@@ -8,7 +8,7 @@ RUN apk update && apk upgrade && \
 
 WORKDIR /usr/src/app
 COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "./"]
-RUN NPM install request
+RUN npm install request
 RUN npm install
 RUN npm rebuild bcrypt --build-from-source
 COPY . .
