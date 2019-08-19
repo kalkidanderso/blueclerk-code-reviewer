@@ -4,8 +4,7 @@ ENV NODE_ENV development
 
 RUN apk update && apk upgrade && \
     apk --no-cache --virtual build-dependencies add \
-    bash git openssh g++ make gcc python build-base build-deps
-
+    bash git openssh g++ make gcc python build-base
 
 WORKDIR /usr/src/app
 COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "./"]
