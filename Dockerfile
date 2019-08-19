@@ -3,8 +3,8 @@ FROM node:12.6-alpine
 ENV NODE_ENV development
 
 RUN apk update && apk upgrade && \
-    apk add --no-cache --virtual build-dependencies build-base python add \
-    bash git openssh g++ make gcc
+    apk --no-cache --virtual build-dependencies add \
+    bash git openssh g++ make gcc python build-base build-deps
 
 
 WORKDIR /usr/src/app
