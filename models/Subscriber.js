@@ -28,7 +28,6 @@ subscriberSchema.pre('save', async function(next) {
 });
 
 subscriberSchema.methods.comparePassword = async function(subPass){
-    //console.log(this.password, subPass)
     return bcrypt.compare(subPass, this.password);
 }
 

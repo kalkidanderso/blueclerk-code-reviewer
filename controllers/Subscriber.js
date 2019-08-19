@@ -12,7 +12,6 @@ const create = async function(req, res) {
     if(err){
         res.status(422).json({ error: err});
     } else {
-        console.log(subscriber.getJWT);
         res.json({user: "created!", subscriber, token: subscriber.getJWT()});
     }
 };
