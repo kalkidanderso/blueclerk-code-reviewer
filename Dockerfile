@@ -10,6 +10,7 @@ RUN apk update && apk upgrade && \
 WORKDIR /usr/src/app
 COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "./"]
 RUN npm install
+RUN npm rebuild bcrypt --build-from-source
 COPY . .
 EXPOSE 3006
 CMD npm start
