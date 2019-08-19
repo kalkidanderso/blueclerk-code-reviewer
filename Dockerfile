@@ -11,5 +11,5 @@ WORKDIR /usr/src/app
 COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "./"]
 RUN npm install
 COPY . .
-EXPOSE 3007
+EXPOSE 3006
 CMD npm start
