@@ -4,7 +4,7 @@ ENV NODE_ENV development
 
 RUN apk update && apk upgrade && \
     apk --no-cache --virtual build-dependencies add \
-    bash git openssh python g++ make gcc del
+    bash git openssh python g++ make gcc
 
 
 WORKDIR /usr/src/app
