@@ -10,6 +10,8 @@ const subscriberSchema = new mongoose.Schema({
     lastName: {type: String, required: true},
     email: { type: String, required: true, unique: true},
     password: {type: String, required: true},
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
     role: {type: String, default: "Global Admin"},
     companyName: {type: String},
     industry: {type: String, default: "General"},
@@ -40,9 +42,16 @@ subscriberSchema.methods.comparePassword = async function(subPass){
 
 subscriberSchema.methods.getJWT = function() {
     let expiration_time = parseInt(process.env.jwt_expiration);
+    let subClaim = {
+        iss: "http://api.blueclerk.com/v1",
+        subscriber_id: this.id,
+        email: this.email,
+        role: this.role
+    };
+
     return (
         "Bearer " +
-        jwt.sign({ subscriber_id: this.id}, process.env.jwt_encryption, {
+        jwt.sign(subClaim, process.env.jwt_encryption, {
             expiresIn: expiration_time
         })
     );
