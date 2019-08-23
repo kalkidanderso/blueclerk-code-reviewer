@@ -11,7 +11,14 @@ const subscriberSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true},
     password: {type: String, required: true},
     role: {type: String, default: "Global Admin"},
-    companyName: {type: String}
+    companyName: {type: String},
+    industry: {type: String, default: "General"},
+    address: {
+        street: String,
+        city: String,
+        state: String,
+        zip: String
+    }
     
 }, { timestamps: true });
 
