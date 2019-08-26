@@ -6,12 +6,15 @@ const saltRounds = 12;
 
 const subscriberSchema = new mongoose.Schema({
     
+    tenantId: {type: String }, 
     firstName: {type: String, required: true},
     lastName: {type: String, required: true},
     email: { type: String, required: true, unique: true},
     password: {type: String, required: true},
     resetPasswordToken: String,
     resetPasswordExpires: Date,
+    displayName: String,
+    avatarUrl: String,
     role: {type: String, default: "Global Admin"},
     companyName: {type: String},
     industry: {type: String, default: "General"},
@@ -20,7 +23,13 @@ const subscriberSchema = new mongoose.Schema({
         city: String,
         state: String,
         zip: String
-    }
+    },
+    companyLogoUrl: String,
+    customers: {type: Array, default: []},
+    equipmentModels: {type: Array, default:[]},
+    customEquipmentModels: { type: Array, default: []},
+    users:{ type: Array, default: []},
+    hasCardOnFile: {type: Boolean, default: false}
     
 }, { timestamps: true });
 
@@ -43,7 +52,7 @@ subscriberSchema.methods.comparePassword = async function(subPass){
 subscriberSchema.methods.getJWT = function() {
     let expiration_time = parseInt(process.env.jwt_expiration);
     let subClaim = {
-        iss: "http://api.blueclerk.com/v1",
+        iss: "http://api.blueclerk.com",
         subscriber_id: this.id,
         email: this.email,
         role: this.role

@@ -2,6 +2,7 @@ const express = require("express");
 const logger = require("morgan");
 const compression = require("compression");
 const cookieParser = require("cookie-parser");
+const session = require("express-session");
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
 const cors = require('cors');
