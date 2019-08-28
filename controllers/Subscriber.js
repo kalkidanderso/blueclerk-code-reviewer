@@ -1,5 +1,6 @@
 const Subscriber  = require('../models/Subscriber');
 const to = require('await-to-js').default;
+const sendEmail = require('../services/aws-ses');
 
 const create = async function(req, res) {
     let subInfo = req.body;
@@ -12,6 +13,7 @@ const create = async function(req, res) {
     if(err){
         res.status(422).json({ error: err});
     } else {
+         sendEmail({to: subscriber.email});
         res.json({user: "created!", subscriber, token: subscriber.getJWT()});
     }
 };
