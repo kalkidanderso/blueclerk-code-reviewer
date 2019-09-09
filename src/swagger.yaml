@@ -3,7 +3,7 @@ info:
   title: "BlueClerk"
   description: "APIs for both app and website"
   version: "1.0.0"
-host: "localhost:3006"
+host: "blueclerk-node-api.deploy.blueclerk.com:3006"
 basePath: "/api/v1"
 schemes:
 - "http"
