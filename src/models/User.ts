@@ -15,7 +15,7 @@ export interface IUser extends Document {
         firstName: string
         lastName: string    
         displayName: string
-        avatarUrl: string
+        imageUrl: string
     }
     address: {
         street: string
@@ -25,12 +25,14 @@ export interface IUser extends Document {
     }
     contact: {
         phone: string
+        fax: string
     }
     permissions: {
         role: Role,
         extra: [string]
     }
 
+    hashPassword: (password: string, next: (err?: any, hash?: string)=>void)=>void
     comparePassword: (password: string, next: (isMatch: boolean)=>void)=>void
     jwt: ()=>string
 
@@ -58,6 +60,7 @@ const UserSchema = new Schema({
     },
     contact: {
         phone: String,
+        fax: String,
     },
     permissions: {
         role: Number,
@@ -69,11 +72,25 @@ const UserSchema = new Schema({
 UserSchema.pre('save', async function(next) {
 
     const user = this as IUser
-    const saltRounds = 12
 
     if(!user.isModified('auth.password')) {
         return next()
     }
+
+    user.hashPassword(user.auth.password, (err?: any, hash?: string)=>{
+
+        if (err || !hash) return next(err) 
+
+        user.auth.password = hash
+        next()
+
+    })
+
+})
+
+UserSchema.methods.hashPassword = function(password: string, next: (err?: any, hash?: string)=>void) {
+
+    const saltRounds = 12
 
     try {
         bcrypt.genSalt(
@@ -83,15 +100,14 @@ UserSchema.pre('save', async function(next) {
                 if (err) return next(err) 
 
                 bcrypt.hash(
-                    user.auth.password, 
+                    password, 
                     salt, 
                     undefined, 
                     (err: mongoose.Error, hash) => {
 
                         if (err) return next(err)
 
-                        user.auth.password = hash
-                        next()
+                        next(null, hash)
 
                     }
                 )
@@ -101,7 +117,7 @@ UserSchema.pre('save', async function(next) {
         return next(err)
     }
 
-})
+}
 
 UserSchema.methods.comparePassword = function(password: string, next: (isMatch: boolean)=>void) {
     

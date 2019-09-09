@@ -20,6 +20,31 @@ export const validate = (validations: ValidationChain[]) => {
 }
 
 export const Validations = {
-    signUp: [check('email').exists(), check('email').isEmail(), check('password').exists()],
-    login: [check('email').exists(), check('email').isEmail(), check('password').exists()],
+  //Auth
+  login: [check('email').exists(), check('email').isEmail(), check('password').exists()],
+  signUp: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
+  adminSignUp: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
+
+  //Users
+  createManager: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
+  createTechnician: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
+  createOfficeAdmin: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
+
+  updateProfile: [check('firstName').exists(), check('lastName').exists(), check('imageUrl').exists()],
+  changePassword: [check('currentPassword').exists(), check('newPassword').exists()],
+  updateCompanyProfile: [check('companyName').exists(), check('logoUrl').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('phone').exists(), check('fax').exists()],
+
+  //Industry
+  createIndustry: [check('title').exists()],
+
+  //Equipment Type
+  createEquipmentType: [check('title').exists()],
+
+  //Equipment Brand
+  createEquipmentBrand: [check('title').exists()],
+
+  //Customers
+  createCustomer: [check('email').exists(), check('email').isEmail(), check('name').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('contactName').exists(), check('phone').exists()],
+  getCustomers: [check('includeActive').exists(), check('includeNonActive').exists()],
+
 }

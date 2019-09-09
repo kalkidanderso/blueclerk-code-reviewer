@@ -4,10 +4,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const aws_sdk_1 = __importDefault(require("aws-sdk"));
-function sendEmail(options) {
-    const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY } = process.env;
+exports.sendEmail = function (options) {
+    const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
     aws_sdk_1.default.config.update({
-        region: 'us-east-1',
+        region: AWS_REGION,
         accessKeyId: AWS_SES_ACCESSKEYID,
         secretAccessKey: AWS_SES_SECRETACCESSKEY,
     });
@@ -39,6 +39,5 @@ function sendEmail(options) {
             }
         });
     });
-}
-exports.default = sendEmail;
+};
 //# sourceMappingURL=aws.js.map

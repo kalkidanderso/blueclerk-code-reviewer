@@ -1,6 +1,6 @@
 import {Request, Response} from 'express'
 import { Status, Role, Messages } from '../common/constants'
-import sendEmail from '../services/aws'
+import {sendEmail} from '../services/aws'
 
 import { User, IUser } from '../models/User'
 import { Subscriber, ISubscriber } from '../models/Subscriber'
@@ -52,13 +52,13 @@ export const createGlobalAdmin = (req: Request, res: Response) => {
                 profile: {
                     firstName: params.firstName,
                     lastName: params.lastName,    
-                    displayName: params.displayName,
+                    displayName: `${params.firstName} ${params.lastName}`,
                 },
                 address: {
-                    street: params.street,
-                    city: params.city,
-                    state: params.state,
-                    zipCode: params.zipCode,
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
                 },
                 contact: {
                     phone: params.phone,
@@ -99,13 +99,13 @@ export const createSubscriber = (req: Request, res: Response) => {
                 profile: {
                     firstName: params.firstName,
                     lastName: params.lastName,    
-                    displayName: params.displayName,
+                    displayName: `${params.firstName} ${params.lastName}`,
                 },
                 address: {
-                    street: params.street,
-                    city: params.city,
-                    state: params.state,
-                    zipCode: params.zipCode,
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
                 },
                 contact: {
                     phone: params.phone,
@@ -116,7 +116,7 @@ export const createSubscriber = (req: Request, res: Response) => {
                 },
                 company: {
                     companyName: params.companyName,
-                    industry: params.industry,
+                    industry: params.industryId,
                 },
             }
         )
@@ -160,6 +160,94 @@ export const getOfficeAdminsList = (req: Request, res: Response) => {
     getNonSubscribersList(req, res, Role.OFFICE_ADMIN)
 }
 
+export const updateProfile = (req: Request, res: Response) => {
+
+    const params = req.body
+    const user = <IUser>req.user
+
+    user.update(
+        {
+            'profile.firstName': params.firstName,
+            'profile.lastName': params.lastName,
+            'profile.imageUrl': params.imageUrl,
+        },
+        (err: any, raw: any)=> {
+                    
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+    
+            return res.json({'status': Status.Success, 'message': 'Profile updated successfully.'})
+        }
+    )
+
+}
+
+export const changePassword = (req: Request, res: Response) => {
+
+    const params = req.body
+    const user = <IUser>req.user
+
+    user.comparePassword(params.currentPassword, (isMatching: Boolean)=> {
+
+        if (!isMatching) {
+            return res.json({'status': Status.Error, 'message': 'Current password doesn\'t match.'})
+        }
+
+        user.hashPassword(params.newPassword, (err?: any, hash?: string)=>{
+
+            if (err || !hash) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+
+            user.update(
+                {
+                    'auth.password': hash,
+                },
+                (err: any, raw: any)=> {
+                            
+                    if (err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    }
+            
+                    return res.json({'status': Status.Success, 'message': 'Password changed successfully.'})
+                }
+            )
+            
+        })
+
+    })
+
+}
+
+export const updateCompanyProfile = (req: Request, res: Response) => {
+
+    const params = req.body
+    const subscriber = <ISubscriber>req.user
+
+    subscriber.update(
+        {
+            'company.companyName': params.companyName,
+            'company.logoUrl': params.logoUrl,
+            'address.street': params.street,
+            'address.city': params.city,
+            'address.state': params.state,
+            'address.zipCode': params.zipCode,
+            'contact.phone': params.phone,
+            'contact.fax': params.fax,
+        },
+        (err: any, raw: any)=> {
+                    
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+    
+            return res.json({'status': Status.Success, 'message': 'Profile updated successfully.'})
+        }
+    )
+
+}
+
 const createNonSubscriber = (req: Request, res: Response, role: Role) => {
 
     checkEmailExists(req, res, (req: Request, res: Response)=>{
@@ -176,13 +264,13 @@ const createNonSubscriber = (req: Request, res: Response, role: Role) => {
                 profile: {
                     firstName: params.firstName,
                     lastName: params.lastName,    
-                    displayName: params.displayName,
+                    displayName: `${params.firstName} ${params.lastName}`,
                 },
                 address: {
-                    street: params.street,
-                    city: params.city,
-                    state: params.state,
-                    zipCode: params.zipCode,
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
                 },
                 contact: {
                     phone: params.phone,
@@ -225,7 +313,7 @@ const getNonSubscribersList = (req: Request, res: Response, role: Role) => {
 
     const user = <IUser>req.user
 
-    User.findOne({_id: user._id})
+    Subscriber.findOne({_id: user._id})
     .populate({
         path: 'users',
         match: { 'permissions.role': { $eq: role } },

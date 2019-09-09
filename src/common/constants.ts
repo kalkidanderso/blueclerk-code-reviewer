@@ -9,13 +9,14 @@ export const Messages = {
     MissingParams: 'Parameters are missing.',
     InvalidEmailPassword: 'Invalid email/password.',
     GenericError: 'Can\'t process now. Please try again later.',
-    DuplicateEmail: 'Email address already register. Please try with some other email address',
+    DuplicateEmail: 'Email address already registered. Please try with some other email address',
+    UnAuthorized: 'You are not authorized for this action. Please contact admin for more details.',
 }
 
 export const enum Role {
-    GLOBAL_ADMIN, 
-    SUBSCRIBER, 
-    MANAGER, 
+    OFFICE_ADMIN,
     TECHNICIAN, 
-    OFFICE_ADMIN
+    MANAGER, 
+    SUBSCRIBER, 
+    GLOBAL_ADMIN
 }

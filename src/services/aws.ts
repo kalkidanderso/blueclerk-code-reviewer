@@ -1,11 +1,11 @@
 import AWS from 'aws-sdk'
 
-function sendEmail(options: any) {
+export const sendEmail = function(options: any) {
 
-  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY} = process.env
+  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
 
   AWS.config.update({
-    region: 'us-east-1',
+    region: AWS_REGION,
     accessKeyId: AWS_SES_ACCESSKEYID,
     secretAccessKey: AWS_SES_SECRETACCESSKEY,
   })
@@ -42,5 +42,3 @@ function sendEmail(options: any) {
     )
   })
 }
-
-export default sendEmail

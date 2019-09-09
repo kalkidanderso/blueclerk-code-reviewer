@@ -5,7 +5,7 @@ export interface ISubscriber extends IUser {
 
     company: {
         companyName: string
-        industry: string
+        industry: Schema.Types.ObjectId
         logoUrl: string
     }
     other: {
@@ -13,6 +13,7 @@ export interface ISubscriber extends IUser {
         hasCardOnFile: boolean
     },
     users: [Schema.Types.ObjectId]
+    customers: [Schema.Types.ObjectId]
     
 }
 
@@ -20,7 +21,7 @@ const SubscriberSchema = new Schema({
 
     company: {
         companyName: String,
-        industry: String,
+        industry: { type: Schema.Types.ObjectId, ref: 'Industry' },
         logoUrl: String,
     },
     other: {
@@ -28,6 +29,7 @@ const SubscriberSchema = new Schema({
         hasCardOnFile: {type: Boolean, default: false}
     },
     users: [{ type: Schema.Types.ObjectId, ref: 'NonSubscriber' }],
+    customers: [{ type: Schema.Types.ObjectId, ref: 'Customer' }],
 
 })
 

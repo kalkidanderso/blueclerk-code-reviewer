@@ -5,7 +5,7 @@ const User_1 = require("./User");
 const SubscriberSchema = new mongoose_1.Schema({
     company: {
         companyName: String,
-        industry: String,
+        industry: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Industry' },
         logoUrl: String,
     },
     other: {
@@ -13,6 +13,7 @@ const SubscriberSchema = new mongoose_1.Schema({
         hasCardOnFile: { type: Boolean, default: false }
     },
     users: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'NonSubscriber' }],
+    customers: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Customer' }],
 });
 exports.Subscriber = User_1.User.discriminator('Subscriber', SubscriberSchema);
 //# sourceMappingURL=Subscriber.js.map

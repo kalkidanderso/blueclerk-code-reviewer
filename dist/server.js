@@ -2,6 +2,13 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const dotenv_1 = __importDefault(require("dotenv"));
@@ -14,6 +21,8 @@ const cors_1 = __importDefault(require("cors"));
 const passport_1 = __importDefault(require("passport"));
 const passport_2 = __importDefault(require("./middlewares/passport"));
 const v1_1 = __importDefault(require("./routes/v1"));
+const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
+const swaggerDocument = __importStar(require("./swagger.json"));
 //Environment config
 dotenv_1.default.config();
 //Database connection
@@ -32,9 +41,14 @@ app.use(cookie_parser_1.default());
 app.use(body_parser_1.default.json({ limit: '50mb' }));
 app.use(body_parser_1.default.urlencoded({ extended: true, limit: '50mb', parameterLimit: 1000000 }));
 app.use(cors_1.default());
+//Auth middleware
 app.use(passport_1.default.initialize());
 passport_2.default(passport_1.default);
+//Logger
 app.use(morgan_1.default('dev'));
+//Swagger
+app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swaggerDocument));
+//Router
 app.use('/api/v1', v1_1.default);
 //Starting the server
 app.listen(app.get('port'), (err) => {

@@ -10,6 +10,8 @@ import passport from 'passport'
 import passportMiddleWare from './middlewares/passport'
 import { MongoError } from 'mongodb'
 import routesV1 from './routes/v1'
+import swaggerUi from 'swagger-ui-express'
+import * as swaggerDocument from './swagger.json'
 
 //Environment config
 dotenv.config()
@@ -38,10 +40,17 @@ app.use(bodyParser.json({limit:'50mb'}));
 app.use(bodyParser.urlencoded({extended:true, limit:'50mb', parameterLimit: 1000000}));
 app.use(cors())
 
+//Auth middleware
 app.use(passport.initialize())
 passportMiddleWare(passport)
 
+//Logger
 app.use(logger('dev'))
+
+//Swagger
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+//Router
 app.use('/api/v1', routesV1)
 
 //Starting the server

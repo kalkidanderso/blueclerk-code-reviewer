@@ -43,6 +43,7 @@ const UserSchema = new mongoose_1.Schema({
     },
     contact: {
         phone: String,
+        fax: String,
     },
     permissions: {
         role: Number,
@@ -52,27 +53,34 @@ const UserSchema = new mongoose_1.Schema({
 UserSchema.pre('save', function (next) {
     return __awaiter(this, void 0, void 0, function* () {
         const user = this;
-        const saltRounds = 12;
         if (!user.isModified('auth.password')) {
             return next();
         }
-        try {
-            bcrypt_nodejs_1.default.genSalt(saltRounds, (err, salt) => {
-                if (err)
-                    return next(err);
-                bcrypt_nodejs_1.default.hash(user.auth.password, salt, undefined, (err, hash) => {
-                    if (err)
-                        return next(err);
-                    user.auth.password = hash;
-                    next();
-                });
-            });
-        }
-        catch (err) {
-            return next(err);
-        }
+        user.hashPassword(user.auth.password, (err, hash) => {
+            if (err || !hash)
+                return next(err);
+            user.auth.password = hash;
+            next();
+        });
     });
 });
+UserSchema.methods.hashPassword = function (password, next) {
+    const saltRounds = 12;
+    try {
+        bcrypt_nodejs_1.default.genSalt(saltRounds, (err, salt) => {
+            if (err)
+                return next(err);
+            bcrypt_nodejs_1.default.hash(password, salt, undefined, (err, hash) => {
+                if (err)
+                    return next(err);
+                next(null, hash);
+            });
+        });
+    }
+    catch (err) {
+        return next(err);
+    }
+};
 UserSchema.methods.comparePassword = function (password, next) {
     const user = this;
     bcrypt_nodejs_1.default.compare(password, user.auth.password, (err, isMatch) => {

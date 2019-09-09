@@ -1,0 +1,27 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const constants_1 = require("../common/constants");
+const Industry_1 = require("../models/Industry");
+exports.createIndustry = (req, res) => {
+    const params = req.body;
+    const user = req.user;
+    const industry = new Industry_1.Industry({
+        title: params.title,
+        createdBy: user._id
+    });
+    industry.save((err) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        return res.json({ 'status': constants_1.Status.Success, 'message': 'Industry created successfully.' });
+    });
+};
+exports.getIndustries = (req, res) => {
+    Industry_1.Industry.find((err, industries) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        res.json({ 'status': constants_1.Status.Success, 'industries': industries });
+    });
+};
+//# sourceMappingURL=industry.js.map
