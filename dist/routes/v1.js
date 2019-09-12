@@ -15,10 +15,13 @@ const validator_1 = require("../middlewares/validator");
 const passport_1 = __importDefault(require("passport"));
 const permissions_1 = require("../middlewares/permissions");
 const userController = __importStar(require("../controllers/user"));
+const jobTypeController = __importStar(require("../controllers/jobType"));
 const equipmentTypeController = __importStar(require("../controllers/equipmentType"));
 const equipmentBrandController = __importStar(require("../controllers/equipmentBrand"));
 const customerController = __importStar(require("../controllers/customer"));
+const customerEquipmentController = __importStar(require("../controllers/customerEquipment"));
 const industryController = __importStar(require("../controllers/industry"));
+const jobController = __importStar(require("../controllers/job"));
 const router = express_1.default.Router();
 //Auth
 router.post('/login', validator_1.validate(validator_1.Validations.login), userController.login);
@@ -46,5 +49,14 @@ router.post('/getEquipmentBrands', passport_1.default.authenticate('jwt', { sess
 //Customers
 router.post('/createCustomer', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* SUBSCRIBER */), validator_1.validate(validator_1.Validations.createCustomer), customerController.createCustomer);
 router.post('/getCustomers', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), validator_1.validate(validator_1.Validations.getCustomers), customerController.getCustomers);
+//Customer equipments
+router.post('/createCustomerEquipment', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(1 /* TECHNICIAN */), validator_1.validate(validator_1.Validations.createCustomerEquipment), customerEquipmentController.createCustomerEquipment);
+router.post('/getCustomerEquipments', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), validator_1.validate(validator_1.Validations.getCustomerEquipments), customerEquipmentController.getCustomerEquipments);
+//Job types
+router.post('/createJobType', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* SUBSCRIBER */), validator_1.validate(validator_1.Validations.createJobType), jobTypeController.createJobType);
+router.post('/getJobTypes', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), jobTypeController.getJobTypes);
+//Job
+router.post('/createJob', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* SUBSCRIBER */), validator_1.validate(validator_1.Validations.createJob), jobController.createJob);
+router.post('/getJobs', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), jobController.getJobs);
 exports.default = router;
 //# sourceMappingURL=v1.js.map

@@ -47,4 +47,14 @@ export const Validations = {
   createCustomer: [check('email').exists(), check('email').isEmail(), check('name').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('contactName').exists(), check('phone').exists()],
   getCustomers: [check('includeActive').exists(), check('includeNonActive').exists()],
 
+  //Customer Equipment
+  createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('imageUrl').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists()],
+  getCustomerEquipments: [check('customerId').exists()],
+
+  //Job Type
+  createJobType: [check('title').exists()],
+
+  //Job
+  createJob: [check('dateTime').exists(), check('technicianId').exists(), check('customerId').exists(), check('jobTypeId').exists()],
+
 }

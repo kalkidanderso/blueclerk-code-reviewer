@@ -6,10 +6,13 @@ import {checkPermissions} from '../middlewares/permissions'
 import {Role} from '../common/constants'
 
 import * as userController from '../controllers/user'
+import * as jobTypeController from '../controllers/jobType'
 import * as equipmentTypeController from '../controllers/equipmentType'
 import * as equipmentBrandController from '../controllers/equipmentBrand'
 import * as customerController from '../controllers/customer'
+import * as customerEquipmentController from '../controllers/customerEquipment'
 import * as industryController from '../controllers/industry'
+import * as jobController from '../controllers/job'
 
 const router: express.Router = express.Router()
 
@@ -158,6 +161,54 @@ router.post(
     checkPermissions(Role.OFFICE_ADMIN),
     validate(Validations.getCustomers), 
     customerController.getCustomers
+    )
+
+//Customer equipments
+router.post(
+    '/createCustomerEquipment', 
+    passport.authenticate('jwt', {session: false}), 
+    checkPermissions(Role.TECHNICIAN),
+    validate(Validations.createCustomerEquipment), 
+    customerEquipmentController.createCustomerEquipment
+    )
+
+router.post(
+    '/getCustomerEquipments', 
+    passport.authenticate('jwt', {session: false}), 
+    checkPermissions(Role.OFFICE_ADMIN),
+    validate(Validations.getCustomerEquipments), 
+    customerEquipmentController.getCustomerEquipments
+    )
+
+//Job types
+router.post(
+    '/createJobType', 
+    passport.authenticate('jwt', {session: false}), 
+    checkPermissions(Role.SUBSCRIBER), 
+    validate(Validations.createJobType), 
+    jobTypeController.createJobType
+    )
+
+router.post(
+    '/getJobTypes', 
+    passport.authenticate('jwt', {session: false}), 
+    checkPermissions(Role.OFFICE_ADMIN),
+    jobTypeController.getJobTypes)
+
+//Job
+router.post(
+    '/createJob', 
+    passport.authenticate('jwt', {session: false}), 
+    checkPermissions(Role.SUBSCRIBER),
+    validate(Validations.createJob), 
+    jobController.createJob
+    )
+
+router.post(
+    '/getJobs', 
+    passport.authenticate('jwt', {session: false}), 
+    checkPermissions(Role.OFFICE_ADMIN),
+    jobController.getJobs
     )
 
 export default router

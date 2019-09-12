@@ -21,6 +21,12 @@ tags:
   description: "For equipment brands"
 - name: "Customer"
   description: "For customers of a subscriber"
+- name: "Customer Equipment"
+  description: "For equipments of a customer"
+- name: "Job Type"
+  description: "For job types"
+- name: "Job"
+  description: "For scheduled jobs"
 
 paths:
   /login:
@@ -648,6 +654,195 @@ paths:
       security:
         - Bearer: []  
   
+  /createCustomerEquipment:
+    post:
+      tags:
+      - "Customer Equipment"
+      summary: "To create an equipment for a customer"
+      description: ""
+      consumes:
+      - "application/x-www-form-urlencoded"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "model"
+        in: "formData"
+        required: true
+        type: "string"
+      - name: "serialNumber"
+        in: "formData"
+        required: true
+        type: "string"
+      - name: "nfcTag"
+        in: "formData"
+        required: true
+        type: "string"
+      - name: "imageUrl"
+        in: "formData"
+        required: true
+        type: "string"
+      - name: "equipmentTypeId"
+        in: "formData"
+        required: true
+        type: "string"
+        description: "Id of the selected equipment type from the list received in /getEquipmentTypes api"
+      - name: "equipmentBrandId"
+        in: "formData"
+        required: true
+        type: "string"
+        description: "Id of the selected equipment brand from the list received in /getEquipmentBrands api"
+      - name: "customerId"
+        in: "formData"
+        required: true
+        type: "string"
+        description: "Id of the selected customer from the list received in /getCustomers api"
+      responses:
+        200:
+          description: "Success"
+          schema:
+            $ref: "#/definitions/GeneralAPIResponse"
+      security:
+        - Bearer: []  
+  /getCustomerEquipments:
+    post:
+      tags:
+      - "Customer Equipment"
+      summary: "To get all equipments of a customer."
+      description: ""
+      consumes:
+      - "application/x-www-form-urlencoded"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "customerId"
+        in: "formData"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "Success"
+          schema:
+            allOf:    
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  equipments:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/CustomerEquipment"
+      security:
+        - Bearer: []  
+  
+  /createJobType:
+    post:
+      tags:
+      - "Job Type"
+      summary: "To create a job type"
+      description: ""
+      consumes:
+      - "application/x-www-form-urlencoded"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "title"
+        in: "formData"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "Success"
+          schema:
+            $ref: "#/definitions/GeneralAPIResponse"
+      security:
+        - Bearer: []  
+  /getJobTypes:
+    post:
+      tags:
+      - "Job Type"
+      summary: "To get all job types created by a subscriber or parent subscriber of normal user. It will also contain types created by global admin."
+      description: ""
+      consumes:
+      - "application/x-www-form-urlencoded"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Success"
+          schema:
+            allOf:    
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  types:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/JobType"
+      security:
+        - Bearer: []  
+
+  /createJob:
+    post:
+      tags:
+      - "Job"
+      summary: "To create a job"
+      description: ""
+      consumes:
+      - "application/x-www-form-urlencoded"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "dateTime"
+        in: "formData"
+        required: true
+        type: "string"
+        description: "date time of job. e.g. 2019-12-22 20:30:00"
+      - name: "technicianId"
+        in: "formData"
+        required: true
+        type: "string"
+        description: "Id of a technician selected from the list received by /getTechnicians api"
+      - name: "customerId"
+        in: "formData"
+        required: true
+        type: "string"
+        description: "Id of a customer selected from the list received by /getCustomers api"
+      - name: "jobTypeId"
+        in: "formData"
+        required: true
+        type: "string"
+        description: "Id of a job type selected from the list received by /getJobTypes api"
+      responses:
+        200:
+          description: "Success"
+          schema:
+            $ref: "#/definitions/GeneralAPIResponse"
+      security:
+        - Bearer: []  
+  /getJobs:
+    post:
+      tags:
+      - "Job"
+      summary: "To get all jobs of a subscriber or parent subscriber of normal user."
+      description: ""
+      consumes:
+      - "application/x-www-form-urlencoded"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Success"
+          schema:
+            allOf:    
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  jobs:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/Job"
+      security:
+        - Bearer: []  
+        
 securityDefinitions:
   Bearer:
     type: apiKey
@@ -773,6 +968,69 @@ definitions:
       subscriber:
         type: "string"
         description: "Id of subscriber who created this customer"
+  CustomerEquipment:
+    type: "object"
+    properties:
+      _id:
+        type: "string"
+      info:
+        type: "object"
+        properties:
+          model: 
+            type: "string"
+          serialNumber: 
+            type: "string"
+          nfcTag: 
+            type: "string"
+          imageUrl: 
+            type: "string"
+      maintenance:
+        type: "object"
+        properties:
+          interval:
+            type: "string"
+          nextDate:
+            type: "string"
+            format: "date-time"
+      type:
+        type: "string"
+        description: "Id of equipment type"
+      brand:
+        type: "string"
+        description: "Id of equipment brand"
+      customer:
+        type: "string"
+        description: "Id of customer"
+  JobType:
+    type: "object"
+    properties:
+      _id:
+        type: "string"
+      title:
+        type: "string"
+      createdBy:
+        type: "string"
+        description: "Id of the subscriber who created it, or null if the global admin created it."
+  Job:
+    type: "object"
+    properties:
+      _id:
+        type: "string"
+      dateTime:
+        type: "string"
+        format: "date-time"
+      technician:
+        type: "string"
+        description: "Id of technician"
+      customer:
+        type: "string"
+        description: "Id of customer"
+      type:
+        type: "string"
+        description: "Id of job type"
+      subscriber:
+        type: "string"
+        description: "Id of subscriber who created it"
   GeneralAPIResponse:
     type: "object"
     properties:
