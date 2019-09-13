@@ -22,6 +22,7 @@ const customerController = __importStar(require("../controllers/customer"));
 const customerEquipmentController = __importStar(require("../controllers/customerEquipment"));
 const industryController = __importStar(require("../controllers/industry"));
 const jobController = __importStar(require("../controllers/job"));
+const imageController = __importStar(require("../controllers/image"));
 const router = express_1.default.Router();
 //Auth
 router.post('/login', validator_1.validate(validator_1.Validations.login), userController.login);
@@ -58,5 +59,7 @@ router.post('/getJobTypes', passport_1.default.authenticate('jwt', { session: fa
 //Job
 router.post('/createJob', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* SUBSCRIBER */), validator_1.validate(validator_1.Validations.createJob), jobController.createJob);
 router.post('/getJobs', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), jobController.getJobs);
+//Image upload
+router.post('/uploadImage', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), imageController.uploadImage);
 exports.default = router;
 //# sourceMappingURL=v1.js.map

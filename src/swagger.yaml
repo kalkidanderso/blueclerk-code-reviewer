@@ -27,6 +27,8 @@ tags:
   description: "For job types"
 - name: "Job"
   description: "For scheduled jobs"
+- name: "Image"
+  description: "For images"
 
 paths:
   /login:
@@ -843,6 +845,34 @@ paths:
       security:
         - Bearer: []  
         
+  /uploadImage:
+    post:
+      tags:
+      - "Image"
+      summary: "To upload an image"
+      description: ""
+      consumes:
+      - "multipart/form-data"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "image"
+        in: "formData"
+        required: true
+        type: "file"
+      responses:
+        200:
+          description: "Success"
+          schema:
+            allOf:    
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  imageUrl:
+                    type: "string"
+      security:
+        - Bearer: []  
+  
 securityDefinitions:
   Bearer:
     type: apiKey

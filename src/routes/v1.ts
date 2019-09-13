@@ -13,6 +13,8 @@ import * as customerController from '../controllers/customer'
 import * as customerEquipmentController from '../controllers/customerEquipment'
 import * as industryController from '../controllers/industry'
 import * as jobController from '../controllers/job'
+import * as imageController from '../controllers/image'
+
 
 const router: express.Router = express.Router()
 
@@ -209,6 +211,14 @@ router.post(
     passport.authenticate('jwt', {session: false}), 
     checkPermissions(Role.OFFICE_ADMIN),
     jobController.getJobs
+    )
+
+//Image upload
+router.post(
+    '/uploadImage', 
+    passport.authenticate('jwt', {session: false}), 
+    checkPermissions(Role.OFFICE_ADMIN),
+    imageController.uploadImage
     )
 
 export default router
