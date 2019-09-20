@@ -35,6 +35,12 @@ mongoose_1.default.connect(`mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_
 });
 // Application/Server configs
 const app = express_1.default();
+//CORS
+app.use(function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
 app.set('port', process.env.PORT || 3000);
 app.use(compression_1.default());
 app.use(cookie_parser_1.default());
