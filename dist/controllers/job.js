@@ -31,13 +31,16 @@ exports.getJobs = (req, res) => {
     Job_1.Job.find({ subscriber: subscriberId })
         .populate({
         path: 'customer',
-    }, 'info.name')
+        select: 'info.name'
+    })
         .populate({
         path: 'technician',
-    }, 'profile.displayName')
+        select: 'profile.displayName'
+    })
         .populate({
         path: 'type',
-    }, 'title')
+        select: 'title'
+    })
         .exec((err, jobs) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });

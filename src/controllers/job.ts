@@ -46,13 +46,16 @@ export const getJobs = (req: Request, res: Response) => {
     Job.find({ subscriber: subscriberId })
     .populate({
         path: 'customer',
-    }, 'info.name')
+        select: 'info.name'
+    })
     .populate({
         path: 'technician',
-    }, 'profile.displayName')
+        select: 'profile.displayName'
+    })
     .populate({
         path: 'type',
-    }, 'title')
+        select: 'title'
+    })
         .exec((err: any, jobs: IJob[])=>{
 
             if (err) {
