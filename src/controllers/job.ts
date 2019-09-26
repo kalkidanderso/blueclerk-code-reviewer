@@ -49,7 +49,7 @@ export const getJobs = (req: Request, res: Response) => {
     }, 'info.name')
     .populate({
         path: 'technician',
-    }, 'info.name')
+    }, 'profile.displayName')
     .populate({
         path: 'type',
     }, 'title')

@@ -34,7 +34,7 @@ exports.getJobs = (req, res) => {
     }, 'info.name')
         .populate({
         path: 'technician',
-    }, 'info.name')
+    }, 'profile.displayName')
         .populate({
         path: 'type',
     }, 'title')
