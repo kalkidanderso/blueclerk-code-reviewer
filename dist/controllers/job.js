@@ -28,7 +28,17 @@ exports.getJobs = (req, res) => {
     else {
         subscriberId = user._id;
     }
-    Job_1.Job.find({ subscriber: subscriberId }, (err, jobs) => {
+    Job_1.Job.find({ subscriber: subscriberId })
+        .populate({
+        path: 'customer',
+    }, 'info.name')
+        .populate({
+        path: 'technician',
+    }, 'info.name')
+        .populate({
+        path: 'type',
+    }, 'title')
+        .exec((err, jobs) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }

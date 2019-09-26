@@ -43,9 +43,17 @@ export const getJobs = (req: Request, res: Response) => {
         subscriberId = user._id
     }
 
-    Job.find(
-        { subscriber: subscriberId },
-        (err: any, jobs: IJob[])=>{
+    Job.find({ subscriber: subscriberId })
+    .populate({
+        path: 'customer',
+    }, 'info.name')
+    .populate({
+        path: 'technician',
+    }, 'info.name')
+    .populate({
+        path: 'type',
+    }, 'title')
+        .exec((err: any, jobs: IJob[])=>{
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
