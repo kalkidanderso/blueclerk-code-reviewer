@@ -7,10 +7,10 @@ exports.createGroup = (req, res) => {
     const group = new Group_1.Group({
         title: params.title,
         company: req.companyId,
-        manager: '',
     });
     group.save((err) => {
         if (err) {
+            console.log(err);
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         return res.json({ 'status': constants_1.Status.Success, 'message': 'Group created successfully.' });

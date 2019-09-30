@@ -12,13 +12,14 @@ export const createGroup = (req: Request, res: Response) => {
         {
             title:  params.title,
             company: req.companyId,
-            manager: '',
         }
     )
 
     group.save((err: any) => {
 
         if (err) {
+            console.log(err);
+            
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
 
