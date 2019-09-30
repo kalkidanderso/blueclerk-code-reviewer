@@ -24,9 +24,9 @@ const CustomerSchema = new mongoose_1.Schema({
         phone: String,
     },
     isActive: { type: Boolean, default: true },
-    subscriber: {
+    company: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Subscriber',
+        ref: 'Company',
         required: true
     },
     equipments: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'CustomerEquipment' }],

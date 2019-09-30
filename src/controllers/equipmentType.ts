@@ -3,7 +3,7 @@ import { Status, Role, Messages } from '../common/constants'
 
 import { EquipmentType, IEquipmentType } from '../models/EquipmentType'
 import { IUser } from '../models/User'
-import { INonSubscriber } from '../models/NonSubscriber'
+import { IEmployee } from '../models/Employee'
 
 export const createEquipmentType = (req: Request, res: Response) => {
 
@@ -12,7 +12,7 @@ export const createEquipmentType = (req: Request, res: Response) => {
 
     const type = new EquipmentType({
         title: params.title,
-        createdBy:  user.permissions.role == Role.SUBSCRIBER ? user._id : null
+        createdBy:  user.permissions.role == Role.COMPANY ? user._id : null
     })
 
     type.save((err: any) => {
@@ -30,11 +30,11 @@ export const createEquipmentType = (req: Request, res: Response) => {
 export const getEquipmentTypes = (req: Request, res: Response) => {
 
     const user = <IUser>req.user
-    const nonSubscriber = <INonSubscriber>user
+    const employee = <IEmployee>user
     
     var createdBy
-    if (nonSubscriber.subscriber) {
-        createdBy = nonSubscriber.subscriber
+    if (employee.company) {
+        createdBy = employee.company
     }else {
         createdBy = user._id
     }

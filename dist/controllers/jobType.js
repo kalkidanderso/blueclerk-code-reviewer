@@ -7,7 +7,7 @@ exports.createJobType = (req, res) => {
     const user = req.user;
     const jobType = new JobType_1.JobType({
         title: params.title,
-        createdBy: user.permissions.role == 3 /* SUBSCRIBER */ ? user._id : null
+        createdBy: user.permissions.role == 3 /* COMPANY */ ? user._id : null
     });
     jobType.save((err) => {
         if (err) {
@@ -17,16 +17,7 @@ exports.createJobType = (req, res) => {
     });
 };
 exports.getJobTypes = (req, res) => {
-    const user = req.user;
-    const nonSubscriber = user;
-    var createdBy;
-    if (nonSubscriber.subscriber) {
-        createdBy = nonSubscriber.subscriber;
-    }
-    else {
-        createdBy = user._id;
-    }
-    JobType_1.JobType.find({ $or: [{ createdBy: null }, { createdBy: createdBy }] }, (err, types) => {
+    JobType_1.JobType.find({ $or: [{ createdBy: null }, { createdBy: req.companyId }] }, (err, types) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }

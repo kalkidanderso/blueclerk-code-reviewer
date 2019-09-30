@@ -50,11 +50,32 @@ export const Validations = {
   //Customer Equipment
   createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('imageUrl').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists()],
   getCustomerEquipments: [check('customerId').exists()],
+  linkEquipmentJob: [check('nfcTag').exists(), check('jobId').exists()],
+  getCustomerEquipmentJobs: [check('equipmentId').exists()],
 
   //Job Type
   createJobType: [check('title').exists()],
 
   //Job
   createJob: [check('dateTime').exists(), check('technicianId').exists(), check('customerId').exists(), check('jobTypeId').exists()],
+  updateJob: [check('status').exists(), check('comment').exists(), check('jobId').exists()],
+  
+  //Group
+  createGroup: [check('title').exists()],
+  groupGeneric: [check('groupId').exists()],
+  addManager: [check('groupId').exists(), check('managerId').exists()],
+  memberGeneric: [check('groupId').exists(), check('memberId').exists()],
+  
+  //Company Equipemnt
+  createCompanyEquipment: [check('imageUrl').exists(), check('model').exists(), check('serialNumber').exists(), check('typeId').exists(),check('brandId').exists()],
+  
+  //Company Equipemnt History
+  createCompanyEquipmentHistory: [check('action').exists(), check('dateTime').exists()],
 
+  //Company Equipemnt Inventory
+  createEquipmentInventory: [check('dateTime').exists(), check('nfcTags').exists(), check('qrCodes').exists()],
+  
+  // Tags
+  placeOrder: [check('noOfTags').exists(), check('total').exists(), check('tax').exists(), check('dateTime').exists()],
+  udpateOrder: [ check('status').exists(), check('orderId').exists(), check('orderStatus').exists()]
 }

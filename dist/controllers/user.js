@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../common/constants");
 const aws_1 = require("../services/aws");
 const User_1 = require("../models/User");
-const Subscriber_1 = require("../models/Subscriber");
-const NonSubscriber_1 = require("../models/NonSubscriber");
+const Company_1 = require("../models/Company");
+const Employee_1 = require("../models/Employee");
 exports.login = (req, res) => {
     const params = req.body;
     User_1.User.findOne({ 'auth.email': params.email }, (err, user) => {
@@ -34,6 +34,7 @@ exports.createGlobalAdmin = (req, res) => {
                 firstName: params.firstName,
                 lastName: params.lastName,
                 displayName: `${params.firstName} ${params.lastName}`,
+                imageUrl: '',
             },
             address: {
                 street: '',
@@ -57,10 +58,10 @@ exports.createGlobalAdmin = (req, res) => {
         });
     });
 };
-exports.createSubscriber = (req, res) => {
+exports.createCompany = (req, res) => {
     checkEmailExists(req, res, (req, res) => {
         const params = req.body;
-        const subscriber = new Subscriber_1.Subscriber({
+        const company = new Company_1.Company({
             auth: {
                 email: params.email,
                 password: params.password,
@@ -69,6 +70,7 @@ exports.createSubscriber = (req, res) => {
                 firstName: params.firstName,
                 lastName: params.lastName,
                 displayName: `${params.firstName} ${params.lastName}`,
+                imageUrl: '',
             },
             address: {
                 street: '',
@@ -80,15 +82,16 @@ exports.createSubscriber = (req, res) => {
                 phone: params.phone,
             },
             permissions: {
-                role: 3 /* SUBSCRIBER */,
+                role: 3 /* COMPANY */,
                 extra: [],
             },
-            company: {
+            info: {
                 companyName: params.companyName,
                 industry: params.industryId,
+                logoUrl: '',
             },
         });
-        subscriber.save((err) => {
+        company.save((err) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
@@ -98,22 +101,22 @@ exports.createSubscriber = (req, res) => {
     });
 };
 exports.createManager = (req, res) => {
-    createNonSubscriber(req, res, 2 /* MANAGER */);
+    createEmployee(req, res, 2 /* MANAGER */);
 };
 exports.createTechnician = (req, res) => {
-    createNonSubscriber(req, res, 1 /* TECHNICIAN */);
+    createEmployee(req, res, 1 /* TECHNICIAN */);
 };
 exports.createOfficeAdmin = (req, res) => {
-    createNonSubscriber(req, res, 0 /* OFFICE_ADMIN */);
+    createEmployee(req, res, 0 /* OFFICE_ADMIN */);
 };
 exports.getManagersList = (req, res) => {
-    getNonSubscribersList(req, res, 2 /* MANAGER */);
+    getEmployeesList(req, res, 2 /* MANAGER */);
 };
 exports.getTechniciansList = (req, res) => {
-    getNonSubscribersList(req, res, 1 /* TECHNICIAN */);
+    getEmployeesList(req, res, 1 /* TECHNICIAN */);
 };
 exports.getOfficeAdminsList = (req, res) => {
-    getNonSubscribersList(req, res, 0 /* OFFICE_ADMIN */);
+    getEmployeesList(req, res, 0 /* OFFICE_ADMIN */);
 };
 exports.updateProfile = (req, res) => {
     const params = req.body;
@@ -122,6 +125,7 @@ exports.updateProfile = (req, res) => {
         'profile.firstName': params.firstName,
         'profile.lastName': params.lastName,
         'profile.imageUrl': params.imageUrl,
+        'profile.displayName': `${params.firstName} ${params.lastName}`,
     }, (err, raw) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -153,28 +157,31 @@ exports.changePassword = (req, res) => {
 };
 exports.updateCompanyProfile = (req, res) => {
     const params = req.body;
-    const subscriber = req.user;
-    subscriber.update({
-        'company.companyName': params.companyName,
-        'company.logoUrl': params.logoUrl,
-        'address.street': params.street,
-        'address.city': params.city,
-        'address.state': params.state,
-        'address.zipCode': params.zipCode,
-        'contact.phone': params.phone,
-        'contact.fax': params.fax,
-    }, (err, raw) => {
+    Company_1.Company.findById(req.companyId, function (err, company) {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        return res.json({ 'status': constants_1.Status.Success, 'message': 'Profile updated successfully.' });
+        company.update({
+            'info.companyName': params.companyName,
+            'info.logoUrl': params.logoUrl,
+            'address.street': params.street,
+            'address.city': params.city,
+            'address.state': params.state,
+            'address.zipCode': params.zipCode,
+            'contact.phone': params.phone,
+            'contact.fax': params.fax,
+        }, (err, raw) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            return res.json({ 'status': constants_1.Status.Success, 'message': 'Profile updated successfully.' });
+        });
     });
 };
-const createNonSubscriber = (req, res, role) => {
+const createEmployee = (req, res, role) => {
     checkEmailExists(req, res, (req, res) => {
         const params = req.body;
-        const subscriber = req.user;
-        const nonSubscriber = new NonSubscriber_1.NonSubscriber({
+        const employee = new Employee_1.Employee({
             auth: {
                 email: params.email,
                 password: params.password,
@@ -183,6 +190,7 @@ const createNonSubscriber = (req, res, role) => {
                 firstName: params.firstName,
                 lastName: params.lastName,
                 displayName: `${params.firstName} ${params.lastName}`,
+                imageUrl: '',
             },
             address: {
                 street: '',
@@ -197,34 +205,38 @@ const createNonSubscriber = (req, res, role) => {
                 role: role,
                 extra: [],
             },
-            subscriber: subscriber._id
+            company: req.companyId
         });
-        nonSubscriber.save((err) => {
+        employee.save((err) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            subscriber.users.push(nonSubscriber._id);
-            subscriber.update({ users: subscriber.users }, (err, raw) => {
+            Company_1.Company.findById(req.companyId, function (err, company) {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'User created successfully.' });
+                company.employees.push(employee._id);
+                company.update({ employees: company.employees }, (err, raw) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Employee created successfully.' });
+                });
             });
         });
     });
 };
-const getNonSubscribersList = (req, res, role) => {
-    const user = req.user;
-    Subscriber_1.Subscriber.findOne({ _id: user._id })
+const getEmployeesList = (req, res, role) => {
+    Company_1.Company.findOne({ _id: req.companyId })
         .populate({
-        path: 'users',
+        path: 'employees',
         match: { 'permissions.role': { $eq: role } },
     })
-        .exec((err, subscriber) => {
-        if (err || !subscriber) {
+        .exec((err, company) => {
+        if (err || !company) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        res.json({ 'status': constants_1.Status.Success, 'users': subscriber.users });
+        res.json({ 'status': constants_1.Status.Success, 'users': company.employees });
     });
 };
 const checkEmailExists = (req, res, next) => {

@@ -12,7 +12,7 @@ const EquipmentTypeSchema = new mongoose_1.Schema({
     title: String,
     createdBy: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Subscriber'
+        ref: 'Company'
     }
 });
 exports.EquipmentType = mongoose_1.default.model('EquipmentType', EquipmentTypeSchema);

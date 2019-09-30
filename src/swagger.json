@@ -5,7 +5,7 @@
     "description": "APIs for both app and website",
     "version": "1.0.0"
   },
-  "host": "blueclerk-node-api.deploy.blueclerk.com:3006",
+  "host": "localhost:3006",
   "basePath": "/api/v1",
   "schemes": [
     "http"
@@ -40,6 +40,18 @@
       "description": "For equipments of a customer"
     },
     {
+      "name": "Company Equipment",
+      "description": "For equipments of a company"
+    },
+    {
+      "name": "Company Equipment History",
+      "description": "For company equipment's Check In Check Out history"
+    },
+    {
+      "name": "Inventory",
+      "description": "For Inventory of company equipments"
+    },
+    {
       "name": "Job Type",
       "description": "For job types"
     },
@@ -50,6 +62,10 @@
     {
       "name": "Image",
       "description": "For images"
+    },
+    {
+      "name": "Group",
+      "description": "For Groups"
     }
   ],
   "paths": {
@@ -95,7 +111,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Sign up for subscriber",
+        "summary": "Sign up for company",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -472,7 +488,7 @@
         "tags": [
           "Users"
         ],
-        "summary": "To get all managers created by a subscriber",
+        "summary": "To get all managers created by a company",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -515,7 +531,7 @@
         "tags": [
           "Users"
         ],
-        "summary": "To get all technicians created by a subscriber",
+        "summary": "To get all technicians created by a company",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -558,7 +574,7 @@
         "tags": [
           "Users"
         ],
-        "summary": "To get all office admins created by a subscriber",
+        "summary": "To get all office admins created by a company",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -691,7 +707,7 @@
         "tags": [
           "Users"
         ],
-        "summary": "To update company profile of a subscriber",
+        "summary": "To update profile of a company",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -805,7 +821,7 @@
         "tags": [
           "Equipment Type"
         ],
-        "summary": "To get all equipment types created by a subscriber or parent subscriber of normal user. It will also contain types created by global admin.",
+        "summary": "To get all equipment types created by a compnay or company of employee. It will also contain types created by global admin.",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -884,7 +900,7 @@
         "tags": [
           "Equipment Brand"
         ],
-        "summary": "To get all equipment brands created by a subscriber or parent subscriber of normal user. It will also contain brands created by global admin.",
+        "summary": "To get all equipment brands created by a company or company of employee. It will also contain brands created by global admin.",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -1005,7 +1021,7 @@
         "tags": [
           "Customer"
         ],
-        "summary": "To get all customers of a subscriber or parent subscriber of normal user.",
+        "summary": "To get all customers of a company or company of employee.",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -1226,7 +1242,7 @@
         "tags": [
           "Job Type"
         ],
-        "summary": "To get all job types created by a subscriber or parent subscriber of normal user. It will also contain types created by global admin.",
+        "summary": "To get all job types created by a company or employee of company. It will also contain types created by global admin.",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -1327,13 +1343,157 @@
         "tags": [
           "Job"
         ],
-        "summary": "To get all jobs of a subscriber or parent subscriber of normal user.",
+        "summary": "To get all jobs of a company or company of employee.",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
         "produces": [
           "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Job"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateJob": {
+      "post": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "To update job status with comment by tech",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of job to link to the scaned customer equipment"
+          },
+          {
+            "name": "status",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Status of job either it is complete or in-progress etc."
+          },
+          {
+            "name": "comment",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/assignJobToEquipment": {
+      "post": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "To link job with customer equipment for history",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "nfcTag",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "jobId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of job to link to the scaned customer equipment"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getCustomerEquipmentJobs": {
+      "post": {
+        "tags": [
+          "Customer Equipment"
+        ],
+        "summary": "To link job to customer equipment for history",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "equipmentId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          }
         ],
         "responses": {
           "200": {
@@ -1399,6 +1559,509 @@
                   "properties": {
                     "imageUrl": {
                       "type": "string"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createGroup": {
+      "post": {
+        "tags": [
+          "Group"
+        ],
+        "summary": "To create a group",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "title",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getGroups": {
+      "post": {
+        "tags": [
+          "Group"
+        ],
+        "summary": "To get groups of a company",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "groups": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Group"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/deleteGroup": {
+      "post": {
+        "tags": [
+          "Group"
+        ],
+        "summary": "To delete a group",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/addGroupManager": {
+      "post": {
+        "tags": [
+          "Group"
+        ],
+        "summary": "To add manager in a group",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "managerId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/addGroupMember": {
+      "post": {
+        "tags": [
+          "Group"
+        ],
+        "summary": "To add a member in a group",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "memberId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/removeGroupMember": {
+      "post": {
+        "tags": [
+          "Group"
+        ],
+        "summary": "To remove a member in a group",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "memberId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createComapnyEquipment": {
+      "post": {
+        "tags": [
+          "Company Equipment"
+        ],
+        "summary": "To add company equipment",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "model",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "serialNumber",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "typeId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "brandId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "imageUrl",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "nfcTag",
+            "in": "formData",
+            "type": "string",
+            "description": "required if qrCode not provided"
+          },
+          {
+            "name": "qrCode",
+            "in": "formData",
+            "type": "string",
+            "description": "required if nfcTag not provided"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getCompanyEquipments": {
+      "post": {
+        "tags": [
+          "Company Equipment"
+        ],
+        "summary": "To get equipments of a company",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "groups": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/CompanyEquipment"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/equipmentCheckInOut": {
+      "post": {
+        "tags": [
+          "Company Equipment History"
+        ],
+        "summary": "To check in and out company equipment",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "action",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "0 for check-in and 1 for check-out"
+          },
+          {
+            "name": "dateTime",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "date time of job. e.g. 2019-12-22 20:30:00"
+          },
+          {
+            "name": "nfcTag",
+            "in": "formData",
+            "type": "string",
+            "description": "required if qrCode not provided"
+          },
+          {
+            "name": "qrCode",
+            "in": "formData",
+            "type": "string",
+            "description": "required if nfcTag not provided"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createEquipmentInventory": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "summary": "To take inventory of company equipments",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "dateTime",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "nfcTags",
+            "in": "formData",
+            "type": "string",
+            "description": "Comma seprated nfcTags (if there is no nfcTag scaned send empty)"
+          },
+          {
+            "name": "qrCodes",
+            "in": "formData",
+            "type": "string",
+            "description": "Comma seprated qrCodes (if there is no qrCode scaned send empty)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getInventoryReport": {
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "summary": "To get inventory history of equipments of a company",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "groups": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Invetory"
+                      }
                     }
                   }
                 }
@@ -1494,13 +2157,13 @@
           "properties": {
             "role": {
               "type": "integer",
-              "description": "0->OFFICE_ADMIN 1->TECHNICIAN 2->MANAGER 3->SUBSCRIBER 4->GLOBAL_ADMIN"
+              "description": "0->OFFICE_ADMIN 1->TECHNICIAN 2->MANAGER 3->COMPANY 4->GLOBAL_ADMIN"
             }
           }
         },
-        "company": {
+        "info": {
           "type": "object",
-          "description": "Company data, returned only if the user is a subscriber",
+          "description": "Company data, returned only if the user type is company",
           "properties": {
             "companyName": {
               "type": "string"
@@ -1513,9 +2176,9 @@
             }
           }
         },
-        "subscriber": {
+        "company": {
           "type": "string",
-          "description": "Subscriber id who created this user, returned if the user is not a subscriber themself like a technician"
+          "description": "Company id who created this user, returned if the user is an employee like a technician, manager or office admin"
         }
       }
     },
@@ -1530,7 +2193,7 @@
         },
         "createdBy": {
           "type": "string",
-          "description": "Id of the subscriber who created it, or null if the global admin created it."
+          "description": "Id of the company who created it, or null if the global admin created it."
         }
       }
     },
@@ -1545,7 +2208,7 @@
         },
         "createdBy": {
           "type": "string",
-          "description": "Id of the subscriber who created it, or null if the global admin created it."
+          "description": "Id of the company who created it, or null if the global admin created it."
         }
       }
     },
@@ -1597,9 +2260,9 @@
         "isActive": {
           "type": "boolean"
         },
-        "subscriber": {
+        "company": {
           "type": "string",
-          "description": "Id of subscriber who created this customer"
+          "description": "Id of company who created this customer"
         }
       }
     },
@@ -1649,6 +2312,13 @@
         "customer": {
           "type": "string",
           "description": "Id of customer"
+        },
+        "jobs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "Id's of jobs done on customers equipment"
+          }
         }
       }
     },
@@ -1663,7 +2333,7 @@
         },
         "createdBy": {
           "type": "string",
-          "description": "Id of the subscriber who created it, or null if the global admin created it."
+          "description": "Id of the company who created it, or null if the global admin created it."
         }
       }
     },
@@ -1689,9 +2359,114 @@
           "type": "string",
           "description": "Id of job type"
         },
-        "subscriber": {
+        "comment": {
           "type": "string",
-          "description": "Id of subscriber who created it"
+          "description": "Comment by employee who completed the job"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of job"
+        },
+        "company": {
+          "type": "string",
+          "description": "Id of company who created it"
+        }
+      }
+    },
+    "Group": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the group"
+        },
+        "company": {
+          "type": "string",
+          "description": "Id of company who created or whose employee created it."
+        },
+        "manager": {
+          "type": "object",
+          "$ref": "#/definitions/User"
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/User"
+          }
+        }
+      }
+    },
+    "CompanyEquipment": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "info": {
+          "type": "object",
+          "properties": {
+            "model": {
+              "type": "string",
+              "description": "Model number of equipment"
+            },
+            "serialNumber": {
+              "type": "string",
+              "description": "Serial number of equipment"
+            },
+            "imageUrl": {
+              "type": "string",
+              "description": "Image url of equipment"
+            },
+            "nfcTag": {
+              "type": "string",
+              "description": "nfcTag of equipment if provided or it will be an empty string"
+            },
+            "qrCode": {
+              "type": "string",
+              "description": "qrCode of equipment if provided or it will be an empty string"
+            }
+          }
+        },
+        "type": {
+          "type": "string",
+          "description": "Id of equipment type"
+        },
+        "brand": {
+          "type": "string",
+          "description": "Id of equipment brand"
+        },
+        "company": {
+          "type": "string",
+          "description": "Id of company who created or whose employee created it"
+        }
+      }
+    },
+    "Invetory": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "dateTimr": {
+          "type": "string",
+          "description": "Date Time when the invetory is taken"
+        },
+        "noOfItems": {
+          "type": "number",
+          "description": "Count of items in current inventory"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Id of company or employee who created it"
+        },
+        "companyEquipments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CompanyEquipment"
+          }
         }
       }
     },

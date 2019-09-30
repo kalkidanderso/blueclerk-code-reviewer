@@ -2,13 +2,11 @@ import {Request, Response} from 'express'
 import { Status, Messages } from '../common/constants'
 
 import { Customer } from '../models/Customer'
-import { ISubscriber, Subscriber } from '../models/Subscriber'
-import { INonSubscriber } from '../models/NonSubscriber'
+import {  Company, ICompany } from '../models/Company'
 
 export const createCustomer = (req: Request, res: Response) => {
 
     const params = req.body
-    const subscriber = <ISubscriber>req.user
 
     const customer = new Customer(
         {
@@ -26,7 +24,7 @@ export const createCustomer = (req: Request, res: Response) => {
                 name: params.contactName,
                 phone: params.phone,
             },
-            subscriber: subscriber._id
+            company: req.companyId
         }
     )
 
@@ -35,20 +33,26 @@ export const createCustomer = (req: Request, res: Response) => {
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
+        Company.findById(req.companyId, function(err: any, company: ICompany){
 
-        subscriber.customers.push(customer._id)
-            
-        subscriber.update(
-            {customers: subscriber.customers},
-            (err: any, raw: any)=> {
-                
-                if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                }
-        
-                return res.json({'status': Status.Success, 'message': 'Customer created successfully.'})
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-        )
+
+            company.customers.push(customer._id)
+                
+            company.update(
+                {customers: company.customers},
+                (err: any, raw: any)=> {
+                    
+                    if (err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    }
+            
+                    return res.json({'status': Status.Success, 'message': 'Customer created successfully.'})
+                }
+            )
+        })
 
     })
 
@@ -57,15 +61,7 @@ export const createCustomer = (req: Request, res: Response) => {
 export const getCustomers = (req: Request, res: Response) => {
 
     const params = req.body
-    const user = <INonSubscriber>req.user
-    
-    var subscriberId
-    if (user.subscriber) {
-        subscriberId = user.subscriber
-    }else {
-        subscriberId = user._id
-    }
-
+ 
     var filter
     if (params.includeActive == 'true' && params.includeNonActive == 'true') {
         filter = {}
@@ -75,18 +71,18 @@ export const getCustomers = (req: Request, res: Response) => {
         filter = {'isActive': { $eq: false }}
     }
 
-    Subscriber.findOne({_id: subscriberId})
+    Company.findOne({_id: req.companyId})
     .populate({
         path: 'customers',
         match: filter,
       })
-    .exec((err: any, subscriber: ISubscriber) => {
+    .exec((err: any, company: ICompany) => {
 
-        if (err || !subscriber) {
+        if (err || !company) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
 
-        res.json({'status': Status.Success, 'customers': subscriber.customers})    
+        res.json({'status': Status.Success, 'customers': company.customers})    
 
     })
     

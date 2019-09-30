@@ -2,10 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../common/constants");
 const Customer_1 = require("../models/Customer");
-const Subscriber_1 = require("../models/Subscriber");
+const Company_1 = require("../models/Company");
 exports.createCustomer = (req, res) => {
     const params = req.body;
-    const subscriber = req.user;
     const customer = new Customer_1.Customer({
         info: {
             name: params.name,
@@ -21,31 +20,28 @@ exports.createCustomer = (req, res) => {
             name: params.contactName,
             phone: params.phone,
         },
-        subscriber: subscriber._id
+        company: req.companyId
     });
     customer.save((err) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        subscriber.customers.push(customer._id);
-        subscriber.update({ customers: subscriber.customers }, (err, raw) => {
+        Company_1.Company.findById(req.companyId, function (err, company) {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer created successfully.' });
+            company.customers.push(customer._id);
+            company.update({ customers: company.customers }, (err, raw) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer created successfully.' });
+            });
         });
     });
 };
 exports.getCustomers = (req, res) => {
     const params = req.body;
-    const user = req.user;
-    var subscriberId;
-    if (user.subscriber) {
-        subscriberId = user.subscriber;
-    }
-    else {
-        subscriberId = user._id;
-    }
     var filter;
     if (params.includeActive == 'true' && params.includeNonActive == 'true') {
         filter = {};
@@ -56,16 +52,16 @@ exports.getCustomers = (req, res) => {
     else {
         filter = { 'isActive': { $eq: false } };
     }
-    Subscriber_1.Subscriber.findOne({ _id: subscriberId })
+    Company_1.Company.findOne({ _id: req.companyId })
         .populate({
         path: 'customers',
         match: filter,
     })
-        .exec((err, subscriber) => {
-        if (err || !subscriber) {
+        .exec((err, company) => {
+        if (err || !company) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        res.json({ 'status': constants_1.Status.Success, 'customers': subscriber.customers });
+        res.json({ 'status': constants_1.Status.Success, 'customers': company.customers });
     });
 };
 //# sourceMappingURL=customer.js.map

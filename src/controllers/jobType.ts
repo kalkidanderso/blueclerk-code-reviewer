@@ -3,7 +3,6 @@ import { Status, Role, Messages } from '../common/constants'
 
 import { JobType, IJobType } from '../models/JobType'
 import { IUser } from '../models/User'
-import { INonSubscriber } from '../models/NonSubscriber'
 
 export const createJobType = (req: Request, res: Response) => {
 
@@ -12,7 +11,7 @@ export const createJobType = (req: Request, res: Response) => {
 
     const jobType = new JobType({
         title: params.title,
-        createdBy:  user.permissions.role == Role.SUBSCRIBER ? user._id : null
+        createdBy:  user.permissions.role == Role.COMPANY ? user._id : null
     })
 
     jobType.save((err: any) => {
@@ -29,18 +28,8 @@ export const createJobType = (req: Request, res: Response) => {
 
 export const getJobTypes = (req: Request, res: Response) => {
 
-    const user = <IUser>req.user
-    const nonSubscriber = <INonSubscriber>user
-    
-    var createdBy
-    if (nonSubscriber.subscriber) {
-        createdBy = nonSubscriber.subscriber
-    }else {
-        createdBy = user._id
-    }
-
     JobType.find(
-        { $or: [ {createdBy: null}, {createdBy: createdBy} ]},
+        { $or: [ {createdBy: null}, {createdBy: req.companyId} ]},
         (err: any, types: IJobType[])=>{
 
             if (err) {

@@ -17,6 +17,19 @@ export const enum Role {
     OFFICE_ADMIN,
     TECHNICIAN, 
     MANAGER, 
-    SUBSCRIBER, 
+    COMPANY, 
     GLOBAL_ADMIN
+}
+
+export const enum OrderStatus {
+    PLACED,
+    PAID, 
+    CONFIRMED, 
+    DISPATCHED, 
+    DELIVERED
+}
+
+export const enum EquipmentStatus {
+    CHECKIN,
+    CHECKOUT
 }

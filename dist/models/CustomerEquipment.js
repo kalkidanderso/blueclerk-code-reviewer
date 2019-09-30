@@ -33,7 +33,11 @@ const CustomerEquipmentSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Customer',
         required: true
-    }
+    },
+    jobs: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'Job'
+        }]
 });
 exports.CustomerEquipment = mongoose_1.default.model('CustomerEquipment', CustomerEquipmentSchema);
 //# sourceMappingURL=CustomerEquipment.js.map

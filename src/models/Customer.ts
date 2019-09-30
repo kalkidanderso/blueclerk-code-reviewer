@@ -17,7 +17,7 @@ export interface ICustomer extends Document {
         phone: string
     }
     isActive: boolean
-    subscriber: Schema.Types.ObjectId
+    company: Schema.Types.ObjectId
     equipments: [Schema.Types.ObjectId]
 
 }
@@ -39,9 +39,9 @@ const CustomerSchema = new Schema({
         phone: String,
     },
     isActive: {type: Boolean, default: true},
-    subscriber: {
+    company: {
         type: Schema.Types.ObjectId,
-        ref: 'Subscriber',
+        ref: 'Company',
         required: true
     },
     equipments: [{ type: Schema.Types.ObjectId, ref: 'CustomerEquipment' }],

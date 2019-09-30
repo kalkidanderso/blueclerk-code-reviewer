@@ -2,13 +2,10 @@ import {Request, Response} from 'express'
 import { Status, Messages } from '../common/constants'
 
 import { Job, IJob } from '../models/Job'
-import { ISubscriber } from '../models/Subscriber'
-import { INonSubscriber } from '../models/NonSubscriber'
 
 export const createJob = (req: Request, res: Response) => {
 
     const params = req.body
-    const subscriber = <ISubscriber>req.user
 
     const job = new Job(
         {
@@ -16,7 +13,8 @@ export const createJob = (req: Request, res: Response) => {
             technician: params.technicianId,
             customer: params.customerId,
             type: params.jobTypeId,
-            subscriber: subscriber._id
+            company: req.companyId,
+            comment: ''
         }
     )
 
@@ -34,29 +32,9 @@ export const createJob = (req: Request, res: Response) => {
 
 export const getJobs = (req: Request, res: Response) => {
 
-    const user = <INonSubscriber>req.user
-
-    var subscriberId
-    if (user.subscriber) {
-        subscriberId = user.subscriber
-    }else {
-        subscriberId = user._id
-    }
-
-    Job.find({ subscriber: subscriberId })
-    .populate({
-        path: 'customer',
-        select: 'info.name'
-    })
-    .populate({
-        path: 'technician',
-        select: 'profile.displayName'
-    })
-    .populate({
-        path: 'type',
-        select: 'title'
-    })
-        .exec((err: any, jobs: IJob[])=>{
+    Job.find(
+        { company: req.companyId },
+        (err: any, jobs: IJob[])=>{
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -67,4 +45,33 @@ export const getJobs = (req: Request, res: Response) => {
         }
     )
 
+}
+
+
+
+export const updateJob = (req: Request, res: Response) => {
+
+    const params = req.body
+
+    Job.findOne(
+        { _id: params.jobId },
+        (err: any, job: IJob)=>{
+
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+
+            job.updateOne(
+                {comment: params.comment, status: params.status},
+                (err: any, raw: any)=> {
+                    
+                    if (err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    }
+    
+                    return res.json({'status': Status.Success, 'message': 'Job updated successfully.'})
+                }
+            )
+        }
+    )
 }

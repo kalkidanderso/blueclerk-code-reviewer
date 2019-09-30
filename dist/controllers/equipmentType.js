@@ -7,7 +7,7 @@ exports.createEquipmentType = (req, res) => {
     const user = req.user;
     const type = new EquipmentType_1.EquipmentType({
         title: params.title,
-        createdBy: user.permissions.role == 3 /* SUBSCRIBER */ ? user._id : null
+        createdBy: user.permissions.role == 3 /* COMPANY */ ? user._id : null
     });
     type.save((err) => {
         if (err) {
@@ -18,10 +18,10 @@ exports.createEquipmentType = (req, res) => {
 };
 exports.getEquipmentTypes = (req, res) => {
     const user = req.user;
-    const nonSubscriber = user;
+    const employee = user;
     var createdBy;
-    if (nonSubscriber.subscriber) {
-        createdBy = nonSubscriber.subscriber;
+    if (employee.company) {
+        createdBy = employee.company;
     }
     else {
         createdBy = user._id;

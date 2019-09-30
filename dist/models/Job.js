@@ -12,7 +12,7 @@ const JobSchema = new mongoose_1.Schema({
     dateTime: Date,
     technician: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'NonSubscriber',
+        ref: 'Employee',
         required: true
     },
     customer: {
@@ -25,11 +25,18 @@ const JobSchema = new mongoose_1.Schema({
         ref: 'JobType',
         required: true
     },
-    subscriber: {
+    company: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Subscriber',
+        ref: 'Company',
         required: true
     },
+    comment: {
+        type: String
+    },
+    status: {
+        type: String,
+        default: 'Pending'
+    }
 });
 exports.Job = mongoose_1.default.model('Job', JobSchema);
 //# sourceMappingURL=Job.js.map

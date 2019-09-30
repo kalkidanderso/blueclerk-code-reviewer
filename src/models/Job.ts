@@ -6,8 +6,9 @@ export interface IJob extends Document {
     technician: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId
     type: Schema.Types.ObjectId
-    subscriber: Schema.Types.ObjectId
-
+    company: Schema.Types.ObjectId
+    comment: String
+    status: String
 }
 
 const JobSchema = new Schema({
@@ -15,7 +16,7 @@ const JobSchema = new Schema({
     dateTime: Date,
     technician: {
         type: Schema.Types.ObjectId,
-        ref: 'NonSubscriber',
+        ref: 'Employee',
         required: true
     },
     customer: {
@@ -28,11 +29,18 @@ const JobSchema = new Schema({
         ref: 'JobType',
         required: true
     },
-    subscriber: {
+    company: {
         type: Schema.Types.ObjectId,
-        ref: 'Subscriber',
+        ref: 'Company',
         required: true
     },
+    comment: {
+        type: String
+    },
+    status: {
+        type: String,
+        default: 'Pending'
+    }
 
 })
 

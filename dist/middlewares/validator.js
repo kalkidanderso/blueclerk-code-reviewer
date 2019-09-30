@@ -45,9 +45,26 @@ exports.Validations = {
     //Customer Equipment
     createCustomerEquipment: [express_validator_1.check('model').exists(), express_validator_1.check('serialNumber').exists(), express_validator_1.check('nfcTag').exists(), express_validator_1.check('imageUrl').exists(), express_validator_1.check('equipmentTypeId').exists(), express_validator_1.check('equipmentBrandId').exists(), express_validator_1.check('customerId').exists()],
     getCustomerEquipments: [express_validator_1.check('customerId').exists()],
+    linkEquipmentJob: [express_validator_1.check('nfcTag').exists(), express_validator_1.check('jobId').exists()],
+    getCustomerEquipmentJobs: [express_validator_1.check('equipmentId').exists()],
     //Job Type
     createJobType: [express_validator_1.check('title').exists()],
     //Job
     createJob: [express_validator_1.check('dateTime').exists(), express_validator_1.check('technicianId').exists(), express_validator_1.check('customerId').exists(), express_validator_1.check('jobTypeId').exists()],
+    updateJob: [express_validator_1.check('status').exists(), express_validator_1.check('comment').exists(), express_validator_1.check('jobId').exists()],
+    //Group
+    createGroup: [express_validator_1.check('title').exists()],
+    groupGeneric: [express_validator_1.check('groupId').exists()],
+    addManager: [express_validator_1.check('groupId').exists(), express_validator_1.check('managerId').exists()],
+    memberGeneric: [express_validator_1.check('groupId').exists(), express_validator_1.check('memberId').exists()],
+    //Company Equipemnt
+    createCompanyEquipment: [express_validator_1.check('imageUrl').exists(), express_validator_1.check('model').exists(), express_validator_1.check('serialNumber').exists(), express_validator_1.check('typeId').exists(), express_validator_1.check('brandId').exists()],
+    //Company Equipemnt History
+    createCompanyEquipmentHistory: [express_validator_1.check('action').exists(), express_validator_1.check('dateTime').exists()],
+    //Company Equipemnt Inventory
+    createEquipmentInventory: [express_validator_1.check('dateTime').exists(), express_validator_1.check('nfcTags').exists(), express_validator_1.check('qrCodes').exists()],
+    // Tags
+    placeOrder: [express_validator_1.check('noOfTags').exists(), express_validator_1.check('total').exists(), express_validator_1.check('tax').exists(), express_validator_1.check('dateTime').exists()],
+    udpateOrder: [express_validator_1.check('status').exists(), express_validator_1.check('orderId').exists(), express_validator_1.check('orderStatus').exists()]
 };
 //# sourceMappingURL=validator.js.map

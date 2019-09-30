@@ -12,7 +12,7 @@ const EquipmentBrandSchema = new Schema({
     title: String,
     createdBy: {
         type: Schema.Types.ObjectId,
-        ref: 'Subscriber'
+        ref: 'Company'
     }
 
 })
