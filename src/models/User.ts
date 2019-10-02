@@ -50,7 +50,7 @@ const UserSchema = new Schema({
         firstName: String,
         lastName: String,    
         displayName: String,
-        avatarUrl: String,
+        imageUrl: String,
     },
     address: {
         street: String,

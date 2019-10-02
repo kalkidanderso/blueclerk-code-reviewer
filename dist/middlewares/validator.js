@@ -40,7 +40,8 @@ exports.Validations = {
     //Equipment Brand
     createEquipmentBrand: [express_validator_1.check('title').exists()],
     //Customers
-    createCustomer: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('name').exists(), express_validator_1.check('street').exists(), express_validator_1.check('city').exists(), express_validator_1.check('state').exists(), express_validator_1.check('zipCode').exists(), express_validator_1.check('contactName').exists(), express_validator_1.check('phone').exists()],
+    createCustomer: [express_validator_1.check('name').exists()],
+    // createCustomer: [check('email').exists(), check('email').isEmail(), check('name').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('contactName').exists(), check('phone').exists()],
     getCustomers: [express_validator_1.check('includeActive').exists(), express_validator_1.check('includeNonActive').exists()],
     //Customer Equipment
     createCustomerEquipment: [express_validator_1.check('model').exists(), express_validator_1.check('serialNumber').exists(), express_validator_1.check('nfcTag').exists(), express_validator_1.check('imageUrl').exists(), express_validator_1.check('equipmentTypeId').exists(), express_validator_1.check('equipmentBrandId').exists(), express_validator_1.check('customerId').exists()],
