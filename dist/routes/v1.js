@@ -56,6 +56,7 @@ router.post('/getEquipmentBrands', passport_1.default.authenticate('jwt', { sess
 //Customers
 router.post('/createCustomer', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.createCustomer), company_1.getCompnayId(), customerController.createCustomer);
 router.post('/getCustomers', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), validator_1.validate(validator_1.Validations.getCustomers), company_1.getCompnayId(), customerController.getCustomers);
+router.post('/updateCustomer', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.updateCustomer), customerController.updateCustomer);
 //Customer equipments
 router.post('/createCustomerEquipment', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(1 /* TECHNICIAN */), validator_1.validate(validator_1.Validations.createCustomerEquipment), customerEquipmentController.createCustomerEquipment);
 router.post('/getCustomerEquipments', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), validator_1.validate(validator_1.Validations.getCustomerEquipments), customerEquipmentController.getCustomerEquipments);

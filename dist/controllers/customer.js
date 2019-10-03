@@ -64,4 +64,28 @@ exports.getCustomers = (req, res) => {
         res.json({ 'status': constants_1.Status.Success, 'customers': company.customers });
     });
 };
+exports.updateCustomer = (req, res) => {
+    const params = req.body;
+    Customer_1.Customer.findById(params.customerId)
+        .exec((err, customer) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        customer.update({
+            'info.name': params.name,
+            'info.email': params.email,
+            'address.street': params.street,
+            'address.city': params.city,
+            'address.state': params.state,
+            'address.zipCode': params.email,
+            'contact.name': params.contactName,
+            'contact.phone': params.phone,
+        }, (err, raw) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer data updated successfully.' });
+        });
+    });
+};
 //# sourceMappingURL=customer.js.map

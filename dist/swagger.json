@@ -955,7 +955,6 @@
                     {
                         "name": "email",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
@@ -967,37 +966,108 @@
                     {
                         "name": "street",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "city",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "state",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "zipCode",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "contactName",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "phone",
                         "in": "formData",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/GeneralAPIResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/updateCustomer": {
+            "post": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "To update created customer",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "customerId",
+                        "in": "formData",
                         "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "name",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "email",
+                        "in": "formData",
+                        "type": "string"
+                    },
+                    {
+                        "name": "street",
+                        "in": "formData",
+                        "type": "string"
+                    },
+                    {
+                        "name": "city",
+                        "in": "formData",
+                        "type": "string"
+                    },
+                    {
+                        "name": "state",
+                        "in": "formData",
+                        "type": "string"
+                    },
+                    {
+                        "name": "zipCode",
+                        "in": "formData",
+                        "type": "string"
+                    },
+                    {
+                        "name": "contactName",
+                        "in": "formData",
+                        "type": "string"
+                    },
+                    {
+                        "name": "phone",
+                        "in": "formData",
                         "type": "string"
                     }
                 ],
@@ -1985,7 +2055,7 @@
                 ]
             }
         },
-        "/createEquipmentInventory": {
+        "/takeInventory": {
             "post": {
                 "tags": [
                     "Inventory"
@@ -2023,49 +2093,6 @@
                         "description": "Success",
                         "schema": {
                             "$ref": "#/definitions/GeneralAPIResponse"
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
-            }
-        },
-        "/getInventoryReport": {
-            "post": {
-                "tags": [
-                    "Inventory"
-                ],
-                "summary": "To get inventory history of equipments of a company",
-                "description": "",
-                "consumes": [
-                    "application/x-www-form-urlencoded"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Success",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/GeneralAPIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "groups": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/Invetory"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
                         }
                     }
                 },

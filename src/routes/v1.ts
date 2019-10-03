@@ -180,6 +180,14 @@ router.post(
     customerController.getCustomers
 )
 
+router.post(
+    '/updateCustomer',
+    passport.authenticate('jwt', { session: false }),
+    checkPermissions(Role.COMPANY),
+    validate(Validations.updateCustomer),
+    customerController.updateCustomer
+)
+
 //Customer equipments
 router.post(
     '/createCustomerEquipment',

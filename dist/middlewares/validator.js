@@ -41,6 +41,7 @@ exports.Validations = {
     createEquipmentBrand: [express_validator_1.check('title').exists()],
     //Customers
     createCustomer: [express_validator_1.check('name').exists()],
+    updateCustomer: [express_validator_1.check('customerId').exists(), express_validator_1.check('name').exists()],
     // createCustomer: [check('email').exists(), check('email').isEmail(), check('name').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('contactName').exists(), check('phone').exists()],
     getCustomers: [express_validator_1.check('includeActive').exists(), express_validator_1.check('includeNonActive').exists()],
     //Customer Equipment

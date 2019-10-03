@@ -45,6 +45,7 @@ export const Validations = {
 
   //Customers
   createCustomer: [check('name').exists()],
+  updateCustomer: [check('customerId').exists(), check('name').exists()],
   // createCustomer: [check('email').exists(), check('email').isEmail(), check('name').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('contactName').exists(), check('phone').exists()],
   getCustomers: [check('includeActive').exists(), check('includeNonActive').exists()],
 

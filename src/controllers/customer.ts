@@ -1,7 +1,7 @@
 import {Request, Response} from 'express'
 import { Status, Messages } from '../common/constants'
 
-import { Customer } from '../models/Customer'
+import { Customer, ICustomer } from '../models/Customer'
 import {  Company, ICompany } from '../models/Company'
 
 export const createCustomer = (req: Request, res: Response) => {
@@ -86,4 +86,36 @@ export const getCustomers = (req: Request, res: Response) => {
 
     })
     
+}
+
+export const updateCustomer = (req: Request, res: Response) => {
+
+    const params = req.body
+
+    Customer.findById(params.customerId)
+    .exec((err: any, customer: ICustomer)=>{
+        if (err) {
+            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }
+
+        customer.update(
+            {
+                'info.name': params.name,
+                'info.email': params.email,
+                'address.street': params.street,
+                'address.city': params.city,
+                'address.state': params.state,
+                'address.zipCode': params.email,
+                'contact.name': params.contactName,
+                'contact.phone': params.phone,
+            },
+            (err: any, raw: any)=> {
+                        
+                if (err) {
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                }
+        
+                return res.json({'status': Status.Success, 'message': 'Customer data updated successfully.'})
+            })
+    })
 }
