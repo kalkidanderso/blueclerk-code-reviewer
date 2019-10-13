@@ -8,29 +8,19 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const OrderSchema = new mongoose_1.Schema({
-    info: {
-        noOfTags: String,
-        dateTime: {
-            type: Date,
-            default: Date.now
-        },
-        total: String,
-        tax: String,
-        status: Number,
-    },
-    address: {
-        street: String,
-        city: String,
-        state: String,
-        zipCode: String,
+const CompanyCardSchema = new mongoose_1.Schema({
+    ending: String,
+    token: String,
+    cardStripeId: String,
+    createdAt: {
+        type: Date,
+        default: Date.now
     },
     company: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Company',
         required: true
-    },
-    stripeChargeId: String
+    }
 });
-exports.Order = mongoose_1.default.model('Order', OrderSchema);
-//# sourceMappingURL=Order.js.map
+exports.CompanyCard = mongoose_1.default.model('CompanyCard', CompanyCardSchema);
+//# sourceMappingURL=CompanyCard.js.map

@@ -2,8 +2,8 @@ import mongoose, {Document, Schema} from 'mongoose'
 
 export interface IOrder extends Document {
     info: {
-        noOfTags: Number
-        date:  Date
+        noOfTags: String
+        dateTime:  Date
         total: String
         tax: String
         status: Number
@@ -15,13 +15,17 @@ export interface IOrder extends Document {
         zipCode: string
     }
     company: Schema.Types.ObjectId
+    stripeChargeId: String
 }
 
 const OrderSchema = new Schema({
 
     info: {
-        noOfTags: Number,
-        date: Date,
+        noOfTags: String,
+        dateTime: {
+            type: Date,
+            default: Date.now
+        },
         total: String,
         tax: String,
         status: Number,
@@ -37,6 +41,7 @@ const OrderSchema = new Schema({
         ref: 'Company',
         required: true
     },
+    stripeChargeId: String
 })
 
 export const Order = mongoose.model<IOrder>('Order', OrderSchema )

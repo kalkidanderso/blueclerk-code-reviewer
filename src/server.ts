@@ -12,6 +12,9 @@ import { MongoError } from 'mongodb'
 import routesV1 from './routes/v1'
 import swaggerUi from 'swagger-ui-express'
 import * as swaggerDocument from './swagger.json'
+// const CronJob = require('cron').CronJob;
+import {CronJob} from 'cron'
+import request from 'request';
 
 //Environment config
 dotenv.config()
@@ -59,6 +62,16 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 //Router
 app.use('/api/v1', routesV1)
+
+new CronJob('0 0 1 * *', function() {
+  // console.log('You will see this message every second');
+  
+    request('http://localhost:'+app.get('port')+'/api/v1/chargeSubscription', function (response: any) {
+      console.log(response);
+      
+    });
+
+}, null, true, 'America/Los_Angeles');
 
 //Starting the server
 app.listen(

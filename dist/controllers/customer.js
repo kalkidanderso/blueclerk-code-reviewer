@@ -31,7 +31,7 @@ exports.createCustomer = (req, res) => {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             company.customers.push(customer._id);
-            company.update({ customers: company.customers }, (err, raw) => {
+            company.updateOne({ customers: company.customers }, (err, raw) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
@@ -71,7 +71,7 @@ exports.updateCustomer = (req, res) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        customer.update({
+        customer.updateOne({
             'info.name': params.name,
             'info.email': params.email,
             'address.street': params.street,

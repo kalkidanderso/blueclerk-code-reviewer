@@ -4,6 +4,7 @@ import { User, IUser } from './User'
 export interface IEmployee extends IUser {
 
     company: Schema.Types.ObjectId
+    status: Number
     
 }
 
@@ -13,6 +14,10 @@ const EmployeeSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Company',
         required: true
+    },
+    status: {
+        type: Number,
+        default: 1
     }
 
 })

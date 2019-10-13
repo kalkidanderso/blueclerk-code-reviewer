@@ -2,92 +2,58 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../common/constants");
 const Order_1 = require("../models/Order");
-const config_1 = require("../common/config");
-exports.createCustomer = (req, res) => {
-    const stripe = require("stripe")(config_1.stripeConfig.sk_secret);
-    stripe.customers.create({
-        email: 'testuser@demo.com',
-        description: 'Customer for testuser@demo.com',
-        source: "tok_visa" // obtained with Stripe.js
-    }, function (err, customer) {
-        // asynchronously called
-        if (err) {
-            console.log('error' + err);
-        }
-        console.log(customer);
-        return res.json({ 'status': constants_1.Status.Success, 'message': 'Stripe customer created successfully.' });
-    });
-    // const params = req.body
-    // var stripeUser= {}
-    // stripe.customers
-    // .create({
-    //     email: 'foo-customer@example.com',
-    // })
-    // .then((customer) => {
-    //     stripeUser = customer
-    //     return stripe.customers.createSource(customer.id, {
-    //     source: 'tok_visa',
-    //     });
-    // })
-    // .then((source) => {
-    //     return stripe.charges.create({
-    //     amount: 1600,
-    //     currency: 'usd',
-    //     customer: source.customer,
-    //     });
-    // })
-    // .then((charge) => {
-    //     // New charge created on a new customer
-    // })
-    // .catch((err) => {
-    //     // Deal with an error
-    // });
-};
+const stripe_1 = require("../services/stripe");
+const CompanyCard_1 = require("../models/CompanyCard");
+const mongodb_1 = require("mongodb");
 exports.placeOrder = (req, res) => {
     const params = req.body;
-    const order = new Order_1.Order({
-        info: {
-            dateTime: params.dateTime,
-            noOfTags: params.noOfTags,
-            total: params.total,
-            tax: params.tax,
-            Status: 0 /* PLACED */
-        },
-        address: {
-            street: params.street,
-            city: params.city,
-            status: params.state,
-            zipCode: params.zipCode
-        },
-        company: req.companyId,
-    });
-    order.save((err) => {
+    const company = req.user;
+    if (company.stripeId == undefined || company.stripeId == "") {
+        return res.json({ status: constants_1.Status.Error, message: "Company payment method required." });
+    }
+    CompanyCard_1.CompanyCard.findById(params.cardId, (err, card) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        return res.json({ 'status': constants_1.Status.Success, 'message': 'Order placed successfully.' });
+        stripe_1.chargeCustomer(params.total, company.stripeId, card.cardStripeId, (status, charge, message) => {
+            if (status == 1) {
+                const order = new Order_1.Order({
+                    info: {
+                        noOfTags: params.noOfTags,
+                        total: params.total,
+                        tax: params.tax,
+                        Status: 0 /* PLACED */
+                    },
+                    address: {
+                        street: params.street,
+                        city: params.city,
+                        state: params.state,
+                        zipCode: params.zipCode
+                    },
+                    company: req.companyId,
+                    stripeChargeId: charge.id,
+                });
+                order.save((err) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    // charge the amount to company
+                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Order placed successfully.' });
+                });
+                // return res.json({status: Status.Success, message: "Order placed successfully."});
+            }
+            else {
+                return res.json({ status: constants_1.Status.Error, message: message });
+            }
+        });
     });
 };
 exports.getOrders = (req, res) => {
-    Order_1.Order.find({ company: req.companyId }, (err, orders) => {
+    Order_1.Order.find({ company: new mongodb_1.ObjectId(req.companyId) }, '_id info.noOfTags info.total info.tax info.status', (err, orders) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        res.json({ 'status': constants_1.Status.Success, 'orders': orders });
-    });
-};
-exports.updateOrder = (req, res) => {
-    const params = req.body;
-    Order_1.Order.findOne({ _id: params.orderId, company: req.companyId }, (err, order) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
-        order.updateOne({ status: params.orderStatus }, (err, raw) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            return res.json({ 'status': constants_1.Status.Success, 'message': 'Order updated successfully.' });
-        });
+        return res.json({ 'status': constants_1.Status.Success, 'orders': orders });
     });
 };
 //# sourceMappingURL=order.js.map

@@ -16,10 +16,12 @@ import * as industryController from '../controllers/industry'
 import * as jobController from '../controllers/job'
 import * as imageController from '../controllers/image'
 import * as groupController from '../controllers/group'
-import * as companyEquipment from '../controllers/companyEquipment'
-// import * as orderController from '../controllers/order'
-import * as companyEquipmentHistory from '../controllers/companyEquipmentHistory'
-import * as companyEquipmentInventory from '../controllers/companyEquipmentInventory'
+import * as companyEquipmentController from '../controllers/companyEquipment'
+import * as orderController from '../controllers/order'
+import * as companyEquipmentHistoryController from '../controllers/companyEquipmentHistory'
+import * as companyEquipmentInventoryController from '../controllers/companyEquipmentInventory'
+import * as companyCardController from '../controllers/companyCard'
+import * as subscriptionController from '../controllers/subscription'
 
 
 const router: express.Router = express.Router()
@@ -129,6 +131,14 @@ router.post(
     validate(Validations.updateCompanyProfile),
     getCompnayId(),
     userController.updateCompanyProfile)
+
+router.post(
+    '/deleteEmployee',
+    passport.authenticate('jwt', { session: false }),
+    checkPermissions(Role.COMPANY),
+    validate(Validations.deleteEmployee),
+    getCompnayId(),
+    userController.deleteEmployee)
 
 //Equipment types
 router.post(
@@ -328,12 +338,12 @@ router.post(
 
 //Company Equipment
 router.post(
-    '/createComapnyEquipment',
+    '/createCompanyEquipment',
     passport.authenticate('jwt', { session: false }),
     checkPermissions(Role.COMPANY),
     validate(Validations.createCompanyEquipment),
     getCompnayId(),
-    companyEquipment.createCompanyEquipment
+    companyEquipmentController.createCompanyEquipment
 )
 
 router.post(
@@ -341,7 +351,7 @@ router.post(
     passport.authenticate('jwt', { session: false }),
     checkPermissions(Role.OFFICE_ADMIN),
     getCompnayId(),
-    companyEquipment.getCompanyEquipments
+    companyEquipmentController.getCompanyEquipments
 )
 
 // Company Equipment History
@@ -350,7 +360,7 @@ router.post(
     passport.authenticate('jwt', { session: false }),
     checkPermissions(Role.OFFICE_ADMIN),
     validate(Validations.createCompanyEquipmentHistory),
-    companyEquipmentHistory.createCompanyEquipmentHistory
+    companyEquipmentHistoryController.createCompanyEquipmentHistory
 )
 
 // Company Equipment Inventory
@@ -359,49 +369,82 @@ router.post(
     passport.authenticate('jwt', { session: false }),
     checkPermissions(Role.OFFICE_ADMIN),
     validate(Validations.createEquipmentInventory),
-    companyEquipmentInventory.createCompanyEquipmentInventory
+    companyEquipmentInventoryController.createCompanyEquipmentInventory
 )
 
 // router.post(
 //     '/getInventoryReport',
 //     passport.authenticate('jwt', { session: false }),
 //     checkPermissions(Role.OFFICE_ADMIN),
-//     companyEquipmentInventory.getIventoryHistory
+//     companyEquipmentInventoryController.getIventoryHistory
 // )
 
+
+// Company cards
+router.post(
+    '/addCompanyCard',
+    passport.authenticate('jwt', { session: false }),
+    checkPermissions(Role.COMPANY),
+    validate(Validations.addCompanyCard),
+    getCompnayId(),
+    companyCardController.createCompanyCard
+)
+
+router.post(
+    '/removeCompanyCard',
+    passport.authenticate('jwt', { session: false }),
+    checkPermissions(Role.COMPANY),
+    validate(Validations.removeCompanyCard),
+    getCompnayId(),
+    companyCardController.removeCompanyCard
+)
+
+router.post(
+    '/getCompanyCards',
+    passport.authenticate('jwt', { session: false }),
+    checkPermissions(Role.COMPANY),
+    getCompnayId(),
+    companyCardController.getCompanyCards
+)
 
 // place tags orders
-// router.post(
-//     '/placeOrder',
-//     passport.authenticate('jwt', { session: false }),
-//     checkPermissions(Role.COMPANY),
-//     validate(Validations.placeOrder),
-//     getCompnayId(),
-//     orderController.placeOrder
-// )
+router.post(
+    '/placeOrder',
+    passport.authenticate('jwt', { session: false }),
+    checkPermissions(Role.COMPANY),
+    validate(Validations.placeOrder),
+    getCompnayId(),
+    orderController.placeOrder
+)
 
-// router.post(
-//     '/getOrders',
-//     passport.authenticate('jwt', { session: false }),
-//     checkPermissions(Role.COMPANY),
-//     getCompnayId(),
-//     orderController.getOrders
-// )
+router.post(
+    '/getOrders',
+    passport.authenticate('jwt', { session: false }),
+    checkPermissions(Role.COMPANY),
+    getCompnayId(),
+    orderController.getOrders
+)
 
-// router.post(
-//     '/updateOrder',
-//     passport.authenticate('jwt', { session: false }),
-//     checkPermissions(Role.COMPANY),
-//     validate(Validations.udpateOrder),
-//     getCompnayId(),
-//     orderController.updateOrder
-// )
 
-// router.post(
-//     '/createStripCustomer',
-//     passport.authenticate('jwt', { session: false }),
-//     orderController.createCustomer
-// )
+router.post(
+    '/buySubscriptions',
+    passport.authenticate('jwt', { session: false }),
+    checkPermissions(Role.COMPANY),
+    validate(Validations.buySubscriptions),
+    subscriptionController.addCompanySubscriptions
+)
 
+router.post(
+    '/cancelSubscriptions',
+    passport.authenticate('jwt', { session: false }),
+    checkPermissions(Role.COMPANY),
+    validate(Validations.buySubscriptions),
+    subscriptionController.removeCompanySubscriptions
+)
+
+router.get(
+    '/chargeSubscription',
+    subscriptionController.chargeCompanySubscription
+)
 
 export default router

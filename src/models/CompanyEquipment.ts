@@ -7,8 +7,8 @@ export interface ICompanyEquipment extends Document {
         model: string
         serialNumber: string    
         imageUrl: string    
-        nfcTag: String
-        qrCode: String
+        nfcTag: string
+        qrCode: string
     }
     type: Schema.Types.ObjectId
     brand: Schema.Types.ObjectId

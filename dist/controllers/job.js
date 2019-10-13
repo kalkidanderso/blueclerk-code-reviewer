@@ -20,7 +20,16 @@ exports.createJob = (req, res) => {
     });
 };
 exports.getJobs = (req, res) => {
-    Job_1.Job.find({ company: req.companyId }, (err, jobs) => {
+    Job_1.Job.find({ company: req.companyId })
+        .populate({
+        path: 'technician',
+        select: 'profile.displayName'
+    })
+        .populate({
+        path: 'customer',
+        select: 'info.name'
+    })
+        .exec((err, jobs) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }

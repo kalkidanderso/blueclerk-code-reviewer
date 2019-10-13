@@ -10,7 +10,6 @@ exports.createCompanyEquipmentInventory = (req, res) => {
     var qrCodes = params.qrCodes.split(',');
     CompanyEquipment_1.CompanyEquipment.find({ $or: [{ nfcTag: { $in: nfcTags } }, { qrCode: { $in: qrCodes } }] }, '_id', (err, companyEquipments) => {
         if (err) {
-            console.log("error1 \n " + err);
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         var ids = companyEquipments.map(function (item) {
@@ -24,7 +23,6 @@ exports.createCompanyEquipmentInventory = (req, res) => {
         });
         companyEquipmentInventory.save((err) => {
             if (err) {
-                console.log("error2 \n " + err);
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             return res.json({ 'status': constants_1.Status.Success, 'message': 'Inventory created successfully.' });
@@ -33,7 +31,6 @@ exports.createCompanyEquipmentInventory = (req, res) => {
 };
 // export const getIventoryHistory = (req: Request, res: Response) => {
 //     const user = <IUser> req.user
-//     console.log("user id \n" + user._id);
 //     Group.findOne(
 //         // {member: user._id},
 //         {members: new ObjectId(user._id)},
@@ -41,27 +38,21 @@ exports.createCompanyEquipmentInventory = (req, res) => {
 //         //     $elemMatch: { id: user._id } 
 //         //  }},
 //         (err: any, group: IGroup)=>{
-//             console.log("group \n"+ group);
 //             if (err) {
 //                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
 //             }
 //             if (group == null || group == undefined) {
-//                 console.log("inside group empty");
 //                 return res.json({'status': Status.Success, 'companyEquipmentInventory': []}) 
 //             }
-//             console.log(group.members);
 //             const members = group.members.map((id)=>{
 //                 new ObjectId(id.toString())
-//                 // console.log(typeof(id));
 //             })
-//             console.log(members);
 //             CompanyEquipmentInventory.find({createdBy : {$in: members}})
 //             // .populate({
 //             //     path: 'createdBy',
 //             //     select: 'profile.displayName',
 //             // })
 //             .exec((err: any, companyEquipmentInventory: ICompanyEquipmentInventory[]) =>{
-//                 console.log(companyEquipmentInventory);
 //                 if (err) {
 //                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
 //                 }

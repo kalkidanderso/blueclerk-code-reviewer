@@ -14,6 +14,12 @@ export interface ICompany extends IUser {
     },
     employees: [Schema.Types.ObjectId]
     customers: [Schema.Types.ObjectId]
+    stripeId: string
+    // subscriptionId: string
+    // nextSubscriptionDate: string
+    maxTechnicians: number
+    maxManagers: number
+    maxOfficeAdmins: number
     
 }
 
@@ -30,6 +36,21 @@ const CompanySchema = new Schema({
     },
     employees: [{ type: Schema.Types.ObjectId, ref: 'Employee' }],
     customers: [{ type: Schema.Types.ObjectId, ref: 'Customer' }],
+    stripeId: String,
+    // subscriptionId: String,
+    // nextSubscriptionDate: String,
+    maxTechnicians: {
+        type: Number,
+        default: 0
+    },
+    maxManagers: {
+        type: Number,
+        default: 0
+    },
+    maxOfficeAdmins: {
+        type: Number,
+        default: 0
+    },
 
 })
 

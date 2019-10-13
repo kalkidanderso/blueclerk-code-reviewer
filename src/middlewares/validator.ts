@@ -33,6 +33,7 @@ export const Validations = {
   updateProfile: [check('firstName').exists(), check('lastName').exists(), check('imageUrl').exists()],
   changePassword: [check('currentPassword').exists(), check('newPassword').exists()],
   updateCompanyProfile: [check('companyName').exists(), check('logoUrl').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('phone').exists(), check('fax').exists()],
+  deleteEmployee: [check('employeeId').exists()],
 
   //Industry
   createIndustry: [check('title').exists()],
@@ -78,6 +79,13 @@ export const Validations = {
   createEquipmentInventory: [check('dateTime').exists(), check('nfcTags').exists(), check('qrCodes').exists()],
   
   // Tags
-  placeOrder: [check('noOfTags').exists(), check('total').exists(), check('tax').exists(), check('dateTime').exists()],
-  udpateOrder: [ check('status').exists(), check('orderId').exists(), check('orderStatus').exists()]
+  placeOrder: [check('noOfTags').exists(), check('total').exists(), check('tax').exists(), check('cardId').exists(),  check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(),],
+
+  // Comapny Cards
+  addCompanyCard: [ check('token').exists(), check('ending').exists()],
+  removeCompanyCard: [ check('cardId').exists()],
+  subscribe: [ check('cardId').exists(), check('planId').exists()],
+ 
+ 
+  buySubscriptions: [ check('noOfOfficeAdmins').exists(),check('noOfTechnicians').exists(),check('noOfManagers').exists(),],
 }

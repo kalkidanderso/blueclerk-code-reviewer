@@ -10,7 +10,6 @@ exports.createGroup = (req, res) => {
     });
     group.save((err) => {
         if (err) {
-            console.log(err);
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         return res.json({ 'status': constants_1.Status.Success, 'message': 'Group created successfully.' });
@@ -59,7 +58,7 @@ exports.addManager = (req, res) => {
         if (err || !group) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        group.update({ manager: params.managerId }, (err, raw) => {
+        group.updateOne({ manager: params.managerId }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
@@ -78,7 +77,7 @@ exports.addMember = (req, res) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Member already exist in group.' });
         }
         group.members.push(params.memberId);
-        group.update({ members: group.members }, (err, raw) => {
+        group.updateOne({ members: group.members }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
@@ -98,7 +97,7 @@ exports.removeMember = (req, res) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Member already removed from group.' });
         }
         group.members.splice(index, 1);
-        group.update({ members: group.members }, (err, raw) => {
+        group.updateOne({ members: group.members }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }

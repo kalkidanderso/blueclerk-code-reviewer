@@ -18,8 +18,6 @@ export const createGroup = (req: Request, res: Response) => {
     group.save((err: any) => {
 
         if (err) {
-            console.log(err);
-            
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
 
@@ -93,7 +91,7 @@ export const addManager = (req: Request, res: Response) => {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
 
-        group.update(
+        group.updateOne(
             {manager: params.managerId},
             (err: any, raw: any)=>{
 
@@ -125,7 +123,7 @@ export const addMember = (req: Request, res: Response) => {
 
         group.members.push(params.memberId)
 
-        group.update(
+        group.updateOne(
             {members: group.members},
             (err: any, raw: any)=>{
 
@@ -159,7 +157,7 @@ export const removeMember = (req: Request, res: Response) => {
           
         group.members.splice(index, 1)
         
-        group.update(
+        group.updateOne(
             {members: group.members},
             (err: any, raw: any)=>{
 

@@ -5,6 +5,7 @@ const aws_1 = require("../services/aws");
 const User_1 = require("../models/User");
 const Company_1 = require("../models/Company");
 const Employee_1 = require("../models/Employee");
+const mongodb_1 = require("mongodb");
 exports.login = (req, res) => {
     const params = req.body;
     User_1.User.findOne({ 'auth.email': params.email }, (err, user) => {
@@ -13,6 +14,10 @@ exports.login = (req, res) => {
         }
         if (!user) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.InvalidEmailPassword });
+        }
+        const employee = user;
+        if (employee.company && employee.status && employee.status == 0) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.AccountDeleted });
         }
         user.comparePassword(params.password, (isMatching) => {
             if (!isMatching) {
@@ -121,7 +126,7 @@ exports.getOfficeAdminsList = (req, res) => {
 exports.updateProfile = (req, res) => {
     const params = req.body;
     const user = req.user;
-    user.update({
+    user.updateOne({
         'profile.firstName': params.firstName,
         'profile.lastName': params.lastName,
         'profile.imageUrl': params.imageUrl,
@@ -144,7 +149,7 @@ exports.changePassword = (req, res) => {
             if (err || !hash) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            user.update({
+            user.updateOne({
                 'auth.password': hash,
             }, (err, raw) => {
                 if (err) {
@@ -161,7 +166,7 @@ exports.updateCompanyProfile = (req, res) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        company.update({
+        company.updateOne({
             'info.companyName': params.companyName,
             'info.logoUrl': params.logoUrl,
             'address.street': params.street,
@@ -178,49 +183,67 @@ exports.updateCompanyProfile = (req, res) => {
         });
     });
 };
-const createEmployee = (req, res, role) => {
-    checkEmailExists(req, res, (req, res) => {
-        const params = req.body;
-        const employee = new Employee_1.Employee({
-            auth: {
-                email: params.email,
-                password: params.password,
-            },
-            profile: {
-                firstName: params.firstName,
-                lastName: params.lastName,
-                displayName: `${params.firstName} ${params.lastName}`,
-                imageUrl: '',
-            },
-            address: {
-                street: '',
-                city: '',
-                state: '',
-                zipCode: '',
-            },
-            contact: {
-                phone: params.phone,
-            },
-            permissions: {
-                role: role,
-                extra: [],
-            },
-            company: req.companyId
-        });
-        employee.save((err) => {
+exports.deleteEmployee = (req, res) => {
+    const params = req.body;
+    User_1.User.findById(params.employeeId, function (err, employee) {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        employee.updateOne({
+            status: 0,
+        }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            Company_1.Company.findById(req.companyId, function (err, company) {
+            return res.json({ 'status': constants_1.Status.Success, 'message': 'Employee deleted successfully.' });
+        });
+    });
+};
+const createEmployee = (req, res, role) => {
+    checkNoOfUsers(req, res, role, (req, res) => {
+        checkEmailExists(req, res, (req, res) => {
+            const params = req.body;
+            const employee = new Employee_1.Employee({
+                auth: {
+                    email: params.email,
+                    password: params.password,
+                },
+                profile: {
+                    firstName: params.firstName,
+                    lastName: params.lastName,
+                    displayName: `${params.firstName} ${params.lastName}`,
+                    imageUrl: '',
+                },
+                address: {
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                },
+                contact: {
+                    phone: params.phone,
+                },
+                permissions: {
+                    role: role,
+                    extra: [],
+                },
+                company: req.companyId
+            });
+            employee.save((err) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                company.employees.push(employee._id);
-                company.update({ employees: company.employees }, (err, raw) => {
+                Company_1.Company.findById(req.companyId, function (err, company) {
                     if (err) {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
-                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Employee created successfully.' });
+                    company.employees.push(employee._id);
+                    company.updateOne({ employees: company.employees }, (err, raw) => {
+                        if (err) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                        }
+                        return res.json({ 'status': constants_1.Status.Success, 'message': 'Employee created successfully.' });
+                    });
                 });
             });
         });
@@ -250,5 +273,123 @@ const checkEmailExists = (req, res, next) => {
         }
         next(req, res);
     });
+};
+const checkNoOfUsers = (req, res, role, next) => {
+    const company = req.user;
+    var dataToUpdate = {
+        maxOfficeAdmins: company.maxOfficeAdmins,
+        maxManagers: company.maxManagers,
+        maxTechnicians: company.maxTechnicians,
+    };
+    if (!company.maxManagers) {
+        dataToUpdate.maxManagers = 0;
+    }
+    if (!company.maxTechnicians) {
+        dataToUpdate.maxTechnicians = 0;
+    }
+    if (!company.maxOfficeAdmins) {
+        dataToUpdate.maxOfficeAdmins = 0;
+    }
+    if (!company.maxManagers || !company.maxTechnicians || !company.maxOfficeAdmins) {
+        company.updateOne(dataToUpdate, (err, raw) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            switch (role) {
+                case 0:
+                    if (company.maxOfficeAdmins == 0) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': 'You dont have any subscription yet. Buy some to add office admin.' });
+                    }
+                    User_1.User.countDocuments({ company: new mongodb_1.ObjectId(req.companyId), status: 1, 'permissions.role': 0 }, function (err, count) {
+                        if (err) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                        }
+                        if (count >= company.maxOfficeAdmins) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': 'Maximum  No. of office admins already added please buy more subscription to add more.' });
+                        }
+                        next(req, res);
+                    });
+                    break;
+                case 1:
+                    if (company.maxTechnicians == 0) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': 'You dont have any subscription yet. Buy some to add technician.' });
+                    }
+                    User_1.User.countDocuments({ company: new mongodb_1.ObjectId(req.companyId), status: 1, 'permissions.role': 1 }, function (err, count) {
+                        if (err) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                        }
+                        if (count >= company.maxTechnicians) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': 'Maximum No. of technicians already added please buy more subscription to add more.' });
+                        }
+                        next(req, res);
+                    });
+                    break;
+                case 2:
+                    if (company.maxManagers == 0) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': 'You dont have any subscription yet. Buy some to add manager.' });
+                    }
+                    User_1.User.countDocuments({ company: new mongodb_1.ObjectId(req.companyId), status: 1, 'permissions.role': 2 }, function (err, count) {
+                        if (err) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                        }
+                        if (count >= company.maxManagers) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': 'Maximum No. of managers already added please buy more subscription to add more.' });
+                        }
+                        next(req, res);
+                    });
+                    break;
+                default:
+                    break;
+            }
+        });
+    }
+    else {
+        switch (role) {
+            case 0:
+                if (company.maxOfficeAdmins == 0) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': 'You dont have any subscription yet. Buy some to add office admin.' });
+                }
+                User_1.User.countDocuments({ company: new mongodb_1.ObjectId(req.companyId), status: 1, 'permissions.role': 0 }, function (err, count) {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    if (count >= company.maxOfficeAdmins) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': 'Maximum  No. of office admins already added please buy more subscription to add more.' });
+                    }
+                    next(req, res);
+                });
+                break;
+            case 1:
+                if (company.maxTechnicians == 0) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': 'You dont have any subscription yet. Buy some to add technician.' });
+                }
+                User_1.User.countDocuments({ company: new mongodb_1.ObjectId(req.companyId), status: 1, 'permissions.role': 1 }, function (err, count) {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    if (count >= company.maxTechnicians) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': 'Maximum No. of technicians already added please buy more subscription to add more.' });
+                    }
+                    next(req, res);
+                });
+                break;
+            case 2:
+                if (company.maxManagers == 0) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': 'You dont have any subscription yet. Buy some to add manager.' });
+                }
+                User_1.User.countDocuments({ company: new mongodb_1.ObjectId(req.companyId), status: 1, 'permissions.role': 2 }, function (err, count) {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    if (count >= company.maxManagers) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': 'Maximum No. of managers already added please buy more subscription to add more.' });
+                    }
+                    next(req, res);
+                });
+                break;
+            default:
+                break;
+        }
+    }
 };
 //# sourceMappingURL=user.js.map

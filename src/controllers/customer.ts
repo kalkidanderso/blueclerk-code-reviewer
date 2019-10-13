@@ -41,7 +41,7 @@ export const createCustomer = (req: Request, res: Response) => {
 
             company.customers.push(customer._id)
                 
-            company.update(
+            company.updateOne(
                 {customers: company.customers},
                 (err: any, raw: any)=> {
                     
@@ -98,7 +98,7 @@ export const updateCustomer = (req: Request, res: Response) => {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
 
-        customer.update(
+        customer.updateOne(
             {
                 'info.name': params.name,
                 'info.email': params.email,

@@ -32,9 +32,16 @@ export const createJob = (req: Request, res: Response) => {
 
 export const getJobs = (req: Request, res: Response) => {
 
-    Job.find(
-        { company: req.companyId },
-        (err: any, jobs: IJob[])=>{
+    Job.find({ company: req.companyId })
+        .populate({
+            path: 'technician',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.name'
+        })
+        .exec((err: any, jobs: IJob[])=>{
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})

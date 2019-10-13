@@ -4,6 +4,7 @@ import { Status, Messages } from '../common/constants'
 import { ICustomerEquipment, CustomerEquipment } from '../models/CustomerEquipment'
 import { ICustomer, Customer } from '../models/Customer'
 import { Job , IJob} from '../models/Job'
+import { ObjectId } from 'mongodb'
 
 export const createCustomerEquipment = (req: Request, res: Response) => {
 
@@ -39,7 +40,7 @@ export const createCustomerEquipment = (req: Request, res: Response) => {
 
                 customer.equipments.push(equipment._id)
 
-                customer.update(
+                customer.updateOne(
                     { equipments: customer.equipments },
                     (err: any, raw: any) => {
 
@@ -62,17 +63,22 @@ export const getCustomerEquipments = (req: Request, res: Response) => {
 
     const params = req.body
 
-    Customer.findOne({ _id: params.customerId })
+    CustomerEquipment.find({ customer: new ObjectId(params.customerId) })
         .populate({
-            path: 'equipments',
+            path: 'type',
+            select: 'title'
         })
-        .exec((err: any, customer: ICustomer) => {
+        .populate({
+            path: 'brand',
+            select: 'title'
+        })
+        .exec((err: any, customerEquipments: ICustomer) => {
 
-            if (err || !customer) {
+            if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            res.json({ 'status': Status.Success, 'equipments': customer.equipments })
+            res.json({ 'status': Status.Success, 'equipments': customerEquipments })
 
         })
 }

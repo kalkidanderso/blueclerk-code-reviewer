@@ -23,6 +23,9 @@ const passport_2 = __importDefault(require("./middlewares/passport"));
 const v1_1 = __importDefault(require("./routes/v1"));
 const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 const swaggerDocument = __importStar(require("./swagger.json"));
+// const CronJob = require('cron').CronJob;
+const cron_1 = require("cron");
+const request_1 = __importDefault(require("request"));
 //Environment config
 dotenv_1.default.config();
 //Database connection
@@ -56,6 +59,12 @@ app.use(morgan_1.default('dev'));
 app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swaggerDocument));
 //Router
 app.use('/api/v1', v1_1.default);
+new cron_1.CronJob('0 0 1 * *', function () {
+    // console.log('You will see this message every second');
+    request_1.default('http://localhost:' + app.get('port') + '/api/v1/chargeSubscription', function (response) {
+        console.log(response);
+    });
+}, null, true, 'America/Los_Angeles');
 //Starting the server
 app.listen(app.get('port'), (err) => {
     if (err)

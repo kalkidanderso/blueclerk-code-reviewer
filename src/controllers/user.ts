@@ -1,10 +1,11 @@
-import {Request, Response} from 'express'
+import {Request, Response, response} from 'express'
 import { Status, Role, Messages } from '../common/constants'
 import {sendEmail} from '../services/aws'
 
 import { User, IUser } from '../models/User'
 import { Company, ICompany } from '../models/Company'
 import { Employee, IEmployee } from '../models/Employee'
+import { ObjectId } from 'mongodb'
 
 export const login = (req: Request, res: Response) => {
 
@@ -20,6 +21,11 @@ export const login = (req: Request, res: Response) => {
 
             if (!user) {
                 return res.json({'status': Status.Error, 'message': Messages.InvalidEmailPassword})
+            }
+
+            const employee  = <IEmployee> user
+            if(employee.company &&  employee.status && employee.status == 0){
+                return res.json({'status': Status.Error, 'message': Messages.AccountDeleted})
             }
 
             user.comparePassword(params.password, (isMatching: Boolean)=> {
@@ -168,7 +174,7 @@ export const updateProfile = (req: Request, res: Response) => {
     const params = req.body
     const user = <IUser>req.user
 
-    user.update(
+    user.updateOne(
         {
             'profile.firstName': params.firstName,
             'profile.lastName': params.lastName,
@@ -204,7 +210,7 @@ export const changePassword = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            user.update(
+            user.updateOne(
                 {
                     'auth.password': hash,
                 },
@@ -234,7 +240,7 @@ export const updateCompanyProfile = (req: Request, res: Response) => {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
         
-        company.update(
+        company.updateOne(
             {
                 'info.companyName': params.companyName,
                 'info.logoUrl': params.logoUrl,
@@ -258,70 +264,100 @@ export const updateCompanyProfile = (req: Request, res: Response) => {
 
 }
 
-const createEmployee = (req: Request, res: Response, role: Role) => {
+export const deleteEmployee = (req: Request, res: Response) => {
 
-    checkEmailExists(req, res, (req: Request, res: Response)=>{
+    const params = req.body
 
-        const params = req.body
-
-        const employee = new Employee(
+    User.findById(params.employeeId, function(err: any, employee: IEmployee){
+        
+        if (err) {
+            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }
+        
+        employee.updateOne(
             {
-                auth: {
-                    email: params.email,
-                    password: params.password,
-                },
-                profile: {
-                    firstName: params.firstName,
-                    lastName: params.lastName,    
-                    displayName: `${params.firstName} ${params.lastName}`,
-                    imageUrl: '',
-                },
-                address: {
-                    street: '',
-                    city: '',
-                    state: '',
-                    zipCode: '',
-                },
-                contact: {
-                    phone: params.phone,
-                },
-                permissions: {
-                    role: role,
-                    extra: [],
-                },
-                company: req.companyId
-            }
-        )
-
-        employee.save((err: any) => {
-
-            if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-            }
-
-            Company.findById(req.companyId, function (err: any, company: ICompany) {
-
+                status: 0,
+            },
+            (err: any, raw: any)=> {
+                        
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
+        
+                return res.json({'status': Status.Success, 'message': 'Employee deleted successfully.'})
+            }
+        )
+    })
 
-                company.employees.push(employee._id)
-                
-                company.update(
-                    {employees: company.employees},
-                    (err: any, raw: any)=> {
-                        
-                        if (err) {
-                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                        }
-                
-                        return res.json({'status': Status.Success, 'message': 'Employee created successfully.'})
+}
+
+const createEmployee = (req: Request, res: Response, role: Role) => {
+
+    checkNoOfUsers(req, res, role, (req: Request, res: Response)=>{
+
+        checkEmailExists(req, res, (req: Request, res: Response)=>{
+    
+            const params = req.body
+    
+            const employee = new Employee(
+                {
+                    auth: {
+                        email: params.email,
+                        password: params.password,
+                    },
+                    profile: {
+                        firstName: params.firstName,
+                        lastName: params.lastName,    
+                        displayName: `${params.firstName} ${params.lastName}`,
+                        imageUrl: '',
+                    },
+                    address: {
+                        street: '',
+                        city: '',
+                        state: '',
+                        zipCode: '',
+                    },
+                    contact: {
+                        phone: params.phone,
+                    },
+                    permissions: {
+                        role: role,
+                        extra: [],
+                    },
+                    company: req.companyId
+                }
+            )
+    
+            employee.save((err: any) => {
+    
+                if (err) {
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                }
+    
+                Company.findById(req.companyId, function (err: any, company: ICompany) {
+    
+                    if (err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
-                )
+    
+                    company.employees.push(employee._id)
+                    
+                    company.updateOne(
+                        {employees: company.employees},
+                        (err: any, raw: any)=> {
+                            
+                            if (err) {
+                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            }
+                    
+                            return res.json({'status': Status.Success, 'message': 'Employee created successfully.'})
+                        }
+                    )
+                })
+    
             })
-
+    
         })
-
     })
 
 }
@@ -366,4 +402,154 @@ const checkEmailExists = (req: Request, res: Response, next: (req: Request, res:
         }
     )
 
+}
+const checkNoOfUsers = (req: Request, res: Response, role: Role, next: (req: Request, res: Response)=>void) => {
+
+    const company = <ICompany>req.user
+  
+    var dataToUpdate = {
+        maxOfficeAdmins: company.maxOfficeAdmins,
+        maxManagers: company.maxManagers,
+        maxTechnicians: company.maxTechnicians,
+    }
+
+    if(!company.maxManagers) {
+        dataToUpdate.maxManagers = 0
+    }
+    if(!company.maxTechnicians) {
+        dataToUpdate.maxTechnicians = 0
+    }
+    if(!company.maxOfficeAdmins) {
+        dataToUpdate.maxOfficeAdmins = 0
+    }
+
+    if(!company.maxManagers || !company.maxTechnicians || !company.maxOfficeAdmins) {
+
+        company.updateOne(
+            dataToUpdate,
+            (err: any, raw: any)=> {
+                
+                if (err) {
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                }
+        
+                
+                switch (role) {
+                    case 0:
+                        if(company.maxOfficeAdmins == 0) {
+                            return res.json({'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add office admin.'})
+                        }
+
+                        User.countDocuments({company: new ObjectId(req.companyId), status: 1, 'permissions.role': 0}, 
+                        function(err: any, count: any) {
+                            if (err) {
+                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            }
+                            
+                            if(count >= company.maxOfficeAdmins) {
+                                return res.json({'status': Status.Error, 'message': 'Maximum  No. of office admins already added please buy more subscription to add more.'})
+                            }
+                            next(req, res)
+                       });
+                        break;
+                    case 1:
+                        if(company.maxTechnicians == 0) {
+                            return res.json({'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add technician.'})
+                        }
+
+                        User.countDocuments({company: new ObjectId(req.companyId), status: 1, 'permissions.role': 1}, 
+                        function(err: any, count: any) {
+                            
+                            if (err) {
+                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            }
+                            
+                            if(count >= company.maxTechnicians) {
+                                return res.json({'status': Status.Error, 'message': 'Maximum No. of technicians already added please buy more subscription to add more.'})
+                            }
+                            next(req, res)
+                       });
+                        break;
+                    case 2:
+                        if(company.maxManagers == 0) {
+                            return res.json({'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add manager.'})
+                        }
+
+                        User.countDocuments({company: new ObjectId(req.companyId), status: 1, 'permissions.role': 2}, 
+                        function(err: any, count: any) {
+                            if (err) {
+                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            }
+                            
+                            if(count >= company.maxManagers) {
+                                return res.json({'status': Status.Error, 'message': 'Maximum No. of managers already added please buy more subscription to add more.'})
+                            }
+                            next(req, res)
+                       });
+                        break;
+                
+                    default:
+                        break;
+                }
+            }
+        )
+    } else{
+        switch (role) {
+            case 0:
+                if(company.maxOfficeAdmins == 0) {
+                    return res.json({'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add office admin.'})
+                }
+
+                User.countDocuments({company: new ObjectId(req.companyId), status: 1, 'permissions.role': 0}, 
+                function(err: any, count: any) {
+                    if (err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    }
+                    
+                    if(count >= company.maxOfficeAdmins) {
+                        return res.json({'status': Status.Error, 'message': 'Maximum  No. of office admins already added please buy more subscription to add more.'})
+                    }
+                    next(req, res)
+               });
+                break;
+            case 1:
+                if(company.maxTechnicians == 0) {
+                    return res.json({'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add technician.'})
+                }
+
+                User.countDocuments({company: new ObjectId(req.companyId), status: 1, 'permissions.role': 1}, 
+                function(err: any, count: any) {
+                    if (err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    }
+                    
+                    if(count >= company.maxTechnicians) {
+                        return res.json({'status': Status.Error, 'message': 'Maximum No. of technicians already added please buy more subscription to add more.'})
+                    }
+                    next(req, res)
+               });
+                break;
+            case 2:
+                if(company.maxManagers == 0) {
+                    return res.json({'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add manager.'})
+                }
+                User.countDocuments({company: new ObjectId(req.companyId), status: 1, 'permissions.role': 2}, 
+                function(err: any, count: any) {
+                    if (err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    }
+                    
+                    if(count >= company.maxManagers) {
+                        return res.json({'status': Status.Error, 'message': 'Maximum No. of managers already added please buy more subscription to add more.'})
+                    }
+                    next(req, res)
+               });
+                break;
+        
+            default:
+                break;
+        }
+    }
+
+    
 }

@@ -33,15 +33,18 @@
         },
         {
             "name": "Customer",
-            "description": "For customers of a subscriber"
+            "description": "For customers of a company"
         },
         {
             "name": "Customer Equipment",
             "description": "For equipments of a customer"
         },
         {
-            "name": "Company Equipment",
-            "description": "For equipments of a company"
+            "name": "Company Equipment"
+        },
+        {
+            "name": "Company Card",
+            "description": "For payment methods of a company"
         },
         {
             "name": "Company Equipment History",
@@ -66,6 +69,14 @@
         {
             "name": "Group",
             "description": "For Groups"
+        },
+        {
+            "name": "Tags",
+            "description": "For Placing Tags Order"
+        },
+        {
+            "name": "Subscription",
+            "description": "For compay to subscribe and unsubscribe"
         }
     ],
     "paths": {
@@ -702,6 +713,42 @@
                 ]
             }
         },
+        "/deleteEmployee": {
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "To delete user (technician, manager or office admin)",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "employeeId",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/GeneralAPIResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
         "/updateCompanyProfile": {
             "post": {
                 "tags": [
@@ -821,7 +868,7 @@
                 "tags": [
                     "Equipment Type"
                 ],
-                "summary": "To get all equipment types created by a compnay or company of employee. It will also contain types created by global admin.",
+                "summary": "To get all equipment types created by a company or company of employee. It will also contain types created by global admin.",
                 "description": "",
                 "consumes": [
                     "application/x-www-form-urlencoded"
@@ -1014,7 +1061,7 @@
                 "tags": [
                     "Customer"
                 ],
-                "summary": "To update created customer",
+                "summary": "To update customer data",
                 "description": "",
                 "consumes": [
                     "application/x-www-form-urlencoded"
@@ -1884,7 +1931,7 @@
                 ]
             }
         },
-        "/createComapnyEquipment": {
+        "/createCompanyEquipment": {
             "post": {
                 "tags": [
                     "Company Equipment"
@@ -2086,6 +2133,354 @@
                         "in": "formData",
                         "type": "string",
                         "description": "Comma seprated qrCodes (if there is no qrCode scaned send empty)"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/GeneralAPIResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/getCompanyCards": {
+            "post": {
+                "tags": [
+                    "Company Card"
+                ],
+                "summary": "To get payment methods of a company",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/GeneralAPIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "cards": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/Card"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/addCompanyCard": {
+            "post": {
+                "tags": [
+                    "Company Card"
+                ],
+                "summary": "To add company card",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "token fetched by mobile from stripe"
+                    },
+                    {
+                        "name": "ending",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "last 4 digits of company card"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/GeneralAPIResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/removeCompanyCard": {
+            "post": {
+                "tags": [
+                    "Company Card"
+                ],
+                "summary": "To remove company card",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "cardId",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "Id of card fetched from /getCompanyCards"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/GeneralAPIResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/placeOrder": {
+            "post": {
+                "tags": [
+                    "Tags"
+                ],
+                "summary": "To buy tags",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "noOfTags",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "total",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "tax",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "cardId",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "Id of company card for transaction fetched by /getCompanyCards."
+                    },
+                    {
+                        "name": "street",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "city",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "state",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "zipCode",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/GeneralAPIResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/getOrders": {
+            "post": {
+                "tags": [
+                    "Tags"
+                ],
+                "summary": "To get tag orders of a company",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/GeneralAPIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "groups": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/Order"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/buySubscriptions": {
+            "post": {
+                "tags": [
+                    "Subscription"
+                ],
+                "summary": "For company to buy subscriptions",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "noOfOfficeAdmins",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "No of office admins company wants to buy or add more subscriptions, if there is none to buy just send 0 otherwise (1,2,3,...)"
+                    },
+                    {
+                        "name": "noOfManagers",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "No of managers company wants to buy or add more subscriptions, if there is none to buy just send 0 otherwise (1,2,3,...)"
+                    },
+                    {
+                        "name": "noOfTechnicians",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "No of technicians company wants to buy or add more subscriptions, if there is none to buy just send 0 otherwise (1,2,3,...)"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/GeneralAPIResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/cancelSubscriptions": {
+            "post": {
+                "tags": [
+                    "Subscription"
+                ],
+                "summary": "For company to cancel subscriptions",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "noOfOfficeAdmins",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "No of office admins company wants to remove from subscription, if there is none to cancel just send 0 otherwise (1,2,3,...)"
+                    },
+                    {
+                        "name": "noOfManagers",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "No of managers company wants to remove from subscription, if there is none to cancel just send 0 otherwise (1,2,3,...)"
+                    },
+                    {
+                        "name": "noOfTechnicians",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "No of technicians company wants to remove from subscription, if there is none to cancel just send 0 otherwise (1,2,3,...)"
                     }
                 ],
                 "responses": {
@@ -2477,7 +2872,7 @@
                 "_id": {
                     "type": "string"
                 },
-                "dateTimr": {
+                "dateTime": {
                     "type": "string",
                     "description": "Date Time when the invetory is taken"
                 },
@@ -2494,6 +2889,72 @@
                     "items": {
                         "$ref": "#/definitions/CompanyEquipment"
                     }
+                }
+            }
+        },
+        "Order": {
+            "type": "object",
+            "properties": {
+                "_id": {
+                    "type": "string"
+                },
+                "info": {
+                    "type": "object",
+                    "properties": {
+                        "noOfTags": {
+                            "type": "string"
+                        },
+                        "dateTime": {
+                            "type": "string",
+                            "description": "Date Time when the order is placed"
+                        },
+                        "total": {
+                            "type": "string"
+                        },
+                        "tax": {
+                            "type": "string"
+                        },
+                        "status": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "address": {
+                    "type": "object",
+                    "properties": {
+                        "street": {
+                            "type": "string"
+                        },
+                        "city": {
+                            "type": "string"
+                        },
+                        "state": {
+                            "type": "string"
+                        },
+                        "zipCode": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "company": {
+                    "type": "string",
+                    "description": "Id of company that placed the order"
+                },
+                "stripeChargeId": {
+                    "type": "number",
+                    "description": "Id of transaction with stripe (for future use)"
+                }
+            }
+        },
+        "Card": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "ending": {
+                    "type": "string",
+                    "description": "Ending 4 digits of card"
                 }
             }
         },

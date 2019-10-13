@@ -33,6 +33,7 @@ exports.Validations = {
     updateProfile: [express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('imageUrl').exists()],
     changePassword: [express_validator_1.check('currentPassword').exists(), express_validator_1.check('newPassword').exists()],
     updateCompanyProfile: [express_validator_1.check('companyName').exists(), express_validator_1.check('logoUrl').exists(), express_validator_1.check('street').exists(), express_validator_1.check('city').exists(), express_validator_1.check('state').exists(), express_validator_1.check('zipCode').exists(), express_validator_1.check('phone').exists(), express_validator_1.check('fax').exists()],
+    deleteEmployee: [express_validator_1.check('employeeId').exists()],
     //Industry
     createIndustry: [express_validator_1.check('title').exists()],
     //Equipment Type
@@ -66,7 +67,11 @@ exports.Validations = {
     //Company Equipemnt Inventory
     createEquipmentInventory: [express_validator_1.check('dateTime').exists(), express_validator_1.check('nfcTags').exists(), express_validator_1.check('qrCodes').exists()],
     // Tags
-    placeOrder: [express_validator_1.check('noOfTags').exists(), express_validator_1.check('total').exists(), express_validator_1.check('tax').exists(), express_validator_1.check('dateTime').exists()],
-    udpateOrder: [express_validator_1.check('status').exists(), express_validator_1.check('orderId').exists(), express_validator_1.check('orderStatus').exists()]
+    placeOrder: [express_validator_1.check('noOfTags').exists(), express_validator_1.check('total').exists(), express_validator_1.check('tax').exists(), express_validator_1.check('cardId').exists(), express_validator_1.check('street').exists(), express_validator_1.check('city').exists(), express_validator_1.check('state').exists(), express_validator_1.check('zipCode').exists(),],
+    // Comapny Cards
+    addCompanyCard: [express_validator_1.check('token').exists(), express_validator_1.check('ending').exists()],
+    removeCompanyCard: [express_validator_1.check('cardId').exists()],
+    subscribe: [express_validator_1.check('cardId').exists(), express_validator_1.check('planId').exists()],
+    buySubscriptions: [express_validator_1.check('noOfOfficeAdmins').exists(), express_validator_1.check('noOfTechnicians').exists(), express_validator_1.check('noOfManagers').exists(),],
 };
 //# sourceMappingURL=validator.js.map

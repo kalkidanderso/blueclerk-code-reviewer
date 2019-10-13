@@ -7,6 +7,10 @@ const EmployeeSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Company',
         required: true
+    },
+    status: {
+        type: Number,
+        default: 1
     }
 });
 exports.Employee = User_1.User.discriminator('Employee', EmployeeSchema);

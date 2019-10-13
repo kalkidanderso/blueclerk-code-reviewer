@@ -25,10 +25,12 @@ const industryController = __importStar(require("../controllers/industry"));
 const jobController = __importStar(require("../controllers/job"));
 const imageController = __importStar(require("../controllers/image"));
 const groupController = __importStar(require("../controllers/group"));
-const companyEquipment = __importStar(require("../controllers/companyEquipment"));
-// import * as orderController from '../controllers/order'
-const companyEquipmentHistory = __importStar(require("../controllers/companyEquipmentHistory"));
-const companyEquipmentInventory = __importStar(require("../controllers/companyEquipmentInventory"));
+const companyEquipmentController = __importStar(require("../controllers/companyEquipment"));
+const orderController = __importStar(require("../controllers/order"));
+const companyEquipmentHistoryController = __importStar(require("../controllers/companyEquipmentHistory"));
+const companyEquipmentInventoryController = __importStar(require("../controllers/companyEquipmentInventory"));
+const companyCardController = __importStar(require("../controllers/companyCard"));
+const subscriptionController = __importStar(require("../controllers/subscription"));
 const router = express_1.default.Router();
 //Auth
 router.post('/login', validator_1.validate(validator_1.Validations.login), userController.login);
@@ -47,6 +49,7 @@ router.post('/getOfficeAdmins', passport_1.default.authenticate('jwt', { session
 router.post('/updateProfile', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), validator_1.validate(validator_1.Validations.updateProfile), userController.updateProfile);
 router.post('/changePassword', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), validator_1.validate(validator_1.Validations.changePassword), userController.changePassword);
 router.post('/updateCompanyProfile', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.updateCompanyProfile), company_1.getCompnayId(), userController.updateCompanyProfile);
+router.post('/deleteEmployee', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.deleteEmployee), company_1.getCompnayId(), userController.deleteEmployee);
 //Equipment types
 router.post('/createEquipmentType', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.createEquipmentType), equipmentTypeController.createEquipmentType);
 router.post('/getEquipmentTypes', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), equipmentTypeController.getEquipmentTypes);
@@ -79,46 +82,27 @@ router.post('/addGroupManager', passport_1.default.authenticate('jwt', { session
 router.post('/addGroupMember', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.memberGeneric), company_1.getCompnayId(), groupController.addMember);
 router.post('/removeGroupMember', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.memberGeneric), company_1.getCompnayId(), groupController.removeMember);
 //Company Equipment
-router.post('/createComapnyEquipment', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.createCompanyEquipment), company_1.getCompnayId(), companyEquipment.createCompanyEquipment);
-router.post('/getCompanyEquipments', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), company_1.getCompnayId(), companyEquipment.getCompanyEquipments);
+router.post('/createCompanyEquipment', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.createCompanyEquipment), company_1.getCompnayId(), companyEquipmentController.createCompanyEquipment);
+router.post('/getCompanyEquipments', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), company_1.getCompnayId(), companyEquipmentController.getCompanyEquipments);
 // Company Equipment History
-router.post('/equipmentCheckInOut', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), validator_1.validate(validator_1.Validations.createCompanyEquipmentHistory), companyEquipmentHistory.createCompanyEquipmentHistory);
+router.post('/equipmentCheckInOut', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), validator_1.validate(validator_1.Validations.createCompanyEquipmentHistory), companyEquipmentHistoryController.createCompanyEquipmentHistory);
 // Company Equipment Inventory
-router.post('/takeInventory', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), validator_1.validate(validator_1.Validations.createEquipmentInventory), companyEquipmentInventory.createCompanyEquipmentInventory);
+router.post('/takeInventory', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), validator_1.validate(validator_1.Validations.createEquipmentInventory), companyEquipmentInventoryController.createCompanyEquipmentInventory);
 // router.post(
 //     '/getInventoryReport',
 //     passport.authenticate('jwt', { session: false }),
 //     checkPermissions(Role.OFFICE_ADMIN),
-//     companyEquipmentInventory.getIventoryHistory
+//     companyEquipmentInventoryController.getIventoryHistory
 // )
+// Company cards
+router.post('/addCompanyCard', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.addCompanyCard), company_1.getCompnayId(), companyCardController.createCompanyCard);
+router.post('/removeCompanyCard', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.removeCompanyCard), company_1.getCompnayId(), companyCardController.removeCompanyCard);
+router.post('/getCompanyCards', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), company_1.getCompnayId(), companyCardController.getCompanyCards);
 // place tags orders
-// router.post(
-//     '/placeOrder',
-//     passport.authenticate('jwt', { session: false }),
-//     checkPermissions(Role.COMPANY),
-//     validate(Validations.placeOrder),
-//     getCompnayId(),
-//     orderController.placeOrder
-// )
-// router.post(
-//     '/getOrders',
-//     passport.authenticate('jwt', { session: false }),
-//     checkPermissions(Role.COMPANY),
-//     getCompnayId(),
-//     orderController.getOrders
-// )
-// router.post(
-//     '/updateOrder',
-//     passport.authenticate('jwt', { session: false }),
-//     checkPermissions(Role.COMPANY),
-//     validate(Validations.udpateOrder),
-//     getCompnayId(),
-//     orderController.updateOrder
-// )
-// router.post(
-//     '/createStripCustomer',
-//     passport.authenticate('jwt', { session: false }),
-//     orderController.createCustomer
-// )
+router.post('/placeOrder', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.placeOrder), company_1.getCompnayId(), orderController.placeOrder);
+router.post('/getOrders', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), company_1.getCompnayId(), orderController.getOrders);
+router.post('/buySubscriptions', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.buySubscriptions), subscriptionController.addCompanySubscriptions);
+router.post('/cancelSubscriptions', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.buySubscriptions), subscriptionController.removeCompanySubscriptions);
+router.get('/chargeSubscription', subscriptionController.chargeCompanySubscription);
 exports.default = router;
 //# sourceMappingURL=v1.js.map

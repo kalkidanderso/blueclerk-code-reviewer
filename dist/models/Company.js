@@ -14,6 +14,21 @@ const CompanySchema = new mongoose_1.Schema({
     },
     employees: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Employee' }],
     customers: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Customer' }],
+    stripeId: String,
+    // subscriptionId: String,
+    // nextSubscriptionDate: String,
+    maxTechnicians: {
+        type: Number,
+        default: 0
+    },
+    maxManagers: {
+        type: Number,
+        default: 0
+    },
+    maxOfficeAdmins: {
+        type: Number,
+        default: 0
+    },
 });
 exports.Company = User_1.User.discriminator('Company', CompanySchema);
 //# sourceMappingURL=Company.js.map

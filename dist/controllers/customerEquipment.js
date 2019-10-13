@@ -4,6 +4,7 @@ const constants_1 = require("../common/constants");
 const CustomerEquipment_1 = require("../models/CustomerEquipment");
 const Customer_1 = require("../models/Customer");
 const Job_1 = require("../models/Job");
+const mongodb_1 = require("mongodb");
 exports.createCustomerEquipment = (req, res) => {
     const params = req.body;
     const equipment = new CustomerEquipment_1.CustomerEquipment({
@@ -26,7 +27,7 @@ exports.createCustomerEquipment = (req, res) => {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             customer.equipments.push(equipment._id);
-            customer.update({ equipments: customer.equipments }, (err, raw) => {
+            customer.updateOne({ equipments: customer.equipments }, (err, raw) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
@@ -37,15 +38,20 @@ exports.createCustomerEquipment = (req, res) => {
 };
 exports.getCustomerEquipments = (req, res) => {
     const params = req.body;
-    Customer_1.Customer.findOne({ _id: params.customerId })
+    CustomerEquipment_1.CustomerEquipment.find({ customer: new mongodb_1.ObjectId(params.customerId) })
         .populate({
-        path: 'equipments',
+        path: 'type',
+        select: 'title'
     })
-        .exec((err, customer) => {
-        if (err || !customer) {
+        .populate({
+        path: 'brand',
+        select: 'title'
+    })
+        .exec((err, customerEquipments) => {
+        if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        res.json({ 'status': constants_1.Status.Success, 'equipments': customer.equipments });
+        res.json({ 'status': constants_1.Status.Success, 'equipments': customerEquipments });
     });
 };
 exports.getCustomerEquipmentJobs = (req, res) => {
