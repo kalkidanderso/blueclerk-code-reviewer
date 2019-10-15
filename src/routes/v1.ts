@@ -140,6 +140,14 @@ router.post(
     getCompnayId(),
     userController.deleteEmployee)
 
+router.post(
+    '/activateEmployee',
+    passport.authenticate('jwt', { session: false }),
+    checkPermissions(Role.COMPANY),
+    validate(Validations.deleteEmployee),
+    getCompnayId(),
+    userController.activateEmployee)
+
 //Equipment types
 router.post(
     '/createEquipmentType',
@@ -263,6 +271,14 @@ router.post(
     checkPermissions(Role.OFFICE_ADMIN),
     getCompnayId(),
     jobController.getJobs
+)
+
+router.post(
+    '/getTechnicianJobs',
+    passport.authenticate('jwt', { session: false }),
+    checkPermissions(Role.TECHNICIAN),
+    getCompnayId(),
+    jobController.getJobsByTechnicianId
 )
 
 router.post(

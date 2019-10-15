@@ -199,6 +199,22 @@ exports.deleteEmployee = (req, res) => {
         });
     });
 };
+exports.activateEmployee = (req, res) => {
+    const params = req.body;
+    User_1.User.findById(params.employeeId, function (err, employee) {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        employee.updateOne({
+            status: 1,
+        }, (err, raw) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            return res.json({ 'status': constants_1.Status.Success, 'message': 'Employee activated successfully.' });
+        });
+    });
+};
 const createEmployee = (req, res, role) => {
     checkNoOfUsers(req, res, role, (req, res) => {
         checkEmailExists(req, res, (req, res) => {

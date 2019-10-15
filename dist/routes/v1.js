@@ -50,6 +50,7 @@ router.post('/updateProfile', passport_1.default.authenticate('jwt', { session: 
 router.post('/changePassword', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), validator_1.validate(validator_1.Validations.changePassword), userController.changePassword);
 router.post('/updateCompanyProfile', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.updateCompanyProfile), company_1.getCompnayId(), userController.updateCompanyProfile);
 router.post('/deleteEmployee', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.deleteEmployee), company_1.getCompnayId(), userController.deleteEmployee);
+router.post('/activateEmployee', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.deleteEmployee), company_1.getCompnayId(), userController.activateEmployee);
 //Equipment types
 router.post('/createEquipmentType', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(3 /* COMPANY */), validator_1.validate(validator_1.Validations.createEquipmentType), equipmentTypeController.createEquipmentType);
 router.post('/getEquipmentTypes', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), equipmentTypeController.getEquipmentTypes);
@@ -71,6 +72,7 @@ router.post('/getJobTypes', passport_1.default.authenticate('jwt', { session: fa
 //Job
 router.post('/createJob', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), validator_1.validate(validator_1.Validations.createJob), company_1.getCompnayId(), jobController.createJob);
 router.post('/getJobs', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), company_1.getCompnayId(), jobController.getJobs);
+router.post('/getTechnicianJobs', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(1 /* TECHNICIAN */), company_1.getCompnayId(), jobController.getJobsByTechnicianId);
 router.post('/updateJob', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(1 /* TECHNICIAN */), validator_1.validate(validator_1.Validations.updateJob), jobController.updateJob);
 //Image upload
 router.post('/uploadImage', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(0 /* OFFICE_ADMIN */), imageController.uploadImage);

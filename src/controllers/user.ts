@@ -291,6 +291,33 @@ export const deleteEmployee = (req: Request, res: Response) => {
 
 }
 
+export const activateEmployee = (req: Request, res: Response) => {
+
+    const params = req.body
+
+    User.findById(params.employeeId, function(err: any, employee: IEmployee){
+        
+        if (err) {
+            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }
+        
+        employee.updateOne(
+            {
+                status: 1,
+            },
+            (err: any, raw: any)=> {
+                        
+                if (err) {
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                }
+        
+                return res.json({'status': Status.Success, 'message': 'Employee activated successfully.'})
+            }
+        )
+    })
+
+}
+
 const createEmployee = (req: Request, res: Response, role: Role) => {
 
     checkNoOfUsers(req, res, role, (req: Request, res: Response)=>{

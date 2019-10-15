@@ -458,6 +458,28 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /activateEmployee:
+    post:
+      tags:
+        - Users
+      summary: To revive/activate deleted user (technician, manager or office admin)
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: employeeId
+          in: formData
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /updateCompanyProfile:
     post:
       tags:
@@ -932,6 +954,30 @@ paths:
                       $ref: '#/definitions/Job'
       security:
         - Bearer: []
+  /getTechnicianJobs:
+    post:
+      tags:
+        - Job
+      summary: To get all jobs of a technician.
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/definitions/Job'
+      security:
+        - Bearer: []
   /updateJob:
     post:
       tags:
@@ -952,8 +998,8 @@ paths:
         - name: status
           in: formData
           required: true
-          type: string
-          description: Status of job either it is complete or in-progress etc.
+          type: number
+          description: Id of job status as number from one of these (PENDING => 0, STARTED => 1, FINISHED => 2).
         - name: comment
           in: formData
           required: true

@@ -2,6 +2,7 @@ import {Request, Response} from 'express'
 import { Status, Messages } from '../common/constants'
 
 import { Job, IJob } from '../models/Job'
+import { IUser } from '../models/User'
 
 export const createJob = (req: Request, res: Response) => {
 
@@ -41,13 +42,51 @@ export const getJobs = (req: Request, res: Response) => {
             path: 'customer',
             select: 'info.name'
         })
+        .populate({
+            path: 'type',
+            select: 'title'
+        })
         .exec((err: any, jobs: IJob[])=>{
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            res.json({'status': Status.Success, 'jobs': jobs})    
+            return res.json({'status': Status.Success, 'jobs': jobs})    
+
+        }
+    )
+
+}
+
+export const getJobsByTechnicianId = (req: Request, res: Response) => {
+
+    const technician = <IUser>req.user
+    
+    if(technician.permissions.role != 1) {
+        return res.json({'status': Status.Success, 'message': 'Invalid user type.'})    
+    }
+    
+    Job.find({ technician: technician._id })
+        .populate({
+            path: 'technician',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.name'
+        })
+        .populate({
+            path: 'type',
+            select: 'title'
+        })
+        .exec((err: any, jobs: IJob[])=>{
+
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+
+            return res.json({'status': Status.Success, 'jobs': jobs})    
 
         }
     )

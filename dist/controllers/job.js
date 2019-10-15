@@ -10,7 +10,7 @@ exports.createJob = (req, res) => {
         customer: params.customerId,
         type: params.jobTypeId,
         company: req.companyId,
-        comment: ''
+        comment: '',
     });
     job.save((err) => {
         if (err) {
@@ -29,11 +29,40 @@ exports.getJobs = (req, res) => {
         path: 'customer',
         select: 'info.name'
     })
+        .populate({
+        path: 'type',
+        select: 'title'
+    })
         .exec((err, jobs) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        res.json({ 'status': constants_1.Status.Success, 'jobs': jobs });
+        return res.json({ 'status': constants_1.Status.Success, 'jobs': jobs });
+    });
+};
+exports.getJobsByTechnicianId = (req, res) => {
+    const technician = req.user;
+    if (technician.permissions.role != 1) {
+        return res.json({ 'status': constants_1.Status.Success, 'message': 'Invalid user type.' });
+    }
+    Job_1.Job.find({ technician: technician._id })
+        .populate({
+        path: 'technician',
+        select: 'profile.displayName'
+    })
+        .populate({
+        path: 'customer',
+        select: 'info.name'
+    })
+        .populate({
+        path: 'type',
+        select: 'title'
+    })
+        .exec((err, jobs) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        return res.json({ 'status': constants_1.Status.Success, 'jobs': jobs });
     });
 };
 exports.updateJob = (req, res) => {

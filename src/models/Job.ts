@@ -7,8 +7,8 @@ export interface IJob extends Document {
     customer: Schema.Types.ObjectId
     type: Schema.Types.ObjectId
     company: Schema.Types.ObjectId
-    comment: String
-    status: String
+    comment: string
+    status: number
 }
 
 const JobSchema = new Schema({
@@ -38,8 +38,8 @@ const JobSchema = new Schema({
         type: String
     },
     status: {
-        type: String,
-        default: 'Pending'
+        type: Number,
+        default: 0
     }
 
 })

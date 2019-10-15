@@ -34,3 +34,9 @@ export const enum EquipmentStatus {
     CHECKIN,
     CHECKOUT
 }
+
+export const enum JobStatus {
+    PENDING,
+    STARTED, 
+    FINISHED
+}

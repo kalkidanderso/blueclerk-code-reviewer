@@ -34,8 +34,8 @@ const JobSchema = new mongoose_1.Schema({
         type: String
     },
     status: {
-        type: String,
-        default: 'Pending'
+        type: Number,
+        default: 0
     }
 });
 exports.Job = mongoose_1.default.model('Job', JobSchema);
