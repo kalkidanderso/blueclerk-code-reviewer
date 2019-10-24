@@ -1,10 +1,10 @@
 import express from 'express'
 import { validate, Validations } from '../middlewares/validator'
 import passport from 'passport'
-import { checkPermissions } from '../middlewares/permissions'
+import { checkPermissions, checkUserPermissions } from '../middlewares/permissions'
 import { getCompnayId } from '../middlewares/company'
 
-import { Role } from '../common/constants'
+import { Role, Permissions } from '../common/constants'
 
 import * as userController from '../controllers/user'
 import * as jobTypeController from '../controllers/jobType'
@@ -22,6 +22,8 @@ import * as companyEquipmentHistoryController from '../controllers/companyEquipm
 import * as companyEquipmentInventoryController from '../controllers/companyEquipmentInventory'
 import * as companyCardController from '../controllers/companyCard'
 import * as subscriptionController from '../controllers/subscription'
+import * as permissionController from '../controllers/permission'
+import { Personalize } from 'aws-sdk'
 
 
 const router: express.Router = express.Router()
@@ -45,6 +47,66 @@ router.post(
     userController.createGlobalAdmin
 )
 
+router.post(
+    '/getDefaultPermissions',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Permission_Get_All),
+    permissionController.getAllPermissions
+)
+
+router.post(
+    '/updateDefaultPermissions',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Permission_Update_Default),
+    validate(Validations.updateDefaultPermissions),
+    permissionController.updateDefaultPermissions
+)
+
+router.post(
+    '/getOfficeAdminPermissions',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Permission_Get_Office_Admin),
+    permissionController.getOfficeAdminPermissions
+)
+
+router.post(
+    '/getTechPermissions',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Permission_Get_Tech),
+    permissionController.getTechPermissions
+)
+
+router.post(
+    '/getManagerPermissions',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Permission_Get_Manager),
+    permissionController.getManagerPermissions
+)
+
+router.post(
+    '/updateUserPermissions',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Permission_Update_Employee),
+    validate(Validations.udpateUserPermissions),
+    permissionController.updateUserPermissions
+)
+
+router.post(
+    '/getEmployeePermissions',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Permission_Get_Employee),
+    validate(Validations.employeePermissions),
+    permissionController.getUserPermissions
+)
+
+
 //Industry
 router.post(
     '/createIndustry',
@@ -59,11 +121,20 @@ router.post(
     industryController.getIndustries
 )
 
+router.post(
+    '/removeIndustry',
+    passport.authenticate('jwt', { session: false }),
+    checkPermissions(Role.GLOBAL_ADMIN),
+    validate(Validations.removeIndustry),
+    industryController.removeIndustry
+)
+
 //Users
 router.post(
     '/createManager',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
+    getCompnayId(),
+    checkUserPermissions(Permissions.User_Create_Manager),
     validate(Validations.createManager),
     getCompnayId(),
     userController.createManager
@@ -72,7 +143,8 @@ router.post(
 router.post(
     '/createTechnician',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
+    getCompnayId(),
+    checkUserPermissions(Permissions.User_Create_Technician),
     validate(Validations.createTechnician),
     getCompnayId(),
     userController.createTechnician
@@ -81,7 +153,8 @@ router.post(
 router.post(
     '/createOfficeAdmin',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
+    getCompnayId(),
+    checkUserPermissions(Permissions.User_Create_Office_Admin),
     validate(Validations.createOfficeAdmin),
     getCompnayId(),
     userController.createOfficeAdmin
@@ -90,7 +163,8 @@ router.post(
 router.post(
     '/getManagers',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
+    getCompnayId(),
+    checkUserPermissions(Permissions.User_Get_Manager),
     getCompnayId(),
     userController.getManagersList
 )
@@ -98,7 +172,8 @@ router.post(
 router.post(
     '/getTechnicians',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
+    getCompnayId(),
+    checkUserPermissions(Permissions.User_Get_Technician),
     getCompnayId(),
     userController.getTechniciansList
 )
@@ -106,53 +181,64 @@ router.post(
 router.post(
     '/getOfficeAdmins',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
+    getCompnayId(),
+    checkUserPermissions(Permissions.User_Get_Office_Admin),
     getCompnayId(),
     userController.getOfficeAdminsList)
 
 router.post(
     '/updateProfile',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.OFFICE_ADMIN),
+    getCompnayId(),
+    checkUserPermissions(Permissions.User_Update_Profile),
     validate(Validations.updateProfile),
     userController.updateProfile)
 
 router.post(
     '/changePassword',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.OFFICE_ADMIN),
+    getCompnayId(),
+    checkUserPermissions(Permissions.User_Change_Password),
     validate(Validations.changePassword),
     userController.changePassword)
 
 router.post(
     '/updateCompanyProfile',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
-    validate(Validations.updateCompanyProfile),
     getCompnayId(),
+    checkUserPermissions(Permissions.Update_Company_Profile),
+    validate(Validations.updateCompanyProfile),
     userController.updateCompanyProfile)
 
 router.post(
     '/deleteEmployee',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
-    validate(Validations.deleteEmployee),
     getCompnayId(),
+    checkUserPermissions(Permissions.User_Delete_Employee),
+    validate(Validations.deleteEmployee),
     userController.deleteEmployee)
 
 router.post(
     '/activateEmployee',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
-    validate(Validations.deleteEmployee),
     getCompnayId(),
+    checkUserPermissions(Permissions.User_Activate_Employee),
+    validate(Validations.deleteEmployee),
     userController.activateEmployee)
+
+    router.post(
+    '/getAllEmployees',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.User_Get_All_Employees),
+    userController.getAllEmployees)
 
 //Equipment types
 router.post(
     '/createEquipmentType',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Equipment_Type_Create),
     validate(Validations.createEquipmentType),
     equipmentTypeController.createEquipmentType
 )
@@ -160,14 +246,16 @@ router.post(
 router.post(
     '/getEquipmentTypes',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.OFFICE_ADMIN),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Equipment_Type_Get),
     equipmentTypeController.getEquipmentTypes)
 
 //Equipment brands
 router.post(
     '/createEquipmentBrand',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Equipment_Brand_Create),
     validate(Validations.createEquipmentBrand),
     equipmentBrandController.createEquipmentBrand
 )
@@ -175,7 +263,8 @@ router.post(
 router.post(
     '/getEquipmentBrands',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.OFFICE_ADMIN),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Equipment_Brand_Get),
     equipmentBrandController.getEquipmentBrands
 )
 
@@ -183,25 +272,26 @@ router.post(
 router.post(
     '/createCustomer',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
-    validate(Validations.createCustomer),
     getCompnayId(),
+    checkUserPermissions(Permissions.Customer_Create),
+    validate(Validations.createCustomer),
     customerController.createCustomer
 )
 
 router.post(
     '/getCustomers',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.OFFICE_ADMIN),
-    validate(Validations.getCustomers),
     getCompnayId(),
+    checkUserPermissions(Permissions.Customer_Get_All),
+    validate(Validations.getCustomers),
     customerController.getCustomers
 )
 
 router.post(
     '/updateCustomer',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Customer_Update),
     validate(Validations.updateCustomer),
     customerController.updateCustomer
 )
@@ -210,7 +300,8 @@ router.post(
 router.post(
     '/createCustomerEquipment',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.TECHNICIAN),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Customer_Equipment_Create),
     validate(Validations.createCustomerEquipment),
     customerEquipmentController.createCustomerEquipment
 )
@@ -218,7 +309,8 @@ router.post(
 router.post(
     '/getCustomerEquipments',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.OFFICE_ADMIN),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Customer_Equipment_Get_All),
     validate(Validations.getCustomerEquipments),
     customerEquipmentController.getCustomerEquipments
 )
@@ -226,15 +318,16 @@ router.post(
 router.post(
     '/getCustomerEquipmentJobs',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.TECHNICIAN),
-    validate(Validations.getCustomerEquipmentJobs),
     getCompnayId(),
+    checkUserPermissions(Permissions.Customer_Equipment_Get_Jobs),
+    validate(Validations.getCustomerEquipmentJobs),
     customerEquipmentController.getCustomerEquipmentJobs
 )
 router.post(
     '/assignJobToEquipment',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.TECHNICIAN),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Customer_Equipment_Assign_Job),
     validate(Validations.linkEquipmentJob),
     customerEquipmentController.linkEquipmentJob
 )
@@ -243,7 +336,8 @@ router.post(
 router.post(
     '/createJobType',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Job_Type_Create),
     validate(Validations.createJobType),
     jobTypeController.createJobType
 )
@@ -251,49 +345,61 @@ router.post(
 router.post(
     '/getJobTypes',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.OFFICE_ADMIN),
     getCompnayId(),
+    checkUserPermissions(Permissions.Job_Type_Get),
     jobTypeController.getJobTypes)
 
 //Job
 router.post(
     '/createJob',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.OFFICE_ADMIN),
-    validate(Validations.createJob),
     getCompnayId(),
+    checkUserPermissions(Permissions.Job_Create),
+    validate(Validations.createJob),
     jobController.createJob
-)
+    )
 
 router.post(
     '/getJobs',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.OFFICE_ADMIN),
     getCompnayId(),
+    checkUserPermissions(Permissions.Job_Get_All),
     jobController.getJobs
-)
-
-router.post(
+    )
+    
+    router.post(
     '/getTechnicianJobs',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.TECHNICIAN),
     getCompnayId(),
+    checkUserPermissions(Permissions.Job_Get_Technician),
+    validate(Validations.technicianJobs),
     jobController.getJobsByTechnicianId
 )
 
 router.post(
     '/updateJob',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.TECHNICIAN),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Job_Update),
     validate(Validations.updateJob),
     jobController.updateJob
+)
+
+router.post(
+    '/editJob',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Job_Edit),
+    validate(Validations.editJob),
+    jobController.editJob
 )
 
 //Image upload
 router.post(
     '/uploadImage',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.OFFICE_ADMIN),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Image_Upload),
     imageController.uploadImage
 )
 
@@ -302,24 +408,25 @@ router.post(
 router.post(
     '/createGroup',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
-    validate(Validations.createGroup),
     getCompnayId(),
+    checkUserPermissions(Permissions.Group_Create),
+    validate(Validations.createGroup),
     groupController.createGroup
 )
 
 router.post(
     '/getGroups',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
     getCompnayId(),
+    checkUserPermissions(Permissions.Group_Get_All),
     groupController.getGroups
 )
 
 router.post(
     '/deleteGroup',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Group_Delete),
     validate(Validations.groupGeneric),
     groupController.deleteGroup
 )
@@ -327,27 +434,27 @@ router.post(
 router.post(
     '/addGroupManager',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
-    validate(Validations.addManager),
     getCompnayId(),
+    checkUserPermissions(Permissions.Group_Add_Manager),
+    validate(Validations.addManager),
     groupController.addManager
 )
 
 router.post(
     '/addGroupMember',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
-    validate(Validations.memberGeneric),
     getCompnayId(),
+    checkUserPermissions(Permissions.Group_Add_Member),
+    validate(Validations.memberGeneric),
     groupController.addMember
 )
 
 router.post(
     '/removeGroupMember',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
-    validate(Validations.memberGeneric),
     getCompnayId(),
+    checkUserPermissions(Permissions.Group_Remove_Member),
+    validate(Validations.memberGeneric),
     groupController.removeMember
 )
 
@@ -356,17 +463,17 @@ router.post(
 router.post(
     '/createCompanyEquipment',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
-    validate(Validations.createCompanyEquipment),
     getCompnayId(),
+    checkUserPermissions(Permissions.Company_Equipment_Create),
+    validate(Validations.createCompanyEquipment),
     companyEquipmentController.createCompanyEquipment
 )
 
 router.post(
     '/getCompanyEquipments',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.OFFICE_ADMIN),
     getCompnayId(),
+    checkUserPermissions(Permissions.Company_Equipment_Get),
     companyEquipmentController.getCompanyEquipments
 )
 
@@ -374,7 +481,8 @@ router.post(
 router.post(
     '/equipmentCheckInOut',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.OFFICE_ADMIN),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Company_Equipment_Check_In_Out),
     validate(Validations.createCompanyEquipmentHistory),
     companyEquipmentHistoryController.createCompanyEquipmentHistory
 )
@@ -383,43 +491,45 @@ router.post(
 router.post(
     '/takeInventory',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.OFFICE_ADMIN),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Inventory_Take),
     validate(Validations.createEquipmentInventory),
     companyEquipmentInventoryController.createCompanyEquipmentInventory
 )
 
-// router.post(
-//     '/getInventoryReport',
-//     passport.authenticate('jwt', { session: false }),
-//     checkPermissions(Role.OFFICE_ADMIN),
-//     companyEquipmentInventoryController.getIventoryHistory
-// )
+router.post(
+    '/getInventoryReport',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Inventory_Report),
+    companyEquipmentInventoryController.getIventoryHistory
+)
 
 
 // Company cards
 router.post(
     '/addCompanyCard',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
-    validate(Validations.addCompanyCard),
     getCompnayId(),
+    checkUserPermissions(Permissions.Company_Card_Add),
+    validate(Validations.addCompanyCard),
     companyCardController.createCompanyCard
 )
 
 router.post(
     '/removeCompanyCard',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
-    validate(Validations.removeCompanyCard),
     getCompnayId(),
+    checkUserPermissions(Permissions.Company_Card_Remove),
+    validate(Validations.removeCompanyCard),
     companyCardController.removeCompanyCard
 )
 
 router.post(
     '/getCompanyCards',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
     getCompnayId(),
+    checkUserPermissions(Permissions.Company_Card_Get),
     companyCardController.getCompanyCards
 )
 
@@ -427,17 +537,17 @@ router.post(
 router.post(
     '/placeOrder',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
-    validate(Validations.placeOrder),
     getCompnayId(),
+    checkUserPermissions(Permissions.Tags_Place_Order),
+    validate(Validations.placeOrder),
     orderController.placeOrder
 )
 
 router.post(
     '/getOrders',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
     getCompnayId(),
+    checkUserPermissions(Permissions.Tags_Get_Orders),
     orderController.getOrders
 )
 
@@ -445,7 +555,8 @@ router.post(
 router.post(
     '/buySubscriptions',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Subscription_Buy),
     validate(Validations.buySubscriptions),
     subscriptionController.addCompanySubscriptions
 )
@@ -453,7 +564,8 @@ router.post(
 router.post(
     '/cancelSubscriptions',
     passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.COMPANY),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Subscription_Cancel),
     validate(Validations.buySubscriptions),
     subscriptionController.removeCompanySubscriptions
 )
@@ -461,6 +573,11 @@ router.post(
 router.get(
     '/chargeSubscription',
     subscriptionController.chargeCompanySubscription
+)
+
+router.post(
+    '/updateSubscription',
+    userController.updateSub
 )
 
 export default router

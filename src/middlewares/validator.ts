@@ -37,6 +37,7 @@ export const Validations = {
 
   //Industry
   createIndustry: [check('title').exists()],
+  removeIndustry: [check('industryId').exists()],
 
   //Equipment Type
   createEquipmentType: [check('title').exists()],
@@ -51,7 +52,7 @@ export const Validations = {
   getCustomers: [check('includeActive').exists(), check('includeNonActive').exists()],
 
   //Customer Equipment
-  createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('imageUrl').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists()],
+  createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('imageUrl').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists(), check('location').exists()],
   getCustomerEquipments: [check('customerId').exists()],
   linkEquipmentJob: [check('nfcTag').exists(), check('jobId').exists()],
   getCustomerEquipmentJobs: [check('equipmentId').exists()],
@@ -62,6 +63,8 @@ export const Validations = {
   //Job
   createJob: [check('dateTime').exists(), check('technicianId').exists(), check('customerId').exists(), check('jobTypeId').exists()],
   updateJob: [check('status').exists(), check('comment').exists(), check('jobId').exists()],
+  editJob: [check('jobId').exists(), check('technicianId').exists(), check('dateTime').exists()],
+  technicianJobs: [check('employeeId').exists()],
   
   //Group
   createGroup: [check('title').exists()],
@@ -76,7 +79,7 @@ export const Validations = {
   createCompanyEquipmentHistory: [check('action').exists(), check('dateTime').exists()],
 
   //Company Equipemnt Inventory
-  createEquipmentInventory: [check('dateTime').exists(), check('nfcTags').exists(), check('qrCodes').exists()],
+  createEquipmentInventory: [check('dateTime').exists()],
   
   // Tags
   placeOrder: [check('noOfTags').exists(), check('total').exists(), check('tax').exists(), check('cardId').exists(),  check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(),],
@@ -88,4 +91,8 @@ export const Validations = {
  
  
   buySubscriptions: [ check('noOfOfficeAdmins').exists(),check('noOfTechnicians').exists(),check('noOfManagers').exists(),],
+
+  updateDefaultPermissions: [check('onPermissions').exists(), check('offPermissions').exists(), check('role').exists()],
+  udpateUserPermissions: [check('onPermissions').exists(), check('offPermissions').exists()],
+  employeePermissions: [check('employeeId').exists()],
 }

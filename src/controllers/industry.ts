@@ -41,3 +41,19 @@ export const getIndustries = (req: Request, res: Response) => {
     )
 
 }
+
+
+export const removeIndustry = (req: Request, res: Response) => {
+
+    const params = req.body
+
+    Industry.findOneAndDelete({_id: params.industryId})
+    .exec((err: any, industry: IIndustry) => {
+
+        if (err) {
+            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }
+
+        return res.json({'status': Status.Success, 'message': 'Industry removed successfully.'})
+    })
+}

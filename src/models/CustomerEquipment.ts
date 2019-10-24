@@ -7,6 +7,7 @@ export interface ICustomerEquipment extends Document {
         serialNumber: string    
         nfcTag: string
         imageUrl: string
+        location: string
     }
     maintenance: {
         interval: string,
@@ -27,6 +28,7 @@ const CustomerEquipmentSchema = new Schema({
         serialNumber: String,    
         nfcTag: String,
         imageUrl: String,
+        location: String,
     },
     maintenance: {
         interval: String,

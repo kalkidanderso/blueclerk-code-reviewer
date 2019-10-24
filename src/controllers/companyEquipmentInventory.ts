@@ -3,6 +3,7 @@ import { Status, Messages} from '../common/constants'
 import { CompanyEquipment, ICompanyEquipment } from '../models/CompanyEquipment'
 import { CompanyEquipmentInventory, ICompanyEquipmentInventory } from '../models/CompanyEquipmentInventory'
 import { IUser } from '../models/User'
+import { Group, IGroup } from '../models/Group'
 import { ObjectId } from 'mongodb'
 
 
@@ -10,19 +11,33 @@ export const createCompanyEquipmentInventory = (req: Request, res: Response) => 
 
     const params = req.body
     const user = <IUser>req.user
-    var nfcTags = params.nfcTags.split(',');
-    var qrCodes = params.qrCodes.split(',');
 
-    CompanyEquipment.find({ $or: [{nfcTag : {$in: nfcTags}}, {qrCode : {$in: qrCodes}}] },
+    if (params.nfcTags == undefined && params.qrCodes == undefined) {
+        return res.json({'status': Status.Error, 'message': Messages.MissingParams})
+    }
+    var nfcTags =[]
+    if (params.nfcTags != undefined) {
+        nfcTags = params.nfcTags.split(',')
+    }
+    var qrCodes = []
+    if (params.qrCodes != undefined) {
+        qrCodes = params.qrCodes.split(',')
+    }
+    
+
+    CompanyEquipment.find({ $or: [{'info.nfcTag' : {$in: nfcTags}}, {'info.qrCode' : {$in: qrCodes}}] },
         '_id',
         (err: any, companyEquipments: ICompanyEquipment[]) =>{
             
             if (err) {
-                
+                console.log(err);
+                    
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
+            console.log("company equipment \n" + companyEquipments);
+            
             var ids = companyEquipments.map(function(item) {
-                return item['_id'];
+                return item._id;
             });
 
             const companyEquipmentInventory = new CompanyEquipmentInventory({
@@ -43,47 +58,54 @@ export const createCompanyEquipmentInventory = (req: Request, res: Response) => 
         })
 }
 
-// export const getIventoryHistory = (req: Request, res: Response) => {
+export const getIventoryHistory = (req: Request, res: Response) => {
 
-//     const user = <IUser> req.user
+    const user = <IUser> req.user
+    console.log(user._id);
+    
+    Group.findOne(
+        // {member: user._id},
+        {members: new ObjectId(user._id)},
+        // { members: { 
+        //     $elemMatch: { id: user._id } 
+        //  }},
+        (err: any, group: IGroup)=>{
 
-//     Group.findOne(
-//         // {member: user._id},
-//         {members: new ObjectId(user._id)},
-//         // { members: { 
-//         //     $elemMatch: { id: user._id } 
-//         //  }},
-//         (err: any, group: IGroup)=>{
-
-//             if (err) {
-//                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
-//             }
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
             
-//             if (group == null || group == undefined) {
+            if (group == null || group == undefined) {
                 
-//                 return res.json({'status': Status.Success, 'companyEquipmentInventory': []}) 
-//             }
-
-//             const members = group.members.map((id)=>{
-                
-//                 new ObjectId(id.toString())
-                
-//             })
+                return res.json({'status': Status.Success, 'companyEquipmentInventory': []}) 
+            }
             
-//             CompanyEquipmentInventory.find({createdBy : {$in: members}})
-//             // .populate({
-//             //     path: 'createdBy',
-//             //     select: 'profile.displayName',
-//             // })
-//             .exec((err: any, companyEquipmentInventory: ICompanyEquipmentInventory[]) =>{
+            const members = group.members.map((id)=>{
+                console.log(id);
                 
-//                 if (err) {
-//                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
-//                 }
+                // new ObjectId(id.toString())
+                return id
+            })
 
-//                 return res.json({'status': Status.Success, 'companyEquipmentInventory': companyEquipmentInventory}) 
-//             })
+            console.log("member \n "+ members);
             
-//         })
+            CompanyEquipmentInventory.find({createdBy : {$in: members}})
+            .populate({
+                path: 'createdBy',
+                select: 'profile.displayName',
+            })
+            .exec((err: any, companyEquipmentInventory: ICompanyEquipmentInventory[]) =>{
+                
+                if (err) {
+                    console.log(err);
+                    
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                }
 
-// }
+                return res.json({'status': Status.Success, 'companyEquipmentInventory': companyEquipmentInventory}) 
+            })
+            
+            // return res.json({'status': Status.Success, 'abc': []}) 
+        })
+
+}

@@ -3,39 +3,10 @@ import { Status, Messages } from '../common/constants'
 
 import { chargeSubscription, subscribe, unsubscribe } from '../services/stripe'
 import { ICompany, Company } from '../models/Company'
-import { CompanyCard, ICompanyCard } from '../models/CompanyCard'
-
-// export const getStripePlans = (req: Request, res: Response) => {
-
-//     getPlans((status:any, plans: any, message: any)=>{
-//         if(status == 1){
-        
-//             return res.json({'status': Status.Success, 'plans': plans})
-        
-//         } else {
-//             return res.json({status: Status.Error, message: message})
-//         }
-//     })
-
-// }
-
-// export const getStripeSubscriptions = (req: Request, res: Response) => {
-
-//     listSubscriptions((status: any, subscriptions:any, message: any)=>{
-//         if(status == 1){
-        
-//             return res.json({'status': Status.Success, 'subscriptions': subscriptions})
-        
-//         } else {
-//             return res.json({status: Status.Error, message: message})
-//         }
-//     })
-
-// }
 
 export const addCompanySubscriptions = (req: Request, res: Response) => {
 
-    const company = <ICompany>req.user
+    const company = <ICompany>req.company
     const params = req.body
 
     if(company.stripeId == undefined || company.stripeId == '') {
@@ -91,7 +62,7 @@ export const addCompanySubscriptions = (req: Request, res: Response) => {
 
 export const removeCompanySubscriptions = (req: Request, res: Response) => {
 
-    const company = <ICompany>req.user
+    const company = <ICompany>req.company
     const params = req.body
 
     if(company.stripeId == undefined || company.stripeId == '') {
@@ -122,8 +93,6 @@ export const chargeCompanySubscription = (req: Request, res: Response) => {
         {$or: [{maxManagers: { $gt: 0 }}, {maxOfficeAdmins: { $gt: 0 }}, {maxTechnicians: { $gt: 0 }}]  },
         (err: any, companies: ICompany[])=>{
             if (err) {
-                console.log(err);
-                
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
             const companiesToCharge:number = companies.length

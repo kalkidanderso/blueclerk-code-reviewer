@@ -8,7 +8,7 @@ import { ObjectId } from 'mongodb'
 export const createCompanyCard = (req: Request, res: Response) => {
 
     const params = req.body
-    const company = <ICompany>req.user
+    const company = <ICompany>req.company
 
     if(company.stripeId){
         return addCardToCompany(req, res)
@@ -56,7 +56,7 @@ export const createCompanyCard = (req: Request, res: Response) => {
 const addCardToCompany = (req: Request, res: Response) => {
 
     const params = req.body
-    const company = <ICompany>req.user
+    const company = <ICompany>req.company
 
     const card = new CompanyCard({
         ending: params.ending,
@@ -94,7 +94,7 @@ const addCardToCompany = (req: Request, res: Response) => {
 export const removeCompanyCard = (req: Request, res: Response) => {
 
     const params = req.body
-    const company = <ICompany>req.user
+    const company = <ICompany>req.company
 
     CompanyCard.findOne({ company: req.companyId, _id: params.cardId}, 
         (err: any, card: ICompanyCard)=>{

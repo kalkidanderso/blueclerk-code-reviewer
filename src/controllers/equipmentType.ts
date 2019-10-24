@@ -3,16 +3,26 @@ import { Status, Role, Messages } from '../common/constants'
 
 import { EquipmentType, IEquipmentType } from '../models/EquipmentType'
 import { IUser } from '../models/User'
-import { IEmployee } from '../models/Employee'
 
 export const createEquipmentType = (req: Request, res: Response) => {
 
     const params = req.body
     const user = <IUser>req.user
 
+    var userId = null
+
+    if (user.permissions.role == Role.COMPANY) {
+        userId = user._id
+    } 
+
+    if (user.permissions.role != Role.GLOBAL_ADMIN){
+        userId = req.companyId
+    }
+
+
     const type = new EquipmentType({
         title: params.title,
-        createdBy:  user.permissions.role == Role.COMPANY ? user._id : null
+        createdBy:  userId
     })
 
     type.save((err: any) => {
@@ -29,18 +39,8 @@ export const createEquipmentType = (req: Request, res: Response) => {
 
 export const getEquipmentTypes = (req: Request, res: Response) => {
 
-    const user = <IUser>req.user
-    const employee = <IEmployee>user
-    
-    var createdBy
-    if (employee.company) {
-        createdBy = employee.company
-    }else {
-        createdBy = user._id
-    }
-
     EquipmentType.find(
-        { $or: [ {createdBy: null}, {createdBy: createdBy} ]},
+        { $or: [ {createdBy: null}, {createdBy: req.companyId} ]},
         (err: any, types: IEquipmentType[])=>{
 
             if (err) {

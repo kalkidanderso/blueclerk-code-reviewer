@@ -4,7 +4,11 @@ import { User, IUser } from './User'
 export interface IEmployee extends IUser {
 
     company: Schema.Types.ObjectId
-    status: Number
+    status: Number,
+    extraPermissions: {
+        on:[number],
+        off: [number]
+    }
     
 }
 
@@ -18,6 +22,10 @@ const EmployeeSchema = new Schema({
     status: {
         type: Number,
         default: 1
+    },
+    extraPermissions: {
+        on:[Number],
+        off: [Number]
     }
 
 })

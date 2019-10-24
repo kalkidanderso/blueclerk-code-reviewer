@@ -7,7 +7,7 @@ const CompanyCard_1 = require("../models/CompanyCard");
 const mongodb_1 = require("mongodb");
 exports.placeOrder = (req, res) => {
     const params = req.body;
-    const company = req.user;
+    const company = req.company;
     if (company.stripeId == undefined || company.stripeId == "") {
         return res.json({ status: constants_1.Status.Error, message: "Company payment method required." });
     }

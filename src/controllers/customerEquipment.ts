@@ -28,6 +28,7 @@ export const createCustomerEquipment = (req: Request, res: Response) => {
                     serialNumber: params.serialNumber,
                     nfcTag: params.nfcTag,
                     imageUrl: params.imageUrl,
+                    location: params.location,
                 },
                 type: params.equipmentTypeId,
                 brand: params.equipmentBrandId,

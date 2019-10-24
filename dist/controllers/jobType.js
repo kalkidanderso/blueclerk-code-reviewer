@@ -5,9 +5,16 @@ const JobType_1 = require("../models/JobType");
 exports.createJobType = (req, res) => {
     const params = req.body;
     const user = req.user;
+    var userId = null;
+    if (user.permissions.role == 3 /* COMPANY */) {
+        userId = user._id;
+    }
+    if (user.permissions.role != 4 /* GLOBAL_ADMIN */) {
+        userId = req.companyId;
+    }
     const jobType = new JobType_1.JobType({
         title: params.title,
-        createdBy: user.permissions.role == 3 /* COMPANY */ ? user._id : null
+        createdBy: userId
     });
     jobType.save((err) => {
         if (err) {

@@ -9,19 +9,37 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const Company_1 = require("../models/Company");
+// export const getCompnayId = () => {
+//     return async (req: Request, res: Response, next: NextFunction) => {
+//         const user = <IUser>req.user
+//         const employee = <IEmployee>req.user
+//         var companyId
+//         if (employee.company) {
+//             companyId = employee.company
+//         } else {
+//             companyId = user._id
+//         }
+//         req.companyId = companyId
+//         next()
+//     }
+// }
 exports.getCompnayId = () => {
     return (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         const user = req.user;
-        const employee = req.user;
-        var companyId;
-        if (employee.company) {
-            companyId = employee.company;
+        if (user.permissions.role == 3 /* COMPANY */) {
+            req.company = user;
+            req.companyId = user._id;
+            next();
         }
-        else {
-            companyId = user._id;
+        else if (user.permissions.role != 4 /* GLOBAL_ADMIN */) {
+            const employee = req.user;
+            Company_1.Company.findById(employee.company, (err, company) => {
+                req.company = company;
+                req.companyId = company._id;
+                next();
+            });
         }
-        req.companyId = companyId;
-        next();
     });
 };
 //# sourceMappingURL=company.js.map

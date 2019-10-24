@@ -1,7 +1,8 @@
 import {Request, Response} from 'express'
-import { Status, Messages } from '../common/constants'
+import { Status, Messages, JobStatus } from '../common/constants'
 
 import { Job, IJob } from '../models/Job'
+import { ICompany } from '../models/Company'
 import { IUser } from '../models/User'
 
 export const createJob = (req: Request, res: Response) => {
@@ -46,6 +47,10 @@ export const getJobs = (req: Request, res: Response) => {
             path: 'type',
             select: 'title'
         })
+        .populate({
+            path: 'company',
+            select: 'info.companyName'
+        })
         .exec((err: any, jobs: IJob[])=>{
 
             if (err) {
@@ -61,13 +66,9 @@ export const getJobs = (req: Request, res: Response) => {
 
 export const getJobsByTechnicianId = (req: Request, res: Response) => {
 
-    const technician = <IUser>req.user
+    const params = req.body
     
-    if(technician.permissions.role != 1) {
-        return res.json({'status': Status.Success, 'message': 'Invalid user type.'})    
-    }
-    
-    Job.find({ technician: technician._id })
+    Job.find({ technician: params.employeeId })
         .populate({
             path: 'technician',
             select: 'profile.displayName'
@@ -79,6 +80,10 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
         .populate({
             path: 'type',
             select: 'title'
+        })
+        .populate({
+            path: 'company',
+            select: 'info.companyName'
         })
         .exec((err: any, jobs: IJob[])=>{
 
@@ -116,6 +121,34 @@ export const updateJob = (req: Request, res: Response) => {
                     }
     
                     return res.json({'status': Status.Success, 'message': 'Job updated successfully.'})
+                }
+            )
+        }
+    )
+}
+
+
+export const editJob = (req: Request, res: Response) => {
+
+    const params = req.body
+
+    Job.findOne(
+        { _id: params.jobId },
+        (err: any, job: IJob)=>{
+
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+
+            job.updateOne(
+                {technician: params.technicianId, dateTime: params.dateTime},
+                (err: any, raw: any)=> {
+                    
+                    if (err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    }
+    
+                    return res.json({'status': Status.Success, 'message': 'Job edited successfully.'})
                 }
             )
         }

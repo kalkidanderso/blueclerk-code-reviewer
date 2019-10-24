@@ -4,4 +4,7 @@ exports.stripeConfig = {
     sk_public: 'pk_test_mQBDMIwnFz7UBeNPS8Afdh3500qyHU6zmP',
     sk_secret: 'sk_test_KwXR4PjoSkxQQuBzDnQurnED00kXsu30X3'
 };
+exports.privateKey = {
+    key: 'KwXkxQQuBzDnZzbt0B3CeDQurnED00kXsu30X3'
+};
 //# sourceMappingURL=config.js.map

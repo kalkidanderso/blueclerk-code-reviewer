@@ -9,10 +9,19 @@ export const createEquipmentBrand = (req: Request, res: Response) => {
 
     const params = req.body
     const user = <IUser>req.user
+    var userId = null
+
+    if (user.permissions.role == Role.COMPANY) {
+        userId = user._id
+    } 
+
+    if (user.permissions.role != Role.GLOBAL_ADMIN){
+        userId = req.companyId
+    }
 
     const brand = new EquipmentBrand({
         title: params.title,
-        createdBy:  user.permissions.role == Role.COMPANY ? user._id : null
+        createdBy:  userId
     })
 
     brand.save((err: any) => {
@@ -29,18 +38,8 @@ export const createEquipmentBrand = (req: Request, res: Response) => {
 
 export const getEquipmentBrands = (req: Request, res: Response) => {
 
-    const user = <IUser>req.user
-    const employee = <IEmployee>user
-    
-    var createdBy
-    if (employee.company) {
-        createdBy = employee.company
-    }else {
-        createdBy = user._id
-    }
-
     EquipmentBrand.find(
-        { $or: [ {createdBy: null}, {createdBy: createdBy} ]},
+        { $or: [ {createdBy: null}, {createdBy: req.companyId} ]},
         (err: any, brands: IEquipmentBrand[])=>{
 
             if (err) {

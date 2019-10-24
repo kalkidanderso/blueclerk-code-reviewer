@@ -20,7 +20,24 @@ export interface ICompany extends IUser {
     maxTechnicians: number
     maxManagers: number
     maxOfficeAdmins: number
-    
+    userPermissions: {
+        0: {
+            on: [Number],
+            off: [Number],
+        },
+        1: {
+            on: [Number],
+            off: [Number],
+        },
+        2: {
+            on: [Number],
+            off: [Number],
+        },
+        3: {
+            on: [Number],
+            off: [Number],
+        },
+    }
 }
 
 const CompanySchema = new Schema({
@@ -51,6 +68,24 @@ const CompanySchema = new Schema({
         type: Number,
         default: 0
     },
+    userPermissions: {
+        0: {
+            on: [Number],
+            off: [Number],
+        },
+        1: {
+            on: [Number],
+            off: [Number],
+        },
+        2: {
+            on: [Number],
+            off: [Number],
+        },
+        3: {
+            on: [Number],
+            off: [Number],
+        },
+    }
 
 })
 

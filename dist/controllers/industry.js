@@ -24,4 +24,14 @@ exports.getIndustries = (req, res) => {
         res.json({ 'status': constants_1.Status.Success, 'industries': industries });
     });
 };
+exports.removeIndustry = (req, res) => {
+    const params = req.body;
+    Industry_1.Industry.findOneAndDelete({ _id: params.industryId })
+        .exec((err, industry) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        return res.json({ 'status': constants_1.Status.Success, 'message': 'Industry removed successfully.' });
+    });
+};
 //# sourceMappingURL=industry.js.map

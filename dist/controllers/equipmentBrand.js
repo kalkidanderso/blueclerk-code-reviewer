@@ -5,9 +5,16 @@ const EquipmentBrand_1 = require("../models/EquipmentBrand");
 exports.createEquipmentBrand = (req, res) => {
     const params = req.body;
     const user = req.user;
+    var userId = null;
+    if (user.permissions.role == 3 /* COMPANY */) {
+        userId = user._id;
+    }
+    if (user.permissions.role != 4 /* GLOBAL_ADMIN */) {
+        userId = req.companyId;
+    }
     const brand = new EquipmentBrand_1.EquipmentBrand({
         title: params.title,
-        createdBy: user.permissions.role == 3 /* COMPANY */ ? user._id : null
+        createdBy: userId
     });
     brand.save((err) => {
         if (err) {
@@ -17,16 +24,7 @@ exports.createEquipmentBrand = (req, res) => {
     });
 };
 exports.getEquipmentBrands = (req, res) => {
-    const user = req.user;
-    const employee = user;
-    var createdBy;
-    if (employee.company) {
-        createdBy = employee.company;
-    }
-    else {
-        createdBy = user._id;
-    }
-    EquipmentBrand_1.EquipmentBrand.find({ $or: [{ createdBy: null }, { createdBy: createdBy }] }, (err, brands) => {
+    EquipmentBrand_1.EquipmentBrand.find({ $or: [{ createdBy: null }, { createdBy: req.companyId }] }, (err, brands) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }

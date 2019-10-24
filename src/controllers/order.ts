@@ -11,7 +11,7 @@ import { ObjectId } from 'mongodb'
 export const placeOrder = (req: Request, res: Response) => {
 
     const params = req.body
-    const company = <ICompany>req.user
+    const company = <ICompany>req.company
 
     if(company.stripeId == undefined || company.stripeId == ""){
         return res.json({status: Status.Error, message: "Company payment method required."})

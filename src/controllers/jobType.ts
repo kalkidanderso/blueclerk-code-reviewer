@@ -8,10 +8,19 @@ export const createJobType = (req: Request, res: Response) => {
 
     const params = req.body
     const user = <IUser>req.user
+    var userId = null
+
+    if (user.permissions.role == Role.COMPANY) {
+        userId = user._id
+    } 
+
+    if (user.permissions.role != Role.GLOBAL_ADMIN){
+        userId = req.companyId
+    }
 
     const jobType = new JobType({
         title: params.title,
-        createdBy:  user.permissions.role == Role.COMPANY ? user._id : null
+        createdBy:  userId
     })
 
     jobType.save((err: any) => {

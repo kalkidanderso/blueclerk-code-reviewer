@@ -14,6 +14,7 @@ const CustomerEquipmentSchema = new mongoose_1.Schema({
         serialNumber: String,
         nfcTag: String,
         imageUrl: String,
+        location: String,
     },
     maintenance: {
         interval: String,

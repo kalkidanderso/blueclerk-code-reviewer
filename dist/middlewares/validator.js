@@ -36,6 +36,7 @@ exports.Validations = {
     deleteEmployee: [express_validator_1.check('employeeId').exists()],
     //Industry
     createIndustry: [express_validator_1.check('title').exists()],
+    removeIndustry: [express_validator_1.check('industryId').exists()],
     //Equipment Type
     createEquipmentType: [express_validator_1.check('title').exists()],
     //Equipment Brand
@@ -46,7 +47,7 @@ exports.Validations = {
     // createCustomer: [check('email').exists(), check('email').isEmail(), check('name').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('contactName').exists(), check('phone').exists()],
     getCustomers: [express_validator_1.check('includeActive').exists(), express_validator_1.check('includeNonActive').exists()],
     //Customer Equipment
-    createCustomerEquipment: [express_validator_1.check('model').exists(), express_validator_1.check('serialNumber').exists(), express_validator_1.check('nfcTag').exists(), express_validator_1.check('imageUrl').exists(), express_validator_1.check('equipmentTypeId').exists(), express_validator_1.check('equipmentBrandId').exists(), express_validator_1.check('customerId').exists()],
+    createCustomerEquipment: [express_validator_1.check('model').exists(), express_validator_1.check('serialNumber').exists(), express_validator_1.check('nfcTag').exists(), express_validator_1.check('imageUrl').exists(), express_validator_1.check('equipmentTypeId').exists(), express_validator_1.check('equipmentBrandId').exists(), express_validator_1.check('customerId').exists(), express_validator_1.check('location').exists()],
     getCustomerEquipments: [express_validator_1.check('customerId').exists()],
     linkEquipmentJob: [express_validator_1.check('nfcTag').exists(), express_validator_1.check('jobId').exists()],
     getCustomerEquipmentJobs: [express_validator_1.check('equipmentId').exists()],
@@ -55,6 +56,8 @@ exports.Validations = {
     //Job
     createJob: [express_validator_1.check('dateTime').exists(), express_validator_1.check('technicianId').exists(), express_validator_1.check('customerId').exists(), express_validator_1.check('jobTypeId').exists()],
     updateJob: [express_validator_1.check('status').exists(), express_validator_1.check('comment').exists(), express_validator_1.check('jobId').exists()],
+    editJob: [express_validator_1.check('jobId').exists(), express_validator_1.check('technicianId').exists(), express_validator_1.check('dateTime').exists()],
+    technicianJobs: [express_validator_1.check('employeeId').exists()],
     //Group
     createGroup: [express_validator_1.check('title').exists()],
     groupGeneric: [express_validator_1.check('groupId').exists()],
@@ -65,7 +68,7 @@ exports.Validations = {
     //Company Equipemnt History
     createCompanyEquipmentHistory: [express_validator_1.check('action').exists(), express_validator_1.check('dateTime').exists()],
     //Company Equipemnt Inventory
-    createEquipmentInventory: [express_validator_1.check('dateTime').exists(), express_validator_1.check('nfcTags').exists(), express_validator_1.check('qrCodes').exists()],
+    createEquipmentInventory: [express_validator_1.check('dateTime').exists()],
     // Tags
     placeOrder: [express_validator_1.check('noOfTags').exists(), express_validator_1.check('total').exists(), express_validator_1.check('tax').exists(), express_validator_1.check('cardId').exists(), express_validator_1.check('street').exists(), express_validator_1.check('city').exists(), express_validator_1.check('state').exists(), express_validator_1.check('zipCode').exists(),],
     // Comapny Cards
@@ -73,5 +76,8 @@ exports.Validations = {
     removeCompanyCard: [express_validator_1.check('cardId').exists()],
     subscribe: [express_validator_1.check('cardId').exists(), express_validator_1.check('planId').exists()],
     buySubscriptions: [express_validator_1.check('noOfOfficeAdmins').exists(), express_validator_1.check('noOfTechnicians').exists(), express_validator_1.check('noOfManagers').exists(),],
+    updateDefaultPermissions: [express_validator_1.check('onPermissions').exists(), express_validator_1.check('offPermissions').exists(), express_validator_1.check('role').exists()],
+    udpateUserPermissions: [express_validator_1.check('onPermissions').exists(), express_validator_1.check('offPermissions').exists()],
+    employeePermissions: [express_validator_1.check('employeeId').exists()],
 };
 //# sourceMappingURL=validator.js.map

@@ -29,6 +29,24 @@ const CompanySchema = new mongoose_1.Schema({
         type: Number,
         default: 0
     },
+    userPermissions: {
+        0: {
+            on: [Number],
+            off: [Number],
+        },
+        1: {
+            on: [Number],
+            off: [Number],
+        },
+        2: {
+            on: [Number],
+            off: [Number],
+        },
+        3: {
+            on: [Number],
+            off: [Number],
+        },
+    }
 });
 exports.Company = User_1.User.discriminator('Company', CompanySchema);
 //# sourceMappingURL=Company.js.map

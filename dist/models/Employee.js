@@ -11,6 +11,10 @@ const EmployeeSchema = new mongoose_1.Schema({
     status: {
         type: Number,
         default: 1
+    },
+    extraPermissions: {
+        on: [Number],
+        off: [Number]
     }
 });
 exports.Employee = User_1.User.discriminator('Employee', EmployeeSchema);
