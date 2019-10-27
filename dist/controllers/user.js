@@ -464,4 +464,12 @@ exports.getAllEmployees = (req, res) => {
         res.json({ 'status': constants_1.Status.Success, 'employees': company.employees });
     });
 };
+exports.getEmployeesForJob = (req, res) => {
+    Employee_1.Employee.find({ $and: [{ company: new mongodb_1.ObjectId(req.companyId) }, { 'permissions.role': { $ne: 0 } }] }, 'id profile.displayName', (err, employees) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        res.json({ 'status': constants_1.Status.Success, 'employees': employees });
+    });
+};
 //# sourceMappingURL=user.js.map

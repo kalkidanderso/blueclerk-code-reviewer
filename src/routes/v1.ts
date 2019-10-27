@@ -232,6 +232,13 @@ router.post(
     getCompnayId(),
     checkUserPermissions(Permissions.User_Get_All_Employees),
     userController.getAllEmployees)
+    
+    router.post(
+    '/getEmployeesForJob',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.User_Get_All_Employees),
+    userController.getEmployeesForJob)
 
 //Equipment types
 router.post(

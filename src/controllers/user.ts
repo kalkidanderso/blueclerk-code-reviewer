@@ -646,3 +646,19 @@ export const getAllEmployees = (req: Request, res: Response) => {
     })
 
 }
+
+export const getEmployeesForJob = (req: Request, res: Response) => {
+
+    Employee.find({$and: [ {company: new ObjectId(req.companyId)},{'permissions.role' : {$ne: 0} }]},
+    'id profile.displayName',
+    (err: any, employees: IEmployee[])=>{
+
+        if (err) {
+            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }
+
+        res.json({'status': Status.Success, 'employees': employees})    
+
+    })
+
+}
