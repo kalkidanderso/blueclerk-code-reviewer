@@ -101,10 +101,6 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
 
     const params = req.body
     CustomerEquipment.findOne({ _id: params.equipmentId })
-        // .populate({
-        //     path: 'jobs',
-        //     match: {company: req.companyId},
-        // })
         .exec((err: any, customerEquipment: ICustomerEquipment) => {
 
             if (err || !customerEquipment) {
@@ -114,6 +110,22 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
 
 
             Job.find({_id: {$in : jobIds }, company: req.companyId})
+            .populate({
+                path: 'technician',
+                select: 'profile.displayName'
+            })
+            .populate({
+                path: 'customer',
+                select: 'info.name'
+            })
+            .populate({
+                path: 'type',
+                select: 'title'
+            })
+            .populate({
+                path: 'company',
+                select: 'info.companyName'
+            })
             .exec((err: any, companyJobs: IJob[])=>{
                 
                 if (err || !companyJobs) {
@@ -152,7 +164,7 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
 
 
 
-export const linkEquipmentJob = (req: Request, res: Response) => {
+export const linkJobToEquipment = (req: Request, res: Response) => {
 
     const params = req.body
 

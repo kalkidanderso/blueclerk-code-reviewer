@@ -67,16 +67,28 @@ exports.getCustomerEquipments = (req, res) => {
 exports.getCustomerEquipmentJobs = (req, res) => {
     const params = req.body;
     CustomerEquipment_1.CustomerEquipment.findOne({ _id: params.equipmentId })
-        // .populate({
-        //     path: 'jobs',
-        //     match: {company: req.companyId},
-        // })
         .exec((err, customerEquipment) => {
         if (err || !customerEquipment) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         var jobIds = customerEquipment.jobs;
         Job_1.Job.find({ _id: { $in: jobIds }, company: req.companyId })
+            .populate({
+            path: 'technician',
+            select: 'profile.displayName'
+        })
+            .populate({
+            path: 'customer',
+            select: 'info.name'
+        })
+            .populate({
+            path: 'type',
+            select: 'title'
+        })
+            .populate({
+            path: 'company',
+            select: 'info.companyName'
+        })
             .exec((err, companyJobs) => {
             if (err || !companyJobs) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -102,7 +114,7 @@ exports.getCustomerEquipmentJobs = (req, res) => {
         });
     });
 };
-exports.linkEquipmentJob = (req, res) => {
+exports.linkJobToEquipment = (req, res) => {
     const params = req.body;
     CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
         .exec((err, customerEquipment) => {

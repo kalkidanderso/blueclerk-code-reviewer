@@ -30,7 +30,15 @@ const JobSchema = new mongoose_1.Schema({
         ref: 'Company',
         required: true
     },
+    equipmentId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Company',
+        default: null
+    },
     comment: {
+        type: String
+    },
+    description: {
         type: String
     },
     status: {

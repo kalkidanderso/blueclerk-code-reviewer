@@ -27,7 +27,7 @@ import { Personalize } from 'aws-sdk'
 
 
 const router: express.Router = express.Router()
-
+ 
 //Auth
 router.post(
     '/login',
@@ -331,12 +331,12 @@ router.post(
     customerEquipmentController.getCustomerEquipmentJobs
 )
 router.post(
-    '/assignJobToEquipment',
+    '/scanJobEquipment',
     passport.authenticate('jwt', { session: false }),
     getCompnayId(),
     checkUserPermissions(Permissions.Customer_Equipment_Assign_Job),
     validate(Validations.linkEquipmentJob),
-    customerEquipmentController.linkEquipmentJob
+    customerEquipmentController.linkJobToEquipment
 )
 
 //Job types
@@ -390,6 +390,24 @@ router.post(
     checkUserPermissions(Permissions.Job_Update),
     validate(Validations.updateJob),
     jobController.updateJob
+)
+
+router.post(
+    '/startJob',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Job_Start),
+    validate(Validations.generalJob),
+    jobController.startJob
+)
+
+router.post(
+    '/getJobDetails',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Job_Detail),
+    validate(Validations.generalJob),
+    jobController.getJobDetails
 )
 
 router.post(

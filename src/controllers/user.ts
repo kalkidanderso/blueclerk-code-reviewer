@@ -1,6 +1,6 @@
 import {Request, Response, response} from 'express'
 import { Status, Role, Messages, UserPermissions } from '../common/constants'
-import {sendEmail} from '../services/aws'
+import {sendEmail, sendEmployeeEmail} from '../services/aws'
 
 import { User, IUser } from '../models/User'
 import { Company, ICompany } from '../models/Company'
@@ -399,7 +399,7 @@ const createEmployee = (req: Request, res: Response, role: Role) => {
                             if (err) {
                                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
                             }
-                    
+                            sendEmployeeEmail({to: params.email, password: params.password})
                             return res.json({'status': Status.Success, 'message': 'Employee created successfully.'})
                         }
                     )

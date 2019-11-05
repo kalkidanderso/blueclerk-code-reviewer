@@ -617,6 +617,10 @@ paths:
           in: formData
           required: true
           type: string
+        - name: industryId
+          in: formData
+          # required: true
+          type: string
       responses:
         '200':
           description: Success
@@ -630,7 +634,7 @@ paths:
         - Equipment Type
       summary: >-
         To get all equipment types created by a company or company
-        of employee. It will also contain types created by global admin.
+        of employee. It will also contain types created by global admin according to industry.
       description: ''
       consumes:
         - application/x-www-form-urlencoded
@@ -664,6 +668,9 @@ paths:
         - name: title
           in: formData
           required: true
+          type: string
+        - name: industryId
+          in: formData
           type: string
       responses:
         '200':
@@ -999,6 +1006,16 @@ paths:
           required: true
           type: string
           description: Id of a job type selected from the list received by /getJobTypes api
+        - name: description
+          in: formData
+          # required: true
+          type: string
+          description: Description of the job 
+        - name: equipmentId
+          in: formData
+          # required: true
+          type: string
+          description: equipment id on which the job is going to be performed 
       responses:
         '200':
           description: Success
@@ -1060,11 +1077,65 @@ paths:
                       $ref: '#/definitions/Job'
       security:
         - Bearer: []
+  /getJobDetails:
+    post:
+      tags:
+        - Job
+      summary: To get job details with customer and company info.
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: jobId
+          in: formData
+          required: true
+          type: string
+          description: 'Id of job you want to get detail of'
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/definitions/Job'
+      security:
+        - Bearer: []
+  /startJob:
+    post:
+      tags:
+        - Job
+      summary: To change the job status to be started
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: jobId
+          in: formData
+          required: true
+          type: string
+          description: >-
+            Id of job to start
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /updateJob:
     post:
       tags:
         - Job
-      summary: To update job status with comment by any emplooye
+      summary: To update job status with comment by any employee
       description: ''
       consumes:
         - application/x-www-form-urlencoded
@@ -1127,11 +1198,11 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
-  /assignJobToEquipment:
+  /scanJobEquipment:
     post:
       tags:
         - Job
-      summary: To link job with customer equipment for history
+      summary: To link job with customer equipment for job history
       description: ''
       consumes:
         - application/x-www-form-urlencoded
@@ -1159,7 +1230,7 @@ paths:
     post:
       tags:
         - Customer Equipment
-      summary: To link job to customer equipment for history
+      summary: To get history of jobs performed on current equipment
       description: ''
       consumes:
         - application/x-www-form-urlencoded
@@ -1970,6 +2041,9 @@ definitions:
         type: string
       title:
         type: string
+      industry:
+        type: string
+        description: Id of industry to which this type belongs. 
       createdBy:
         type: string
         description: >-

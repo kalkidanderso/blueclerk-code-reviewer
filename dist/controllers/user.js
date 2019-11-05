@@ -280,6 +280,7 @@ const createEmployee = (req, res, role) => {
                         if (err) {
                             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                         }
+                        aws_1.sendEmployeeEmail({ to: params.email, password: params.password });
                         return res.json({ 'status': constants_1.Status.Success, 'message': 'Employee created successfully.' });
                     });
                 });

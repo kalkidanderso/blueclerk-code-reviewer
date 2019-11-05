@@ -4,12 +4,14 @@ import { Status, Role, Messages } from '../common/constants'
 import { EquipmentBrand, IEquipmentBrand } from '../models/EquipmentBrand'
 import { IUser } from '../models/User'
 import { IEmployee } from '../models/Employee'
+import { Company, ICompany } from '../models/Company'
 
 export const createEquipmentBrand = (req: Request, res: Response) => {
 
     const params = req.body
     const user = <IUser>req.user
     var userId = null
+    var industryId = null
 
     if (user.permissions.role == Role.COMPANY) {
         userId = user._id
@@ -19,8 +21,18 @@ export const createEquipmentBrand = (req: Request, res: Response) => {
         userId = req.companyId
     }
 
+      
+    if(user.permissions.role == Role.GLOBAL_ADMIN) {
+        if(params.industryId == undefined || params.industryId == null) {
+            return res.json({ status: Status.Error, message: "Industry Id is required"})
+        }else{
+            industryId = params.industryId
+        }
+    }
+
     const brand = new EquipmentBrand({
         title: params.title,
+        industry: industryId,
         createdBy:  userId
     })
 
@@ -38,17 +50,45 @@ export const createEquipmentBrand = (req: Request, res: Response) => {
 
 export const getEquipmentBrands = (req: Request, res: Response) => {
 
-    EquipmentBrand.find(
-        { $or: [ {createdBy: null}, {createdBy: req.companyId} ]},
-        (err: any, brands: IEquipmentBrand[])=>{
+    const user = <IUser>req.user
+    if(user.permissions.role == Role.GLOBAL_ADMIN) {
+        EquipmentBrand.find(
+            { $or: [ {createdBy: null}, {createdBy: req.companyId} ]},
+            (err: any, brands: IEquipmentBrand[])=>{
+    
+                if (err) {
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                }
+    
+                res.json({'status': Status.Success, 'brands': brands})    
+    
+            }
+        )
 
+    } else{
+        Company.findById(req.companyId, 
+        (err: any, company: ICompany)=>{
+    
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-
-            res.json({'status': Status.Success, 'brands': brands})    
-
-        }
-    )
+                
+            EquipmentBrand.find(
+                { $or : [ {createdBy: req.companyId} , 
+                    { $and: [{industry: company.info.industry}, {createdBy: null}, ]}
+                ]},
+                (err: any, brands: IEquipmentBrand[])=>{
+        
+                    if (err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    }
+        
+                    res.json({'status': Status.Success, 'brands': brands})    
+        
+                }
+            )
+    
+        })
+    }
 
 }

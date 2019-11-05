@@ -30,6 +30,7 @@ import { Company, ICompany } from '../models/Company'
 export const getCompnayId = () => {
 
     
+    
     return async (req: Request, res: Response, next: NextFunction) => {
 
         const user = <IUser>req.user
@@ -46,6 +47,8 @@ export const getCompnayId = () => {
                 req.companyId = company._id
                 next()
             })
+        }else{
+            next()
         }
 
     }

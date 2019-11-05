@@ -2,18 +2,29 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../common/constants");
 const EquipmentBrand_1 = require("../models/EquipmentBrand");
+const Company_1 = require("../models/Company");
 exports.createEquipmentBrand = (req, res) => {
     const params = req.body;
     const user = req.user;
     var userId = null;
+    var industryId = null;
     if (user.permissions.role == 3 /* COMPANY */) {
         userId = user._id;
     }
     if (user.permissions.role != 4 /* GLOBAL_ADMIN */) {
         userId = req.companyId;
     }
+    if (user.permissions.role == 4 /* GLOBAL_ADMIN */) {
+        if (params.industryId == undefined || params.industryId == null) {
+            return res.json({ status: constants_1.Status.Error, message: "Industry Id is required" });
+        }
+        else {
+            industryId = params.industryId;
+        }
+    }
     const brand = new EquipmentBrand_1.EquipmentBrand({
         title: params.title,
+        industry: industryId,
         createdBy: userId
     });
     brand.save((err) => {
@@ -24,11 +35,29 @@ exports.createEquipmentBrand = (req, res) => {
     });
 };
 exports.getEquipmentBrands = (req, res) => {
-    EquipmentBrand_1.EquipmentBrand.find({ $or: [{ createdBy: null }, { createdBy: req.companyId }] }, (err, brands) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
-        res.json({ 'status': constants_1.Status.Success, 'brands': brands });
-    });
+    const user = req.user;
+    if (user.permissions.role == 4 /* GLOBAL_ADMIN */) {
+        EquipmentBrand_1.EquipmentBrand.find({ $or: [{ createdBy: null }, { createdBy: req.companyId }] }, (err, brands) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            res.json({ 'status': constants_1.Status.Success, 'brands': brands });
+        });
+    }
+    else {
+        Company_1.Company.findById(req.companyId, (err, company) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            EquipmentBrand_1.EquipmentBrand.find({ $or: [{ createdBy: req.companyId },
+                    { $and: [{ industry: company.info.industry }, { createdBy: null },] }
+                ] }, (err, brands) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                res.json({ 'status': constants_1.Status.Success, 'brands': brands });
+            });
+        });
+    }
 };
 //# sourceMappingURL=equipmentBrand.js.map

@@ -40,6 +40,9 @@ exports.getCompnayId = () => {
                 next();
             });
         }
+        else {
+            next();
+        }
     });
 };
 //# sourceMappingURL=company.js.map

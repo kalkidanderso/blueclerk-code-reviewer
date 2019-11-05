@@ -43,6 +43,42 @@ exports.sendEmail = function (options) {
         });
     });
 };
+exports.sendEmployeeEmail = function (options) {
+    const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
+    aws_sdk_1.default.config.update({
+        region: AWS_REGION,
+        accessKeyId: AWS_SES_ACCESSKEYID,
+        secretAccessKey: AWS_SES_SECRETACCESSKEY,
+    });
+    const ses = new aws_sdk_1.default.SES({ apiVersion: '2012-10-17' });
+    return new Promise((resolve, reject) => {
+        ses.sendEmail({
+            Source: APP_EMAIL_NOREPLY,
+            Destination: {
+                CcAddresses: [],
+                ToAddresses: [options.to],
+            },
+            Message: {
+                Subject: {
+                    Data: "Email Confirmation with details from Blueclerk.com",
+                },
+                Body: {
+                    Html: {
+                        Data: "Welcome to Blueclerk.com! Your password for " + options.to + " is " + options.password,
+                    },
+                },
+            },
+            ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        }, (err, info) => {
+            if (err) {
+                reject(err);
+            }
+            else {
+                resolve(info);
+            }
+        });
+    });
+};
 exports.uploadImageInS3 = function (req, res, next) {
     const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, AWS_BUCKET_NAME, AWS_REGION } = process.env;
     aws_sdk_1.default.config.update({
