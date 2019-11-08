@@ -167,15 +167,15 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
 export const linkJobToEquipment = (req: Request, res: Response) => {
 
     const params = req.body
-    params.nfcTag = params.nfcTag.replace(/\\/g, '\\')
-    CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
+    const nfcTag = params.nfcTag.replace(/\\/g, '\\')
+    CustomerEquipment.findOne({ 'info.nfcTag': nfcTag })
         .exec((err: any, customerEquipment: ICustomerEquipment) => {
 
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError, "err" : err })
             }
             if (customerEquipment == undefined || customerEquipment == null) {
-                return res.json({ 'status': Status.Error, "message": "customer equipment is null", "tag": params.nfcTag  })
+                return res.json({ 'status': Status.Error, "message": "customer equipment is null", "tag": params.nfcTag, "newtag": nfcTag  })
             }
             return res.json({ 'status': Status.Success, "equipment": customerEquipment })
 
