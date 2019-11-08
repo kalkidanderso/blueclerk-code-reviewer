@@ -167,17 +167,17 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
 export const linkJobToEquipment = (req: Request, res: Response) => {
 
     const params = req.body
-    const nfcTag = params.nfcTag.replace(/\\/g, '\\')
-    CustomerEquipment.findOne({ 'info.nfcTag': nfcTag })
+
+    CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
         .exec((err: any, customerEquipment: ICustomerEquipment) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError, "err" : err })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError, "err": err })
             }
+            
             if (customerEquipment == undefined || customerEquipment == null) {
-                return res.json({ 'status': Status.Error, "message": "customer equipment is null", "tag": params.nfcTag, "newtag": nfcTag  })
+                return res.json({ 'status': Status.Error, 'message': "Customer Equipment not found"})
             }
-            return res.json({ 'status': Status.Success, "equipment": customerEquipment })
 
             var index = customerEquipment.jobs.indexOf(params.jobId)
 
@@ -191,7 +191,7 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
                 (err: any, raw: any) => {
 
                     if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError, "err": err })
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
 
                     return res.json({ 'status': Status.Success, 'message': 'Customer equipment job added successfully.' })
