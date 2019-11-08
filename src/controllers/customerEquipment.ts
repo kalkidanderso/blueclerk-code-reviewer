@@ -171,9 +171,13 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
     CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
         .exec((err: any, customerEquipment: ICustomerEquipment) => {
 
-            if (err || !customerEquipment) {
+            if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError, "err" : err })
             }
+            if (customerEquipment == undefined || customerEquipment == null) {
+                return res.json({ 'status': Status.Error, "message": "customer equipment is null", "tag": params.nfcTag  })
+            }
+            return res.json({ 'status': Status.Success, "equipment": customerEquipment })
 
             var index = customerEquipment.jobs.indexOf(params.jobId)
 

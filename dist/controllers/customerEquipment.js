@@ -118,9 +118,13 @@ exports.linkJobToEquipment = (req, res) => {
     const params = req.body;
     CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
         .exec((err, customerEquipment) => {
-        if (err || !customerEquipment) {
+        if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, "err": err });
         }
+        if (customerEquipment == undefined || customerEquipment == null) {
+            return res.json({ 'status': constants_1.Status.Error, "message": "customer equipment is null", "tag": params.nfcTag });
+        }
+        return res.json({ 'status': constants_1.Status.Success, "equipment": customerEquipment });
         var index = customerEquipment.jobs.indexOf(params.jobId);
         if (index !== -1) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Job already linked to equipment.' });
