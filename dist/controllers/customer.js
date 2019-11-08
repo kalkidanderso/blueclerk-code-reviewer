@@ -77,7 +77,7 @@ exports.updateCustomer = (req, res) => {
             'address.street': params.street,
             'address.city': params.city,
             'address.state': params.state,
-            'address.zipCode': params.email,
+            'address.zipCode': params.zipCode,
             'contact.name': params.contactName,
             'contact.phone': params.phone,
         }, (err, raw) => {
