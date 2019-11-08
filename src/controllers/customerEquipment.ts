@@ -172,7 +172,7 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
         .exec((err: any, customerEquipment: ICustomerEquipment) => {
 
             if (err || !customerEquipment) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError, "err" : err })
             }
 
             var index = customerEquipment.jobs.indexOf(params.jobId)
@@ -187,7 +187,7 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
                 (err: any, raw: any) => {
 
                     if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError, "err": err })
                     }
 
                     return res.json({ 'status': Status.Success, 'message': 'Customer equipment job added successfully.' })

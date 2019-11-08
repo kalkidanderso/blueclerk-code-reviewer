@@ -119,7 +119,7 @@ exports.linkJobToEquipment = (req, res) => {
     CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
         .exec((err, customerEquipment) => {
         if (err || !customerEquipment) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, "err": err });
         }
         var index = customerEquipment.jobs.indexOf(params.jobId);
         if (index !== -1) {
@@ -128,7 +128,7 @@ exports.linkJobToEquipment = (req, res) => {
         customerEquipment.jobs.push(params.jobId);
         customerEquipment.updateOne({ jobs: customerEquipment.jobs }, (err, raw) => {
             if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, "err": err });
             }
             return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer equipment job added successfully.' });
         });
