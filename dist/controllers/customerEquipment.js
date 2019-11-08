@@ -116,6 +116,7 @@ exports.getCustomerEquipmentJobs = (req, res) => {
 };
 exports.linkJobToEquipment = (req, res) => {
     const params = req.body;
+    params.nfcTag = params.nfcTag.replace(/\\/g, '\\');
     CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
         .exec((err, customerEquipment) => {
         if (err) {
