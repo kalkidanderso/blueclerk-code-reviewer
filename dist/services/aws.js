@@ -64,7 +64,43 @@ exports.sendEmployeeEmail = function (options) {
                 },
                 Body: {
                     Html: {
-                        Data: "Welcome to Blueclerk.com! Your password for " + options.to + " is " + options.password,
+                        Data: "<p>Welcome to BlueClerk!  You have been added as a user to the organization " + options.company + "</p><p>Your Role: " + options.role + "</p> <p>Below are your login credentials</p> <a href=\"https://app.blueclerk.com/login/\ target=\"_blank\">app.blueclerk.com</a> <p>Login ID: " + options.to + "</p><p>Temporary Password: " + options.password + "</p><p>We encourage you to download our app on either Android or iOS (links) to fully optimize the system</p><p>Please login to your account and add information for your organization.  If you have any questions about the system, we have a variety of helpful tools.</p><p>Please refer to our help desk <a href=\"dasolgroup.zendesk.com\" target=\"_blank\">dasolgroup.zendesk.com</a></p><p>If you require further assistance, please contact us via Zendesk through the website.  We can also be reached by phone at 512-846-6035</p> <p>For up to date information, we encourage you to like us on <a href=\"www.facebook.com/blueclerk\" target=\"_blank\">Facebook</a> </p>",
+                    },
+                },
+            },
+            ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        }, (err, info) => {
+            if (err) {
+                reject(err);
+            }
+            else {
+                resolve(info);
+            }
+        });
+    });
+};
+exports.sendPasswordEmail = function (options) {
+    const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
+    aws_sdk_1.default.config.update({
+        region: AWS_REGION,
+        accessKeyId: AWS_SES_ACCESSKEYID,
+        secretAccessKey: AWS_SES_SECRETACCESSKEY,
+    });
+    const ses = new aws_sdk_1.default.SES({ apiVersion: '2012-10-17' });
+    return new Promise((resolve, reject) => {
+        ses.sendEmail({
+            Source: APP_EMAIL_NOREPLY,
+            Destination: {
+                CcAddresses: [],
+                ToAddresses: [options.to],
+            },
+            Message: {
+                Subject: {
+                    Data: "Forgot password email from Blueclerk.com",
+                },
+                Body: {
+                    Html: {
+                        Data: "<p>Dear " + options.name + "</p><p>Your new password is below.  If you wish to change your password from this, please login and go to your profile.</p> <br/> <b>" + options.password + "</b><br/><br/> <p>Sincerely,</p><p>BlueClerk</p>",
                     },
                 },
             },

@@ -26,14 +26,15 @@ export const Validations = {
   adminSignUp: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
 
   //Users
-  createManager: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
-  createTechnician: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
-  createOfficeAdmin: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
+  createManager: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
+  createTechnician: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
+  createOfficeAdmin: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
 
   updateProfile: [check('firstName').exists(), check('lastName').exists(), check('imageUrl').exists()],
   changePassword: [check('currentPassword').exists(), check('newPassword').exists()],
   updateCompanyProfile: [check('companyName').exists(), check('logoUrl').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('phone').exists(), check('fax').exists()],
   deleteEmployee: [check('employeeId').exists()],
+  forgotPassword: [check('email').exists()],
 
   //Industry
   createIndustry: [check('title').exists()],
@@ -55,7 +56,7 @@ export const Validations = {
   createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('imageUrl').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists(), check('location').exists()],
   getCustomerEquipments: [check('customerId').exists()],
   linkEquipmentJob: [check('nfcTag').exists(), check('jobId').exists()],
-  getCustomerEquipmentJobs: [check('equipmentId').exists()],
+  getCustomerEquipmentJobs: [check('nfcTag').exists()],
 
   //Job Type
   createJobType: [check('title').exists()],

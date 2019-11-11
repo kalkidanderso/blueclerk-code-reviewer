@@ -202,6 +202,14 @@ router.post(
     validate(Validations.changePassword),
     userController.changePassword)
 
+    router.post(
+    '/forgotPassword',
+    // passport.authenticate('jwt', { session: false }),
+    // getCompnayId(),
+    // checkUserPermissions(Permissions.User_Change_Password),
+    validate(Validations.forgotPassword),
+    userController.fogotPassword)
+
 router.post(
     '/updateCompanyProfile',
     passport.authenticate('jwt', { session: false }),

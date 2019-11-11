@@ -10,7 +10,8 @@ export interface IJob extends Document {
     equipmentId: string
     comment: string
     description: string
-    status: number
+    status: number,
+    createdAt: Date
 }
 
 const JobSchema = new Schema({
@@ -50,7 +51,10 @@ const JobSchema = new Schema({
     status: {
         type: Number,
         default: 0
-    }
+    },
+    createdAt: {
+        type: Date
+    },
 
 })
 

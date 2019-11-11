@@ -100,7 +100,7 @@ export const getCustomerEquipments = (req: Request, res: Response) => {
 export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
 
     const params = req.body
-    CustomerEquipment.findOne({ _id: params.equipmentId })
+    CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
         .exec((err: any, customerEquipment: ICustomerEquipment) => {
 
             if (err || !customerEquipment) {
@@ -140,8 +140,6 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
                     }
     
                     var allJobs = companyJobs.concat(nonCompanyJobs)
-
-                    // return res.json({ 'status': Status.Success, 'jobs': allJobs })
 
                     allJobs.sort(function(a, b){
                         var keyA = new Date(a.dateTime),

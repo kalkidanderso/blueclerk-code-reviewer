@@ -66,7 +66,7 @@ exports.getCustomerEquipments = (req, res) => {
 };
 exports.getCustomerEquipmentJobs = (req, res) => {
     const params = req.body;
-    CustomerEquipment_1.CustomerEquipment.findOne({ _id: params.equipmentId })
+    CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
         .exec((err, customerEquipment) => {
         if (err || !customerEquipment) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -99,7 +99,6 @@ exports.getCustomerEquipmentJobs = (req, res) => {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
                 var allJobs = companyJobs.concat(nonCompanyJobs);
-                // return res.json({ 'status': Status.Success, 'jobs': allJobs })
                 allJobs.sort(function (a, b) {
                     var keyA = new Date(a.dateTime), keyB = new Date(b.dateTime);
                     // Compare the 2 dates

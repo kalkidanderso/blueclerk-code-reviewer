@@ -19,6 +19,7 @@ exports.createJob = (req, res) => {
                 comment: '',
                 description: params.description,
                 equipmentId: params.equipmentId,
+                createdAt: Date.now,
             });
             job.save((err) => {
                 if (err) {

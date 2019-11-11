@@ -233,10 +233,6 @@ paths:
           in: formData
           required: true
           type: string
-        - name: password
-          in: formData
-          required: true
-          type: string
         - name: firstName
           in: formData
           required: true
@@ -271,10 +267,6 @@ paths:
           in: formData
           required: true
           type: string
-        - name: password
-          in: formData
-          required: true
-          type: string
         - name: firstName
           in: formData
           required: true
@@ -306,10 +298,6 @@ paths:
         - application/json
       parameters:
         - name: email
-          in: formData
-          required: true
-          type: string
-        - name: password
           in: formData
           required: true
           type: string
@@ -1237,7 +1225,7 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: equipmentId
+        - name: nfcTag
           in: formData
           required: true
           type: string

@@ -19,6 +19,8 @@ const JobType_1 = require("../models/JobType");
 const EquipmentBrand_1 = require("../models/EquipmentBrand");
 const EquipmentType_1 = require("../models/EquipmentType");
 const config_1 = require("../common/config");
+var generator = require('generate-password');
+var passwordValidator = require('password-validator');
 exports.login = (req, res) => {
     const params = req.body;
     User_1.User.findOne({ 'auth.email': params.email }, (err, user) => {
@@ -176,6 +178,31 @@ exports.changePassword = (req, res) => {
         });
     });
 };
+exports.fogotPassword = (req, res) => {
+    const params = req.body;
+    User_1.User.findOne({ 'auth.email': params.email }, (err, user) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (user == undefined || user == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid email address." });
+        }
+        var password = generator.generate({
+            length: 8,
+            numbers: true,
+            uppercase: true,
+            excludeSimilarCharacters: true,
+            strict: true
+        });
+        user.updateOne({ 'auth.password': password }, (err, raw) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            aws_1.sendPasswordEmail({ to: params.email, name: user.profile.displayName, password: password });
+            return res.json({ 'status': constants_1.Status.Error, 'message': "Email sent." });
+        });
+    });
+};
 exports.updateCompanyProfile = (req, res) => {
     const params = req.body;
     Company_1.Company.findById(req.companyId, function (err, company) {
@@ -237,10 +264,18 @@ const createEmployee = (req, res, role) => {
     checkNoOfUsers(req, res, role, (req, res) => {
         checkEmailExists(req, res, (req, res) => {
             const params = req.body;
+            const roles = ['OfficeAdmin', 'Technician', 'Manager'];
+            var password = generator.generate({
+                length: 8,
+                numbers: true,
+                uppercase: true,
+                excludeSimilarCharacters: true,
+                strict: true
+            });
             const employee = new Employee_1.Employee({
                 auth: {
                     email: params.email,
-                    password: params.password,
+                    password: password,
                 },
                 profile: {
                     firstName: params.firstName,
@@ -280,7 +315,7 @@ const createEmployee = (req, res, role) => {
                         if (err) {
                             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                         }
-                        aws_1.sendEmployeeEmail({ to: params.email, password: params.password });
+                        aws_1.sendEmployeeEmail({ to: params.email, company: company.info.companyName, role: roles[employee.permissions.role], password: password });
                         return res.json({ 'status': constants_1.Status.Success, 'message': 'Employee created successfully.' });
                     });
                 });
@@ -303,6 +338,20 @@ const getEmployeesList = (req, res, role) => {
 };
 const checkEmailExists = (req, res, next) => {
     const params = req.body;
+    var schema = new passwordValidator();
+    schema
+        .is().min(8) // Minimum length 8
+        .is().max(30) // Maximum length 100
+        .has().uppercase() // Must have uppercase letters
+        .has().lowercase() // Must have lowercase letters
+        .has().digits() // Must have digits
+        .has().not().spaces() // Should not have spaces
+        .is().not().oneOf(['Passw0rd', 'Password123']); // Blacklist these values
+    // Validate against a password string
+    console.log(schema.validate(params.passsword));
+    if (params.password && !schema.validate(params.password)) {
+        return res.json({ 'status': constants_1.Status.Error, 'message': "Your passsword is weak chose strong." });
+    }
     User_1.User.findOne({ 'auth.email': params.email }, (err, user) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });

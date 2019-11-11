@@ -44,7 +44,10 @@ const JobSchema = new mongoose_1.Schema({
     status: {
         type: Number,
         default: 0
-    }
+    },
+    createdAt: {
+        type: Date
+    },
 });
 exports.Job = mongoose_1.default.model('Job', JobSchema);
 //# sourceMappingURL=Job.js.map
