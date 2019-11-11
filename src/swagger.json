@@ -734,6 +734,42 @@
         ]
       }
     },
+    "/forgotPassword": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "To change password of any user",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "email",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/deleteEmployee": {
       "post": {
         "tags": [
