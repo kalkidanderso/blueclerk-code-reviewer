@@ -194,12 +194,14 @@ exports.fogotPassword = (req, res) => {
             excludeSimilarCharacters: true,
             strict: true
         });
-        user.updateOne({ 'auth.password': password }, (err, raw) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            aws_1.sendPasswordEmail({ to: params.email, name: user.profile.displayName, password: password });
-            return res.json({ 'status': constants_1.Status.Error, 'message': "Email sent." });
+        user.hashPassword(password, (err, hash) => {
+            user.updateOne({ 'auth.password': hash }, (err, raw) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                aws_1.sendPasswordEmail({ to: params.email, name: user.profile.displayName, password: password });
+                return res.json({ 'status': constants_1.Status.Error, 'message': "Email sent." });
+            });
         });
     });
 };

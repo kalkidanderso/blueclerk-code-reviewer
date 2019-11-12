@@ -272,15 +272,18 @@ export const fogotPassword = (req: Request, res: Response) => {
                 strict: true
             });
 
-            user.updateOne({ 'auth.password': password },
-                (err: any, raw: any) => {
-                    if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                    }
+            user.hashPassword(password, (err: any, hash: string)=> {
 
-                    sendPasswordEmail({ to: params.email, name: user.profile.displayName, password: password })
-                    return res.json({ 'status': Status.Error, 'message': "Email sent." })
-                })
+                user.updateOne({ 'auth.password': hash },
+                    (err: any, raw: any) => {
+                        if (err) {
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
+    
+                        sendPasswordEmail({ to: params.email, name: user.profile.displayName, password: password })
+                        return res.json({ 'status': Status.Error, 'message': "Email sent." })
+                    })
+            })
         })
 }
 

@@ -762,12 +762,7 @@
                             "$ref": "#/definitions/GeneralAPIResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/deleteEmployee": {

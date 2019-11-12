@@ -468,8 +468,6 @@ paths:
           description: Success
           schema:
             $ref: '#/definitions/GeneralAPIResponse'
-      security:
-        - Bearer: []
   /deleteEmployee:
     post:
       tags:
