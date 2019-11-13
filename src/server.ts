@@ -61,7 +61,7 @@ app.use(logger('dev'))
 app.use(
     '/',
     function(req, res){
-       return res.json({msg: "test success"})
+       return res.json({msg: "test success 01"})
     })
 
 //Swagger
