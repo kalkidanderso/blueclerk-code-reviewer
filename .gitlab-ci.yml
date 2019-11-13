@@ -13,7 +13,7 @@ before_script:
 stages:
   - dev
 
-deploy_to_dokku:
+deploy_to_dokku_dev:
   stage: dev
   script:
-    - git push -f dokku@deploy.blueclerk.com:blueclerk-node-api-dev HEAD:refs/for/dev
+    - git push -f dokku@deploy.blueclerk.com:blueclerk-node-api-dev HEAD:dev
