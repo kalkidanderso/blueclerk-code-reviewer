@@ -3,16 +3,16 @@ job:
     - git clean -fd
 
 
-    # Install ssh-agent if not already installed, it is required by Docker.
-    # (change apt-get to yum if you use a CentOS-based image)
-  - 'which ssh-agent || ( apk update -y && apk add openssh-client git -y )'
-    # Run ssh-agent (inside the build environment)
-  - eval $(ssh-agent -s)
-  - rm -rf ~/.ssh
-  - mkdir -p ~/.ssh
-  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
-  - chmod 600 ~/.ssh/id_rsa
-  - ssh-keyscan -H 'deploy.blueclerk.com' >> ~/.ssh/known_hosts
+        # Install ssh-agent if not already installed, it is required by Docker.
+        # (change apt-get to yum if you use a CentOS-based image)
+      - 'which ssh-agent || ( apk update -y && apk add openssh-client git -y )'
+        # Run ssh-agent (inside the build environment)
+      - eval $(ssh-agent -s)
+      - rm -rf ~/.ssh
+      - mkdir -p ~/.ssh
+      - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+      - chmod 600 ~/.ssh/id_rsa
+      - ssh-keyscan -H 'deploy.blueclerk.com' >> ~/.ssh/known_hosts
 
 stages:
   - dev
