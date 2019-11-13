@@ -16,4 +16,4 @@ stages:
 deploy_to_dokku:
   stage: dev
   script:
-    - git push -f dokku@deploy.blueclerk.com:blueclerk-node-api-dev dev
+    - git push -f dokku@deploy.blueclerk.com:blueclerk-node-api-dev dev:master
