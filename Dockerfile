@@ -12,7 +12,7 @@ RUN npm install request
 RUN npm install
 RUN npm rebuild bcrypt --build-from-source
 COPY . .
-EXPOSE 3008
+EXPOSE 3006
 RUN npm run tsc
 
 CMD ["node", "dist/server.js"]
