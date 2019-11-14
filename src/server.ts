@@ -57,13 +57,6 @@ passportMiddleWare(passport)
 //Logger
 app.use(logger('dev'))
 
-// Testing deploy repos
-app.use(
-    '/',
-    function(req, res){
-       return res.json({msg: "test success 01"})
-    })
-
 //Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
