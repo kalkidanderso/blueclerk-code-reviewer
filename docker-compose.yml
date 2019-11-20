@@ -8,3 +8,5 @@ services:
       NODE_ENV: development
     ports:
       - 3006:3006
+      - 3006:80
+      - 3006:443
