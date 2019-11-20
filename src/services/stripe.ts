@@ -2,12 +2,12 @@ import { stripeConfig } from '../common/config'
 import Stripe from 'stripe';
 
 export const createCustomer = (email: string, description: string, token: string, callback: Function) => {
-    
+
     const stripe = new Stripe(stripeConfig.sk_secret);
     stripe.customers.create({
         email: email,
         description: description,
-        source: token // obtained with Stripe.js
+        // source: token // obtained with Stripe.js
     
     }).then(function( customer: any) {
         // asynchronously called
@@ -23,7 +23,7 @@ export const createCustomer = (email: string, description: string, token: string
                 message = err.message;
                 break;
             default:
-                message = "Error please try again";
+                message = err.message;
                 break;
         }
         return callback(0, message);
@@ -46,7 +46,7 @@ export const detachCustomerSource = (stripeId: String, cardId: String, callback:
                 message = err.message;
                 break;
             default:
-                message = "Error please try again";
+                message = err.message;
                 break;
         }
         return callback(message);
@@ -74,7 +74,7 @@ export const addCustomerSource = (stripeId: String, token: String, callback: Fun
                     message = err.message;
                     break;
                 default:
-                    message = "Error please try again";
+                    message = err.message;
                     break;
             }
             return callback(0, null, message);
@@ -108,7 +108,7 @@ export const chargeSubscription = function (amount: any, customerId: String, cal
                 message = err.message;
                 break;
             default:
-                message = "Error please try again";
+                message = err.message;
                 break;
         }
         
@@ -143,7 +143,7 @@ export const chargeCustomer = function (amount: any, customerId: String,  cardId
                 message = err.message;
                 break;
             default:
-                message = "Error please try again";
+                message = err.message;
                 break;
         }
         return callback(0, null, message);
@@ -176,7 +176,7 @@ export const chargeCustomer = function (amount: any, customerId: String,  cardId
 //                 message = err.message;
 //                 break;
 //             default:
-//                 message = "Error please try again";
+//                 message = err.message;
 //                 break;
 //         }
 //         return callback(0, null, message);
@@ -212,7 +212,7 @@ export const subscribe = function (customerId: String, cardId: String, planId: S
                     message = err.message;
                     break;
                 default:
-                    message = "Error please try again";
+                    message = err.message;
                     break;
             }
             return callback(0, null, message);
@@ -227,7 +227,7 @@ export const subscribe = function (customerId: String, cardId: String, planId: S
                 message = err.message;
                 break;
             default:
-                message = "Error please try again";
+                message = err.message;
                 break;
         }
         return callback(0, null, message);
@@ -255,7 +255,7 @@ export const unsubscribe = function (subscriptionId: String, callback: Function)
                 message = err.message;
                 break;
             default:
-                message = "Error please try again";
+                message = err.message;
                 break;
         }
         return callback(0, message);
@@ -291,7 +291,7 @@ export const listSubscriptions = function (callback: Function) {
                 message = err.message;
                 break;
             default:
-                message = "Error please try again";
+                message = err.message;
                 break;
         }
         return callback(0, null, message);

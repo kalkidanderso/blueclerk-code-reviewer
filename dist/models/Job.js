@@ -12,7 +12,7 @@ const JobSchema = new mongoose_1.Schema({
     dateTime: Date,
     technician: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Employee',
+        ref: 'User',
         required: true
     },
     customer: {
@@ -32,7 +32,7 @@ const JobSchema = new mongoose_1.Schema({
     },
     equipmentId: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Company',
+        ref: 'CustomerEquipment',
         default: null
     },
     comment: {

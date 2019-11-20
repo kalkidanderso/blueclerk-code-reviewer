@@ -19,7 +19,7 @@ const JobSchema = new Schema({
     dateTime: Date,
     technician: {
         type: Schema.Types.ObjectId,
-        ref: 'Employee',
+        ref: 'User',
         required: true
     },
     customer: {
@@ -39,7 +39,7 @@ const JobSchema = new Schema({
     },
     equipmentId: {
         type: Schema.Types.ObjectId,
-        ref: 'Company',
+        ref: 'CustomerEquipment',
         default: null
     },
     comment: {

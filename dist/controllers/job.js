@@ -19,7 +19,7 @@ exports.createJob = (req, res) => {
                 comment: '',
                 description: params.description,
                 equipmentId: params.equipmentId,
-                createdAt: Date.now,
+                createdAt: Date.now(),
             });
             job.save((err) => {
                 if (err) {
@@ -45,9 +45,11 @@ exports.createJob = (req, res) => {
             comment: '',
             description: params.description,
             equipmentId: params.equipmentId,
+            createdAt: Date.now(),
         });
         job.save((err) => {
             if (err) {
+                console.log(err);
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });

@@ -10,7 +10,6 @@ exports.createCustomer = (email, description, token, callback) => {
     stripe.customers.create({
         email: email,
         description: description,
-        source: token // obtained with Stripe.js
     }).then(function (customer) {
         // asynchronously called
         return callback(1, customer);
@@ -23,7 +22,7 @@ exports.createCustomer = (email, description, token, callback) => {
                 message = err.message;
                 break;
             default:
-                message = "Error please try again";
+                message = err.message;
                 break;
         }
         return callback(0, message);
@@ -42,7 +41,7 @@ exports.detachCustomerSource = (stripeId, cardId, callback) => {
                 message = err.message;
                 break;
             default:
-                message = "Error please try again";
+                message = err.message;
                 break;
         }
         return callback(message);
@@ -64,7 +63,7 @@ exports.addCustomerSource = (stripeId, token, callback) => {
                 message = err.message;
                 break;
             default:
-                message = "Error please try again";
+                message = err.message;
                 break;
         }
         return callback(0, null, message);
@@ -92,7 +91,7 @@ exports.chargeSubscription = function (amount, customerId, callback) {
                 message = err.message;
                 break;
             default:
-                message = "Error please try again";
+                message = err.message;
                 break;
         }
         return callback(0, null, message);
@@ -121,7 +120,7 @@ exports.chargeCustomer = function (amount, customerId, cardId, callback) {
                 message = err.message;
                 break;
             default:
-                message = "Error please try again";
+                message = err.message;
                 break;
         }
         return callback(0, null, message);
@@ -150,7 +149,7 @@ exports.chargeCustomer = function (amount, customerId, cardId, callback) {
 //                 message = err.message;
 //                 break;
 //             default:
-//                 message = "Error please try again";
+//                 message = err.message;
 //                 break;
 //         }
 //         return callback(0, null, message);
@@ -181,7 +180,7 @@ exports.subscribe = function (customerId, cardId, planId, callback) {
                     message = err.message;
                     break;
                 default:
-                    message = "Error please try again";
+                    message = err.message;
                     break;
             }
             return callback(0, null, message);
@@ -195,7 +194,7 @@ exports.subscribe = function (customerId, cardId, planId, callback) {
                 message = err.message;
                 break;
             default:
-                message = "Error please try again";
+                message = err.message;
                 break;
         }
         return callback(0, null, message);
@@ -215,7 +214,7 @@ exports.unsubscribe = function (subscriptionId, callback) {
                 message = err.message;
                 break;
             default:
-                message = "Error please try again";
+                message = err.message;
                 break;
         }
         return callback(0, message);
@@ -244,7 +243,7 @@ exports.listSubscriptions = function (callback) {
                 message = err.message;
                 break;
             default:
-                message = "Error please try again";
+                message = err.message;
                 break;
         }
         return callback(0, null, message);

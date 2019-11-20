@@ -26,7 +26,7 @@ export const createJob = (req: Request, res: Response) => {
                     comment: '',
                     description: params.description,
                     equipmentId: params.equipmentId,
-                    createdAt: Date.now,
+                    createdAt: Date.now(),
                 }
             )
         
@@ -59,11 +59,14 @@ export const createJob = (req: Request, res: Response) => {
                 comment: '',
                 description: params.description,
                 equipmentId: params.equipmentId,
+                createdAt: Date.now(),
             }
         )
     
         job.save((err: any) => {
             if (err) {
+                console.log(err);
+                
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
