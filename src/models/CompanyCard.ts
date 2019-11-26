@@ -3,6 +3,10 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface ICompanyCard extends Document {
 
     ending: String
+    expiryMonth: String,
+    expiryYear: String,
+    cardType: String,
+    name: String,
     token: String
     cardStripeId: String
     date: Date
@@ -12,6 +16,10 @@ export interface ICompanyCard extends Document {
 const CompanyCardSchema = new Schema({
 
     ending: String,
+    expiryMonth: String,
+    expiryYear: String,
+    cardType: String,
+    name: String,
     token: String,
     cardStripeId: String,
     createdAt: {

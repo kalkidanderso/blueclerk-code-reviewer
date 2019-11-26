@@ -513,8 +513,35 @@ exports.getAllEmployees = (req, res) => {
         if (err || !company) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        res.json({ 'status': constants_1.Status.Success, 'employees': company.employees });
+        const employees = company.employees;
+        company.employees = undefined;
+        company.userPermissions = undefined;
+        company.auth = undefined;
+        company.permissions = undefined;
+        company.address = undefined;
+        company.stripeId = undefined;
+        company.address = undefined;
+        company.contact = undefined;
+        company.employees = undefined;
+        company.customers = undefined;
+        company.maxTechnicians = undefined;
+        company.maxManagers = undefined;
+        company.maxOfficeAdmins = undefined;
+        company.other = undefined;
+        company.info = undefined;
+        res.json({ 'status': constants_1.Status.Success, 'employees': employees, 'company': company });
     });
+    // Company.findOne({ _id: req.companyId })
+    //     .populate({
+    //         path: 'employees',
+    //         select: '_id profile.displayName',
+    //     })
+    //     .exec((err: any, company: ICompany) => {
+    //         if (err || !company) {
+    //             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+    //         }
+    //         res.json({ 'status': Status.Success, 'employees': company.employees })
+    //     })
 };
 exports.getEmployeesForJob = (req, res) => {
     Employee_1.Employee.find({ $and: [{ company: new mongodb_1.ObjectId(req.companyId) }, { 'permissions.role': { $ne: 0 } }] }, 'id profile.displayName', (err, employees) => {

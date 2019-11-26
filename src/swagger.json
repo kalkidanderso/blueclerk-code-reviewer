@@ -1968,6 +1968,12 @@
             "required": true,
             "type": "string",
             "description": "Id of job to link to the scaned customer equipment"
+          },
+          {
+            "name": "comment",
+            "in": "formData",
+            "type": "string",
+            "description": "additional note by tech while scaning"
           }
         ],
         "responses": {

@@ -192,7 +192,25 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
 
-                    return res.json({ 'status': Status.Success, 'message': 'Customer equipment job added successfully.' })
+                    if(params.comment != undefined || params.comment != null) {
+                        Job.updateOne({_id: params.jobId}, {comment: params.comment, equipmentId:customerEquipment._id, timeOfScan: Date.now() }, (err: any, raw: any) =>{
+
+                            if (err) {
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            }
+                            return res.json({ 'status': Status.Success, 'message': 'Customer equipment job added successfully.' })
+                        })
+                    }else{
+                        Job.updateOne({_id: params.jobId}, {equipmentId:customerEquipment._id, timeOfScan: Date.now() }, (err: any, raw: any) =>{
+
+                            if (err) {
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            }
+                            return res.json({ 'status': Status.Success, 'message': 'Customer equipment job added successfully.' })
+                        })
+                        // return res.json({ 'status': Status.Success, 'message': 'Customer equipment job added successfully.' })
+                    }
+
                 }
             )
         })

@@ -132,7 +132,23 @@ exports.linkJobToEquipment = (req, res) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer equipment job added successfully.' });
+            if (params.comment != undefined || params.comment != null) {
+                Job_1.Job.updateOne({ _id: params.jobId }, { comment: params.comment, equipmentId: customerEquipment._id, timeOfScan: Date.now() }, (err, raw) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer equipment job added successfully.' });
+                });
+            }
+            else {
+                Job_1.Job.updateOne({ _id: params.jobId }, { equipmentId: customerEquipment._id, timeOfScan: Date.now() }, (err, raw) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer equipment job added successfully.' });
+                });
+                // return res.json({ 'status': Status.Success, 'message': 'Customer equipment job added successfully.' })
+            }
         });
     });
 };

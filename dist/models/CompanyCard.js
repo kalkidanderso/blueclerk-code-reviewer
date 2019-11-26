@@ -10,6 +10,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const CompanyCardSchema = new mongoose_1.Schema({
     ending: String,
+    expiryMonth: String,
+    expiryYear: String,
+    cardType: String,
+    name: String,
     token: String,
     cardStripeId: String,
     createdAt: {

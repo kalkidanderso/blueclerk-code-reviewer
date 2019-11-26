@@ -38,7 +38,11 @@ export const createCompanyCard = (req: Request, res: Response) => {
                         if(status == 1){
                             
                             card.updateOne({
-                                cardStripeId: source.id
+                                cardStripeId: source.id,
+                                expiryMonth: source.exp_month,
+                                expiryYear: source.exp_year,
+                                cardType: source.brand,
+                                name: source.name
                             }).exec((err: any, raw: any)=>{
                                 if (err) {
                                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -121,7 +125,11 @@ const addCardToCompany = (req: Request, res: Response) => {
         addCustomerSource(company.stripeId, params.token, (status: any, source: any, message: any)=>{
             if(status == 1){
                 card.updateOne({
-                    cardStripeId: source.id
+                    cardStripeId: source.id,
+                    expiryMonth: source.exp_month,
+                    expiryYear: source.exp_year,
+                    cardType: source.brand,
+                    name: source.name
                 }).exec((err: any, raw: any)=>{
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -191,7 +199,7 @@ export const getCompanyCards = (req: Request, res: Response) => {
 
     CompanyCard.find(
         {company: new ObjectId(req.companyId)},
-        '_id ending',
+        '_id ending expiryMonth expiryYear name cardType',
         (err: any, cards: ICompanyCard[]) => {
 
             if (err) {

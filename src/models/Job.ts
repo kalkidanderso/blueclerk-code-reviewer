@@ -11,7 +11,8 @@ export interface IJob extends Document {
     comment: string
     description: string
     status: number,
-    createdAt: Date
+    createdAt: Date,
+    timeOfScan: Date,
 }
 
 const JobSchema = new Schema({
@@ -53,6 +54,9 @@ const JobSchema = new Schema({
         default: 0
     },
     createdAt: {
+        type: Date
+    },
+    timeOfScan: {
         type: Date
     },
 

@@ -30,7 +30,11 @@ exports.createCompanyCard = (req, res) => {
                     stripe_1.addCustomerSource(customer.id, params.token, (status, source, message) => {
                         if (status == 1) {
                             card.updateOne({
-                                cardStripeId: source.id
+                                cardStripeId: source.id,
+                                expiryMonth: source.exp_month,
+                                expiryYear: source.exp_year,
+                                cardType: source.brand,
+                                name: source.name
                             }).exec((err, raw) => {
                                 if (err) {
                                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -96,7 +100,11 @@ const addCardToCompany = (req, res) => {
         stripe_1.addCustomerSource(company.stripeId, params.token, (status, source, message) => {
             if (status == 1) {
                 card.updateOne({
-                    cardStripeId: source.id
+                    cardStripeId: source.id,
+                    expiryMonth: source.exp_month,
+                    expiryYear: source.exp_year,
+                    cardType: source.brand,
+                    name: source.name
                 }).exec((err, raw) => {
                     if (err) {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -148,7 +156,7 @@ exports.removeCompanyCard = (req, res) => {
     });
 };
 exports.getCompanyCards = (req, res) => {
-    CompanyCard_1.CompanyCard.find({ company: new mongodb_1.ObjectId(req.companyId) }, '_id ending', (err, cards) => {
+    CompanyCard_1.CompanyCard.find({ company: new mongodb_1.ObjectId(req.companyId) }, '_id ending expiryMonth expiryYear name cardType', (err, cards) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
