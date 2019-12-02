@@ -170,6 +170,10 @@ exports.getJobDetails = (req, res) => {
         select: 'title'
     })
         .populate({
+        path: 'equipmentId',
+        select: 'info.model info.serialNumber info.imageUrl'
+    })
+        .populate({
         path: 'company',
         select: 'info profile address contact'
     })
