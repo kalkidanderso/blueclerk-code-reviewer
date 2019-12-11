@@ -317,42 +317,6 @@
         }
       }
     },
-    "/removeIndustry": {
-      "post": {
-        "tags": [
-          "Industry"
-        ],
-        "summary": "To remove an industry",
-        "description": "Only a global admin can remove an industry",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "name": "industryId",
-            "in": "formData",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "$ref": "#/definitions/GeneralAPIResponse"
-            }
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
     "/createManager": {
       "post": {
         "tags": [

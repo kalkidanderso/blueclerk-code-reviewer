@@ -121,13 +121,13 @@ router.post(
     industryController.getIndustries
 )
 
-router.post(
-    '/removeIndustry',
-    passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.GLOBAL_ADMIN),
-    validate(Validations.removeIndustry),
-    industryController.removeIndustry
-)
+// router.post(
+//     '/removeIndustry',
+//     passport.authenticate('jwt', { session: false }),
+//     checkPermissions(Role.GLOBAL_ADMIN),
+//     validate(Validations.removeIndustry),
+//     industryController.removeIndustry
+// )
 
 //Users
 router.post(

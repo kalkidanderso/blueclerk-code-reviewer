@@ -47,7 +47,13 @@ router.post('/getEmployeePermissions', passport_1.default.authenticate('jwt', { 
 //Industry
 router.post('/createIndustry', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(4 /* GLOBAL_ADMIN */), validator_1.validate(validator_1.Validations.createIndustry), industryController.createIndustry);
 router.post('/getIndustries', industryController.getIndustries);
-router.post('/removeIndustry', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(4 /* GLOBAL_ADMIN */), validator_1.validate(validator_1.Validations.removeIndustry), industryController.removeIndustry);
+// router.post(
+//     '/removeIndustry',
+//     passport.authenticate('jwt', { session: false }),
+//     checkPermissions(Role.GLOBAL_ADMIN),
+//     validate(Validations.removeIndustry),
+//     industryController.removeIndustry
+// )
 //Users
 router.post('/createManager', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(8 /* User_Create_Manager */), validator_1.validate(validator_1.Validations.createManager), company_1.getCompnayId(), userController.createManager);
 router.post('/createTechnician', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(10 /* User_Create_Technician */), validator_1.validate(validator_1.Validations.createTechnician), company_1.getCompnayId(), userController.createTechnician);
