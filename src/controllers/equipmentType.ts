@@ -50,11 +50,14 @@ export const createEquipmentType = (req: Request, res: Response) => {
 export const getEquipmentTypes = (req: Request, res: Response) => {
 
     const user = <IUser>req.user
-
+    var companyId = req.companyId;
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
     if(user.permissions.role == Role.GLOBAL_ADMIN) {
 
         EquipmentType.find(
-            { $or: [ {createdBy: null}, {createdBy: req.companyId} ]},
+            { $or: [ {createdBy: null}, {createdBy: companyId} ]},
             (err: any, types: IEquipmentType[])=>{
     
                 if (err) {
@@ -68,7 +71,7 @@ export const getEquipmentTypes = (req: Request, res: Response) => {
 
     } else {
 
-        Company.findById(req.companyId, 
+        Company.findById(companyId, 
         (err: any, company: ICompany)=>{
     
             if (err) {
@@ -76,7 +79,7 @@ export const getEquipmentTypes = (req: Request, res: Response) => {
             }
                 
             EquipmentType.find(
-                { $or : [ {createdBy: req.companyId} , 
+                { $or : [ {createdBy: companyId} , 
                     { $and: [{industry: company.info.industry}, {createdBy: null}, ]}
                 ]},
                 (err: any, types: IEquipmentType[])=>{

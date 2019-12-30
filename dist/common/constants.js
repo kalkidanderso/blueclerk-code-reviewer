@@ -11,6 +11,28 @@ exports.Messages = {
     DuplicateEmail: 'Email address already registered. Please try with some other email address',
     UnAuthorized: 'You are not authorized for this action. Please contact admin for more details.',
     AccountDeleted: 'You account has been deleted. Please contact admin for more details.',
+    AgreeToTermAndConditions: 'You must agree to terms and conditions of blueclerk.',
+};
+exports.ContractorPermissions = {
+    on: [
+        20 /* Equipment_Type_Get */,
+        22 /* Equipment_Brand_Get */,
+        26 /* Customer_Get_All */,
+        27 /* Customer_Equipment_Create */,
+        28 /* Customer_Equipment_Get_All */,
+        29 /* Customer_Equipment_Get_Jobs */,
+        30 /* Customer_Equipment_Assign_Job */,
+        32 /* Job_Type_Get */,
+        33 /* Job_Create */,
+        34 /* Job_Get_All */,
+        35 /* Job_Get_Technician */,
+        36 /* Job_Update */,
+        37 /* Job_Edit */,
+        38 /* Job_Start */,
+        39 /* Job_Finish */,
+        40 /* Job_Detail */,
+        41 /* Image_Upload */,
+    ]
 };
 exports.UserPermissions = {
     0: {
@@ -269,6 +291,12 @@ exports.UserPermissions = {
             57 /* Tags_Get_Orders */,
             58 /* Subscription_Buy */,
             59 /* Subscription_Cancel */,
+            60 /* Start_Contract */,
+            61 /* Invite_Contractor */,
+            64 /* Add_Contractor_Permission */,
+            66 /* Get_Company_Contracts */,
+            63 /* Cancel_Finish_Contract */,
+            68 /* Company_Subscribe */
         ],
         off: [0 /* None */],
     }

@@ -8,7 +8,9 @@ export const addCompanySubscriptions = (req: Request, res: Response) => {
 
     const company = <ICompany>req.company
     const params = req.body
-
+    if (company.paid == false &&  new Date() > company.chargeDate) {
+        return res.json({ 'status': Status.Error, 'message': 'You can\'t buy subscription contact blueclerk admin for details.' })
+    }
     if(company.stripeId == undefined || company.stripeId == '') {
         return res.json({status: Status.Error, message: "Company payment method required."})
     }
@@ -64,7 +66,9 @@ export const removeCompanySubscriptions = (req: Request, res: Response) => {
 
     const company = <ICompany>req.company
     const params = req.body
-
+    if (company.paid == false &&  new Date() > company.chargeDate) {
+        return res.json({ 'status': Status.Error, 'message': 'You can\'t cancel subscription contact blueclerk admin for details.' })
+    }
     if(company.stripeId == undefined || company.stripeId == '') {
         return res.json({status: Status.Error, message: "Company payment method required."})
     }
