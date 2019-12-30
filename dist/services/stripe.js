@@ -28,6 +28,55 @@ exports.createCustomer = (email, description, token, callback) => {
         return callback(0, message);
     });
 };
+exports.addCustomerAndCharge = (email, description, token, amount, callback) => {
+    const stripe = new stripe_1.default(config_1.stripeConfig.sk_secret);
+    stripe.customers.create({
+        email: email,
+        description: description,
+        source: token
+    }).then(function (customer) {
+        // asynchronously called
+        let total = amount * 100;
+        total = Math.ceil(total);
+        if (total < 100) {
+            return callback(0, null, "Total amount must be greater then 1$");
+        }
+        stripe.charges.create({
+            amount: total,
+            currency: "usd",
+            customer: customer.id
+        }).then(function (charge) {
+            // asynchronously called
+            return callback(1, customer, charge, '');
+        }).catch(function (err) {
+            var message = "";
+            switch (err.type) {
+                case 'StripeCardError':
+                    // A declined card error
+                    message = err.message;
+                    break;
+                default:
+                    message = err.message;
+                    break;
+            }
+            return callback(0, null, null, message);
+        });
+        // return callback(1, customer);
+    }).catch(function (err) {
+        // asynchronously called
+        var message = "";
+        switch (err.type) {
+            case 'StripeCardError':
+                // A declined card error
+                message = err.message;
+                break;
+            default:
+                message = err.message;
+                break;
+        }
+        return callback(0, null, null, message);
+    });
+};
 exports.detachCustomerSource = (stripeId, cardId, callback) => {
     const stripe = require("stripe")(config_1.stripeConfig.sk_secret);
     stripe.customers.deleteSource(stripeId, cardId)

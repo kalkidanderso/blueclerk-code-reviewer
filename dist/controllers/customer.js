@@ -5,6 +5,10 @@ const Customer_1 = require("../models/Customer");
 const Company_1 = require("../models/Company");
 exports.createCustomer = (req, res) => {
     const params = req.body;
+    var companyId = req.companyId;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId;
+    }
     const customer = new Customer_1.Customer({
         info: {
             name: params.name,
@@ -20,7 +24,7 @@ exports.createCustomer = (req, res) => {
             name: params.contactName,
             phone: params.phone,
         },
-        company: req.companyId
+        company: companyId
     });
     customer.save((err) => {
         if (err) {
@@ -42,6 +46,10 @@ exports.createCustomer = (req, res) => {
 };
 exports.getCustomers = (req, res) => {
     const params = req.body;
+    var companyId = req.companyId;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId;
+    }
     var filter;
     if (params.includeActive == 'true' && params.includeNonActive == 'true') {
         filter = {};
@@ -52,7 +60,11 @@ exports.getCustomers = (req, res) => {
     else {
         filter = { 'isActive': { $eq: false } };
     }
-    Company_1.Company.findOne({ _id: req.companyId })
+    var companyId = companyId;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId;
+    }
+    Company_1.Company.findOne({ _id: companyId })
         .populate({
         path: 'customers',
         match: filter,

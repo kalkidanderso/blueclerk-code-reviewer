@@ -1,10 +1,11 @@
 import {Request, Response, response} from 'express'
-import { Status, Role, Messages, UserPermissions } from '../common/constants'
+import { Status, Role, Messages, UserPermissions, ContractorPermissions } from '../common/constants'
 import {sendEmail} from '../services/aws'
 
 import { User, IUser } from '../models/User'
 import { Company, ICompany } from '../models/Company'
 import { Employee, IEmployee } from '../models/Employee'
+import { Contract, IContract } from '../models/Contract'
 import { ObjectId } from 'mongodb'
 
 export const getAllPermissions = (req: Request, res: Response) => {
@@ -229,5 +230,35 @@ const getPermissionByEmployeeId = (req: Request, res:Response, company: ICompany
         next(req, res, employeePermissions)
 
 
+    })
+}
+
+export const addContractorPermissions = (req: Request, res: Response) => {
+
+    const params = req.body
+
+    var permissions = params.permissions.split(',').map(Number)
+    let checker = (arr: any, target: any) => target.every((v: any) => arr.includes(v));
+    
+    if(!checker(ContractorPermissions.on, permissions)) {
+        return res.json({'status': Status.Error, 'message': 'Invalid permissions for contractor'})
+    }
+    
+    Contract.findOne( {contractor: params.contractorId, company: req.companyId}, 
+        (err: any, contract: IContract) => {
+
+        if (err) {
+            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }
+        
+        contract.updateOne({
+            extraPermissions: permissions
+        }, (err: any, raw: any)=>{
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+
+            return res.json({'status': Status.Success, 'message': 'Contractor permissions added successfully.'})   
+        })
     })
 }

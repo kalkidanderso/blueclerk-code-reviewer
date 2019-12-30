@@ -24,8 +24,16 @@ exports.validate = (validations) => {
 exports.Validations = {
     //Auth
     login: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('password').exists()],
+    // companySubscribe: [check('agreedStatus').exists()],
+    agree: [express_validator_1.check('agreedStatus').exists()],
     signUp: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('password').exists(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists(), express_validator_1.check('companyName').exists(), express_validator_1.check('industryId').exists()],
     adminSignUp: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('password').exists(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists()],
+    contractorSignup: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('password').exists(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists(), express_validator_1.check('companyName').exists(), express_validator_1.check('industryId').exists()],
+    searchContractor: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail()],
+    inviteContractor: [express_validator_1.check('contractorId').exists()],
+    updateContract: [express_validator_1.check('contractId').exists(), express_validator_1.check('status').exists()],
+    contractorPermissions: [express_validator_1.check('contractorId').exists(), express_validator_1.check('permissions').exists()],
+    upgradeToCompany: [express_validator_1.check('token').exists(), express_validator_1.check('ending').exists()],
     //Users
     createManager: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists()],
     createTechnician: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists()],
@@ -50,7 +58,7 @@ exports.Validations = {
     //Customer Equipment
     createCustomerEquipment: [express_validator_1.check('model').exists(), express_validator_1.check('serialNumber').exists(), express_validator_1.check('nfcTag').exists(), express_validator_1.check('imageUrl').exists(), express_validator_1.check('equipmentTypeId').exists(), express_validator_1.check('equipmentBrandId').exists(), express_validator_1.check('customerId').exists(), express_validator_1.check('location').exists()],
     getCustomerEquipments: [express_validator_1.check('customerId').exists()],
-    linkEquipmentJob: [express_validator_1.check('nfcTag').exists(), express_validator_1.check('jobId').exists()],
+    linkEquipmentJob: [express_validator_1.check('nfcTag').exists(), express_validator_1.check('jobId').exists(), express_validator_1.check('comment').exists()],
     getCustomerEquipmentJobs: [express_validator_1.check('nfcTag').exists()],
     //Job Type
     createJobType: [express_validator_1.check('title').exists()],
@@ -73,7 +81,7 @@ exports.Validations = {
     createEquipmentInventory: [express_validator_1.check('dateTime').exists()],
     // Tags
     placeOrder: [express_validator_1.check('noOfTags').exists(), express_validator_1.check('total').exists(), express_validator_1.check('tax').exists(), express_validator_1.check('cardId').exists(), express_validator_1.check('street').exists(), express_validator_1.check('city').exists(), express_validator_1.check('state').exists(), express_validator_1.check('zipCode').exists(),],
-    // Comapny Cards
+    // Company Cards
     addCompanyCard: [express_validator_1.check('token').exists(), express_validator_1.check('ending').exists()],
     removeCompanyCard: [express_validator_1.check('cardId').exists()],
     subscribe: [express_validator_1.check('cardId').exists(), express_validator_1.check('planId').exists()],
