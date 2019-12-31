@@ -1405,6 +1405,42 @@
         ]
       }
     },
+    "/agreeTermAndCondition": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Employee agree to terms and condition",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "agreedStatus",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/createEquipmentType": {
       "post": {
         "tags": [
@@ -3428,6 +3464,34 @@
             "type": "string",
             "description": "No of technicians company wants to remove from subscription, if there is none to cancel just send 0 otherwise (1,2,3,...)"
           }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/subscribe": {
+      "post": {
+        "tags": [
+          "Subscription"
+        ],
+        "summary": "Company pay subscription for its own account after trial expires",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
         ],
         "responses": {
           "200": {
