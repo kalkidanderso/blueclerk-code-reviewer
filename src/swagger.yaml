@@ -887,28 +887,6 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
-  /agreeTermAndCondition:
-    post:
-      tags:
-        - Users
-      summary: Employee agree to terms and condition
-      description: ''
-      consumes:
-        - application/x-www-form-urlencoded
-      produces:
-        - application/json
-      parameters:
-        - name: agreedStatus
-          in: formData
-          required: true
-          type: string
-      responses:
-        '200':
-          description: Success
-          schema:
-            $ref: '#/definitions/GeneralAPIResponse'
-      security:
-        - Bearer: []
   /createEquipmentType:
     post:
       tags:
@@ -2182,23 +2160,7 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
-  /subscribe:
-    post:
-      tags:
-        - Subscription
-      summary: Company pay subscription for its own account after trial expires
-      description: ''
-      consumes:
-        - application/x-www-form-urlencoded
-      produces:
-        - application/json
-      responses:
-        '200':
-          description: Success
-          schema:
-            $ref: '#/definitions/GeneralAPIResponse'
-      security:
-        - Bearer: []
+  
   /getDefaultPermissions:
     post:
       tags:
