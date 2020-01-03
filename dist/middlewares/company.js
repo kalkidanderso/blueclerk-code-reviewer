@@ -10,7 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const Company_1 = require("../models/Company");
-const constants_1 = require("../common/constants");
 // export const getCompnayId = () => {
 //     return async (req: Request, res: Response, next: NextFunction) => {
 //         const user = <IUser>req.user
@@ -28,23 +27,10 @@ const constants_1 = require("../common/constants");
 exports.getCompnayId = () => {
     return (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         const user = req.user;
-        req.otherCompanyId = undefined;
-        // check if contractor or organization is making the request
-        if (req.body.companyId != undefined) {
-            req.otherCompanyId = req.body.companyId;
-        }
         if (user.permissions.role == 3 /* COMPANY */) {
-            Company_1.Company.findById(user._id, (err, company) => {
-                if (company.type == 1 && (req.body.companyId == undefined || req.body.companyId == null)) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': 'Company id is required.' });
-                }
-                else {
-                    req.company = company;
-                    req.companyId = company._id;
-                    next();
-                    return;
-                }
-            });
+            req.company = user;
+            req.companyId = user._id;
+            next();
         }
         else if (user.permissions.role != 4 /* GLOBAL_ADMIN */) {
             const employee = req.user;
@@ -52,12 +38,10 @@ exports.getCompnayId = () => {
                 req.company = company;
                 req.companyId = company._id;
                 next();
-                return;
             });
         }
         else {
             next();
-            return;
         }
     });
 };

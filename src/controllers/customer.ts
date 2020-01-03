@@ -7,10 +7,7 @@ import {  Company, ICompany } from '../models/Company'
 export const createCustomer = (req: Request, res: Response) => {
 
     const params = req.body
-    var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
+
     const customer = new Customer(
         {
             info: {
@@ -27,7 +24,7 @@ export const createCustomer = (req: Request, res: Response) => {
                 name: params.contactName,
                 phone: params.phone,
             },
-            company: companyId
+            company: req.companyId
         }
     )
 
@@ -64,10 +61,7 @@ export const createCustomer = (req: Request, res: Response) => {
 export const getCustomers = (req: Request, res: Response) => {
 
     const params = req.body
-    var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
+ 
     var filter
     if (params.includeActive == 'true' && params.includeNonActive == 'true') {
         filter = {}
@@ -76,11 +70,8 @@ export const getCustomers = (req: Request, res: Response) => {
     }else {
         filter = {'isActive': { $eq: false }}
     }
-    var companyId = companyId;
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
-    Company.findOne({_id: companyId})
+
+    Company.findOne({_id: req.companyId})
     .populate({
         path: 'customers',
         match: filter,

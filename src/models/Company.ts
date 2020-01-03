@@ -15,9 +15,8 @@ export interface ICompany extends IUser {
     employees: [Schema.Types.ObjectId]
     customers: [Schema.Types.ObjectId]
     stripeId: string
-    paid: boolean
-    type: number
-    chargeDate: Date
+    // subscriptionId: string
+    // nextSubscriptionDate: string
     maxTechnicians: number
     maxManagers: number
     maxOfficeAdmins: number
@@ -55,17 +54,8 @@ const CompanySchema = new Schema({
     employees: [{ type: Schema.Types.ObjectId, ref: 'Employee' }],
     customers: [{ type: Schema.Types.ObjectId, ref: 'Customer' }],
     stripeId: String,
-    paid: {
-        type: Boolean,
-        default: false
-    },
-    // type 0 for company
-    // type 1 for contractor
-    type: {
-        type: Number,
-        default: 0
-    },
-    chargeDate: Date, // signup + 30 days
+    // subscriptionId: String,
+    // nextSubscriptionDate: String,
     maxTechnicians: {
         type: Number,
         default: 0

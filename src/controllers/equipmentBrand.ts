@@ -51,13 +51,9 @@ export const createEquipmentBrand = (req: Request, res: Response) => {
 export const getEquipmentBrands = (req: Request, res: Response) => {
 
     const user = <IUser>req.user
-    var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
     if(user.permissions.role == Role.GLOBAL_ADMIN) {
         EquipmentBrand.find(
-            { $or: [ {createdBy: null}, {createdBy: companyId} ]},
+            { $or: [ {createdBy: null}, {createdBy: req.companyId} ]},
             (err: any, brands: IEquipmentBrand[])=>{
     
                 if (err) {
@@ -70,7 +66,7 @@ export const getEquipmentBrands = (req: Request, res: Response) => {
         )
 
     } else{
-        Company.findById(companyId, 
+        Company.findById(req.companyId, 
         (err: any, company: ICompany)=>{
     
             if (err) {
@@ -78,7 +74,7 @@ export const getEquipmentBrands = (req: Request, res: Response) => {
             }
                 
             EquipmentBrand.find(
-                { $or : [ {createdBy: companyId} , 
+                { $or : [ {createdBy: req.companyId} , 
                     { $and: [{industry: company.info.industry}, {createdBy: null}, ]}
                 ]},
                 (err: any, brands: IEquipmentBrand[])=>{

@@ -30,9 +30,12 @@ export const createCompanyEquipmentInventory = (req: Request, res: Response) => 
         (err: any, companyEquipments: ICompanyEquipment[]) =>{
             
             if (err) {
+                console.log(err);
+                    
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-
+            console.log("company equipment \n" + companyEquipments);
+            
             var ids = companyEquipments.map(function(item) {
                 return item._id;
             });
@@ -58,9 +61,14 @@ export const createCompanyEquipmentInventory = (req: Request, res: Response) => 
 export const getIventoryHistory = (req: Request, res: Response) => {
 
     const user = <IUser> req.user
+    console.log(user._id);
     
     Group.findOne(
+        // {member: user._id},
         {members: new ObjectId(user._id)},
+        // { members: { 
+        //     $elemMatch: { id: user._id } 
+        //  }},
         (err: any, group: IGroup)=>{
 
             if (err) {
@@ -73,10 +81,13 @@ export const getIventoryHistory = (req: Request, res: Response) => {
             }
             
             const members = group.members.map((id)=>{
+                console.log(id);
                 
+                // new ObjectId(id.toString())
                 return id
             })
 
+            console.log("member \n "+ members);
             
             CompanyEquipmentInventory.find({createdBy : {$in: members}})
             .populate({
@@ -86,6 +97,7 @@ export const getIventoryHistory = (req: Request, res: Response) => {
             .exec((err: any, companyEquipmentInventory: ICompanyEquipmentInventory[]) =>{
                 
                 if (err) {
+                    console.log(err);
                     
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
@@ -93,6 +105,7 @@ export const getIventoryHistory = (req: Request, res: Response) => {
                 return res.json({'status': Status.Success, 'companyEquipmentInventory': companyEquipmentInventory}) 
             })
             
+            // return res.json({'status': Status.Success, 'abc': []}) 
         })
 
 }

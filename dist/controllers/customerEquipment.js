@@ -65,36 +65,14 @@ exports.getCustomerEquipments = (req, res) => {
     });
 };
 exports.getCustomerEquipmentJobs = (req, res) => {
-    var companyId = req.companyId;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId;
-    }
     const params = req.body;
     CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
         .exec((err, customerEquipment) => {
-        if (err) {
+        if (err || !customerEquipment) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        if (customerEquipment == undefined || customerEquipment == null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'No equipment found. Please try again' });
-        }
-        // Scan.find({equipment: customerEquipment._id})
-        // .populate({
-        //     path: 'job',
-        //     // select: 'profile.displayName'
-        // })
-        // .populate({
-        //     path: 'equipment',
-        //     // select: 'profile.displayName'
-        // })
-        // .exec((err:any, scans: IScan[])=>{
-        //     if (err) {
-        //         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        //     }
-        //     return res.json({ 'status': Status.Success, 'jobs': scans })
-        // })
         var jobIds = customerEquipment.jobs;
-        Job_1.Job.find({ _id: { $in: jobIds }, company: companyId })
+        Job_1.Job.find({ _id: { $in: jobIds }, company: req.companyId })
             .populate({
             path: 'technician',
             select: 'profile.displayName'
@@ -115,7 +93,7 @@ exports.getCustomerEquipmentJobs = (req, res) => {
             if (err || !companyJobs) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            Job_1.Job.find({ _id: { $in: jobIds }, company: { $ne: companyId } }, '_id comment dateTime')
+            Job_1.Job.find({ _id: { $in: jobIds }, company: { $ne: req.companyId } }, '_id comment dateTime')
                 .exec((err, nonCompanyJobs) => {
                 if (err || !nonCompanyJobs) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -140,7 +118,7 @@ exports.linkJobToEquipment = (req, res) => {
     CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
         .exec((err, customerEquipment) => {
         if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, "err": err });
         }
         if (customerEquipment == undefined || customerEquipment == null) {
             return res.json({ 'status': constants_1.Status.Error, 'message': "Customer Equipment not found" });

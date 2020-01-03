@@ -5,10 +5,6 @@ const Job_1 = require("../models/Job");
 const CustomerEquipment_1 = require("../models/CustomerEquipment");
 exports.createJob = (req, res) => {
     const params = req.body;
-    var companyId = req.companyId;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId;
-    }
     if (params.equipmentId != undefined && params.equipmentId != null) {
         CustomerEquipment_1.CustomerEquipment.findById(params.equipmentId, (err, equipment) => {
             if (err) {
@@ -19,7 +15,7 @@ exports.createJob = (req, res) => {
                 technician: params.technicianId,
                 customer: params.customerId,
                 type: params.jobTypeId,
-                company: companyId,
+                company: req.companyId,
                 comment: '',
                 description: params.description,
                 equipmentId: params.equipmentId,
@@ -45,7 +41,7 @@ exports.createJob = (req, res) => {
             technician: params.technicianId,
             customer: params.customerId,
             type: params.jobTypeId,
-            company: companyId,
+            company: req.companyId,
             comment: '',
             description: params.description,
             equipmentId: params.equipmentId,
@@ -61,11 +57,7 @@ exports.createJob = (req, res) => {
     }
 };
 exports.getJobs = (req, res) => {
-    var companyId = req.companyId;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId;
-    }
-    Job_1.Job.find({ company: companyId })
+    Job_1.Job.find({ company: req.companyId })
         .populate({
         path: 'technician',
         select: 'profile.displayName'

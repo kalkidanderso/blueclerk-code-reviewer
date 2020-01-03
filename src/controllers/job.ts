@@ -7,10 +7,7 @@ import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipme
 export const createJob = (req: Request, res: Response) => {
 
     const params = req.body
-    var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
+
     if(params.equipmentId != undefined && params.equipmentId != null) {
         CustomerEquipment.findById(params.equipmentId, 
         (err: any, equipment: ICustomerEquipment)=>{
@@ -25,7 +22,7 @@ export const createJob = (req: Request, res: Response) => {
                     technician: params.technicianId,
                     customer: params.customerId,
                     type: params.jobTypeId,
-                    company: companyId,
+                    company: req.companyId,
                     comment: '',
                     description: params.description,
                     equipmentId: params.equipmentId,
@@ -58,7 +55,7 @@ export const createJob = (req: Request, res: Response) => {
                 technician: params.technicianId,
                 customer: params.customerId,
                 type: params.jobTypeId,
-                company: companyId,
+                company: req.companyId,
                 comment: '',
                 description: params.description,
                 equipmentId: params.equipmentId,
@@ -82,11 +79,7 @@ export const createJob = (req: Request, res: Response) => {
 
 export const getJobs = (req: Request, res: Response) => {
 
-    var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
-    Job.find({ company: companyId })
+    Job.find({ company: req.companyId })
         .populate({
             path: 'technician',
             select: 'profile.displayName'

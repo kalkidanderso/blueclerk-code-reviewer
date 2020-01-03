@@ -4,13 +4,9 @@ const constants_1 = require("../common/constants");
 const Group_1 = require("../models/Group");
 exports.createGroup = (req, res) => {
     const params = req.body;
-    var companyId = req.companyId;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId;
-    }
     const group = new Group_1.Group({
         title: params.title,
-        company: companyId,
+        company: req.companyId,
     });
     group.save((err) => {
         if (err) {
@@ -20,11 +16,7 @@ exports.createGroup = (req, res) => {
     });
 };
 exports.getGroups = (req, res) => {
-    var companyId = req.companyId;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId;
-    }
-    Group_1.Group.find({ company: companyId })
+    Group_1.Group.find({ company: req.companyId })
         .populate({
         path: 'manager',
     })
@@ -40,12 +32,8 @@ exports.getGroups = (req, res) => {
 };
 exports.deleteGroup = (req, res) => {
     const params = req.body;
-    // const user = <ICompany>req.user
-    // var companyId = user._id
-    var companyId = req.companyId;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId;
-    }
+    const user = req.user;
+    var companyId = user._id;
     Group_1.Group.findOne({ _id: params.groupId, company: companyId })
         .exec((err, group) => {
         if (!err && !group) {
@@ -65,11 +53,7 @@ exports.deleteGroup = (req, res) => {
 };
 exports.addManager = (req, res) => {
     const params = req.body;
-    var companyId = req.companyId;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId;
-    }
-    Group_1.Group.findOne({ _id: params.groupId, company: companyId })
+    Group_1.Group.findOne({ _id: params.groupId, company: req.companyId })
         .exec((err, group) => {
         if (err || !group) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -84,11 +68,7 @@ exports.addManager = (req, res) => {
 };
 exports.addMember = (req, res) => {
     const params = req.body;
-    var companyId = req.companyId;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId;
-    }
-    Group_1.Group.findOne({ _id: params.groupId, company: companyId })
+    Group_1.Group.findOne({ _id: params.groupId, company: req.companyId })
         .exec((err, group) => {
         if (err || !group) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -107,11 +87,7 @@ exports.addMember = (req, res) => {
 };
 exports.removeMember = (req, res) => {
     const params = req.body;
-    var companyId = req.companyId;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId;
-    }
-    Group_1.Group.findOne({ _id: params.groupId, company: companyId })
+    Group_1.Group.findOne({ _id: params.groupId, company: req.companyId })
         .exec((err, group) => {
         if (err || !group) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });

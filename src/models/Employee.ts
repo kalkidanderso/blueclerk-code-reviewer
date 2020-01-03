@@ -8,8 +8,7 @@ export interface IEmployee extends IUser {
     extraPermissions: {
         on:[number],
         off: [number]
-    },
-    agreed: boolean
+    }
     
 }
 
@@ -27,10 +26,6 @@ const EmployeeSchema = new Schema({
     extraPermissions: {
         on:[Number],
         off: [Number]
-    },
-    agreed: {
-        type: Boolean,
-        default: false
     }
 
 })

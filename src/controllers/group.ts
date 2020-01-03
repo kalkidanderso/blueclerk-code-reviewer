@@ -7,14 +7,11 @@ import { Company, ICompany } from '../models/Company'
 export const createGroup = (req: Request, res: Response) => {
 
     const params = req.body
-    var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
+
     const group = new Group(
         {
             title:  params.title,
-            company: companyId,
+            company: req.companyId,
         }
     )
 
@@ -33,11 +30,7 @@ export const createGroup = (req: Request, res: Response) => {
 
 export const getGroups = (req: Request, res: Response) => {
 
-    var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
-    Group.find({company: companyId})
+    Group.find({company: req.companyId})
     .populate({
         path: 'manager',
     })
@@ -58,14 +51,9 @@ export const getGroups = (req: Request, res: Response) => {
 export const deleteGroup = (req: Request, res: Response) => {
 
     const params = req.body
-    // const user = <ICompany>req.user
+    const user = <ICompany>req.user
     
-    // var companyId = user._id
-
-    var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
+    var companyId = user._id
 
     Group.findOne({_id: params.groupId, company: companyId})
     .exec((err: any, group: IGroup) => {
@@ -95,11 +83,8 @@ export const deleteGroup = (req: Request, res: Response) => {
 export const addManager = (req: Request, res: Response) => {
 
     const params = req.body
-    var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
-    Group.findOne({_id: params.groupId, company: companyId})
+
+    Group.findOne({_id: params.groupId, company: req.companyId})
     .exec((err: any, group: IGroup) => {
 
         if (err || !group) {
@@ -124,12 +109,8 @@ export const addManager = (req: Request, res: Response) => {
 export const addMember = (req: Request, res: Response) => {
 
     const params = req.body
-    var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
   
-    Group.findOne({_id: params.groupId, company: companyId})
+    Group.findOne({_id: params.groupId, company: req.companyId})
     .exec((err: any, group: IGroup) => {
 
         if (err || !group) {
@@ -160,11 +141,8 @@ export const addMember = (req: Request, res: Response) => {
 export const removeMember = (req: Request, res: Response) => {
 
     const params = req.body
-    var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
-    Group.findOne({_id: params.groupId, company: companyId})
+
+    Group.findOne({_id: params.groupId, company: req.companyId})
     .exec((err: any, group: IGroup) => {
 
         if (err || !group) {

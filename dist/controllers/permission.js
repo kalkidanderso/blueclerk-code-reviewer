@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../common/constants");
 const Employee_1 = require("../models/Employee");
-const Contract_1 = require("../models/Contract");
 exports.getAllPermissions = (req, res) => {
     const company = req.company;
     if (company.userPermissions == undefined || !company.userPermissions) {
@@ -170,27 +169,6 @@ const getPermissionByEmployeeId = (req, res, company, employeeId, next) => {
             off: defaultPermissionsOff,
         };
         next(req, res, employeePermissions);
-    });
-};
-exports.addContractorPermissions = (req, res) => {
-    const params = req.body;
-    var permissions = params.permissions.split(',').map(Number);
-    let checker = (arr, target) => target.every((v) => arr.includes(v));
-    if (!checker(constants_1.ContractorPermissions.on, permissions)) {
-        return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid permissions for contractor' });
-    }
-    Contract_1.Contract.findOne({ contractor: params.contractorId, company: req.companyId }, (err, contract) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
-        contract.updateOne({
-            extraPermissions: permissions
-        }, (err, raw) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            return res.json({ 'status': constants_1.Status.Success, 'message': 'Contractor permissions added successfully.' });
-        });
     });
 };
 //# sourceMappingURL=permission.js.map

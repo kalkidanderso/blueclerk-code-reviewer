@@ -15,10 +15,6 @@ const EmployeeSchema = new mongoose_1.Schema({
     extraPermissions: {
         on: [Number],
         off: [Number]
-    },
-    agreed: {
-        type: Boolean,
-        default: false
     }
 });
 exports.Employee = User_1.User.discriminator('Employee', EmployeeSchema);

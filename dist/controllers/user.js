@@ -19,10 +19,8 @@ const JobType_1 = require("../models/JobType");
 const EquipmentBrand_1 = require("../models/EquipmentBrand");
 const EquipmentType_1 = require("../models/EquipmentType");
 const config_1 = require("../common/config");
-const Contract_1 = require("../models/Contract");
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
-const stripe_1 = require("../services/stripe");
 exports.login = (req, res) => {
     const params = req.body;
     User_1.User.findOne({ 'auth.email': params.email }, (err, user) => {
@@ -34,40 +32,16 @@ exports.login = (req, res) => {
         }
         if (user.permissions.role != 3 /* COMPANY */ && user.permissions.role != 4 /* GLOBAL_ADMIN */) {
             const employee = user;
-            Company_1.Company.findById(employee.company, (err, company) => {
-                if (err) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                }
-                if (company.paid == false && new Date() > company.chargeDate) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': 'You can\'t login please contact your Company.' });
-                }
-                if (employee.status == 0) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.AccountDeleted });
-                }
-                user.comparePassword(params.password, (isMatching) => {
-                    if (!isMatching) {
-                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.InvalidEmailPassword });
-                    }
-                    return res.json({ 'status': constants_1.Status.Success, 'user': user, 'token': user.jwt() });
-                });
-            });
+            if (employee.status == 0) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.AccountDeleted });
+            }
         }
-        else {
-            user.comparePassword(params.password, (isMatching) => {
-                if (!isMatching) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.InvalidEmailPassword });
-                }
-                if (user.permissions.role == 3 /* COMPANY */) {
-                    const company = user;
-                    // if(company.type == 1)
-                    company.userPermissions = undefined;
-                    return res.json({ 'status': constants_1.Status.Success, 'user': company, 'token': user.jwt() });
-                }
-                else {
-                    return res.json({ 'status': constants_1.Status.Success, 'user': user, 'token': user.jwt() });
-                }
-            });
-        }
+        user.comparePassword(params.password, (isMatching) => {
+            if (!isMatching) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.InvalidEmailPassword });
+            }
+            res.json({ 'status': constants_1.Status.Success, 'user': user, 'token': user.jwt() });
+        });
     });
 };
 exports.createGlobalAdmin = (req, res) => {
@@ -109,8 +83,6 @@ exports.createGlobalAdmin = (req, res) => {
 exports.createCompany = (req, res) => {
     checkEmailExists(req, res, (req, res) => {
         const params = req.body;
-        const chargeDate = new Date();
-        chargeDate.setDate(chargeDate.getDate() + 30);
         const company = new Company_1.Company({
             auth: {
                 email: params.email,
@@ -140,11 +112,7 @@ exports.createCompany = (req, res) => {
                 industry: params.industryId,
                 logoUrl: '',
             },
-            userPermissions: constants_1.UserPermissions,
-            chargeDate: chargeDate,
-            maxTechnicians: 2,
-            maxManagers: 1,
-            maxOfficeAdmins: 1
+            userPermissions: constants_1.UserPermissions
         });
         company.save((err) => {
             if (err) {
@@ -382,6 +350,7 @@ const checkEmailExists = (req, res, next) => {
         .has().not().spaces() // Should not have spaces
         .is().not().oneOf(['Passw0rd', 'Password123']); // Blacklist these values
     // Validate against a password string
+    console.log(schema.validate(params.passsword));
     if (params.password && !schema.validate(params.password)) {
         return res.json({ 'status': constants_1.Status.Error, 'message': "Your passsword is weak chose strong." });
     }
@@ -397,9 +366,6 @@ const checkEmailExists = (req, res, next) => {
 };
 const checkNoOfUsers = (req, res, role, next) => {
     const company = req.company;
-    if (company.paid == false && new Date() > company.chargeDate) {
-        return res.json({ 'status': constants_1.Status.Error, 'message': 'You can\'t create users contact blueclerk admin for details.' });
-    }
     var dataToUpdate = {
         maxOfficeAdmins: company.maxOfficeAdmins,
         maxManagers: company.maxManagers,
@@ -583,333 +549,6 @@ exports.getEmployeesForJob = (req, res) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         res.json({ 'status': constants_1.Status.Success, 'employees': employees });
-    });
-};
-// new contractor signup
-exports.createContractor = (req, res) => {
-    checkEmailExists(req, res, (req, res) => {
-        const params = req.body;
-        const company = new Company_1.Company({
-            auth: {
-                email: params.email,
-                password: params.password,
-            },
-            profile: {
-                firstName: params.firstName,
-                lastName: params.lastName,
-                displayName: `${params.firstName} ${params.lastName}`,
-                imageUrl: '',
-            },
-            address: {
-                street: '',
-                city: '',
-                state: '',
-                zipCode: '',
-            },
-            contact: {
-                phone: params.phone,
-            },
-            permissions: {
-                role: 3 /* COMPANY */,
-                extra: [],
-            },
-            info: {
-                companyName: params.companyName,
-                industry: params.industryId,
-                logoUrl: '',
-            },
-            type: 1,
-            userPermissions: constants_1.UserPermissions
-        });
-        company.save((err) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            aws_1.sendEmail({ to: params.email });
-            exports.login(req, res);
-        });
-    });
-};
-// search contractor/organization for contract
-exports.searchContractor = (req, res) => {
-    const params = req.body;
-    User_1.User.find({ 'auth.email': params.email, 'permissions.role': 3 /* COMPANY */ }, 'auth.email profile.displayName type', (err, users) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
-        if (users.length == 0) {
-            return res.json({ 'status': constants_1.Status.Success, 'contractors': [] });
-        }
-        return res.json({ 'status': constants_1.Status.Success, 'contractors': users });
-    });
-};
-// company start / initiate contract for contractor
-exports.startContract = (req, res) => {
-    const params = req.body;
-    const company = req.user;
-    User_1.User.findById(params.contractorId, (err, contractor) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
-        if (contractor == undefined || contractor == null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid contractor.' });
-        }
-        // check if contract already started
-        Contract_1.Contract.findOne({ 'company': req.companyId, 'contractor': contractor._id }, (err, oldcontract) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            if (oldcontract != undefined && oldcontract != null) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': 'Contract already exist.' });
-            }
-            const contract = new Contract_1.Contract({
-                company: req.companyId,
-                contractor: contractor._id,
-                status: 0 /* PENDING */,
-            });
-            contract.save((err) => {
-                if (err) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                }
-                // ToDo send email to contractor for contract started
-                aws_1.sendContractStartEmail({ to: contractor.auth.email, company: company.info.companyName, contractor: contractor.profile.displayName });
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract started successfully.' });
-            });
-        });
-    });
-};
-//invite contractor for signup
-exports.inviteContractor = (req, res) => {
-    const params = req.body;
-    const company = req.user;
-    User_1.User.findOne({ 'auth.email': params.email }, (err, contractor) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
-        if (contractor != undefined && contractor != null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Email already taken.' });
-        }
-        // ToDo email email with singup link
-        aws_1.sendInvitationToContractor({ to: params.email, company: company.info.companyName });
-        return res.json({ 'status': constants_1.Status.Error, 'message': 'Invitation sent.' });
-    });
-};
-// get all contracts for contractor
-exports.getAllContracts = (req, res) => {
-    const contractor = req.user;
-    Contract_1.Contract.find({ contractor: contractor._id })
-        .populate({
-        path: 'company',
-        select: 'info.companyName profile.displayName type'
-    })
-        .populate({
-        path: 'contractor',
-        select: 'info.companyName profile.displayName type'
-    })
-        .exec((err, contracts) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
-        if (contracts.length == 0 || contracts == undefined) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'No contracts found.' });
-        }
-        res.json({ 'status': constants_1.Status.Success, 'contracts': contracts });
-    });
-};
-// contracts started by company
-exports.getCompanyContracts = (req, res) => {
-    const company = req.user;
-    Contract_1.Contract.find({ company: company._id })
-        .populate({
-        path: 'company',
-        select: 'info.companyName profile.displayName type'
-    })
-        .populate({
-        path: 'contractor',
-        select: 'info.companyName profile.displayName type'
-    })
-        .exec((err, contracts) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
-        if (contracts.length == 0 || contracts == undefined) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'No contracts found.' });
-        }
-        res.json({ 'status': constants_1.Status.Success, 'contracts': contracts });
-    });
-};
-// contract accept or reject by contractor /organization
-exports.acceptRejectContract = (req, res) => {
-    const params = req.body;
-    const contractor = req.user;
-    var contractStatus = 0;
-    if (params.status == 'accept') {
-        contractStatus = 1 /* ACCEPTED */;
-    }
-    else if (params.status == 'reject') {
-        contractStatus = 3 /* REJECTED */;
-    }
-    else {
-        return res.json({ 'status': constants_1.Status.Error, 'message': 'Invald contract status' });
-    }
-    Contract_1.Contract.findOne({ _id: params.contractId }, (err, contract) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
-        if (contract == undefined || contract == null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid contract.' });
-        }
-        if (contract.status == 2 /* CANCELED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Contract is already canceled.' });
-        }
-        if (contract.status == 3 /* REJECTED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Contract is already rejected.' });
-        }
-        if (contract.status == 4 /* FINISHED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Contract is already finished.' });
-        }
-        contract.updateOne({ status: contractStatus }, (err, raw) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            // ToDo send email to company /contractor on update
-            Company_1.Company.findById(contract.company, (err, company) => {
-                if (err) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                }
-                aws_1.sendContractStatusChangeEmailToCompany({ to: company.auth.email, contractor: contractor.profile.displayName, company: company.info.companyName, contractStatus: params.status + 'ed' });
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract ' + params.status + 'ed.' });
-            });
-        });
-    });
-};
-// cancel or finish by compnay
-exports.cancelOrFinishContract = (req, res) => {
-    const params = req.body;
-    const company = req.user;
-    var contractStatus = 0;
-    if (params.status == 'cancel') {
-        contractStatus = 2 /* CANCELED */;
-    }
-    else if (params.status == 'finish') {
-        contractStatus = 4 /* FINISHED */;
-    }
-    else {
-        return res.json({ 'status': constants_1.Status.Error, 'message': 'Invald contract status' });
-    }
-    Contract_1.Contract.findOne({ 'company': req.companyId, '_id': params.contractId }, (err, contract) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
-        if (contract == undefined || contract == null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid contract.' });
-        }
-        if (contract.status == 2 /* CANCELED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Contract is already canceled.' });
-        }
-        if (contract.status == 3 /* REJECTED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Contract is already rejected.' });
-        }
-        if (contract.status == 4 /* FINISHED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Contract is already finished.' });
-        }
-        contract.updateOne({ status: contractStatus }, (err, raw) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            // ToDo send email to company /contractor on update
-            Company_1.Company.findById(contract.contractor, (err, contractor) => {
-                if (err) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                }
-                aws_1.sendContractStatusChangeEmailToContractor({ to: contractor.auth.email, contractor: contractor.profile.displayName, company: company.info.companyName, contractStatus: params.status + 'ed' });
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract ' + params.status + 'ed.' });
-            });
-        });
-    });
-};
-exports.upgradeToCompany = (req, res) => {
-    // return res.json({ 'status': Status.Error, 'message': 'reached inside.' })
-    const params = req.body;
-    const user = req.user;
-    User_1.User.findById(user._id, (err, contractor) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
-        if (contractor == undefined || contractor == null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid user.' });
-        }
-        if (contractor.type == 0 || contractor.paid == true) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'You can not upgrade.' });
-        }
-        // create strip customer and charge
-        stripe_1.addCustomerAndCharge(contractor.auth.email, 'company ' + contractor.info.companyName, params.token, 50, (status, customer, charge, message) => {
-            if (status == 1) {
-                contractor.paid = true;
-                contractor.type = 0;
-                contractor.updateOne(contractor, (err, raw) => {
-                    if (err) {
-                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                    }
-                    const stripCard = customer.sources.data[0];
-                    const card = new CompanyCard_1.CompanyCard({
-                        ending: params.ending,
-                        token: params.token,
-                        company: contractor._id,
-                        cardStripeId: stripCard.id,
-                        expiryMonth: stripCard.exp_month,
-                        expiryYear: stripCard.exp_year,
-                        cardType: stripCard.brand,
-                        name: stripCard.name
-                    });
-                    card.save((err) => {
-                        if (err) {
-                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                        }
-                        return res.json({ status: constants_1.Status.Success, message: "Account upgraded successfully." });
-                    });
-                });
-            }
-            else {
-                return res.json({ status: constants_1.Status.Error, message: message });
-            }
-        });
-    });
-};
-exports.agreeToTermAndConditions = (req, res) => {
-    const params = req.body;
-    const user = req.user;
-    user.updateOne({
-        agreed: params.agreedStatus
-    }, (err, raw) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
-        return res.json({ 'status': constants_1.Status.Success, 'message': 'Status updated successfully.' });
-    });
-};
-exports.companySubscribe = (req, res) => {
-    const company = req.company;
-    if (company.stripeId == undefined || company.stripeId == '') {
-        return res.json({ status: constants_1.Status.Error, message: "Company payment method required." });
-    }
-    var amount = 50;
-    if (amount == 0) {
-        return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid no of subscriptions." });
-    }
-    stripe_1.chargeSubscription(amount, company.stripeId, (status, charge, message) => {
-        if (status == 1) {
-            company.updateOne({ paid: true })
-                .exec((err, raw) => {
-                if (err) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                }
-                return res.json({ 'status': constants_1.Status.Error, 'message': 'Company subscription added successfull.' });
-            });
-        }
-        else {
-            return res.json({ status: constants_1.Status.Error, message: message });
-        }
     });
 };
 //# sourceMappingURL=user.js.map

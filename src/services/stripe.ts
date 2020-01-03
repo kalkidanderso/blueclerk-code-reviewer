@@ -30,65 +30,6 @@ export const createCustomer = (email: string, description: string, token: string
     })
 }
 
-export const addCustomerAndCharge = (email: string, description: string, token: string, amount: number, callback: Function) => {
-
-    const stripe = new Stripe(stripeConfig.sk_secret);
-    stripe.customers.create({
-        email: email,
-        description: description,
-        source: token
-    
-    }).then(function( customer: any) {
-        // asynchronously called
-
-        let total: number = amount * 100;
-        total = Math.ceil(total)
-        if(total < 100){
-            return callback(0, null, "Total amount must be greater then 1$");    
-        }
-        
-        stripe.charges.create({
-            amount: total,
-            currency: "usd",
-            customer: customer.id
-
-        }).then(function( charge: any) {
-            // asynchronously called
-            return callback(1, customer, charge, '');
-            
-        }).catch(function(err: any) {
-            
-            var message= "";
-            switch (err.type) {
-                case 'StripeCardError':
-                    // A declined card error
-                    message = err.message;
-                    break;
-                default:
-                    message = err.message;
-                    break;
-            }
-            return callback(0, null, null, message);
-        });
-        
-        // return callback(1, customer);
-        
-    }).catch(function(err: any) {
-        // asynchronously called
-        var message= "";
-        switch (err.type) {
-            case 'StripeCardError':
-                // A declined card error
-                message = err.message;
-                break;
-            default:
-                message = err.message;
-                break;
-        }
-        return callback(0, null, null, message);
-    })
-}
-
 export const detachCustomerSource = (stripeId: String, cardId: String, callback: Function) => {
 
     const stripe = require("stripe")(stripeConfig.sk_secret);

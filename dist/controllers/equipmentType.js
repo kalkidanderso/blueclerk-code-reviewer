@@ -36,12 +36,8 @@ exports.createEquipmentType = (req, res) => {
 };
 exports.getEquipmentTypes = (req, res) => {
     const user = req.user;
-    var companyId = req.companyId;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId;
-    }
     if (user.permissions.role == 4 /* GLOBAL_ADMIN */) {
-        EquipmentType_1.EquipmentType.find({ $or: [{ createdBy: null }, { createdBy: companyId }] }, (err, types) => {
+        EquipmentType_1.EquipmentType.find({ $or: [{ createdBy: null }, { createdBy: req.companyId }] }, (err, types) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
@@ -49,11 +45,11 @@ exports.getEquipmentTypes = (req, res) => {
         });
     }
     else {
-        Company_1.Company.findById(companyId, (err, company) => {
+        Company_1.Company.findById(req.companyId, (err, company) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            EquipmentType_1.EquipmentType.find({ $or: [{ createdBy: companyId },
+            EquipmentType_1.EquipmentType.find({ $or: [{ createdBy: req.companyId },
                     { $and: [{ industry: company.info.industry }, { createdBy: null },] }
                 ] }, (err, types) => {
                 if (err) {

@@ -12,7 +12,6 @@ export const Messages = {
     DuplicateEmail: 'Email address already registered. Please try with some other email address',
     UnAuthorized: 'You are not authorized for this action. Please contact admin for more details.',
     AccountDeleted: 'You account has been deleted. Please contact admin for more details.',
-    AgreeToTermAndConditions: 'You must agree to terms and conditions of blueclerk.',
 }
 
 export const enum Role {
@@ -41,14 +40,6 @@ export const enum JobStatus {
     STARTED,
     FINISHED,
     CANCELED
-}
-
-export const enum ContractStatus {
-    PENDING,
-    ACCEPTED,
-    CANCELED,
-    REJECTED,
-    FINISHED
 }
 export const enum Permissions {
     None,
@@ -111,38 +102,8 @@ export const enum Permissions {
     Tags_Get_Orders,
     Subscription_Buy,
     Subscription_Cancel,
-    Start_Contract,
-    Invite_Contractor,
-    Accept_Reject_Contract,
-    Cancel_Finish_Contract,
-    Add_Contractor_Permission,
-    Get_All_Contracts,
-    Get_Company_Contracts,
-    Upgrade_To_Company,
-    Company_Subscribe,
 }
 
-export const ContractorPermissions = {
-    on: [
-        Permissions.Equipment_Type_Get,
-        Permissions.Equipment_Brand_Get,
-        Permissions.Customer_Get_All,
-        Permissions.Customer_Equipment_Create,
-        Permissions.Customer_Equipment_Get_All,
-        Permissions.Customer_Equipment_Get_Jobs,
-        Permissions.Customer_Equipment_Assign_Job,
-        Permissions.Job_Type_Get,
-        Permissions.Job_Create,
-        Permissions.Job_Get_All,
-        Permissions.Job_Get_Technician,
-        Permissions.Job_Update,
-        Permissions.Job_Edit,
-        Permissions.Job_Start,
-        Permissions.Job_Finish,
-        Permissions.Job_Detail,
-        Permissions.Image_Upload,
-    ]
-}
 export const UserPermissions = {
     0: {
         on: [
@@ -400,12 +361,6 @@ export const UserPermissions = {
             Permissions.Tags_Get_Orders,
             Permissions.Subscription_Buy,
             Permissions.Subscription_Cancel,
-            Permissions.Start_Contract,
-            Permissions.Invite_Contractor,
-            Permissions.Add_Contractor_Permission,
-            Permissions.Get_Company_Contracts,
-            Permissions.Cancel_Finish_Contract,
-            Permissions.Company_Subscribe
         ],
         off: [Permissions.None],
     }

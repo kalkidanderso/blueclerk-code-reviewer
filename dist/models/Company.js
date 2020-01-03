@@ -15,17 +15,8 @@ const CompanySchema = new mongoose_1.Schema({
     employees: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Employee' }],
     customers: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Customer' }],
     stripeId: String,
-    paid: {
-        type: Boolean,
-        default: false
-    },
-    // type 0 for company
-    // type 1 for contractor
-    type: {
-        type: Number,
-        default: 0
-    },
-    chargeDate: Date,
+    // subscriptionId: String,
+    // nextSubscriptionDate: String,
     maxTechnicians: {
         type: Number,
         default: 0
