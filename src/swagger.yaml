@@ -392,42 +392,42 @@ paths:
           description: Success
           schema:
             $ref: '#/definitions/AuthAPIResponse'
-  /adminSignUp:
-    post:
-      tags:
-        - Auth
-      summary: Sign up for global admin
-      description: ''
-      consumes:
-        - application/x-www-form-urlencoded
-      produces:
-        - application/json
-      parameters:
-        - name: email
-          in: formData
-          required: true
-          type: string
-        - name: password
-          in: formData
-          required: true
-          type: string
-        - name: firstName
-          in: formData
-          required: true
-          type: string
-        - name: lastName
-          in: formData
-          required: true
-          type: string
-        - name: phone
-          in: formData
-          required: true
-          type: string
-      responses:
-        '200':
-          description: Success
-          schema:
-            $ref: '#/definitions/AuthAPIResponse'
+  # /adminSignUp:
+  #   post:
+  #     tags:
+  #       - Auth
+  #     summary: Sign up for global admin
+  #     description: ''
+  #     consumes:
+  #       - application/x-www-form-urlencoded
+  #     produces:
+  #       - application/json
+  #     parameters:
+  #       - name: email
+  #         in: formData
+  #         required: true
+  #         type: string
+  #       - name: password
+  #         in: formData
+  #         required: true
+  #         type: string
+  #       - name: firstName
+  #         in: formData
+  #         required: true
+  #         type: string
+  #       - name: lastName
+  #         in: formData
+  #         required: true
+  #         type: string
+  #       - name: phone
+  #         in: formData
+  #         required: true
+  #         type: string
+  #     responses:
+  #       '200':
+  #         description: Success
+  #         schema:
+  #           $ref: '#/definitions/AuthAPIResponse'
   /createIndustry:
     post:
       tags:
