@@ -58,7 +58,7 @@ exports.Validations = {
     //Customer Equipment
     createCustomerEquipment: [express_validator_1.check('model').exists(), express_validator_1.check('serialNumber').exists(), express_validator_1.check('nfcTag').exists(), express_validator_1.check('imageUrl').exists(), express_validator_1.check('equipmentTypeId').exists(), express_validator_1.check('equipmentBrandId').exists(), express_validator_1.check('customerId').exists(), express_validator_1.check('location').exists()],
     getCustomerEquipments: [express_validator_1.check('customerId').exists()],
-    linkEquipmentJob: [express_validator_1.check('nfcTag').exists(), express_validator_1.check('jobId').exists()],
+    linkEquipmentJob: [express_validator_1.check('nfcTag').exists(), express_validator_1.check('jobId').exists(), express_validator_1.check('comment').exists()],
     getCustomerEquipmentJobs: [express_validator_1.check('nfcTag').exists()],
     //Job Type
     createJobType: [express_validator_1.check('title').exists()],

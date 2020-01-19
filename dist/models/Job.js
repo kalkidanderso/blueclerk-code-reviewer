@@ -30,14 +30,6 @@ const JobSchema = new mongoose_1.Schema({
         ref: 'Company',
         required: true
     },
-    equipmentId: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'CustomerEquipment',
-        default: null
-    },
-    comment: {
-        type: String
-    },
     description: {
         type: String
     },
@@ -48,8 +40,10 @@ const JobSchema = new mongoose_1.Schema({
     createdAt: {
         type: Date
     },
-    timeOfScan: {
-        type: Date
+    createdBy: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     },
 });
 exports.Job = mongoose_1.default.model('Job', JobSchema);

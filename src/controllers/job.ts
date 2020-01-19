@@ -2,83 +2,39 @@ import {Request, Response} from 'express'
 import { Status, Messages, JobStatus } from '../common/constants'
 
 import { Job, IJob } from '../models/Job'
-import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
+import { IUser } from '../models/User'
+// import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 
 export const createJob = (req: Request, res: Response) => {
 
     const params = req.body
+    const user = <IUser>req.user
     var companyId = req.companyId;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-    if(params.equipmentId != undefined && params.equipmentId != null) {
-        CustomerEquipment.findById(params.equipmentId, 
-        (err: any, equipment: ICustomerEquipment)=>{
-            
-            if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-            }
-    
-            const job = new Job(
-                {
-                    dateTime: params.dateTime,
-                    technician: params.technicianId,
-                    customer: params.customerId,
-                    type: params.jobTypeId,
-                    company: companyId,
-                    comment: '',
-                    description: params.description,
-                    equipmentId: params.equipmentId,
-                    createdAt: Date.now(),
-                }
-            )
-        
-            job.save((err: any) => {
-        
-                if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                }
-                
-                equipment.jobs.push(job._id)
-                equipment.updateOne({jobs: equipment.jobs}, (err:any, raw: any)=> {
-                    if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                    }   
 
-                    return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
-                });
-        
-            })
-        })
 
-    }else{
-        const job = new Job(
-            {
-                dateTime: params.dateTime,
-                technician: params.technicianId,
-                customer: params.customerId,
-                type: params.jobTypeId,
-                company: companyId,
-                comment: '',
-                description: params.description,
-                equipmentId: params.equipmentId,
-                createdAt: Date.now(),
-            }
-        )
-    
-        job.save((err: any) => {
-            if (err) {
-                console.log(err);
-                
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-            }
-
-            return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
-        })
-    }
-   
-
+    const job = new Job(
+        {
+            dateTime: params.dateTime,
+            technician: params.technicianId,
+            customer: params.customerId,
+            type: params.jobTypeId,
+            company: companyId,
+            createdBy: user._id,
+            description: params.description,
+            createdAt: Date.now(),
+        }
+    )
+    job.save((err: any) => {
+        if (err) {
+            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }
+        return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
+    })
 }
+
 
 export const getJobs = (req: Request, res: Response) => {
 
@@ -164,10 +120,13 @@ export const updateJob = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
             if(job.status == JobStatus.FINISHED) {
-                return res.json({'status': Status.Error, 'message': "Edit job is not allowed onece it is finished"})
+                return res.json({'status': Status.Error, 'message': "Edit job is not allowed once it is finished"})
+            }
+            if(job.status == JobStatus.CANCELED) {
+                return res.json({'status': Status.Error, 'message': "Edit job is not allowed once it is canceled"})
             }
             job.updateOne(
-                {comment: params.comment, status: params.status},
+                {description: params.comment, status: params.status},
                 (err: any, raw: any)=> {
                     
                     if (err) {
@@ -192,7 +151,12 @@ export const startJob = (req: Request, res: Response) => {
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-
+            if(job.status == JobStatus.FINISHED) {
+                return res.json({'status': Status.Error, 'message': "You can't start this job, it is already finished"})
+            }
+            if(job.status == JobStatus.CANCELED) {
+                return res.json({'status': Status.Error, 'message': "You can't start this job, it is already canceled"})
+            }
             job.updateOne(
                 {status: JobStatus.STARTED},
                 (err: any, raw: any)=> {

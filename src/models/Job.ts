@@ -7,12 +7,10 @@ export interface IJob extends Document {
     customer: Schema.Types.ObjectId
     type: Schema.Types.ObjectId
     company: Schema.Types.ObjectId
-    equipmentId: string
-    comment: string
     description: string
     status: number,
     createdAt: Date,
-    timeOfScan: Date,
+    createdBy: Schema.Types.ObjectId,
 }
 
 const JobSchema = new Schema({
@@ -38,14 +36,6 @@ const JobSchema = new Schema({
         ref: 'Company',
         required: true
     },
-    equipmentId: {
-        type: Schema.Types.ObjectId,
-        ref: 'CustomerEquipment',
-        default: null
-    },
-    comment: {
-        type: String
-    },
     description: {
         type: String
     },
@@ -56,8 +46,10 @@ const JobSchema = new Schema({
     createdAt: {
         type: Date
     },
-    timeOfScan: {
-        type: Date
+    createdBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     },
 
 })
