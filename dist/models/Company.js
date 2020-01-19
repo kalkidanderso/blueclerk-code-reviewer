@@ -55,6 +55,10 @@ const CompanySchema = new mongoose_1.Schema({
             on: [Number],
             off: [Number],
         },
+    },
+    currentJobId: {
+        type: Number,
+        default: 0
     }
 });
 exports.Company = User_1.User.discriminator('Company', CompanySchema);

@@ -10,6 +10,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const JobSchema = new mongoose_1.Schema({
     dateTime: Date,
+    jobId: Number,
     technician: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',

@@ -32,6 +32,7 @@ export const Validations = {
   updateContract: [check('contractId').exists(), check('status').exists()],
   contractorPermissions: [check('contractorId').exists(), check('permissions').exists()],
   upgradeToCompany: [check('token').exists(), check('ending').exists()],
+  customWorkOrder: [check('workOrderNumber').exists(), check('workOrderNumber').isNumeric()],
   //Users
   createManager: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
   createTechnician: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],

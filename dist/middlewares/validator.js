@@ -34,6 +34,7 @@ exports.Validations = {
     updateContract: [express_validator_1.check('contractId').exists(), express_validator_1.check('status').exists()],
     contractorPermissions: [express_validator_1.check('contractorId').exists(), express_validator_1.check('permissions').exists()],
     upgradeToCompany: [express_validator_1.check('token').exists(), express_validator_1.check('ending').exists()],
+    customWorkOrder: [express_validator_1.check('workOrderNumber').exists(), express_validator_1.check('workOrderNumber').isNumeric()],
     //Users
     createManager: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists()],
     createTechnician: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists()],

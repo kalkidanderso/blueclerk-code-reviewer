@@ -912,4 +912,24 @@ exports.companySubscribe = (req, res) => {
         }
     });
 };
+exports.setCustomWorkNumber = (req, res) => {
+    // return res.json({ 'status': Status.Error, 'message': 'reached inside.' })
+    const params = req.body;
+    const user = req.user;
+    User_1.User.findById(user._id, (err, company) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (company == undefined || company == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid user.' });
+        }
+        company.currentJobId = params.workOrderNumber;
+        company.updateOne(company, (err, raw) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            return res.json({ status: constants_1.Status.Success, message: "Custom work order number added." });
+        });
+    });
+};
 //# sourceMappingURL=user.js.map

@@ -2,12 +2,14 @@ import {Request, Response} from 'express'
 import { Status, Messages, JobStatus } from '../common/constants'
 
 import { Job, IJob } from '../models/Job'
+import { Company, ICompany } from '../models/Company'
 import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 
 export const createJob = (req: Request, res: Response) => {
 
     const params = req.body
     var companyId = req.companyId;
+    var company  = <ICompany>req.company;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
@@ -22,6 +24,7 @@ export const createJob = (req: Request, res: Response) => {
             const job = new Job(
                 {
                     dateTime: params.dateTime,
+                    jobId: company.currentJobId+1,
                     technician: params.technicianId,
                     customer: params.customerId,
                     type: params.jobTypeId,
@@ -44,8 +47,15 @@ export const createJob = (req: Request, res: Response) => {
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }   
+                    company.currentJobId = company.currentJobId+1
+                    Company.updateOne(company, (err: any, raw: any)=>{
+                        if (err) {
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                        }    
+                        return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
+                    })
 
-                    return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
+                    // return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
                 });
         
             })
@@ -55,6 +65,7 @@ export const createJob = (req: Request, res: Response) => {
         const job = new Job(
             {
                 dateTime: params.dateTime,
+                jobId: company.currentJobId+1,
                 technician: params.technicianId,
                 customer: params.customerId,
                 type: params.jobTypeId,
@@ -73,7 +84,15 @@ export const createJob = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
+            company.currentJobId = company.currentJobId+1
+            Company.updateOne(company, (err: any, raw: any)=>{
+                if (err) {
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                }    
+                return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
+            })
+            
+            // return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
         })
     }
    

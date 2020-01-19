@@ -3,6 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface IJob extends Document {
 
     dateTime: Date
+    jobId: number
     technician: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId
     type: Schema.Types.ObjectId
@@ -18,6 +19,7 @@ export interface IJob extends Document {
 const JobSchema = new Schema({
 
     dateTime: Date,
+    jobId: Number,
     technician: {
         type: Schema.Types.ObjectId,
         ref: 'User',

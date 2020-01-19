@@ -1265,3 +1265,33 @@ export const companySubscribe = (req: Request, res: Response) => {
 
 }
 
+
+export const setCustomWorkNumber = (req: Request, res: Response) => {
+    // return res.json({ 'status': Status.Error, 'message': 'reached inside.' })
+    const params = req.body
+    const user = <ICompany>req.user
+    
+    User.findById(user._id,
+        (err: any, company: ICompany) => {
+
+            if (err) {                
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+            
+            if(company == undefined || company == null ) {
+                return res.json({ 'status': Status.Error, 'message': 'Invalid user.' })
+            }
+
+            company.currentJobId = params.workOrderNumber
+            company.updateOne(company, (err: any, raw: any)=> {
+                if (err) {                
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                }
+           
+                return res.json({status: Status.Success, message: "Custom work order number added."});
+               
+            })                    
+            
+        }
+    )
+}

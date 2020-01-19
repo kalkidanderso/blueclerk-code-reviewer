@@ -705,4 +705,12 @@ router.post(
     userController.upgradeToCompany
 )
 
+router.post(
+    '/setCustomWorkOrderNumber',
+    passport.authenticate('jwt', { session: false }),
+    checkUserPermissions(Permissions.Custom_work_Order_Number),
+    validate(Validations.customWorkOrder),
+    userController.setCustomWorkNumber
+)
+
 export default router

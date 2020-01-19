@@ -2,10 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../common/constants");
 const Job_1 = require("../models/Job");
+const Company_1 = require("../models/Company");
 const CustomerEquipment_1 = require("../models/CustomerEquipment");
 exports.createJob = (req, res) => {
     const params = req.body;
     var companyId = req.companyId;
+    var company = req.company;
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
     }
@@ -16,6 +18,7 @@ exports.createJob = (req, res) => {
             }
             const job = new Job_1.Job({
                 dateTime: params.dateTime,
+                jobId: company.currentJobId + 1,
                 technician: params.technicianId,
                 customer: params.customerId,
                 type: params.jobTypeId,
@@ -34,7 +37,14 @@ exports.createJob = (req, res) => {
                     if (err) {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
-                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
+                    company.currentJobId = company.currentJobId + 1;
+                    Company_1.Company.updateOne(company, (err, raw) => {
+                        if (err) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                        }
+                        return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
+                    });
+                    // return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
                 });
             });
         });
@@ -42,6 +52,7 @@ exports.createJob = (req, res) => {
     else {
         const job = new Job_1.Job({
             dateTime: params.dateTime,
+            jobId: company.currentJobId + 1,
             technician: params.technicianId,
             customer: params.customerId,
             type: params.jobTypeId,
@@ -56,7 +67,14 @@ exports.createJob = (req, res) => {
                 console.log(err);
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
+            company.currentJobId = company.currentJobId + 1;
+            Company_1.Company.updateOne(company, (err, raw) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
+            });
+            // return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
         });
     }
 };

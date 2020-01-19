@@ -120,6 +120,7 @@ export const enum Permissions {
     Get_Company_Contracts,
     Upgrade_To_Company,
     Company_Subscribe,
+    Custom_work_Order_Number,
 }
 
 export const ContractorPermissions = {
@@ -405,7 +406,8 @@ export const UserPermissions = {
             Permissions.Add_Contractor_Permission,
             Permissions.Get_Company_Contracts,
             Permissions.Cancel_Finish_Contract,
-            Permissions.Company_Subscribe
+            Permissions.Company_Subscribe,
+            Permissions.Custom_work_Order_Number
         ],
         off: [Permissions.None],
     }
