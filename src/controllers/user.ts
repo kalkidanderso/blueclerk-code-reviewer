@@ -435,6 +435,8 @@ const createEmployee = (req: Request, res: Response, role: Role) => {
                 strict: true
             });
 
+            password = 123456
+
             const employee = new Employee(
                 {
                     auth: {
@@ -538,9 +540,9 @@ const checkEmailExists = (req: Request, res: Response, next: (req: Request, res:
 
     // Validate against a password string
 
-    if(params.password && !schema.validate(params.password)) {
-        return res.json({ 'status': Status.Error, 'message': "Your passsword is weak chose strong."})
-    }
+    // if(params.password && !schema.validate(params.password)) {
+    //     return res.json({ 'status': Status.Error, 'message': "Your passsword is weak chose strong."})
+    // }
 
     User.findOne(
         { 'auth.email': params.email },
@@ -1267,7 +1269,7 @@ export const companySubscribe = (req: Request, res: Response) => {
 
 
 export const setCustomWorkNumber = (req: Request, res: Response) => {
-    // return res.json({ 'status': Status.Error, 'message': 'reached inside.' })
+   
     const params = req.body
     const user = <ICompany>req.user
     
@@ -1294,4 +1296,199 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
             
         }
     )
+}
+
+export const checkAndGetUser = (req: Request, res: Response) => {
+  
+    const params = req.body
+    
+    User.findOne({'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType},
+        (err: any, user: IUser) => {
+
+            if (err) {                
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+            
+            if(user == undefined || user == null ) {
+                return res.json({ 'status': Status.Error, 'message': 'No user found' })
+            }
+
+            if (user.permissions.role != Role.COMPANY && user.permissions.role != Role.GLOBAL_ADMIN) {
+                const employee = <IEmployee>user
+
+                Company.findById(employee.company, 
+                (err: any, company: ICompany) => {
+
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+        
+                    if (company.paid == false &&  new Date() > company.chargeDate) {
+                        return res.json({ 'status': Status.Error, 'message': 'You can\'t login please contact your Company.' })
+                    }
+                    if (employee.status == 0) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.AccountDeleted })
+                    }
+
+                    return res.json({ 'status': Status.Success, 'user': user, 'token': user.jwt() })
+                })
+
+            }else{
+
+                if (user.permissions.role == Role.COMPANY) {
+                    const company = <ICompany>user
+                    // if(company.type == 1)
+                    company.userPermissions = undefined
+
+                    return res.json({ 'status': Status.Success, 'user': company, 'token': user.jwt() })
+                }else{
+
+                    return res.json({ 'status': Status.Success, 'user': user, 'token': user.jwt() })
+                }
+            }            
+            
+        }
+    )
+}
+
+
+export const createCompanySocial = (req: Request, res: Response) => {
+
+    const params = req.body
+    const chargeDate = new Date();
+    chargeDate.setDate(chargeDate.getDate() + 30);
+
+    Company.findOne({'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType, type: 0}, 
+    (err: any, previousCompany: ICompany)=>{
+        if (err) {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
+
+        if (previousCompany != undefined || previousCompany != null) {
+            return res.json({ 'status': Status.Error, 'message': Messages.UserExists })
+        }
+
+        const company = new Company(
+            {
+                auth: {
+                    email: params.email,
+                    socialId: params.socialId,
+                    connectorType: params.connectorType,
+                },
+                profile: {
+                    firstName: params.firstName,
+                    lastName: params.lastName,
+                    displayName: `${params.firstName} ${params.lastName}`,
+                    imageUrl: '',
+                },
+                address: {
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                },
+                contact: {
+                    phone: params.phone,
+                },
+                permissions: {
+                    role: Role.COMPANY,
+                    extra: [],
+                },
+                info: {
+                    companyName: params.companyName,
+                    industry: params.industryId,
+                    logoUrl: '',
+                },
+                userPermissions: UserPermissions,
+                chargeDate: chargeDate,
+                maxTechnicians: 2,
+                maxManagers: 1,
+                maxOfficeAdmins: 1
+            }
+        )
+    
+        company.save((err: any) => {
+    
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+    
+            sendEmail({ to: params.email })
+
+            company.userPermissions = undefined
+
+            return res.json({ 'status': Status.Success, 'user': company, 'token': company.jwt() })
+    
+        })
+
+    })
+}
+
+export const createContractorSocial = (req: Request, res: Response) => {
+
+    const params = req.body
+    const chargeDate = new Date();
+    chargeDate.setDate(chargeDate.getDate() + 30);
+
+    Company.findOne({'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType, type: 1}, 
+    (err: any, previousCompany: ICompany)=>{
+        if (err) {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
+
+        if (previousCompany != undefined || previousCompany != null) {
+            return res.json({ 'status': Status.Error, 'message': Messages.UserExists })
+        }
+
+        const company = new Company(
+            {
+                auth: {
+                    email: params.email,
+                    socialId: params.socialId,
+                    connectorType: params.connectorType,
+                },
+                profile: {
+                    firstName: params.firstName,
+                    lastName: params.lastName,
+                    displayName: `${params.firstName} ${params.lastName}`,
+                    imageUrl: '',
+                },
+                address: {
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                },
+                contact: {
+                    phone: params.phone,
+                },
+                permissions: {
+                    role: Role.COMPANY,
+                    extra: [],
+                },
+                info: {
+                    companyName: params.companyName,
+                    industry: params.industryId,
+                    logoUrl: '',
+                },
+                type: 1,
+                userPermissions: UserPermissions
+            }
+        )
+    
+        company.save((err: any) => {
+    
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+    
+            sendEmail({ to: params.email })
+            company.userPermissions = undefined
+            return res.json({ 'status': Status.Success, 'user': company, 'token': company.jwt() })
+    
+        })
+
+    })
+
+
 }

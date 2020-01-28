@@ -13,6 +13,7 @@ export const Messages = {
     UnAuthorized: 'You are not authorized for this action. Please contact admin for more details.',
     AccountDeleted: 'You account has been deleted. Please contact admin for more details.',
     AgreeToTermAndConditions: 'You must agree to terms and conditions of blueclerk.',
+    UserExists: 'User already exists.',
 }
 
 export const enum Role {
@@ -121,6 +122,7 @@ export const enum Permissions {
     Upgrade_To_Company,
     Company_Subscribe,
     Custom_work_Order_Number,
+    Customer_Import,
 }
 
 export const ContractorPermissions = {
@@ -407,7 +409,8 @@ export const UserPermissions = {
             Permissions.Get_Company_Contracts,
             Permissions.Cancel_Finish_Contract,
             Permissions.Company_Subscribe,
-            Permissions.Custom_work_Order_Number
+            Permissions.Custom_work_Order_Number,
+            Permissions.Customer_Import
         ],
         off: [Permissions.None],
     }

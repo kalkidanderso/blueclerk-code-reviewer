@@ -22,16 +22,24 @@ exports.createEquipmentBrand = (req, res) => {
             industryId = params.industryId;
         }
     }
-    const brand = new EquipmentBrand_1.EquipmentBrand({
-        title: params.title,
-        industry: industryId,
-        createdBy: userId
-    });
-    brand.save((err) => {
+    EquipmentBrand_1.EquipmentBrand.findOne({ title: params.title }, (err, previousEquipmentBrand) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        return res.json({ 'status': constants_1.Status.Success, 'message': 'Equipment brand created successfully.' });
+        if (previousEquipmentBrand != undefined || previousEquipmentBrand != null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "Equipment Brand already created" });
+        }
+        const brand = new EquipmentBrand_1.EquipmentBrand({
+            title: params.title,
+            industry: industryId,
+            createdBy: userId
+        });
+        brand.save((err) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            return res.json({ 'status': constants_1.Status.Success, 'message': 'Equipment brand created successfully.' });
+        });
     });
 };
 exports.getEquipmentBrands = (req, res) => {

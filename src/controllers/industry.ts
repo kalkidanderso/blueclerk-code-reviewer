@@ -9,20 +9,31 @@ export const createIndustry = (req: Request, res: Response) => {
     const params = req.body
     const user = <IUser>req.user
 
-    const industry = new Industry({
-        title: params.title,
-        createdBy:  user._id
-    })
-
-    industry.save((err: any) => {
-
+    Industry.findOne({title: params.title}, (err: any, previousIndustry: IIndustry) =>{
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
+        
+        if(previousIndustry != undefined || previousIndustry != null) {
+            return res.json({'status': Status.Error, 'message': "Industry already created"})
+        }
 
-        return res.json({'status': Status.Success, 'message': 'Industry created successfully.'})
-
+        const industry = new Industry({
+            title: params.title,
+            createdBy:  user._id
+        })
+    
+        industry.save((err: any) => {
+    
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+    
+            return res.json({'status': Status.Success, 'message': 'Industry created successfully.'})
+    
+        })
     })
+
 
 }
 

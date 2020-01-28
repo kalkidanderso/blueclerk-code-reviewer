@@ -297,7 +297,8 @@ exports.UserPermissions = {
             66 /* Get_Company_Contracts */,
             63 /* Cancel_Finish_Contract */,
             68 /* Company_Subscribe */,
-            69 /* Custom_work_Order_Number */
+            69 /* Custom_work_Order_Number */,
+            70 /* Customer_Import */
         ],
         off: [0 /* None */],
     }

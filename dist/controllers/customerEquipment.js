@@ -8,7 +8,7 @@ const mongodb_1 = require("mongodb");
 const util_1 = require("util");
 exports.createCustomerEquipment = (req, res) => {
     const params = req.body;
-    CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag }, (err, customerEquipment) => {
+    CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag, customer: new mongodb_1.ObjectId(params.customerId) }, (err, customerEquipment) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }

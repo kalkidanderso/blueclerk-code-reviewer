@@ -26,6 +26,7 @@ const swaggerDocument = __importStar(require("./swagger.json"));
 // const CronJob = require('cron').CronJob;
 const cron_1 = require("cron");
 const request_1 = __importDefault(require("request"));
+const fileUpload = require('express-fileupload');
 //Environment config
 dotenv_1.default.config();
 //Database connection
@@ -55,6 +56,7 @@ app.use(passport_1.default.initialize());
 passport_2.default(passport_1.default);
 //Logger
 app.use(morgan_1.default('dev'));
+app.use(fileUpload());
 //Swagger
 app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swaggerDocument));
 //Router

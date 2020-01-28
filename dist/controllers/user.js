@@ -306,6 +306,7 @@ const createEmployee = (req, res, role) => {
                 excludeSimilarCharacters: true,
                 strict: true
             });
+            password = 123456;
             const employee = new Employee_1.Employee({
                 auth: {
                     email: params.email,
@@ -382,9 +383,9 @@ const checkEmailExists = (req, res, next) => {
         .has().not().spaces() // Should not have spaces
         .is().not().oneOf(['Passw0rd', 'Password123']); // Blacklist these values
     // Validate against a password string
-    if (params.password && !schema.validate(params.password)) {
-        return res.json({ 'status': constants_1.Status.Error, 'message': "Your passsword is weak chose strong." });
-    }
+    // if(params.password && !schema.validate(params.password)) {
+    //     return res.json({ 'status': Status.Error, 'message': "Your passsword is weak chose strong."})
+    // }
     User_1.User.findOne({ 'auth.email': params.email }, (err, user) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -913,7 +914,6 @@ exports.companySubscribe = (req, res) => {
     });
 };
 exports.setCustomWorkNumber = (req, res) => {
-    // return res.json({ 'status': Status.Error, 'message': 'reached inside.' })
     const params = req.body;
     const user = req.user;
     User_1.User.findById(user._id, (err, company) => {
@@ -929,6 +929,157 @@ exports.setCustomWorkNumber = (req, res) => {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             return res.json({ status: constants_1.Status.Success, message: "Custom work order number added." });
+        });
+    });
+};
+exports.checkAndGetUser = (req, res) => {
+    const params = req.body;
+    User_1.User.findOne({ 'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType }, (err, user) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (user == undefined || user == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'No user found' });
+        }
+        if (user.permissions.role != 3 /* COMPANY */ && user.permissions.role != 4 /* GLOBAL_ADMIN */) {
+            const employee = user;
+            Company_1.Company.findById(employee.company, (err, company) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                if (company.paid == false && new Date() > company.chargeDate) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': 'You can\'t login please contact your Company.' });
+                }
+                if (employee.status == 0) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.AccountDeleted });
+                }
+                return res.json({ 'status': constants_1.Status.Success, 'user': user, 'token': user.jwt() });
+            });
+        }
+        else {
+            if (user.permissions.role == 3 /* COMPANY */) {
+                const company = user;
+                // if(company.type == 1)
+                company.userPermissions = undefined;
+                return res.json({ 'status': constants_1.Status.Success, 'user': company, 'token': user.jwt() });
+            }
+            else {
+                return res.json({ 'status': constants_1.Status.Success, 'user': user, 'token': user.jwt() });
+            }
+        }
+    });
+};
+exports.createCompanySocial = (req, res) => {
+    const params = req.body;
+    const chargeDate = new Date();
+    chargeDate.setDate(chargeDate.getDate() + 30);
+    Company_1.Company.findOne({ 'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType, type: 0 }, (err, previousCompany) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (previousCompany != undefined || previousCompany != null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        const company = new Company_1.Company({
+            auth: {
+                email: params.email,
+                socialId: params.socialId,
+                connectorType: params.connectorType,
+            },
+            profile: {
+                firstName: params.firstName,
+                lastName: params.lastName,
+                displayName: `${params.firstName} ${params.lastName}`,
+                imageUrl: '',
+            },
+            address: {
+                street: '',
+                city: '',
+                state: '',
+                zipCode: '',
+            },
+            contact: {
+                phone: params.phone,
+            },
+            permissions: {
+                role: 3 /* COMPANY */,
+                extra: [],
+            },
+            info: {
+                companyName: params.companyName,
+                industry: params.industryId,
+                logoUrl: '',
+            },
+            userPermissions: constants_1.UserPermissions,
+            chargeDate: chargeDate,
+            maxTechnicians: 2,
+            maxManagers: 1,
+            maxOfficeAdmins: 1
+        });
+        company.save((err) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            aws_1.sendEmail({ to: params.email });
+            company.userPermissions = undefined;
+            return res.json({ 'status': constants_1.Status.Success, 'user': company, 'token': company.jwt() });
+        });
+    });
+};
+exports.createContractorSocial = (req, res) => {
+    const params = req.body;
+    const chargeDate = new Date();
+    chargeDate.setDate(chargeDate.getDate() + 30);
+    Company_1.Company.findOne({ 'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType, type: 1 }, (err, previousCompany) => {
+        if (err) {
+            console.log("error 1\n", err);
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (previousCompany != undefined || previousCompany != null) {
+            console.log("error 2\n", previousCompany);
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        const company = new Company_1.Company({
+            auth: {
+                email: params.email,
+                socialId: params.socialId,
+                connectorType: params.connectorType,
+            },
+            profile: {
+                firstName: params.firstName,
+                lastName: params.lastName,
+                displayName: `${params.firstName} ${params.lastName}`,
+                imageUrl: '',
+            },
+            address: {
+                street: '',
+                city: '',
+                state: '',
+                zipCode: '',
+            },
+            contact: {
+                phone: params.phone,
+            },
+            permissions: {
+                role: 3 /* COMPANY */,
+                extra: [],
+            },
+            info: {
+                companyName: params.companyName,
+                industry: params.industryId,
+                logoUrl: '',
+            },
+            type: 1,
+            userPermissions: constants_1.UserPermissions
+        });
+        company.save((err) => {
+            if (err) {
+                console.log("error 3\n", err);
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            aws_1.sendEmail({ to: params.email });
+            company.userPermissions = undefined;
+            return res.json({ 'status': constants_1.Status.Success, 'user': company, 'token': company.jwt() });
         });
     });
 };

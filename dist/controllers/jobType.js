@@ -12,15 +12,23 @@ exports.createJobType = (req, res) => {
     if (user.permissions.role != 4 /* GLOBAL_ADMIN */) {
         userId = req.companyId;
     }
-    const jobType = new JobType_1.JobType({
-        title: params.title,
-        createdBy: userId
-    });
-    jobType.save((err) => {
+    JobType_1.JobType.findOne({ title: params.title }, (err, previousJobType) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        return res.json({ 'status': constants_1.Status.Success, 'message': 'Job type created successfully.' });
+        if (previousJobType != undefined || previousJobType != null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "Job Type created" });
+        }
+        const jobType = new JobType_1.JobType({
+            title: params.title,
+            createdBy: userId
+        });
+        jobType.save((err) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            return res.json({ 'status': constants_1.Status.Success, 'message': 'Job type created successfully.' });
+        });
     });
 };
 exports.getJobTypes = (req, res) => {

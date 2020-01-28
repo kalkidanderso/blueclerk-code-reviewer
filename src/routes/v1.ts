@@ -23,6 +23,7 @@ import * as companyEquipmentInventoryController from '../controllers/companyEqui
 import * as companyCardController from '../controllers/companyCard'
 import * as subscriptionController from '../controllers/subscription'
 import * as permissionController from '../controllers/permission'
+import * as customerImportController from '../controllers/customerImport'
 import { Personalize } from 'aws-sdk'
 
 
@@ -621,10 +622,10 @@ router.get(
     subscriptionController.chargeCompanySubscription
 )
 
-// router.post(
-//     '/updateSubscription',
-//     userController.updateSub
-// )
+router.post(
+    '/updateSubscription',
+    userController.updateSub
+)
 
 router.post(
     '/contractorSignup',
@@ -711,6 +712,32 @@ router.post(
     checkUserPermissions(Permissions.Custom_work_Order_Number),
     validate(Validations.customWorkOrder),
     userController.setCustomWorkNumber
+)
+
+router.post(
+    '/checkAndGet',
+    validate(Validations.socialLogin),
+    userController.checkAndGetUser
+)
+
+router.post(
+    '/signUpSocial',
+    validate(Validations.socialSignUp),
+    userController.createCompanySocial
+)
+
+router.post(
+    '/contractorSignUpSocial',
+    validate(Validations.socialSignUp),
+    userController.createContractorSocial
+)
+
+router.post(
+    '/uploadFile',
+    passport.authenticate('jwt', { session: false }),
+    checkUserPermissions(Permissions.Custom_work_Order_Number),
+    // validate(Validations.customerImport),
+    customerImportController.uploadfile
 )
 
 export default router

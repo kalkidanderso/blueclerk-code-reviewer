@@ -8,7 +8,7 @@ export const createJobType = (req: Request, res: Response) => {
 
     const params = req.body
     const user = <IUser>req.user
-    var userId = null
+    var userId: any = null
 
     if (user.permissions.role == Role.COMPANY) {
         userId = user._id
@@ -18,19 +18,29 @@ export const createJobType = (req: Request, res: Response) => {
         userId = req.companyId
     }
 
-    const jobType = new JobType({
-        title: params.title,
-        createdBy:  userId
-    })
-
-    jobType.save((err: any) => {
-
+    JobType.findOne({title: params.title}, (err: any, previousJobType: IJobType) =>{
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
+        
+        if(previousJobType != undefined || previousJobType != null) {
+            return res.json({'status': Status.Error, 'message': "Job Type created"})
+        }
 
-        return res.json({'status': Status.Success, 'message': 'Job type created successfully.'})
-
+        const jobType = new JobType({
+            title: params.title,
+            createdBy:  userId
+        })
+    
+        jobType.save((err: any) => {
+    
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+    
+            return res.json({'status': Status.Success, 'message': 'Job type created successfully.'})
+    
+        })
     })
 
 }

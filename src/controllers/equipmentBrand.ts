@@ -3,15 +3,14 @@ import { Status, Role, Messages } from '../common/constants'
 
 import { EquipmentBrand, IEquipmentBrand } from '../models/EquipmentBrand'
 import { IUser } from '../models/User'
-import { IEmployee } from '../models/Employee'
 import { Company, ICompany } from '../models/Company'
 
 export const createEquipmentBrand = (req: Request, res: Response) => {
 
     const params = req.body
     const user = <IUser>req.user
-    var userId = null
-    var industryId = null
+    var userId: any = null
+    var industryId: any = null
 
     if (user.permissions.role == Role.COMPANY) {
         userId = user._id
@@ -30,20 +29,31 @@ export const createEquipmentBrand = (req: Request, res: Response) => {
         }
     }
 
-    const brand = new EquipmentBrand({
-        title: params.title,
-        industry: industryId,
-        createdBy:  userId
-    })
 
-    brand.save((err: any) => {
-
+    EquipmentBrand.findOne({title: params.title}, (err: any, previousEquipmentBrand: IEquipmentBrand) =>{
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
+        
+        if(previousEquipmentBrand != undefined || previousEquipmentBrand != null) {
+            return res.json({'status': Status.Error, 'message': "Equipment Brand already created"})
+        }
 
-        return res.json({'status': Status.Success, 'message': 'Equipment brand created successfully.'})
-
+        const brand = new EquipmentBrand({
+            title: params.title,
+            industry: industryId,
+            createdBy:  userId
+        })
+    
+        brand.save((err: any) => {
+    
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+    
+            return res.json({'status': Status.Success, 'message': 'Equipment brand created successfully.'})
+    
+        })
     })
 
 }

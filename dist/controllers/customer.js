@@ -9,37 +9,45 @@ exports.createCustomer = (req, res) => {
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
     }
-    const customer = new Customer_1.Customer({
-        info: {
-            name: params.name,
-            email: params.email,
-        },
-        address: {
-            street: params.street,
-            city: params.city,
-            state: params.state,
-            zipCode: params.zipCode,
-        },
-        contact: {
-            name: params.contactName,
-            phone: params.phone,
-        },
-        company: companyId
-    });
-    customer.save((err) => {
+    Customer_1.Customer.findOne({ 'info.email': params.email, company: companyId }, (err, previousCustomer) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        Company_1.Company.findById(req.companyId, function (err, company) {
+        if (previousCustomer != undefined || previousCustomer != null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "Customer already exist" });
+        }
+        const customer = new Customer_1.Customer({
+            info: {
+                name: params.name,
+                email: params.email,
+            },
+            address: {
+                street: params.street,
+                city: params.city,
+                state: params.state,
+                zipCode: params.zipCode,
+            },
+            contact: {
+                name: params.contactName,
+                phone: params.phone,
+            },
+            company: companyId
+        });
+        customer.save((err) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            company.customers.push(customer._id);
-            company.updateOne({ customers: company.customers }, (err, raw) => {
+            Company_1.Company.findById(req.companyId, function (err, company) {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer created successfully.' });
+                company.customers.push(customer._id);
+                company.updateOne({ customers: company.customers }, (err, raw) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer created successfully.' });
+                });
             });
         });
     });

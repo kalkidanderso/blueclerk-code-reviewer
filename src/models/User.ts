@@ -10,6 +10,8 @@ export interface IUser extends Document {
         password: string
         resetPasswordToken: string
         resetPasswordExpires: Date    
+        socialId: string
+        connectorType: number
     }
     profile: {
         firstName: string
@@ -42,9 +44,14 @@ const UserSchema = new Schema({
 
     auth: {
         email: { type: String, required: true, unique: true },
-        password: { type: String, required: true },
+        password: { type: String },
         resetPasswordToken: String,
-        resetPasswordExpires: Date,   
+        resetPasswordExpires: Date,
+        socialId: String,
+        connectorType: {
+            type: Number,
+            default: 0
+        }
     },
     profile: {
         firstName: String,

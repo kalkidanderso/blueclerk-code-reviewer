@@ -3,9 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../common/constants");
 const CompanyEquipment_1 = require("../models/CompanyEquipment");
 const util_1 = require("util");
+const mongodb_1 = require("mongodb");
 exports.createCompanyEquipment = (req, res) => {
     const params = req.body;
-    CompanyEquipment_1.CompanyEquipment.findOne({ $or: [{ 'info.nfcTag': params.nfcTag }, { 'info.qrCode': params.qrCode }] }, (err, compEquipmemnt) => {
+    CompanyEquipment_1.CompanyEquipment.findOne({ $or: [{ 'info.nfcTag': params.nfcTag, company: new mongodb_1.ObjectId(req.companyId) }, { 'info.qrCode': params.qrCode, company: new mongodb_1.ObjectId(req.companyId) }] }, (err, compEquipmemnt) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }

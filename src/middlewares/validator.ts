@@ -22,6 +22,9 @@ export const validate = (validations: ValidationChain[]) => {
 export const Validations = {
   //Auth
   login: [check('email').exists(), check('email').isEmail(), check('password').exists()],
+  socialLogin: [check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric()],
+  socialSignUp: [check('email').exists(), check('email').isEmail(), check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
+  // customerImport: [check('customerSheet').exists()],
   // companySubscribe: [check('agreedStatus').exists()],
   agree: [check('agreedStatus').exists()],
   signUp: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],

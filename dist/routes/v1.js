@@ -32,6 +32,7 @@ const companyEquipmentInventoryController = __importStar(require("../controllers
 const companyCardController = __importStar(require("../controllers/companyCard"));
 const subscriptionController = __importStar(require("../controllers/subscription"));
 const permissionController = __importStar(require("../controllers/permission"));
+const customerImportController = __importStar(require("../controllers/customerImport"));
 const router = express_1.default.Router();
 //Auth
 router.post('/login', validator_1.validate(validator_1.Validations.login), userController.login);
@@ -128,10 +129,7 @@ router.post('/getOrders', passport_1.default.authenticate('jwt', { session: fals
 router.post('/buySubscriptions', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(58 /* Subscription_Buy */), validator_1.validate(validator_1.Validations.buySubscriptions), subscriptionController.addCompanySubscriptions);
 router.post('/cancelSubscriptions', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(59 /* Subscription_Cancel */), validator_1.validate(validator_1.Validations.buySubscriptions), subscriptionController.removeCompanySubscriptions);
 router.get('/chargeSubscription', subscriptionController.chargeCompanySubscription);
-// router.post(
-//     '/updateSubscription',
-//     userController.updateSub
-// )
+router.post('/updateSubscription', userController.updateSub);
 router.post('/contractorSignup', validator_1.validate(validator_1.Validations.contractorSignup), userController.createContractor);
 router.post('/searchContractor', validator_1.validate(validator_1.Validations.searchContractor), userController.searchContractor);
 router.post('/startContract', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(61 /* Invite_Contractor */), validator_1.validate(validator_1.Validations.inviteContractor), userController.startContract);
@@ -145,5 +143,11 @@ router.post('/CancelOrFinish', passport_1.default.authenticate('jwt', { session:
 router.post('/changeContractorPermission', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(64 /* Add_Contractor_Permission */), validator_1.validate(validator_1.Validations.contractorPermissions), permissionController.addContractorPermissions);
 router.post('/upgradeToCompany', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkUserPermissions(67 /* Upgrade_To_Company */), validator_1.validate(validator_1.Validations.upgradeToCompany), userController.upgradeToCompany);
 router.post('/setCustomWorkOrderNumber', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkUserPermissions(69 /* Custom_work_Order_Number */), validator_1.validate(validator_1.Validations.customWorkOrder), userController.setCustomWorkNumber);
+router.post('/checkAndGet', validator_1.validate(validator_1.Validations.socialLogin), userController.checkAndGetUser);
+router.post('/signUpSocial', validator_1.validate(validator_1.Validations.socialSignUp), userController.createCompanySocial);
+router.post('/contractorSignUpSocial', validator_1.validate(validator_1.Validations.socialSignUp), userController.createContractorSocial);
+router.post('/uploadFile', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkUserPermissions(69 /* Custom_work_Order_Number */), 
+// validate(Validations.customerImport),
+customerImportController.uploadfile);
 exports.default = router;
 //# sourceMappingURL=v1.js.map

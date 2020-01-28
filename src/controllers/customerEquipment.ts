@@ -12,7 +12,7 @@ export const createCustomerEquipment = (req: Request, res: Response) => {
 
     const params = req.body
 
-    CustomerEquipment.findOne({'info.nfcTag': params.nfcTag}, 
+    CustomerEquipment.findOne({'info.nfcTag': params.nfcTag, customer: new ObjectId(params.customerId)}, 
     (err: any, customerEquipment: ICustomerEquipment)=>{
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError})

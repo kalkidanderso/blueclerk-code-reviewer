@@ -22,16 +22,24 @@ exports.createEquipmentType = (req, res) => {
             industryId = params.industryId;
         }
     }
-    const type = new EquipmentType_1.EquipmentType({
-        title: params.title,
-        industry: industryId,
-        createdBy: userId
-    });
-    type.save((err) => {
+    EquipmentType_1.EquipmentType.findOne({ title: params.title }, (err, previousEquipmentType) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        return res.json({ 'status': constants_1.Status.Success, 'message': 'Equipment type created successfully.' });
+        if (previousEquipmentType != undefined || previousEquipmentType != null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "Equipment Type already created" });
+        }
+        const type = new EquipmentType_1.EquipmentType({
+            title: params.title,
+            industry: industryId,
+            createdBy: userId
+        });
+        type.save((err) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            return res.json({ 'status': constants_1.Status.Success, 'message': 'Equipment type created successfully.' });
+        });
     });
 };
 exports.getEquipmentTypes = (req, res) => {

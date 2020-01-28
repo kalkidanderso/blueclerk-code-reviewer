@@ -24,6 +24,9 @@ exports.validate = (validations) => {
 exports.Validations = {
     //Auth
     login: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('password').exists()],
+    socialLogin: [express_validator_1.check('socialId').exists(), express_validator_1.check('connectorType').exists(), express_validator_1.check('connectorType').isNumeric()],
+    socialSignUp: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('socialId').exists(), express_validator_1.check('connectorType').exists(), express_validator_1.check('connectorType').isNumeric(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists(), express_validator_1.check('companyName').exists(), express_validator_1.check('industryId').exists()],
+    // customerImport: [check('customerSheet').exists()],
     // companySubscribe: [check('agreedStatus').exists()],
     agree: [express_validator_1.check('agreedStatus').exists()],
     signUp: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('password').exists(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists(), express_validator_1.check('companyName').exists(), express_validator_1.check('industryId').exists()],

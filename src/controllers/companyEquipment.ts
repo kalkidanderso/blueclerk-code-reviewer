@@ -3,13 +3,14 @@ import { Status, Messages } from '../common/constants'
 
 import { CompanyEquipment, ICompanyEquipment } from '../models/CompanyEquipment'
 import { isNull } from 'util'
+import { ObjectId } from 'mongodb'
 
 export const createCompanyEquipment = (req: Request, res: Response) => {
 
     const params = req.body
 
     
-    CompanyEquipment.findOne(  { $or: [{'info.nfcTag': params.nfcTag}, {'info.qrCode': params.qrCode}]}, 
+    CompanyEquipment.findOne(  { $or: [{'info.nfcTag': params.nfcTag, company: new ObjectId(req.companyId)}, {'info.qrCode': params.qrCode, company: new ObjectId(req.companyId)}]}, 
     (err: any, compEquipmemnt: ICompanyEquipment)=>{
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError})
