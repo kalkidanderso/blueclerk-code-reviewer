@@ -30,7 +30,7 @@ export const sendEmail = function(options: any) {
           },
           Body: {
             Html: {
-              Data: "Welcome to Blueclerk.com! Please click on the link to confirm your email https://blueclerk.com",
+              Data: "Welcome to Blueclerk.com! Please click on the link to confirm your email https://app.blueclerk.com",
             },
           },
         },
