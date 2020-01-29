@@ -21,10 +21,8 @@ exports.createCompanyEquipmentInventory = (req, res) => {
     }
     CompanyEquipment_1.CompanyEquipment.find({ $or: [{ 'info.nfcTag': { $in: nfcTags } }, { 'info.qrCode': { $in: qrCodes } }] }, '_id', (err, companyEquipments) => {
         if (err) {
-            console.log(err);
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        console.log("company equipment \n" + companyEquipments);
         var ids = companyEquipments.map(function (item) {
             return item._id;
         });
@@ -44,14 +42,7 @@ exports.createCompanyEquipmentInventory = (req, res) => {
 };
 exports.getIventoryHistory = (req, res) => {
     const user = req.user;
-    console.log(user._id);
-    Group_1.Group.findOne(
-    // {member: user._id},
-    { members: new mongodb_1.ObjectId(user._id) }, 
-    // { members: { 
-    //     $elemMatch: { id: user._id } 
-    //  }},
-    (err, group) => {
+    Group_1.Group.findOne({ members: new mongodb_1.ObjectId(user._id) }, (err, group) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
@@ -59,11 +50,8 @@ exports.getIventoryHistory = (req, res) => {
             return res.json({ 'status': constants_1.Status.Success, 'companyEquipmentInventory': [] });
         }
         const members = group.members.map((id) => {
-            console.log(id);
-            // new ObjectId(id.toString())
             return id;
         });
-        console.log("member \n " + members);
         CompanyEquipmentInventory_1.CompanyEquipmentInventory.find({ createdBy: { $in: members } })
             .populate({
             path: 'createdBy',
@@ -71,12 +59,10 @@ exports.getIventoryHistory = (req, res) => {
         })
             .exec((err, companyEquipmentInventory) => {
             if (err) {
-                console.log(err);
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             return res.json({ 'status': constants_1.Status.Success, 'companyEquipmentInventory': companyEquipmentInventory });
         });
-        // return res.json({'status': Status.Success, 'abc': []}) 
     });
 };
 //# sourceMappingURL=companyEquipmentInventory.js.map

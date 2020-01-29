@@ -42,6 +42,8 @@ tags:
   - name: Subscription
   - name: Permission
     description: For employee or company permissions
+  - name: Contractor
+    description: For contractor login, signup and details
     
 paths:
   /login:
@@ -115,11 +117,239 @@ paths:
           description: Success
           schema:
             $ref: '#/definitions/AuthAPIResponse'
-  /adminSignUp:
+  /searchContractor:
+    post:
+      tags:
+        - Contractor
+      summary: Search for contractor
+      description: 'Company can serach contractors'
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: email
+          in: formData
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/User'
+      security:
+        - Bearer: []
+  /inviteContractor:
+    post:
+      tags:
+        - Contractor
+      summary: To invite contractor to join BlueClerk
+      description: A company can invite a contractor
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: email
+          in: formData
+          description: email of contractor to invite
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /startContract:
+    post:
+      tags:
+        - Contractor
+      summary: To send offer to a contractor
+      description: A company can initiate a contract with contractor
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: contractorId
+          in: formData
+          description: Id of a contractor fetched with /searchContractor api
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getContracts:
+    post:
+      tags:
+        - Contractor
+      summary: To get all contracts by contractor
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  industries:
+                    type: array
+                    items:
+                      $ref: '#/definitions/Contract'
+      security:
+        - Bearer: []
+  /getCompanyContracts:
+    post:
+      tags:
+        - Contractor
+      summary: To get all contracts by company
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  industries:
+                    type: array
+                    items:
+                      $ref: '#/definitions/Contract'
+      security:
+        - Bearer: []
+  /acceptOrRejectContract:
+    post:
+      tags:
+        - Contractor
+      summary: Accepting or rejecting a contract by contractor
+      # description: Only a global admin can create an industry
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: contractId
+          in: formData
+          description: Id of a contract fetched by /getContracts api
+          required: true
+          type: string
+        - name: status
+          in: formData
+          description: status of contract accept / reject
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /CancelOrFinish:
+    post:
+      tags:
+        - Contractor
+      summary: Canceling of Finishing contract by company
+      # description: Only a global admin can create an industry
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: contractId
+          in: formData
+          description: Id of a contract fetched by /getContracts api
+          required: true
+          type: string
+        - name: status
+          in: formData
+          description: status of contract cancel / finish
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /upgradeToCompany:
+    post:
+      tags:
+        - Contractor
+      summary: Canceling of Finishing contract by company
+      # description: Only a global admin can create an industry
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: token
+          in: formData
+          description: strip token got from mobile end
+          required: true
+          type: string
+        - name: ending
+          in: formData
+          description: last 4 digits of card
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /changeContractorPermission:
+    post:
+      tags:
+        - Permission
+      summary: Assigning permissions to contractor
+      # description: Only a global admin can create an industry
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: contractorId
+          in: formData
+          description: Id of a contractor
+          required: true
+          type: string
+        - name: permissions
+          in: formData
+          description: comma seprated permissions
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /contractorSignup:
     post:
       tags:
         - Auth
-      summary: Sign up for global admin
+      summary: Sign up for contractor
       description: ''
       consumes:
         - application/x-www-form-urlencoded
@@ -146,11 +376,58 @@ paths:
           in: formData
           required: true
           type: string
+        - name: companyName
+          in: formData
+          required: true
+          type: string
+        - name: industryId
+          in: formData
+          description: >-
+            Id of the selected industry from the industries fetched with
+            /getIndustries api
+          required: true
+          type: string
       responses:
         '200':
           description: Success
           schema:
             $ref: '#/definitions/AuthAPIResponse'
+  # /adminSignUp:
+  #   post:
+  #     tags:
+  #       - Auth
+  #     summary: Sign up for global admin
+  #     description: ''
+  #     consumes:
+  #       - application/x-www-form-urlencoded
+  #     produces:
+  #       - application/json
+  #     parameters:
+  #       - name: email
+  #         in: formData
+  #         required: true
+  #         type: string
+  #       - name: password
+  #         in: formData
+  #         required: true
+  #         type: string
+  #       - name: firstName
+  #         in: formData
+  #         required: true
+  #         type: string
+  #       - name: lastName
+  #         in: formData
+  #         required: true
+  #         type: string
+  #       - name: phone
+  #         in: formData
+  #         required: true
+  #         type: string
+  #     responses:
+  #       '200':
+  #         description: Success
+  #         schema:
+  #           $ref: '#/definitions/AuthAPIResponse'
   /createIndustry:
     post:
       tags:
@@ -195,28 +472,28 @@ paths:
                     type: array
                     items:
                       $ref: '#/definitions/Industry'
-  /removeIndustry:
-    post:
-      tags:
-        - Industry
-      summary: To remove an industry
-      description: Only a global admin can remove an industry
-      consumes:
-        - application/x-www-form-urlencoded
-      produces:
-        - application/json
-      parameters:
-        - name: industryId
-          in: formData
-          required: true
-          type: string
-      responses:
-        '200':
-          description: Success
-          schema:
-            $ref: '#/definitions/GeneralAPIResponse'
-      security:
-        - Bearer: []
+  # /removeIndustry:
+  #   post:
+  #     tags:
+  #       - Industry
+  #     summary: To remove an industry
+  #     description: Only a global admin can remove an industry
+  #     consumes:
+  #       - application/x-www-form-urlencoded
+  #     produces:
+  #       - application/json
+  #     parameters:
+  #       - name: industryId
+  #         in: formData
+  #         required: true
+  #         type: string
+  #     responses:
+  #       '200':
+  #         description: Success
+  #         schema:
+  #           $ref: '#/definitions/GeneralAPIResponse'
+  #     security:
+  #       - Bearer: []
  
   /createManager:
     post:
@@ -610,6 +887,28 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /agreeTermAndCondition:
+    post:
+      tags:
+        - Users
+      summary: Employee agree to terms and condition
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: agreedStatus
+          in: formData
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /createEquipmentType:
     post:
       tags:
@@ -648,6 +947,11 @@ paths:
         - application/x-www-form-urlencoded
       produces:
         - application/json
+      parameters:
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success
@@ -699,6 +1003,11 @@ paths:
         - application/x-www-form-urlencoded
       produces:
         - application/json
+      parameters:
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success
@@ -829,6 +1138,10 @@ paths:
           description: >-
             Should include non-active clients in the response. true->include
             false->don't include
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success
@@ -895,6 +1208,10 @@ paths:
           description: >-
             Id of the selected customer from the list received in /getCustomers
             api
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success
@@ -917,6 +1234,10 @@ paths:
           in: formData
           required: true
           type: string
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success
@@ -965,6 +1286,11 @@ paths:
         - application/x-www-form-urlencoded
       produces:
         - application/json
+      parameters:
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success
@@ -1019,11 +1345,10 @@ paths:
           # required: true
           type: string
           description: Description of the job 
-        - name: equipmentId
+        - name: companyId
           in: formData
-          # required: true
           type: string
-          description: equipment id on which the job is going to be performed 
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success
@@ -1041,6 +1366,11 @@ paths:
         - application/x-www-form-urlencoded
       produces:
         - application/json
+      parameters:
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success
@@ -1071,6 +1401,10 @@ paths:
           required: true
           type: string
           description: 'Id of employee who performed the jobs'
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success
@@ -1101,6 +1435,10 @@ paths:
           required: true
           type: string
           description: 'Id of job you want to get detail of'
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success
@@ -1132,6 +1470,10 @@ paths:
           type: string
           description: >-
             Id of job to start
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success
@@ -1165,6 +1507,10 @@ paths:
           in: formData
           required: true
           type: string
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success
@@ -1199,6 +1545,10 @@ paths:
           required: true
           type: string
           description: 'date time of job. e.g. 2019-12-22 20:30:00'
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success
@@ -1210,7 +1560,7 @@ paths:
     post:
       tags:
         - Job
-      summary: To link job with customer equipment for job history
+      summary: Scan customer eqiupment for the job
       description: ''
       consumes:
         - application/x-www-form-urlencoded
@@ -1230,8 +1580,13 @@ paths:
         - name: comment
           in: formData
           type: string
+          required: true
           description: >-
             additional note by tech while scaning
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hiting for other company'
       responses:
         '200':
           description: Success
@@ -1254,6 +1609,10 @@ paths:
           in: formData
           required: true
           type: string
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success
@@ -1265,7 +1624,7 @@ paths:
                   jobs:
                     type: array
                     items:
-                      $ref: '#/definitions/Job'
+                      $ref: '#/definitions/Scan'
       security:
         - Bearer: []
   /uploadImage:
@@ -1283,6 +1642,10 @@ paths:
           in: formData
           required: true
           type: file
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success
@@ -1819,7 +2182,23 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
-  
+  /subscribe:
+    post:
+      tags:
+        - Subscription
+      summary: Company pay subscription for its own account after trial expires
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /getDefaultPermissions:
     post:
       tags:
@@ -2300,6 +2679,41 @@ definitions:
       ending:
         type: string
         description: Ending 4 digits of card
+  Contract:
+    type: object
+    properties:
+      id:
+        type: string
+      company:
+        type: string
+        description: Id of company who hired the contractor
+      contractor:
+        type: string
+        description: Id of contractor hired by the company
+      type:
+        type: string
+        description: type of contract 0 for contractor and 1 for contract with company
+  Scan:
+    type: object
+    properties:
+      id:
+        type: string
+      job:
+        type: string
+        description: Id of job performed on equipment
+      equipment:
+        type: string
+        description: Id of an equipment job was performed on
+      user:
+        type: string
+        description: Id of a user who performed the job
+      comment:
+        type: string
+        description: comment added by the user performed the scan
+      timeOfScan: 
+        type: string
+        format: date-time
+        description: time when the equipment was scanned
   GeneralAPIResponse:
     type: object
     properties:

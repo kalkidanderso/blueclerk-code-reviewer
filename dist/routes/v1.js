@@ -35,6 +35,8 @@ const permissionController = __importStar(require("../controllers/permission"));
 const router = express_1.default.Router();
 //Auth
 router.post('/login', validator_1.validate(validator_1.Validations.login), userController.login);
+router.post('/subscribe', passport_1.default.authenticate('jwt', { session: false }), userController.companySubscribe);
+router.post('/agreeTermAndCondition', passport_1.default.authenticate('jwt', { session: false }), validator_1.validate(validator_1.Validations.agree), userController.agreeToTermAndConditions);
 router.post('/signup', validator_1.validate(validator_1.Validations.signUp), userController.createCompany);
 router.post('/adminSignUp', validator_1.validate(validator_1.Validations.adminSignUp), userController.createGlobalAdmin);
 router.post('/getDefaultPermissions', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(1 /* Permission_Get_All */), permissionController.getAllPermissions);
@@ -47,7 +49,13 @@ router.post('/getEmployeePermissions', passport_1.default.authenticate('jwt', { 
 //Industry
 router.post('/createIndustry', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(4 /* GLOBAL_ADMIN */), validator_1.validate(validator_1.Validations.createIndustry), industryController.createIndustry);
 router.post('/getIndustries', industryController.getIndustries);
-router.post('/removeIndustry', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkPermissions(4 /* GLOBAL_ADMIN */), validator_1.validate(validator_1.Validations.removeIndustry), industryController.removeIndustry);
+// router.post(
+//     '/removeIndustry',
+//     passport.authenticate('jwt', { session: false }),
+//     checkPermissions(Role.GLOBAL_ADMIN),
+//     validate(Validations.removeIndustry),
+//     industryController.removeIndustry
+// )
 //Users
 router.post('/createManager', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(8 /* User_Create_Manager */), validator_1.validate(validator_1.Validations.createManager), company_1.getCompnayId(), userController.createManager);
 router.post('/createTechnician', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(10 /* User_Create_Technician */), validator_1.validate(validator_1.Validations.createTechnician), company_1.getCompnayId(), userController.createTechnician);
@@ -120,6 +128,21 @@ router.post('/getOrders', passport_1.default.authenticate('jwt', { session: fals
 router.post('/buySubscriptions', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(58 /* Subscription_Buy */), validator_1.validate(validator_1.Validations.buySubscriptions), subscriptionController.addCompanySubscriptions);
 router.post('/cancelSubscriptions', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(59 /* Subscription_Cancel */), validator_1.validate(validator_1.Validations.buySubscriptions), subscriptionController.removeCompanySubscriptions);
 router.get('/chargeSubscription', subscriptionController.chargeCompanySubscription);
-router.post('/updateSubscription', userController.updateSub);
+// router.post(
+//     '/updateSubscription',
+//     userController.updateSub
+// )
+router.post('/contractorSignup', validator_1.validate(validator_1.Validations.contractorSignup), userController.createContractor);
+router.post('/searchContractor', validator_1.validate(validator_1.Validations.searchContractor), userController.searchContractor);
+router.post('/startContract', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(61 /* Invite_Contractor */), validator_1.validate(validator_1.Validations.inviteContractor), userController.startContract);
+router.post('/inviteContractor', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(61 /* Invite_Contractor */), validator_1.validate(validator_1.Validations.searchContractor), userController.inviteContractor);
+// limit only for contractors
+router.post('/getContracts', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkUserPermissions(65 /* Get_All_Contracts */), userController.getAllContracts);
+router.post('/getCompanyContracts', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(66 /* Get_Company_Contracts */), userController.getCompanyContracts);
+// limit only for contractors
+router.post('/acceptOrRejectContract', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkUserPermissions(62 /* Accept_Reject_Contract */), validator_1.validate(validator_1.Validations.updateContract), userController.acceptRejectContract);
+router.post('/CancelOrFinish', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(63 /* Cancel_Finish_Contract */), validator_1.validate(validator_1.Validations.updateContract), userController.cancelOrFinishContract);
+router.post('/changeContractorPermission', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(64 /* Add_Contractor_Permission */), validator_1.validate(validator_1.Validations.contractorPermissions), permissionController.addContractorPermissions);
+router.post('/upgradeToCompany', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkUserPermissions(67 /* Upgrade_To_Company */), validator_1.validate(validator_1.Validations.upgradeToCompany), userController.upgradeToCompany);
 exports.default = router;
 //# sourceMappingURL=v1.js.map

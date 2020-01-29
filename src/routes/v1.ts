@@ -36,6 +36,19 @@ router.post(
 )
 
 router.post(
+    '/subscribe',
+    passport.authenticate('jwt', { session: false }),
+    userController.companySubscribe
+)
+
+router.post(
+    '/agreeTermAndCondition',
+    passport.authenticate('jwt', { session: false }),
+    validate(Validations.agree),
+    userController.agreeToTermAndConditions
+)
+
+router.post(
     '/signup',
     validate(Validations.signUp),
     userController.createCompany
@@ -121,13 +134,13 @@ router.post(
     industryController.getIndustries
 )
 
-router.post(
-    '/removeIndustry',
-    passport.authenticate('jwt', { session: false }),
-    checkPermissions(Role.GLOBAL_ADMIN),
-    validate(Validations.removeIndustry),
-    industryController.removeIndustry
-)
+// router.post(
+//     '/removeIndustry',
+//     passport.authenticate('jwt', { session: false }),
+//     checkPermissions(Role.GLOBAL_ADMIN),
+//     validate(Validations.removeIndustry),
+//     industryController.removeIndustry
+// )
 
 //Users
 router.post(
@@ -608,9 +621,88 @@ router.get(
     subscriptionController.chargeCompanySubscription
 )
 
+// router.post(
+//     '/updateSubscription',
+//     userController.updateSub
+// )
+
 router.post(
-    '/updateSubscription',
-    userController.updateSub
+    '/contractorSignup',
+    validate(Validations.contractorSignup),
+    userController.createContractor
+)
+
+router.post(
+    '/searchContractor',
+    validate(Validations.searchContractor),
+    userController.searchContractor
+)
+
+router.post(
+    '/startContract',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Invite_Contractor),
+    validate(Validations.inviteContractor),
+    userController.startContract
+)
+
+router.post(
+    '/inviteContractor',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Invite_Contractor),
+    validate(Validations.searchContractor),
+    userController.inviteContractor
+)
+
+// limit only for contractors
+router.post(
+    '/getContracts',
+    passport.authenticate('jwt', { session: false }),
+    checkUserPermissions(Permissions.Get_All_Contracts),
+    userController.getAllContracts
+)
+router.post(
+    '/getCompanyContracts',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Get_Company_Contracts),
+    userController.getCompanyContracts
+)
+// limit only for contractors
+router.post(
+    '/acceptOrRejectContract',
+    passport.authenticate('jwt', { session: false }),
+    checkUserPermissions(Permissions.Accept_Reject_Contract),
+    validate(Validations.updateContract),
+    userController.acceptRejectContract
+)
+
+router.post(
+    '/CancelOrFinish',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Cancel_Finish_Contract),
+    validate(Validations.updateContract),
+    userController.cancelOrFinishContract
+)
+
+router.post(
+    '/changeContractorPermission',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Add_Contractor_Permission),
+    validate(Validations.contractorPermissions),
+    permissionController.addContractorPermissions
+)
+
+router.post(
+    '/upgradeToCompany',
+    passport.authenticate('jwt', { session: false }),
+    checkUserPermissions(Permissions.Upgrade_To_Company),
+    validate(Validations.upgradeToCompany),
+    userController.upgradeToCompany
 )
 
 export default router

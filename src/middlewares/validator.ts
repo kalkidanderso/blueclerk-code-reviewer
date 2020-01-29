@@ -22,9 +22,16 @@ export const validate = (validations: ValidationChain[]) => {
 export const Validations = {
   //Auth
   login: [check('email').exists(), check('email').isEmail(), check('password').exists()],
+  // companySubscribe: [check('agreedStatus').exists()],
+  agree: [check('agreedStatus').exists()],
   signUp: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
   adminSignUp: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
-
+  contractorSignup: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
+  searchContractor: [check('email').exists(), check('email').isEmail()],
+  inviteContractor: [check('contractorId').exists()],
+  updateContract: [check('contractId').exists(), check('status').exists()],
+  contractorPermissions: [check('contractorId').exists(), check('permissions').exists()],
+  upgradeToCompany: [check('token').exists(), check('ending').exists()],
   //Users
   createManager: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
   createTechnician: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
@@ -86,7 +93,7 @@ export const Validations = {
   // Tags
   placeOrder: [check('noOfTags').exists(), check('total').exists(), check('tax').exists(), check('cardId').exists(),  check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(),],
 
-  // Comapny Cards
+  // Company Cards
   addCompanyCard: [ check('token').exists(), check('ending').exists()],
   removeCompanyCard: [ check('cardId').exists()],
   subscribe: [ check('cardId').exists(), check('planId').exists()],

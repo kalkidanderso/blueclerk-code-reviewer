@@ -36,8 +36,12 @@ exports.createEquipmentBrand = (req, res) => {
 };
 exports.getEquipmentBrands = (req, res) => {
     const user = req.user;
+    var companyId = req.companyId;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId;
+    }
     if (user.permissions.role == 4 /* GLOBAL_ADMIN */) {
-        EquipmentBrand_1.EquipmentBrand.find({ $or: [{ createdBy: null }, { createdBy: req.companyId }] }, (err, brands) => {
+        EquipmentBrand_1.EquipmentBrand.find({ $or: [{ createdBy: null }, { createdBy: companyId }] }, (err, brands) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
@@ -45,11 +49,11 @@ exports.getEquipmentBrands = (req, res) => {
         });
     }
     else {
-        Company_1.Company.findById(req.companyId, (err, company) => {
+        Company_1.Company.findById(companyId, (err, company) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            EquipmentBrand_1.EquipmentBrand.find({ $or: [{ createdBy: req.companyId },
+            EquipmentBrand_1.EquipmentBrand.find({ $or: [{ createdBy: companyId },
                     { $and: [{ industry: company.info.industry }, { createdBy: null },] }
                 ] }, (err, brands) => {
                 if (err) {

@@ -4,6 +4,7 @@ import { Status, Messages } from '../common/constants'
 import { ICustomerEquipment, CustomerEquipment } from '../models/CustomerEquipment'
 import { ICustomer, Customer } from '../models/Customer'
 import { Job , IJob} from '../models/Job'
+import { IUser} from '../models/User'
 import { ObjectId } from 'mongodb'
 import { isNull } from 'util'
 
@@ -98,18 +99,44 @@ export const getCustomerEquipments = (req: Request, res: Response) => {
 
 
 export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
-
+    var companyId = req.companyId;
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
     const params = req.body
     CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
         .exec((err: any, customerEquipment: ICustomerEquipment) => {
 
-            if (err || !customerEquipment) {
+            if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
+
+            if (customerEquipment == undefined || customerEquipment == null) {
+                return res.json({ 'status': Status.Error, 'message': 'No equipment found. Please try again'})
+            }
+
+            // Scan.find({equipment: customerEquipment._id})
+            // .populate({
+            //     path: 'job',
+            //     // select: 'profile.displayName'
+            // })
+            // .populate({
+            //     path: 'equipment',
+            //     // select: 'profile.displayName'
+            // })
+            // .exec((err:any, scans: IScan[])=>{
+
+            //     if (err) {
+            //         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            //     }
+
+            //     return res.json({ 'status': Status.Success, 'jobs': scans })
+            // })
+
             var jobIds = customerEquipment.jobs
 
 
-            Job.find({_id: {$in : jobIds }, company: req.companyId})
+            Job.find({_id: {$in : jobIds }, company: companyId})
             .populate({
                 path: 'technician',
                 select: 'profile.displayName'
@@ -132,7 +159,7 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
 
-                Job.find({_id: {$in : jobIds }, company:  { $ne: req.companyId }}, '_id comment dateTime',)
+                Job.find({_id: {$in : jobIds }, company:  { $ne: companyId }}, '_id comment dateTime',)
                 .exec((err: any, nonCompanyJobs: IJob[])=>{
                     
                     if (err || !nonCompanyJobs) {
@@ -170,7 +197,7 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
         .exec((err: any, customerEquipment: ICustomerEquipment) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError, "err": err })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
             
             if (customerEquipment == undefined || customerEquipment == null) {
