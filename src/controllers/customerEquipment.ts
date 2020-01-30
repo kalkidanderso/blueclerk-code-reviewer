@@ -4,6 +4,7 @@ import { Status, Messages } from '../common/constants'
 import { ICustomerEquipment, CustomerEquipment } from '../models/CustomerEquipment'
 import { ICustomer, Customer } from '../models/Customer'
 import { Job , IJob} from '../models/Job'
+import { Scan, IScan} from '../models/Scan'
 import { IUser} from '../models/User'
 import { ObjectId } from 'mongodb'
 import { isNull } from 'util'
@@ -86,6 +87,10 @@ export const getCustomerEquipments = (req: Request, res: Response) => {
             path: 'brand',
             select: 'title'
         })
+        .populate({
+            path: 'customer',
+            select: 'info.name'
+        })
         .exec((err: any, customerEquipments: ICustomerEquipment) => {
 
             if (err) {
@@ -115,74 +120,74 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'No equipment found. Please try again'})
             }
 
-            // Scan.find({equipment: customerEquipment._id})
-            // .populate({
-            //     path: 'job',
-            //     // select: 'profile.displayName'
-            // })
-            // .populate({
-            //     path: 'equipment',
-            //     // select: 'profile.displayName'
-            // })
-            // .exec((err:any, scans: IScan[])=>{
-
-            //     if (err) {
-            //         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            //     }
-
-            //     return res.json({ 'status': Status.Success, 'jobs': scans })
-            // })
-
-            var jobIds = customerEquipment.jobs
-
-
-            Job.find({_id: {$in : jobIds }, company: companyId})
+            Scan.find({equipment: customerEquipment._id})
             .populate({
-                path: 'technician',
-                select: 'profile.displayName'
+                path: 'job',
+                // select: 'profile.displayName'
             })
             .populate({
-                path: 'customer',
-                select: 'info.name'
+                path: 'equipment',
+                // select: 'profile.displayName'
             })
-            .populate({
-                path: 'type',
-                select: 'title'
-            })
-            .populate({
-                path: 'company',
-                select: 'info.companyName'
-            })
-            .exec((err: any, companyJobs: IJob[])=>{
-                
-                if (err || !companyJobs) {
+            .exec((err:any, scans: IScan[])=>{
+
+                if (err) {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
 
-                Job.find({_id: {$in : jobIds }, company:  { $ne: companyId }}, '_id comment dateTime',)
-                .exec((err: any, nonCompanyJobs: IJob[])=>{
-                    
-                    if (err || !nonCompanyJobs) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                    }
-    
-                    var allJobs = companyJobs.concat(nonCompanyJobs)
-
-                    allJobs.sort(function(a, b){
-                        var keyA = new Date(a.dateTime),
-                            keyB = new Date(b.dateTime);
-                        // Compare the 2 dates
-    
-                        if(keyA > keyB) return -1;
-                        if(keyA < keyB) return 1;
-                        return 0;
-                    });
-                    
-                    return res.json({ 'status': Status.Success, 'jobs': allJobs })
-
-                })
-                
+                return res.json({ 'status': Status.Success, 'jobs': scans })
             })
+
+            // var jobIds = customerEquipment.jobs
+
+
+            // Job.find({_id: {$in : jobIds }, company: companyId})
+            // .populate({
+            //     path: 'technician',
+            //     select: 'profile.displayName'
+            // })
+            // .populate({
+            //     path: 'customer',
+            //     select: 'info.name'
+            // })
+            // .populate({
+            //     path: 'type',
+            //     select: 'title'
+            // })
+            // .populate({
+            //     path: 'company',
+            //     select: 'info.companyName'
+            // })
+            // .exec((err: any, companyJobs: IJob[])=>{
+                
+            //     if (err || !companyJobs) {
+            //         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            //     }
+
+            //     Job.find({_id: {$in : jobIds }, company:  { $ne: companyId }}, '_id comment dateTime',)
+            //     .exec((err: any, nonCompanyJobs: IJob[])=>{
+                    
+            //         if (err || !nonCompanyJobs) {
+            //             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            //         }
+    
+            //         var allJobs = companyJobs.concat(nonCompanyJobs)
+
+            //         allJobs.sort(function(a, b){
+            //             var keyA = new Date(a.dateTime),
+            //                 keyB = new Date(b.dateTime);
+            //             // Compare the 2 dates
+    
+            //             if(keyA > keyB) return -1;
+            //             if(keyA < keyB) return 1;
+            //             return 0;
+            //         });
+                    
+            //         return res.json({ 'status': Status.Success, 'jobs': allJobs })
+
+            //     })
+                
+            // })
 
         })
 }
@@ -192,6 +197,7 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
 export const linkJobToEquipment = (req: Request, res: Response) => {
 
     const params = req.body
+    const user = <IUser>req.user
 
     CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
         .exec((err: any, customerEquipment: ICustomerEquipment) => {
@@ -204,42 +210,42 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': "Customer Equipment not found"})
             }
 
-            var index = customerEquipment.jobs.indexOf(params.jobId)
-
-            if (index !== -1) {
-                return res.json({ 'status': Status.Error, 'message': 'Job already linked to equipment.' })
-            }
-
-            customerEquipment.jobs.push(params.jobId)
-            customerEquipment.updateOne(
-                { jobs: customerEquipment.jobs },
-                (err: any, raw: any) => {
-
+            Job.findById(params.jobId,
+                (err: any, job: IJob) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
 
-                    if(params.comment != undefined || params.comment != null) {
-                        Job.updateOne({_id: params.jobId}, {comment: params.comment, equipmentId:customerEquipment._id, timeOfScan: Date.now() }, (err: any, raw: any) =>{
-
-                            if (err) {
-                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                            }
-                            return res.json({ 'status': Status.Success, 'message': 'Customer equipment job added successfully.' })
-                        })
-                    }else{
-                        Job.updateOne({_id: params.jobId}, {equipmentId:customerEquipment._id, timeOfScan: Date.now() }, (err: any, raw: any) =>{
-
-                            if (err) {
-                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                            }
-                            return res.json({ 'status': Status.Success, 'message': 'Customer equipment job added successfully.' })
-                        })
-                        // return res.json({ 'status': Status.Success, 'message': 'Customer equipment job added successfully.' })
+                    if (job != undefined && job != null) {
+                        return res.json({ 'status': Status.Error, 'message': "Equipment already scanned for this job."})
                     }
+            })
 
-                }
-            )
+            Scan.findOne({equipmentId: customerEquipment._id, jobId: params.jobId}, 
+                (err: any, scan: IScan) => {
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+                    
+                    if (scan != undefined && scan != null) {
+                        return res.json({ 'status': Status.Error, 'message': "Equipment already scanned for this job."})
+                    }
+                    // create new scan
+                    const newScan = new Scan({
+                        equipment: customerEquipment._id,
+                        job: params.jobId,
+                        comment: params.comment,
+                        user: user._id,
+                        timeOfScan: Date.now()
+                    })
+                    newScan.save((err: any) => {
+                        if (err) {
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
+                        return res.json({ 'status': Status.Success, 'message': 'Equipment scanned successfully.' })
+                    })
+                })
+    
         })
 
 }

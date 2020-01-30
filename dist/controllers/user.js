@@ -978,7 +978,7 @@ exports.createCompanySocial = (req, res) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         if (previousCompany != undefined || previousCompany != null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.UserExists });
         }
         const company = new Company_1.Company({
             auth: {
@@ -1032,12 +1032,10 @@ exports.createContractorSocial = (req, res) => {
     chargeDate.setDate(chargeDate.getDate() + 30);
     Company_1.Company.findOne({ 'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType, type: 1 }, (err, previousCompany) => {
         if (err) {
-            console.log("error 1\n", err);
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         if (previousCompany != undefined || previousCompany != null) {
-            console.log("error 2\n", previousCompany);
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.UserExists });
         }
         const company = new Company_1.Company({
             auth: {
@@ -1074,7 +1072,6 @@ exports.createContractorSocial = (req, res) => {
         });
         company.save((err) => {
             if (err) {
-                console.log("error 3\n", err);
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             aws_1.sendEmail({ to: params.email });

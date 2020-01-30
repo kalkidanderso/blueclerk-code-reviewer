@@ -24,7 +24,7 @@ export const Validations = {
   login: [check('email').exists(), check('email').isEmail(), check('password').exists()],
   socialLogin: [check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric()],
   socialSignUp: [check('email').exists(), check('email').isEmail(), check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
-  // customerImport: [check('customerSheet').exists()],
+  customerImport: [check('customerSheet').exists()],
   // companySubscribe: [check('agreedStatus').exists()],
   agree: [check('agreedStatus').exists()],
   signUp: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
@@ -66,14 +66,14 @@ export const Validations = {
   //Customer Equipment
   createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('imageUrl').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists(), check('location').exists()],
   getCustomerEquipments: [check('customerId').exists()],
-  linkEquipmentJob: [check('nfcTag').exists(), check('jobId').exists()],
+  linkEquipmentJob: [check('nfcTag').exists(), check('jobId').exists(), check('comment').exists()],
   getCustomerEquipmentJobs: [check('nfcTag').exists()],
 
   //Job Type
   createJobType: [check('title').exists()],
 
   //Job
-  createJob: [check('dateTime').exists(), check('technicianId').exists(), check('customerId').exists(), check('jobTypeId').exists()],
+  createJob: [check('dateTime').exists(), check('technicianId').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists()],
   generalJob: [check('jobId').exists()],
   updateJob: [check('status').exists(), check('comment').exists(), check('jobId').exists()],
   editJob: [check('jobId').exists(), check('technicianId').exists(), check('dateTime').exists()],
@@ -108,4 +108,8 @@ export const Validations = {
   updateDefaultPermissions: [check('onPermissions').exists(), check('offPermissions').exists(), check('role').exists()],
   udpateUserPermissions: [check('onPermissions').exists(), check('offPermissions').exists()],
   employeePermissions: [check('employeeId').exists()],
+   
+  createTicket: [check('customerId').exists(), check('comment').exists(), check('note').exists(), check('scheduleTime').exists()],
+  updateTicket: [check('ticketId').exists(), check('comment').exists(), check('note').exists(), check('scheduleTime').exists()],
+  getTicketDetail: [check('ticketId').exists()],
 }

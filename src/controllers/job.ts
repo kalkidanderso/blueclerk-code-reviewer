@@ -4,20 +4,27 @@ import { Status, Messages, JobStatus } from '../common/constants'
 import { Job, IJob } from '../models/Job'
 import { Company, ICompany } from '../models/Company'
 import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
+import { IUser } from '../models/User'
+// import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 
 export const createJob = (req: Request, res: Response) => {
 
     const params = req.body
+    const user = <IUser>req.user
     var companyId = req.companyId;
     var company  = <ICompany>req.company;
+    
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
+
     if(params.equipmentId != undefined && params.equipmentId != null) {
+        
         CustomerEquipment.findById(params.equipmentId, 
         (err: any, equipment: ICustomerEquipment)=>{
             
             if (err) {
+                console.log("first \n", err)
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
     
@@ -25,39 +32,34 @@ export const createJob = (req: Request, res: Response) => {
                 {
                     dateTime: params.dateTime,
                     jobId: company.currentJobId+1,
+                    ticket: params.ticketId,
                     technician: params.technicianId,
                     customer: params.customerId,
                     type: params.jobTypeId,
                     company: companyId,
-                    comment: '',
                     description: params.description,
                     equipmentId: params.equipmentId,
                     createdAt: Date.now(),
+                    createdBy: user._id
                 }
             )
         
             job.save((err: any) => {
         
                 if (err) {
+                    console.log("second \n", err)
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
                 
-                equipment.jobs.push(job._id)
-                equipment.updateOne({jobs: equipment.jobs}, (err:any, raw: any)=> {
+                company.currentJobId = company.currentJobId+1
+                Company.updateOne({currentJobId: company.currentJobId+1}, (err: any, raw: any)=>{
                     if (err) {
+                        console.log("third \n", err)
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                    }   
-                    company.currentJobId = company.currentJobId+1
-                    Company.updateOne(company, (err: any, raw: any)=>{
-                        if (err) {
-                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                        }    
-                        return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
-                    })
-
-                    // return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
-                });
-        
+                    }    
+                    return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
+                })
+                
             })
         })
 
@@ -66,38 +68,35 @@ export const createJob = (req: Request, res: Response) => {
             {
                 dateTime: params.dateTime,
                 jobId: company.currentJobId+1,
+                ticket: params.ticketId,
                 technician: params.technicianId,
                 customer: params.customerId,
                 type: params.jobTypeId,
                 company: companyId,
-                comment: '',
                 description: params.description,
-                equipmentId: params.equipmentId,
                 createdAt: Date.now(),
+                createdBy: user._id
             }
         )
     
         job.save((err: any) => {
             if (err) {
-                console.log(err);
-                
+                console.log("fourth \n", err)
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
             company.currentJobId = company.currentJobId+1
-            Company.updateOne(company, (err: any, raw: any)=>{
+            Company.updateOne({currentJobId: company.currentJobId+1}, (err: any, raw: any)=>{
                 if (err) {
+                    console.log("fifth \n", err)
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }    
                 return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
             })
-            
-            // return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
         })
     }
-   
-
 }
+
 
 export const getJobs = (req: Request, res: Response) => {
 
@@ -106,6 +105,9 @@ export const getJobs = (req: Request, res: Response) => {
         companyId = req.otherCompanyId
     }
     Job.find({ company: companyId })
+        .populate({
+            path: 'ticket',
+        })
         .populate({
             path: 'technician',
             select: 'profile.displayName'
@@ -121,6 +123,10 @@ export const getJobs = (req: Request, res: Response) => {
         .populate({
             path: 'company',
             select: 'info.companyName'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'profile.displayName'
         })
         .exec((err: any, jobs: IJob[])=>{
 
@@ -141,6 +147,9 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
     
     Job.find({ technician: params.employeeId })
         .populate({
+            path: 'ticket',
+        })
+        .populate({
             path: 'technician',
             select: 'profile.displayName'
         })
@@ -155,6 +164,10 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
         .populate({
             path: 'company',
             select: 'info.companyName'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'profile.displayName'
         })
         .exec((err: any, jobs: IJob[])=>{
 
@@ -183,10 +196,13 @@ export const updateJob = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
             if(job.status == JobStatus.FINISHED) {
-                return res.json({'status': Status.Error, 'message': "Edit job is not allowed onece it is finished"})
+                return res.json({'status': Status.Error, 'message': "Edit job is not allowed once it is finished"})
+            }
+            if(job.status == JobStatus.CANCELED) {
+                return res.json({'status': Status.Error, 'message': "Edit job is not allowed once it is canceled"})
             }
             job.updateOne(
-                {comment: params.comment, status: params.status},
+                {description: params.comment, status: params.status},
                 (err: any, raw: any)=> {
                     
                     if (err) {
@@ -211,7 +227,12 @@ export const startJob = (req: Request, res: Response) => {
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-
+            if(job.status == JobStatus.FINISHED) {
+                return res.json({'status': Status.Error, 'message': "You can't start this job, it is already finished"})
+            }
+            if(job.status == JobStatus.CANCELED) {
+                return res.json({'status': Status.Error, 'message': "You can't start this job, it is already canceled"})
+            }
             job.updateOne(
                 {status: JobStatus.STARTED},
                 (err: any, raw: any)=> {
@@ -264,6 +285,9 @@ export const getJobDetails = (req: Request, res: Response) => {
     const params = req.body
     
     Job.findById(params.jobId)
+        .populate({
+            path: 'ticket',
+        })
         .populate({
             path: 'technician',
             select: 'profile.displayName'

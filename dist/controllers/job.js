@@ -4,8 +4,10 @@ const constants_1 = require("../common/constants");
 const Job_1 = require("../models/Job");
 const Company_1 = require("../models/Company");
 const CustomerEquipment_1 = require("../models/CustomerEquipment");
+// import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 exports.createJob = (req, res) => {
     const params = req.body;
+    const user = req.user;
     var companyId = req.companyId;
     var company = req.company;
     if (req.otherCompanyId != undefined) {
@@ -14,37 +16,34 @@ exports.createJob = (req, res) => {
     if (params.equipmentId != undefined && params.equipmentId != null) {
         CustomerEquipment_1.CustomerEquipment.findById(params.equipmentId, (err, equipment) => {
             if (err) {
+                console.log("first \n", err);
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             const job = new Job_1.Job({
                 dateTime: params.dateTime,
                 jobId: company.currentJobId + 1,
+                ticket: params.ticketId,
                 technician: params.technicianId,
                 customer: params.customerId,
                 type: params.jobTypeId,
                 company: companyId,
-                comment: '',
                 description: params.description,
                 equipmentId: params.equipmentId,
                 createdAt: Date.now(),
+                createdBy: user._id
             });
             job.save((err) => {
                 if (err) {
+                    console.log("second \n", err);
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                equipment.jobs.push(job._id);
-                equipment.updateOne({ jobs: equipment.jobs }, (err, raw) => {
+                company.currentJobId = company.currentJobId + 1;
+                Company_1.Company.updateOne({ currentJobId: company.currentJobId + 1 }, (err, raw) => {
                     if (err) {
+                        console.log("third \n", err);
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
-                    company.currentJobId = company.currentJobId + 1;
-                    Company_1.Company.updateOne(company, (err, raw) => {
-                        if (err) {
-                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                        }
-                        return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
-                    });
-                    // return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
+                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
                 });
             });
         });
@@ -53,28 +52,28 @@ exports.createJob = (req, res) => {
         const job = new Job_1.Job({
             dateTime: params.dateTime,
             jobId: company.currentJobId + 1,
+            ticket: params.ticketId,
             technician: params.technicianId,
             customer: params.customerId,
             type: params.jobTypeId,
             company: companyId,
-            comment: '',
             description: params.description,
-            equipmentId: params.equipmentId,
             createdAt: Date.now(),
+            createdBy: user._id
         });
         job.save((err) => {
             if (err) {
-                console.log(err);
+                console.log("fourth \n", err);
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             company.currentJobId = company.currentJobId + 1;
-            Company_1.Company.updateOne(company, (err, raw) => {
+            Company_1.Company.updateOne({ currentJobId: company.currentJobId + 1 }, (err, raw) => {
                 if (err) {
+                    console.log("fifth \n", err);
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
                 return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
             });
-            // return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
         });
     }
 };
@@ -84,6 +83,9 @@ exports.getJobs = (req, res) => {
         companyId = req.otherCompanyId;
     }
     Job_1.Job.find({ company: companyId })
+        .populate({
+        path: 'ticket',
+    })
         .populate({
         path: 'technician',
         select: 'profile.displayName'
@@ -99,6 +101,10 @@ exports.getJobs = (req, res) => {
         .populate({
         path: 'company',
         select: 'info.companyName'
+    })
+        .populate({
+        path: 'createdBy',
+        select: 'profile.displayName'
     })
         .exec((err, jobs) => {
         if (err) {
@@ -111,6 +117,9 @@ exports.getJobsByTechnicianId = (req, res) => {
     const params = req.body;
     Job_1.Job.find({ technician: params.employeeId })
         .populate({
+        path: 'ticket',
+    })
+        .populate({
         path: 'technician',
         select: 'profile.displayName'
     })
@@ -125,6 +134,10 @@ exports.getJobsByTechnicianId = (req, res) => {
         .populate({
         path: 'company',
         select: 'info.companyName'
+    })
+        .populate({
+        path: 'createdBy',
+        select: 'profile.displayName'
     })
         .exec((err, jobs) => {
         if (err) {
@@ -140,9 +153,12 @@ exports.updateJob = (req, res) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         if (job.status == 2 /* FINISHED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': "Edit job is not allowed onece it is finished" });
+            return res.json({ 'status': constants_1.Status.Error, 'message': "Edit job is not allowed once it is finished" });
         }
-        job.updateOne({ comment: params.comment, status: params.status }, (err, raw) => {
+        if (job.status == 3 /* CANCELED */) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "Edit job is not allowed once it is canceled" });
+        }
+        job.updateOne({ description: params.comment, status: params.status }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
@@ -155,6 +171,12 @@ exports.startJob = (req, res) => {
     Job_1.Job.findOne({ _id: params.jobId }, (err, job) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (job.status == 2 /* FINISHED */) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "You can't start this job, it is already finished" });
+        }
+        if (job.status == 3 /* CANCELED */) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "You can't start this job, it is already canceled" });
         }
         job.updateOne({ status: 1 /* STARTED */ }, (err, raw) => {
             if (err) {
@@ -184,6 +206,9 @@ exports.editJob = (req, res) => {
 exports.getJobDetails = (req, res) => {
     const params = req.body;
     Job_1.Job.findById(params.jobId)
+        .populate({
+        path: 'ticket',
+    })
         .populate({
         path: 'technician',
         select: 'profile.displayName'

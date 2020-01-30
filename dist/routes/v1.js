@@ -33,6 +33,7 @@ const companyCardController = __importStar(require("../controllers/companyCard")
 const subscriptionController = __importStar(require("../controllers/subscription"));
 const permissionController = __importStar(require("../controllers/permission"));
 const customerImportController = __importStar(require("../controllers/customerImport"));
+const serviceTicketController = __importStar(require("../controllers/serviceTicket"));
 const router = express_1.default.Router();
 //Auth
 router.post('/login', validator_1.validate(validator_1.Validations.login), userController.login);
@@ -142,12 +143,14 @@ router.post('/acceptOrRejectContract', passport_1.default.authenticate('jwt', { 
 router.post('/CancelOrFinish', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(63 /* Cancel_Finish_Contract */), validator_1.validate(validator_1.Validations.updateContract), userController.cancelOrFinishContract);
 router.post('/changeContractorPermission', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(64 /* Add_Contractor_Permission */), validator_1.validate(validator_1.Validations.contractorPermissions), permissionController.addContractorPermissions);
 router.post('/upgradeToCompany', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkUserPermissions(67 /* Upgrade_To_Company */), validator_1.validate(validator_1.Validations.upgradeToCompany), userController.upgradeToCompany);
-router.post('/setCustomWorkOrderNumber', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkUserPermissions(69 /* Custom_work_Order_Number */), validator_1.validate(validator_1.Validations.customWorkOrder), userController.setCustomWorkNumber);
+router.post('/setCustomWorkOrderNumber', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(69 /* Custom_work_Order_Number */), validator_1.validate(validator_1.Validations.customWorkOrder), userController.setCustomWorkNumber);
 router.post('/checkAndGet', validator_1.validate(validator_1.Validations.socialLogin), userController.checkAndGetUser);
 router.post('/signUpSocial', validator_1.validate(validator_1.Validations.socialSignUp), userController.createCompanySocial);
 router.post('/contractorSignUpSocial', validator_1.validate(validator_1.Validations.socialSignUp), userController.createContractorSocial);
-router.post('/uploadFile', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkUserPermissions(69 /* Custom_work_Order_Number */), 
-// validate(Validations.customerImport),
-customerImportController.uploadfile);
+router.post('/importCustomer', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(69 /* Custom_work_Order_Number */), validator_1.validate(validator_1.Validations.customerImport), customerImportController.uploadfile);
+router.post('/getServiceTickets', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(71 /* Get_Service_Tickets */), serviceTicketController.getServiceTickets);
+router.post('/createServiceTicket', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(72 /* Create_Service_Ticket */), validator_1.validate(validator_1.Validations.createTicket), serviceTicketController.createServiceTicket);
+router.post('/updateServiceTicket', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(73 /* Update_Service_Ticket */), validator_1.validate(validator_1.Validations.updateTicket), serviceTicketController.updateServiceTicket);
+router.post('/getServiceTicketDetail', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(74 /* Get_Ticket_Detail */), validator_1.validate(validator_1.Validations.getTicketDetail), serviceTicketController.getServiceTicketDetail);
 exports.default = router;
 //# sourceMappingURL=v1.js.map

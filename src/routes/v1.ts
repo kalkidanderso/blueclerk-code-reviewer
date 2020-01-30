@@ -24,6 +24,7 @@ import * as companyCardController from '../controllers/companyCard'
 import * as subscriptionController from '../controllers/subscription'
 import * as permissionController from '../controllers/permission'
 import * as customerImportController from '../controllers/customerImport'
+import * as serviceTicketController from '../controllers/serviceTicket'
 import { Personalize } from 'aws-sdk'
 
 
@@ -709,6 +710,7 @@ router.post(
 router.post(
     '/setCustomWorkOrderNumber',
     passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
     checkUserPermissions(Permissions.Custom_work_Order_Number),
     validate(Validations.customWorkOrder),
     userController.setCustomWorkNumber
@@ -733,11 +735,45 @@ router.post(
 )
 
 router.post(
-    '/uploadFile',
+    '/importCustomer',
     passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
     checkUserPermissions(Permissions.Custom_work_Order_Number),
-    // validate(Validations.customerImport),
+    validate(Validations.customerImport),
     customerImportController.uploadfile
 )
 
+router.post(
+    '/getServiceTickets',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Get_Service_Tickets),
+    serviceTicketController.getServiceTickets
+)
+
+router.post(
+    '/createServiceTicket',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Create_Service_Ticket),
+    validate(Validations.createTicket),
+    serviceTicketController.createServiceTicket
+)
+
+router.post(
+    '/updateServiceTicket',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Update_Service_Ticket),
+    validate(Validations.updateTicket),
+    serviceTicketController.updateServiceTicket
+)
+router.post(
+    '/getServiceTicketDetail',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Get_Ticket_Detail),
+    validate(Validations.getTicketDetail),
+    serviceTicketController.getServiceTicketDetail
+)
 export default router

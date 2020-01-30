@@ -12,6 +12,7 @@ exports.Messages = {
     UnAuthorized: 'You are not authorized for this action. Please contact admin for more details.',
     AccountDeleted: 'You account has been deleted. Please contact admin for more details.',
     AgreeToTermAndConditions: 'You must agree to terms and conditions of blueclerk.',
+    UserExists: 'User already exists.',
 };
 exports.ContractorPermissions = {
     on: [
@@ -96,6 +97,10 @@ exports.UserPermissions = {
             57 /* Tags_Get_Orders */,
             58 /* Subscription_Buy */,
             59 /* Subscription_Cancel */,
+            71 /* Get_Service_Tickets */,
+            72 /* Create_Service_Ticket */,
+            73 /* Update_Service_Ticket */,
+            74 /* Get_Ticket_Detail */,
         ],
         off: [0 /* None */],
     },
@@ -160,6 +165,10 @@ exports.UserPermissions = {
             57 /* Tags_Get_Orders */,
             58 /* Subscription_Buy */,
             59 /* Subscription_Cancel */,
+            71 /* Get_Service_Tickets */,
+            72 /* Create_Service_Ticket */,
+            73 /* Update_Service_Ticket */,
+            74 /* Get_Ticket_Detail */,
         ],
         off: [0 /* None */],
     },
@@ -227,6 +236,10 @@ exports.UserPermissions = {
             57 /* Tags_Get_Orders */,
             58 /* Subscription_Buy */,
             59 /* Subscription_Cancel */,
+            71 /* Get_Service_Tickets */,
+            72 /* Create_Service_Ticket */,
+            73 /* Update_Service_Ticket */,
+            74 /* Get_Ticket_Detail */,
         ],
         off: [0 /* None */],
     },
@@ -298,7 +311,11 @@ exports.UserPermissions = {
             63 /* Cancel_Finish_Contract */,
             68 /* Company_Subscribe */,
             69 /* Custom_work_Order_Number */,
-            70 /* Customer_Import */
+            70 /* Customer_Import */,
+            71 /* Get_Service_Tickets */,
+            72 /* Create_Service_Ticket */,
+            73 /* Update_Service_Ticket */,
+            74 /* Get_Ticket_Detail */,
         ],
         off: [0 /* None */],
     }
