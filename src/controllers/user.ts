@@ -435,7 +435,7 @@ const createEmployee = (req: Request, res: Response, role: Role) => {
                 strict: true
             });
 
-            password = 123456
+            // password = 123456
 
             const employee = new Employee(
                 {

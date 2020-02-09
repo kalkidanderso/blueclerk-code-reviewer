@@ -306,7 +306,7 @@ const createEmployee = (req, res, role) => {
                 excludeSimilarCharacters: true,
                 strict: true
             });
-            password = 123456;
+            // password = 123456
             const employee = new Employee_1.Employee({
                 auth: {
                     email: params.email,
