@@ -57,7 +57,7 @@ passportMiddleWare(passport)
 
 //Logger
 app.use(logger('dev'))
-app.use(fileUpload());
+// app.use(fileUpload());
 //Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 

@@ -104,7 +104,9 @@ router.post('/startJob', passport_1.default.authenticate('jwt', { session: false
 router.post('/getJobDetails', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(40 /* Job_Detail */), validator_1.validate(validator_1.Validations.generalJob), jobController.getJobDetails);
 router.post('/editJob', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(37 /* Job_Edit */), validator_1.validate(validator_1.Validations.editJob), jobController.editJob);
 //Image upload
-router.post('/uploadImage', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(41 /* Image_Upload */), imageController.uploadImage);
+router.post('/uploadImage', passport_1.default.authenticate('jwt', { session: false }), 
+// getCompnayId(),
+permissions_1.checkUserPermissions(41 /* Image_Upload */), imageController.uploadImage);
 //Group
 router.post('/createGroup', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(42 /* Group_Create */), validator_1.validate(validator_1.Validations.createGroup), groupController.createGroup);
 router.post('/getGroups', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(43 /* Group_Get_All */), groupController.getGroups);
@@ -147,7 +149,9 @@ router.post('/setCustomWorkOrderNumber', passport_1.default.authenticate('jwt', 
 router.post('/checkAndGet', validator_1.validate(validator_1.Validations.socialLogin), userController.checkAndGetUser);
 router.post('/signUpSocial', validator_1.validate(validator_1.Validations.socialSignUp), userController.createCompanySocial);
 router.post('/contractorSignUpSocial', validator_1.validate(validator_1.Validations.socialSignUp), userController.createContractorSocial);
-router.post('/importCustomer', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(69 /* Custom_work_Order_Number */), validator_1.validate(validator_1.Validations.customerImport), customerImportController.uploadfile);
+router.post('/importCustomer', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(70 /* Customer_Import */), 
+// validate(Validations.customerImport),
+customerImportController.uploadfile);
 router.post('/getServiceTickets', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(71 /* Get_Service_Tickets */), serviceTicketController.getServiceTickets);
 router.post('/createServiceTicket', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(72 /* Create_Service_Ticket */), validator_1.validate(validator_1.Validations.createTicket), serviceTicketController.createServiceTicket);
 router.post('/updateServiceTicket', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(73 /* Update_Service_Ticket */), validator_1.validate(validator_1.Validations.updateTicket), serviceTicketController.updateServiceTicket);

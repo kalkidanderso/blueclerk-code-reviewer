@@ -446,7 +446,7 @@ router.post(
 router.post(
     '/uploadImage',
     passport.authenticate('jwt', { session: false }),
-    getCompnayId(),
+    // getCompnayId(),
     checkUserPermissions(Permissions.Image_Upload),
     imageController.uploadImage
 )
@@ -738,8 +738,8 @@ router.post(
     '/importCustomer',
     passport.authenticate('jwt', { session: false }),
     getCompnayId(),
-    checkUserPermissions(Permissions.Custom_work_Order_Number),
-    validate(Validations.customerImport),
+    checkUserPermissions(Permissions.Customer_Import),
+    // validate(Validations.customerImport),
     customerImportController.uploadfile
 )
 

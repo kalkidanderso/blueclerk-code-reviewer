@@ -56,7 +56,7 @@ app.use(passport_1.default.initialize());
 passport_2.default(passport_1.default);
 //Logger
 app.use(morgan_1.default('dev'));
-app.use(fileUpload());
+// app.use(fileUpload());
 //Swagger
 app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swaggerDocument));
 //Router
