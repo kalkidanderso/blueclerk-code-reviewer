@@ -93,8 +93,8 @@ exports.Validations = {
     updateDefaultPermissions: [express_validator_1.check('onPermissions').exists(), express_validator_1.check('offPermissions').exists(), express_validator_1.check('role').exists()],
     udpateUserPermissions: [express_validator_1.check('onPermissions').exists(), express_validator_1.check('offPermissions').exists()],
     employeePermissions: [express_validator_1.check('employeeId').exists()],
-    createTicket: [express_validator_1.check('customerId').exists(), express_validator_1.check('comment').exists(), express_validator_1.check('note').exists(), express_validator_1.check('scheduleTime').exists()],
-    updateTicket: [express_validator_1.check('ticketId').exists(), express_validator_1.check('comment').exists(), express_validator_1.check('note').exists(), express_validator_1.check('scheduleTime').exists()],
+    createTicket: [express_validator_1.check('customerId').exists()],
+    updateTicket: [express_validator_1.check('ticketId').exists(), express_validator_1.check('note').exists()],
     getTicketDetail: [express_validator_1.check('ticketId').exists()],
 };
 //# sourceMappingURL=validator.js.map

@@ -109,7 +109,7 @@ export const Validations = {
   udpateUserPermissions: [check('onPermissions').exists(), check('offPermissions').exists()],
   employeePermissions: [check('employeeId').exists()],
    
-  createTicket: [check('customerId').exists(), check('comment').exists(), check('note').exists(), check('scheduleTime').exists()],
-  updateTicket: [check('ticketId').exists(), check('comment').exists(), check('note').exists(), check('scheduleTime').exists()],
+  createTicket: [check('customerId').exists()],
+  updateTicket: [check('ticketId').exists(), check('note').exists()],
   getTicketDetail: [check('ticketId').exists()],
 }

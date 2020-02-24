@@ -9,27 +9,24 @@ export const createServiceTicket = (req: Request, res: Response) => {
 
     const params = req.body
     var companyId = req.companyId;
-    var user = <IUser>req.user;
+    var user = <IUser>req.user
 
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-    console.log(companyId);
 
     const serviceTicket = new ServiceTicket({
         createdAt: Date.now(),
-        scheduleTime: params.scheduleTime,
         customer: params.customerId,
         createdBy: user._id,
         company: companyId,
-        comment: params.comment,
         note: params.note,
     })
-    console.log(serviceTicket)
+
     serviceTicket.save((err: any) => {
 
         if (err) {
-            console.log(err);
+            
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
 
@@ -86,7 +83,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
             }
            
             serviceTicket.updateOne(
-                {comment: params.comment, note: params.note, scheduleTime: params.scheduleTime},
+                {note: params.note},
                 (err: any, raw: any)=> {
                     
                     if (err) {

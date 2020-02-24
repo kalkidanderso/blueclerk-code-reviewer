@@ -1456,11 +1456,6 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: scheduleTime
-          in: formData
-          required: true
-          type: string
-          description: 'date time of job. e.g. 2020-01-22 20:30:00'
         - name: customerId
           in: formData
           required: true
@@ -1468,13 +1463,8 @@ paths:
           description: >-
             Id of a customer selected from the list received by /getCustomers
             api
-        - name: comment
-          in: formData
-          required: true
-          type: string
         - name: note
           in: formData
-          required: true
           type: string
       responses:
         '200':
@@ -1567,15 +1557,6 @@ paths:
           required: true
           type: string
           description: Additional note for the service tickett
-        - name: comment
-          in: formData
-          required: true
-          type: string
-        - name: scheduleTime
-          in: formData
-          type: string
-          description: 'date time of job. e.g. 2020-01-22 20:30:00'
-          required: true
       responses:
         '200':
           description: Success

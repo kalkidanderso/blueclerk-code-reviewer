@@ -24,7 +24,6 @@ export const createJob = (req: Request, res: Response) => {
         (err: any, equipment: ICustomerEquipment)=>{
             
             if (err) {
-                console.log("first \n", err)
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
     
@@ -47,14 +46,12 @@ export const createJob = (req: Request, res: Response) => {
             job.save((err: any) => {
         
                 if (err) {
-                    console.log("second \n", err)
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
                 
                 company.currentJobId = company.currentJobId+1
                 Company.updateOne({currentJobId: company.currentJobId+1}, (err: any, raw: any)=>{
                     if (err) {
-                        console.log("third \n", err)
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }    
                     return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
@@ -81,14 +78,12 @@ export const createJob = (req: Request, res: Response) => {
     
         job.save((err: any) => {
             if (err) {
-                console.log("fourth \n", err)
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
             company.currentJobId = company.currentJobId+1
             Company.updateOne({currentJobId: company.currentJobId+1}, (err: any, raw: any)=>{
                 if (err) {
-                    console.log("fifth \n", err)
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }    
                 return res.json({'status': Status.Success, 'message': 'Job created successfully.'})

@@ -9,20 +9,15 @@ exports.createServiceTicket = (req, res) => {
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
     }
-    console.log(companyId);
     const serviceTicket = new ServiceTicket_1.ServiceTicket({
         createdAt: Date.now(),
-        scheduleTime: params.scheduleTime,
         customer: params.customerId,
         createdBy: user._id,
         company: companyId,
-        comment: params.comment,
         note: params.note,
     });
-    console.log(serviceTicket);
     serviceTicket.save((err) => {
         if (err) {
-            console.log(err);
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         return res.json({ 'status': constants_1.Status.Success, 'message': 'Service ticket created successfully.' });
@@ -59,7 +54,7 @@ exports.updateServiceTicket = (req, res) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        serviceTicket.updateOne({ comment: params.comment, note: params.note, scheduleTime: params.scheduleTime }, (err, raw) => {
+        serviceTicket.updateOne({ note: params.note }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
