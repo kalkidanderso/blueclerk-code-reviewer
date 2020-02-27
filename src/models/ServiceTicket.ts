@@ -2,17 +2,20 @@ import mongoose, { Document, Schema } from 'mongoose'
 
 export interface IServiceTicket extends Document {
 
-    createdAt: Date,
+    createdAt: Date
+    scheduleTime: Date
     customer: Schema.Types.ObjectId
     createdBy: Schema.Types.ObjectId
     note: string
     company: Schema.Types.ObjectId
+    technician: Schema.Types.ObjectId
     
 }
 
 const ServiceTicketSchema = new Schema({
 
     createdAt: Date,
+    scheduleTime: Date,
     customer: {
         type: Schema.Types.ObjectId,
         ref: 'Customer',
@@ -28,6 +31,10 @@ const ServiceTicketSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Company',
         required: true
+    },
+    technician: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
     },
 
 })

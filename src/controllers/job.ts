@@ -18,12 +18,14 @@ export const createJob = (req: Request, res: Response) => {
         companyId = req.otherCompanyId
     }
 
-    if(params.equipmentId != undefined && params.equipmentId != null) {
+    if(params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
         
         CustomerEquipment.findById(params.equipmentId, 
         (err: any, equipment: ICustomerEquipment)=>{
             
             if (err) {
+                console.log("err1")
+                console.log(err)
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
     
@@ -46,12 +48,16 @@ export const createJob = (req: Request, res: Response) => {
             job.save((err: any) => {
         
                 if (err) {
+                    console.log("err2")
+                    console.log(err)
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
                 
                 company.currentJobId = company.currentJobId+1
                 Company.updateOne({currentJobId: company.currentJobId+1}, (err: any, raw: any)=>{
                     if (err) {
+                        console.log("err4")
+                        console.log(err)
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }    
                     return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
@@ -78,12 +84,16 @@ export const createJob = (req: Request, res: Response) => {
     
         job.save((err: any) => {
             if (err) {
+                console.log("err5")
+                console.log(err)
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
             company.currentJobId = company.currentJobId+1
             Company.updateOne({currentJobId: company.currentJobId+1}, (err: any, raw: any)=>{
                 if (err) {
+                    console.log("err6")
+                    console.log(err)
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }    
                 return res.json({'status': Status.Success, 'message': 'Job created successfully.'})

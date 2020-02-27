@@ -17,10 +17,12 @@ export const createServiceTicket = (req: Request, res: Response) => {
 
     const serviceTicket = new ServiceTicket({
         createdAt: Date.now(),
+        scheduleTime: params.scheduleTime,
         customer: params.customerId,
         createdBy: user._id,
         company: companyId,
         note: params.note,
+        technician: params.technicianId,
     })
 
     serviceTicket.save((err: any) => {
@@ -50,6 +52,10 @@ export const getServiceTickets = (req: Request, res: Response) => {
         })
         .populate({
             path: 'createdBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'technician',
             select: 'profile.displayName'
         })
         .exec((err: any, serviceTickets: IServiceTicket[])=>{

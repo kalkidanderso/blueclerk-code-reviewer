@@ -13,9 +13,11 @@ exports.createJob = (req, res) => {
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
     }
-    if (params.equipmentId != undefined && params.equipmentId != null) {
+    if (params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
         CustomerEquipment_1.CustomerEquipment.findById(params.equipmentId, (err, equipment) => {
             if (err) {
+                console.log("err1");
+                console.log(err);
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             const job = new Job_1.Job({
@@ -33,11 +35,15 @@ exports.createJob = (req, res) => {
             });
             job.save((err) => {
                 if (err) {
+                    console.log("err2");
+                    console.log(err);
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
                 company.currentJobId = company.currentJobId + 1;
                 Company_1.Company.updateOne({ currentJobId: company.currentJobId + 1 }, (err, raw) => {
                     if (err) {
+                        console.log("err4");
+                        console.log(err);
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
                     return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
@@ -60,11 +66,15 @@ exports.createJob = (req, res) => {
         });
         job.save((err) => {
             if (err) {
+                console.log("err5");
+                console.log(err);
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             company.currentJobId = company.currentJobId + 1;
             Company_1.Company.updateOne({ currentJobId: company.currentJobId + 1 }, (err, raw) => {
                 if (err) {
+                    console.log("err6");
+                    console.log(err);
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
                 return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });

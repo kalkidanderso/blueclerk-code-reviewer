@@ -2238,6 +2238,17 @@
                         "name": "note",
                         "in": "formData",
                         "type": "string"
+                    },
+                    {
+                        "name": "technicianId",
+                        "in": "formData",
+                        "type": "string",
+                        "description": "Id of a technician / admin"
+                    },
+                    {
+                        "name": "scheduleTime",
+                        "in": "formData",
+                        "type": "string"
                     }
                 ],
                 "responses": {

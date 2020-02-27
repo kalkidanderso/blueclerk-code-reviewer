@@ -10,6 +10,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const ServiceTicketSchema = new mongoose_1.Schema({
     createdAt: Date,
+    scheduleTime: Date,
     customer: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Customer',
@@ -25,6 +26,10 @@ const ServiceTicketSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Company',
         required: true
+    },
+    technician: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User',
     },
 });
 exports.ServiceTicket = mongoose_1.default.model('ServiceTicket', ServiceTicketSchema);
