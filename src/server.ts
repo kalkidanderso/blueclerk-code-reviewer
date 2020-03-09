@@ -15,7 +15,6 @@ import * as swaggerDocument from './swagger.json'
 // const CronJob = require('cron').CronJob;
 import {CronJob} from 'cron'
 import request from 'request';
-const fileUpload = require('express-fileupload');
 
 //Environment config
 dotenv.config()
@@ -57,7 +56,6 @@ passportMiddleWare(passport)
 
 //Logger
 app.use(logger('dev'))
-// app.use(fileUpload());
 //Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 

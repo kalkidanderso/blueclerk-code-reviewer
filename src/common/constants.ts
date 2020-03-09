@@ -127,6 +127,7 @@ export const enum Permissions {
     Create_Service_Ticket,
     Update_Service_Ticket,
     Get_Ticket_Detail,
+    Get_Contractors_For_Job,
 }
 
 export const ContractorPermissions = {
@@ -148,6 +149,10 @@ export const ContractorPermissions = {
         Permissions.Job_Finish,
         Permissions.Job_Detail,
         Permissions.Image_Upload,
+        Permissions.Get_Service_Tickets,
+        Permissions.Create_Service_Ticket,
+        Permissions.Update_Service_Ticket,
+        Permissions.Get_Ticket_Detail,
     ]
 }
 export const UserPermissions = {
@@ -216,6 +221,7 @@ export const UserPermissions = {
             Permissions.Create_Service_Ticket,
             Permissions.Update_Service_Ticket,
             Permissions.Get_Ticket_Detail,
+            Permissions.Get_Contractors_For_Job,
         ],
         off: [Permissions.None],
     },
@@ -284,6 +290,7 @@ export const UserPermissions = {
             Permissions.Create_Service_Ticket,
             Permissions.Update_Service_Ticket,
             Permissions.Get_Ticket_Detail,
+            Permissions.Get_Contractors_For_Job,
         ],
         off: [Permissions.None],
     },
@@ -355,6 +362,7 @@ export const UserPermissions = {
             Permissions.Create_Service_Ticket,
             Permissions.Update_Service_Ticket,
             Permissions.Get_Ticket_Detail,
+            Permissions.Get_Contractors_For_Job,
         ],
         off: [Permissions.None],
     },
@@ -431,6 +439,7 @@ export const UserPermissions = {
             Permissions.Create_Service_Ticket,
             Permissions.Update_Service_Ticket,
             Permissions.Get_Ticket_Detail,
+            Permissions.Get_Contractors_For_Job,
         ],
         off: [Permissions.None],
     }

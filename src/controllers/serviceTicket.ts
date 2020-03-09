@@ -17,7 +17,7 @@ export const createServiceTicket = (req: Request, res: Response) => {
 
     const serviceTicket = new ServiceTicket({
         createdAt: Date.now(),
-        scheduleTime: params.scheduleTime,
+        scheduleDateTime: params.scheduleDateTime,
         customer: params.customerId,
         createdBy: user._id,
         company: companyId,

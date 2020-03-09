@@ -51,6 +51,12 @@ const JobSchema = new mongoose_1.Schema({
         ref: 'User',
         required: true
     },
+    // employee type 0 for company employee
+    // employee type 1 for external employee
+    employeeType: {
+        type: Boolean,
+        default: false
+    }
 });
 exports.Job = mongoose_1.default.model('Job', JobSchema);
 //# sourceMappingURL=Job.js.map

@@ -1471,6 +1471,49 @@
                 ]
             }
         },
+        "/getContractorsForJob": {
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "To get all contractors of a company for assigning them a job",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/GeneralAPIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "users": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/User"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
         "/updateCompanyProfile": {
             "post": {
                 "tags": [
@@ -2246,9 +2289,15 @@
                         "description": "Id of a technician / admin"
                     },
                     {
-                        "name": "scheduleTime",
+                        "name": "scheduleDateTime",
                         "in": "formData",
                         "type": "string"
+                    },
+                    {
+                        "name": "companyId",
+                        "in": "formData",
+                        "type": "string",
+                        "description": "Id of company if contractor is hitting for other company"
                     }
                 ],
                 "responses": {
@@ -2401,7 +2450,13 @@
                         "in": "formData",
                         "required": true,
                         "type": "string",
-                        "description": "Additional note for the service tickett"
+                        "description": "Additional note for the service ticket"
+                    },
+                    {
+                        "name": "companyId",
+                        "in": "formData",
+                        "type": "string",
+                        "description": "Id of company if contractor is hitting for other company"
                     }
                 ],
                 "responses": {
@@ -2479,6 +2534,13 @@
                         "in": "formData",
                         "type": "string",
                         "description": "Description of the job"
+                    },
+                    {
+                        "name": "employeeType",
+                        "in": "formData",
+                        "required": true,
+                        "type": "number",
+                        "description": "0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor"
                     },
                     {
                         "name": "companyId",

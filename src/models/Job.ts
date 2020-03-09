@@ -14,6 +14,7 @@ export interface IJob extends Document {
     status: number,
     createdAt: Date,
     createdBy: Schema.Types.ObjectId,
+    employeeType: boolean
 }
 
 const JobSchema = new Schema({
@@ -60,6 +61,12 @@ const JobSchema = new Schema({
         ref: 'User',
         required: true
     },
+    // employee type 0 for company employee
+    // employee type 1 for external employee
+    employeeType:{
+        type: Boolean,
+        default: false
+    }
 
 })
 

@@ -1492,3 +1492,35 @@ export const createContractorSocial = (req: Request, res: Response) => {
 
 
 }
+
+export const getContractorForJob = (req: Request, res: Response) => {
+
+    var companyId = req.companyId;
+    var company  = <ICompany>req.company;
+    
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+
+    Contract.find({company: company._id})
+    .populate({
+        path: 'contractor',
+        select: '_id profile.displayName type',
+    })
+    .exec(
+    (err: any, contracts: IContract[]) => {
+
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+
+            console.log(contracts)
+            const contractors = contracts.map((contract)=>{
+                return contract.contractor
+            })
+            
+            return res.json({ 'status': Status.Success, 'contractors': contractors})
+        }
+    )
+
+}

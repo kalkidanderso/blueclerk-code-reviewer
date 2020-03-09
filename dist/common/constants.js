@@ -33,6 +33,10 @@ exports.ContractorPermissions = {
         39 /* Job_Finish */,
         40 /* Job_Detail */,
         41 /* Image_Upload */,
+        71 /* Get_Service_Tickets */,
+        72 /* Create_Service_Ticket */,
+        73 /* Update_Service_Ticket */,
+        74 /* Get_Ticket_Detail */,
     ]
 };
 exports.UserPermissions = {
@@ -101,6 +105,7 @@ exports.UserPermissions = {
             72 /* Create_Service_Ticket */,
             73 /* Update_Service_Ticket */,
             74 /* Get_Ticket_Detail */,
+            75 /* Get_Contractors_For_Job */,
         ],
         off: [0 /* None */],
     },
@@ -169,6 +174,7 @@ exports.UserPermissions = {
             72 /* Create_Service_Ticket */,
             73 /* Update_Service_Ticket */,
             74 /* Get_Ticket_Detail */,
+            75 /* Get_Contractors_For_Job */,
         ],
         off: [0 /* None */],
     },
@@ -240,6 +246,7 @@ exports.UserPermissions = {
             72 /* Create_Service_Ticket */,
             73 /* Update_Service_Ticket */,
             74 /* Get_Ticket_Detail */,
+            75 /* Get_Contractors_For_Job */,
         ],
         off: [0 /* None */],
     },
@@ -316,6 +323,7 @@ exports.UserPermissions = {
             72 /* Create_Service_Ticket */,
             73 /* Update_Service_Ticket */,
             74 /* Get_Ticket_Detail */,
+            75 /* Get_Contractors_For_Job */,
         ],
         off: [0 /* None */],
     }

@@ -776,4 +776,13 @@ router.post(
     validate(Validations.getTicketDetail),
     serviceTicketController.getServiceTicketDetail
 )
+
+router.post(
+    '/getContractorsForJob',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Get_Contractors_For_Job),
+    userController.getContractorForJob
+)
+
 export default router

@@ -156,5 +156,6 @@ router.post('/getServiceTickets', passport_1.default.authenticate('jwt', { sessi
 router.post('/createServiceTicket', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(72 /* Create_Service_Ticket */), validator_1.validate(validator_1.Validations.createTicket), serviceTicketController.createServiceTicket);
 router.post('/updateServiceTicket', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(73 /* Update_Service_Ticket */), validator_1.validate(validator_1.Validations.updateTicket), serviceTicketController.updateServiceTicket);
 router.post('/getServiceTicketDetail', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(74 /* Get_Ticket_Detail */), validator_1.validate(validator_1.Validations.getTicketDetail), serviceTicketController.getServiceTicketDetail);
+router.post('/getContractorsForJob', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(75 /* Get_Contractors_For_Job */), userController.getContractorForJob);
 exports.default = router;
 //# sourceMappingURL=v1.js.map

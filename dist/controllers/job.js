@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../common/constants");
+const aws_1 = require("../services/aws");
 const Job_1 = require("../models/Job");
 const Company_1 = require("../models/Company");
 const CustomerEquipment_1 = require("../models/CustomerEquipment");
@@ -16,9 +17,10 @@ exports.createJob = (req, res) => {
     if (params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
         CustomerEquipment_1.CustomerEquipment.findById(params.equipmentId, (err, equipment) => {
             if (err) {
-                console.log("err1");
-                console.log(err);
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            if (equipment == null || equipment == undefined) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid equipment id" });
             }
             const job = new Job_1.Job({
                 dateTime: params.dateTime,
@@ -31,22 +33,51 @@ exports.createJob = (req, res) => {
                 description: params.description,
                 equipmentId: params.equipmentId,
                 createdAt: Date.now(),
-                createdBy: user._id
+                createdBy: user._id,
+                employeeType: params.employeeType
             });
             job.save((err) => {
                 if (err) {
-                    console.log("err2");
-                    console.log(err);
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
                 company.currentJobId = company.currentJobId + 1;
                 Company_1.Company.updateOne({ currentJobId: company.currentJobId + 1 }, (err, raw) => {
                     if (err) {
-                        console.log("err4");
-                        console.log(err);
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
-                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
+                    Job_1.Job.findById(job.id)
+                        .populate({
+                        path: 'technician',
+                        select: 'profile.displayName auth.email'
+                    })
+                        .populate({
+                        path: 'customer',
+                        select: 'info.name info.email'
+                    })
+                        .populate({
+                        path: 'createdBy',
+                        select: 'profile.displayName'
+                    })
+                        .populate({
+                        path: 'type',
+                        select: 'title'
+                    })
+                        .exec((err, job) => {
+                        if (err) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                        }
+                        var tech = job.technician;
+                        var cust = job.customer;
+                        var type = job.type;
+                        var creator = job.createdBy;
+                        aws_1.sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime });
+                        aws_1.sendJobEmailToCustomer({ to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime });
+                        if (params.employeeType == 1) {
+                            aws_1.sendJobEmailToCompanyAdmin({ to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName });
+                        }
+                        return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
+                    });
+                    // return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
                 });
             });
         });
@@ -62,22 +93,50 @@ exports.createJob = (req, res) => {
             company: companyId,
             description: params.description,
             createdAt: Date.now(),
-            createdBy: user._id
+            createdBy: user._id,
+            employeeType: params.employeeType
         });
         job.save((err) => {
             if (err) {
-                console.log("err5");
-                console.log(err);
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             company.currentJobId = company.currentJobId + 1;
             Company_1.Company.updateOne({ currentJobId: company.currentJobId + 1 }, (err, raw) => {
                 if (err) {
-                    console.log("err6");
-                    console.log(err);
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
+                Job_1.Job.findById(job.id)
+                    .populate({
+                    path: 'technician',
+                    select: 'profile.displayName auth.email'
+                })
+                    .populate({
+                    path: 'customer',
+                    select: 'info.name info.email'
+                })
+                    .populate({
+                    path: 'createdBy',
+                    select: 'profile.displayName'
+                })
+                    .populate({
+                    path: 'type',
+                    select: 'title'
+                })
+                    .exec((err, job) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    var tech = job.technician;
+                    var cust = job.customer;
+                    var type = job.type;
+                    var creator = job.createdBy;
+                    aws_1.sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime });
+                    aws_1.sendJobEmailToCustomer({ to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime });
+                    if (params.employeeType == 1) {
+                        aws_1.sendJobEmailToCompanyAdmin({ to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName });
+                    }
+                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
+                });
             });
         });
     }

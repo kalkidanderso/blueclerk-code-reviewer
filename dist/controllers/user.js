@@ -1080,4 +1080,26 @@ exports.createContractorSocial = (req, res) => {
         });
     });
 };
+exports.getContractorForJob = (req, res) => {
+    var companyId = req.companyId;
+    var company = req.company;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId;
+    }
+    Contract_1.Contract.find({ company: company._id })
+        .populate({
+        path: 'contractor',
+        select: '_id profile.displayName type',
+    })
+        .exec((err, contracts) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        console.log(contracts);
+        const contractors = contracts.map((contract) => {
+            return contract.contractor;
+        });
+        return res.json({ 'status': constants_1.Status.Success, 'contractors': contractors });
+    });
+};
 //# sourceMappingURL=user.js.map

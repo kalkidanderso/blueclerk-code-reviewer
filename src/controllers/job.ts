@@ -1,5 +1,6 @@
 import {Request, Response} from 'express'
 import { Status, Messages, JobStatus } from '../common/constants'
+import { sendJobEmailToAssignee, sendJobEmailToCustomer, sendJobEmailToCompanyAdmin } from '../services/aws'
 
 import { Job, IJob } from '../models/Job'
 import { Company, ICompany } from '../models/Company'
@@ -24,9 +25,10 @@ export const createJob = (req: Request, res: Response) => {
         (err: any, equipment: ICustomerEquipment)=>{
             
             if (err) {
-                console.log("err1")
-                console.log(err)
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+            if (equipment == null || equipment == undefined) {
+                return res.json({'status': Status.Error, 'message': "Invalid equipment id"})
             }
     
             const job = new Job(
@@ -41,26 +43,62 @@ export const createJob = (req: Request, res: Response) => {
                     description: params.description,
                     equipmentId: params.equipmentId,
                     createdAt: Date.now(),
-                    createdBy: user._id
+                    createdBy: user._id,
+                    employeeType: params.employeeType
                 }
             )
         
             job.save((err: any) => {
         
                 if (err) {
-                    console.log("err2")
-                    console.log(err)
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
                 
                 company.currentJobId = company.currentJobId+1
                 Company.updateOne({currentJobId: company.currentJobId+1}, (err: any, raw: any)=>{
                     if (err) {
-                        console.log("err4")
-                        console.log(err)
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }    
-                    return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
+                    Job.findById(job.id)
+                    .populate({
+                        path:'technician',
+                        select:'profile.displayName auth.email'
+                    })
+                    .populate({
+                        path:'customer',
+                        select:'info.name info.email'
+                    })
+                    .populate({
+                        path:'createdBy',
+                        select:'profile.displayName'
+                    })
+                    .populate({
+                        path:'type',
+                        select:'title'
+                    })
+                    .exec((err: any, job: IJob) => {
+    
+                        if (err) {
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
+    
+                        var tech : any = job.technician
+                        var cust : any = job.customer
+                        var type : any = job.type
+                        var creator : any = job.createdBy
+                        
+                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime})
+
+                        sendJobEmailToCustomer({to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime})
+
+                        if(params.employeeType == 1) {
+                            sendJobEmailToCompanyAdmin({to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName})
+                        }
+                        
+                        return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
+            
+                    })
+                    // return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
                 })
                 
             })
@@ -78,25 +116,61 @@ export const createJob = (req: Request, res: Response) => {
                 company: companyId,
                 description: params.description,
                 createdAt: Date.now(),
-                createdBy: user._id
+                createdBy: user._id,
+                employeeType: params.employeeType
             }
         )
     
         job.save((err: any) => {
             if (err) {
-                console.log("err5")
-                console.log(err)
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
             company.currentJobId = company.currentJobId+1
             Company.updateOne({currentJobId: company.currentJobId+1}, (err: any, raw: any)=>{
                 if (err) {
-                    console.log("err6")
-                    console.log(err)
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }    
-                return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
+
+                Job.findById(job.id)
+                .populate({
+                    path:'technician',
+                    select:'profile.displayName auth.email'
+                })
+                .populate({
+                    path:'customer',
+                    select:'info.name info.email'
+                })
+                .populate({
+                    path:'createdBy',
+                    select:'profile.displayName'
+                })
+                .populate({
+                    path:'type',
+                    select:'title'
+                })
+                .exec((err: any, job: IJob) => {
+
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+
+                    var tech : any= job.technician
+                    var cust : any= job.customer
+                    var type : any= job.type
+                    var creator : any = job.createdBy
+
+                    sendJobEmailToAssignee({to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime})
+
+                    sendJobEmailToCustomer({to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime})
+                    
+                    if(params.employeeType == 1) {
+                        sendJobEmailToCompanyAdmin({to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName})
+                    }
+
+                    return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
+        
+                })
             })
         })
     }

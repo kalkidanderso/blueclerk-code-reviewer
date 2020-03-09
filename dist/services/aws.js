@@ -298,4 +298,112 @@ exports.uploadImageInS3 = function (req, res, next) {
         next(null, req.file.location);
     });
 };
+exports.sendJobEmailToAssignee = function (options) {
+    const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
+    aws_sdk_1.default.config.update({
+        region: AWS_REGION,
+        accessKeyId: AWS_SES_ACCESSKEYID,
+        secretAccessKey: AWS_SES_SECRETACCESSKEY,
+    });
+    const ses = new aws_sdk_1.default.SES({ apiVersion: '2012-10-17' });
+    return new Promise((resolve, reject) => {
+        ses.sendEmail({
+            Source: APP_EMAIL_NOREPLY,
+            Destination: {
+                CcAddresses: [],
+                ToAddresses: [options.to],
+            },
+            Message: {
+                Subject: {
+                    Data: "New Job Assigned via BlueClerk",
+                },
+                Body: {
+                    Html: {
+                        Data: "<p>Dear " + options.assigneeName + "!</p><p>This email is to inform you that a job has been assigned and scheduled to you by (" + options.companyName + ").  Job details below:</p><p>Customer : " + options.customerName + "</p><p>Job Type : " + options.jobType + "</p><p>Notes : " + options.notes + "</p> <p>Date : " + options.dateTime + "</p> <p>If you have any questions, please reach out to the company who has assigned you to this job.  Thank you.</p><br/><br/> <p> <a href=\"https:\/\/blueclerk.com/privacy-policy\" target=\"_blank\">Privacy policy</a> </p>",
+                    },
+                },
+            },
+            ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        }, (err, info) => {
+            if (err) {
+                reject(err);
+            }
+            else {
+                resolve(info);
+            }
+        });
+    });
+};
+exports.sendJobEmailToCustomer = function (options) {
+    const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
+    aws_sdk_1.default.config.update({
+        region: AWS_REGION,
+        accessKeyId: AWS_SES_ACCESSKEYID,
+        secretAccessKey: AWS_SES_SECRETACCESSKEY,
+    });
+    const ses = new aws_sdk_1.default.SES({ apiVersion: '2012-10-17' });
+    return new Promise((resolve, reject) => {
+        ses.sendEmail({
+            Source: APP_EMAIL_NOREPLY,
+            Destination: {
+                CcAddresses: [],
+                ToAddresses: [options.to],
+            },
+            Message: {
+                Subject: {
+                    Data: "Job Scheduled via BlueClerk",
+                },
+                Body: {
+                    Html: {
+                        Data: "<p>Dear " + options.customerName + "!</p><p>This email is to inform you that a job has been scheduled with (" + options.companyName + ").  Job details below:</p><p>Assigned To : " + options.assigneeName + "</p><p>Job Type : " + options.jobType + "</p><p>Notes : " + options.notes + "</p> <p>Date : " + options.dateTime + "</p> <p>If you have any questions, please reach out to the company who has assigned you to this job.  Thank you.</p><br/><br/> <p> <a href=\"https:\/\/blueclerk.com/privacy-policy\" target=\"_blank\">Privacy policy</a> </p>",
+                    },
+                },
+            },
+            ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        }, (err, info) => {
+            if (err) {
+                reject(err);
+            }
+            else {
+                resolve(info);
+            }
+        });
+    });
+};
+exports.sendJobEmailToCompanyAdmin = function (options) {
+    const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
+    aws_sdk_1.default.config.update({
+        region: AWS_REGION,
+        accessKeyId: AWS_SES_ACCESSKEYID,
+        secretAccessKey: AWS_SES_SECRETACCESSKEY,
+    });
+    const ses = new aws_sdk_1.default.SES({ apiVersion: '2012-10-17' });
+    return new Promise((resolve, reject) => {
+        ses.sendEmail({
+            Source: APP_EMAIL_NOREPLY,
+            Destination: {
+                CcAddresses: [],
+                ToAddresses: [options.to],
+            },
+            Message: {
+                Subject: {
+                    Data: "Job Scheduled via BlueClerk",
+                },
+                Body: {
+                    Html: {
+                        Data: "<p>Dear " + options.contactPerson + "!</p><p>This email is to inform you that a job has been scheduled with (" + options.assigneeName + ") by " + options.vendorName + ".  Job details below:</p><p>Company : " + options.companyName + "</p><p>Customer : " + options.customerName + "</p><p>Job Type : " + options.jobType + "</p><p>Notes : " + options.notes + "</p> <p>Date : " + options.dateTime + "</p> <p>If you have any questions, please reach out to the vendor who has created this job.  Thank you.</p><br/><br/> <p> <a href=\"https:\/\/blueclerk.com/privacy-policy\" target=\"_blank\">Privacy policy</a> </p>",
+                    },
+                },
+            },
+            ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        }, (err, info) => {
+            if (err) {
+                reject(err);
+            }
+            else {
+                resolve(info);
+            }
+        });
+    });
+};
 //# sourceMappingURL=aws.js.map
