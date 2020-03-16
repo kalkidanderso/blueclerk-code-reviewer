@@ -21,7 +21,8 @@ export const enum Role {
     TECHNICIAN,
     MANAGER,
     COMPANY,
-    GLOBAL_ADMIN
+    GLOBAL_ADMIN,
+    CUSTOMER
 }
 
 export const enum OrderStatus {
@@ -128,6 +129,7 @@ export const enum Permissions {
     Update_Service_Ticket,
     Get_Ticket_Detail,
     Get_Contractors_For_Job,
+    Get_Customer_Detail,
 }
 
 export const ContractorPermissions = {
@@ -153,6 +155,7 @@ export const ContractorPermissions = {
         Permissions.Create_Service_Ticket,
         Permissions.Update_Service_Ticket,
         Permissions.Get_Ticket_Detail,
+        Permissions.Get_Customer_Detail
     ]
 }
 export const UserPermissions = {
@@ -222,6 +225,7 @@ export const UserPermissions = {
             Permissions.Update_Service_Ticket,
             Permissions.Get_Ticket_Detail,
             Permissions.Get_Contractors_For_Job,
+            Permissions.Get_Customer_Detail
         ],
         off: [Permissions.None],
     },
@@ -291,6 +295,7 @@ export const UserPermissions = {
             Permissions.Update_Service_Ticket,
             Permissions.Get_Ticket_Detail,
             Permissions.Get_Contractors_For_Job,
+            Permissions.Get_Customer_Detail
         ],
         off: [Permissions.None],
     },
@@ -363,6 +368,7 @@ export const UserPermissions = {
             Permissions.Update_Service_Ticket,
             Permissions.Get_Ticket_Detail,
             Permissions.Get_Contractors_For_Job,
+            Permissions.Get_Customer_Detail
         ],
         off: [Permissions.None],
     },
@@ -440,6 +446,7 @@ export const UserPermissions = {
             Permissions.Update_Service_Ticket,
             Permissions.Get_Ticket_Detail,
             Permissions.Get_Contractors_For_Job,
+            Permissions.Get_Customer_Detail
         ],
         off: [Permissions.None],
     }

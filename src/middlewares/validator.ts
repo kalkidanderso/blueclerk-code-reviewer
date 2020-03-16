@@ -58,13 +58,14 @@ export const Validations = {
   createEquipmentBrand: [check('title').exists()],
 
   //Customers
-  createCustomer: [check('name').exists()],
+  createCustomer: [check('firstName').exists(), check('lastName').exists()],
   updateCustomer: [check('customerId').exists(), check('name').exists()],
   // createCustomer: [check('email').exists(), check('email').isEmail(), check('name').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('contactName').exists(), check('phone').exists()],
   getCustomers: [check('includeActive').exists(), check('includeNonActive').exists()],
+  getCustomerDetail: [check('customerId').exists()],
 
   //Customer Equipment
-  createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('imageUrl').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists(), check('location').exists()],
+  createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists(), check('location').exists(), check('images').exists()],
   getCustomerEquipments: [check('customerId').exists()],
   linkEquipmentJob: [check('nfcTag').exists(), check('jobId').exists(), check('comment').exists()],
   getCustomerEquipmentJobs: [check('nfcTag').exists()],

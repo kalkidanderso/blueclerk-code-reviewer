@@ -20,6 +20,7 @@ const EquipmentBrand_1 = require("../models/EquipmentBrand");
 const EquipmentType_1 = require("../models/EquipmentType");
 const config_1 = require("../common/config");
 const Contract_1 = require("../models/Contract");
+const CompanyCustomer_1 = require("../models/CompanyCustomer");
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
 const stripe_1 = require("../services/stripe");
@@ -778,8 +779,17 @@ exports.acceptRejectContract = (req, res) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                aws_1.sendContractStatusChangeEmailToCompany({ to: company.auth.email, contractor: contractor.profile.displayName, company: company.info.companyName, contractStatus: params.status + 'ed' });
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract ' + params.status + 'ed.' });
+                const companyCustomer = new CompanyCustomer_1.CompanyCustomer({
+                    company: contractor._id,
+                    customer: company._id,
+                });
+                companyCustomer.save((err) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    aws_1.sendContractStatusChangeEmailToCompany({ to: company.auth.email, contractor: contractor.profile.displayName, company: company.info.companyName, contractStatus: params.status + 'ed' });
+                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract ' + params.status + 'ed.' });
+                });
             });
         });
     });
@@ -1095,7 +1105,6 @@ exports.getContractorForJob = (req, res) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        console.log(contracts);
         const contractors = contracts.map((contract) => {
             return contract.contractor;
         });

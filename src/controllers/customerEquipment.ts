@@ -61,8 +61,28 @@ export const createCustomerEquipment = (req: Request, res: Response) => {
                             if (err) {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                             }
+
+                            if (params.images != undefined && params.images != '') {
+                                var images: any = []
+                                var urls = params.images.split(',').map(String)
+                                urls.map((url: any)=>{
+                                    equipment.images.push(url)        
+                                })
+                                equipment.updateOne(
+                                    { images: equipment.images },
+                                    (err: any, raw: any) => {
+                
+                                        if (err) {
+                                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                        }
+                                        return res.json({ 'status': Status.Success, 'message': 'Customer equipment created successfully.' })
+                                    }
+                                )
+
+                            } else {
+                                return res.json({ 'status': Status.Success, 'message': 'Customer equipment created successfully.' })
+                            }
     
-                            return res.json({ 'status': Status.Success, 'message': 'Customer equipment created successfully.' })
                         }
                     )
     
@@ -210,16 +230,16 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': "Customer Equipment not found"})
             }
 
-            Job.findById(params.jobId,
-                (err: any, job: IJob) => {
-                    if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                    }
+            // Job.findById(params.jobId,
+            //     (err: any, job: IJob) => {
+            //         if (err) {
+            //             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            //         }
 
-                    if (job != undefined && job != null) {
-                        return res.json({ 'status': Status.Error, 'message': "Equipment already scanned for this job."})
-                    }
-            })
+            //         if (job != undefined && job != null) {
+            //             return res.json({ 'status': Status.Error, 'message': "Equipment already scanned for this job."})
+            //         }
+            // })
 
             Scan.findOne({equipmentId: customerEquipment._id, jobId: params.jobId}, 
                 (err: any, scan: IScan) => {

@@ -318,6 +318,15 @@ router.post(
 )
 
 router.post(
+    '/getCustomerDetail',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Get_Customer_Detail),
+    validate(Validations.getCustomerDetail),
+    customerController.customerDetail
+)
+
+router.post(
     '/updateCustomer',
     passport.authenticate('jwt', { session: false }),
     getCompnayId(),

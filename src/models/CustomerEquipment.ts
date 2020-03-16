@@ -17,6 +17,7 @@ export interface ICustomerEquipment extends Document {
     type: Schema.Types.ObjectId
     brand: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId
+    images:[string]
     // jobs:[ Schema.Types.ObjectId ]
 
 }
@@ -49,6 +50,8 @@ const CustomerEquipmentSchema = new Schema({
         ref: 'Customer',
         required: true
     },
+    images: [String],
+
     // jobs:[{ 
     //     type: Schema.Types.ObjectId,
     //     ref: 'Job'

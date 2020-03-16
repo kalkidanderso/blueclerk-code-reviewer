@@ -55,12 +55,13 @@ exports.Validations = {
     //Equipment Brand
     createEquipmentBrand: [express_validator_1.check('title').exists()],
     //Customers
-    createCustomer: [express_validator_1.check('name').exists()],
+    createCustomer: [express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists()],
     updateCustomer: [express_validator_1.check('customerId').exists(), express_validator_1.check('name').exists()],
     // createCustomer: [check('email').exists(), check('email').isEmail(), check('name').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('contactName').exists(), check('phone').exists()],
     getCustomers: [express_validator_1.check('includeActive').exists(), express_validator_1.check('includeNonActive').exists()],
+    getCustomerDetail: [express_validator_1.check('customerId').exists()],
     //Customer Equipment
-    createCustomerEquipment: [express_validator_1.check('model').exists(), express_validator_1.check('serialNumber').exists(), express_validator_1.check('nfcTag').exists(), express_validator_1.check('imageUrl').exists(), express_validator_1.check('equipmentTypeId').exists(), express_validator_1.check('equipmentBrandId').exists(), express_validator_1.check('customerId').exists(), express_validator_1.check('location').exists()],
+    createCustomerEquipment: [express_validator_1.check('model').exists(), express_validator_1.check('serialNumber').exists(), express_validator_1.check('nfcTag').exists(), express_validator_1.check('equipmentTypeId').exists(), express_validator_1.check('equipmentBrandId').exists(), express_validator_1.check('customerId').exists(), express_validator_1.check('location').exists(), express_validator_1.check('images').exists()],
     getCustomerEquipments: [express_validator_1.check('customerId').exists()],
     linkEquipmentJob: [express_validator_1.check('nfcTag').exists(), express_validator_1.check('jobId').exists(), express_validator_1.check('comment').exists()],
     getCustomerEquipmentJobs: [express_validator_1.check('nfcTag').exists()],

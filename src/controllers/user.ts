@@ -20,6 +20,7 @@ import { EquipmentBrand } from '../models/EquipmentBrand'
 import { EquipmentType } from '../models/EquipmentType'
 import { privateKey } from '../common/config'
 import { Contract, IContract } from '../models/Contract'
+import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
 import { addCustomerAndCharge, addCustomerSource, chargeSubscription} from '../services/stripe'
@@ -1073,8 +1074,22 @@ export const acceptRejectContract = (req: Request, res: Response) => {
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
-                    sendContractStatusChangeEmailToCompany({ to: company.auth.email, contractor: contractor.profile.displayName , company: company.info.companyName, contractStatus:params.status+'ed' })
-                    return res.json({'status': Status.Success, 'message': 'Contract '+params.status+'ed.'})   
+                    const companyCustomer = new CompanyCustomer({
+                        company: contractor._id,
+                        customer: company._id,
+                    })
+                    companyCustomer.save((err: any) => {
+        
+                        if (err) {
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
+            
+                        sendContractStatusChangeEmailToCompany({ to: company.auth.email, contractor: contractor.profile.displayName , company: company.info.companyName, contractStatus:params.status+'ed' })
+                        return res.json({'status': Status.Success, 'message': 'Contract '+params.status+'ed.'})
+            
+                    })
+
+                       
                 })
             })
         }
@@ -1514,8 +1529,7 @@ export const getContractorForJob = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            console.log(contracts)
-            const contractors = contracts.map((contract)=>{
+             const contractors = contracts.map((contract)=>{
                 return contract.contractor
             })
             

@@ -1832,7 +1832,13 @@
             "type": "string"
           },
           {
-            "name": "name",
+            "name": "firstName",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "lastName",
             "in": "formData",
             "required": true,
             "type": "string"
@@ -1854,11 +1860,6 @@
           },
           {
             "name": "zipCode",
-            "in": "formData",
-            "type": "string"
-          },
-          {
-            "name": "contactName",
             "in": "formData",
             "type": "string"
           },
@@ -1904,7 +1905,13 @@
             "type": "string"
           },
           {
-            "name": "name",
+            "name": "firstName",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "lastName",
             "in": "formData",
             "required": true,
             "type": "string"
@@ -1931,11 +1938,6 @@
           },
           {
             "name": "zipCode",
-            "in": "formData",
-            "type": "string"
-          },
-          {
-            "name": "contactName",
             "in": "formData",
             "type": "string"
           },
@@ -1987,6 +1989,60 @@
             "required": true,
             "type": "boolean",
             "description": "Should include non-active clients in the response. true->include false->don't include"
+          },
+          {
+            "name": "companyId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of company if contractor is hitting for other company"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "customer": {
+                      "$ref": "#/definitions/Customer"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getCustomerDetail": {
+      "post": {
+        "tags": [
+          "Customer"
+        ],
+        "summary": "To get detail of a customer.",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of customer for getting detail"
           },
           {
             "name": "companyId",
@@ -2064,10 +2120,11 @@
             "type": "string"
           },
           {
-            "name": "imageUrl",
+            "name": "images",
             "in": "formData",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "description": "comma seprated image Urls"
           },
           {
             "name": "equipmentTypeId",

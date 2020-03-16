@@ -1,21 +1,8 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { User, IUser} from './User'
 
-export interface ICustomer extends Document {
+export interface ICustomer extends IUser {
 
-    info: {
-        name: string
-        email: string
-    }
-    address: {
-        street: string
-        city: string
-        state: string
-        zipCode: string
-    }
-    contact: {
-        name: string
-        phone: string
-    }
     isActive: boolean
     company: Schema.Types.ObjectId
     equipments: [Schema.Types.ObjectId]
@@ -24,20 +11,6 @@ export interface ICustomer extends Document {
 
 const CustomerSchema = new Schema({
 
-    info: {
-        name: String,
-        email: String,
-    },
-    address: {
-        street: String,
-        city: String,
-        state: String,
-        zipCode: String,
-    },
-    contact: {
-        name: String,
-        phone: String,
-    },
     isActive: {type: Boolean, default: true},
     company: {
         type: Schema.Types.ObjectId,
@@ -48,4 +21,4 @@ const CustomerSchema = new Schema({
 
 })
 
-export const Customer = mongoose.model<ICustomer>('Customer', CustomerSchema)
+export const Customer = User.discriminator<ICustomer>('Customer', CustomerSchema)

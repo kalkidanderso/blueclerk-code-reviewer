@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../common/constants");
 const CustomerEquipment_1 = require("../models/CustomerEquipment");
 const Customer_1 = require("../models/Customer");
-const Job_1 = require("../models/Job");
 const Scan_1 = require("../models/Scan");
 const mongodb_1 = require("mongodb");
 const util_1 = require("util");
@@ -41,7 +40,22 @@ exports.createCustomerEquipment = (req, res) => {
                     if (err) {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
-                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer equipment created successfully.' });
+                    if (params.images != undefined && params.images != '') {
+                        var images = [];
+                        var urls = params.images.split(',').map(String);
+                        urls.map((url) => {
+                            equipment.images.push(url);
+                        });
+                        equipment.updateOne({ images: equipment.images }, (err, raw) => {
+                            if (err) {
+                                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                            }
+                            return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer equipment created successfully.' });
+                        });
+                    }
+                    else {
+                        return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer equipment created successfully.' });
+                    }
                 });
             });
         });
@@ -148,14 +162,15 @@ exports.linkJobToEquipment = (req, res) => {
         if (customerEquipment == undefined || customerEquipment == null) {
             return res.json({ 'status': constants_1.Status.Error, 'message': "Customer Equipment not found" });
         }
-        Job_1.Job.findById(params.jobId, (err, job) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            if (job != undefined && job != null) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': "Equipment already scanned for this job." });
-            }
-        });
+        // Job.findById(params.jobId,
+        //     (err: any, job: IJob) => {
+        //         if (err) {
+        //             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        //         }
+        //         if (job != undefined && job != null) {
+        //             return res.json({ 'status': Status.Error, 'message': "Equipment already scanned for this job."})
+        //         }
+        // })
         Scan_1.Scan.findOne({ equipmentId: customerEquipment._id, jobId: params.jobId }, (err, scan) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
