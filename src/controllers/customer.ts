@@ -31,9 +31,9 @@ export const createCustomer = (req: Request, res: Response) => {
                     email: params.email,
                 },
                 profile:{
-                    firstName: params.firstName,
-                    lastName: params.lastName,
-                    displayName: `${params.firstName} ${params.lastName}`,
+                    firstName: params.name,
+                    lastName: params.name,
+                    displayName: params.name,
                     imageUrl: '',
                 },
                 address: {
@@ -141,9 +141,9 @@ export const updateCustomer = (req: Request, res: Response) => {
         customer.updateOne(
             {
                 'auth.email': params.email,
-                'profile.firstName': params.firstName,
-                'profile.lastName': params.lastName,
-                'profile.displayName': `${params.firstName} ${params.lastName}`,
+                'profile.firstName': params.name,
+                'profile.lastName': params.name,
+                'profile.displayName': params.name,
                 'address.street': params.street,
                 'address.city': params.city,
                 'address.state': params.state,

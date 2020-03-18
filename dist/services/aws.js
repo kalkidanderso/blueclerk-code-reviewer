@@ -133,12 +133,12 @@ exports.sendContractStartEmail = function (options) {
             },
             Message: {
                 Subject: {
-                    Data: "Offer contract from " + options.company + " on Blueclerk",
+                    Data: "Added as vendor by " + options.company + " on Blueclerk",
                 },
                 Body: {
                     Html: {
                         Data: "<p>Hi! " + options.contractor + "</p>\
-              <p>" + options.company + " has sent you a contract offer you can view the details by login in. Click the link to login:<a href=\"https://app.blueclerk.com/login/\ target=\"_blank\">app.blueclerk.com</a></p>",
+              <p>" + options.company + " has sent you a contract offer you can view the details by login in. Click the link to login <a href=\"https://app.blueclerk.com/login/\ target=\"_blank\">app.blueclerk.com</a></p>",
                     },
                 },
             },

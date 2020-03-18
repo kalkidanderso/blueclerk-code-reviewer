@@ -328,7 +328,8 @@ exports.UserPermissions = {
             73 /* Update_Service_Ticket */,
             74 /* Get_Ticket_Detail */,
             75 /* Get_Contractors_For_Job */,
-            76 /* Get_Customer_Detail */
+            76 /* Get_Customer_Detail */,
+            65 /* Get_All_Contracts */
         ],
         off: [0 /* None */],
     }
