@@ -15,65 +15,54 @@ export const createCustomer = (req: Request, res: Response) => {
         companyId = req.otherCompanyId
     }
     
-    Customer.findOne({'auth.email': params.email, company: companyId}, 
-    (err: any, previousCustomer: IUser)=>{
+    const customer = new Customer(
+        {
+            info: {
+                email: params.email,
+            },
+            profile:{
+                firstName: params.name,
+                lastName: params.name,
+                displayName: params.name,
+                imageUrl: '',
+            },
+            address: {
+                street: params.street,
+                city: params.city,
+                state: params.state,
+                zipCode: params.zipCode,
+            },
+            contact: {
+                phone: params.phone,
+            },
+            company: companyId,
+            permissions: {
+                role: Role.CUSTOMER,
+                extra: [],
+            },
+        }
+    )
+
+    customer.save((err: any) => {
+
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
         
-        if(previousCustomer != undefined || previousCustomer != null) {
-            return res.json({'status': Status.Error, 'message': "Customer already exist"})
-        }
+        // create company customer here
+        const companyCustomer = new CompanyCustomer({
+            company: companyId,
+            customer: customer._id,
+            createdAt: Date.now()
+        })
 
-        const customer = new Customer(
-            {
-                auth: {
-                    email: params.email,
-                },
-                profile:{
-                    firstName: params.name,
-                    lastName: params.name,
-                    displayName: params.name,
-                    imageUrl: '',
-                },
-                address: {
-                    street: params.street,
-                    city: params.city,
-                    state: params.state,
-                    zipCode: params.zipCode,
-                },
-                contact: {
-                    phone: params.phone,
-                },
-                company: companyId,
-                permissions: {
-                    role: Role.CUSTOMER,
-                    extra: [],
-                },
-            }
-        )
-    
-        customer.save((err: any) => {
-    
+        companyCustomer.save((err: any) => {
+
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-            
-            // create company customer here
-            const companyCustomer = new CompanyCustomer({
-                company: companyId,
-                customer: customer._id,
-                createdAt: Date.now()
-            })
 
-            companyCustomer.save((err: any) => {
-    
-                if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                }
-
-                return res.json({'status': Status.Success, 'message': 'Customer created successfully.'})
-            })
+            return res.json({'status': Status.Success, 'message': 'Customer created successfully.'})
         })
     })
 
@@ -114,7 +103,7 @@ export const getCustomers = (req: Request, res: Response) => {
         })
         
         User.find({_id : {$in: customerIds}},
-            'auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode contact.phone permissions.role',
+            'info.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode contact.phone permissions.role',
             (err: any, users: IUser[]) =>{
             
             if (err) {
@@ -140,7 +129,7 @@ export const updateCustomer = (req: Request, res: Response) => {
 
         customer.updateOne(
             {
-                'auth.email': params.email,
+                'info.email': params.email,
                 'profile.firstName': params.name,
                 'profile.lastName': params.name,
                 'profile.displayName': params.name,

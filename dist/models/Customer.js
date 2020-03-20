@@ -4,6 +4,9 @@ const mongoose_1 = require("mongoose");
 const User_1 = require("./User");
 const CustomerSchema = new mongoose_1.Schema({
     isActive: { type: Boolean, default: true },
+    info: {
+        email: String
+    },
     company: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Company',

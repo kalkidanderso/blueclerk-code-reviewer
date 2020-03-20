@@ -10,54 +10,46 @@ exports.createCustomer = (req, res) => {
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
     }
-    Customer_1.Customer.findOne({ 'auth.email': params.email, company: companyId }, (err, previousCustomer) => {
+    const customer = new Customer_1.Customer({
+        info: {
+            email: params.email,
+        },
+        profile: {
+            firstName: params.name,
+            lastName: params.name,
+            displayName: params.name,
+            imageUrl: '',
+        },
+        address: {
+            street: params.street,
+            city: params.city,
+            state: params.state,
+            zipCode: params.zipCode,
+        },
+        contact: {
+            phone: params.phone,
+        },
+        company: companyId,
+        permissions: {
+            role: 5 /* CUSTOMER */,
+            extra: [],
+        },
+    });
+    customer.save((err) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        if (previousCustomer != undefined || previousCustomer != null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': "Customer already exist" });
-        }
-        const customer = new Customer_1.Customer({
-            auth: {
-                email: params.email,
-            },
-            profile: {
-                firstName: params.name,
-                lastName: params.name,
-                displayName: params.name,
-                imageUrl: '',
-            },
-            address: {
-                street: params.street,
-                city: params.city,
-                state: params.state,
-                zipCode: params.zipCode,
-            },
-            contact: {
-                phone: params.phone,
-            },
+        // create company customer here
+        const companyCustomer = new CompanyCustomer_1.CompanyCustomer({
             company: companyId,
-            permissions: {
-                role: 5 /* CUSTOMER */,
-                extra: [],
-            },
+            customer: customer._id,
+            createdAt: Date.now()
         });
-        customer.save((err) => {
+        companyCustomer.save((err) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            // create company customer here
-            const companyCustomer = new CompanyCustomer_1.CompanyCustomer({
-                company: companyId,
-                customer: customer._id,
-                createdAt: Date.now()
-            });
-            companyCustomer.save((err) => {
-                if (err) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                }
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer created successfully.' });
-            });
+            return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer created successfully.' });
         });
     });
 };
@@ -91,7 +83,7 @@ exports.getCustomers = (req, res) => {
         const customerIds = companyCustomers.map((obj) => {
             return obj.customer;
         });
-        User_1.User.find({ _id: { $in: customerIds } }, 'auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode contact.phone permissions.role', (err, users) => {
+        User_1.User.find({ _id: { $in: customerIds } }, 'info.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode contact.phone permissions.role', (err, users) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
@@ -107,7 +99,7 @@ exports.updateCustomer = (req, res) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         customer.updateOne({
-            'auth.email': params.email,
+            'info.email': params.email,
             'profile.firstName': params.name,
             'profile.lastName': params.name,
             'profile.displayName': params.name,
