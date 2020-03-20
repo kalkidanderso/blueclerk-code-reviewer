@@ -37,7 +37,7 @@ exports.createCustomer = (req, res) => {
     });
     customer.save((err) => {
         if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error': err });
         }
         // create company customer here
         const companyCustomer = new CompanyCustomer_1.CompanyCustomer({
