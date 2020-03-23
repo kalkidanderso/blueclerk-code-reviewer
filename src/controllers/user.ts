@@ -734,6 +734,7 @@ export const updateSub = (req: Request, res: Response) => {
         JobType.collection.drop()
         Order.collection.drop()
         User.collection.drop()
+        CompanyCustomer.collection.drop()
 
         return res.json({ 'message': 'Done' })
     }

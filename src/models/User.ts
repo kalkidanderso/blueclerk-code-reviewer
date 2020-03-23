@@ -43,7 +43,7 @@ export interface IUser extends Document {
 const UserSchema = new Schema({
 
     auth: {
-        email: { type: String, unique: true },
+        email: { type: String },
         password: { type: String },
         resetPasswordToken: String,
         resetPasswordExpires: Date,

@@ -67,8 +67,13 @@ export const uploadfile = (req: Request, res: Response) => {
             
                 customers.push(new Customer({
                     info: {
-                        name: obj.name,
                         email: obj.email,
+                    },
+                    profile:{
+                        firstName: obj.name,
+                        lastName: obj.name,
+                        displayName: obj.name,
+                        imageUrl: '',
                     },
                     address: {
                         street: obj.street,
@@ -77,10 +82,13 @@ export const uploadfile = (req: Request, res: Response) => {
                         zipCode: obj.zipCode,
                     },
                     contact: {
-                        name: obj.name,
                         phone: obj.phone,
                     },
-                    company: req.companyId
+                    company: req.companyId,
+                    permissions: {
+                        role: Role.CUSTOMER,
+                        extra: [],
+                    }
                 })) 
     
             })

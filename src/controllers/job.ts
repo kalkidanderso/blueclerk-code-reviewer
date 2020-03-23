@@ -193,7 +193,7 @@ export const getJobs = (req: Request, res: Response) => {
         })
         .populate({
             path: 'customer',
-            select: 'info.name'
+            select: 'info.email auth.name'
         })
         .populate({
             path: 'type',
@@ -234,7 +234,7 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
         })
         .populate({
             path: 'customer',
-            select: 'info.name'
+            select: 'info.email auth.name'
         })
         .populate({
             path: 'type',

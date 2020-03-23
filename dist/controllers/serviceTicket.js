@@ -33,7 +33,7 @@ exports.getServiceTickets = (req, res) => {
     ServiceTicket_1.ServiceTicket.find({ company: companyId })
         .populate({
         path: 'customer',
-        select: 'info.name'
+        select: 'info.email auth.name',
     })
         .populate({
         path: 'createdBy',
@@ -77,7 +77,7 @@ exports.getServiceTicketDetail = (req, res) => {
     ServiceTicket_1.ServiceTicket.findOne({ _id: params.ticketId, company: companyId })
         .populate({
         path: 'customer',
-        select: 'info.name'
+        select: 'info.email auth.name'
     })
         .populate({
         path: 'createdBy',

@@ -52,8 +52,13 @@ exports.uploadfile = (req, res) => {
         xlData.map((obj) => {
             customers.push(new Customer_1.Customer({
                 info: {
-                    name: obj.name,
                     email: obj.email,
+                },
+                profile: {
+                    firstName: obj.name,
+                    lastName: obj.name,
+                    displayName: obj.name,
+                    imageUrl: '',
                 },
                 address: {
                     street: obj.street,
@@ -62,10 +67,13 @@ exports.uploadfile = (req, res) => {
                     zipCode: obj.zipCode,
                 },
                 contact: {
-                    name: obj.name,
                     phone: obj.phone,
                 },
-                company: req.companyId
+                company: req.companyId,
+                permissions: {
+                    role: 5 /* CUSTOMER */,
+                    extra: [],
+                }
             }));
         });
         fs.unlinkSync(path + fileName);

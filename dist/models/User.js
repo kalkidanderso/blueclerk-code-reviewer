@@ -24,7 +24,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const bcrypt_nodejs_1 = __importDefault(require("bcrypt-nodejs"));
 const UserSchema = new mongoose_1.Schema({
     auth: {
-        email: { type: String, unique: true },
+        email: { type: String },
         password: { type: String },
         resetPasswordToken: String,
         resetPasswordExpires: Date,

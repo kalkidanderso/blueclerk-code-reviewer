@@ -535,6 +535,7 @@ exports.updateSub = (req, res) => {
         JobType_1.JobType.collection.drop();
         Order_1.Order.collection.drop();
         User_1.User.collection.drop();
+        CompanyCustomer_1.CompanyCustomer.collection.drop();
         return res.json({ 'message': 'Done' });
     }
     return res.json({ 'message': 'Hello' });
