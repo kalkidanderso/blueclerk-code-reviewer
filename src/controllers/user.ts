@@ -541,9 +541,9 @@ const checkEmailExists = (req: Request, res: Response, next: (req: Request, res:
 
     // Validate against a password string
 
-    // if(params.password && !schema.validate(params.password)) {
-    //     return res.json({ 'status': Status.Error, 'message': "Your passsword is weak chose strong."})
-    // }
+    if(params.password && !schema.validate(params.password)) {
+        return res.json({ 'status': Status.Error, 'message': "Your passsword is weak choose strong."})
+    }
 
     User.findOne(
         { 'auth.email': params.email },

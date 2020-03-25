@@ -384,9 +384,9 @@ const checkEmailExists = (req, res, next) => {
         .has().not().spaces() // Should not have spaces
         .is().not().oneOf(['Passw0rd', 'Password123']); // Blacklist these values
     // Validate against a password string
-    // if(params.password && !schema.validate(params.password)) {
-    //     return res.json({ 'status': Status.Error, 'message': "Your passsword is weak chose strong."})
-    // }
+    if (params.password && !schema.validate(params.password)) {
+        return res.json({ 'status': constants_1.Status.Error, 'message': "Your passsword is weak choose strong." });
+    }
     User_1.User.findOne({ 'auth.email': params.email }, (err, user) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
