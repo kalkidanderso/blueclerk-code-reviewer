@@ -18,7 +18,7 @@ exports.validate = (validations) => {
         if (errors.isEmpty()) {
             return next();
         }
-        res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.MissingParams });
+        res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.MissingParams, 'errors': errors });
     });
 };
 exports.Validations = {

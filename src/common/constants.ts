@@ -447,7 +447,8 @@ export const UserPermissions = {
             Permissions.Get_Ticket_Detail,
             Permissions.Get_Contractors_For_Job,
             Permissions.Get_Customer_Detail,
-            Permissions.Get_All_Contracts
+            Permissions.Get_All_Contracts,
+            Permissions.Accept_Reject_Contract
         ],
         off: [Permissions.None],
     }

@@ -156,7 +156,7 @@ exports.getJobs = (req, res) => {
     })
         .populate({
         path: 'customer',
-        select: 'info.email auth.name'
+        select: 'info.email profile.displayName'
     })
         .populate({
         path: 'type',
@@ -189,7 +189,7 @@ exports.getJobsByTechnicianId = (req, res) => {
     })
         .populate({
         path: 'customer',
-        select: 'info.email auth.name'
+        select: 'info.email profile.displayName'
     })
         .populate({
         path: 'type',
