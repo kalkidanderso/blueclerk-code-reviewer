@@ -636,7 +636,7 @@ exports.createContractor = (req, res) => {
 // search contractor/organization for contract
 exports.searchContractor = (req, res) => {
     const params = req.body;
-    User_1.User.find({ 'auth.email': params.email, 'permissions.role': 3 /* COMPANY */ }, 'auth.email profile.displayName type', (err, users) => {
+    User_1.User.find({ 'auth.email': params.email, 'permissions.role': 3 /* COMPANY */ }, 'auth.email profile.displayName type info.companyName contact.phone', (err, users) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }

@@ -138,7 +138,7 @@ exports.sendContractStartEmail = function (options) {
                 Body: {
                     Html: {
                         Data: "<p>Hi! " + options.contractor + "</p>\
-              <p>" + options.company + " has sent you a contract offer you can view the details by login in. Click the link to login <a href=\"https://app.blueclerk.com/login/\ target=\"_blank\">app.blueclerk.com</a></p>",
+              <p>" + options.company + " has sent you an invitation to become a vendor for their organization. Please login to view details <a href=\"https://app.blueclerk.com/login/\ target=\"_blank\">app.blueclerk.com</a></p>",
                     },
                 },
             },
@@ -170,12 +170,12 @@ exports.sendContractStatusChangeEmailToContractor = function (options) {
             },
             Message: {
                 Subject: {
-                    Data: "Contract updated by " + options.company + " on Blueclerk",
+                    Data: "Alert: Vendor status on BlueClerk has changed",
                 },
                 Body: {
                     Html: {
                         Data: "<p>Hi! " + options.contractor + "</p>\
-              <p>" + options.company + " has changed the contract status to " + options.contractStatus + "</p>",
+              <p>Your status as a vendor with " + options.company + " has changed to " + options.contractStatus + "</p>",
                     },
                 },
             },
@@ -207,12 +207,12 @@ exports.sendContractStatusChangeEmailToCompany = function (options) {
             },
             Message: {
                 Subject: {
-                    Data: "Contract updated by " + options.contractor + " on Blueclerk",
+                    Data: "lert: Vendor status on BlueClerk has changed",
                 },
                 Body: {
                     Html: {
                         Data: "<p>Hi! " + options.company + "</p>\
-              <p>" + options.contractor + " has changed the contract status to " + options.contractStatus + "</p>",
+              <p>Your status as a vending company with " + options.contractor + " has changed to " + options.contractStatus + "</p>",
                     },
                 },
             },

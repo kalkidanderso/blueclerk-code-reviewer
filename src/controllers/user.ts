@@ -870,7 +870,7 @@ export const searchContractor = (req: Request, res: Response) => {
     
     User.find(
         { 'auth.email': params.email, 'permissions.role' : Role.COMPANY }, 
-        'auth.email profile.displayName type',
+        'auth.email profile.displayName type info.companyName contact.phone',
         (err: any, users: IUser[]) => {
 
             if (err) {

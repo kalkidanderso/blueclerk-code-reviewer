@@ -25,7 +25,7 @@ export const createJob = (req: Request, res: Response) => {
         (err: any, equipment: ICustomerEquipment)=>{
             
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({'status': Status.Error, 'message': Messages.GenericError, 'error1' : err})
             }
             if (equipment == null || equipment == undefined) {
                 return res.json({'status': Status.Error, 'message': "Invalid equipment id"})
@@ -51,13 +51,13 @@ export const createJob = (req: Request, res: Response) => {
             job.save((err: any) => {
         
                 if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError, 'error2' : err})
                 }
                 
                 company.currentJobId = company.currentJobId+1
                 Company.updateOne({currentJobId: company.currentJobId+1}, (err: any, raw: any)=>{
                     if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError, 'error3' : err})
                     }    
                     Job.findById(job.id)
                     .populate({
@@ -79,7 +79,7 @@ export const createJob = (req: Request, res: Response) => {
                     .exec((err: any, job: IJob) => {
     
                         if (err) {
-                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError , 'error4' : err})
                         }
     
                         var tech : any = job.technician

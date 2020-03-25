@@ -13,7 +13,7 @@ export const validate = (validations: ValidationChain[]) => {
         return next()
       }
   
-      res.json({'status': Status.Error, 'message': Messages.MissingParams, 'errors': errors})
+      res.json({'status': Status.Error, 'message': Messages.MissingParams})
 
     }
 

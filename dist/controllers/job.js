@@ -17,7 +17,7 @@ exports.createJob = (req, res) => {
     if (params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
         CustomerEquipment_1.CustomerEquipment.findById(params.equipmentId, (err, equipment) => {
             if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error1': err });
             }
             if (equipment == null || equipment == undefined) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid equipment id" });
@@ -38,12 +38,12 @@ exports.createJob = (req, res) => {
             });
             job.save((err) => {
                 if (err) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error2': err });
                 }
                 company.currentJobId = company.currentJobId + 1;
                 Company_1.Company.updateOne({ currentJobId: company.currentJobId + 1 }, (err, raw) => {
                     if (err) {
-                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error3': err });
                     }
                     Job_1.Job.findById(job.id)
                         .populate({
@@ -64,7 +64,7 @@ exports.createJob = (req, res) => {
                     })
                         .exec((err, job) => {
                         if (err) {
-                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error4': err });
                         }
                         var tech = job.technician;
                         var cust = job.customer;
