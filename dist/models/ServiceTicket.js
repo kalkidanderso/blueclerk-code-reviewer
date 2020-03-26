@@ -13,7 +13,7 @@ const ServiceTicketSchema = new mongoose_1.Schema({
     scheduleDateTime: Date,
     customer: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Customer',
+        ref: 'User',
         required: true
     },
     createdBy: {

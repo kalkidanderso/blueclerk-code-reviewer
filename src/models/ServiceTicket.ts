@@ -18,7 +18,7 @@ const ServiceTicketSchema = new Schema({
     scheduleDateTime: Date,
     customer: {
         type: Schema.Types.ObjectId,
-        ref: 'Customer',
+        ref: 'User',
         required: true
     },
     createdBy: {
