@@ -52,7 +52,7 @@ exports.createJob = (req, res) => {
                     })
                         .populate({
                         path: 'customer',
-                        select: 'info.name info.email'
+                        select: 'profile.displayName info.email'
                     })
                         .populate({
                         path: 'createdBy',
@@ -70,10 +70,10 @@ exports.createJob = (req, res) => {
                         var cust = job.customer;
                         var type = job.type;
                         var creator = job.createdBy;
-                        aws_1.sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime });
-                        aws_1.sendJobEmailToCustomer({ to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime });
+                        aws_1.sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime });
+                        aws_1.sendJobEmailToCustomer({ to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime });
                         if (params.employeeType == 1) {
-                            aws_1.sendJobEmailToCompanyAdmin({ to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName });
+                            aws_1.sendJobEmailToCompanyAdmin({ to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName });
                         }
                         return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
                     });
@@ -112,7 +112,7 @@ exports.createJob = (req, res) => {
                 })
                     .populate({
                     path: 'customer',
-                    select: 'info.name info.email'
+                    select: 'profile.displayName info.email'
                 })
                     .populate({
                     path: 'createdBy',
@@ -130,10 +130,10 @@ exports.createJob = (req, res) => {
                     var cust = job.customer;
                     var type = job.type;
                     var creator = job.createdBy;
-                    aws_1.sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime });
-                    aws_1.sendJobEmailToCustomer({ to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime });
+                    aws_1.sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime });
+                    aws_1.sendJobEmailToCustomer({ to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime });
                     if (params.employeeType == 1) {
-                        aws_1.sendJobEmailToCompanyAdmin({ to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName });
+                        aws_1.sendJobEmailToCompanyAdmin({ to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName });
                     }
                     return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
                 });

@@ -66,7 +66,7 @@ export const createJob = (req: Request, res: Response) => {
                     })
                     .populate({
                         path:'customer',
-                        select:'info.name info.email'
+                        select:'profile.displayName info.email'
                     })
                     .populate({
                         path:'createdBy',
@@ -87,12 +87,12 @@ export const createJob = (req: Request, res: Response) => {
                         var type : any = job.type
                         var creator : any = job.createdBy
                         
-                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime})
+                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime})
 
-                        sendJobEmailToCustomer({to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime})
+                        sendJobEmailToCustomer({to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime})
 
                         if(params.employeeType == 1) {
-                            sendJobEmailToCompanyAdmin({to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName})
+                            sendJobEmailToCompanyAdmin({to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName})
                         }
                         
                         return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
@@ -139,7 +139,7 @@ export const createJob = (req: Request, res: Response) => {
                 })
                 .populate({
                     path:'customer',
-                    select:'info.name info.email'
+                    select:'profile.displayName info.email'
                 })
                 .populate({
                     path:'createdBy',
@@ -160,12 +160,12 @@ export const createJob = (req: Request, res: Response) => {
                     var type : any= job.type
                     var creator : any = job.createdBy
 
-                    sendJobEmailToAssignee({to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime})
+                    sendJobEmailToAssignee({to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime})
 
-                    sendJobEmailToCustomer({to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime})
+                    sendJobEmailToCustomer({to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime})
                     
                     if(params.employeeType == 1) {
-                        sendJobEmailToCompanyAdmin({to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.info.name, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName})
+                        sendJobEmailToCompanyAdmin({to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName})
                     }
 
                     return res.json({'status': Status.Success, 'message': 'Job created successfully.'})

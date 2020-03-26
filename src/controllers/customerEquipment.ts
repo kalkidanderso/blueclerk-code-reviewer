@@ -109,7 +109,7 @@ export const getCustomerEquipments = (req: Request, res: Response) => {
         })
         .populate({
             path: 'customer',
-            select: 'info.name'
+            select: 'profile.displayName'
         })
         .exec((err: any, customerEquipments: ICustomerEquipment) => {
 

@@ -74,7 +74,7 @@ exports.getCustomerEquipments = (req, res) => {
     })
         .populate({
         path: 'customer',
-        select: 'info.name'
+        select: 'profile.displayName'
     })
         .exec((err, customerEquipments) => {
         if (err) {

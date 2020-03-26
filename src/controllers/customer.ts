@@ -103,7 +103,7 @@ export const getCustomers = (req: Request, res: Response) => {
         })
         
         User.find({_id : {$in: customerIds}},
-            'info.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode contact.phone permissions.role',
+            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode contact.phone permissions.role',
             (err: any, users: IUser[]) =>{
             
             if (err) {

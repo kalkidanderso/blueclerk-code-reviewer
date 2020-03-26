@@ -207,7 +207,7 @@ exports.sendContractStatusChangeEmailToCompany = function (options) {
             },
             Message: {
                 Subject: {
-                    Data: "lert: Vendor status on BlueClerk has changed",
+                    Data: "Alert: Vendor status on BlueClerk has changed",
                 },
                 Body: {
                     Html: {
