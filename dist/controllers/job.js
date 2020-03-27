@@ -156,7 +156,7 @@ exports.getJobs = (req, res) => {
     })
         .populate({
         path: 'customer',
-        select: 'info.email profile.displayName'
+        select: 'info.email auth.email profile.displayName'
     })
         .populate({
         path: 'type',

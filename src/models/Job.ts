@@ -33,7 +33,7 @@ const JobSchema = new Schema({
     },
     customer: {
         type: Schema.Types.ObjectId,
-        ref: 'Customer',
+        ref: 'User',
         required: true
     },
     type: {

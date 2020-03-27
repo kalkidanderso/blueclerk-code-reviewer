@@ -23,7 +23,7 @@ const JobSchema = new mongoose_1.Schema({
     },
     customer: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Customer',
+        ref: 'User',
         required: true
     },
     type: {
