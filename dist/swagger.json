@@ -827,6 +827,37 @@
                 }
             }
         },
+        "/setCustomWorkOrderNumber": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Setting custom work order number for service tickets and job",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "workOrderNumber",
+                        "in": "formData",
+                        "required": true,
+                        "type": "number"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/AuthAPIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/createIndustry": {
             "post": {
                 "tags": [
