@@ -9,6 +9,8 @@ export interface IServiceTicket extends Document {
     note: string
     company: Schema.Types.ObjectId
     technician: Schema.Types.ObjectId
+    ticketId: string
+    jobCreated: boolean
     
 }
 
@@ -36,6 +38,11 @@ const ServiceTicketSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User',
     },
+    ticketId: String,
+    jobCreated: {
+        type: Boolean,
+        default: false
+    }
 
 })
 

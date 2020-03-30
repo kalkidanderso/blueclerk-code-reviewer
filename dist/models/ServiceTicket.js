@@ -31,6 +31,11 @@ const ServiceTicketSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
     },
+    ticketId: String,
+    jobCreated: {
+        type: Boolean,
+        default: false
+    }
 });
 exports.ServiceTicket = mongoose_1.default.model('ServiceTicket', ServiceTicketSchema);
 //# sourceMappingURL=ServiceTicket.js.map

@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../common/constants");
 const aws_1 = require("../services/aws");
 const Job_1 = require("../models/Job");
-const Company_1 = require("../models/Company");
 const CustomerEquipment_1 = require("../models/CustomerEquipment");
+const ServiceTicket_1 = require("../models/ServiceTicket");
 // import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 exports.createJob = (req, res) => {
     const params = req.body;
@@ -14,36 +14,104 @@ exports.createJob = (req, res) => {
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
     }
-    if (params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
-        CustomerEquipment_1.CustomerEquipment.findById(params.equipmentId, (err, equipment) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error1': err });
-            }
-            if (equipment == null || equipment == undefined) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid equipment id" });
-            }
+    ServiceTicket_1.ServiceTicket.findById(params.ticketId, (err, serviceTicket) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (serviceTicket == undefined || serviceTicket == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid ticket Id' });
+        }
+        if (serviceTicket.jobCreated) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'Job aleady created for this ticket.' });
+        }
+        var idForJob = parseInt(serviceTicket.ticketId.replace("Ticket-", ''));
+        if (params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
+            CustomerEquipment_1.CustomerEquipment.findById(params.equipmentId, (err, equipment) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error1': err });
+                }
+                if (equipment == null || equipment == undefined) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid equipment id" });
+                }
+                const job = new Job_1.Job({
+                    dateTime: params.dateTime,
+                    jobId: 'Job-' + idForJob,
+                    ticket: params.ticketId,
+                    technician: params.technicianId,
+                    customer: params.customerId,
+                    type: params.jobTypeId,
+                    company: companyId,
+                    description: params.description,
+                    equipmentId: params.equipmentId,
+                    createdAt: Date.now(),
+                    createdBy: user._id,
+                    employeeType: params.employeeType
+                });
+                job.save((err) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error2': err });
+                    }
+                    serviceTicket.updateOne({ jobCreated: true }, (err, raw) => {
+                        if (err) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                        }
+                        Job_1.Job.findById(job.id)
+                            .populate({
+                            path: 'technician',
+                            select: 'profile.displayName auth.email'
+                        })
+                            .populate({
+                            path: 'customer',
+                            select: 'profile.displayName info.email'
+                        })
+                            .populate({
+                            path: 'createdBy',
+                            select: 'profile.displayName'
+                        })
+                            .populate({
+                            path: 'type',
+                            select: 'title'
+                        })
+                            .exec((err, job) => {
+                            if (err) {
+                                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error4': err });
+                            }
+                            var tech = job.technician;
+                            var cust = job.customer;
+                            var type = job.type;
+                            var creator = job.createdBy;
+                            aws_1.sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime });
+                            aws_1.sendJobEmailToCustomer({ to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime });
+                            if (params.employeeType == 1) {
+                                aws_1.sendJobEmailToCompanyAdmin({ to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName });
+                            }
+                            return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
+                        });
+                    });
+                });
+            });
+        }
+        else {
             const job = new Job_1.Job({
                 dateTime: params.dateTime,
-                jobId: company.currentJobId + 1,
+                jobId: 'Job-' + idForJob,
                 ticket: params.ticketId,
                 technician: params.technicianId,
                 customer: params.customerId,
                 type: params.jobTypeId,
                 company: companyId,
                 description: params.description,
-                equipmentId: params.equipmentId,
                 createdAt: Date.now(),
                 createdBy: user._id,
                 employeeType: params.employeeType
             });
             job.save((err) => {
                 if (err) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error2': err });
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                company.currentJobId = company.currentJobId + 1;
-                Company_1.Company.updateOne({ currentJobId: company.currentJobId + 1 }, (err, raw) => {
+                serviceTicket.updateOne({ jobCreated: true }, (err, raw) => {
                     if (err) {
-                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error3': err });
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
                     Job_1.Job.findById(job.id)
                         .populate({
@@ -64,7 +132,7 @@ exports.createJob = (req, res) => {
                     })
                         .exec((err, job) => {
                         if (err) {
-                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error4': err });
+                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                         }
                         var tech = job.technician;
                         var cust = job.customer;
@@ -77,69 +145,10 @@ exports.createJob = (req, res) => {
                         }
                         return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
                     });
-                    // return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
                 });
             });
-        });
-    }
-    else {
-        const job = new Job_1.Job({
-            dateTime: params.dateTime,
-            jobId: company.currentJobId + 1,
-            ticket: params.ticketId,
-            technician: params.technicianId,
-            customer: params.customerId,
-            type: params.jobTypeId,
-            company: companyId,
-            description: params.description,
-            createdAt: Date.now(),
-            createdBy: user._id,
-            employeeType: params.employeeType
-        });
-        job.save((err) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            company.currentJobId = company.currentJobId + 1;
-            Company_1.Company.updateOne({ currentJobId: company.currentJobId + 1 }, (err, raw) => {
-                if (err) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                }
-                Job_1.Job.findById(job.id)
-                    .populate({
-                    path: 'technician',
-                    select: 'profile.displayName auth.email'
-                })
-                    .populate({
-                    path: 'customer',
-                    select: 'profile.displayName info.email'
-                })
-                    .populate({
-                    path: 'createdBy',
-                    select: 'profile.displayName'
-                })
-                    .populate({
-                    path: 'type',
-                    select: 'title'
-                })
-                    .exec((err, job) => {
-                    if (err) {
-                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                    }
-                    var tech = job.technician;
-                    var cust = job.customer;
-                    var type = job.type;
-                    var creator = job.createdBy;
-                    aws_1.sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime });
-                    aws_1.sendJobEmailToCustomer({ to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime });
-                    if (params.employeeType == 1) {
-                        aws_1.sendJobEmailToCompanyAdmin({ to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName });
-                    }
-                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
-                });
-            });
-        });
-    }
+        }
+    });
 };
 exports.getJobs = (req, res) => {
     var companyId = req.companyId;
@@ -149,6 +158,7 @@ exports.getJobs = (req, res) => {
     Job_1.Job.find({ company: companyId })
         .populate({
         path: 'ticket',
+        select: 'scheduleDateTime note ticketId'
     })
         .populate({
         path: 'technician',

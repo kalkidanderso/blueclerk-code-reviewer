@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface IJob extends Document {
 
     dateTime: Date
-    jobId: number
+    jobId: string
     ticket: Schema.Types.ObjectId
     technician: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId
@@ -20,7 +20,7 @@ export interface IJob extends Document {
 const JobSchema = new Schema({
 
     dateTime: Date,
-    jobId: Number,
+    jobId: String,
     ticket: {
         type: Schema.Types.ObjectId,
         ref: 'ServiceTicket',
