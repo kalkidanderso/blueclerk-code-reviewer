@@ -146,7 +146,9 @@ router.post('/acceptOrRejectContract', passport_1.default.authenticate('jwt', { 
 router.post('/CancelOrFinish', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(63 /* Cancel_Finish_Contract */), validator_1.validate(validator_1.Validations.updateContract), userController.cancelOrFinishContract);
 router.post('/changeContractorPermission', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(64 /* Add_Contractor_Permission */), validator_1.validate(validator_1.Validations.contractorPermissions), permissionController.addContractorPermissions);
 router.post('/upgradeToCompany', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkUserPermissions(67 /* Upgrade_To_Company */), validator_1.validate(validator_1.Validations.upgradeToCompany), userController.upgradeToCompany);
-router.post('/setCustomWorkOrderNumber', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(69 /* Custom_work_Order_Number */), validator_1.validate(validator_1.Validations.customWorkOrder), userController.setCustomWorkNumber);
+router.post('/setCustomWorkOrderNumber', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(69 /* Custom_work_Order_Number */), 
+// validate(Validations.customWorkOrder),
+userController.setCustomWorkNumber);
 router.post('/checkAndGet', validator_1.validate(validator_1.Validations.socialLogin), userController.checkAndGetUser);
 router.post('/signUpSocial', validator_1.validate(validator_1.Validations.socialSignUp), userController.createCompanySocial);
 router.post('/contractorSignUpSocial', validator_1.validate(validator_1.Validations.socialSignUp), userController.createContractorSocial);

@@ -721,7 +721,7 @@ router.post(
     passport.authenticate('jwt', { session: false }),
     getCompnayId(),
     checkUserPermissions(Permissions.Custom_work_Order_Number),
-    validate(Validations.customWorkOrder),
+    // validate(Validations.customWorkOrder),
     userController.setCustomWorkNumber
 )
 

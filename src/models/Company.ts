@@ -39,7 +39,8 @@ export interface ICompany extends IUser {
             off: [Number],
         },
     },
-    currentJobId: number
+    currentJobId: number,
+    prefix: string
 }
 
 const CompanySchema = new Schema({
@@ -100,6 +101,9 @@ const CompanySchema = new Schema({
     currentJobId: {
         type: Number,
         default: 0
+    },
+    prefix: {
+        type: String
     }
 
 })

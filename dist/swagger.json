@@ -844,18 +844,27 @@
                     {
                         "name": "workOrderNumber",
                         "in": "formData",
-                        "required": true,
                         "type": "number"
+                    },
+                    {
+                        "name": "prefix",
+                        "in": "formData",
+                        "type": "string"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "Success",
                         "schema": {
-                            "$ref": "#/definitions/AuthAPIResponse"
+                            "$ref": "#/definitions/GeneralAPIResponse"
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
             }
         },
         "/createIndustry": {

@@ -31,8 +31,9 @@ export const createJob = (req: Request, res: Response) => {
             if (serviceTicket.jobCreated) {
                 return res.json({'status': Status.Error, 'message': 'Job aleady created for this ticket.'})
             }
+ 
+            var jobId = serviceTicket.ticketId.replace("Ticket",'Job')
 
-            var idForJob = parseInt(serviceTicket.ticketId.replace("Ticket-",''))
             if(params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
         
                 CustomerEquipment.findById(params.equipmentId, 
@@ -48,7 +49,7 @@ export const createJob = (req: Request, res: Response) => {
                     const job = new Job(
                         {
                             dateTime: params.dateTime,
-                            jobId: 'Job-'+idForJob,
+                            jobId: jobId,
                             ticket: params.ticketId,
                             technician: params.technicianId,
                             customer: params.customerId,
@@ -121,7 +122,7 @@ export const createJob = (req: Request, res: Response) => {
                 const job = new Job(
                     {
                         dateTime: params.dateTime,
-                        jobId: 'Job-'+idForJob,
+                        jobId: jobId,
                         ticket: params.ticketId,
                         technician: params.technicianId,
                         customer: params.customerId,
@@ -284,20 +285,31 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
 export const updateJob = (req: Request, res: Response) => {
 
     const params = req.body
+    var companyId = req.companyId;
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
 
     Job.findOne(
-        { _id: params.jobId },
+        { _id: params.jobId, company: companyId },
         (err: any, job: IJob)=>{
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
+
+            if (job == undefined || job == null) {
+                return res.json({'status': Status.Error, 'message': "Invalid job id"})
+            }
+
             if(job.status == JobStatus.FINISHED) {
                 return res.json({'status': Status.Error, 'message': "Edit job is not allowed once it is finished"})
             }
+
             if(job.status == JobStatus.CANCELED) {
                 return res.json({'status': Status.Error, 'message': "Edit job is not allowed once it is canceled"})
             }
+
             job.updateOne(
                 {description: params.comment, status: params.status},
                 (err: any, raw: any)=> {
@@ -316,20 +328,32 @@ export const updateJob = (req: Request, res: Response) => {
 export const startJob = (req: Request, res: Response) => {
 
     const params = req.body
+    
+    var companyId = req.companyId;
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
 
     Job.findOne(
-        { _id: params.jobId },
+        { _id: params.jobId, company: companyId },
         (err: any, job: IJob)=>{
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
+
+            if (job == undefined || job == null) {
+                return res.json({'status': Status.Error, 'message': "Invalid job id"})
+            }
+
             if(job.status == JobStatus.FINISHED) {
                 return res.json({'status': Status.Error, 'message': "You can't start this job, it is already finished"})
             }
+            
             if(job.status == JobStatus.CANCELED) {
                 return res.json({'status': Status.Error, 'message': "You can't start this job, it is already canceled"})
             }
+            
             job.updateOne(
                 {status: JobStatus.STARTED},
                 (err: any, raw: any)=> {
@@ -349,15 +373,23 @@ export const startJob = (req: Request, res: Response) => {
 export const editJob = (req: Request, res: Response) => {
 
     const params = req.body
+    var companyId = req.companyId;
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
 
     Job.findOne(
-        { _id: params.jobId },
+        { _id: params.jobId, company: companyId },
         (err: any, job: IJob)=>{
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
             
+            if (job == undefined || job == null) {
+                return res.json({'status': Status.Error, 'message': "Invalid job id"})
+            }
+
             if(job.status == JobStatus.CANCELED || job.status == JobStatus.FINISHED) {
                 return res.json({'status': Status.Error, 'message': "Edit job is not allowed onece it is cancelled or finished"})
             }
@@ -380,8 +412,13 @@ export const editJob = (req: Request, res: Response) => {
 export const getJobDetails = (req: Request, res: Response) => {
 
     const params = req.body
-    
-    Job.findById(params.jobId)
+
+    var companyId = req.companyId;
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+
+    Job.findOne({_id: params.jobId, comapny: companyId})
         .populate({
             path: 'ticket',
         })
@@ -408,6 +445,10 @@ export const getJobDetails = (req: Request, res: Response) => {
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+            
+            if (job == undefined || job == null) {
+                return res.json({'status': Status.Error, 'message': "Invalid job id"})
             }
 
             return res.json({'status': Status.Success, 'job': job})    

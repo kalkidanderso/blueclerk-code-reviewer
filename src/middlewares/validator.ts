@@ -35,7 +35,7 @@ export const Validations = {
   updateContract: [check('contractId').exists(), check('status').exists()],
   contractorPermissions: [check('contractorId').exists(), check('permissions').exists()],
   upgradeToCompany: [check('token').exists(), check('ending').exists()],
-  customWorkOrder: [check('workOrderNumber').exists(), check('workOrderNumber').isNumeric()],
+  // customWorkOrder: [check('workOrderNumber').exists(), check('workOrderNumber').isNumeric()],
   //Users
   createManager: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
   createTechnician: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
@@ -113,4 +113,5 @@ export const Validations = {
   createTicket: [check('customerId').exists()],
   updateTicket: [check('ticketId').exists(), check('note').exists()],
   getTicketDetail: [check('ticketId').exists()],
+  getJobReport: [check('jobId').exists()],
 }

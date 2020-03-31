@@ -24,7 +24,7 @@ exports.createJob = (req, res) => {
         if (serviceTicket.jobCreated) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Job aleady created for this ticket.' });
         }
-        var idForJob = parseInt(serviceTicket.ticketId.replace("Ticket-", ''));
+        var jobId = serviceTicket.ticketId.replace("Ticket", 'Job');
         if (params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
             CustomerEquipment_1.CustomerEquipment.findById(params.equipmentId, (err, equipment) => {
                 if (err) {
@@ -35,7 +35,7 @@ exports.createJob = (req, res) => {
                 }
                 const job = new Job_1.Job({
                     dateTime: params.dateTime,
-                    jobId: 'Job-' + idForJob,
+                    jobId: jobId,
                     ticket: params.ticketId,
                     technician: params.technicianId,
                     customer: params.customerId,
@@ -94,7 +94,7 @@ exports.createJob = (req, res) => {
         else {
             const job = new Job_1.Job({
                 dateTime: params.dateTime,
-                jobId: 'Job-' + idForJob,
+                jobId: jobId,
                 ticket: params.ticketId,
                 technician: params.technicianId,
                 customer: params.customerId,
@@ -222,9 +222,16 @@ exports.getJobsByTechnicianId = (req, res) => {
 };
 exports.updateJob = (req, res) => {
     const params = req.body;
-    Job_1.Job.findOne({ _id: params.jobId }, (err, job) => {
+    var companyId = req.companyId;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId;
+    }
+    Job_1.Job.findOne({ _id: params.jobId, company: companyId }, (err, job) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (job == undefined || job == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid job id" });
         }
         if (job.status == 2 /* FINISHED */) {
             return res.json({ 'status': constants_1.Status.Error, 'message': "Edit job is not allowed once it is finished" });
@@ -242,9 +249,16 @@ exports.updateJob = (req, res) => {
 };
 exports.startJob = (req, res) => {
     const params = req.body;
-    Job_1.Job.findOne({ _id: params.jobId }, (err, job) => {
+    var companyId = req.companyId;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId;
+    }
+    Job_1.Job.findOne({ _id: params.jobId, company: companyId }, (err, job) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (job == undefined || job == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid job id" });
         }
         if (job.status == 2 /* FINISHED */) {
             return res.json({ 'status': constants_1.Status.Error, 'message': "You can't start this job, it is already finished" });
@@ -262,9 +276,16 @@ exports.startJob = (req, res) => {
 };
 exports.editJob = (req, res) => {
     const params = req.body;
-    Job_1.Job.findOne({ _id: params.jobId }, (err, job) => {
+    var companyId = req.companyId;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId;
+    }
+    Job_1.Job.findOne({ _id: params.jobId, company: companyId }, (err, job) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (job == undefined || job == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid job id" });
         }
         if (job.status == 3 /* CANCELED */ || job.status == 2 /* FINISHED */) {
             return res.json({ 'status': constants_1.Status.Error, 'message': "Edit job is not allowed onece it is cancelled or finished" });
@@ -279,7 +300,11 @@ exports.editJob = (req, res) => {
 };
 exports.getJobDetails = (req, res) => {
     const params = req.body;
-    Job_1.Job.findById(params.jobId)
+    var companyId = req.companyId;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId;
+    }
+    Job_1.Job.findOne({ _id: params.jobId, comapny: companyId })
         .populate({
         path: 'ticket',
     })
@@ -305,6 +330,9 @@ exports.getJobDetails = (req, res) => {
         .exec((err, job) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (job == undefined || job == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid job id" });
         }
         return res.json({ 'status': constants_1.Status.Success, 'job': job });
     });

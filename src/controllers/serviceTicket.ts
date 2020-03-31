@@ -16,6 +16,11 @@ export const createServiceTicket = (req: Request, res: Response) => {
         companyId = req.otherCompanyId
     }
 
+    var ticketId = 'Ticket '+ (company.currentJobId+1)
+    if(company.prefix != undefined) {
+        ticketId = 'Ticket '+company.prefix+'-'+(company.currentJobId+1)
+    }
+
     const serviceTicket = new ServiceTicket({
         createdAt: Date.now(),
         scheduleDateTime: params.scheduleDateTime,
@@ -24,7 +29,7 @@ export const createServiceTicket = (req: Request, res: Response) => {
         company: companyId,
         note: params.note,
         technician: params.technicianId,
-        ticketId: 'Ticket-'+ (company.currentJobId+1)
+        ticketId: ticketId
     })
 
     serviceTicket.save((err: any) => {
@@ -39,9 +44,6 @@ export const createServiceTicket = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
             
-            console.log(serviceTicket.ticketId)
-            var idForJob = parseInt(serviceTicket.ticketId.replace("Ticket-",''))
-            console.log(idForJob)
             return res.json({'status': Status.Success, 'message': 'Service ticket created successfully.'})
         })
     })

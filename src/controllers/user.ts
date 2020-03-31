@@ -1289,6 +1289,10 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
     const params = req.body
     const user = <ICompany>req.user
     
+    if(params.prefix == undefined && params.workOrderNumber == undefined) {
+        return res.json({ 'status': Status.Error, 'message': "Either prefix or customWorkOrderNumbe is required." })
+    }
+
     User.findById(user._id,
         (err: any, company: ICompany) => {
 
@@ -1300,7 +1304,14 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'Invalid user.' })
             }
 
-            company.currentJobId = params.workOrderNumber
+            if(params.workOrderNumber != undefined) {
+                company.currentJobId = params.workOrderNumber
+            }
+
+            if(params.prefix != undefined) {
+                company.prefix = params.prefix
+            }
+
             company.updateOne(company, (err: any, raw: any)=> {
                 if (err) {                
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })

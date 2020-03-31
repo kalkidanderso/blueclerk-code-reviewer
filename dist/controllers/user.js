@@ -927,6 +927,9 @@ exports.companySubscribe = (req, res) => {
 exports.setCustomWorkNumber = (req, res) => {
     const params = req.body;
     const user = req.user;
+    if (params.prefix == undefined && params.workOrderNumber == undefined) {
+        return res.json({ 'status': constants_1.Status.Error, 'message': "Either prefix or customWorkOrderNumbe is required." });
+    }
     User_1.User.findById(user._id, (err, company) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -934,7 +937,12 @@ exports.setCustomWorkNumber = (req, res) => {
         if (company == undefined || company == null) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid user.' });
         }
-        company.currentJobId = params.workOrderNumber;
+        if (params.workOrderNumber != undefined) {
+            company.currentJobId = params.workOrderNumber;
+        }
+        if (params.prefix != undefined) {
+            company.prefix = params.prefix;
+        }
         company.updateOne(company, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
