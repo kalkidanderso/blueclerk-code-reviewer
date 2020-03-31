@@ -7,6 +7,7 @@ import { Company, ICompany } from '../models/Company'
 import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 import { IUser } from '../models/User'
 import { ServiceTicket ,IServiceTicket } from '../models/ServiceTicket'
+import { Scan ,IScan } from '../models/Scan'
 // import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 
 export const createJob = (req: Request, res: Response) => {
@@ -418,7 +419,7 @@ export const getJobDetails = (req: Request, res: Response) => {
         companyId = req.otherCompanyId
     }
 
-    Job.findOne({_id: params.jobId, comapny: companyId})
+    Job.findOne({_id: params.jobId, company: companyId})
         .populate({
             path: 'ticket',
         })
@@ -458,3 +459,71 @@ export const getJobDetails = (req: Request, res: Response) => {
 
 }
 
+
+export const getJobReport = (req: Request, res: Response) => {
+    const params = req.body
+    var companyId = req.companyId;
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+     
+    Job.findOne({_id: params.jobId, company: companyId})
+        .populate({
+            path: 'ticket',
+            select: 'ticketId note scheduleDateTime'
+        })
+        .populate({
+            path: 'technician',
+            select: 'profile.displayName auth.email contact.phone permissions.role'
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone'
+        })
+        .populate({
+            path: 'type',
+            select: 'title'
+        })
+        .populate({
+            path: 'company',
+            select: 'info.companyName auth.email permissions.role address.street address.city address.state address.zipCode contact.phone'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone'
+        })
+        .exec((err: any, job: IJob)=>{
+
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+
+            if (job == undefined || job == null) {
+                return res.json({'status': Status.Error, 'message': "Invalid job id"})
+            }
+
+            if (job.status != JobStatus.FINISHED) {
+                return res.json({'status': Status.Error, 'message': "Job is not finished yet"})
+            }
+
+            // scans
+            Scan.find({ job: job._id}, 'comment timeOfScan')
+            .populate({
+                path: 'equipment',
+                select: 'info.model info.serialNumber info.nfcTag info.imageUrl info.location',
+                populate: { path: 'EquipmentType', select: 'title' }
+            })
+            .exec ((err: any, scans: IScan[]) => {
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                }
+                
+                if (scans.length == 0) {
+                    return res.json({ 'status': Status.Error, 'message': "No equipment scanned for this job."})
+                }
+
+                return res.json({ 'status': Status.Success, 'job': job, 'scans': scans  })
+            })
+        }
+    )
+}

@@ -171,7 +171,7 @@ exports.linkJobToEquipment = (req, res) => {
         //             return res.json({ 'status': Status.Error, 'message': "Equipment already scanned for this job."})
         //         }
         // })
-        Scan_1.Scan.findOne({ equipmentId: customerEquipment._id, jobId: params.jobId }, (err, scan) => {
+        Scan_1.Scan.findOne({ equipmentId: customerEquipment._id, job: params.jobId }, (err, scan) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }

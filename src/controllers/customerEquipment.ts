@@ -241,7 +241,7 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
             //         }
             // })
 
-            Scan.findOne({equipmentId: customerEquipment._id, jobId: params.jobId}, 
+            Scan.findOne({equipmentId: customerEquipment._id, job: params.jobId}, 
                 (err: any, scan: IScan) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })

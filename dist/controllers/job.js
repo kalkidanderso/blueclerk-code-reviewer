@@ -5,6 +5,7 @@ const aws_1 = require("../services/aws");
 const Job_1 = require("../models/Job");
 const CustomerEquipment_1 = require("../models/CustomerEquipment");
 const ServiceTicket_1 = require("../models/ServiceTicket");
+const Scan_1 = require("../models/Scan");
 // import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 exports.createJob = (req, res) => {
     const params = req.body;
@@ -304,7 +305,7 @@ exports.getJobDetails = (req, res) => {
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
     }
-    Job_1.Job.findOne({ _id: params.jobId, comapny: companyId })
+    Job_1.Job.findOne({ _id: params.jobId, company: companyId })
         .populate({
         path: 'ticket',
     })
@@ -335,6 +336,65 @@ exports.getJobDetails = (req, res) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid job id" });
         }
         return res.json({ 'status': constants_1.Status.Success, 'job': job });
+    });
+};
+exports.getJobReport = (req, res) => {
+    const params = req.body;
+    var companyId = req.companyId;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId;
+    }
+    Job_1.Job.findOne({ _id: params.jobId, company: companyId })
+        .populate({
+        path: 'ticket',
+        select: 'ticketId note scheduleDateTime'
+    })
+        .populate({
+        path: 'technician',
+        select: 'profile.displayName auth.email contact.phone permissions.role'
+    })
+        .populate({
+        path: 'customer',
+        select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone'
+    })
+        .populate({
+        path: 'type',
+        select: 'title'
+    })
+        .populate({
+        path: 'company',
+        select: 'info.companyName auth.email permissions.role address.street address.city address.state address.zipCode contact.phone'
+    })
+        .populate({
+        path: 'createdBy',
+        select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone'
+    })
+        .exec((err, job) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (job == undefined || job == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid job id" });
+        }
+        if (job.status != 2 /* FINISHED */) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "Job is not finished yet" });
+        }
+        // scans
+        Scan_1.Scan.find({ job: job._id }, 'comment timeOfScan')
+            .populate({
+            path: 'equipment',
+            select: 'info.model info.serialNumber info.nfcTag info.imageUrl info.location',
+            populate: { path: 'EquipmentType', select: 'title' }
+        })
+            .exec((err, scans) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            if (scans.length == 0) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': "No equipment scanned for this job." });
+            }
+            return res.json({ 'status': constants_1.Status.Success, 'job': job, 'scans': scans });
+        });
     });
 };
 //# sourceMappingURL=job.js.map

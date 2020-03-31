@@ -794,4 +794,13 @@ router.post(
     userController.getContractorForJob
 )
 
+router.post(
+    '/getJobReport',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Get_Job_Report),
+    validate(Validations.getJobReport),
+    jobController.getJobReport
+)
+
 export default router

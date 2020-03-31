@@ -107,7 +107,8 @@ exports.UserPermissions = {
             73 /* Update_Service_Ticket */,
             74 /* Get_Ticket_Detail */,
             75 /* Get_Contractors_For_Job */,
-            76 /* Get_Customer_Detail */
+            76 /* Get_Customer_Detail */,
+            77 /* Get_Job_Report */
         ],
         off: [0 /* None */],
     },
@@ -177,7 +178,8 @@ exports.UserPermissions = {
             73 /* Update_Service_Ticket */,
             74 /* Get_Ticket_Detail */,
             75 /* Get_Contractors_For_Job */,
-            76 /* Get_Customer_Detail */
+            76 /* Get_Customer_Detail */,
+            77 /* Get_Job_Report */
         ],
         off: [0 /* None */],
     },
@@ -250,7 +252,8 @@ exports.UserPermissions = {
             73 /* Update_Service_Ticket */,
             74 /* Get_Ticket_Detail */,
             75 /* Get_Contractors_For_Job */,
-            76 /* Get_Customer_Detail */
+            76 /* Get_Customer_Detail */,
+            77 /* Get_Job_Report */
         ],
         off: [0 /* None */],
     },
@@ -330,7 +333,8 @@ exports.UserPermissions = {
             75 /* Get_Contractors_For_Job */,
             76 /* Get_Customer_Detail */,
             65 /* Get_All_Contracts */,
-            62 /* Accept_Reject_Contract */
+            62 /* Accept_Reject_Contract */,
+            77 /* Get_Job_Report */
         ],
         off: [0 /* None */],
     }

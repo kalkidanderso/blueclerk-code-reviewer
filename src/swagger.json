@@ -3028,6 +3028,43 @@
         ]
       }
     },
+    "/getJobReport": {
+      "post": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "Scan report of a job",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of job to get report (job must be finished and have tags scaned)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/JobReport"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getCustomerEquipmentJobs": {
       "post": {
         "tags": [
@@ -4864,6 +4901,325 @@
           "type": "string",
           "format": "date-time",
           "description": "time when the equipment was scanned"
+        }
+      }
+    },
+    "JobReport": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string",
+          "description": "Auto generated job id from sevice ticket number"
+        },
+        "status": {
+          "type": "number",
+          "description": "Status of job if it is finshed or not"
+        },
+        "employeeType": {
+          "type": "boolean",
+          "description": "If false that means assigned to employee if true that means job is assigned to vendor or vendors employee"
+        },
+        "dateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Time when job was scheduled"
+        },
+        "description": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ticket": {
+          "type": "object",
+          "properties": {
+            "scheduleDateTime": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Time when ticket was scheduled"
+            },
+            "note": {
+              "type": "string",
+              "description": "Additional note added by person who created ticket"
+            },
+            "ticketId": {
+              "type": "string",
+              "description": "Auto generated ticket number using prefix defined by user"
+            }
+          }
+        },
+        "technician": {
+          "type": "object",
+          "properties": {
+            "auth": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "description": "Email address of technician"
+                }
+              }
+            },
+            "profile": {
+              "type": "object",
+              "properties": {
+                "displayName": {
+                  "type": "string",
+                  "description": "Name of technician"
+                }
+              }
+            },
+            "contact": {
+              "type": "object",
+              "properties": {
+                "phone": {
+                  "type": "string",
+                  "description": "Phone number of technician"
+                }
+              }
+            },
+            "permissions": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "description": "Role of technician in his company/organization"
+                }
+              }
+            }
+          }
+        },
+        "customer": {
+          "type": "object",
+          "properties": {
+            "auth": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "description": "Email address of customer or from info.email"
+                }
+              }
+            },
+            "info": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "description": "Email address of customer if present"
+                }
+              }
+            },
+            "profile": {
+              "type": "object",
+              "properties": {
+                "displayName": {
+                  "type": "string",
+                  "description": "Name of customer"
+                }
+              }
+            },
+            "contact": {
+              "type": "object",
+              "properties": {
+                "phone": {
+                  "type": "string",
+                  "description": "Phone number of customer if present"
+                }
+              }
+            },
+            "address": {
+              "type": "object",
+              "properties": {
+                "street": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "zipCode": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "type": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "Title of job type"
+            }
+          }
+        },
+        "company": {
+          "type": "object",
+          "properties": {
+            "auth": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "description": "Email address of company"
+                }
+              }
+            },
+            "info": {
+              "type": "object",
+              "properties": {
+                "companyName": {
+                  "type": "string",
+                  "description": "Name of company"
+                }
+              }
+            },
+            "contact": {
+              "type": "object",
+              "properties": {
+                "phone": {
+                  "type": "string",
+                  "description": "Phone number of company"
+                }
+              }
+            },
+            "permissions": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string"
+                }
+              }
+            },
+            "address": {
+              "type": "object",
+              "properties": {
+                "street": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "zipCode": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "createdBy": {
+          "type": "object",
+          "properties": {
+            "auth": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "description": "Email address of person who created job"
+                }
+              }
+            },
+            "info": {
+              "type": "object",
+              "properties": {
+                "companyName": {
+                  "type": "string",
+                  "description": "Name of company"
+                }
+              }
+            },
+            "profile": {
+              "type": "object",
+              "properties": {
+                "displayName": {
+                  "type": "string"
+                }
+              }
+            },
+            "contact": {
+              "type": "object",
+              "properties": {
+                "phone": {
+                  "type": "string"
+                }
+              }
+            },
+            "permissions": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "description": "Role of person who created job in his company/organization"
+                }
+              }
+            },
+            "address": {
+              "type": "object",
+              "properties": {
+                "street": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "zipCode": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "scans": {
+          "type": "object",
+          "properties": {
+            "comment": {
+              "type": "string",
+              "description": "comment added by person who scanned the equipment"
+            },
+            "timeOfScan": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "equipment": {
+              "type": "object",
+              "properties": {
+                "info": {
+                  "type": "object",
+                  "properties": {
+                    "model": {
+                      "type": "string",
+                      "description": "model number of equipment scanned"
+                    },
+                    "serialNumber": {
+                      "type": "string",
+                      "description": "serialNumber number of equipment scanned"
+                    },
+                    "nfcTag": {
+                      "type": "string",
+                      "description": "nfcTag of equipment scanned"
+                    },
+                    "location": {
+                      "type": "string",
+                      "description": "location of equipment"
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
