@@ -35,6 +35,8 @@ tags:
     description: For creting and getting service tickets
   - name: Job
     description: For scheduled jobs
+  - name: Reports
+    description: For job and other reports
   - name: Image
     description: For images
   - name: Group
@@ -1964,8 +1966,8 @@ paths:
   /getJobReport:
     post:
       tags:
-        - Job
-      summary: Scan report of a job
+        - Reports
+      summary: Get report of a finshed job
       description: ''
       consumes:
         - application/x-www-form-urlencoded
@@ -3280,6 +3282,9 @@ definitions:
               companyName:  
                 type: string
                 description: Name of company
+              logoUrl:
+                type: string
+                description: Logo of company
           contact:
             type: object
             properties:
@@ -3371,6 +3376,20 @@ definitions:
                   location:
                     type: string
                     description: location of equipment
+              images:
+                type: array
+                items:
+                  type: string
+              type:
+                type: object
+                properties:
+                  title: 
+                    type: string
+              brand:
+                type: object
+                properties:
+                  title: 
+                    type: string
   GeneralAPIResponse:
     type: object
     properties:

@@ -486,7 +486,7 @@ export const getJobReport = (req: Request, res: Response) => {
         })
         .populate({
             path: 'company',
-            select: 'info.companyName auth.email permissions.role address.street address.city address.state address.zipCode contact.phone'
+            select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone'
         })
         .populate({
             path: 'createdBy',
@@ -510,8 +510,9 @@ export const getJobReport = (req: Request, res: Response) => {
             Scan.find({ job: job._id}, 'comment timeOfScan')
             .populate({
                 path: 'equipment',
-                select: 'info.model info.serialNumber info.nfcTag info.imageUrl info.location',
-                populate: { path: 'EquipmentType', select: 'title' }
+                select: 'info.model info.serialNumber info.nfcTag images info.location',
+                populate: [{ path: 'brand', select: 'title' },{ path: 'type', select: 'title' }],
+                
             })
             .exec ((err: any, scans: IScan[]) => {
                 if (err) {

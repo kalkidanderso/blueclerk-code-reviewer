@@ -67,6 +67,10 @@
             "description": "For scheduled jobs"
         },
         {
+            "name": "Reports",
+            "description": "For job and other reports"
+        },
+        {
             "name": "Image",
             "description": "For images"
         },
@@ -3031,9 +3035,9 @@
         "/getJobReport": {
             "post": {
                 "tags": [
-                    "Job"
+                    "Reports"
                 ],
-                "summary": "Scan report of a job",
+                "summary": "Get report of a finshed job",
                 "description": "",
                 "consumes": [
                     "application/x-www-form-urlencoded"
@@ -5078,6 +5082,10 @@
                                 "companyName": {
                                     "type": "string",
                                     "description": "Name of company"
+                                },
+                                "logoUrl": {
+                                    "type": "string",
+                                    "description": "Logo of company"
                                 }
                             }
                         },
@@ -5214,6 +5222,28 @@
                                         "location": {
                                             "type": "string",
                                             "description": "location of equipment"
+                                        }
+                                    }
+                                },
+                                "images": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": {
+                                    "type": "object",
+                                    "properties": {
+                                        "title": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "brand": {
+                                    "type": "object",
+                                    "properties": {
+                                        "title": {
+                                            "type": "string"
                                         }
                                     }
                                 }
