@@ -37,7 +37,7 @@ const serviceTicketController = __importStar(require("../controllers/serviceTick
 const router = express_1.default.Router();
 //Auth
 router.post('/login', validator_1.validate(validator_1.Validations.login), userController.login);
-router.post('/subscribe', passport_1.default.authenticate('jwt', { session: false }), userController.companySubscribe);
+router.post('/subscribe', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), userController.companySubscribe);
 router.post('/agreeTermAndCondition', passport_1.default.authenticate('jwt', { session: false }), validator_1.validate(validator_1.Validations.agree), userController.agreeToTermAndConditions);
 router.post('/signup', validator_1.validate(validator_1.Validations.signUp), userController.createCompany);
 router.post('/adminSignUp', validator_1.validate(validator_1.Validations.adminSignUp), userController.createGlobalAdmin);
@@ -67,11 +67,7 @@ router.post('/getTechnicians', passport_1.default.authenticate('jwt', { session:
 router.post('/getOfficeAdmins', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(13 /* User_Get_Office_Admin */), company_1.getCompnayId(), userController.getOfficeAdminsList);
 router.post('/updateProfile', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(14 /* User_Update_Profile */), validator_1.validate(validator_1.Validations.updateProfile), userController.updateProfile);
 router.post('/changePassword', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(15 /* User_Change_Password */), validator_1.validate(validator_1.Validations.changePassword), userController.changePassword);
-router.post('/forgotPassword', 
-// passport.authenticate('jwt', { session: false }),
-// getCompnayId(),
-// checkUserPermissions(Permissions.User_Change_Password),
-validator_1.validate(validator_1.Validations.forgotPassword), userController.fogotPassword);
+router.post('/forgotPassword', validator_1.validate(validator_1.Validations.forgotPassword), userController.fogotPassword);
 router.post('/updateCompanyProfile', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(19 /* Update_Company_Profile */), validator_1.validate(validator_1.Validations.updateCompanyProfile), userController.updateCompanyProfile);
 router.post('/deleteEmployee', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(16 /* User_Delete_Employee */), validator_1.validate(validator_1.Validations.deleteEmployee), userController.deleteEmployee);
 router.post('/activateEmployee', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(17 /* User_Activate_Employee */), validator_1.validate(validator_1.Validations.deleteEmployee), userController.activateEmployee);
@@ -133,25 +129,26 @@ router.post('/getOrders', passport_1.default.authenticate('jwt', { session: fals
 router.post('/buySubscriptions', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(58 /* Subscription_Buy */), validator_1.validate(validator_1.Validations.buySubscriptions), subscriptionController.addCompanySubscriptions);
 router.post('/cancelSubscriptions', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(59 /* Subscription_Cancel */), validator_1.validate(validator_1.Validations.buySubscriptions), subscriptionController.removeCompanySubscriptions);
 router.get('/chargeSubscription', subscriptionController.chargeCompanySubscription);
-router.post('/updateSubscription', userController.updateSub);
+// router.post(
+//     '/updateSubscription',
+//     userController.updateSub
+// )
 router.post('/contractorSignup', validator_1.validate(validator_1.Validations.contractorSignup), userController.createContractor);
 router.post('/searchContractor', validator_1.validate(validator_1.Validations.searchContractor), userController.searchContractor);
 router.post('/startContract', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(61 /* Invite_Contractor */), validator_1.validate(validator_1.Validations.inviteContractor), userController.startContract);
 router.post('/inviteContractor', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(61 /* Invite_Contractor */), validator_1.validate(validator_1.Validations.searchContractor), userController.inviteContractor);
 // limit only for contractors
-router.post('/getContracts', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkUserPermissions(65 /* Get_All_Contracts */), userController.getAllContracts);
+router.post('/getContracts', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(65 /* Get_All_Contracts */), userController.getAllContracts);
 router.post('/getCompanyContracts', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(66 /* Get_Company_Contracts */), userController.getCompanyContracts);
 // limit only for contractors
-router.post('/acceptOrRejectContract', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkUserPermissions(62 /* Accept_Reject_Contract */), validator_1.validate(validator_1.Validations.updateContract), userController.acceptRejectContract);
+router.post('/acceptOrRejectContract', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(62 /* Accept_Reject_Contract */), validator_1.validate(validator_1.Validations.updateContract), userController.acceptRejectContract);
 router.post('/CancelOrFinish', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(63 /* Cancel_Finish_Contract */), validator_1.validate(validator_1.Validations.updateContract), userController.cancelOrFinishContract);
 router.post('/changeContractorPermission', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(64 /* Add_Contractor_Permission */), validator_1.validate(validator_1.Validations.contractorPermissions), permissionController.addContractorPermissions);
 router.post('/upgradeToCompany', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkUserPermissions(67 /* Upgrade_To_Company */), validator_1.validate(validator_1.Validations.upgradeToCompany), userController.upgradeToCompany);
-router.post('/setCustomWorkOrderNumber', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(69 /* Custom_work_Order_Number */), 
-// validate(Validations.customWorkOrder),
-userController.setCustomWorkNumber);
+router.post('/setCustomWorkOrderNumber', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(69 /* Custom_work_Order_Number */), userController.setCustomWorkNumber);
 router.post('/checkAndGet', validator_1.validate(validator_1.Validations.socialLogin), userController.checkAndGetUser);
 router.post('/signUpSocial', validator_1.validate(validator_1.Validations.socialSignUp), userController.createCompanySocial);
-router.post('/contractorSignUpSocial', validator_1.validate(validator_1.Validations.socialSignUp), userController.createContractorSocial);
+router.post('/contractorSignUpSocial', validator_1.validate(validator_1.Validations.contractorSocialSignUp), userController.createContractorSocial);
 router.post('/importCustomer', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(70 /* Customer_Import */), 
 // validate(Validations.customerImport),
 customerImportController.uploadfile);

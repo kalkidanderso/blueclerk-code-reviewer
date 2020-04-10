@@ -20,10 +20,14 @@ import { EquipmentBrand } from '../models/EquipmentBrand'
 import { EquipmentType } from '../models/EquipmentType'
 import { privateKey } from '../common/config'
 import { Contract, IContract } from '../models/Contract'
-import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
+import { CompanyCustomer } from '../models/CompanyCustomer'
+import { CompanyAdmin, ICompanyAdmin } from '../models/CompanyAdmin'
+import { Scan } from '../models/Scan'
+import { ServiceTicket } from '../models/ServiceTicket'
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
 import { addCustomerAndCharge, addCustomerSource, chargeSubscription} from '../services/stripe'
+import { param } from 'express-validator'
 
 export const login = (req: Request, res: Response) => {
 
@@ -41,7 +45,7 @@ export const login = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
             }
 
-            if (user.permissions.role != Role.COMPANY && user.permissions.role != Role.GLOBAL_ADMIN) {
+            if (user.permissions.role != Role.COMPANY_ADMIN && user.permissions.role != Role.GLOBAL_ADMIN) {
                 const employee = <IEmployee>user
 
                 Company.findById(employee.company, 
@@ -68,29 +72,43 @@ export const login = (req: Request, res: Response) => {
                     })
                 })
 
-            }else{
-
+            } else if(user.permissions.role != Role.GLOBAL_ADMIN) {
+                
                 user.comparePassword(params.password, (isMatching: Boolean) => {
     
                     if (!isMatching) {
                         return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
                     }
-    
-                    if (user.permissions.role == Role.COMPANY) {
-                        const company = <ICompany>user
-                        // if(company.type == 1)
-                        company.userPermissions = undefined
-    
-                        return res.json({ 'status': Status.Success, 'user': company, 'token': user.jwt() })
-                    }else{
-    
-                        return res.json({ 'status': Status.Success, 'user': user, 'token': user.jwt() })
-                    }
+                    const admin = <ICompanyAdmin> user
+                    Company.findById(admin.company, 
+                        (err: any, company: ICompany) => {
+                            if (err) {
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            }
+                            company.userPermissions = undefined
+                            company.employees = undefined
+                            company.customers = undefined
+                            company.paid = undefined
+                            company.type = undefined
+                            company.maxTechnicians = undefined
+                            company.maxManagers = undefined
+                            company.maxOfficeAdmins = undefined
+                            return res.json({ 'status': Status.Success, 'user': user, 'company': company, 'token': user.jwt() })
+                        }
+                    )
+                    
     
                 })
+            }else{
+                user.comparePassword(params.password, (isMatching: Boolean) => {
+    
+                    if (!isMatching) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
+                    }
+                    
+                    return res.json({ 'status': Status.Success, 'user': user, 'token': user.jwt() })
+                })
             }
-
-
         }
     )
 
@@ -146,22 +164,18 @@ export const createGlobalAdmin = (req: Request, res: Response) => {
 
 export const createCompany = (req: Request, res: Response) => {
 
-    checkEmailExists(req, res, (req: Request, res: Response) => {
+    checkCompanyEmailExists(req, res, (req: Request, res: Response) => {
 
         const params = req.body
         const chargeDate = new Date();
         chargeDate.setDate(chargeDate.getDate() + 30);
         const company = new Company(
             {
-                auth: {
-                    email: params.email,
-                    password: params.password,
-                },
-                profile: {
-                    firstName: params.firstName,
-                    lastName: params.lastName,
-                    displayName: `${params.firstName} ${params.lastName}`,
-                    imageUrl: '',
+                info: {
+                    companyName: params.companyName,
+                    industry: params.industryId,
+                    logoUrl: '',
+                    companyEmail: params.companyEmail,
                 },
                 address: {
                     street: '',
@@ -170,16 +184,7 @@ export const createCompany = (req: Request, res: Response) => {
                     zipCode: '',
                 },
                 contact: {
-                    phone: params.phone,
-                },
-                permissions: {
-                    role: Role.COMPANY,
-                    extra: [],
-                },
-                info: {
-                    companyName: params.companyName,
-                    industry: params.industryId,
-                    logoUrl: '',
+                    phone: params.companyPhone,
                 },
                 userPermissions: UserPermissions,
                 chargeDate: chargeDate,
@@ -195,8 +200,55 @@ export const createCompany = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            sendEmail({ to: params.email })
-            login(req, res)
+            const companyAdmin = new CompanyAdmin(
+                {
+                    auth: {
+                        email: params.email,
+                        password: params.password,
+                    },
+                    profile: {
+                        firstName: params.firstName,
+                        lastName: params.lastName,
+                        displayName: `${params.firstName} ${params.lastName}`,
+                        imageUrl: '',
+                    },
+                    address: {
+                        street: '',
+                        city: '',
+                        state: '',
+                        zipCode: '',
+                    },
+                    contact: {
+                        phone: params.phone,
+                    },
+                    permissions: {
+                        role: Role.COMPANY_ADMIN,
+                        extra: [],
+                    },
+                    company: company._id
+                }
+            )
+
+            companyAdmin.save((err: any) => {
+
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                }
+
+                company.updateOne({
+                    'admin': companyAdmin._id
+                },(err: any, raq: any) =>{
+
+                    if (err) {
+                        console.log(err)
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+
+                    sendEmail({ to: params.email })
+                    login(req, res)
+                })
+
+            })
 
         })
 
@@ -239,6 +291,11 @@ export const updateProfile = (req: Request, res: Response) => {
             'profile.lastName': params.lastName,
             'profile.imageUrl': params.imageUrl,
             'profile.displayName': `${params.firstName} ${params.lastName}`,
+            'address.street': params.street,
+            'address.city': params.city,
+            'address.state': params.state,
+            'address.zipCode': params.zipCode,
+            'contact.phone': params.phone,
         },
         (err: any, raw: any) => {
 
@@ -338,26 +395,65 @@ export const updateCompanyProfile = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        company.updateOne(
-            {
-                'info.companyName': params.companyName,
-                'info.logoUrl': params.logoUrl,
-                'address.street': params.street,
-                'address.city': params.city,
-                'address.state': params.state,
-                'address.zipCode': params.zipCode,
-                'contact.phone': params.phone,
-                'contact.fax': params.fax,
-            },
-            (err: any, raw: any) => {
+        if(company.info.companyEmail != params.companyEmail ) {
 
-                if (err) {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            Company.findOne(
+                { 'info.companyEmail': params.companyEmail },
+                (err: any, company: ICompany) => {
+        
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+        
+                    if (company) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.CompanyDuplicateEmail })
+                    }
+                    company.updateOne(
+                        {
+                            'info.companyName': params.companyName,
+                            'info.companyEmail': params.companyEmail,
+                            'info.logoUrl': params.logoUrl,
+                            'address.street': params.street,
+                            'address.city': params.city,
+                            'address.state': params.state,
+                            'address.zipCode': params.zipCode,
+                            'contact.phone': params.phone,
+                            'contact.fax': params.fax,
+                        },
+                        (err: any, raw: any) => {
+            
+                            if (err) {
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            }
+            
+                            return res.json({ 'status': Status.Success, 'message': 'Profile updated successfully.' })
+                        }
+                    )
                 }
+            )
 
-                return res.json({ 'status': Status.Success, 'message': 'Profile updated successfully.' })
-            }
-        )
+        }else{
+            company.updateOne(
+                {
+                    'info.companyName': params.companyName,
+                    'info.logoUrl': params.logoUrl,
+                    'address.street': params.street,
+                    'address.city': params.city,
+                    'address.state': params.state,
+                    'address.zipCode': params.zipCode,
+                    'contact.phone': params.phone,
+                    'contact.fax': params.fax,
+                },
+                (err: any, raw: any) => {
+    
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+    
+                    return res.json({ 'status': Status.Success, 'message': 'Profile updated successfully.' })
+                }
+            )
+        }
     })
 
 }
@@ -563,6 +659,50 @@ const checkEmailExists = (req: Request, res: Response, next: (req: Request, res:
     )
 
 }
+
+
+const checkCompanyEmailExists = (req: Request, res: Response, next: (req: Request, res: Response) => void) => {
+
+    const params = req.body
+    var email = params.email
+
+    if(params.companyEmail) {
+        email = params.companyEmail
+    }
+    Company.findOne(
+        { 'info.companyEmail': email },
+        (err: any, company: ICompany) => {
+
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+
+            if (company) {
+                return res.json({ 'status': Status.Error, 'message': Messages.CompanyDuplicateEmail })
+            }
+
+            User.findOne(
+                { 'auth.email': params.email },
+                (err: any, user: IUser) => {
+
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+
+                    if (user) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.DuplicateEmail })
+                    }
+
+                    next(req, res)
+
+                }
+            )
+
+        }
+    )
+
+}
+
 const checkNoOfUsers = (req: Request, res: Response, role: Role, next: (req: Request, res: Response) => void) => {
 
     const company = <ICompany>req.company
@@ -735,6 +875,10 @@ export const updateSub = (req: Request, res: Response) => {
         Order.collection.drop()
         User.collection.drop()
         CompanyCustomer.collection.drop()
+        CompanyAdmin.collection.drop()
+        Contract.collection.drop()
+        Scan.collection.drop()
+        ServiceTicket.collection.drop()
 
         return res.json({ 'message': 'Done' })
     }
@@ -748,6 +892,10 @@ export const getAllEmployees = (req: Request, res: Response) => {
             path: 'employees',
             select: '_id profile.displayName',
         })
+        .populate({
+            path: 'admin',
+            select: '_id profile.displayName',
+        })
         .exec((err: any, company: ICompany) => {
 
             if (err || !company) {
@@ -756,19 +904,19 @@ export const getAllEmployees = (req: Request, res: Response) => {
             const employees = company.employees
             company.employees = undefined
             company.userPermissions = undefined
-            company.auth = undefined
-            company.permissions = undefined
-            company.address = undefined
             company.stripeId = undefined
-            company.address = undefined
-            company.contact = undefined
             company.employees = undefined
             company.customers = undefined
             company.maxTechnicians = undefined
             company.maxManagers = undefined
             company.maxOfficeAdmins = undefined
             company.other = undefined
-            company.info = undefined
+            company.paid = undefined
+            company.type = undefined
+            company.currentJobId = undefined
+            company.chargeDate = undefined
+            company.contact = undefined
+            company.address = undefined
 
             res.json({ 'status': Status.Success, 'employees': employees, 'company': company })
 
@@ -809,21 +957,17 @@ export const getEmployeesForJob = (req: Request, res: Response) => {
 // new contractor signup
 export const createContractor = (req: Request, res: Response) => {
 
-    checkEmailExists(req, res, (req: Request, res: Response) => {
+    checkCompanyEmailExists(req, res, (req: Request, res: Response) => {
 
         const params = req.body
        
         const company = new Company(
             {
-                auth: {
-                    email: params.email,
-                    password: params.password,
-                },
-                profile: {
-                    firstName: params.firstName,
-                    lastName: params.lastName,
-                    displayName: `${params.firstName} ${params.lastName}`,
-                    imageUrl: '',
+                info: {
+                    companyName: params.companyName,
+                    industry: params.industryId,
+                    logoUrl: '',
+                    companyEmail: params.email,
                 },
                 address: {
                     street: '',
@@ -834,14 +978,9 @@ export const createContractor = (req: Request, res: Response) => {
                 contact: {
                     phone: params.phone,
                 },
-                permissions: {
-                    role: Role.COMPANY,
-                    extra: [],
-                },
-                info: {
-                    companyName: params.companyName,
-                    industry: params.industryId,
-                    logoUrl: '',
+                auth: {
+                    email: params.email,
+                    password: params.password,
                 },
                 type: 1,
                 userPermissions: UserPermissions
@@ -854,9 +993,54 @@ export const createContractor = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            sendEmail({ to: params.email })
-            login(req, res)
+            const companyAdmin = new CompanyAdmin(
+                {
+                    auth: {
+                        email: params.email,
+                        password: params.password,
+                    },
+                    profile: {
+                        firstName: params.firstName,
+                        lastName: params.lastName,
+                        displayName: `${params.firstName} ${params.lastName}`,
+                        imageUrl: '',
+                    },
+                    address: {
+                        street: '',
+                        city: '',
+                        state: '',
+                        zipCode: '',
+                    },
+                    contact: {
+                        phone: params.phone,
+                    },
+                    permissions: {
+                        role: Role.COMPANY_ADMIN,
+                        extra: [],
+                    },
+                    company: company._id
+                }
+            )
 
+            companyAdmin.save((err: any) => {
+
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                }
+
+                company.updateOne({
+                    'admin': companyAdmin._id
+                },(err: any, raq: any) =>{
+
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+
+                    sendEmail({ to: params.email })
+                    login(req, res)
+                })
+
+            })
         })
 
     })
@@ -868,19 +1052,19 @@ export const searchContractor = (req: Request, res: Response) => {
 
     const params = req.body
     
-    User.find(
-        { 'auth.email': params.email, 'permissions.role' : Role.COMPANY }, 
-        'auth.email profile.displayName info.companyName contact.phone',
-        (err: any, users: IUser[]) => {
+    Company.find(
+        { 'info.companyEmail': params.email }, 
+        'info.companyEmail info.companyName contact.phone',
+        (err: any, contractors: ICompany[]) => {
 
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
             
-            if(users.length == 0) {
+            if(contractors.length == 0) {
                 return res.json({ 'status': Status.Success, 'contractors': []})
             }
-            return res.json({ 'status': Status.Success, 'contractors': users})
+            return res.json({ 'status': Status.Success, 'contractors': contractors})
         }
     )
 }
@@ -889,9 +1073,9 @@ export const searchContractor = (req: Request, res: Response) => {
 export const startContract = (req: Request, res: Response) => {
 
     const params = req.body
-    const company = <ICompany>req.user
+    const user = <IUser>req.user
 
-    User.findById(params.contractorId,
+    Company.findById(params.contractorId,
         (err: any, contractor: ICompany) => {
 
             if (err) {
@@ -929,7 +1113,7 @@ export const startContract = (req: Request, res: Response) => {
                     }
         
                     // ToDo send email to contractor for contract started
-                    sendContractStartEmail({to: contractor.auth.email, company: company.info.companyName, contractor: contractor.profile.displayName })
+                    // sendContractStartEmail({to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
                     return res.json({ 'status': Status.Success, 'message': 'Contract started successfully.'})
         
                 })
@@ -943,9 +1127,9 @@ export const startContract = (req: Request, res: Response) => {
 export const inviteContractor = (req: Request, res: Response) => {
 
     const params = req.body
-    const company = <ICompany>req.user
+    const user = <IUser>req.user
 
-    User.findOne({'auth.email' : params.email},
+    Company.findOne({'info.companyEmail' : params.email},
         (err: any, contractor: ICompany) => {
 
             if (err) {
@@ -957,7 +1141,7 @@ export const inviteContractor = (req: Request, res: Response) => {
             }
 
             // ToDo email email with singup link
-            sendInvitationToContractor({ to: params.email, company: company.info.companyName})
+            sendInvitationToContractor({ to: params.email, company: req.company.info.companyName})
             return res.json({ 'status': Status.Error, 'message': 'Invitation sent.' })
         }
     )
@@ -966,16 +1150,16 @@ export const inviteContractor = (req: Request, res: Response) => {
 // get all contracts for contractor
 export const getAllContracts = (req: Request, res: Response) => {
 
-    const contractor = <ICompany>req.user
+    const user = <IUser>req.user
 
-    Contract.find({contractor: contractor._id})
+    Contract.find({contractor: user._id})
     .populate({
         path: 'company',
-        select: 'info.companyName profile.displayName type'
+        select: 'info.companyName info.companyEmail type'
     })
     .populate({
         path: 'contractor',
-        select: 'info.companyName profile.displayName type'
+        select: 'info.companyName info.companyEmail type'
     })
     .exec((err: any, contracts: IContract[]) => {
 
@@ -984,7 +1168,7 @@ export const getAllContracts = (req: Request, res: Response) => {
             }
             
             if(contracts.length == 0 || contracts == undefined ) {
-                return res.json({ 'status': Status.Error, 'message': 'No contracts found.' })
+                return res.json({ 'status': Status.Error, 'message': 'No contract found.' })
             }
 
             res.json({ 'status': Status.Success, 'contracts': contracts})
@@ -995,16 +1179,16 @@ export const getAllContracts = (req: Request, res: Response) => {
 // contracts started by company
 export const getCompanyContracts = (req: Request, res: Response) => {
 
-    const company = <ICompany>req.user
+    const company = <ICompany>req.company
     
     Contract.find({company: company._id})
     .populate({
         path: 'company',
-        select: 'info.companyName profile.displayName type'
+        select: 'info.companyName info.companyEmail type'
     })
     .populate({
         path: 'contractor',
-        select: 'info.companyName profile.displayName type'
+        select: 'info.companyName info.companyEmail type'
     })
     .exec((err: any, contracts: IContract[]) => {
 
@@ -1025,7 +1209,7 @@ export const getCompanyContracts = (req: Request, res: Response) => {
 export const acceptRejectContract = (req: Request, res: Response) => {
 
     const params = req.body
-    const contractor = <ICompany>req.user
+    const contractor = <ICompany>req.company
     
     var contractStatus = 0;
     
@@ -1039,7 +1223,7 @@ export const acceptRejectContract = (req: Request, res: Response) => {
         return res.json({ 'status': Status.Error, 'message': 'Invald contract status' })
     }        
     
-    Contract.findOne({_id: params.contractId} , 
+    Contract.findOne({_id: params.contractId, contractor: contractor._id} , 
         (err: any, contract: IContract) => {
 
             if (err) {
@@ -1085,7 +1269,7 @@ export const acceptRejectContract = (req: Request, res: Response) => {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
             
-                        sendContractStatusChangeEmailToCompany({ to: company.auth.email, contractor: contractor.profile.displayName , company: company.info.companyName, contractStatus:params.status+'ed' })
+                        // sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyEmail , company: company.info.companyName, contractStatus:params.status+'ed' })
                         return res.json({'status': Status.Success, 'message': 'Contract '+params.status+'ed.'})
             
                     })
@@ -1101,7 +1285,7 @@ export const acceptRejectContract = (req: Request, res: Response) => {
 export const cancelOrFinishContract = (req: Request, res: Response) => {
 
     const params = req.body
-    const company = <ICompany>req.user
+    const company = <ICompany>req.company
     
     var contractStatus = 0;
     
@@ -1152,7 +1336,7 @@ export const cancelOrFinishContract = (req: Request, res: Response) => {
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
-                    sendContractStatusChangeEmailToContractor({ to: contractor.auth.email, contractor: contractor.profile.displayName , company: company.info.companyName, contractStatus:params.status+'ed' })
+                    // sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName , company: company.info.companyName, contractStatus:params.status+'ed' })
                     return res.json({'status': Status.Success, 'message': 'Contract '+params.status+'ed.'})   
                 })
             })
@@ -1165,9 +1349,9 @@ export const cancelOrFinishContract = (req: Request, res: Response) => {
 export const upgradeToCompany = (req: Request, res: Response) => {
     // return res.json({ 'status': Status.Error, 'message': 'reached inside.' })
     const params = req.body
-    const user = <ICompany>req.user
+    const user = <ICompany>req.company
     
-    User.findById(user._id,
+    Company.findById(user._id,
         (err: any, contractor: ICompany) => {
 
             if (err) {                
@@ -1183,7 +1367,7 @@ export const upgradeToCompany = (req: Request, res: Response) => {
             }
 
             // create strip customer and charge
-            addCustomerAndCharge(contractor.auth.email, 'company '+ contractor.info.companyName, params.token, 50, (status: any, customer: any, charge: any, message: string)=>{
+            addCustomerAndCharge(contractor.info.companyEmail, 'company '+ contractor.info.companyName, params.token, 50, (status: any, customer: any, charge: any, message: string)=>{
               
                 if(status == 1)
                 {
@@ -1287,13 +1471,13 @@ export const companySubscribe = (req: Request, res: Response) => {
 export const setCustomWorkNumber = (req: Request, res: Response) => {
    
     const params = req.body
-    const user = <ICompany>req.user
+    const admin = <ICompanyAdmin>req.user
     
     if(params.prefix == undefined && params.workOrderNumber == undefined) {
         return res.json({ 'status': Status.Error, 'message': "Either prefix or customWorkOrderNumbe is required." })
     }
 
-    User.findById(user._id,
+    Company.findById(admin.company,
         (err: any, company: ICompany) => {
 
             if (err) {                
@@ -1301,7 +1485,7 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
             }
             
             if(company == undefined || company == null ) {
-                return res.json({ 'status': Status.Error, 'message': 'Invalid user.' })
+                return res.json({ 'status': Status.Error, 'message': 'No company found.' })
             }
 
             if(params.workOrderNumber != undefined) {
@@ -1340,7 +1524,7 @@ export const checkAndGetUser = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'No user found' })
             }
 
-            if (user.permissions.role != Role.COMPANY && user.permissions.role != Role.GLOBAL_ADMIN) {
+            if (user.permissions.role != Role.COMPANY_ADMIN && user.permissions.role != Role.GLOBAL_ADMIN) {
                 const employee = <IEmployee>user
 
                 Company.findById(employee.company, 
@@ -1360,20 +1544,25 @@ export const checkAndGetUser = (req: Request, res: Response) => {
                     return res.json({ 'status': Status.Success, 'user': user, 'token': user.jwt() })
                 })
 
-            }else{
-
-                if (user.permissions.role == Role.COMPANY) {
-                    const company = <ICompany>user
-                    // if(company.type == 1)
-                    company.userPermissions = undefined
-
-                    return res.json({ 'status': Status.Success, 'user': company, 'token': user.jwt() })
-                }else{
-
-                    return res.json({ 'status': Status.Success, 'user': user, 'token': user.jwt() })
-                }
-            }            
-            
+            } else {
+                const admin = <ICompanyAdmin> user
+                Company.findById(admin.company, 
+                    (err: any, company: ICompany) => {
+                        if (err) {
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
+                        company.userPermissions = undefined
+                        company.employees = undefined
+                        company.customers = undefined
+                        company.paid = undefined
+                        company.type = undefined
+                        company.maxTechnicians = undefined
+                        company.maxManagers = undefined
+                        company.maxOfficeAdmins = undefined
+                        return res.json({ 'status': Status.Success, 'user': user, 'company': company, 'token': user.jwt() })
+                    }
+                )
+            }                        
         }
     )
 }
@@ -1385,67 +1574,90 @@ export const createCompanySocial = (req: Request, res: Response) => {
     const chargeDate = new Date();
     chargeDate.setDate(chargeDate.getDate() + 30);
 
-    Company.findOne({'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType, type: 0}, 
-    (err: any, previousCompany: ICompany)=>{
+    User.findOne({'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType, type: 0}, 
+    (err: any, previousUser: IUser)=>{
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        if (previousCompany != undefined || previousCompany != null) {
+        if (previousUser != undefined || previousUser != null) {
             return res.json({ 'status': Status.Error, 'message': Messages.UserExists })
         }
 
-        const company = new Company(
-            {
-                auth: {
-                    email: params.email,
-                    socialId: params.socialId,
-                    connectorType: params.connectorType,
-                },
-                profile: {
-                    firstName: params.firstName,
-                    lastName: params.lastName,
-                    displayName: `${params.firstName} ${params.lastName}`,
-                    imageUrl: '',
-                },
-                address: {
-                    street: '',
-                    city: '',
-                    state: '',
-                    zipCode: '',
-                },
-                contact: {
-                    phone: params.phone,
-                },
-                permissions: {
-                    role: Role.COMPANY,
-                    extra: [],
-                },
-                info: {
-                    companyName: params.companyName,
-                    industry: params.industryId,
-                    logoUrl: '',
-                },
-                userPermissions: UserPermissions,
-                chargeDate: chargeDate,
-                maxTechnicians: 2,
-                maxManagers: 1,
-                maxOfficeAdmins: 1
-            }
-        )
-    
-        company.save((err: any) => {
-    
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            }
-    
-            sendEmail({ to: params.email })
+        checkCompanyEmailExists(req, res, (req: Request, res: Response) => { 
 
-            company.userPermissions = undefined
-
-            return res.json({ 'status': Status.Success, 'user': company, 'token': company.jwt() })
+            const company = new Company(
+                {
+                    info: {
+                        companyName: params.companyName,
+                        industry: params.industryId,
+                        logoUrl: '',
+                        companyEmail: params.companyEmail,
+                    },
+                    address: {
+                        street: '',
+                        city: '',
+                        state: '',
+                        zipCode: '',
+                    },
+                    contact: {
+                        phone: params.companyPhone,
+                    },
+                    userPermissions: UserPermissions,
+                    chargeDate: chargeDate,
+                    maxTechnicians: 2,
+                    maxManagers: 1,
+                    maxOfficeAdmins: 1
+                }
+            )
+        
+            company.save((err: any) => {
+        
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                }
+                const companyAdmin = new CompanyAdmin(
+                    {
+                        auth: {
+                            email: params.email,
+                            socialId: params.socialId,
+                            connectorType: params.connectorType,
+                        },
+                        profile: {
+                            firstName: params.firstName,
+                            lastName: params.lastName,
+                            displayName: `${params.firstName} ${params.lastName}`,
+                            imageUrl: '',
+                        },
+                        address: {
+                            street: '',
+                            city: '',
+                            state: '',
+                            zipCode: '',
+                        },
+                        contact: {
+                            phone: params.phone,
+                        },
+                        permissions: {
+                            role: Role.COMPANY_ADMIN,
+                            extra: [],
+                        },
+                        company: company._id
+                    }
+                )
     
+                companyAdmin.save((err: any) => {
+    
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+    
+                    sendEmail({ to: params.email })
+                    
+                    return res.json({ 'status': Status.Success, 'user': companyAdmin, 'token': companyAdmin.jwt() })
+                })
+        
+            })
         })
 
     })
@@ -1457,67 +1669,98 @@ export const createContractorSocial = (req: Request, res: Response) => {
     const chargeDate = new Date();
     chargeDate.setDate(chargeDate.getDate() + 30);
 
-    Company.findOne({'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType, type: 1}, 
-    (err: any, previousCompany: ICompany)=>{
+    User.findOne({'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType, type: 1}, 
+    (err: any, previousUser: IUser)=>{
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        if (previousCompany != undefined || previousCompany != null) {
+        if (previousUser != undefined || previousUser != null) {
             return res.json({ 'status': Status.Error, 'message': Messages.UserExists })
         }
 
-        const company = new Company(
-            {
-                auth: {
-                    email: params.email,
-                    socialId: params.socialId,
-                    connectorType: params.connectorType,
-                },
-                profile: {
-                    firstName: params.firstName,
-                    lastName: params.lastName,
-                    displayName: `${params.firstName} ${params.lastName}`,
-                    imageUrl: '',
-                },
-                address: {
-                    street: '',
-                    city: '',
-                    state: '',
-                    zipCode: '',
-                },
-                contact: {
-                    phone: params.phone,
-                },
-                permissions: {
-                    role: Role.COMPANY,
-                    extra: [],
-                },
-                info: {
-                    companyName: params.companyName,
-                    industry: params.industryId,
-                    logoUrl: '',
-                },
-                type: 1,
-                userPermissions: UserPermissions
-            }
-        )
+        checkCompanyEmailExists(req, res, (req: Request, res: Response) => {
+
+            const params = req.body
+           
+            const company = new Company(
+                {
+                    info: {
+                        companyName: params.companyName,
+                        industry: params.industryId,
+                        logoUrl: '',
+                        companyEmail: params.email,
+                    },
+                    address: {
+                        street: '',
+                        city: '',
+                        state: '',
+                        zipCode: '',
+                    },
+                    contact: {
+                        phone: params.phone,
+                    },
+                    auth: {
+                        email: params.email,
+                        password: params.password,
+                    },
+                    type: 1,
+                    userPermissions: UserPermissions
+                }
+            )
     
-        company.save((err: any) => {
+            company.save((err: any) => {
     
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            }
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                }
     
-            sendEmail({ to: params.email })
-            company.userPermissions = undefined
-            return res.json({ 'status': Status.Success, 'user': company, 'token': company.jwt() })
+                const companyAdmin = new CompanyAdmin(
+                    {
+                        auth: {
+                            email: params.email,
+                            socialId: params.socialId,
+                            connectorType: params.connectorType,
+                        },
+                        profile: {
+                            firstName: params.firstName,
+                            lastName: params.lastName,
+                            displayName: `${params.firstName} ${params.lastName}`,
+                            imageUrl: '',
+                        },
+                        address: {
+                            street: '',
+                            city: '',
+                            state: '',
+                            zipCode: '',
+                        },
+                        contact: {
+                            phone: params.phone,
+                        },
+                        permissions: {
+                            role: Role.COMPANY_ADMIN,
+                            extra: [],
+                        },
+                        company: company._id
+                    }
+                )
+    
+                companyAdmin.save((err: any) => {
+    
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+    
+                    sendEmail({ to: params.email })
+
+                    return res.json({ 'status': Status.Success, 'user': companyAdmin, 'token': companyAdmin.jwt() })
+    
+                })
+            })
     
         })
 
     })
-
-
 }
 
 export const getContractorForJob = (req: Request, res: Response) => {
@@ -1532,7 +1775,7 @@ export const getContractorForJob = (req: Request, res: Response) => {
     Contract.find({company: company._id})
     .populate({
         path: 'contractor',
-        select: '_id profile.displayName type',
+        select: '_id info.companyName info.companyEmail type',
     })
     .exec(
     (err: any, contracts: IContract[]) => {

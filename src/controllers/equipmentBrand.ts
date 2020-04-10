@@ -12,7 +12,7 @@ export const createEquipmentBrand = (req: Request, res: Response) => {
     var userId: any = null
     var industryId: any = null
 
-    if (user.permissions.role == Role.COMPANY) {
+    if (user.permissions.role == Role.COMPANY_ADMIN) {
         userId = user._id
     } 
 

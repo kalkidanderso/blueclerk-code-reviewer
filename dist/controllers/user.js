@@ -21,6 +21,9 @@ const EquipmentType_1 = require("../models/EquipmentType");
 const config_1 = require("../common/config");
 const Contract_1 = require("../models/Contract");
 const CompanyCustomer_1 = require("../models/CompanyCustomer");
+const CompanyAdmin_1 = require("../models/CompanyAdmin");
+const Scan_1 = require("../models/Scan");
+const ServiceTicket_1 = require("../models/ServiceTicket");
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
 const stripe_1 = require("../services/stripe");
@@ -33,7 +36,7 @@ exports.login = (req, res) => {
         if (!user) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.InvalidEmailPassword });
         }
-        if (user.permissions.role != 3 /* COMPANY */ && user.permissions.role != 4 /* GLOBAL_ADMIN */) {
+        if (user.permissions.role != 3 /* COMPANY_ADMIN */ && user.permissions.role != 4 /* GLOBAL_ADMIN */) {
             const employee = user;
             Company_1.Company.findById(employee.company, (err, company) => {
                 if (err) {
@@ -53,20 +56,34 @@ exports.login = (req, res) => {
                 });
             });
         }
+        else if (user.permissions.role != 4 /* GLOBAL_ADMIN */) {
+            user.comparePassword(params.password, (isMatching) => {
+                if (!isMatching) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.InvalidEmailPassword });
+                }
+                const admin = user;
+                Company_1.Company.findById(admin.company, (err, company) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    company.userPermissions = undefined;
+                    company.employees = undefined;
+                    company.customers = undefined;
+                    company.paid = undefined;
+                    company.type = undefined;
+                    company.maxTechnicians = undefined;
+                    company.maxManagers = undefined;
+                    company.maxOfficeAdmins = undefined;
+                    return res.json({ 'status': constants_1.Status.Success, 'user': user, 'company': company, 'token': user.jwt() });
+                });
+            });
+        }
         else {
             user.comparePassword(params.password, (isMatching) => {
                 if (!isMatching) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.InvalidEmailPassword });
                 }
-                if (user.permissions.role == 3 /* COMPANY */) {
-                    const company = user;
-                    // if(company.type == 1)
-                    company.userPermissions = undefined;
-                    return res.json({ 'status': constants_1.Status.Success, 'user': company, 'token': user.jwt() });
-                }
-                else {
-                    return res.json({ 'status': constants_1.Status.Success, 'user': user, 'token': user.jwt() });
-                }
+                return res.json({ 'status': constants_1.Status.Success, 'user': user, 'token': user.jwt() });
             });
         }
     });
@@ -108,20 +125,16 @@ exports.createGlobalAdmin = (req, res) => {
     });
 };
 exports.createCompany = (req, res) => {
-    checkEmailExists(req, res, (req, res) => {
+    checkCompanyEmailExists(req, res, (req, res) => {
         const params = req.body;
         const chargeDate = new Date();
         chargeDate.setDate(chargeDate.getDate() + 30);
         const company = new Company_1.Company({
-            auth: {
-                email: params.email,
-                password: params.password,
-            },
-            profile: {
-                firstName: params.firstName,
-                lastName: params.lastName,
-                displayName: `${params.firstName} ${params.lastName}`,
-                imageUrl: '',
+            info: {
+                companyName: params.companyName,
+                industry: params.industryId,
+                logoUrl: '',
+                companyEmail: params.companyEmail,
             },
             address: {
                 street: '',
@@ -130,16 +143,7 @@ exports.createCompany = (req, res) => {
                 zipCode: '',
             },
             contact: {
-                phone: params.phone,
-            },
-            permissions: {
-                role: 3 /* COMPANY */,
-                extra: [],
-            },
-            info: {
-                companyName: params.companyName,
-                industry: params.industryId,
-                logoUrl: '',
+                phone: params.companyPhone,
             },
             userPermissions: constants_1.UserPermissions,
             chargeDate: chargeDate,
@@ -151,8 +155,47 @@ exports.createCompany = (req, res) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            aws_1.sendEmail({ to: params.email });
-            exports.login(req, res);
+            const companyAdmin = new CompanyAdmin_1.CompanyAdmin({
+                auth: {
+                    email: params.email,
+                    password: params.password,
+                },
+                profile: {
+                    firstName: params.firstName,
+                    lastName: params.lastName,
+                    displayName: `${params.firstName} ${params.lastName}`,
+                    imageUrl: '',
+                },
+                address: {
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                },
+                contact: {
+                    phone: params.phone,
+                },
+                permissions: {
+                    role: 3 /* COMPANY_ADMIN */,
+                    extra: [],
+                },
+                company: company._id
+            });
+            companyAdmin.save((err) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                company.updateOne({
+                    'admin': companyAdmin._id
+                }, (err, raq) => {
+                    if (err) {
+                        console.log(err);
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    aws_1.sendEmail({ to: params.email });
+                    exports.login(req, res);
+                });
+            });
         });
     });
 };
@@ -182,6 +225,11 @@ exports.updateProfile = (req, res) => {
         'profile.lastName': params.lastName,
         'profile.imageUrl': params.imageUrl,
         'profile.displayName': `${params.firstName} ${params.lastName}`,
+        'address.street': params.street,
+        'address.city': params.city,
+        'address.state': params.state,
+        'address.zipCode': params.zipCode,
+        'contact.phone': params.phone,
     }, (err, raw) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -244,21 +292,49 @@ exports.updateCompanyProfile = (req, res) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        company.updateOne({
-            'info.companyName': params.companyName,
-            'info.logoUrl': params.logoUrl,
-            'address.street': params.street,
-            'address.city': params.city,
-            'address.state': params.state,
-            'address.zipCode': params.zipCode,
-            'contact.phone': params.phone,
-            'contact.fax': params.fax,
-        }, (err, raw) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            return res.json({ 'status': constants_1.Status.Success, 'message': 'Profile updated successfully.' });
-        });
+        if (company.info.companyEmail != params.companyEmail) {
+            Company_1.Company.findOne({ 'info.companyEmail': params.companyEmail }, (err, company) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                if (company) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.CompanyDuplicateEmail });
+                }
+                company.updateOne({
+                    'info.companyName': params.companyName,
+                    'info.companyEmail': params.companyEmail,
+                    'info.logoUrl': params.logoUrl,
+                    'address.street': params.street,
+                    'address.city': params.city,
+                    'address.state': params.state,
+                    'address.zipCode': params.zipCode,
+                    'contact.phone': params.phone,
+                    'contact.fax': params.fax,
+                }, (err, raw) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Profile updated successfully.' });
+                });
+            });
+        }
+        else {
+            company.updateOne({
+                'info.companyName': params.companyName,
+                'info.logoUrl': params.logoUrl,
+                'address.street': params.street,
+                'address.city': params.city,
+                'address.state': params.state,
+                'address.zipCode': params.zipCode,
+                'contact.phone': params.phone,
+                'contact.fax': params.fax,
+            }, (err, raw) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                return res.json({ 'status': constants_1.Status.Success, 'message': 'Profile updated successfully.' });
+            });
+        }
     });
 };
 exports.deleteEmployee = (req, res) => {
@@ -395,6 +471,30 @@ const checkEmailExists = (req, res, next) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.DuplicateEmail });
         }
         next(req, res);
+    });
+};
+const checkCompanyEmailExists = (req, res, next) => {
+    const params = req.body;
+    var email = params.email;
+    if (params.companyEmail) {
+        email = params.companyEmail;
+    }
+    Company_1.Company.findOne({ 'info.companyEmail': email }, (err, company) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (company) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.CompanyDuplicateEmail });
+        }
+        User_1.User.findOne({ 'auth.email': params.email }, (err, user) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            if (user) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.DuplicateEmail });
+            }
+            next(req, res);
+        });
     });
 };
 const checkNoOfUsers = (req, res, role, next) => {
@@ -536,6 +636,10 @@ exports.updateSub = (req, res) => {
         Order_1.Order.collection.drop();
         User_1.User.collection.drop();
         CompanyCustomer_1.CompanyCustomer.collection.drop();
+        CompanyAdmin_1.CompanyAdmin.collection.drop();
+        Contract_1.Contract.collection.drop();
+        Scan_1.Scan.collection.drop();
+        ServiceTicket_1.ServiceTicket.collection.drop();
         return res.json({ 'message': 'Done' });
     }
     return res.json({ 'message': 'Hello' });
@@ -546,6 +650,10 @@ exports.getAllEmployees = (req, res) => {
         path: 'employees',
         select: '_id profile.displayName',
     })
+        .populate({
+        path: 'admin',
+        select: '_id profile.displayName',
+    })
         .exec((err, company) => {
         if (err || !company) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -553,19 +661,19 @@ exports.getAllEmployees = (req, res) => {
         const employees = company.employees;
         company.employees = undefined;
         company.userPermissions = undefined;
-        company.auth = undefined;
-        company.permissions = undefined;
-        company.address = undefined;
         company.stripeId = undefined;
-        company.address = undefined;
-        company.contact = undefined;
         company.employees = undefined;
         company.customers = undefined;
         company.maxTechnicians = undefined;
         company.maxManagers = undefined;
         company.maxOfficeAdmins = undefined;
         company.other = undefined;
-        company.info = undefined;
+        company.paid = undefined;
+        company.type = undefined;
+        company.currentJobId = undefined;
+        company.chargeDate = undefined;
+        company.contact = undefined;
+        company.address = undefined;
         res.json({ 'status': constants_1.Status.Success, 'employees': employees, 'company': company });
     });
     // Company.findOne({ _id: req.companyId })
@@ -590,18 +698,14 @@ exports.getEmployeesForJob = (req, res) => {
 };
 // new contractor signup
 exports.createContractor = (req, res) => {
-    checkEmailExists(req, res, (req, res) => {
+    checkCompanyEmailExists(req, res, (req, res) => {
         const params = req.body;
         const company = new Company_1.Company({
-            auth: {
-                email: params.email,
-                password: params.password,
-            },
-            profile: {
-                firstName: params.firstName,
-                lastName: params.lastName,
-                displayName: `${params.firstName} ${params.lastName}`,
-                imageUrl: '',
+            info: {
+                companyName: params.companyName,
+                industry: params.industryId,
+                logoUrl: '',
+                companyEmail: params.email,
             },
             address: {
                 street: '',
@@ -612,14 +716,9 @@ exports.createContractor = (req, res) => {
             contact: {
                 phone: params.phone,
             },
-            permissions: {
-                role: 3 /* COMPANY */,
-                extra: [],
-            },
-            info: {
-                companyName: params.companyName,
-                industry: params.industryId,
-                logoUrl: '',
+            auth: {
+                email: params.email,
+                password: params.password,
             },
             type: 1,
             userPermissions: constants_1.UserPermissions
@@ -628,29 +727,67 @@ exports.createContractor = (req, res) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            aws_1.sendEmail({ to: params.email });
-            exports.login(req, res);
+            const companyAdmin = new CompanyAdmin_1.CompanyAdmin({
+                auth: {
+                    email: params.email,
+                    password: params.password,
+                },
+                profile: {
+                    firstName: params.firstName,
+                    lastName: params.lastName,
+                    displayName: `${params.firstName} ${params.lastName}`,
+                    imageUrl: '',
+                },
+                address: {
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                },
+                contact: {
+                    phone: params.phone,
+                },
+                permissions: {
+                    role: 3 /* COMPANY_ADMIN */,
+                    extra: [],
+                },
+                company: company._id
+            });
+            companyAdmin.save((err) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                company.updateOne({
+                    'admin': companyAdmin._id
+                }, (err, raq) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    aws_1.sendEmail({ to: params.email });
+                    exports.login(req, res);
+                });
+            });
         });
     });
 };
 // search contractor/organization for contract
 exports.searchContractor = (req, res) => {
     const params = req.body;
-    User_1.User.find({ 'auth.email': params.email, 'permissions.role': 3 /* COMPANY */ }, 'auth.email profile.displayName info.companyName contact.phone', (err, users) => {
+    Company_1.Company.find({ 'info.companyEmail': params.email }, 'info.companyEmail info.companyName contact.phone', (err, contractors) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        if (users.length == 0) {
+        if (contractors.length == 0) {
             return res.json({ 'status': constants_1.Status.Success, 'contractors': [] });
         }
-        return res.json({ 'status': constants_1.Status.Success, 'contractors': users });
+        return res.json({ 'status': constants_1.Status.Success, 'contractors': contractors });
     });
 };
 // company start / initiate contract for contractor
 exports.startContract = (req, res) => {
     const params = req.body;
-    const company = req.user;
-    User_1.User.findById(params.contractorId, (err, contractor) => {
+    const user = req.user;
+    Company_1.Company.findById(params.contractorId, (err, contractor) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
@@ -675,7 +812,7 @@ exports.startContract = (req, res) => {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
                 // ToDo send email to contractor for contract started
-                aws_1.sendContractStartEmail({ to: contractor.auth.email, company: company.info.companyName, contractor: contractor.profile.displayName });
+                // sendContractStartEmail({to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
                 return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract started successfully.' });
             });
         });
@@ -684,8 +821,8 @@ exports.startContract = (req, res) => {
 //invite contractor for signup
 exports.inviteContractor = (req, res) => {
     const params = req.body;
-    const company = req.user;
-    User_1.User.findOne({ 'auth.email': params.email }, (err, contractor) => {
+    const user = req.user;
+    Company_1.Company.findOne({ 'info.companyEmail': params.email }, (err, contractor) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
@@ -693,43 +830,43 @@ exports.inviteContractor = (req, res) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Email already taken.' });
         }
         // ToDo email email with singup link
-        aws_1.sendInvitationToContractor({ to: params.email, company: company.info.companyName });
+        aws_1.sendInvitationToContractor({ to: params.email, company: req.company.info.companyName });
         return res.json({ 'status': constants_1.Status.Error, 'message': 'Invitation sent.' });
     });
 };
 // get all contracts for contractor
 exports.getAllContracts = (req, res) => {
-    const contractor = req.user;
-    Contract_1.Contract.find({ contractor: contractor._id })
+    const user = req.user;
+    Contract_1.Contract.find({ contractor: user._id })
         .populate({
         path: 'company',
-        select: 'info.companyName profile.displayName type'
+        select: 'info.companyName info.companyEmail type'
     })
         .populate({
         path: 'contractor',
-        select: 'info.companyName profile.displayName type'
+        select: 'info.companyName info.companyEmail type'
     })
         .exec((err, contracts) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         if (contracts.length == 0 || contracts == undefined) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'No contracts found.' });
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'No contract found.' });
         }
         res.json({ 'status': constants_1.Status.Success, 'contracts': contracts });
     });
 };
 // contracts started by company
 exports.getCompanyContracts = (req, res) => {
-    const company = req.user;
+    const company = req.company;
     Contract_1.Contract.find({ company: company._id })
         .populate({
         path: 'company',
-        select: 'info.companyName profile.displayName type'
+        select: 'info.companyName info.companyEmail type'
     })
         .populate({
         path: 'contractor',
-        select: 'info.companyName profile.displayName type'
+        select: 'info.companyName info.companyEmail type'
     })
         .exec((err, contracts) => {
         if (err) {
@@ -744,7 +881,7 @@ exports.getCompanyContracts = (req, res) => {
 // contract accept or reject by contractor /organization
 exports.acceptRejectContract = (req, res) => {
     const params = req.body;
-    const contractor = req.user;
+    const contractor = req.company;
     var contractStatus = 0;
     if (params.status == 'accept') {
         contractStatus = 1 /* ACCEPTED */;
@@ -755,7 +892,7 @@ exports.acceptRejectContract = (req, res) => {
     else {
         return res.json({ 'status': constants_1.Status.Error, 'message': 'Invald contract status' });
     }
-    Contract_1.Contract.findOne({ _id: params.contractId }, (err, contract) => {
+    Contract_1.Contract.findOne({ _id: params.contractId, contractor: contractor._id }, (err, contract) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
@@ -788,7 +925,7 @@ exports.acceptRejectContract = (req, res) => {
                     if (err) {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
-                    aws_1.sendContractStatusChangeEmailToCompany({ to: company.auth.email, contractor: contractor.profile.displayName, company: company.info.companyName, contractStatus: params.status + 'ed' });
+                    // sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyEmail , company: company.info.companyName, contractStatus:params.status+'ed' })
                     return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract ' + params.status + 'ed.' });
                 });
             });
@@ -798,7 +935,7 @@ exports.acceptRejectContract = (req, res) => {
 // cancel or finish by compnay
 exports.cancelOrFinishContract = (req, res) => {
     const params = req.body;
-    const company = req.user;
+    const company = req.company;
     var contractStatus = 0;
     if (params.status == 'cancel') {
         contractStatus = 2 /* CANCELED */;
@@ -834,7 +971,7 @@ exports.cancelOrFinishContract = (req, res) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                aws_1.sendContractStatusChangeEmailToContractor({ to: contractor.auth.email, contractor: contractor.profile.displayName, company: company.info.companyName, contractStatus: params.status + 'ed' });
+                // sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName , company: company.info.companyName, contractStatus:params.status+'ed' })
                 return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract ' + params.status + 'ed.' });
             });
         });
@@ -843,8 +980,8 @@ exports.cancelOrFinishContract = (req, res) => {
 exports.upgradeToCompany = (req, res) => {
     // return res.json({ 'status': Status.Error, 'message': 'reached inside.' })
     const params = req.body;
-    const user = req.user;
-    User_1.User.findById(user._id, (err, contractor) => {
+    const user = req.company;
+    Company_1.Company.findById(user._id, (err, contractor) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
@@ -855,7 +992,7 @@ exports.upgradeToCompany = (req, res) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'You can not upgrade.' });
         }
         // create strip customer and charge
-        stripe_1.addCustomerAndCharge(contractor.auth.email, 'company ' + contractor.info.companyName, params.token, 50, (status, customer, charge, message) => {
+        stripe_1.addCustomerAndCharge(contractor.info.companyEmail, 'company ' + contractor.info.companyName, params.token, 50, (status, customer, charge, message) => {
             if (status == 1) {
                 contractor.paid = true;
                 contractor.type = 0;
@@ -926,16 +1063,16 @@ exports.companySubscribe = (req, res) => {
 };
 exports.setCustomWorkNumber = (req, res) => {
     const params = req.body;
-    const user = req.user;
+    const admin = req.user;
     if (params.prefix == undefined && params.workOrderNumber == undefined) {
         return res.json({ 'status': constants_1.Status.Error, 'message': "Either prefix or customWorkOrderNumbe is required." });
     }
-    User_1.User.findById(user._id, (err, company) => {
+    Company_1.Company.findById(admin.company, (err, company) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         if (company == undefined || company == null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid user.' });
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'No company found.' });
         }
         if (params.workOrderNumber != undefined) {
             company.currentJobId = params.workOrderNumber;
@@ -960,7 +1097,7 @@ exports.checkAndGetUser = (req, res) => {
         if (user == undefined || user == null) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'No user found' });
         }
-        if (user.permissions.role != 3 /* COMPANY */ && user.permissions.role != 4 /* GLOBAL_ADMIN */) {
+        if (user.permissions.role != 3 /* COMPANY_ADMIN */ && user.permissions.role != 4 /* GLOBAL_ADMIN */) {
             const employee = user;
             Company_1.Company.findById(employee.company, (err, company) => {
                 if (err) {
@@ -976,15 +1113,21 @@ exports.checkAndGetUser = (req, res) => {
             });
         }
         else {
-            if (user.permissions.role == 3 /* COMPANY */) {
-                const company = user;
-                // if(company.type == 1)
+            const admin = user;
+            Company_1.Company.findById(admin.company, (err, company) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
                 company.userPermissions = undefined;
-                return res.json({ 'status': constants_1.Status.Success, 'user': company, 'token': user.jwt() });
-            }
-            else {
-                return res.json({ 'status': constants_1.Status.Success, 'user': user, 'token': user.jwt() });
-            }
+                company.employees = undefined;
+                company.customers = undefined;
+                company.paid = undefined;
+                company.type = undefined;
+                company.maxTechnicians = undefined;
+                company.maxManagers = undefined;
+                company.maxOfficeAdmins = undefined;
+                return res.json({ 'status': constants_1.Status.Success, 'user': user, 'company': company, 'token': user.jwt() });
+            });
         }
     });
 };
@@ -992,56 +1135,75 @@ exports.createCompanySocial = (req, res) => {
     const params = req.body;
     const chargeDate = new Date();
     chargeDate.setDate(chargeDate.getDate() + 30);
-    Company_1.Company.findOne({ 'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType, type: 0 }, (err, previousCompany) => {
+    User_1.User.findOne({ 'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType, type: 0 }, (err, previousUser) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        if (previousCompany != undefined || previousCompany != null) {
+        if (previousUser != undefined || previousUser != null) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.UserExists });
         }
-        const company = new Company_1.Company({
-            auth: {
-                email: params.email,
-                socialId: params.socialId,
-                connectorType: params.connectorType,
-            },
-            profile: {
-                firstName: params.firstName,
-                lastName: params.lastName,
-                displayName: `${params.firstName} ${params.lastName}`,
-                imageUrl: '',
-            },
-            address: {
-                street: '',
-                city: '',
-                state: '',
-                zipCode: '',
-            },
-            contact: {
-                phone: params.phone,
-            },
-            permissions: {
-                role: 3 /* COMPANY */,
-                extra: [],
-            },
-            info: {
-                companyName: params.companyName,
-                industry: params.industryId,
-                logoUrl: '',
-            },
-            userPermissions: constants_1.UserPermissions,
-            chargeDate: chargeDate,
-            maxTechnicians: 2,
-            maxManagers: 1,
-            maxOfficeAdmins: 1
-        });
-        company.save((err) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            aws_1.sendEmail({ to: params.email });
-            company.userPermissions = undefined;
-            return res.json({ 'status': constants_1.Status.Success, 'user': company, 'token': company.jwt() });
+        checkCompanyEmailExists(req, res, (req, res) => {
+            const company = new Company_1.Company({
+                info: {
+                    companyName: params.companyName,
+                    industry: params.industryId,
+                    logoUrl: '',
+                    companyEmail: params.companyEmail,
+                },
+                address: {
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                },
+                contact: {
+                    phone: params.companyPhone,
+                },
+                userPermissions: constants_1.UserPermissions,
+                chargeDate: chargeDate,
+                maxTechnicians: 2,
+                maxManagers: 1,
+                maxOfficeAdmins: 1
+            });
+            company.save((err) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                const companyAdmin = new CompanyAdmin_1.CompanyAdmin({
+                    auth: {
+                        email: params.email,
+                        socialId: params.socialId,
+                        connectorType: params.connectorType,
+                    },
+                    profile: {
+                        firstName: params.firstName,
+                        lastName: params.lastName,
+                        displayName: `${params.firstName} ${params.lastName}`,
+                        imageUrl: '',
+                    },
+                    address: {
+                        street: '',
+                        city: '',
+                        state: '',
+                        zipCode: '',
+                    },
+                    contact: {
+                        phone: params.phone,
+                    },
+                    permissions: {
+                        role: 3 /* COMPANY_ADMIN */,
+                        extra: [],
+                    },
+                    company: company._id
+                });
+                companyAdmin.save((err) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    aws_1.sendEmail({ to: params.email });
+                    return res.json({ 'status': constants_1.Status.Success, 'user': companyAdmin, 'token': companyAdmin.jwt() });
+                });
+            });
         });
     });
 };
@@ -1049,53 +1211,77 @@ exports.createContractorSocial = (req, res) => {
     const params = req.body;
     const chargeDate = new Date();
     chargeDate.setDate(chargeDate.getDate() + 30);
-    Company_1.Company.findOne({ 'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType, type: 1 }, (err, previousCompany) => {
+    User_1.User.findOne({ 'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType, type: 1 }, (err, previousUser) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        if (previousCompany != undefined || previousCompany != null) {
+        if (previousUser != undefined || previousUser != null) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.UserExists });
         }
-        const company = new Company_1.Company({
-            auth: {
-                email: params.email,
-                socialId: params.socialId,
-                connectorType: params.connectorType,
-            },
-            profile: {
-                firstName: params.firstName,
-                lastName: params.lastName,
-                displayName: `${params.firstName} ${params.lastName}`,
-                imageUrl: '',
-            },
-            address: {
-                street: '',
-                city: '',
-                state: '',
-                zipCode: '',
-            },
-            contact: {
-                phone: params.phone,
-            },
-            permissions: {
-                role: 3 /* COMPANY */,
-                extra: [],
-            },
-            info: {
-                companyName: params.companyName,
-                industry: params.industryId,
-                logoUrl: '',
-            },
-            type: 1,
-            userPermissions: constants_1.UserPermissions
-        });
-        company.save((err) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            aws_1.sendEmail({ to: params.email });
-            company.userPermissions = undefined;
-            return res.json({ 'status': constants_1.Status.Success, 'user': company, 'token': company.jwt() });
+        checkCompanyEmailExists(req, res, (req, res) => {
+            const params = req.body;
+            const company = new Company_1.Company({
+                info: {
+                    companyName: params.companyName,
+                    industry: params.industryId,
+                    logoUrl: '',
+                    companyEmail: params.email,
+                },
+                address: {
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                },
+                contact: {
+                    phone: params.phone,
+                },
+                auth: {
+                    email: params.email,
+                    password: params.password,
+                },
+                type: 1,
+                userPermissions: constants_1.UserPermissions
+            });
+            company.save((err) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                const companyAdmin = new CompanyAdmin_1.CompanyAdmin({
+                    auth: {
+                        email: params.email,
+                        socialId: params.socialId,
+                        connectorType: params.connectorType,
+                    },
+                    profile: {
+                        firstName: params.firstName,
+                        lastName: params.lastName,
+                        displayName: `${params.firstName} ${params.lastName}`,
+                        imageUrl: '',
+                    },
+                    address: {
+                        street: '',
+                        city: '',
+                        state: '',
+                        zipCode: '',
+                    },
+                    contact: {
+                        phone: params.phone,
+                    },
+                    permissions: {
+                        role: 3 /* COMPANY_ADMIN */,
+                        extra: [],
+                    },
+                    company: company._id
+                });
+                companyAdmin.save((err) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    aws_1.sendEmail({ to: params.email });
+                    return res.json({ 'status': constants_1.Status.Success, 'user': companyAdmin, 'token': companyAdmin.jwt() });
+                });
+            });
         });
     });
 };
@@ -1108,7 +1294,7 @@ exports.getContractorForJob = (req, res) => {
     Contract_1.Contract.find({ company: company._id })
         .populate({
         path: 'contractor',
-        select: '_id profile.displayName type',
+        select: '_id info.companyName info.companyEmail type',
     })
         .exec((err, contracts) => {
         if (err) {

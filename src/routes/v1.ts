@@ -40,6 +40,7 @@ router.post(
 router.post(
     '/subscribe',
     passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
     userController.companySubscribe
 )
 
@@ -219,9 +220,6 @@ router.post(
 
     router.post(
     '/forgotPassword',
-    // passport.authenticate('jwt', { session: false }),
-    // getCompnayId(),
-    // checkUserPermissions(Permissions.User_Change_Password),
     validate(Validations.forgotPassword),
     userController.fogotPassword)
 
@@ -632,10 +630,10 @@ router.get(
     subscriptionController.chargeCompanySubscription
 )
 
-router.post(
-    '/updateSubscription',
-    userController.updateSub
-)
+// router.post(
+//     '/updateSubscription',
+//     userController.updateSub
+// )
 
 router.post(
     '/contractorSignup',
@@ -671,6 +669,7 @@ router.post(
 router.post(
     '/getContracts',
     passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
     checkUserPermissions(Permissions.Get_All_Contracts),
     userController.getAllContracts
 )
@@ -685,6 +684,7 @@ router.post(
 router.post(
     '/acceptOrRejectContract',
     passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
     checkUserPermissions(Permissions.Accept_Reject_Contract),
     validate(Validations.updateContract),
     userController.acceptRejectContract
@@ -721,7 +721,6 @@ router.post(
     passport.authenticate('jwt', { session: false }),
     getCompnayId(),
     checkUserPermissions(Permissions.Custom_work_Order_Number),
-    // validate(Validations.customWorkOrder),
     userController.setCustomWorkNumber
 )
 
@@ -739,7 +738,7 @@ router.post(
 
 router.post(
     '/contractorSignUpSocial',
-    validate(Validations.socialSignUp),
+    validate(Validations.contractorSocialSignUp),
     userController.createContractorSocial
 )
 

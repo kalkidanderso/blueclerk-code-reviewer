@@ -6,7 +6,7 @@ exports.createJobType = (req, res) => {
     const params = req.body;
     const user = req.user;
     var userId = null;
-    if (user.permissions.role == 3 /* COMPANY */) {
+    if (user.permissions.role == 3 /* COMPANY_ADMIN */) {
         userId = user._id;
     }
     if (user.permissions.role != 4 /* GLOBAL_ADMIN */) {

@@ -108,7 +108,7 @@ export const createJob = (req: Request, res: Response) => {
                                 sendJobEmailToCustomer({to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime})
         
                                 if(params.employeeType == 1) {
-                                    sendJobEmailToCompanyAdmin({to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName})
+                                    sendJobEmailToCompanyAdmin({to: company.info.companyEmail, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName})
                                 }
                                 
                                 return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
@@ -179,7 +179,7 @@ export const createJob = (req: Request, res: Response) => {
                             sendJobEmailToCustomer({to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime})
                             
                             if(params.employeeType == 1) {
-                                sendJobEmailToCompanyAdmin({to: company.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName})
+                                sendJobEmailToCompanyAdmin({to: company.info.companyEmail, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName})
                             }
         
                             return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
@@ -528,3 +528,4 @@ export const getJobReport = (req: Request, res: Response) => {
         }
     )
 }
+

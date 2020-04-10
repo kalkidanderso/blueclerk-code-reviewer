@@ -51,6 +51,8 @@ const UserSchema = new Schema({
         connectorType: {
             type: Number,
             default: 0
+            // 0 for facebook
+            // 1 for google
         }
     },
     profile: {

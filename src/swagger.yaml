@@ -80,7 +80,7 @@ paths:
     post:
       tags:
         - Auth
-      summary: Sign up for company
+      summary: Sign up as company Admin and creates company
       description: ''
       consumes:
         - application/x-www-form-urlencoded
@@ -91,26 +91,41 @@ paths:
           in: formData
           required: true
           type: string
+          description: email address of admin of a company
         - name: password
           in: formData
           required: true
           type: string
+          description: password for company admin login
         - name: firstName
           in: formData
           required: true
           type: string
+          description: first Name of admin of company
         - name: lastName
           in: formData
           required: true
           type: string
+          description: last Name of admin of company
         - name: phone
           in: formData
           required: true
           type: string
+          description: phone number of admin of company
+        - name: companyEmail
+          in: formData
+          required: true
+          type: string
+          description: this email will be used as company email adress
         - name: companyName
           in: formData
           required: true
           type: string
+        - name: companyPhone
+          in: formData
+          required: true
+          type: string
+          description: company phone number
         - name: industryId
           in: formData
           description: >-
@@ -439,22 +454,36 @@ paths:
           in: formData
           required: true
           type: string
+          description: email address of admin of a company
         - name: firstName
           in: formData
           required: true
           type: string
+          description: first Name of admin of company
         - name: lastName
           in: formData
           required: true
           type: string
+          description: last Name of admin of company
         - name: phone
           in: formData
           required: true
           type: string
+          description: phone number of admin of company
+        - name: companyEmail
+          in: formData
+          required: true
+          type: string
+          description: this email will be used as company email adress
         - name: companyName
           in: formData
           required: true
           type: string
+        - name: companyPhone
+          in: formData
+          required: true
+          type: string
+          description: company phone number
         - name: industryId
           in: formData
           description: >-
@@ -856,7 +885,21 @@ paths:
           type: string
         - name: imageUrl
           in: formData
-          required: true
+          type: string
+        - name: street
+          in: formData
+          type: string
+        - name: city
+          in: formData
+          type: string
+        - name: state
+          in: formData
+          type: string
+        - name: zipCode
+          in: formData
+          type: string
+        - name: phone
+          in: formData
           type: string
       responses:
         '200':
@@ -1042,6 +1085,11 @@ paths:
           in: formData
           required: true
           type: string
+        - name: companyEmail
+          in: formData
+          required: true
+          type: string
+          description: email address of company
         - name: logoUrl
           in: formData
           required: true

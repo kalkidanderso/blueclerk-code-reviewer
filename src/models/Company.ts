@@ -1,12 +1,22 @@
-import { Schema } from 'mongoose'
-import { User, IUser } from './User'
+import mongoose, { Document, Schema } from 'mongoose'
 
-export interface ICompany extends IUser {
+export interface ICompany extends Document{
 
     info: {
         companyName: string
         industry: Schema.Types.ObjectId
-        logoUrl: string
+        logoUrl: string,
+        companyEmail: string
+    },
+    address: {
+        street: string
+        city: string
+        state: string
+        zipCode: string
+    }
+    contact: {
+        phone: string
+        fax: string
     }
     other: {
         tenantId: string
@@ -40,7 +50,8 @@ export interface ICompany extends IUser {
         },
     },
     currentJobId: number,
-    prefix: string
+    prefix: string,
+    admin: Schema.Types.ObjectId
 }
 
 const CompanySchema = new Schema({
@@ -49,6 +60,17 @@ const CompanySchema = new Schema({
         companyName: String,
         industry: { type: Schema.Types.ObjectId, ref: 'Industry' },
         logoUrl: String,
+        companyEmail: String,
+    },
+    address: {
+        street: String,
+        city: String,
+        state: String,
+        zipCode: String,
+    },
+    contact: {
+        phone: String,
+        fax: String,
     },
     other: {
         tenantId: String,
@@ -104,8 +126,10 @@ const CompanySchema = new Schema({
     },
     prefix: {
         type: String
-    }
+    },
+    admin: { type: Schema.Types.ObjectId, ref: 'CompanyAdmin' },
 
 })
 
-export const Company = User.discriminator<ICompany>('Company', CompanySchema)
+// export const Company = User.discriminator<ICompany>('Company', CompanySchema)
+export const Company = mongoose.model<ICompany>('Company', CompanySchema)

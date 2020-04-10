@@ -8,7 +8,7 @@ exports.createEquipmentType = (req, res) => {
     const user = req.user;
     var userId = null;
     var industryId = null;
-    if (user.permissions.role == 3 /* COMPANY */) {
+    if (user.permissions.role == 3 /* COMPANY_ADMIN */) {
         userId = user._id;
     }
     if (user.permissions.role != 4 /* GLOBAL_ADMIN */) {

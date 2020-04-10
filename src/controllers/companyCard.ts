@@ -14,7 +14,7 @@ export const createCompanyCard = (req: Request, res: Response) => {
         return addCardToCompany(req, res)
     }
 
-    createCustomer(company.auth.email, 'company '+ company.profile.displayName, params.token, (status: any, customer: any)=>{
+    createCustomer(company.info.companyEmail, 'company '+ company.info.companyName, params.token, (status: any, customer: any)=>{
         if(status == 1)
         {
             company.updateOne({stripeId: customer.id})

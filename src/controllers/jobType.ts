@@ -10,7 +10,7 @@ export const createJobType = (req: Request, res: Response) => {
     const user = <IUser>req.user
     var userId: any = null
 
-    if (user.permissions.role == Role.COMPANY) {
+    if (user.permissions.role == Role.COMPANY_ADMIN) {
         userId = user._id
     } 
 

@@ -10,6 +10,7 @@ export const Messages = {
     InvalidEmailPassword: 'Invalid email/password.',
     GenericError: 'Can\'t process now. Please try again later.',
     DuplicateEmail: 'Email address already registered. Please try with some other email address',
+    CompanyDuplicateEmail: 'Company Email address already registered. Please try with some other email address',
     UnAuthorized: 'You are not authorized for this action. Please contact admin for more details.',
     AccountDeleted: 'You account has been deleted. Please contact admin for more details.',
     AgreeToTermAndConditions: 'You must agree to terms and conditions of blueclerk.',
@@ -20,7 +21,7 @@ export const enum Role {
     OFFICE_ADMIN,
     TECHNICIAN,
     MANAGER,
-    COMPANY,
+    COMPANY_ADMIN,
     GLOBAL_ADMIN,
     CUSTOMER
 }

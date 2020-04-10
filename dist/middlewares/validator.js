@@ -23,28 +23,27 @@ exports.validate = (validations) => {
 };
 exports.Validations = {
     //Auth
+    signUp: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists(), express_validator_1.check('password').exists(), express_validator_1.check('companyEmail').exists(), express_validator_1.check('companyEmail').isEmail(), express_validator_1.check('companyPhone').exists(), express_validator_1.check('companyName').exists(), express_validator_1.check('industryId').exists()],
     login: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('password').exists()],
     socialLogin: [express_validator_1.check('socialId').exists(), express_validator_1.check('connectorType').exists(), express_validator_1.check('connectorType').isNumeric()],
-    socialSignUp: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('socialId').exists(), express_validator_1.check('connectorType').exists(), express_validator_1.check('connectorType').isNumeric(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists(), express_validator_1.check('companyName').exists(), express_validator_1.check('industryId').exists()],
+    socialSignUp: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('socialId').exists(), express_validator_1.check('connectorType').exists(), express_validator_1.check('connectorType').isNumeric(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists(), express_validator_1.check('companyEmail').exists(), express_validator_1.check('companyEmail').isEmail(), express_validator_1.check('companyPhone').exists(), express_validator_1.check('companyName').exists(), express_validator_1.check('industryId').exists()],
     customerImport: [express_validator_1.check('customerSheet').exists()],
-    // companySubscribe: [check('agreedStatus').exists()],
     agree: [express_validator_1.check('agreedStatus').exists()],
-    signUp: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('password').exists(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists(), express_validator_1.check('companyName').exists(), express_validator_1.check('industryId').exists()],
     adminSignUp: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('password').exists(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists()],
     contractorSignup: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('password').exists(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists(), express_validator_1.check('companyName').exists(), express_validator_1.check('industryId').exists()],
+    contractorSocialSignUp: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('socialId').exists(), express_validator_1.check('connectorType').exists(), express_validator_1.check('connectorType').isNumeric(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists(), express_validator_1.check('companyName').exists(), express_validator_1.check('industryId').exists()],
     searchContractor: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail()],
     inviteContractor: [express_validator_1.check('contractorId').exists()],
     updateContract: [express_validator_1.check('contractId').exists(), express_validator_1.check('status').exists()],
     contractorPermissions: [express_validator_1.check('contractorId').exists(), express_validator_1.check('permissions').exists()],
     upgradeToCompany: [express_validator_1.check('token').exists(), express_validator_1.check('ending').exists()],
-    // customWorkOrder: [check('workOrderNumber').exists(), check('workOrderNumber').isNumeric()],
     //Users
     createManager: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists()],
     createTechnician: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists()],
     createOfficeAdmin: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists()],
-    updateProfile: [express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('imageUrl').exists()],
+    updateProfile: [express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists()],
     changePassword: [express_validator_1.check('currentPassword').exists(), express_validator_1.check('newPassword').exists()],
-    updateCompanyProfile: [express_validator_1.check('companyName').exists(), express_validator_1.check('logoUrl').exists(), express_validator_1.check('street').exists(), express_validator_1.check('city').exists(), express_validator_1.check('state').exists(), express_validator_1.check('zipCode').exists(), express_validator_1.check('phone').exists(), express_validator_1.check('fax').exists()],
+    updateCompanyProfile: [express_validator_1.check('companyName').exists(), express_validator_1.check('companyEmail').exists(), express_validator_1.check('companyEmail').isEmail(), express_validator_1.check('logoUrl').exists(), express_validator_1.check('street').exists(), express_validator_1.check('city').exists(), express_validator_1.check('state').exists(), express_validator_1.check('zipCode').exists(), express_validator_1.check('phone').exists(), express_validator_1.check('fax').exists()],
     deleteEmployee: [express_validator_1.check('employeeId').exists()],
     forgotPassword: [express_validator_1.check('email').exists()],
     //Industry
@@ -57,7 +56,6 @@ exports.Validations = {
     //Customers
     createCustomer: [express_validator_1.check('name').exists()],
     updateCustomer: [express_validator_1.check('customerId').exists(), express_validator_1.check('name').exists()],
-    // createCustomer: [check('email').exists(), check('email').isEmail(), check('name').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('contactName').exists(), check('phone').exists()],
     getCustomers: [express_validator_1.check('includeActive').exists(), express_validator_1.check('includeNonActive').exists()],
     getCustomerDetail: [express_validator_1.check('customerId').exists()],
     //Customer Equipment
