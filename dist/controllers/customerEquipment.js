@@ -108,7 +108,7 @@ exports.getCustomerEquipmentJobs = (req, res) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            return res.json({ 'status': constants_1.Status.Success, 'equipment': customerEquipment, 'jobs': scans });
+            return res.json({ 'status': constants_1.Status.Success, 'jobs': scans });
         });
         // var jobIds = customerEquipment.jobs
         // Job.find({_id: {$in : jobIds }, company: companyId})
