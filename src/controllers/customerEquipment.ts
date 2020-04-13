@@ -155,7 +155,7 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
 
-                return res.json({ 'status': Status.Success, 'jobs': scans })
+                return res.json({ 'status': Status.Success, 'equipment': customerEquipment, 'jobs': scans })
             })
 
             // var jobIds = customerEquipment.jobs
