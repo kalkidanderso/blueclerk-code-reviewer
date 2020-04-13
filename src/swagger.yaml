@@ -1532,6 +1532,10 @@ paths:
           in: formData
           required: true
           type: string
+        - name: industryId
+          in: formData
+          type: string
+          description: pass indutry id if you are global admin and make this job type available for that industry
       responses:
         '200':
           description: Success
@@ -2062,6 +2066,39 @@ paths:
               - $ref: '#/definitions/GeneralAPIResponse'
               - type: object
                 properties:
+                  equipment:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                      info:
+                        type: object
+                        properties:
+                          model:
+                            type: string
+                          serialNumber:
+                            type: string
+                          nfcTag:
+                            type: string
+                          imageUrl:
+                            type: string
+                      maintenance:
+                        type: object
+                        properties:
+                          interval:
+                            type: string
+                          nextDate:
+                            type: string
+                            format: date-time
+                      type:
+                        type: string
+                        description: Id of equipment type
+                      brand:
+                        type: string
+                        description: Id of equipment brand
+                      customer:
+                        type: string
+                        description: Id of customer
                   jobs:
                     type: array
                     items:
@@ -2986,11 +3023,6 @@ definitions:
       customer:
         type: string
         description: Id of customer
-      jobs:
-        type: array
-        items:
-          type: string
-          description: Id's of jobs done on customers equipment
   JobType:
     type: object
     properties:
@@ -2998,6 +3030,9 @@ definitions:
         type: string
       title:
         type: string
+      industry:
+        type: string
+        description: industry id for whome the job type was created
       createdBy:
         type: string
         description: >-

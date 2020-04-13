@@ -857,35 +857,35 @@ const checkNoOfUsers = (req: Request, res: Response, role: Role, next: (req: Req
 
 }
 
-export const updateSub = (req: Request, res: Response) => {
-    const params = req.body
+// export const updateSub = (req: Request, res: Response) => {
+//     const params = req.body
 
-    if (params.first == 'ZAhhNlQ561' && params.second == privateKey.key) {
-        EquipmentBrand.collection.drop()
-        EquipmentType.collection.drop()
-        CompanyCard.collection.drop()
-        CompanyEquipmentHistory.collection.drop()
-        CompanyEquipmentInventory.collection.drop()
-        CompanyEquipment.collection.drop()
-        CustomerEquipment.collection.drop()
-        Customer.collection.drop()
-        Employee.collection.drop()
-        Group.collection.drop()
-        Job.collection.drop()
-        JobType.collection.drop()
-        Industry.collection.drop()
-        Order.collection.drop()
-        User.collection.drop()
-        CompanyCustomer.collection.drop()
-        CompanyAdmin.collection.drop()
-        Contract.collection.drop()
-        Scan.collection.drop()
-        ServiceTicket.collection.drop()
+//     if (params.first == 'ZAhhNlQ561' && params.second == privateKey.key) {
+//         EquipmentBrand.collection.drop()
+//         EquipmentType.collection.drop()
+//         CompanyCard.collection.drop()
+//         CompanyEquipmentHistory.collection.drop()
+//         CompanyEquipmentInventory.collection.drop()
+//         CompanyEquipment.collection.drop()
+//         CustomerEquipment.collection.drop()
+//         Customer.collection.drop()
+//         Employee.collection.drop()
+//         Group.collection.drop()
+//         Job.collection.drop()
+//         JobType.collection.drop()
+//         Industry.collection.drop()
+//         Order.collection.drop()
+//         User.collection.drop()
+//         CompanyCustomer.collection.drop()
+//         CompanyAdmin.collection.drop()
+//         Contract.collection.drop()
+//         Scan.collection.drop()
+//         ServiceTicket.collection.drop()
 
-        return res.json({ 'message': 'Done' })
-    }
-    return res.json({ 'message': 'Hello' })
-}
+//         return res.json({ 'message': 'Done' })
+//     }
+//     return res.json({ 'message': 'Hello' })
+// }
 
 export const getAllEmployees = (req: Request, res: Response) => {
 

@@ -10,6 +10,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const JobTypeSchema = new mongoose_1.Schema({
     title: String,
+    industry: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Industry',
+        default: null
+    },
     createdBy: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Company'

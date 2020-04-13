@@ -28,32 +28,60 @@ export const createEquipmentType = (req: Request, res: Response) => {
             industryId = params.industryId
         }
     }
-
-    EquipmentType.findOne({title: params.title}, (err: any, previousEquipmentType: IEquipmentType) =>{
-        if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
-        }
-        
-        if(previousEquipmentType != undefined || previousEquipmentType != null) {
-            return res.json({'status': Status.Error, 'message': "Equipment Type already created"})
-        }
-
-        const type = new EquipmentType({
-            title: params.title,
-            industry: industryId,
-            createdBy:  userId
-        })
-    
-        type.save((err: any) => {
-    
+    if (industryId != null && industryId != undefined) {
+        EquipmentType.findOne({title: params.title, industry: industryId, createdBy: null}, (err: any, previousEquipmentType: IEquipmentType) =>{
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
+            
+            if(previousEquipmentType != undefined || previousEquipmentType != null) {
+                return res.json({'status': Status.Error, 'message': "Equipment Type already created fot this industry"})
+            }
     
-            return res.json({'status': Status.Success, 'message': 'Equipment type created successfully.'})
-    
+            const type = new EquipmentType({
+                title: params.title,
+                industry: industryId,
+                createdBy:  userId
+            })
+        
+            type.save((err: any) => {
+        
+                if (err) {
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                }
+        
+                return res.json({'status': Status.Success, 'message': 'Equipment type created successfully.'})
+        
+            })
         })
-    })
+    }else{
+        EquipmentType.findOne({title: params.title, createdBy: req.companyId}, (err: any, previousEquipmentType: IEquipmentType) =>{
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+            
+            if(previousEquipmentType != undefined || previousEquipmentType != null) {
+                return res.json({'status': Status.Error, 'message': "Equipment Type already created"})
+            }
+    
+            const type = new EquipmentType({
+                title: params.title,
+                industry: industryId,
+                createdBy:  userId
+            })
+        
+            type.save((err: any) => {
+        
+                if (err) {
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                }
+        
+                return res.json({'status': Status.Success, 'message': 'Equipment type created successfully.'})
+        
+            })
+        })
+    }
+    
 
 
 }
@@ -67,8 +95,7 @@ export const getEquipmentTypes = (req: Request, res: Response) => {
     }
     if(user.permissions.role == Role.GLOBAL_ADMIN) {
 
-        EquipmentType.find(
-            { $or: [ {createdBy: null}, {createdBy: companyId} ]},
+        EquipmentType.find({},
             (err: any, types: IEquipmentType[])=>{
     
                 if (err) {

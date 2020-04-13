@@ -2345,6 +2345,12 @@
                         "in": "formData",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "industryId",
+                        "in": "formData",
+                        "type": "string",
+                        "description": "pass indutry id if you are global admin and make this job type available for that industry"
                     }
                 ],
                 "responses": {
@@ -3175,6 +3181,55 @@
                                 {
                                     "type": "object",
                                     "properties": {
+                                        "equipment": {
+                                            "type": "object",
+                                            "properties": {
+                                                "_id": {
+                                                    "type": "string"
+                                                },
+                                                "info": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "model": {
+                                                            "type": "string"
+                                                        },
+                                                        "serialNumber": {
+                                                            "type": "string"
+                                                        },
+                                                        "nfcTag": {
+                                                            "type": "string"
+                                                        },
+                                                        "imageUrl": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                },
+                                                "maintenance": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "interval": {
+                                                            "type": "string"
+                                                        },
+                                                        "nextDate": {
+                                                            "type": "string",
+                                                            "format": "date-time"
+                                                        }
+                                                    }
+                                                },
+                                                "type": {
+                                                    "type": "string",
+                                                    "description": "Id of equipment type"
+                                                },
+                                                "brand": {
+                                                    "type": "string",
+                                                    "description": "Id of equipment brand"
+                                                },
+                                                "customer": {
+                                                    "type": "string",
+                                                    "description": "Id of customer"
+                                                }
+                                            }
+                                        },
                                         "jobs": {
                                             "type": "array",
                                             "items": {
@@ -4659,13 +4714,6 @@
                 "customer": {
                     "type": "string",
                     "description": "Id of customer"
-                },
-                "jobs": {
-                    "type": "array",
-                    "items": {
-                        "type": "string",
-                        "description": "Id's of jobs done on customers equipment"
-                    }
                 }
             }
         },
@@ -4677,6 +4725,10 @@
                 },
                 "title": {
                     "type": "string"
+                },
+                "industry": {
+                    "type": "string",
+                    "description": "industry id for whome the job type was created"
                 },
                 "createdBy": {
                     "type": "string",

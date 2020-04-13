@@ -630,10 +630,10 @@ router.get(
     subscriptionController.chargeCompanySubscription
 )
 
-router.post(
-    '/updateSubscription',
-    userController.updateSub
-)
+// router.post(
+//     '/updateSubscription',
+//     userController.updateSub
+// )
 
 router.post(
     '/contractorSignup',

@@ -22,25 +22,48 @@ exports.createEquipmentType = (req, res) => {
             industryId = params.industryId;
         }
     }
-    EquipmentType_1.EquipmentType.findOne({ title: params.title }, (err, previousEquipmentType) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
-        if (previousEquipmentType != undefined || previousEquipmentType != null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': "Equipment Type already created" });
-        }
-        const type = new EquipmentType_1.EquipmentType({
-            title: params.title,
-            industry: industryId,
-            createdBy: userId
-        });
-        type.save((err) => {
+    if (industryId != null && industryId != undefined) {
+        EquipmentType_1.EquipmentType.findOne({ title: params.title, industry: industryId, createdBy: null }, (err, previousEquipmentType) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            return res.json({ 'status': constants_1.Status.Success, 'message': 'Equipment type created successfully.' });
+            if (previousEquipmentType != undefined || previousEquipmentType != null) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': "Equipment Type already created fot this industry" });
+            }
+            const type = new EquipmentType_1.EquipmentType({
+                title: params.title,
+                industry: industryId,
+                createdBy: userId
+            });
+            type.save((err) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                return res.json({ 'status': constants_1.Status.Success, 'message': 'Equipment type created successfully.' });
+            });
         });
-    });
+    }
+    else {
+        EquipmentType_1.EquipmentType.findOne({ title: params.title, createdBy: req.companyId }, (err, previousEquipmentType) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            if (previousEquipmentType != undefined || previousEquipmentType != null) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': "Equipment Type already created" });
+            }
+            const type = new EquipmentType_1.EquipmentType({
+                title: params.title,
+                industry: industryId,
+                createdBy: userId
+            });
+            type.save((err) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                return res.json({ 'status': constants_1.Status.Success, 'message': 'Equipment type created successfully.' });
+            });
+        });
+    }
 };
 exports.getEquipmentTypes = (req, res) => {
     const user = req.user;
@@ -49,7 +72,7 @@ exports.getEquipmentTypes = (req, res) => {
         companyId = req.otherCompanyId;
     }
     if (user.permissions.role == 4 /* GLOBAL_ADMIN */) {
-        EquipmentType_1.EquipmentType.find({ $or: [{ createdBy: null }, { createdBy: companyId }] }, (err, types) => {
+        EquipmentType_1.EquipmentType.find({}, (err, types) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }

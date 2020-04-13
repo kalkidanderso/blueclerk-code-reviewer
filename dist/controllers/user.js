@@ -6,25 +6,10 @@ const User_1 = require("../models/User");
 const Company_1 = require("../models/Company");
 const Employee_1 = require("../models/Employee");
 const mongodb_1 = require("mongodb");
-const Order_1 = require("../models/Order");
 const CompanyCard_1 = require("../models/CompanyCard");
-const CompanyEquipmentHistory_1 = require("../models/CompanyEquipmentHistory");
-const CompanyEquipmentInventory_1 = require("../models/CompanyEquipmentInventory");
-const CompanyEquipment_1 = require("../models/CompanyEquipment");
-const CustomerEquipment_1 = require("../models/CustomerEquipment");
-const Customer_1 = require("../models/Customer");
-const Group_1 = require("../models/Group");
-const Job_1 = require("../models/Job");
-const JobType_1 = require("../models/JobType");
-const EquipmentBrand_1 = require("../models/EquipmentBrand");
-const EquipmentType_1 = require("../models/EquipmentType");
-const config_1 = require("../common/config");
 const Contract_1 = require("../models/Contract");
 const CompanyCustomer_1 = require("../models/CompanyCustomer");
 const CompanyAdmin_1 = require("../models/CompanyAdmin");
-const Scan_1 = require("../models/Scan");
-const ServiceTicket_1 = require("../models/ServiceTicket");
-const Industry_1 = require("../models/Industry");
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
 const stripe_1 = require("../services/stripe");
@@ -619,33 +604,33 @@ const checkNoOfUsers = (req, res, role, next) => {
         }
     }
 };
-exports.updateSub = (req, res) => {
-    const params = req.body;
-    if (params.first == 'ZAhhNlQ561' && params.second == config_1.privateKey.key) {
-        EquipmentBrand_1.EquipmentBrand.collection.drop();
-        EquipmentType_1.EquipmentType.collection.drop();
-        CompanyCard_1.CompanyCard.collection.drop();
-        CompanyEquipmentHistory_1.CompanyEquipmentHistory.collection.drop();
-        CompanyEquipmentInventory_1.CompanyEquipmentInventory.collection.drop();
-        CompanyEquipment_1.CompanyEquipment.collection.drop();
-        CustomerEquipment_1.CustomerEquipment.collection.drop();
-        Customer_1.Customer.collection.drop();
-        Employee_1.Employee.collection.drop();
-        Group_1.Group.collection.drop();
-        Job_1.Job.collection.drop();
-        JobType_1.JobType.collection.drop();
-        Industry_1.Industry.collection.drop();
-        Order_1.Order.collection.drop();
-        User_1.User.collection.drop();
-        CompanyCustomer_1.CompanyCustomer.collection.drop();
-        CompanyAdmin_1.CompanyAdmin.collection.drop();
-        Contract_1.Contract.collection.drop();
-        Scan_1.Scan.collection.drop();
-        ServiceTicket_1.ServiceTicket.collection.drop();
-        return res.json({ 'message': 'Done' });
-    }
-    return res.json({ 'message': 'Hello' });
-};
+// export const updateSub = (req: Request, res: Response) => {
+//     const params = req.body
+//     if (params.first == 'ZAhhNlQ561' && params.second == privateKey.key) {
+//         EquipmentBrand.collection.drop()
+//         EquipmentType.collection.drop()
+//         CompanyCard.collection.drop()
+//         CompanyEquipmentHistory.collection.drop()
+//         CompanyEquipmentInventory.collection.drop()
+//         CompanyEquipment.collection.drop()
+//         CustomerEquipment.collection.drop()
+//         Customer.collection.drop()
+//         Employee.collection.drop()
+//         Group.collection.drop()
+//         Job.collection.drop()
+//         JobType.collection.drop()
+//         Industry.collection.drop()
+//         Order.collection.drop()
+//         User.collection.drop()
+//         CompanyCustomer.collection.drop()
+//         CompanyAdmin.collection.drop()
+//         Contract.collection.drop()
+//         Scan.collection.drop()
+//         ServiceTicket.collection.drop()
+//         return res.json({ 'message': 'Done' })
+//     }
+//     return res.json({ 'message': 'Hello' })
+// }
 exports.getAllEmployees = (req, res) => {
     Company_1.Company.findOne({ _id: req.companyId })
         .populate({
