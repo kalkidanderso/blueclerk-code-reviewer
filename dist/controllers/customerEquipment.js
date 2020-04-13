@@ -195,4 +195,50 @@ exports.linkJobToEquipment = (req, res) => {
         });
     });
 };
+exports.getCustomerEquipmentInfo = (req, res) => {
+    const params = req.body;
+    CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag }, 'info.model info.serialNumber info.location images')
+        .populate({
+        path: 'type',
+        select: 'title'
+    })
+        .populate({
+        path: 'brand',
+        select: 'title'
+    })
+        .populate({
+        path: 'customer',
+        select: 'profile.displayName address.street address.city address.state address.zipCode'
+    })
+        .exec((err, equipment) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        res.json({ 'status': constants_1.Status.Success, 'equipment': equipment });
+    });
+};
+exports.getEquipmentJobs = (req, res) => {
+    const params = req.body;
+    CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
+        .exec((err, customerEquipment) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (customerEquipment == undefined || customerEquipment == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'No equipment found. Please try again' });
+        }
+        Scan_1.Scan.find({ equipment: customerEquipment._id }, '_id')
+            .populate({
+            path: 'job',
+            select: 'jobId description status dateTime',
+            populate: [{ path: 'customer', select: 'profile.displayName' }],
+        })
+            .exec((err, scans) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            return res.json({ 'status': constants_1.Status.Success, 'jobs': scans });
+        });
+    });
+};
 //# sourceMappingURL=customerEquipment.js.map

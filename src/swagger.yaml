@@ -22,6 +22,8 @@ tags:
     description: For customers of a company
   - name: Customer Equipment
     description: For equipments of a customer
+  - name: Customer Equipment Detail
+    description: For Limited information of customer equipment and jobs
   - name: Company Equipment
   - name: Company Card
     description: For payment methods of a company
@@ -1515,6 +1517,125 @@ paths:
                     type: array
                     items:
                       $ref: '#/definitions/CustomerEquipment'
+      security:
+        - Bearer: []
+  /getEquipmentInfo:
+    post:
+      tags:
+        - Customer Equipment Detail
+      summary: To get detail of equipment by nfc tag
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: nfcTag
+          in: formData
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  equipment:
+                    type: object
+                    properties:
+                      info:  
+                        type: object
+                        properties:
+                          model:
+                            type: string
+                            description: model number of equipment scanned
+                          serialNumber:
+                            type: string
+                            description: serialNumber number of equipment scanned
+                          location:
+                            type: string
+                            description: location of equipment
+                      images:
+                        type: array
+                        items:
+                          type: string
+                      type:
+                        type: object
+                        properties:
+                          title: 
+                            type: string
+                      brand:
+                        type: object
+                        properties:
+                          title: 
+                            type: string
+                      customer:
+                        type: object
+                        properties:
+                          profile:
+                            type: object
+                            properties:
+                              displayName: 
+                                type: string
+                          address:
+                            type: object
+                            properties:
+                              street: 
+                                type: string
+                              city:
+                                type: string
+                              state:
+                                type: string
+                              zipCode:
+                                type: string
+      security:
+        - Bearer: []
+  /getEquipmentJobs:
+    post:
+      tags:
+        - Customer Equipment Detail
+      summary: To get jobs performed on equipment by nfc tag
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: nfcTag
+          in: formData
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  scans:
+                    type: array
+                    items:
+                      properties:
+                        jobId:
+                          type: string
+                        description:
+                          type: string
+                        status:
+                          type: boolean
+                        dateTime:
+                          type: string
+                          format: date
+                        customer:  
+                          type: object
+                          properties:
+                            profile:
+                              type: object
+                              properties:
+                                displayName:
+                                  type: string
       security:
         - Bearer: []
   /createJobType:

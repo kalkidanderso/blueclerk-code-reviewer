@@ -799,7 +799,7 @@ exports.startContract = (req, res) => {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
                 // ToDo send email to contractor for contract started
-                // sendContractStartEmail({to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
+                aws_1.sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName });
                 return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract started successfully.' });
             });
         });
@@ -824,7 +824,7 @@ exports.inviteContractor = (req, res) => {
 // get all contracts for contractor
 exports.getAllContracts = (req, res) => {
     const user = req.user;
-    Contract_1.Contract.find({ contractor: user._id })
+    Contract_1.Contract.find({ contractor: user.company })
         .populate({
         path: 'company',
         select: 'info.companyName info.companyEmail type'
@@ -912,7 +912,7 @@ exports.acceptRejectContract = (req, res) => {
                     if (err) {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
-                    // sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyEmail , company: company.info.companyName, contractStatus:params.status+'ed' })
+                    aws_1.sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyEmail, company: company.info.companyName, contractStatus: params.status + 'ed' });
                     return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract ' + params.status + 'ed.' });
                 });
             });

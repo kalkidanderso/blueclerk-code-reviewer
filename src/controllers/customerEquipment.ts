@@ -269,3 +269,65 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
         })
 
 }
+
+
+export const getCustomerEquipmentInfo = (req: Request, res: Response) => {
+
+    const params = req.body
+
+    CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag }, 'info.model info.serialNumber info.location images')
+        .populate({
+            path: 'type',
+            select: 'title'
+        })
+        .populate({
+            path: 'brand',
+            select: 'title'
+        })
+        .populate({
+            path: 'customer',
+            select: 'profile.displayName address.street address.city address.state address.zipCode'
+        })
+        .exec((err: any, equipment: ICustomerEquipment) => {
+
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+
+            res.json({ 'status': Status.Success, 'equipment': equipment })
+
+        })
+}
+
+
+export const getEquipmentJobs = (req: Request, res: Response) => {
+
+    const params = req.body
+    CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
+        .exec((err: any, customerEquipment: ICustomerEquipment) => {
+
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+
+            if (customerEquipment == undefined || customerEquipment == null) {
+                return res.json({ 'status': Status.Error, 'message': 'No equipment found. Please try again'})
+            }
+
+            Scan.find({equipment: customerEquipment._id}, '_id')
+            .populate({
+                path: 'job',
+                select: 'jobId description status dateTime',
+                populate: [{ path: 'customer', select: 'profile.displayName' }],
+            })
+            .exec((err:any, scans: IScan[])=>{
+
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                }
+
+                return res.json({ 'status': Status.Success, 'jobs': scans })
+            })
+
+        })
+}

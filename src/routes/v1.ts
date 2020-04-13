@@ -360,6 +360,25 @@ router.post(
     validate(Validations.getCustomerEquipmentJobs),
     customerEquipmentController.getCustomerEquipmentJobs
 )
+
+router.post(
+    '/getEquipmentInfo',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Customer_Equipment_Get_All),
+    validate(Validations.getCustomerEquipmentInfo),
+    customerEquipmentController.getCustomerEquipmentInfo
+)
+
+router.post(
+    '/getEquipmentJobs',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Customer_Equipment_Get_All),
+    validate(Validations.getCustomerEquipmentInfo),
+    customerEquipmentController.getEquipmentJobs
+)
+
 router.post(
     '/scanJobEquipment',
     passport.authenticate('jwt', { session: false }),

@@ -1115,7 +1115,7 @@ export const startContract = (req: Request, res: Response) => {
                     }
         
                     // ToDo send email to contractor for contract started
-                    // sendContractStartEmail({to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
+                    sendContractStartEmail({to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
                     return res.json({ 'status': Status.Success, 'message': 'Contract started successfully.'})
         
                 })
@@ -1152,9 +1152,9 @@ export const inviteContractor = (req: Request, res: Response) => {
 // get all contracts for contractor
 export const getAllContracts = (req: Request, res: Response) => {
 
-    const user = <IUser>req.user
+    const user = <ICompanyAdmin>req.user
 
-    Contract.find({contractor: user._id})
+    Contract.find({contractor: user.company})
     .populate({
         path: 'company',
         select: 'info.companyName info.companyEmail type'
@@ -1271,7 +1271,7 @@ export const acceptRejectContract = (req: Request, res: Response) => {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
             
-                        // sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyEmail , company: company.info.companyName, contractStatus:params.status+'ed' })
+                        sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyEmail , company: company.info.companyName, contractStatus:params.status+'ed' })
                         return res.json({'status': Status.Success, 'message': 'Contract '+params.status+'ed.'})
             
                     })

@@ -90,6 +90,8 @@ export const Validations = {
   createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists(), check('location').exists(), check('images').exists()],
 
   getCustomerEquipments: [check('customerId').exists()],
+  
+  getCustomerEquipmentInfo: [check('nfcTag').exists()],
 
   linkEquipmentJob: [check('nfcTag').exists(), check('jobId').exists(), check('comment').exists()],
 
