@@ -24,6 +24,7 @@ import { CompanyCustomer } from '../models/CompanyCustomer'
 import { CompanyAdmin, ICompanyAdmin } from '../models/CompanyAdmin'
 import { Scan } from '../models/Scan'
 import { ServiceTicket } from '../models/ServiceTicket'
+import { Industry } from '../models/Industry'
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
 import { addCustomerAndCharge, addCustomerSource, chargeSubscription} from '../services/stripe'
@@ -872,6 +873,7 @@ export const updateSub = (req: Request, res: Response) => {
         Group.collection.drop()
         Job.collection.drop()
         JobType.collection.drop()
+        Industry.collection.drop()
         Order.collection.drop()
         User.collection.drop()
         CompanyCustomer.collection.drop()

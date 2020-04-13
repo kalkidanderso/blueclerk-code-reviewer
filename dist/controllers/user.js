@@ -24,6 +24,7 @@ const CompanyCustomer_1 = require("../models/CompanyCustomer");
 const CompanyAdmin_1 = require("../models/CompanyAdmin");
 const Scan_1 = require("../models/Scan");
 const ServiceTicket_1 = require("../models/ServiceTicket");
+const Industry_1 = require("../models/Industry");
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
 const stripe_1 = require("../services/stripe");
@@ -633,6 +634,7 @@ exports.updateSub = (req, res) => {
         Group_1.Group.collection.drop();
         Job_1.Job.collection.drop();
         JobType_1.JobType.collection.drop();
+        Industry_1.Industry.collection.drop();
         Order_1.Order.collection.drop();
         User_1.User.collection.drop();
         CompanyCustomer_1.CompanyCustomer.collection.drop();
