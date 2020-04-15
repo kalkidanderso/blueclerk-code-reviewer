@@ -278,12 +278,15 @@ exports.updateCompanyProfile = (req, res) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
+        console.log(company.info.companyEmail);
+        console.log(params.companyEmail);
         if (company.info.companyEmail != params.companyEmail) {
-            Company_1.Company.findOne({ 'info.companyEmail': params.companyEmail }, (err, company) => {
+            Company_1.Company.findOne({ 'info.companyEmail': params.companyEmail }, (err, previousCompany) => {
+                console.log(previousCompany);
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                if (company) {
+                if (previousCompany) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.CompanyDuplicateEmail });
                 }
                 company.updateOne({
