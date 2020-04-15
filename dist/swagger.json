@@ -190,24 +190,10 @@
                         "description": "phone number of admin of company"
                     },
                     {
-                        "name": "companyEmail",
-                        "in": "formData",
-                        "required": true,
-                        "type": "string",
-                        "description": "this email will be used as company email adress"
-                    },
-                    {
                         "name": "companyName",
                         "in": "formData",
                         "required": true,
                         "type": "string"
-                    },
-                    {
-                        "name": "companyPhone",
-                        "in": "formData",
-                        "required": true,
-                        "type": "string",
-                        "description": "company phone number"
                     },
                     {
                         "name": "industryId",
@@ -745,24 +731,10 @@
                         "description": "phone number of admin of company"
                     },
                     {
-                        "name": "companyEmail",
-                        "in": "formData",
-                        "required": true,
-                        "type": "string",
-                        "description": "this email will be used as company email adress"
-                    },
-                    {
                         "name": "companyName",
                         "in": "formData",
                         "required": true,
                         "type": "string"
-                    },
-                    {
-                        "name": "companyPhone",
-                        "in": "formData",
-                        "required": true,
-                        "type": "string",
-                        "description": "company phone number"
                     },
                     {
                         "name": "industryId",

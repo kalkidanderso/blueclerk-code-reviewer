@@ -120,7 +120,7 @@ exports.createCompany = (req, res) => {
                 companyName: params.companyName,
                 industry: params.industryId,
                 logoUrl: '',
-                companyEmail: params.companyEmail,
+                companyEmail: params.email,
             },
             address: {
                 street: '',
@@ -129,7 +129,7 @@ exports.createCompany = (req, res) => {
                 zipCode: '',
             },
             contact: {
-                phone: params.companyPhone,
+                phone: params.phone,
             },
             userPermissions: constants_1.UserPermissions,
             chargeDate: chargeDate,
@@ -461,11 +461,7 @@ const checkEmailExists = (req, res, next) => {
 };
 const checkCompanyEmailExists = (req, res, next) => {
     const params = req.body;
-    var email = params.email;
-    if (params.companyEmail) {
-        email = params.companyEmail;
-    }
-    Company_1.Company.findOne({ 'info.companyEmail': email }, (err, company) => {
+    Company_1.Company.findOne({ 'info.companyEmail': params.email }, (err, company) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
@@ -1135,7 +1131,7 @@ exports.createCompanySocial = (req, res) => {
                     companyName: params.companyName,
                     industry: params.industryId,
                     logoUrl: '',
-                    companyEmail: params.companyEmail,
+                    companyEmail: params.email,
                 },
                 address: {
                     street: '',
@@ -1144,7 +1140,7 @@ exports.createCompanySocial = (req, res) => {
                     zipCode: '',
                 },
                 contact: {
-                    phone: params.companyPhone,
+                    phone: params.phone,
                 },
                 userPermissions: constants_1.UserPermissions,
                 chargeDate: chargeDate,

@@ -176,7 +176,7 @@ export const createCompany = (req: Request, res: Response) => {
                     companyName: params.companyName,
                     industry: params.industryId,
                     logoUrl: '',
-                    companyEmail: params.companyEmail,
+                    companyEmail: params.email,
                 },
                 address: {
                     street: '',
@@ -185,7 +185,7 @@ export const createCompany = (req: Request, res: Response) => {
                     zipCode: '',
                 },
                 contact: {
-                    phone: params.companyPhone,
+                    phone: params.phone,
                 },
                 userPermissions: UserPermissions,
                 chargeDate: chargeDate,
@@ -665,13 +665,9 @@ const checkEmailExists = (req: Request, res: Response, next: (req: Request, res:
 const checkCompanyEmailExists = (req: Request, res: Response, next: (req: Request, res: Response) => void) => {
 
     const params = req.body
-    var email = params.email
 
-    if(params.companyEmail) {
-        email = params.companyEmail
-    }
     Company.findOne(
-        { 'info.companyEmail': email },
+        { 'info.companyEmail': params.email },
         (err: any, company: ICompany) => {
 
             if (err) {
@@ -1594,7 +1590,7 @@ export const createCompanySocial = (req: Request, res: Response) => {
                         companyName: params.companyName,
                         industry: params.industryId,
                         logoUrl: '',
-                        companyEmail: params.companyEmail,
+                        companyEmail: params.email,
                     },
                     address: {
                         street: '',
@@ -1603,7 +1599,7 @@ export const createCompanySocial = (req: Request, res: Response) => {
                         zipCode: '',
                     },
                     contact: {
-                        phone: params.companyPhone,
+                        phone: params.phone,
                     },
                     userPermissions: UserPermissions,
                     chargeDate: chargeDate,

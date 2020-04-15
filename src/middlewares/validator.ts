@@ -21,13 +21,13 @@ export const validate = (validations: ValidationChain[]) => {
 
 export const Validations = {
   //Auth
-  signUp: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('password').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('companyPhone').exists(), check('companyName').exists(), check('industryId').exists()],
+  signUp: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('password').exists(), check('companyName').exists(), check('industryId').exists()],
   
   login: [check('email').exists(), check('email').isEmail(), check('password').exists()],
 
   socialLogin: [check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric()],
   
-  socialSignUp: [check('email').exists(), check('email').isEmail(), check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('companyPhone').exists(), check('companyName').exists(), check('industryId').exists()],
+  socialSignUp: [check('email').exists(), check('email').isEmail(), check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
   
   customerImport: [check('customerSheet').exists()],
   
