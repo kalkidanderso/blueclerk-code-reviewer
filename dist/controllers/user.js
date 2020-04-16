@@ -759,7 +759,7 @@ exports.createContractor = (req, res) => {
 // search contractor/organization for contract
 exports.searchContractor = (req, res) => {
     const params = req.body;
-    Company_1.Company.find({ 'info.companyEmail': params.email }, 'info.companyEmail info.companyName contact.phone', (err, contractors) => {
+    Company_1.Company.find({ 'info.companyEmail': params.email }, 'info.companyEmail info.companyName contact.phone info.logoUrl address.street address.city address.state address.zipCode', (err, contractors) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
@@ -778,7 +778,7 @@ exports.startContract = (req, res) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         if (contractor == undefined || contractor == null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid contractor.' });
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid vendor.' });
         }
         // check if contract already started
         Contract_1.Contract.findOne({ 'company': req.companyId, 'contractor': contractor._id }, (err, oldcontract) => {
@@ -786,7 +786,7 @@ exports.startContract = (req, res) => {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             if (oldcontract != undefined && oldcontract != null) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': 'Contract already exist.' });
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'Vendor already exist.' });
             }
             const contract = new Contract_1.Contract({
                 company: req.companyId,
@@ -799,7 +799,7 @@ exports.startContract = (req, res) => {
                 }
                 // ToDo send email to contractor for contract started
                 aws_1.sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName });
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract started successfully.' });
+                return res.json({ 'status': constants_1.Status.Success, 'message': 'Vendor Added.' });
             });
         });
     });

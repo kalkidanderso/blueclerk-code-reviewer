@@ -1053,7 +1053,7 @@ export const searchContractor = (req: Request, res: Response) => {
     
     Company.find(
         { 'info.companyEmail': params.email }, 
-        'info.companyEmail info.companyName contact.phone',
+        'info.companyEmail info.companyName contact.phone info.logoUrl address.street address.city address.state address.zipCode',
         (err: any, contractors: ICompany[]) => {
 
             if (err) {
@@ -1082,7 +1082,7 @@ export const startContract = (req: Request, res: Response) => {
             }
             
             if(contractor == undefined || contractor == null ) {
-                return res.json({ 'status': Status.Error, 'message': 'Invalid contractor.' })
+                return res.json({ 'status': Status.Error, 'message': 'Invalid vendor.' })
             }
             
             // check if contract already started
@@ -1094,7 +1094,7 @@ export const startContract = (req: Request, res: Response) => {
                 }
                 
                 if(oldcontract  != undefined && oldcontract != null ) {
-                    return res.json({ 'status': Status.Error, 'message': 'Contract already exist.' })
+                    return res.json({ 'status': Status.Error, 'message': 'Vendor already exist.' })
                 }
 
                 const contract = new Contract(
@@ -1113,7 +1113,7 @@ export const startContract = (req: Request, res: Response) => {
         
                     // ToDo send email to contractor for contract started
                     sendContractStartEmail({to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
-                    return res.json({ 'status': Status.Success, 'message': 'Contract started successfully.'})
+                    return res.json({ 'status': Status.Success, 'message': 'Vendor Added.'})
         
                 })
             })
