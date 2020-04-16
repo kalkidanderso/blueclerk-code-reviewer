@@ -1625,31 +1625,26 @@
                     {
                         "name": "logoUrl",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "street",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "city",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "state",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "zipCode",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
@@ -1661,7 +1656,6 @@
                     {
                         "name": "fax",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     }
                 ],

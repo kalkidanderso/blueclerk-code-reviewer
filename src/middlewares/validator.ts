@@ -60,7 +60,7 @@ export const Validations = {
   
   changePassword: [check('currentPassword').exists(), check('newPassword').exists()],
   
-  updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('logoUrl').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('phone').exists(), check('fax').exists()],
+  updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('phone').exists()],
   
   deleteEmployee: [check('employeeId').exists()],
   
