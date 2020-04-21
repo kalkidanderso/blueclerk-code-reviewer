@@ -25,6 +25,7 @@ import * as subscriptionController from '../controllers/subscription'
 import * as permissionController from '../controllers/permission'
 import * as customerImportController from '../controllers/customerImport'
 import * as serviceTicketController from '../controllers/serviceTicket'
+import * as quickBookController from '../controllers/quickbook'
 import { Personalize } from 'aws-sdk'
 
 
@@ -820,5 +821,32 @@ router.post(
     validate(Validations.getJobReport),
     jobController.getJobReport
 )
+
+router.post(
+    '/getQBCustomers',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    // checkUserPermissions(Permissions.Get_Job_Report), // create new permission for accessing quickbooks
+    validate(Validations.getQBCustomers),
+    quickBookController.getQBCustomers
+)
+
+router.post(
+    '/syncQBCustomers',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    // checkUserPermissions(Permissions.Get_Job_Report), // create new permission for accessing quickbooks
+    validate(Validations.getQBCustomers),
+    quickBookController.syncQBCustomers
+)
+
+router.post(
+    '/createQBCustomer',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    validate(Validations.createQBCustomer),
+    quickBookController.createQBCustomer
+)
+
 
 export default router

@@ -13,6 +13,10 @@ const CustomerSchema = new mongoose_1.Schema({
         required: true
     },
     equipments: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'CustomerEquipment' }],
+    quickbookId: {
+        type: String,
+        default: null
+    }
 });
 exports.Customer = User_1.User.discriminator('Customer', CustomerSchema);
 //# sourceMappingURL=Customer.js.map

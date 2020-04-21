@@ -34,6 +34,7 @@ const subscriptionController = __importStar(require("../controllers/subscription
 const permissionController = __importStar(require("../controllers/permission"));
 const customerImportController = __importStar(require("../controllers/customerImport"));
 const serviceTicketController = __importStar(require("../controllers/serviceTicket"));
+const quickBookController = __importStar(require("../controllers/quickbook"));
 const router = express_1.default.Router();
 //Auth
 router.post('/login', validator_1.validate(validator_1.Validations.login), userController.login);
@@ -160,5 +161,12 @@ router.post('/updateServiceTicket', passport_1.default.authenticate('jwt', { ses
 router.post('/getServiceTicketDetail', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(74 /* Get_Ticket_Detail */), validator_1.validate(validator_1.Validations.getTicketDetail), serviceTicketController.getServiceTicketDetail);
 router.post('/getContractorsForJob', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(75 /* Get_Contractors_For_Job */), userController.getContractorForJob);
 router.post('/getJobReport', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(77 /* Get_Job_Report */), validator_1.validate(validator_1.Validations.getJobReport), jobController.getJobReport);
+router.post('/getQBCustomers', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), 
+// checkUserPermissions(Permissions.Get_Job_Report), // create new permission for accessing quickbooks
+validator_1.validate(validator_1.Validations.getQBCustomers), quickBookController.getQBCustomers);
+router.post('/syncQBCustomers', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), 
+// checkUserPermissions(Permissions.Get_Job_Report), // create new permission for accessing quickbooks
+validator_1.validate(validator_1.Validations.getQBCustomers), quickBookController.syncQBCustomers);
+router.post('/createQBCustomer', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.createQBCustomer), quickBookController.createQBCustomer);
 exports.default = router;
 //# sourceMappingURL=v1.js.map

@@ -52,6 +52,8 @@ tags:
     description: For contractor login, signup and details
   - name: Import Customer
     description: For import customers through excel file
+  - name: Quickbooks Integration
+    description: For Quickbooks customers integration
     
 paths:
   /login:
@@ -2951,6 +2953,127 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
           - Bearer: []
+  /getQBCustomers:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Get quickbooks customers for the first time
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: qbAccessToken
+          in: formData
+          description: Quickbooks access token after connecting to quickbooks online through frontend or from quickbook dasboard -> Playground
+          required: true
+          type: string
+        - name: qbRefreshToken
+          in: formData
+          description: Quickbooks refresh access token after connecting to quickbooks online through frontend or from quickbook dasboard -> Playground
+          required: true
+          type: string
+        - name: realmId
+          in: formData
+          description: CompanyId / realm Id fetched from frontend after connecting quickbooks onine  or from quickbook dasboard -> Playground
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /syncQBCustomers:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Manually syncing quickbooks customers
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: qbAccessToken
+          in: formData
+          description: Quickbooks access token after connecting to quickbooks online through frontend or from quickbook dasboard -> Playground
+          required: true
+          type: string
+        - name: qbRefreshToken
+          in: formData
+          description: Quickbooks refresh access token after connecting to quickbooks online through frontend or from quickbook dasboard -> Playground
+          required: true
+          type: string
+        - name: realmId
+          in: formData
+          description: CompanyId / realm Id fetched from frontend after connecting quickbooks onine  or from quickbook dasboard -> Playground
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /createQBCustomer:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Creating customer in quickbooks
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: qbAccessToken
+          in: formData
+          description: Quickbooks access token after connecting to quickbooks online through frontend or from quickbook dasboard -> Playground
+          required: true
+          type: string
+        - name: qbRefreshToken
+          in: formData
+          description: Quickbooks refresh access token after connecting to quickbooks online through frontend or from quickbook dasboard -> Playground
+          required: true
+          type: string
+        - name: realmId
+          in: formData
+          description: CompanyId / realm Id fetched from frontend after connecting quickbooks onine  or from quickbook dasboard -> Playground
+          required: true
+          type: string
+        - name: email
+          in: formData
+          type: string
+        - name: name
+          in: formData
+          required: true
+          type: string
+        - name: street
+          in: formData
+          type: string
+        - name: city
+          in: formData
+          type: string
+        - name: state
+          in: formData
+          type: string
+        - name: zipCode
+          in: formData
+          type: string
+        - name: phone
+          in: formData
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
 securityDefinitions:
   Bearer:
     type: apiKey

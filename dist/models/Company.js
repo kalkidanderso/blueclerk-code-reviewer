@@ -81,6 +81,14 @@ const CompanySchema = new mongoose_1.Schema({
         type: String
     },
     admin: { type: mongoose_1.Schema.Types.ObjectId, ref: 'CompanyAdmin' },
+    qbAccessToken: String,
+    qbRefreshToken: String,
+    realmId: String,
+    customersSynced: {
+        type: Boolean,
+        default: false
+    },
+    customersSyncedAt: Date
 });
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)
 exports.Company = mongoose_1.default.model('Company', CompanySchema);

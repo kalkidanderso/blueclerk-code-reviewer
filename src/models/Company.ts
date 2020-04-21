@@ -51,7 +51,12 @@ export interface ICompany extends Document{
     },
     currentJobId: number,
     prefix: string,
-    admin: Schema.Types.ObjectId
+    admin: Schema.Types.ObjectId,
+    qbAccessToken: string,
+    qbRefreshToken: string,
+    realmId: string,
+    customersSynced: boolean,
+    customersSyncedAt: Date
 }
 
 const CompanySchema = new Schema({
@@ -128,7 +133,14 @@ const CompanySchema = new Schema({
         type: String
     },
     admin: { type: Schema.Types.ObjectId, ref: 'CompanyAdmin' },
-
+    qbAccessToken: String,
+    qbRefreshToken: String,
+    realmId: String,
+    customersSynced: {
+        type: Boolean,
+        default: false
+    },
+    customersSyncedAt: Date
 })
 
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)

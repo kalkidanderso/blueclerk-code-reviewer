@@ -154,4 +154,8 @@ export const Validations = {
   getTicketDetail: [check('ticketId').exists()],
  
   getJobReport: [check('jobId').exists()],
+
+  getQBCustomers: [check('qbAccessToken').exists(), check('qbAccessToken').not().isEmpty(), check('qbRefreshToken').exists(), check('qbRefreshToken').not().isEmpty(), check('realmId').exists(), check('realmId').not().isEmpty(),],
+  
+  createQBCustomer: [check('qbAccessToken').exists(), check('qbAccessToken').not().isEmpty(), check('qbRefreshToken').exists(), check('qbRefreshToken').not().isEmpty(), check('realmId').exists(), check('realmId').not().isEmpty(), check('name').exists(),  check('name').not().isEmpty(),],
 }

@@ -8,7 +8,8 @@ export interface ICustomer extends IUser {
         email: String
     }
     company: Schema.Types.ObjectId
-    equipments: [Schema.Types.ObjectId]
+    equipments: [Schema.Types.ObjectId],
+    quickbookId: string
 
 }
 
@@ -24,6 +25,10 @@ const CustomerSchema = new Schema({
         required: true
     },
     equipments: [{ type: Schema.Types.ObjectId, ref: 'CustomerEquipment' }],
+    quickbookId: {
+        type: String,
+        default: null
+    }
 
 })
 
