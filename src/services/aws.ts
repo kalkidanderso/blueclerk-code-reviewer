@@ -205,7 +205,7 @@ export const sendContractStatusChangeEmailToContractor = function(options: any) 
           Body: {
             Html: {
               Data: "<p>Hi! "+ options.contractor+"</p>\
-              <p>Your status as a vendor with "+options.company+" has changed to "+ options.contractStatus+"</p>",
+              <p>You have "+ options.contractStatus+" to be a vendor of "+options.company+". If you did not accept this change, please login and change your password immediately  </p>",
             },
           },
         },
@@ -249,7 +249,7 @@ export const sendContractStatusChangeEmailToCompany = function(options: any) {
           Body: {
             Html: {
               Data: "<p>Hi! "+ options.company+"</p>\
-              <p>Your status as a vending company with "+options.contractor+" has changed to "+ options.contractStatus+"</p>",
+              <p>"+options.contractor+" has "+ options.contractStatus+" to be a vendor for your organization.  If feel this was in error, please login and change your password immediately.</p>",
             },
           },
         },
