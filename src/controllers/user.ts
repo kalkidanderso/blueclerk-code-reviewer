@@ -1487,11 +1487,11 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'No company found.' })
             }
 
-            if(params.workOrderNumber != undefined) {
+            if(params.workOrderNumber != undefined && params.workOrderNumber !== null && params.workOrderNumber !== '""') {
                 company.currentJobId = params.workOrderNumber
             }
 
-            if(params.prefix != undefined) {
+            if(params.prefix != undefined && params.prefix !== null && params.prefix !== '""') {
                 company.prefix = params.prefix
             }
 
@@ -1501,7 +1501,6 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
                 }
            
                 return res.json({status: Status.Success, message: "Custom work order number added."});
-               
             })                    
             
         }

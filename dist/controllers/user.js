@@ -1060,10 +1060,10 @@ exports.setCustomWorkNumber = (req, res) => {
         if (company == undefined || company == null) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'No company found.' });
         }
-        if (params.workOrderNumber != undefined) {
+        if (params.workOrderNumber != undefined && params.workOrderNumber !== null && params.workOrderNumber !== '""') {
             company.currentJobId = params.workOrderNumber;
         }
-        if (params.prefix != undefined) {
+        if (params.prefix != undefined && params.prefix !== null && params.prefix !== '""') {
             company.prefix = params.prefix;
         }
         company.updateOne(company, (err, raw) => {
