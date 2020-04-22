@@ -2,7 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Status = {
     Error: 0,
-    Success: 1
+    Success: 1,
+    TagAssociated: 2,
+    TagNotAssociated: 3,
 };
 exports.Messages = {
     MissingParams: 'Parameters are missing.',
@@ -14,6 +16,8 @@ exports.Messages = {
     AccountDeleted: 'You account has been deleted. Please contact admin for more details.',
     AgreeToTermAndConditions: 'You must agree to terms and conditions of blueclerk.',
     UserExists: 'User already exists.',
+    TagAssociated: 'Tag is associated with customer',
+    TagNotAssociated: 'Tag is not associated with customer',
 };
 exports.ContractorPermissions = {
     on: [
@@ -109,7 +113,8 @@ exports.UserPermissions = {
             74 /* Get_Ticket_Detail */,
             75 /* Get_Contractors_For_Job */,
             76 /* Get_Customer_Detail */,
-            77 /* Get_Job_Report */
+            77 /* Get_Job_Report */,
+            80 /* Scan_Tag */
         ],
         off: [0 /* None */],
     },
@@ -180,7 +185,8 @@ exports.UserPermissions = {
             74 /* Get_Ticket_Detail */,
             75 /* Get_Contractors_For_Job */,
             76 /* Get_Customer_Detail */,
-            77 /* Get_Job_Report */
+            77 /* Get_Job_Report */,
+            80 /* Scan_Tag */
         ],
         off: [0 /* None */],
     },
@@ -254,7 +260,8 @@ exports.UserPermissions = {
             74 /* Get_Ticket_Detail */,
             75 /* Get_Contractors_For_Job */,
             76 /* Get_Customer_Detail */,
-            77 /* Get_Job_Report */
+            77 /* Get_Job_Report */,
+            80 /* Scan_Tag */
         ],
         off: [0 /* None */],
     },
@@ -335,7 +342,10 @@ exports.UserPermissions = {
             76 /* Get_Customer_Detail */,
             65 /* Get_All_Contracts */,
             62 /* Accept_Reject_Contract */,
-            77 /* Get_Job_Report */
+            77 /* Get_Job_Report */,
+            78 /* Get_QB_Customers */,
+            79 /* Create_QB_customer */,
+            80 /* Scan_Tag */
         ],
         off: [0 /* None */],
     }

@@ -161,12 +161,9 @@ router.post('/updateServiceTicket', passport_1.default.authenticate('jwt', { ses
 router.post('/getServiceTicketDetail', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(74 /* Get_Ticket_Detail */), validator_1.validate(validator_1.Validations.getTicketDetail), serviceTicketController.getServiceTicketDetail);
 router.post('/getContractorsForJob', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(75 /* Get_Contractors_For_Job */), userController.getContractorForJob);
 router.post('/getJobReport', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(77 /* Get_Job_Report */), validator_1.validate(validator_1.Validations.getJobReport), jobController.getJobReport);
-router.post('/getQBCustomers', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), 
-// checkUserPermissions(Permissions.Get_Job_Report), // create new permission for accessing quickbooks
-validator_1.validate(validator_1.Validations.getQBCustomers), quickBookController.getQBCustomers);
-router.post('/syncQBCustomers', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), 
-// checkUserPermissions(Permissions.Get_Job_Report), // create new permission for accessing quickbooks
-validator_1.validate(validator_1.Validations.getQBCustomers), quickBookController.syncQBCustomers);
-router.post('/createQBCustomer', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.createQBCustomer), quickBookController.createQBCustomer);
+router.post('/getQBCustomers', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(78 /* Get_QB_Customers */), validator_1.validate(validator_1.Validations.getQBCustomers), quickBookController.getQBCustomers);
+router.post('/syncQBCustomers', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(78 /* Get_QB_Customers */), validator_1.validate(validator_1.Validations.getQBCustomers), quickBookController.syncQBCustomers);
+router.post('/createQBCustomer', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(79 /* Create_QB_customer */), validator_1.validate(validator_1.Validations.createQBCustomer), quickBookController.createQBCustomer);
+router.post('/scanTag', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(80 /* Scan_Tag */), validator_1.validate(validator_1.Validations.getCustomerEquipmentJobs), customerEquipmentController.checkTagAssociation);
 exports.default = router;
 //# sourceMappingURL=v1.js.map

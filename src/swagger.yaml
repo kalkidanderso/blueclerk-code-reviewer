@@ -1495,6 +1495,94 @@ paths:
                       $ref: '#/definitions/CustomerEquipment'
       security:
         - Bearer: []
+  /getCustomerEquipmentJobs:
+    post:
+      tags:
+        - Customer Equipment
+      summary: To get history of jobs performed on current equipment
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: nfcTag
+          in: formData
+          required: true
+          type: string
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
+      responses:
+        '200':
+          description: Success
+          schema:
+           allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  equipment:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                      info:
+                        type: object
+                        properties:
+                          model:
+                            type: string
+                          serialNumber:
+                            type: string
+                          nfcTag:
+                            type: string
+                          imageUrl:
+                            type: string
+                      maintenance:
+                        type: object
+                        properties:
+                          interval:
+                            type: string
+                          nextDate:
+                            type: string
+                            format: date-time
+                      type:
+                        type: string
+                        description: Id of equipment type
+                      brand:
+                        type: string
+                        description: Id of equipment brand
+                      customer:
+                        type: string
+                        description: Id of customer
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/definitions/Scan'
+      security:
+        - Bearer: []
+  /scanTag:
+    post:
+      tags:
+        - Customer Equipment
+      summary: To check if the tag is linked to some equipment or not
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: nfcTag
+          in: formData
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/CheckTagResponse'
+      security:
+        - Bearer: []
   /getEquipmentInfo:
     post:
       tags:
@@ -2136,72 +2224,7 @@ paths:
             $ref: '#/definitions/JobReport'
       security:
         - Bearer: []
-  /getCustomerEquipmentJobs:
-    post:
-      tags:
-        - Customer Equipment
-      summary: To get history of jobs performed on current equipment
-      description: ''
-      consumes:
-        - application/x-www-form-urlencoded
-      produces:
-        - application/json
-      parameters:
-        - name: nfcTag
-          in: formData
-          required: true
-          type: string
-        - name: companyId
-          in: formData
-          type: string
-          description: 'Id of company if contractor is hitting for other company'
-      responses:
-        '200':
-          description: Success
-          schema:
-           allOf:
-              - $ref: '#/definitions/GeneralAPIResponse'
-              - type: object
-                properties:
-                  equipment:
-                    type: object
-                    properties:
-                      _id:
-                        type: string
-                      info:
-                        type: object
-                        properties:
-                          model:
-                            type: string
-                          serialNumber:
-                            type: string
-                          nfcTag:
-                            type: string
-                          imageUrl:
-                            type: string
-                      maintenance:
-                        type: object
-                        properties:
-                          interval:
-                            type: string
-                          nextDate:
-                            type: string
-                            format: date-time
-                      type:
-                        type: string
-                        description: Id of equipment type
-                      brand:
-                        type: string
-                        description: Id of equipment brand
-                      customer:
-                        type: string
-                        description: Id of customer
-                  jobs:
-                    type: array
-                    items:
-                      $ref: '#/definitions/Scan'
-      security:
-        - Bearer: []
+  
   /uploadImage:
     post:
       tags:
@@ -3701,6 +3724,26 @@ definitions:
         enum:
           - 0
           - 1
+      message:
+        type: string
+        description: Error message in case of operation failure
+  CheckTagResponse:
+    type: object
+    properties:
+      status:
+        type: integer
+        format: int32
+        description: 'Status of operation, 0 -> failure 1 -> success'
+        enum:
+          - 0
+          - 1
+      tagStatus:
+        type: integer
+        format: int32
+        description: 'Status of operation, 2 -> associated 3 -> not associated'
+        enum:
+          - 2
+          - 3
       message:
         type: string
         description: Error message in case of operation failure

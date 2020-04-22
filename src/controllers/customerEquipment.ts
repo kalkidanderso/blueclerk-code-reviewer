@@ -117,7 +117,7 @@ export const getCustomerEquipments = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            res.json({ 'status': Status.Success, 'equipments': customerEquipments })
+            return res.json({ 'status': Status.Success, 'equipments': customerEquipments })
 
         })
 }
@@ -294,7 +294,7 @@ export const getCustomerEquipmentInfo = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            res.json({ 'status': Status.Success, 'equipment': equipment })
+            return res.json({ 'status': Status.Success, 'equipment': equipment })
 
         })
 }
@@ -328,6 +328,27 @@ export const getEquipmentJobs = (req: Request, res: Response) => {
 
                 return res.json({ 'status': Status.Success, 'jobs': scans })
             })
+
+        })
+}
+
+
+export const checkTagAssociation = (req: Request, res: Response) => {
+
+    const params = req.body
+
+    CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
+        .exec((err: any, equipment: ICustomerEquipment) => {
+
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+
+            if(equipment == undefined || equipment == null) {
+                return res.json({ 'status': Status.Success, 'tagStatus': Status.TagNotAssociated, 'message': Messages.TagNotAssociated })
+            }
+
+            return res.json({ 'status': Status.Success, 'tagStatus': Status.TagAssociated, 'message': Messages.TagAssociated })
 
         })
 }

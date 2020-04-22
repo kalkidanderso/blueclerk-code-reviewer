@@ -826,7 +826,7 @@ router.post(
     '/getQBCustomers',
     passport.authenticate('jwt', { session: false }),
     getCompnayId(),
-    // checkUserPermissions(Permissions.Get_Job_Report), // create new permission for accessing quickbooks
+    checkUserPermissions(Permissions.Get_QB_Customers),
     validate(Validations.getQBCustomers),
     quickBookController.getQBCustomers
 )
@@ -835,7 +835,7 @@ router.post(
     '/syncQBCustomers',
     passport.authenticate('jwt', { session: false }),
     getCompnayId(),
-    // checkUserPermissions(Permissions.Get_Job_Report), // create new permission for accessing quickbooks
+    checkUserPermissions(Permissions.Get_QB_Customers),
     validate(Validations.getQBCustomers),
     quickBookController.syncQBCustomers
 )
@@ -844,9 +844,17 @@ router.post(
     '/createQBCustomer',
     passport.authenticate('jwt', { session: false }),
     getCompnayId(),
+    checkUserPermissions(Permissions.Create_QB_customer),
     validate(Validations.createQBCustomer),
     quickBookController.createQBCustomer
 )
 
-
+router.post(
+    '/scanTag',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Scan_Tag),
+    validate(Validations.getCustomerEquipmentJobs),
+    customerEquipmentController.checkTagAssociation
+)
 export default router

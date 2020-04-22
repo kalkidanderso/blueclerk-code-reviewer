@@ -2,7 +2,9 @@ import { check } from 'express-validator'
 
 export const Status = {
     Error: 0,
-    Success: 1
+    Success: 1,
+    TagAssociated: 2,
+    TagNotAssociated: 3,
 }
 
 export const Messages = {
@@ -15,6 +17,8 @@ export const Messages = {
     AccountDeleted: 'You account has been deleted. Please contact admin for more details.',
     AgreeToTermAndConditions: 'You must agree to terms and conditions of blueclerk.',
     UserExists: 'User already exists.',
+    TagAssociated: 'Tag is associated with customer',
+    TagNotAssociated: 'Tag is not associated with customer',
 }
 
 export const enum Role {
@@ -131,7 +135,10 @@ export const enum Permissions {
     Get_Ticket_Detail,
     Get_Contractors_For_Job,
     Get_Customer_Detail,
-    Get_Job_Report
+    Get_Job_Report,
+    Get_QB_Customers,
+    Create_QB_customer,
+    Scan_Tag,
 }
 
 export const ContractorPermissions = {
@@ -228,7 +235,8 @@ export const UserPermissions = {
             Permissions.Get_Ticket_Detail,
             Permissions.Get_Contractors_For_Job,
             Permissions.Get_Customer_Detail,
-            Permissions.Get_Job_Report
+            Permissions.Get_Job_Report,
+            Permissions.Scan_Tag
         ],
         off: [Permissions.None],
     },
@@ -299,7 +307,8 @@ export const UserPermissions = {
             Permissions.Get_Ticket_Detail,
             Permissions.Get_Contractors_For_Job,
             Permissions.Get_Customer_Detail,
-            Permissions.Get_Job_Report
+            Permissions.Get_Job_Report,
+            Permissions.Scan_Tag
         ],
         off: [Permissions.None],
     },
@@ -373,7 +382,8 @@ export const UserPermissions = {
             Permissions.Get_Ticket_Detail,
             Permissions.Get_Contractors_For_Job,
             Permissions.Get_Customer_Detail,
-            Permissions.Get_Job_Report
+            Permissions.Get_Job_Report,
+            Permissions.Scan_Tag
         ],
         off: [Permissions.None],
     },
@@ -454,7 +464,10 @@ export const UserPermissions = {
             Permissions.Get_Customer_Detail,
             Permissions.Get_All_Contracts,
             Permissions.Accept_Reject_Contract,
-            Permissions.Get_Job_Report
+            Permissions.Get_Job_Report,
+            Permissions.Get_QB_Customers,
+            Permissions.Create_QB_customer,
+            Permissions.Scan_Tag
         ],
         off: [Permissions.None],
     }

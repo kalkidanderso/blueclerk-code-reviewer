@@ -80,7 +80,7 @@ exports.getCustomerEquipments = (req, res) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        res.json({ 'status': constants_1.Status.Success, 'equipments': customerEquipments });
+        return res.json({ 'status': constants_1.Status.Success, 'equipments': customerEquipments });
     });
 };
 exports.getCustomerEquipmentJobs = (req, res) => {
@@ -214,7 +214,7 @@ exports.getCustomerEquipmentInfo = (req, res) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        res.json({ 'status': constants_1.Status.Success, 'equipment': equipment });
+        return res.json({ 'status': constants_1.Status.Success, 'equipment': equipment });
     });
 };
 exports.getEquipmentJobs = (req, res) => {
@@ -239,6 +239,19 @@ exports.getEquipmentJobs = (req, res) => {
             }
             return res.json({ 'status': constants_1.Status.Success, 'jobs': scans });
         });
+    });
+};
+exports.checkTagAssociation = (req, res) => {
+    const params = req.body;
+    CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
+        .exec((err, equipment) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (equipment == undefined || equipment == null) {
+            return res.json({ 'status': constants_1.Status.Success, 'tagStatus': constants_1.Status.TagNotAssociated, 'message': constants_1.Messages.TagNotAssociated });
+        }
+        return res.json({ 'status': constants_1.Status.Success, 'tagStatus': constants_1.Status.TagAssociated, 'message': constants_1.Messages.TagAssociated });
     });
 };
 //# sourceMappingURL=customerEquipment.js.map
