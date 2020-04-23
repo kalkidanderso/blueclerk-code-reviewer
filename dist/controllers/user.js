@@ -1050,7 +1050,7 @@ exports.companySubscribe = (req, res) => {
 exports.setCustomWorkNumber = (req, res) => {
     const params = req.body;
     const admin = req.user;
-    if (params.prefix == undefined && params.workOrderNumber == undefined) {
+    if (params.prefix == undefined && params.prefix === null && params.prefix === '""' && params.workOrderNumber == undefined && params.workOrderNumber === null && params.workOrderNumber === '""') {
         return res.json({ 'status': constants_1.Status.Error, 'message': "Either prefix or customWorkOrderNumbe is required." });
     }
     Company_1.Company.findById(admin.company, (err, company) => {

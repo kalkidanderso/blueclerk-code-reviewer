@@ -1472,7 +1472,7 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
     const params = req.body
     const admin = <ICompanyAdmin>req.user
     
-    if(params.prefix == undefined && params.workOrderNumber == undefined) {
+    if(params.prefix == undefined && params.prefix === null && params.prefix === '""' && params.workOrderNumber == undefined && params.workOrderNumber === null && params.workOrderNumber === '""') {
         return res.json({ 'status': Status.Error, 'message': "Either prefix or customWorkOrderNumbe is required." })
     }
 
