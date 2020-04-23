@@ -11,7 +11,7 @@ exports.createServiceTicket = (req, res) => {
         companyId = req.otherCompanyId;
     }
     var ticketId = 'Ticket ' + (company.currentJobId + 1);
-    if (company.prefix != undefined) {
+    if (company.prefix != undefined && company.prefix != null && company.prefix == '""') {
         ticketId = 'Ticket ' + company.prefix + '-' + (company.currentJobId + 1);
     }
     const serviceTicket = new ServiceTicket_1.ServiceTicket({
