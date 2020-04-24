@@ -10,6 +10,7 @@ const CompanyCard_1 = require("../models/CompanyCard");
 const Contract_1 = require("../models/Contract");
 const CompanyCustomer_1 = require("../models/CompanyCustomer");
 const CompanyAdmin_1 = require("../models/CompanyAdmin");
+const CompanyPrefix_1 = require("../models/CompanyPrefix");
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
 const stripe_1 = require("../services/stripe");
@@ -1026,7 +1027,7 @@ exports.agreeToTermAndConditions = (req, res) => {
 exports.companySubscribe = (req, res) => {
     const company = req.company;
     if (company.stripeId == undefined || company.stripeId == '') {
-        return res.json({ status: constants_1.Status.Error, message: "Company payment method required." });
+        return res.json({ 'status': constants_1.Status.Error, 'message': "Company payment method required." });
     }
     var amount = 50;
     if (amount == 0) {
@@ -1043,15 +1044,17 @@ exports.companySubscribe = (req, res) => {
             });
         }
         else {
-            return res.json({ status: constants_1.Status.Error, message: message });
+            return res.json({ 'status': constants_1.Status.Error, 'message': message });
         }
     });
 };
 exports.setCustomWorkNumber = (req, res) => {
     const params = req.body;
     const admin = req.user;
-    if (params.prefix == undefined && params.prefix === null && params.prefix === '""' && params.workOrderNumber == undefined && params.workOrderNumber === null && params.workOrderNumber === '""') {
-        return res.json({ 'status': constants_1.Status.Error, 'message': "Either prefix or customWorkOrderNumbe is required." });
+    var oldPrefix;
+    var oldJobId;
+    if ((params.prefix == undefined || params.prefix === null || params.prefix === '""') && (params.workOrderNumber == undefined || params.workOrderNumber === null || params.workOrderNumber === '""')) {
+        return res.json({ 'status': constants_1.Status.Error, 'message': "Either prefix or work order number is required." });
     }
     Company_1.Company.findById(admin.company, (err, company) => {
         if (err) {
@@ -1060,18 +1063,146 @@ exports.setCustomWorkNumber = (req, res) => {
         if (company == undefined || company == null) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'No company found.' });
         }
-        if (params.workOrderNumber != undefined && params.workOrderNumber !== null && params.workOrderNumber !== '""') {
-            company.currentJobId = params.workOrderNumber;
-        }
-        if (params.prefix != undefined && params.prefix !== null && params.prefix !== '""') {
-            company.prefix = params.prefix;
-        }
-        company.updateOne(company, (err, raw) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        if (typeof params.prefix !== 'undefined' && params.prefix && (typeof params.workOrderNumber === 'undefined' && !params.workOrderNumber)) {
+            if (params.prefix == company.prefix) {
+                return res.json({ 'status': constants_1.Status.Success, 'message': "Prefix already set there." });
             }
-            return res.json({ status: constants_1.Status.Success, message: "Custom work order number added." });
-        });
+            checkPrefixExists(req, res, (req, res, previousPrefix) => {
+                oldPrefix = company.prefix;
+                company.updateOne({ 'prefix': params.prefix }, (err, raw) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    if (previousPrefix == null && oldPrefix != undefined) {
+                        var prefix = new CompanyPrefix_1.CompanyPrefix({
+                            company: req.companyId,
+                            prefix: oldPrefix,
+                            maxJobId: company.currentJobId
+                        });
+                        prefix.save((err, companyPrefix) => {
+                            if (err) {
+                                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                            }
+                            return res.json({ 'status': constants_1.Status.Success, 'message': "Prefix updated successfully." });
+                        });
+                    }
+                    else if (previousPrefix != null) {
+                        previousPrefix.updateOne({ 'prefix': oldPrefix, 'maxJobId': company.currentJobId }, (err, raw) => {
+                            if (err) {
+                                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                            }
+                            return res.json({ 'status': constants_1.Status.Success, 'message': "Prefix updated successfully." });
+                        });
+                    }
+                    else {
+                        return res.json({ 'status': constants_1.Status.Success, 'message': "Prefix updated successfully." });
+                    }
+                });
+            });
+        }
+        else if (typeof params.workOrderNumber !== 'undefined' && params.workOrderNumber && (typeof params.prefix === 'undefined' || !params.prefix)) {
+            if (company.currentJobId > params.workOrderNumber) {
+                return res.json({ 'status': constants_1.Status.Success, 'message': "Work order number can not be less then " + company.currentJobId });
+            }
+            company.updateOne({ 'currentJobId': params.workOrderNumber }, (err, raw) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                return res.json({ 'status': constants_1.Status.Success, 'message': "Work order number updated successfully." });
+            });
+        }
+        else if ((typeof params.prefix !== 'undefined' && params.prefix) && (typeof params.workOrderNumber !== 'undefined' && params.workOrderNumber)) {
+            if (company.prefix == params.prefix) {
+                if (company.currentJobId > params.workOrderNumber) {
+                    return res.json({ 'status': constants_1.Status.Success, 'message': "Work order number can not be less then " + company.currentJobId });
+                }
+                company.updateOne({ 'currentJobId': params.workOrderNumber }, (err, raw) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    return res.json({ 'status': constants_1.Status.Success, 'message': "Work order number updated successfully." });
+                });
+            }
+            else if (company.prefix != params.prefix) {
+                checkPrefixExists(req, res, (req, res) => {
+                    oldPrefix = company.prefix;
+                    oldJobId = company.currentJobId;
+                    company.updateOne({ 'prefix': params.prefix, 'currentJobId': params.workOrderNumber }, (err, raw) => {
+                        if (err) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                        }
+                        if (prefix == null && oldPrefix != undefined) {
+                            var prefix = new CompanyPrefix_1.CompanyPrefix({
+                                company: req.companyId,
+                                prefix: oldPrefix,
+                                maxJobId: oldJobId
+                            });
+                            prefix.save((err, companyPrefix) => {
+                                if (err) {
+                                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                                }
+                                return res.json({ 'status': constants_1.Status.Success, 'message': "Prefix updated successfully." });
+                            });
+                        }
+                        else if (prefix != null) {
+                            const companyPrefix = prefix;
+                            companyPrefix.updateOne({ 'prefix': oldPrefix, 'maxJobId': oldJobId }, (err, raw) => {
+                                if (err) {
+                                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                                }
+                                return res.json({ 'status': constants_1.Status.Success, 'message': "Prefix updated successfully." });
+                            });
+                        }
+                        else {
+                            return res.json({ 'status': constants_1.Status.Success, 'message': "Prefix updated successfully." });
+                        }
+                    });
+                });
+            }
+        }
+    });
+};
+const checkPrefixExists = (req, res, next) => {
+    const params = req.body;
+    CompanyPrefix_1.CompanyPrefix.findOne({ 'prefix': req.company.prefix, 'company': req.companyId }, (err, companyPrefix) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (companyPrefix == undefined || companyPrefix == null) {
+            next(req, res, null);
+            return;
+        }
+        else {
+            if (params.workOrderNumber != undefined && params.workOrderNumber !== null && params.workOrderNumber != '""') {
+                if (companyPrefix.maxJobId > params.workOrderNumber) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': 'Work order number with prefix ' + params.prefix + ' is not allowed. Try no greater then ' + companyPrefix.maxJobId });
+                }
+                else {
+                    next(req, res, companyPrefix);
+                    return;
+                }
+            }
+            else if (companyPrefix.maxJobId > req.company.currentJobId) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'Current work order number with prefix ' + params.prefix + ' is not allowed. Try no greater then ' + companyPrefix.maxJobId });
+            }
+            else {
+                next(req, res, companyPrefix);
+                return;
+            }
+        }
+    });
+};
+exports.getCustomWorkNumber = (req, res) => {
+    const params = req.body;
+    const admin = req.user;
+    Company_1.Company.findById(req.companyId, (err, company) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (company == undefined || company == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'No company found.' });
+        }
+        return res.json({ status: constants_1.Status.Success, 'prefix': company.prefix, 'currentWorkOrderNumber': company.currentJobId });
     });
 };
 exports.checkAndGetUser = (req, res) => {

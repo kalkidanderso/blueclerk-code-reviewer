@@ -571,6 +571,23 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /getCurrentJobId:
+    post:
+      tags:
+        - Auth
+      summary: Getting latest custom work order number for service tickets and job
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/WorkOrderNumberResponse'
+      security:
+        - Bearer: []
   # /adminSignUp:
   #   post:
   #     tags:
@@ -3740,10 +3757,30 @@ definitions:
       tagStatus:
         type: integer
         format: int32
-        description: 'Status of operation, 2 -> associated 3 -> not associated'
+        description: 'Status of tag, 2 -> associated 3 -> not associated'
         enum:
           - 2
           - 3
+      message:
+        type: string
+        description: Error message in case of operation failure
+  WorkOrderNumberResponse:
+    type: object
+    properties:
+      status:
+        type: integer
+        format: int32
+        description: 'Status of operation, 0 -> failure 1 -> success'
+        enum:
+          - 0
+          - 1
+      currentWorkOrderNumber:
+        type: integer
+        format: int32
+        description: 'The lastest work order number'
+      prefix:
+        type: string
+        description: 'This will be returned if the company has set the prefix'
       message:
         type: string
         description: Error message in case of operation failure

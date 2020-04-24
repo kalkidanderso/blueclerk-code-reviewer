@@ -745,6 +745,14 @@ router.post(
 )
 
 router.post(
+    '/getCurrentJobId',
+    passport.authenticate('jwt', { session: false }),
+    getCompnayId(),
+    checkUserPermissions(Permissions.Get_Custom_Work_No),
+    userController.getCustomWorkNumber
+)
+
+router.post(
     '/checkAndGet',
     validate(Validations.socialLogin),
     userController.checkAndGetUser

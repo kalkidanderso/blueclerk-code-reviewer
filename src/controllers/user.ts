@@ -22,6 +22,7 @@ import { privateKey } from '../common/config'
 import { Contract, IContract } from '../models/Contract'
 import { CompanyCustomer } from '../models/CompanyCustomer'
 import { CompanyAdmin, ICompanyAdmin } from '../models/CompanyAdmin'
+import { CompanyPrefix, ICompanyPrefix } from '../models/CompanyPrefix'
 import { Scan } from '../models/Scan'
 import { ServiceTicket } from '../models/ServiceTicket'
 import { Industry } from '../models/Industry'
@@ -1438,7 +1439,7 @@ export const companySubscribe = (req: Request, res: Response) => {
     const company = <ICompany>req.company
 
     if(company.stripeId == undefined || company.stripeId == '') {
-        return res.json({status: Status.Error, message: "Company payment method required."})
+        return res.json({'status': Status.Error, 'message': "Company payment method required."})
     }
 
     var amount: number = 50;
@@ -1460,7 +1461,7 @@ export const companySubscribe = (req: Request, res: Response) => {
             })
 
         } else {
-            return res.json({status: Status.Error, message: message})
+            return res.json({'status': Status.Error, 'message': message})
         }
     })
 
@@ -1471,9 +1472,11 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
    
     const params = req.body
     const admin = <ICompanyAdmin>req.user
-    
-    if(params.prefix == undefined && params.prefix === null && params.prefix === '""' && params.workOrderNumber == undefined && params.workOrderNumber === null && params.workOrderNumber === '""') {
-        return res.json({ 'status': Status.Error, 'message': "Either prefix or customWorkOrderNumbe is required." })
+    var oldPrefix: string
+    var oldJobId:  number
+
+    if((params.prefix == undefined || params.prefix === null || params.prefix === '""') && (params.workOrderNumber == undefined || params.workOrderNumber === null || params.workOrderNumber === '""')) {
+        return res.json({ 'status': Status.Error, 'message': "Either prefix or work order number is required." })
     }
 
     Company.findById(admin.company,
@@ -1486,23 +1489,192 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
             if(company == undefined || company == null ) {
                 return res.json({ 'status': Status.Error, 'message': 'No company found.' })
             }
-
-            if(params.workOrderNumber != undefined && params.workOrderNumber !== null && params.workOrderNumber !== '""') {
-                company.currentJobId = params.workOrderNumber
-            }
-
-            if(params.prefix != undefined && params.prefix !== null && params.prefix !== '""') {
-                company.prefix = params.prefix
-            }
-
-            company.updateOne(company, (err: any, raw: any)=> {
-                if (err) {                
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                }
-           
-                return res.json({status: Status.Success, message: "Custom work order number added."});
-            })                    
             
+            if(typeof params.prefix !== 'undefined' && params.prefix && ( typeof params.workOrderNumber === 'undefined' && !params.workOrderNumber )) {
+            
+                if(params.prefix == company.prefix) {
+               
+                    return res.json({'status': Status.Success, 'message': "Prefix already set there."});
+                }
+                
+                checkPrefixExists(req, res, (req: Request, res: Response, previousPrefix: ICompanyPrefix) => { 
+               
+                    oldPrefix = company.prefix
+               
+                    company.updateOne({'prefix':params.prefix}, (err: any, raw: any)=> {
+                        if (err) {                
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
+                        
+                  
+                        if(previousPrefix == null && oldPrefix != undefined) {
+                  
+                            var prefix = new CompanyPrefix({
+                                company : req.companyId,
+                                prefix : oldPrefix,
+                                maxJobId: company.currentJobId
+                            })
+                  
+                            prefix.save((err: any, companyPrefix: ICompanyPrefix) => {
+                                if (err) {
+                                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                                }
+                  
+                                return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
+                            })
+                  
+                        }else if(previousPrefix != null){
+                  
+                            previousPrefix.updateOne(
+                                {'prefix' : oldPrefix, 'maxJobId': company.currentJobId},
+                                (err: any, raw: any) => {
+                                if (err) {
+                                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                                }
+                            
+                                return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
+                            })
+                        }else{
+
+                            return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
+                        }
+
+                        
+                    })
+                    
+                })
+            } else if (typeof params.workOrderNumber !== 'undefined' && params.workOrderNumber && (typeof params.prefix === 'undefined' || !params.prefix)){
+          
+                if(company.currentJobId > params.workOrderNumber) {
+                    return res.json({'status': Status.Success, 'message': "Work order number can not be less then "+company.currentJobId});      
+                }
+
+                company.updateOne({'currentJobId':params.workOrderNumber}, (err: any, raw: any)=> {
+                    if (err) {                
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+
+                    return res.json({'status': Status.Success, 'message': "Work order number updated successfully."});
+                })
+
+            } else if ((typeof params.prefix !== 'undefined' && params.prefix) && (typeof params.workOrderNumber !== 'undefined' && params.workOrderNumber) ) {
+                
+                if (company.prefix == params.prefix) {
+
+                    if (company.currentJobId > params.workOrderNumber) {
+                        return res.json({'status': Status.Success, 'message': "Work order number can not be less then "+company.currentJobId});
+                    }
+
+                    company.updateOne({'currentJobId':params.workOrderNumber}, (err: any, raw: any)=> {
+                        if (err) {                
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
+                        
+                        return res.json({'status': Status.Success, 'message': "Work order number updated successfully."});
+                    })
+                
+                } else if (company.prefix != params.prefix) {
+                    checkPrefixExists(req, res, (req: Request, res: Response) => { 
+
+                        oldPrefix = company.prefix
+                        oldJobId = company.currentJobId
+
+                        company.updateOne({'prefix':params.prefix, 'currentJobId' : params.workOrderNumber}, (err: any, raw: any)=> {
+                            if (err) {                
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            }
+
+                            if(prefix == null && oldPrefix != undefined) {
+                                var prefix = new CompanyPrefix({
+                                    company : req.companyId,
+                                    prefix : oldPrefix,
+                                    maxJobId: oldJobId
+                                })
+                                prefix.save((err: any, companyPrefix: ICompanyPrefix) => {
+                                    if (err) {
+                                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                                    }
+            
+                                    return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
+                                })
+                            }else if(prefix != null) {
+                                const companyPrefix = <ICompanyPrefix>prefix
+                                
+                                companyPrefix.updateOne(
+                                    {'prefix' : oldPrefix, 'maxJobId': oldJobId},
+                                    (err: any, raw: any) => {
+                                    if (err) {
+                                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                                    }
+            
+                                    return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
+                                })
+                            }else{
+                                return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
+                            }
+                        })
+                    })
+                }
+            }         
+        }
+    )
+}
+
+const checkPrefixExists = (req: Request, res: Response, next: (req: Request, res: Response, prefix: ICompanyPrefix) => void) => {
+
+    const params = req.body
+
+    CompanyPrefix.findOne(
+        { 'prefix': req.company.prefix, 'company' : req.companyId },
+        (err: any, companyPrefix: ICompanyPrefix) => {
+
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+
+            if (companyPrefix == undefined || companyPrefix == null) {
+                next(req, res, null)
+                return
+            
+            }else{
+                if(params.workOrderNumber != undefined && params.workOrderNumber !==null && params.workOrderNumber!= '""') {
+                    if (companyPrefix.maxJobId > params.workOrderNumber) {
+                        return res.json({ 'status': Status.Error, 'message': 'Work order number with prefix '+params.prefix+' is not allowed. Try no greater then '+companyPrefix.maxJobId })
+                    } else {
+                        next(req, res, companyPrefix)
+                        return
+                    }
+
+                }else if (companyPrefix.maxJobId > req.company.currentJobId){
+                    return res.json({ 'status': Status.Error, 'message': 'Current work order number with prefix '+params.prefix+' is not allowed. Try no greater then '+companyPrefix.maxJobId })
+                
+                }else{
+                    next(req, res, companyPrefix)
+                    return
+                }   
+            }
+        }
+    )
+
+}
+
+export const getCustomWorkNumber = (req: Request, res: Response) => {
+   
+    const params = req.body
+    const admin = <ICompanyAdmin>req.user
+    
+    Company.findById(req.companyId,
+        (err: any, company: ICompany) => {
+
+            if (err) {          
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+            
+            if(company == undefined || company == null ) {
+                return res.json({ 'status': Status.Error, 'message': 'No company found.' })
+            }
+
+            return res.json({status: Status.Success, 'prefix' : company.prefix, 'currentWorkOrderNumber' : company.currentJobId});
         }
     )
 }

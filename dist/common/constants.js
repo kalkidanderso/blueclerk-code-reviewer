@@ -114,7 +114,8 @@ exports.UserPermissions = {
             75 /* Get_Contractors_For_Job */,
             76 /* Get_Customer_Detail */,
             77 /* Get_Job_Report */,
-            80 /* Scan_Tag */
+            80 /* Scan_Tag */,
+            81 /* Get_Custom_Work_No */
         ],
         off: [0 /* None */],
     },
@@ -186,7 +187,8 @@ exports.UserPermissions = {
             75 /* Get_Contractors_For_Job */,
             76 /* Get_Customer_Detail */,
             77 /* Get_Job_Report */,
-            80 /* Scan_Tag */
+            80 /* Scan_Tag */,
+            81 /* Get_Custom_Work_No */
         ],
         off: [0 /* None */],
     },
@@ -261,7 +263,8 @@ exports.UserPermissions = {
             75 /* Get_Contractors_For_Job */,
             76 /* Get_Customer_Detail */,
             77 /* Get_Job_Report */,
-            80 /* Scan_Tag */
+            80 /* Scan_Tag */,
+            81 /* Get_Custom_Work_No */
         ],
         off: [0 /* None */],
     },
@@ -345,7 +348,8 @@ exports.UserPermissions = {
             77 /* Get_Job_Report */,
             78 /* Get_QB_Customers */,
             79 /* Create_QB_customer */,
-            80 /* Scan_Tag */
+            80 /* Scan_Tag */,
+            81 /* Get_Custom_Work_No */
         ],
         off: [0 /* None */],
     }

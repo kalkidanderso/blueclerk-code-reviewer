@@ -139,6 +139,7 @@ export const enum Permissions {
     Get_QB_Customers,
     Create_QB_customer,
     Scan_Tag,
+    Get_Custom_Work_No,
 }
 
 export const ContractorPermissions = {
@@ -236,7 +237,8 @@ export const UserPermissions = {
             Permissions.Get_Contractors_For_Job,
             Permissions.Get_Customer_Detail,
             Permissions.Get_Job_Report,
-            Permissions.Scan_Tag
+            Permissions.Scan_Tag,
+            Permissions.Get_Custom_Work_No
         ],
         off: [Permissions.None],
     },
@@ -308,7 +310,8 @@ export const UserPermissions = {
             Permissions.Get_Contractors_For_Job,
             Permissions.Get_Customer_Detail,
             Permissions.Get_Job_Report,
-            Permissions.Scan_Tag
+            Permissions.Scan_Tag,
+            Permissions.Get_Custom_Work_No
         ],
         off: [Permissions.None],
     },
@@ -383,7 +386,8 @@ export const UserPermissions = {
             Permissions.Get_Contractors_For_Job,
             Permissions.Get_Customer_Detail,
             Permissions.Get_Job_Report,
-            Permissions.Scan_Tag
+            Permissions.Scan_Tag,
+            Permissions.Get_Custom_Work_No
         ],
         off: [Permissions.None],
     },
@@ -467,7 +471,8 @@ export const UserPermissions = {
             Permissions.Get_Job_Report,
             Permissions.Get_QB_Customers,
             Permissions.Create_QB_customer,
-            Permissions.Scan_Tag
+            Permissions.Scan_Tag,
+            Permissions.Get_Custom_Work_No
         ],
         off: [Permissions.None],
     }
