@@ -3003,22 +3003,6 @@ paths:
         - application/x-www-form-urlencoded
       produces:
         - application/json
-      parameters:
-        - name: qbAccessToken
-          in: formData
-          description: Quickbooks access token after connecting to quickbooks online through frontend or from quickbook dasboard -> Playground
-          required: true
-          type: string
-        - name: qbRefreshToken
-          in: formData
-          description: Quickbooks refresh access token after connecting to quickbooks online through frontend or from quickbook dasboard -> Playground
-          required: true
-          type: string
-        - name: realmId
-          in: formData
-          description: CompanyId / realm Id fetched from frontend after connecting quickbooks onine  or from quickbook dasboard -> Playground
-          required: true
-          type: string
       responses:
         '200':
           description: Success
@@ -3036,22 +3020,6 @@ paths:
         - application/x-www-form-urlencoded
       produces:
         - application/json
-      parameters:
-        - name: qbAccessToken
-          in: formData
-          description: Quickbooks access token after connecting to quickbooks online through frontend or from quickbook dasboard -> Playground
-          required: true
-          type: string
-        - name: qbRefreshToken
-          in: formData
-          description: Quickbooks refresh access token after connecting to quickbooks online through frontend or from quickbook dasboard -> Playground
-          required: true
-          type: string
-        - name: realmId
-          in: formData
-          description: CompanyId / realm Id fetched from frontend after connecting quickbooks onine  or from quickbook dasboard -> Playground
-          required: true
-          type: string
       responses:
         '200':
           description: Success
@@ -3070,21 +3038,6 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: qbAccessToken
-          in: formData
-          description: Quickbooks access token after connecting to quickbooks online through frontend or from quickbook dasboard -> Playground
-          required: true
-          type: string
-        - name: qbRefreshToken
-          in: formData
-          description: Quickbooks refresh access token after connecting to quickbooks online through frontend or from quickbook dasboard -> Playground
-          required: true
-          type: string
-        - name: realmId
-          in: formData
-          description: CompanyId / realm Id fetched from frontend after connecting quickbooks onine  or from quickbook dasboard -> Playground
-          required: true
-          type: string
         - name: email
           in: formData
           type: string

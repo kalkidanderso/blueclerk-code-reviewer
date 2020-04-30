@@ -88,7 +88,8 @@ const CompanySchema = new mongoose_1.Schema({
         type: Boolean,
         default: false
     },
-    customersSyncedAt: Date
+    customersSyncedAt: Date,
+    socketId: String
 });
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)
 exports.Company = mongoose_1.default.model('Company', CompanySchema);

@@ -56,7 +56,8 @@ export interface ICompany extends Document{
     qbRefreshToken: string,
     realmId: string,
     customersSynced: boolean,
-    customersSyncedAt: Date
+    customersSyncedAt: Date,
+    socketId: string
 }
 
 const CompanySchema = new Schema({
@@ -140,7 +141,8 @@ const CompanySchema = new Schema({
         type: Boolean,
         default: false
     },
-    customersSyncedAt: Date
+    customersSyncedAt: Date,
+    socketId: String
 })
 
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)

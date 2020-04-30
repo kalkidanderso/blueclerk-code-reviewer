@@ -4,7 +4,10 @@ export const stripeConfig = {
 }
 export const qbConfig = {
     qb_client_id: 'ABpcfFS7x9n3cNJQ3eojqsD0hzHV4wFbF9bHyYHzq8G6vC5b2Z',
-    qb_client_secret: 'W9RXt15hXNzcryKKkHmMxKBCGlRVBMyRJK5V1nO9'
+    qb_client_secret: 'W9RXt15hXNzcryKKkHmMxKBCGlRVBMyRJK5V1nO9',
+    qb_environment: 'sandbox',
+    qb_redirect_uri: 'http://blueclerk-node-api.deploy.blueclerk.com:3006/api/v1/callback'
+
 }
 export const privateKey = {
     key: 'KwXkxQQuBzDnZzbt0B3CeDQurnED00kXsu30X3'

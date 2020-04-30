@@ -97,7 +97,6 @@ exports.Validations = {
     updateTicket: [express_validator_1.check('ticketId').exists(), express_validator_1.check('note').exists()],
     getTicketDetail: [express_validator_1.check('ticketId').exists()],
     getJobReport: [express_validator_1.check('jobId').exists()],
-    getQBCustomers: [express_validator_1.check('qbAccessToken').exists(), express_validator_1.check('qbAccessToken').not().isEmpty(), express_validator_1.check('qbRefreshToken').exists(), express_validator_1.check('qbRefreshToken').not().isEmpty(), express_validator_1.check('realmId').exists(), express_validator_1.check('realmId').not().isEmpty(),],
-    createQBCustomer: [express_validator_1.check('qbAccessToken').exists(), express_validator_1.check('qbAccessToken').not().isEmpty(), express_validator_1.check('qbRefreshToken').exists(), express_validator_1.check('qbRefreshToken').not().isEmpty(), express_validator_1.check('realmId').exists(), express_validator_1.check('realmId').not().isEmpty(), express_validator_1.check('name').exists(), express_validator_1.check('name').not().isEmpty(),],
+    createQBCustomer: [express_validator_1.check('name').exists(), express_validator_1.check('name').not().isEmpty(),],
 };
 //# sourceMappingURL=validator.js.map

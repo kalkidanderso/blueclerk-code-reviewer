@@ -140,6 +140,8 @@ export const enum Permissions {
     Create_QB_customer,
     Scan_Tag,
     Get_Custom_Work_No,
+    Get_QB_Uri,
+
 }
 
 export const ContractorPermissions = {
@@ -472,7 +474,8 @@ export const UserPermissions = {
             Permissions.Get_QB_Customers,
             Permissions.Create_QB_customer,
             Permissions.Scan_Tag,
-            Permissions.Get_Custom_Work_No
+            Permissions.Get_Custom_Work_No,
+            Permissions.Get_QB_Uri
         ],
         off: [Permissions.None],
     }

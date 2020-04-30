@@ -6,14 +6,11 @@ const Company_1 = require("../models/Company");
 const Customer_1 = require("../models/Customer");
 const CompanyCustomer_1 = require("../models/CompanyCustomer");
 var QuickBooks = require('node-quickbooks');
+var OAuthClient = require("intuit-oauth");
+var http = require('http');
+var io = require("socket.io");
 exports.getQBCustomers = (req, res) => {
     const params = req.body;
-    var qbo = new QuickBooks(config_1.qbConfig.qb_client_id, config_1.qbConfig.qb_client_secret, params.qbAccessToken, false, // no token secret for oAuth 2.0
-    params.realmId, true, // use the sandbox?
-    false, // enable debugging?
-    null, // set minorversion, or null for the latest version
-    '2.0', //oAuth version
-    params.qbRefreshToken);
     var companyId = req.companyId;
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
@@ -25,10 +22,13 @@ exports.getQBCustomers = (req, res) => {
         if (company.customersSynced) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'You have already synced the customers try manual sync.' });
         }
+        var qbo = new QuickBooks(config_1.qbConfig.qb_client_id, config_1.qbConfig.qb_client_secret, company.qbAccessToken, false, // no token secret for oAuth 2.0
+        company.realmId, true, // use the sandbox?
+        false, // enable debugging?
+        null, // set minorversion, or null for the latest version
+        '2.0', //oAuth version
+        company.qbRefreshToken);
         company.updateOne({
-            'qbAccessToken': params.qbAccessToken,
-            'qbRefreshToken': params.qbRefreshToken,
-            'realmId': params.realmId,
             'customersSynced': true,
             'customersSyncedAt': Date.now(),
         }, (err, raw) => {
@@ -36,7 +36,6 @@ exports.getQBCustomers = (req, res) => {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             qbo.findCustomers({ fetchAll: true }, function (qbError, customers) {
-                console.log(customers);
                 if (qbError != null && Object.keys(qbError).length != 0) {
                     var errorMessage;
                     if (qbError.hasOwnProperty("fault")) {
@@ -117,12 +116,6 @@ exports.getQBCustomers = (req, res) => {
 };
 exports.syncQBCustomers = (req, res) => {
     const params = req.body;
-    var qbo = new QuickBooks(config_1.qbConfig.qb_client_id, config_1.qbConfig.qb_client_secret, params.qbAccessToken, false, // no token secret for oAuth 2.0
-    params.realmId, true, // use the sandbox?
-    false, // enable debugging?
-    14, // set minorversion, or null for the latest version
-    '2.0', //oAuth version
-    params.qbRefreshToken);
     var companyId = req.companyId;
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
@@ -135,6 +128,12 @@ exports.syncQBCustomers = (req, res) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
+            var qbo = new QuickBooks(config_1.qbConfig.qb_client_id, config_1.qbConfig.qb_client_secret, company.qbAccessToken, false, // no token secret for oAuth 2.0
+            company.realmId, true, // use the sandbox?
+            false, // enable debugging?
+            14, // set minorversion, or null for the latest version
+            '2.0', //oAuth version
+            company.qbRefreshToken);
             var companyCustomerIds = [];
             if (companyCustomers.length > 0) {
                 companyCustomers.map((cust) => {
@@ -197,6 +196,7 @@ exports.syncQBCustomers = (req, res) => {
                         if (newCustomers.length == 0) {
                             return res.json({ 'status': constants_1.Status.Success, 'message': "Nothing to sync" });
                         }
+                        return res.json({ 'status': constants_1.Status.Success, 'newCustomers': newCustomers });
                         Customer_1.Customer.collection.insert(newCustomers, function (err, insertedCustomers) {
                             if (err) {
                                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -233,12 +233,6 @@ exports.syncQBCustomers = (req, res) => {
 };
 exports.createQBCustomer = (req, res) => {
     const params = req.body;
-    var qbo = new QuickBooks(config_1.qbConfig.qb_client_id, config_1.qbConfig.qb_client_secret, params.qbAccessToken, false, // no token secret for oAuth 2.0
-    params.realmId, true, // use the sandbox?
-    false, // enable debugging?
-    14, // set minorversion, or null for the latest version
-    '2.0', //oAuth version
-    params.qbRefreshToken);
     var companyId = req.companyId;
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
@@ -247,6 +241,12 @@ exports.createQBCustomer = (req, res) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'No company found.' });
         }
+        var qbo = new QuickBooks(config_1.qbConfig.qb_client_id, config_1.qbConfig.qb_client_secret, company.qbAccessToken, false, // no token secret for oAuth 2.0
+        company.realmId, true, // use the sandbox?
+        false, // enable debugging?
+        14, // set minorversion, or null for the latest version
+        '2.0', //oAuth version
+        company.qbRefreshToken);
         let customer = {
             "PrimaryEmailAddr": {
                 "Address": params.email
@@ -273,5 +273,75 @@ const get = function (obj, key) {
     return key.split(".").reduce(function (o, x) {
         return (typeof o == "undefined" || o === null) ? '' : o[x];
     }, obj);
+};
+exports.getQBUri = (req, res) => {
+    const params = req.body;
+    var oauthClient = new OAuthClient({
+        clientId: config_1.qbConfig.qb_client_id,
+        clientSecret: config_1.qbConfig.qb_client_secret,
+        environment: config_1.qbConfig.qb_environment,
+        redirectUri: config_1.qbConfig.qb_redirect_uri,
+    });
+    var authUri = oauthClient.authorizeUri({
+        scope: [OAuthClient.scopes.Accounting],
+        state: req.companyId,
+    });
+    Company_1.Company.findById(req.companyId, (err, company) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (company == undefined || company == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid company id" });
+        }
+        company.updateOne({
+            socketId: params.sessionID
+        }, (err, raw) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            return res.json({ 'status': constants_1.Status.Success, 'authUri': authUri });
+        });
+    });
+};
+exports.getCallBackToken = (req, res, sio) => {
+    var oauthClient = new OAuthClient({
+        clientId: config_1.qbConfig.qb_client_id,
+        clientSecret: config_1.qbConfig.qb_client_secret,
+        environment: config_1.qbConfig.qb_environment,
+        redirectUri: config_1.qbConfig.qb_redirect_uri,
+    });
+    oauthClient
+        .createToken(req.url)
+        .then(function (authResponse) {
+        // var oauth2_token_json: any = JSON.stringify(authResponse.getJson(), null, 2);
+        const companyId = req.query.state;
+        const refresh_token = authResponse.token.refresh_token;
+        const access_token = authResponse.token.access_token;
+        const realmId = req.query.realmId;
+        Company_1.Company.findById(companyId, (err, company) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            if (company == undefined || company == null) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid company id" });
+            }
+            company.updateOne({
+                qbAccessToken: access_token,
+                qbRefreshToken: refresh_token,
+                realmId: realmId
+            }, (err, raw) => {
+                if (err) {
+                    sio.emit(company.socketId, { 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                // sio.emit("authToken", oauth2_token_json);
+                sio.emit(company.socketId, { 'status': constants_1.Status.Success, 'message': 'Quickbooks Connected Successfully' });
+                res.json({ 'status': 200 });
+            });
+        });
+    })
+        .catch(function (err) {
+        console.error(err);
+    });
 };
 //# sourceMappingURL=quickbook.js.map

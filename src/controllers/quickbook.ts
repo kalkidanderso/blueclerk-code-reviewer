@@ -6,19 +6,12 @@ import { Customer, ICustomer } from '../models/Customer'
 import { CompanyCustomer } from '../models/CompanyCustomer'
 
 var QuickBooks = require('node-quickbooks')
+var OAuthClient = require("intuit-oauth");
+var http = require('http');
+var io = require("socket.io")
 
 export const getQBCustomers = (req: Request, res: Response) => {
     const params = req.body
-    var qbo = new QuickBooks(qbConfig.qb_client_id,
-        qbConfig.qb_client_secret,
-        params.qbAccessToken,
-        false, // no token secret for oAuth 2.0
-        params.realmId,
-        true, // use the sandbox?
-        false, // enable debugging?
-        null, // set minorversion, or null for the latest version
-        '2.0', //oAuth version
-        params.qbRefreshToken);
     
     var companyId = req.companyId;
     if(req.otherCompanyId != undefined) {
@@ -34,10 +27,18 @@ export const getQBCustomers = (req: Request, res: Response) => {
             return res.json({'status': Status.Error, 'message': 'You have already synced the customers try manual sync.' })
         }
 
+        var qbo = new QuickBooks(qbConfig.qb_client_id,
+        qbConfig.qb_client_secret,
+        company.qbAccessToken,
+        false, // no token secret for oAuth 2.0
+        company.realmId,
+        true, // use the sandbox?
+        false, // enable debugging?
+        null, // set minorversion, or null for the latest version
+        '2.0', //oAuth version
+        company.qbRefreshToken);
+
         company.updateOne({
-            'qbAccessToken': params.qbAccessToken,
-            'qbRefreshToken': params.qbRefreshToken,
-            'realmId': params.realmId,
             'customersSynced': true,
             'customersSyncedAt': Date.now(),
         },
@@ -48,7 +49,7 @@ export const getQBCustomers = (req: Request, res: Response) => {
 
             qbo.findCustomers({fetchAll: true},
             function(qbError: any, customers: any) {
-                console.log(customers)
+                
                 if (qbError != null && Object.keys(qbError).length != 0) {
                     
                     var errorMessage: string
@@ -107,7 +108,7 @@ export const getQBCustomers = (req: Request, res: Response) => {
                         if(newCustomers.length == 0) {
                             return res.json({'status': Status.Success, 'message': "Nothing to sync"})
                         }
-
+                        
                         Customer.collection.insert(newCustomers, function (err: any, insertedCustomers: any) {
                             if (err){ 
                                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -143,17 +144,7 @@ export const getQBCustomers = (req: Request, res: Response) => {
 
 export const syncQBCustomers = (req: Request, res: Response) => {
     const params = req.body
-    var qbo = new QuickBooks(qbConfig.qb_client_id,
-        qbConfig.qb_client_secret,
-        params.qbAccessToken,
-        false, // no token secret for oAuth 2.0
-        params.realmId,
-        true, // use the sandbox?
-        false, // enable debugging?
-        14, // set minorversion, or null for the latest version
-        '2.0', //oAuth version
-        params.qbRefreshToken
-    );
+    
     
     var companyId = req.companyId;
     if(req.otherCompanyId != undefined) {
@@ -169,6 +160,18 @@ export const syncQBCustomers = (req: Request, res: Response) => {
             if(err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError })
             }
+
+            var qbo = new QuickBooks(qbConfig.qb_client_id,
+                qbConfig.qb_client_secret,
+                company.qbAccessToken,
+                false, // no token secret for oAuth 2.0
+                company.realmId,
+                true, // use the sandbox?
+                false, // enable debugging?
+                14, // set minorversion, or null for the latest version
+                '2.0', //oAuth version
+                company.qbRefreshToken
+            );
 
             var companyCustomerIds: any = []
 
@@ -244,6 +247,7 @@ export const syncQBCustomers = (req: Request, res: Response) => {
                             return res.json({'status': Status.Success, 'message': "Nothing to sync"})
                         }
 
+                        return res.json({'status': Status.Success, 'newCustomers': newCustomers})
                         Customer.collection.insert(newCustomers, function (err: any, insertedCustomers: any) {
                             if (err){ 
                                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -289,17 +293,7 @@ export const syncQBCustomers = (req: Request, res: Response) => {
 
 export const createQBCustomer = (req: Request, res: Response) => {
     const params = req.body
-    var qbo = new QuickBooks(qbConfig.qb_client_id,
-        qbConfig.qb_client_secret,
-        params.qbAccessToken,
-        false, // no token secret for oAuth 2.0
-        params.realmId,
-        true, // use the sandbox?
-        false, // enable debugging?
-        14, // set minorversion, or null for the latest version
-        '2.0', //oAuth version
-        params.qbRefreshToken
-    );
+   
     
     var companyId = req.companyId;
     if(req.otherCompanyId != undefined) {
@@ -310,6 +304,17 @@ export const createQBCustomer = (req: Request, res: Response) => {
         if(err) {
             return res.json({'status': Status.Error, 'message': 'No company found.' })
         }
+        var qbo = new QuickBooks(qbConfig.qb_client_id,
+            qbConfig.qb_client_secret,
+            company.qbAccessToken,
+            false, // no token secret for oAuth 2.0
+            company.realmId,
+            true, // use the sandbox?
+            false, // enable debugging?
+            14, // set minorversion, or null for the latest version
+            '2.0', //oAuth version
+            company.qbRefreshToken
+        );
 
         let customer = {
             "PrimaryEmailAddr": {
@@ -342,4 +347,91 @@ const get = function(obj: any, key: any) {
     return key.split(".").reduce(function(o: any, x: any) {
         return (typeof o == "undefined" || o === null) ? '' : o[x];
     }, obj);
+}
+
+
+export const getQBUri = (req: Request, res: Response) => {
+    
+    const params = req.body
+    
+    var oauthClient = new OAuthClient({
+        clientId: qbConfig.qb_client_id,
+        clientSecret: qbConfig.qb_client_secret,
+        environment: qbConfig.qb_environment,
+        redirectUri: qbConfig.qb_redirect_uri,
+    });
+
+    var authUri = oauthClient.authorizeUri({
+        scope: [OAuthClient.scopes.Accounting],
+        state: req.companyId,
+    });
+
+    Company.findById(req.companyId, (err: any, company: ICompany) => {
+        if(err){
+            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }
+        if(company == undefined || company ==null){
+            return res.json({'status': Status.Error, 'message': "Invalid company id"})
+        }
+
+        company.updateOne({
+            socketId: params.sessionID
+        }, (err: any, raw: any)=>{
+            if(err){
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+            
+            return res.json({'status': Status.Success, 'authUri': authUri})
+        })
+    })
+}
+
+export const getCallBackToken = (req: Request, res: Response, sio: any) => {
+
+    var oauthClient = new OAuthClient({
+        clientId: qbConfig.qb_client_id,
+        clientSecret: qbConfig.qb_client_secret,
+        environment: qbConfig.qb_environment,
+        redirectUri: qbConfig.qb_redirect_uri,
+    });
+    
+    oauthClient
+    .createToken(req.url)
+    .then(function (authResponse: any) {
+      
+        // var oauth2_token_json: any = JSON.stringify(authResponse.getJson(), null, 2);
+      
+        const companyId = req.query.state
+        const refresh_token = authResponse.token.refresh_token
+        const access_token = authResponse.token.access_token
+        const realmId = req.query.realmId
+
+        Company.findById(companyId, (err: any, company: ICompany) => {
+            if(err){
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+            if(company == undefined || company ==null){
+                return res.json({'status': Status.Error, 'message': "Invalid company id"})
+            }
+
+            company.updateOne({
+                qbAccessToken: access_token,
+                qbRefreshToken: refresh_token,
+                realmId: realmId
+            }, (err: any, raw: any)=>{
+                if(err){
+                    sio.emit(company.socketId, {'status': Status.Error, 'message': Messages.GenericError});
+                    res.json({'status': Status.Error, 'message': Messages.GenericError})
+                }
+                
+                // sio.emit("authToken", oauth2_token_json);
+                
+                sio.emit(company.socketId, {'status': Status.Success, 'message': 'Quickbooks Connected Successfully'});
+                res.json({'status': 200})
+            })
+        })
+    })
+    .catch(function (err: any) {
+      console.error(err);
+    });
 }

@@ -349,7 +349,8 @@ exports.UserPermissions = {
             78 /* Get_QB_Customers */,
             79 /* Create_QB_customer */,
             80 /* Scan_Tag */,
-            81 /* Get_Custom_Work_No */
+            81 /* Get_Custom_Work_No */,
+            82 /* Get_QB_Uri */
         ],
         off: [0 /* None */],
     }

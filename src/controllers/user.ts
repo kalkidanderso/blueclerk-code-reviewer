@@ -242,7 +242,6 @@ export const createCompany = (req: Request, res: Response) => {
                 },(err: any, raq: any) =>{
 
                     if (err) {
-                        console.log(err)
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
 
@@ -396,14 +395,13 @@ export const updateCompanyProfile = (req: Request, res: Response) => {
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
-        console.log(company.info.companyEmail)
-        console.log(params.companyEmail)
+        
         if(company.info.companyEmail != params.companyEmail ) {
 
             Company.findOne(
                 { 'info.companyEmail': params.companyEmail },
                 (err: any, previousCompany: ICompany) => {
-                    console.log(previousCompany)
+                    
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }

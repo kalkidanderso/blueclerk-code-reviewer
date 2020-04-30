@@ -176,7 +176,6 @@ exports.createCompany = (req, res) => {
                     'admin': companyAdmin._id
                 }, (err, raq) => {
                     if (err) {
-                        console.log(err);
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
                     aws_1.sendEmail({ to: params.email });
@@ -279,11 +278,8 @@ exports.updateCompanyProfile = (req, res) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        console.log(company.info.companyEmail);
-        console.log(params.companyEmail);
         if (company.info.companyEmail != params.companyEmail) {
             Company_1.Company.findOne({ 'info.companyEmail': params.companyEmail }, (err, previousCompany) => {
-                console.log(previousCompany);
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
