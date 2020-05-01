@@ -5,6 +5,7 @@ exports.Status = {
     Success: 1,
     TagAssociated: 2,
     TagNotAssociated: 3,
+    QBTokenExpired: 4
 };
 exports.Messages = {
     MissingParams: 'Parameters are missing.',
@@ -115,7 +116,8 @@ exports.UserPermissions = {
             76 /* Get_Customer_Detail */,
             77 /* Get_Job_Report */,
             80 /* Scan_Tag */,
-            81 /* Get_Custom_Work_No */
+            81 /* Get_Custom_Work_No */,
+            83 /* Get_Sync_Info */
         ],
         off: [0 /* None */],
     },
@@ -188,7 +190,8 @@ exports.UserPermissions = {
             76 /* Get_Customer_Detail */,
             77 /* Get_Job_Report */,
             80 /* Scan_Tag */,
-            81 /* Get_Custom_Work_No */
+            81 /* Get_Custom_Work_No */,
+            83 /* Get_Sync_Info */
         ],
         off: [0 /* None */],
     },
@@ -264,7 +267,8 @@ exports.UserPermissions = {
             76 /* Get_Customer_Detail */,
             77 /* Get_Job_Report */,
             80 /* Scan_Tag */,
-            81 /* Get_Custom_Work_No */
+            81 /* Get_Custom_Work_No */,
+            83 /* Get_Sync_Info */
         ],
         off: [0 /* None */],
     },
@@ -350,7 +354,8 @@ exports.UserPermissions = {
             79 /* Create_QB_customer */,
             80 /* Scan_Tag */,
             81 /* Get_Custom_Work_No */,
-            82 /* Get_QB_Uri */
+            82 /* Get_QB_Uri */,
+            83 /* Get_Sync_Info */
         ],
         off: [0 /* None */],
     }

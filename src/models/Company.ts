@@ -57,7 +57,8 @@ export interface ICompany extends Document{
     realmId: string,
     customersSynced: boolean,
     customersSyncedAt: Date,
-    socketId: string
+    socketId: string,
+    qbAuthorized: boolean
 }
 
 const CompanySchema = new Schema({
@@ -142,7 +143,11 @@ const CompanySchema = new Schema({
         default: false
     },
     customersSyncedAt: Date,
-    socketId: String
+    socketId: String,
+    qbAuthorized: {
+        type: Boolean,
+        default: false
+    },
 })
 
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)

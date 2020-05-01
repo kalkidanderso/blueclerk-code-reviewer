@@ -754,6 +754,14 @@ const router: express.Router = express.Router()
     )
 
     router.post(
+        '/getSyncInfo',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Custom_Work_No),
+        userController.getSyncInfo
+    )
+
+    router.post(
         '/checkAndGet',
         validate(Validations.socialLogin),
         userController.checkAndGetUser

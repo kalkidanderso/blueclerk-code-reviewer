@@ -89,7 +89,11 @@ const CompanySchema = new mongoose_1.Schema({
         default: false
     },
     customersSyncedAt: Date,
-    socketId: String
+    socketId: String,
+    qbAuthorized: {
+        type: Boolean,
+        default: false
+    },
 });
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)
 exports.Company = mongoose_1.default.model('Company', CompanySchema);

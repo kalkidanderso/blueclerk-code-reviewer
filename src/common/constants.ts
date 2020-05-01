@@ -5,6 +5,7 @@ export const Status = {
     Success: 1,
     TagAssociated: 2,
     TagNotAssociated: 3,
+    QBTokenExpired: 4
 }
 
 export const Messages = {
@@ -141,6 +142,7 @@ export const enum Permissions {
     Scan_Tag,
     Get_Custom_Work_No,
     Get_QB_Uri,
+    Get_Sync_Info
 
 }
 
@@ -240,7 +242,8 @@ export const UserPermissions = {
             Permissions.Get_Customer_Detail,
             Permissions.Get_Job_Report,
             Permissions.Scan_Tag,
-            Permissions.Get_Custom_Work_No
+            Permissions.Get_Custom_Work_No,
+            Permissions.Get_Sync_Info
         ],
         off: [Permissions.None],
     },
@@ -313,7 +316,8 @@ export const UserPermissions = {
             Permissions.Get_Customer_Detail,
             Permissions.Get_Job_Report,
             Permissions.Scan_Tag,
-            Permissions.Get_Custom_Work_No
+            Permissions.Get_Custom_Work_No,
+            Permissions.Get_Sync_Info
         ],
         off: [Permissions.None],
     },
@@ -389,7 +393,8 @@ export const UserPermissions = {
             Permissions.Get_Customer_Detail,
             Permissions.Get_Job_Report,
             Permissions.Scan_Tag,
-            Permissions.Get_Custom_Work_No
+            Permissions.Get_Custom_Work_No,
+            Permissions.Get_Sync_Info
         ],
         off: [Permissions.None],
     },
@@ -475,7 +480,8 @@ export const UserPermissions = {
             Permissions.Create_QB_customer,
             Permissions.Scan_Tag,
             Permissions.Get_Custom_Work_No,
-            Permissions.Get_QB_Uri
+            Permissions.Get_QB_Uri,
+            Permissions.Get_Sync_Info
         ],
         off: [Permissions.None],
     }

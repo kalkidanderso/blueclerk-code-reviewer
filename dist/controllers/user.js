@@ -1201,6 +1201,17 @@ exports.getCustomWorkNumber = (req, res) => {
         return res.json({ status: constants_1.Status.Success, 'prefix': company.prefix, 'currentWorkOrderNumber': company.currentJobId });
     });
 };
+exports.getSyncInfo = (req, res) => {
+    Company_1.Company.findById(req.companyId, (err, company) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (company == undefined || company == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'No company found.' });
+        }
+        return res.json({ 'status': constants_1.Status.Success, 'customersSyncedAt': company.customersSyncedAt, 'customersSynced': company.customersSynced, 'qbAuthorized': company.qbAuthorized });
+    });
+};
 exports.checkAndGetUser = (req, res) => {
     const params = req.body;
     User_1.User.findOne({ 'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType }, (err, user) => {

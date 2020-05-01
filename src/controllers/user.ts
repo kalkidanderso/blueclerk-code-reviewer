@@ -1677,6 +1677,24 @@ export const getCustomWorkNumber = (req: Request, res: Response) => {
     )
 }
 
+export const getSyncInfo = (req: Request, res: Response) => {
+   
+    Company.findById(req.companyId,
+        (err: any, company: ICompany) => {
+
+            if (err) {          
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+            
+            if(company == undefined || company == null ) {
+                return res.json({ 'status': Status.Error, 'message': 'No company found.' })
+            }
+
+            return res.json({'status': Status.Success, 'customersSyncedAt' : company.customersSyncedAt, 'customersSynced' : company.customersSynced, 'qbAuthorized' : company.qbAuthorized});
+        }
+    )
+}
+
 export const checkAndGetUser = (req: Request, res: Response) => {
   
     const params = req.body

@@ -151,6 +151,7 @@ function default_1(sio) {
     router.post('/upgradeToCompany', passport_1.default.authenticate('jwt', { session: false }), permissions_1.checkUserPermissions(67 /* Upgrade_To_Company */), validator_1.validate(validator_1.Validations.upgradeToCompany), userController.upgradeToCompany);
     router.post('/setCustomWorkOrderNumber', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(69 /* Custom_work_Order_Number */), userController.setCustomWorkNumber);
     router.post('/getCurrentJobId', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(81 /* Get_Custom_Work_No */), userController.getCustomWorkNumber);
+    router.post('/getSyncInfo', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(81 /* Get_Custom_Work_No */), userController.getSyncInfo);
     router.post('/checkAndGet', validator_1.validate(validator_1.Validations.socialLogin), userController.checkAndGetUser);
     router.post('/signUpSocial', validator_1.validate(validator_1.Validations.socialSignUp), userController.createCompanySocial);
     router.post('/contractorSignUpSocial', validator_1.validate(validator_1.Validations.contractorSocialSignUp), userController.createContractorSocial);
