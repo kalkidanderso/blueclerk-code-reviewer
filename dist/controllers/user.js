@@ -114,7 +114,7 @@ exports.createGlobalAdmin = (req, res) => {
 exports.createCompany = (req, res) => {
     checkCompanyEmailExists(req, res, (req, res) => {
         const params = req.body;
-        const chargeDate = new Date();
+        var chargeDate = new Date();
         chargeDate.setDate(chargeDate.getDate() + 30);
         const company = new Company_1.Company({
             info: {

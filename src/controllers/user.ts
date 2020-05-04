@@ -169,7 +169,7 @@ export const createCompany = (req: Request, res: Response) => {
     checkCompanyEmailExists(req, res, (req: Request, res: Response) => {
 
         const params = req.body
-        const chargeDate = new Date();
+        var chargeDate = new Date();
         chargeDate.setDate(chargeDate.getDate() + 30);
         const company = new Company(
             {

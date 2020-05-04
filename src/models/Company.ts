@@ -58,7 +58,8 @@ export interface ICompany extends Document{
     customersSynced: boolean,
     customersSyncedAt: Date,
     socketId: string,
-    qbAuthorized: boolean
+    qbAuthorized: boolean,
+    qbRefeshTokenExpiry: Date
 }
 
 const CompanySchema = new Schema({
@@ -148,6 +149,7 @@ const CompanySchema = new Schema({
         type: Boolean,
         default: false
     },
+    qbRefeshTokenExpiry: Date
 })
 
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)

@@ -94,6 +94,7 @@ const CompanySchema = new mongoose_1.Schema({
         type: Boolean,
         default: false
     },
+    qbRefeshTokenExpiry: Date
 });
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)
 exports.Company = mongoose_1.default.model('Company', CompanySchema);

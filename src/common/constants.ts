@@ -5,7 +5,7 @@ export const Status = {
     Success: 1,
     TagAssociated: 2,
     TagNotAssociated: 3,
-    QBTokenExpired: 4
+    QBUnauthorized: 4
 }
 
 export const Messages = {
@@ -20,6 +20,7 @@ export const Messages = {
     UserExists: 'User already exists.',
     TagAssociated: 'Tag is associated with customer',
     TagNotAssociated: 'Tag is not associated with customer',
+    QBUnAuthorized: 'Quickbooks authorization failed',
 }
 
 export const enum Role {

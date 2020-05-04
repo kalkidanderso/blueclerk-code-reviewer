@@ -11,7 +11,6 @@ var http = require('http');
 var io = require("socket.io")
 
 export const getQBCustomers = (req: Request, res: Response) => {
-    const params = req.body
     
     var companyId = req.companyId;
     if(req.otherCompanyId != undefined) {
@@ -27,56 +26,170 @@ export const getQBCustomers = (req: Request, res: Response) => {
             return res.json({'status': Status.Error, 'message': 'You have already synced the customers try manual sync.' })
         }
 
-        var qbo = new QuickBooks(qbConfig.qb_client_id,
-        qbConfig.qb_client_secret,
-        company.qbAccessToken,
-        false, // no token secret for oAuth 2.0
-        company.realmId,
-        true, // use the sandbox?
-        false, // enable debugging?
-        null, // set minorversion, or null for the latest version
-        '2.0', //oAuth version
-        company.qbRefreshToken);
+        if(!company.qbAuthorized) {
+            return res.json({'status': Status.QBUnauthorized, 'message': Messages.QBUnAuthorized })
+        }
 
-        company.updateOne({
-            'customersSynced': true,
-            'customersSyncedAt': Date.now(),
-        },
-        (err: any, raw: any) => {
+        if(company.qbAccessToken == undefined || company.qbAccessToken == null || company.qbRefreshToken == undefined || company.qbRefreshToken == null || company.realmId == undefined || company.realmId == null) {
+            return res.json({'status': Status.QBUnauthorized, 'message': Messages.QBUnAuthorized })
+        }
+
+        _getCustomers(req, res, company, (req: Request, res: Response, error: number, errorMessage: string, customers: any) =>{
+            console.log("after get customer")
+            if(error == 0) {
+                console.log("inside errror is 0")
+                return res.json({'status': Status.Error, 'message': errorMessage})
+            }
+
+            if(error == 400){
+                company.updateOne({
+                    qbAuthorized: false,
+                    qbAccessToken: undefined,
+                    qbRefreshToken: undefined,
+                },
+                (err: any, raw: any) => {
+                    if(err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError })
+                    }
+
+                    return res.json({'status': Status.QBUnauthorized, 'message': "Quickbooks Authorization failed."})
+                })
+            }
+
+            if(customers.hasOwnProperty("QueryResponse")) {
+                var importedCustomers = customers.QueryResponse.Customer
+
+                var newCustomers: any = []
+                for (let index = 0; index < importedCustomers.length; index++) {
+                    const element = importedCustomers[index];
+                    newCustomers.push(new Customer({
+                        info: {
+                            email: get(element, 'PrimaryEmailAddr.Address'),
+                        },
+                        profile:{
+                            firstName: get(element, 'DisplayName'),
+                            lastName: get(element, 'DisplayName'),
+                            displayName: get(element, 'DisplayName'),
+                            imageUrl: '',
+                        },
+                        address: {
+                            street: get(element, 'BillAddr.Line1'),
+                            city: get(element, 'BillAddr.City'),
+                            state: get(element, 'BillAddr.CountrySubDivisionCode'),
+                            zipCode: get(element, 'BillAddr.PostalCode'),
+                        },
+                        contact: {
+                            phone: get(element ,'PrimaryPhone.FreeFormNumber'),
+                        },
+                        company: req.companyId,
+                        permissions: {
+                            role: Role.CUSTOMER,
+                            extra: [],
+                        },
+                        quickbookId: element.Id
+                    }))
+                }
+
+                if(newCustomers.length == 0) {
+                    return res.json({'status': Status.Success, 'message': "Nothing to sync"})
+                }
+                
+                Customer.collection.insert(newCustomers, function (err: any, insertedCustomers: any) {
+                    if (err){ 
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    
+                    } else {
+                        var newCompanyCustomers: any = []
+                        insertedCustomers.ops.map((cust: any) => {
+                            newCompanyCustomers.push(new CompanyCustomer({
+                                company: companyId,
+                                customer: cust._id,
+                                createdAt: Date.now()
+                            }))
+                        })
+
+                        CompanyCustomer.collection.insert(newCompanyCustomers, function (err: any, docs: any) {
+                            if (err){ 
+                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            }
+
+                            return res.json({'status': Status.Success, 'message': "Customers Synced successfully"})
+                        })
+
+                    }
+                })
+            }
+
+        })
+    })
+    
+}
+
+
+export const syncQBCustomers = (req: Request, res: Response) => {
+    console.log("syn customers is called")
+    var companyId = req.companyId;
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+        
+    Company.findById(companyId, (err: any, company: ICompany) => {
+        if(err) {
+            return res.json({'status': Status.Error, 'message': 'No company found.' })
+        }
+
+        if(!company.qbAuthorized) {
+            return res.json({'status': Status.QBUnauthorized, 'message': Messages.QBUnAuthorized })
+        }
+
+        if(company.qbAccessToken == undefined || company.qbAccessToken == null || company.qbRefreshToken == undefined || company.qbRefreshToken == null || company.realmId == undefined || company.realmId == null) {
+            return res.json({'status': Status.QBUnauthorized, 'message': Messages.QBUnAuthorized })
+        }
+
+        Customer.find({'company': company._id, 'quickbookId': { $ne: null }}, 'quickbookId', (err: any, companyCustomers: ICustomer[]) => {
             if(err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            qbo.findCustomers({fetchAll: true},
-            function(qbError: any, customers: any) {
-                
-                if (qbError != null && Object.keys(qbError).length != 0) {
-                    
-                    var errorMessage: string
-                    if(qbError.hasOwnProperty("fault")){
+            var companyCustomerIds: any = []
 
-                        if(qbError.fault.error[0].detail.length == 0) {
-                            errorMessage = qbError.fault.error[0].message
-                        }else{
-                            errorMessage = qbError.fault.error[0].detail
+            if(companyCustomers.length > 0) {
+                companyCustomers.map((cust: any) =>{
+                    companyCustomerIds.push(cust.quickbookId)
+                })
+            }
+          
+            _getCustomers(req, res, company, (req: Request, res: Response, error: number, errorMessage: string, customers: any) =>{
+                console.log("after get customer")
+                if(error == 0) {
+                    console.log("inside errror is 0")
+                    return res.json({'status': Status.Error, 'message': errorMessage})
+                }
+
+                if(error == 400){
+                    company.updateOne({
+                        qbAuthorized: false,
+                        qbAccessToken: undefined,
+                        qbRefreshToken: undefined,
+                    },
+                    (err: any, raw: any) => {
+                        if(err) {
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError })
                         }
-                    }
-                    
-                    if(qbError.hasOwnProperty("Fault")){
-                        errorMessage = qbError.Fault.Error[0].Message
-                    }
-                    
-                    return res.json({'status': Status.Error, message: errorMessage })
 
-                } else {
+                        return res.json({'status': Status.QBUnauthorized, 'message': "Quickbooks Authorization failed."})
+                    })
+                }
 
-                    
-                    if(customers.hasOwnProperty("QueryResponse")) {
-                        var importedCustomers = customers.QueryResponse.Customer
+                if(customers.hasOwnProperty("QueryResponse")) {
+                    var importedCustomers = customers.QueryResponse.Customer
 
-                        var newCustomers: any = []
-                        for (let index = 0; index < importedCustomers.length; index++) {
-                            const element = importedCustomers[index];
+                    var newCustomers: any = []
+                    for (let index = 0; index < importedCustomers.length; index++) {
+                        const element = importedCustomers[index];
+
+                        if(companyCustomerIds.length == 0 || !companyCustomerIds.includes(element.Id)) {
+
                             newCustomers.push(new Customer({
                                 info: {
                                     email: get(element, 'PrimaryEmailAddr.Address'),
@@ -104,183 +217,44 @@ export const getQBCustomers = (req: Request, res: Response) => {
                                 quickbookId: element.Id
                             }))
                         }
+                    }
 
-                        if(newCustomers.length == 0) {
-                            return res.json({'status': Status.Success, 'message': "Nothing to sync"})
-                        }
+                    if(newCustomers.length == 0) {
+                        return res.json({'status': Status.Success, 'message': "Nothing to sync"})
+                    }
+
+                    Customer.collection.insert(newCustomers, function (err: any, insertedCustomers: any) {
+                        if (err){ 
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         
-                        Customer.collection.insert(newCustomers, function (err: any, insertedCustomers: any) {
-                            if (err){ 
-                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                            
-                            } else {
-                                var newCompanyCustomers: any = []
-                                insertedCustomers.ops.map((cust: any) => {
-                                    newCompanyCustomers.push(new CompanyCustomer({
-                                        company: companyId,
-                                        customer: cust._id,
-                                        createdAt: Date.now()
-                                    }))
-                                })
-    
-                                CompanyCustomer.collection.insert(newCompanyCustomers, function (err: any, docs: any) {
-                                    if (err){ 
-                                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                                    }
-    
-                                    return res.json({'status': Status.Success, 'message': "Customers Synced successfully"})
-                                })
-    
-                            }
-                        })
-                    }
-                }
-            })
-        })
-    })
-    
-}
-
-
-export const syncQBCustomers = (req: Request, res: Response) => {
-    const params = req.body
-    
-    
-    var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
-        
-    Company.findById(companyId, (err: any, company: ICompany) => {
-        if(err) {
-            return res.json({'status': Status.Error, 'message': 'No company found.' })
-        }
-
-        Customer.find({'company': company._id, 'quickbookId': { $ne: null }}, 'quickbookId', (err: any, companyCustomers: ICustomer[]) => {
-            if(err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError })
-            }
-
-            var qbo = new QuickBooks(qbConfig.qb_client_id,
-                qbConfig.qb_client_secret,
-                company.qbAccessToken,
-                false, // no token secret for oAuth 2.0
-                company.realmId,
-                true, // use the sandbox?
-                false, // enable debugging?
-                14, // set minorversion, or null for the latest version
-                '2.0', //oAuth version
-                company.qbRefreshToken
-            );
-
-            var companyCustomerIds: any = []
-
-            if(companyCustomers.length > 0) {
-                companyCustomers.map((cust: any) =>{
-                    companyCustomerIds.push(cust.quickbookId)
-                })
-            }
-          
-            qbo.findCustomers( [
-            {field: 'fetchAll', value: true}
-            ], function(qbError: any, customers: any) {
-                
-                if (qbError != null && Object.keys(qbError).length != 0) {
-                
-                    var errorMessage: string
-                    if(qbError.hasOwnProperty("fault")){
-
-                        if(qbError.fault.error[0].detail.length == 0) {
-                            errorMessage = qbError.fault.error[0].message
-                        }else{
-                            errorMessage = qbError.fault.error[0].detail
-                        }
-                    }
-                    
-                    if(qbError.hasOwnProperty("Fault")){
-                        errorMessage = qbError.Fault.Error[0].Message
-                    }
-                    
-                    return res.json({'status': Status.Error, 'message': errorMessage, 'err' : qbError })
-
-                } else {
-
-                    if(customers.hasOwnProperty("QueryResponse")) {
-                        var importedCustomers = customers.QueryResponse.Customer
-
-                        var newCustomers: any = []
-                        for (let index = 0; index < importedCustomers.length; index++) {
-                            const element = importedCustomers[index];
-
-                            if(companyCustomerIds.length == 0 || !companyCustomerIds.includes(element.Id)) {
-
-                                newCustomers.push(new Customer({
-                                    info: {
-                                        email: get(element, 'PrimaryEmailAddr.Address'),
-                                    },
-                                    profile:{
-                                        firstName: get(element, 'DisplayName'),
-                                        lastName: get(element, 'DisplayName'),
-                                        displayName: get(element, 'DisplayName'),
-                                        imageUrl: '',
-                                    },
-                                    address: {
-                                        street: get(element, 'BillAddr.Line1'),
-                                        city: get(element, 'BillAddr.City'),
-                                        state: get(element, 'BillAddr.CountrySubDivisionCode'),
-                                        zipCode: get(element, 'BillAddr.PostalCode'),
-                                    },
-                                    contact: {
-                                        phone: get(element ,'PrimaryPhone.FreeFormNumber'),
-                                    },
-                                    company: req.companyId,
-                                    permissions: {
-                                        role: Role.CUSTOMER,
-                                        extra: [],
-                                    },
-                                    quickbookId: element.Id
+                        } else {
+                            var newCompanyCustomers: any = []
+                            insertedCustomers.ops.map((cust: any) => {
+                                newCompanyCustomers.push(new CompanyCustomer({
+                                    company: companyId,
+                                    customer: cust._id,
+                                    createdAt: Date.now()
                                 }))
-                            }
-                        }
+                            })
 
-                        if(newCustomers.length == 0) {
-                            return res.json({'status': Status.Success, 'message': "Nothing to sync"})
-                        }
-
-                        return res.json({'status': Status.Success, 'newCustomers': newCustomers})
-                        Customer.collection.insert(newCustomers, function (err: any, insertedCustomers: any) {
-                            if (err){ 
-                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                            
-                            } else {
-                                var newCompanyCustomers: any = []
-                                insertedCustomers.ops.map((cust: any) => {
-                                    newCompanyCustomers.push(new CompanyCustomer({
-                                        company: companyId,
-                                        customer: cust._id,
-                                        createdAt: Date.now()
-                                    }))
-                                })
-    
-                                CompanyCustomer.collection.insert(newCompanyCustomers, function (err: any, docs: any) {
-                                    if (err){ 
-                                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            CompanyCustomer.collection.insert(newCompanyCustomers, function (err: any, docs: any) {
+                                if (err){ 
+                                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                                }
+                                
+                                company.updateOne({
+                                    'customersSyncedAt': Date.now(),
+                                },
+                                (err: any, raw: any) => {
+                                    if(err) {
+                                        return res.json({'status': Status.Error, 'message': Messages.GenericError })
                                     }
-                                    
-                                    company.updateOne({
-                                        'customersSyncedAt': Date.now(),
-                                    },
-                                    (err: any, raw: any) => {
-                                        if(err) {
-                                            return res.json({'status': Status.Error, 'message': Messages.GenericError })
-                                        }
-                                        return res.json({'status': Status.Success, 'message': "Customers synced successfully"})
-                                    })
+                                    return res.json({'status': Status.Success, 'message': "Customers synced successfully"})
                                 })
-    
-                            }
-                        })
-                    }
+                            })
+
+                        }
+                    })
                 }
             })
         
@@ -304,6 +278,15 @@ export const createQBCustomer = (req: Request, res: Response) => {
         if(err) {
             return res.json({'status': Status.Error, 'message': 'No company found.' })
         }
+
+        if(!company.qbAuthorized) {
+            return res.json({'status': Status.QBUnauthorized, 'message': Messages.QBUnAuthorized })
+        }
+
+        if(company.qbAccessToken == undefined || company.qbAccessToken == null || company.qbRefreshToken == undefined || company.qbRefreshToken == null || company.realmId == undefined || company.realmId == null) {
+            return res.json({'status': Status.QBUnauthorized, 'message': Messages.QBUnAuthorized })
+        }
+
         var qbo = new QuickBooks(qbConfig.qb_client_id,
             qbConfig.qb_client_secret,
             company.qbAccessToken,
@@ -321,7 +304,6 @@ export const createQBCustomer = (req: Request, res: Response) => {
               "Address": params.email
             }, 
             "DisplayName": params.name, 
-            "Notes": "Created from blue.", 
             "PrimaryPhone": {
               "FreeFormNumber": params.phone
             }, 
@@ -332,17 +314,92 @@ export const createQBCustomer = (req: Request, res: Response) => {
         }
 
         qbo.createCustomer(customer, function(err: any, data: any) {
-            if(err) {
-                  
-                return res.json({'error': err })
-            }
+            
+            if (err != null && Object.keys(err).length != 0) {
+                
+                if(err.hasOwnProperty("fault")){
+                
+                    if(err.fault.error[0].message.length != 0 && err.fault.error[0].message.split('; ')[2].replace('statusCode=','') == 401) {
+                        
+                        _refreshToken(req, res, company, (req: Request, res: Response, newCompany: ICompany, error: number, newErrorMessage: string) => { 
 
-            return res.json({'status': Status.Success, 'message': 'Customer created successfully.'})
+                            if(error == 0) {
+
+                                return res.json({'status': Status.Error, 'message': newErrorMessage})
+                            }
+
+                            if(error == 400){
+
+                                company.updateOne({
+                                    qbAuthorized: false,
+                                    qbAccessToken: undefined,
+                                    qbRefreshToken: undefined,
+                                },
+                                (err: any, raw: any) => {
+                                    if(err) {
+                                        return res.json({'status': Status.Error, 'message': Messages.GenericError })
+                                    }
+
+                                    return res.json({'status': Status.QBUnauthorized, 'message': "Quickbooks Authorization failed."})
+                                })
+                            }
+                            
+                            qbo = new QuickBooks(qbConfig.qb_client_id,
+                                qbConfig.qb_client_secret,
+                                newCompany.qbAccessToken,
+                                false, // no token secret for oAuth 2.0
+                                newCompany.realmId,
+                                true, // use the sandbox?
+                                false, // enable debugging?
+                                14, // set minorversion, or null for the latest version
+                                '2.0', //oAuth version
+                                newCompany.qbRefreshToken
+                            );
+                            qbo.createCustomer(customer, function(newError: any, data: any) { 
+                                if (newError != null && Object.keys(newError).length != 0) {
+
+                                    if(newError.hasOwnProperty("fault")){
+                                        if(newError.fault.error[0].detail.length == 0) {
+                                            return res.json({'status': Status.Error, 'message': newError.fault.error[0].message})
+                    
+                                        }else{
+                                            return res.json({'status': Status.Error, 'message': newError.fault.error[0].detail})
+                                        }
+
+                                    } else if(newError.hasOwnProperty("Fault")){
+                                        return res.json({'status': Status.Error, 'message': newError.Fault.Error[0].Message})
+                                    }
+                                 
+                                }else{
+                                    return res.json({'status': Status.Success, 'message': 'Customer created successfully.'})
+                                }
+                            })
+                            
+                        })
+
+
+                    }else if(err.fault.error[0].detail.length != 0) {
+                        return res.json({'status': Status.Error, 'message': err.fault.error[0].message})
+
+                    }else{
+                        return res.json({'status': Status.Error, 'message': err.fault.error[0].detail})
+                        
+                    }
+
+                } else if(err.hasOwnProperty("Fault")){
+                    return res.json({'status': Status.Error, 'message': err.Fault.Error[0].Message})
+                }
+                
+            }else{
+                return res.json({'status': Status.Success, 'message': 'Customer created successfully.'})
+            }
+            
         })
 
     })
     
 }
+
 const get = function(obj: any, key: any) {
     return key.split(".").reduce(function(o: any, x: any) {
         return (typeof o == "undefined" || o === null) ? '' : o[x];
@@ -413,11 +470,14 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
             if(company == undefined || company ==null){
                 return res.json({'status': Status.Error, 'message': "Invalid company id"})
             }
-
+            var expiry = new Date();
+            expiry.setDate(expiry.getDate() + 99);
             company.updateOne({
                 qbAccessToken: access_token,
                 qbRefreshToken: refresh_token,
-                realmId: realmId
+                realmId: realmId,
+                qbAuthorized: true,
+                qbRefeshTokenExpiry: expiry
             }, (err: any, raw: any)=>{
                 if(err){
                     sio.emit(company.socketId, {'status': Status.Error, 'message': Messages.GenericError});
@@ -435,3 +495,156 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
       console.error(err);
     });
 }
+
+const _refreshToken = (req: Request, res: Response, company: ICompany, next: (req: Request, res: Response, company: ICompany, error: number, errorMessage: string) => void) => {
+
+    var oauthClient = new OAuthClient({
+        clientId: qbConfig.qb_client_id,
+        clientSecret: qbConfig.qb_client_secret,
+        environment: qbConfig.qb_environment,
+        redirectUri: qbConfig.qb_redirect_uri,
+    });
+
+    oauthClient
+    .refreshUsingToken(company.qbRefreshToken)
+    .then(function (authResponse: any) {
+        const refresh_token = authResponse.token.refresh_token
+        const access_token = authResponse.token.access_token
+
+        var expiry = new Date();
+        expiry.setDate(expiry.getDate() + 99)
+
+        company.updateOne({
+            qbAccessToken: access_token,
+            qbRefreshToken: refresh_token,
+            qbAuthorized: true,
+            qbRefeshTokenExpiry: expiry
+        }, (err: any, raw: any)=>{
+            if(err){
+                next(req, res, null, 0, Messages.GenericError)
+                return
+            }
+
+            Company.findById(company._id, (err: any, newCompany: ICompany) => {
+                if(err){
+                    next(req, res, null, 0, Messages.GenericError)
+                    return
+                }
+
+                next(req, res, newCompany, 1, '')
+                return
+            })
+        })
+    })
+    .catch(function (err: any) {
+        next(req, res, null, err.authResponse.response.status, 'Unable to refersh the token')
+        return
+        
+    });
+}
+
+const _getCustomers = (req: Request, res: Response, company: ICompany, next: (req: Request, res: Response, error: number, errorMessage: string, customers: any) => void) => {
+
+    var qbo = new QuickBooks(qbConfig.qb_client_id,
+        qbConfig.qb_client_secret,
+        company.qbAccessToken,
+        false, // no token secret for oAuth 2.0
+        company.realmId,
+        true, // use the sandbox?
+        false, // enable debugging?
+        14, // set minorversion, or null for the latest version
+        '2.0', //oAuth version
+        company.qbRefreshToken
+    );
+
+
+    qbo.findCustomers( [{field: 'fetchAll', value: true} ], 
+        function(qbError: any, customers: any) {
+            
+            var errorMessage: string
+            if (qbError != null && Object.keys(qbError).length != 0) {
+
+                if(qbError.hasOwnProperty("fault")){
+                
+                    if(qbError.fault.error[0].message.length != 0 && qbError.fault.error[0].message.split('; ')[2].replace('statusCode=','') == 401) {
+                
+                        _refreshToken(req, res, company, (req: Request, res: Response, newCompany: ICompany, error: number, newErrorMessage: string) => { 
+                
+                            if(error == 0) {
+                                next(req,res, error, newErrorMessage, [])
+                                return 
+                            }
+
+                            if(error == 400) {
+                                next(req,res, error, newErrorMessage, [])
+                                return 
+                            }
+                            
+                            qbo = new QuickBooks(qbConfig.qb_client_id,
+                                qbConfig.qb_client_secret,
+                                newCompany.qbAccessToken,
+                                false, // no token secret for oAuth 2.0
+                                newCompany.realmId,
+                                true, // use the sandbox?
+                                false, // enable debugging?
+                                14, // set minorversion, or null for the latest version
+                                '2.0', //oAuth version
+                                newCompany.qbRefreshToken
+                            );
+                            
+                            qbo.findCustomers( [{field: 'fetchAll', value: true} ], 
+                                function(qbErrorNew: any, customers2: any) {
+                                    if (qbErrorNew != null && Object.keys(qbErrorNew).length != 0) {
+                
+                                        if(qbErrorNew.hasOwnProperty("fault")){
+                                            if(qbErrorNew.fault.error[0].detail.length != 0) {
+                                                errorMessage = qbErrorNew.fault.error[0].message
+                        
+                                            }else{
+                                                errorMessage = qbErrorNew.fault.error[0].detail
+                                            }
+                                          
+                                            next(req,res, 0, errorMessage, [])
+                                            return 
+
+                                        } else if(qbErrorNew.hasOwnProperty("Fault")){
+                                            errorMessage = qbErrorNew.Fault.Error[0].Message
+                                            next(req,res, 0, errorMessage, [])
+                                            return 
+                                        }
+                                     
+                                    }else{
+                                        next(req,res, 1, '', customers2)
+                                        return
+                                    }
+                                }   
+                            )
+                        })
+
+
+                    }else if(qbError.fault.error[0].detail.length != 0) {
+                        errorMessage = qbError.fault.error[0].message
+                        next(req,res, 0, errorMessage, [])
+                        return 
+
+                    }else{
+                        errorMessage = qbError.fault.error[0].detail
+                        next(req,res, 0, errorMessage, [])
+                        return 
+                    }
+
+                } else if(qbError.hasOwnProperty("Fault")){
+                    errorMessage = qbError.Fault.Error[0].Message
+                    next(req,res, 0, errorMessage, [])
+                    return 
+
+                }
+                
+            }else{
+                next(req,res, 1, '', customers)
+                return
+            }
+        }
+    )
+}
+
