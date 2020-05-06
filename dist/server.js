@@ -81,7 +81,7 @@ new cron_1.CronJob('0 0 1 * *', function () {
         console.log(response);
     });
 }, null, true, 'America/Los_Angeles');
-new cron_1.CronJob('* * * * *', function () {
+new cron_1.CronJob('59 23 * * *', function () {
     request_1.default('http://localhost:' + app.get('port') + '/api/v1/downgradeCompanies', function (response) {
         console.log(response);
     });

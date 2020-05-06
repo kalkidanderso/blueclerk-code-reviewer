@@ -509,7 +509,7 @@ export const sendAccountDowngradeEmail = function(options: any) {
           },
           Body: {
             Html: {
-              Data: "<p>Your account has been downgraded to the free version. You may still use the software free of charge with limited functionality. All of your data will be saved.</p><div><a href=\"https://app.blueclerk.com/login/\" target=\"_blank\"><img src=\"https://app.blueclerk.com/assets/img/logo.jpg\" style=\"width: 20%;\" alt='BlueClerk'></a></div>",
+              Data: "<p>Your account has been downgraded to the free version. You may still use the software free of charge with limited functionality. All of your data will be saved.</p><p>You can upgrade to a full account at any time.</p><div><a href=\"https://app.blueclerk.com/login/\" target=\"_blank\"><img src=\"https://app.blueclerk.com/assets/img/logo.jpg\" style=\"width: 20%;\" alt='BlueClerk'></a></div>",
             },
           },
         },
