@@ -1,6 +1,6 @@
 import { Request, Response, response } from 'express'
 import { Status, Role, Messages, UserPermissions,ContractStatus, Permissions } from '../common/constants'
-import { sendEmail, sendEmployeeEmail, sendPasswordEmail, sendInvitationToContractor, sendContractStartEmail, sendContractStatusChangeEmailToCompany, sendContractStatusChangeEmailToContractor } from '../services/aws'
+import { sendEmail, sendEmployeeEmail, sendPasswordEmail, sendInvitationToContractor, sendContractStartEmail, sendContractStatusChangeEmailToCompany, sendContractStatusChangeEmailToContractor, sendAccountDowngradeEmail } from '../services/aws'
 
 import { User, IUser } from '../models/User'
 import { Company, ICompany } from '../models/Company'
@@ -1347,9 +1347,9 @@ export const cancelOrFinishContract = (req: Request, res: Response) => {
 export const upgradeToCompany = (req: Request, res: Response) => {
     // return res.json({ 'status': Status.Error, 'message': 'reached inside.' })
     const params = req.body
-    const user = <ICompany>req.company
+    const user = <ICompanyAdmin>req.user
     
-    Company.findById(user._id,
+    Company.findById(user.company,
         (err: any, contractor: ICompany) => {
 
             if (err) {                
@@ -1370,8 +1370,12 @@ export const upgradeToCompany = (req: Request, res: Response) => {
                 if(status == 1)
                 {
 
+                    var chargeDate = new Date();
+                    chargeDate.setDate(chargeDate.getDate() + 30);
+
                     contractor.paid =  true
                     contractor.type =  0
+                    contractor.chargeDate = chargeDate
                     contractor.updateOne(contractor, (err: any, raw: any)=> {
                         if (err) {                
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -1978,4 +1982,40 @@ export const getContractorForJob = (req: Request, res: Response) => {
         }
     )
 
+}
+
+
+export const downgradeCompanies = (req: Request, res: Response) => {
+
+    Company.find(
+        { $and: [{chargeDate: { $lte: new Date() }}, {paid: false}, {type: 0}] },
+        (err: any, companies: ICompany[])=>{
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+
+            if(companies.length > 0) {
+                const companiesToDowngrade:number = companies.length
+                let companiesDowngraded: number = 0;
+                
+                for (let index = 0; index < companies.length; index++) {
+                    const company = companies[index];
+    
+                    company.updateOne({type: 1}, (err: any, raw: any) =>{
+                        if(err) {
+                            console.log("Unable to downgrade" + company._id + "\n")
+                        }
+                        sendAccountDowngradeEmail({ to: company.info.companyEmail })
+    
+                        companiesDowngraded ++;
+                        if(companiesToDowngrade == companiesDowngraded) {
+                            return res.json({'status': Status.Success, 'message': 'Downgrading done.'})
+                        }
+                    })
+                    
+                }
+            }else{
+                return res.json({'status': Status.Error, 'message': 'Nothing to downgrade.'})
+            }           
+        })
 }

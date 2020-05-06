@@ -889,6 +889,11 @@ const router: express.Router = express.Router()
             quickBookController.getCallBackToken(req, res, sio)
         }
     )
+
+    router.get(
+        '/downgradeCompanies',
+        userController.downgradeCompanies
+    )
     return router
 
 }

@@ -88,6 +88,12 @@ new CronJob('0 0 1 * *', function() {
 
 }, null, true, 'America/Los_Angeles');
 
+new CronJob('59 23 * * *', function() {
+    request('http://localhost:'+app.get('port')+'/api/v1/downgradeCompanies', function (response: any) {
+      console.log(response);
+    });
+}, null, true, 'America/Los_Angeles');
+
 //Starting the server
 server.listen(
   app.get('port'),

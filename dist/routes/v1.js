@@ -176,6 +176,7 @@ function default_1(sio) {
     router.get('/callback', (req, res) => {
         quickBookController.getCallBackToken(req, res, sio);
     });
+    router.get('/downgradeCompanies', userController.downgradeCompanies);
     return router;
 }
 exports.default = default_1;
