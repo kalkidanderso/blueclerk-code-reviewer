@@ -10,6 +10,9 @@ before_script:
   - chmod 600 ~/.ssh/id_rsa
   - ssh-keyscan -H 'deploy.blueclerk.com' >> ~/.ssh/known_hosts
 
+variables:
+  GIT_DEPTH: 0
+
 stages:
   - deus
 
