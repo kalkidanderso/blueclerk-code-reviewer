@@ -2,7 +2,7 @@ version: '2.1'
 
 services:
   blueclerk-node-api-dev:
-    image: blueclerk-node-api-dev
+    image: blueclerk-node-api
     build: .
     environment:
       NODE_ENV: development
