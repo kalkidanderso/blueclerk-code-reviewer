@@ -19,4 +19,9 @@ stages:
 deploy_to_dokku_dev:
   stage: deus
   script:
-    - git push -f dokku@deploy.blueclerk.com:blueclerk-node-api-dev HEAD:refs/heads/dev
+    - git checkout -b dev
+    - git pull origin dev
+    - git branch --set-upstream-to dev
+    - git push dokku@deploy.blueclerk.com:blueclerk-backend-api-dev dev:master
+
+   # - git push -f dokku@deploy.blueclerk.com:blueclerk-node-api-dev HEAD:refs/heads/dev
