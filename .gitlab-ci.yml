@@ -11,9 +11,9 @@ before_script:
   - ssh-keyscan -H 'deploy.blueclerk.com' >> ~/.ssh/known_hosts
 
 stages:
-  - dev
+  - deus
 
 deploy_to_dokku_dev:
-  stage: dev
+  stage: deus
   script:
     - git push -f dokku@deploy.blueclerk.com:blueclerk-node-api-dev HEAD:refs/heads/dev
