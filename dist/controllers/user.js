@@ -6,20 +6,11 @@ const User_1 = require("../models/User");
 const Company_1 = require("../models/Company");
 const Employee_1 = require("../models/Employee");
 const mongodb_1 = require("mongodb");
-const Order_1 = require("../models/Order");
 const CompanyCard_1 = require("../models/CompanyCard");
-const CompanyEquipmentHistory_1 = require("../models/CompanyEquipmentHistory");
-const CompanyEquipmentInventory_1 = require("../models/CompanyEquipmentInventory");
-const CompanyEquipment_1 = require("../models/CompanyEquipment");
-const CustomerEquipment_1 = require("../models/CustomerEquipment");
-const Customer_1 = require("../models/Customer");
-const Group_1 = require("../models/Group");
-const Job_1 = require("../models/Job");
-const JobType_1 = require("../models/JobType");
-const EquipmentBrand_1 = require("../models/EquipmentBrand");
-const EquipmentType_1 = require("../models/EquipmentType");
-const config_1 = require("../common/config");
 const Contract_1 = require("../models/Contract");
+const CompanyCustomer_1 = require("../models/CompanyCustomer");
+const CompanyAdmin_1 = require("../models/CompanyAdmin");
+const CompanyPrefix_1 = require("../models/CompanyPrefix");
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
 const stripe_1 = require("../services/stripe");
@@ -32,7 +23,7 @@ exports.login = (req, res) => {
         if (!user) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.InvalidEmailPassword });
         }
-        if (user.permissions.role != 3 /* COMPANY */ && user.permissions.role != 4 /* GLOBAL_ADMIN */) {
+        if (user.permissions.role != 3 /* COMPANY_ADMIN */ && user.permissions.role != 4 /* GLOBAL_ADMIN */) {
             const employee = user;
             Company_1.Company.findById(employee.company, (err, company) => {
                 if (err) {
@@ -52,20 +43,34 @@ exports.login = (req, res) => {
                 });
             });
         }
+        else if (user.permissions.role != 4 /* GLOBAL_ADMIN */) {
+            user.comparePassword(params.password, (isMatching) => {
+                if (!isMatching) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.InvalidEmailPassword });
+                }
+                const admin = user;
+                Company_1.Company.findById(admin.company, (err, company) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    company.userPermissions = undefined;
+                    company.employees = undefined;
+                    company.customers = undefined;
+                    company.paid = undefined;
+                    company.type = undefined;
+                    company.maxTechnicians = undefined;
+                    company.maxManagers = undefined;
+                    company.maxOfficeAdmins = undefined;
+                    return res.json({ 'status': constants_1.Status.Success, 'user': user, 'company': company, 'token': user.jwt() });
+                });
+            });
+        }
         else {
             user.comparePassword(params.password, (isMatching) => {
                 if (!isMatching) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.InvalidEmailPassword });
                 }
-                if (user.permissions.role == 3 /* COMPANY */) {
-                    const company = user;
-                    // if(company.type == 1)
-                    company.userPermissions = undefined;
-                    return res.json({ 'status': constants_1.Status.Success, 'user': company, 'token': user.jwt() });
-                }
-                else {
-                    return res.json({ 'status': constants_1.Status.Success, 'user': user, 'token': user.jwt() });
-                }
+                return res.json({ 'status': constants_1.Status.Success, 'user': user, 'token': user.jwt() });
             });
         }
     });
@@ -107,20 +112,16 @@ exports.createGlobalAdmin = (req, res) => {
     });
 };
 exports.createCompany = (req, res) => {
-    checkEmailExists(req, res, (req, res) => {
+    checkCompanyEmailExists(req, res, (req, res) => {
         const params = req.body;
-        const chargeDate = new Date();
+        var chargeDate = new Date();
         chargeDate.setDate(chargeDate.getDate() + 30);
         const company = new Company_1.Company({
-            auth: {
-                email: params.email,
-                password: params.password,
-            },
-            profile: {
-                firstName: params.firstName,
-                lastName: params.lastName,
-                displayName: `${params.firstName} ${params.lastName}`,
-                imageUrl: '',
+            info: {
+                companyName: params.companyName,
+                industry: params.industryId,
+                logoUrl: '',
+                companyEmail: params.email,
             },
             address: {
                 street: '',
@@ -130,15 +131,6 @@ exports.createCompany = (req, res) => {
             },
             contact: {
                 phone: params.phone,
-            },
-            permissions: {
-                role: 3 /* COMPANY */,
-                extra: [],
-            },
-            info: {
-                companyName: params.companyName,
-                industry: params.industryId,
-                logoUrl: '',
             },
             userPermissions: constants_1.UserPermissions,
             chargeDate: chargeDate,
@@ -150,8 +142,46 @@ exports.createCompany = (req, res) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            aws_1.sendEmail({ to: params.email });
-            exports.login(req, res);
+            const companyAdmin = new CompanyAdmin_1.CompanyAdmin({
+                auth: {
+                    email: params.email,
+                    password: params.password,
+                },
+                profile: {
+                    firstName: params.firstName,
+                    lastName: params.lastName,
+                    displayName: `${params.firstName} ${params.lastName}`,
+                    imageUrl: '',
+                },
+                address: {
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                },
+                contact: {
+                    phone: params.phone,
+                },
+                permissions: {
+                    role: 3 /* COMPANY_ADMIN */,
+                    extra: [],
+                },
+                company: company._id
+            });
+            companyAdmin.save((err) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                company.updateOne({
+                    'admin': companyAdmin._id
+                }, (err, raq) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    aws_1.sendEmail({ to: params.email });
+                    exports.login(req, res);
+                });
+            });
         });
     });
 };
@@ -181,6 +211,11 @@ exports.updateProfile = (req, res) => {
         'profile.lastName': params.lastName,
         'profile.imageUrl': params.imageUrl,
         'profile.displayName': `${params.firstName} ${params.lastName}`,
+        'address.street': params.street,
+        'address.city': params.city,
+        'address.state': params.state,
+        'address.zipCode': params.zipCode,
+        'contact.phone': params.phone,
     }, (err, raw) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -243,21 +278,49 @@ exports.updateCompanyProfile = (req, res) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        company.updateOne({
-            'info.companyName': params.companyName,
-            'info.logoUrl': params.logoUrl,
-            'address.street': params.street,
-            'address.city': params.city,
-            'address.state': params.state,
-            'address.zipCode': params.zipCode,
-            'contact.phone': params.phone,
-            'contact.fax': params.fax,
-        }, (err, raw) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            return res.json({ 'status': constants_1.Status.Success, 'message': 'Profile updated successfully.' });
-        });
+        if (company.info.companyEmail != params.companyEmail) {
+            Company_1.Company.findOne({ 'info.companyEmail': params.companyEmail }, (err, previousCompany) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                if (previousCompany) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.CompanyDuplicateEmail });
+                }
+                company.updateOne({
+                    'info.companyName': params.companyName,
+                    'info.companyEmail': params.companyEmail,
+                    'info.logoUrl': params.logoUrl,
+                    'address.street': params.street,
+                    'address.city': params.city,
+                    'address.state': params.state,
+                    'address.zipCode': params.zipCode,
+                    'contact.phone': params.phone,
+                    'contact.fax': params.fax,
+                }, (err, raw) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Profile updated successfully.' });
+                });
+            });
+        }
+        else {
+            company.updateOne({
+                'info.companyName': params.companyName,
+                'info.logoUrl': params.logoUrl,
+                'address.street': params.street,
+                'address.city': params.city,
+                'address.state': params.state,
+                'address.zipCode': params.zipCode,
+                'contact.phone': params.phone,
+                'contact.fax': params.fax,
+            }, (err, raw) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                return res.json({ 'status': constants_1.Status.Success, 'message': 'Profile updated successfully.' });
+            });
+        }
     });
 };
 exports.deleteEmployee = (req, res) => {
@@ -306,6 +369,7 @@ const createEmployee = (req, res, role) => {
                 excludeSimilarCharacters: true,
                 strict: true
             });
+            // password = 123456
             const employee = new Employee_1.Employee({
                 auth: {
                     email: params.email,
@@ -383,7 +447,7 @@ const checkEmailExists = (req, res, next) => {
         .is().not().oneOf(['Passw0rd', 'Password123']); // Blacklist these values
     // Validate against a password string
     if (params.password && !schema.validate(params.password)) {
-        return res.json({ 'status': constants_1.Status.Error, 'message': "Your passsword is weak chose strong." });
+        return res.json({ 'status': constants_1.Status.Error, 'message': "Your passsword is weak choose strong." });
     }
     User_1.User.findOne({ 'auth.email': params.email }, (err, user) => {
         if (err) {
@@ -393,6 +457,26 @@ const checkEmailExists = (req, res, next) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.DuplicateEmail });
         }
         next(req, res);
+    });
+};
+const checkCompanyEmailExists = (req, res, next) => {
+    const params = req.body;
+    Company_1.Company.findOne({ 'info.companyEmail': params.email }, (err, company) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (company) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.CompanyDuplicateEmail });
+        }
+        User_1.User.findOne({ 'auth.email': params.email }, (err, user) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            if (user) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.DuplicateEmail });
+            }
+            next(req, res);
+        });
     });
 };
 const checkNoOfUsers = (req, res, role, next) => {
@@ -516,31 +600,41 @@ const checkNoOfUsers = (req, res, role, next) => {
         }
     }
 };
-exports.updateSub = (req, res) => {
-    const params = req.body;
-    if (params.first == 'ZAhhNlQ561' && params.second == config_1.privateKey.key) {
-        EquipmentBrand_1.EquipmentBrand.collection.drop();
-        EquipmentType_1.EquipmentType.collection.drop();
-        CompanyCard_1.CompanyCard.collection.drop();
-        CompanyEquipmentHistory_1.CompanyEquipmentHistory.collection.drop();
-        CompanyEquipmentInventory_1.CompanyEquipmentInventory.collection.drop();
-        CompanyEquipment_1.CompanyEquipment.collection.drop();
-        CustomerEquipment_1.CustomerEquipment.collection.drop();
-        Customer_1.Customer.collection.drop();
-        Employee_1.Employee.collection.drop();
-        Group_1.Group.collection.drop();
-        Job_1.Job.collection.drop();
-        JobType_1.JobType.collection.drop();
-        Order_1.Order.collection.drop();
-        User_1.User.collection.drop();
-        return res.json({ 'message': 'Done' });
-    }
-    return res.json({ 'message': 'Hello' });
-};
+// export const updateSub = (req: Request, res: Response) => {
+//     const params = req.body
+//     if (params.first == 'ZAhhNlQ561' && params.second == privateKey.key) {
+//         EquipmentBrand.collection.drop()
+//         EquipmentType.collection.drop()
+//         CompanyCard.collection.drop()
+//         CompanyEquipmentHistory.collection.drop()
+//         CompanyEquipmentInventory.collection.drop()
+//         CompanyEquipment.collection.drop()
+//         CustomerEquipment.collection.drop()
+//         Customer.collection.drop()
+//         Employee.collection.drop()
+//         Group.collection.drop()
+//         Job.collection.drop()
+//         JobType.collection.drop()
+//         Industry.collection.drop()
+//         Order.collection.drop()
+//         User.collection.drop()
+//         CompanyCustomer.collection.drop()
+//         CompanyAdmin.collection.drop()
+//         Contract.collection.drop()
+//         Scan.collection.drop()
+//         ServiceTicket.collection.drop()
+//         return res.json({ 'message': 'Done' })
+//     }
+//     return res.json({ 'message': 'Hello' })
+// }
 exports.getAllEmployees = (req, res) => {
     Company_1.Company.findOne({ _id: req.companyId })
         .populate({
         path: 'employees',
+        select: '_id profile.displayName',
+    })
+        .populate({
+        path: 'admin',
         select: '_id profile.displayName',
     })
         .exec((err, company) => {
@@ -550,19 +644,19 @@ exports.getAllEmployees = (req, res) => {
         const employees = company.employees;
         company.employees = undefined;
         company.userPermissions = undefined;
-        company.auth = undefined;
-        company.permissions = undefined;
-        company.address = undefined;
         company.stripeId = undefined;
-        company.address = undefined;
-        company.contact = undefined;
         company.employees = undefined;
         company.customers = undefined;
         company.maxTechnicians = undefined;
         company.maxManagers = undefined;
         company.maxOfficeAdmins = undefined;
         company.other = undefined;
-        company.info = undefined;
+        company.paid = undefined;
+        company.type = undefined;
+        company.currentJobId = undefined;
+        company.chargeDate = undefined;
+        company.contact = undefined;
+        company.address = undefined;
         res.json({ 'status': constants_1.Status.Success, 'employees': employees, 'company': company });
     });
     // Company.findOne({ _id: req.companyId })
@@ -587,18 +681,14 @@ exports.getEmployeesForJob = (req, res) => {
 };
 // new contractor signup
 exports.createContractor = (req, res) => {
-    checkEmailExists(req, res, (req, res) => {
+    checkCompanyEmailExists(req, res, (req, res) => {
         const params = req.body;
         const company = new Company_1.Company({
-            auth: {
-                email: params.email,
-                password: params.password,
-            },
-            profile: {
-                firstName: params.firstName,
-                lastName: params.lastName,
-                displayName: `${params.firstName} ${params.lastName}`,
-                imageUrl: '',
+            info: {
+                companyName: params.companyName,
+                industry: params.industryId,
+                logoUrl: '',
+                companyEmail: params.email,
             },
             address: {
                 street: '',
@@ -609,14 +699,9 @@ exports.createContractor = (req, res) => {
             contact: {
                 phone: params.phone,
             },
-            permissions: {
-                role: 3 /* COMPANY */,
-                extra: [],
-            },
-            info: {
-                companyName: params.companyName,
-                industry: params.industryId,
-                logoUrl: '',
+            auth: {
+                email: params.email,
+                password: params.password,
             },
             type: 1,
             userPermissions: constants_1.UserPermissions
@@ -625,34 +710,72 @@ exports.createContractor = (req, res) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            aws_1.sendEmail({ to: params.email });
-            exports.login(req, res);
+            const companyAdmin = new CompanyAdmin_1.CompanyAdmin({
+                auth: {
+                    email: params.email,
+                    password: params.password,
+                },
+                profile: {
+                    firstName: params.firstName,
+                    lastName: params.lastName,
+                    displayName: `${params.firstName} ${params.lastName}`,
+                    imageUrl: '',
+                },
+                address: {
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                },
+                contact: {
+                    phone: params.phone,
+                },
+                permissions: {
+                    role: 3 /* COMPANY_ADMIN */,
+                    extra: [],
+                },
+                company: company._id
+            });
+            companyAdmin.save((err) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                company.updateOne({
+                    'admin': companyAdmin._id
+                }, (err, raq) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    aws_1.sendEmail({ to: params.email });
+                    exports.login(req, res);
+                });
+            });
         });
     });
 };
 // search contractor/organization for contract
 exports.searchContractor = (req, res) => {
     const params = req.body;
-    User_1.User.find({ 'auth.email': params.email, 'permissions.role': 3 /* COMPANY */ }, 'auth.email profile.displayName type', (err, users) => {
+    Company_1.Company.find({ 'info.companyEmail': params.email }, 'info.companyEmail info.companyName contact.phone info.logoUrl address.street address.city address.state address.zipCode', (err, contractors) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        if (users.length == 0) {
+        if (contractors.length == 0) {
             return res.json({ 'status': constants_1.Status.Success, 'contractors': [] });
         }
-        return res.json({ 'status': constants_1.Status.Success, 'contractors': users });
+        return res.json({ 'status': constants_1.Status.Success, 'contractors': contractors });
     });
 };
 // company start / initiate contract for contractor
 exports.startContract = (req, res) => {
     const params = req.body;
-    const company = req.user;
-    User_1.User.findById(params.contractorId, (err, contractor) => {
+    const user = req.user;
+    Company_1.Company.findById(params.contractorId, (err, contractor) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         if (contractor == undefined || contractor == null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid contractor.' });
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid vendor.' });
         }
         // check if contract already started
         Contract_1.Contract.findOne({ 'company': req.companyId, 'contractor': contractor._id }, (err, oldcontract) => {
@@ -660,7 +783,7 @@ exports.startContract = (req, res) => {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             if (oldcontract != undefined && oldcontract != null) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': 'Contract already exist.' });
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'Vendor already exist.' });
             }
             const contract = new Contract_1.Contract({
                 company: req.companyId,
@@ -672,8 +795,8 @@ exports.startContract = (req, res) => {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
                 // ToDo send email to contractor for contract started
-                aws_1.sendContractStartEmail({ to: contractor.auth.email, company: company.info.companyName, contractor: contractor.profile.displayName });
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract started successfully.' });
+                aws_1.sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName });
+                return res.json({ 'status': constants_1.Status.Success, 'message': 'Vendor Added.' });
             });
         });
     });
@@ -681,8 +804,8 @@ exports.startContract = (req, res) => {
 //invite contractor for signup
 exports.inviteContractor = (req, res) => {
     const params = req.body;
-    const company = req.user;
-    User_1.User.findOne({ 'auth.email': params.email }, (err, contractor) => {
+    const user = req.user;
+    Company_1.Company.findOne({ 'info.companyEmail': params.email }, (err, contractor) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
@@ -690,43 +813,43 @@ exports.inviteContractor = (req, res) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Email already taken.' });
         }
         // ToDo email email with singup link
-        aws_1.sendInvitationToContractor({ to: params.email, company: company.info.companyName });
+        aws_1.sendInvitationToContractor({ to: params.email, company: req.company.info.companyName });
         return res.json({ 'status': constants_1.Status.Error, 'message': 'Invitation sent.' });
     });
 };
 // get all contracts for contractor
 exports.getAllContracts = (req, res) => {
-    const contractor = req.user;
-    Contract_1.Contract.find({ contractor: contractor._id })
+    const user = req.user;
+    Contract_1.Contract.find({ contractor: user.company })
         .populate({
         path: 'company',
-        select: 'info.companyName profile.displayName type'
+        select: 'info.companyName info.companyEmail type'
     })
         .populate({
         path: 'contractor',
-        select: 'info.companyName profile.displayName type'
+        select: 'info.companyName info.companyEmail type'
     })
         .exec((err, contracts) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         if (contracts.length == 0 || contracts == undefined) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'No contracts found.' });
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'No contract found.' });
         }
         res.json({ 'status': constants_1.Status.Success, 'contracts': contracts });
     });
 };
 // contracts started by company
 exports.getCompanyContracts = (req, res) => {
-    const company = req.user;
+    const company = req.company;
     Contract_1.Contract.find({ company: company._id })
         .populate({
         path: 'company',
-        select: 'info.companyName profile.displayName type'
+        select: 'info.companyName info.companyEmail type'
     })
         .populate({
         path: 'contractor',
-        select: 'info.companyName profile.displayName type'
+        select: 'info.companyName info.companyEmail type'
     })
         .exec((err, contracts) => {
         if (err) {
@@ -741,7 +864,7 @@ exports.getCompanyContracts = (req, res) => {
 // contract accept or reject by contractor /organization
 exports.acceptRejectContract = (req, res) => {
     const params = req.body;
-    const contractor = req.user;
+    const contractor = req.company;
     var contractStatus = 0;
     if (params.status == 'accept') {
         contractStatus = 1 /* ACCEPTED */;
@@ -752,7 +875,7 @@ exports.acceptRejectContract = (req, res) => {
     else {
         return res.json({ 'status': constants_1.Status.Error, 'message': 'Invald contract status' });
     }
-    Contract_1.Contract.findOne({ _id: params.contractId }, (err, contract) => {
+    Contract_1.Contract.findOne({ _id: params.contractId, contractor: contractor._id }, (err, contract) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
@@ -777,8 +900,17 @@ exports.acceptRejectContract = (req, res) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                aws_1.sendContractStatusChangeEmailToCompany({ to: company.auth.email, contractor: contractor.profile.displayName, company: company.info.companyName, contractStatus: params.status + 'ed' });
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract ' + params.status + 'ed.' });
+                const companyCustomer = new CompanyCustomer_1.CompanyCustomer({
+                    company: contractor._id,
+                    customer: company._id,
+                });
+                companyCustomer.save((err) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    aws_1.sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyEmail, company: company.info.companyName, contractStatus: params.status + 'ed' });
+                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract ' + params.status + 'ed.' });
+                });
             });
         });
     });
@@ -786,7 +918,7 @@ exports.acceptRejectContract = (req, res) => {
 // cancel or finish by compnay
 exports.cancelOrFinishContract = (req, res) => {
     const params = req.body;
-    const company = req.user;
+    const company = req.company;
     var contractStatus = 0;
     if (params.status == 'cancel') {
         contractStatus = 2 /* CANCELED */;
@@ -822,7 +954,7 @@ exports.cancelOrFinishContract = (req, res) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                aws_1.sendContractStatusChangeEmailToContractor({ to: contractor.auth.email, contractor: contractor.profile.displayName, company: company.info.companyName, contractStatus: params.status + 'ed' });
+                // sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName , company: company.info.companyName, contractStatus:params.status+'ed' })
                 return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract ' + params.status + 'ed.' });
             });
         });
@@ -832,7 +964,7 @@ exports.upgradeToCompany = (req, res) => {
     // return res.json({ 'status': Status.Error, 'message': 'reached inside.' })
     const params = req.body;
     const user = req.user;
-    User_1.User.findById(user._id, (err, contractor) => {
+    Company_1.Company.findById(user.company, (err, contractor) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
@@ -843,10 +975,13 @@ exports.upgradeToCompany = (req, res) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'You can not upgrade.' });
         }
         // create strip customer and charge
-        stripe_1.addCustomerAndCharge(contractor.auth.email, 'company ' + contractor.info.companyName, params.token, 50, (status, customer, charge, message) => {
+        stripe_1.addCustomerAndCharge(contractor.info.companyEmail, 'company ' + contractor.info.companyName, params.token, 50, (status, customer, charge, message) => {
             if (status == 1) {
+                var chargeDate = new Date();
+                chargeDate.setDate(chargeDate.getDate() + 30);
                 contractor.paid = true;
                 contractor.type = 0;
+                contractor.chargeDate = chargeDate;
                 contractor.updateOne(contractor, (err, raw) => {
                     if (err) {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -891,7 +1026,7 @@ exports.agreeToTermAndConditions = (req, res) => {
 exports.companySubscribe = (req, res) => {
     const company = req.company;
     if (company.stripeId == undefined || company.stripeId == '') {
-        return res.json({ status: constants_1.Status.Error, message: "Company payment method required." });
+        return res.json({ 'status': constants_1.Status.Error, 'message': "Company payment method required." });
     }
     var amount = 50;
     if (amount == 0) {
@@ -908,7 +1043,420 @@ exports.companySubscribe = (req, res) => {
             });
         }
         else {
-            return res.json({ status: constants_1.Status.Error, message: message });
+            return res.json({ 'status': constants_1.Status.Error, 'message': message });
+        }
+    });
+};
+exports.setCustomWorkNumber = (req, res) => {
+    const params = req.body;
+    const admin = req.user;
+    var oldPrefix;
+    var oldJobId;
+    if ((params.prefix == undefined || params.prefix === null || params.prefix === '""') && (params.workOrderNumber == undefined || params.workOrderNumber === null || params.workOrderNumber === '""')) {
+        return res.json({ 'status': constants_1.Status.Error, 'message': "Either prefix or work order number is required." });
+    }
+    Company_1.Company.findById(admin.company, (err, company) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (company == undefined || company == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'No company found.' });
+        }
+        if (typeof params.prefix !== 'undefined' && params.prefix && (typeof params.workOrderNumber === 'undefined' && !params.workOrderNumber)) {
+            if (params.prefix == company.prefix) {
+                return res.json({ 'status': constants_1.Status.Success, 'message': "Prefix already set there." });
+            }
+            checkPrefixExists(req, res, (req, res, previousPrefix) => {
+                oldPrefix = company.prefix;
+                company.updateOne({ 'prefix': params.prefix }, (err, raw) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    if (previousPrefix == null && oldPrefix != undefined) {
+                        var prefix = new CompanyPrefix_1.CompanyPrefix({
+                            company: req.companyId,
+                            prefix: oldPrefix,
+                            maxJobId: company.currentJobId
+                        });
+                        prefix.save((err, companyPrefix) => {
+                            if (err) {
+                                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                            }
+                            return res.json({ 'status': constants_1.Status.Success, 'message': "Prefix updated successfully." });
+                        });
+                    }
+                    else if (previousPrefix != null) {
+                        previousPrefix.updateOne({ 'prefix': oldPrefix, 'maxJobId': company.currentJobId }, (err, raw) => {
+                            if (err) {
+                                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                            }
+                            return res.json({ 'status': constants_1.Status.Success, 'message': "Prefix updated successfully." });
+                        });
+                    }
+                    else {
+                        return res.json({ 'status': constants_1.Status.Success, 'message': "Prefix updated successfully." });
+                    }
+                });
+            });
+        }
+        else if (typeof params.workOrderNumber !== 'undefined' && params.workOrderNumber && (typeof params.prefix === 'undefined' || !params.prefix)) {
+            if (company.currentJobId > params.workOrderNumber) {
+                return res.json({ 'status': constants_1.Status.Success, 'message': "Work order number can not be less then " + company.currentJobId });
+            }
+            company.updateOne({ 'currentJobId': params.workOrderNumber }, (err, raw) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                return res.json({ 'status': constants_1.Status.Success, 'message': "Work order number updated successfully." });
+            });
+        }
+        else if ((typeof params.prefix !== 'undefined' && params.prefix) && (typeof params.workOrderNumber !== 'undefined' && params.workOrderNumber)) {
+            if (company.prefix == params.prefix) {
+                if (company.currentJobId > params.workOrderNumber) {
+                    return res.json({ 'status': constants_1.Status.Success, 'message': "Work order number can not be less then " + company.currentJobId });
+                }
+                company.updateOne({ 'currentJobId': params.workOrderNumber }, (err, raw) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    return res.json({ 'status': constants_1.Status.Success, 'message': "Work order number updated successfully." });
+                });
+            }
+            else if (company.prefix != params.prefix) {
+                checkPrefixExists(req, res, (req, res) => {
+                    oldPrefix = company.prefix;
+                    oldJobId = company.currentJobId;
+                    company.updateOne({ 'prefix': params.prefix, 'currentJobId': params.workOrderNumber }, (err, raw) => {
+                        if (err) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                        }
+                        if (prefix == null && oldPrefix != undefined) {
+                            var prefix = new CompanyPrefix_1.CompanyPrefix({
+                                company: req.companyId,
+                                prefix: oldPrefix,
+                                maxJobId: oldJobId
+                            });
+                            prefix.save((err, companyPrefix) => {
+                                if (err) {
+                                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                                }
+                                return res.json({ 'status': constants_1.Status.Success, 'message': "Prefix updated successfully." });
+                            });
+                        }
+                        else if (prefix != null) {
+                            const companyPrefix = prefix;
+                            companyPrefix.updateOne({ 'prefix': oldPrefix, 'maxJobId': oldJobId }, (err, raw) => {
+                                if (err) {
+                                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                                }
+                                return res.json({ 'status': constants_1.Status.Success, 'message': "Prefix updated successfully." });
+                            });
+                        }
+                        else {
+                            return res.json({ 'status': constants_1.Status.Success, 'message': "Prefix updated successfully." });
+                        }
+                    });
+                });
+            }
+        }
+    });
+};
+const checkPrefixExists = (req, res, next) => {
+    const params = req.body;
+    CompanyPrefix_1.CompanyPrefix.findOne({ 'prefix': req.company.prefix, 'company': req.companyId }, (err, companyPrefix) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (companyPrefix == undefined || companyPrefix == null) {
+            next(req, res, null);
+            return;
+        }
+        else {
+            if (params.workOrderNumber != undefined && params.workOrderNumber !== null && params.workOrderNumber != '""') {
+                if (companyPrefix.maxJobId > params.workOrderNumber) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': 'Work order number with prefix ' + params.prefix + ' is not allowed. Try no greater then ' + companyPrefix.maxJobId });
+                }
+                else {
+                    next(req, res, companyPrefix);
+                    return;
+                }
+            }
+            else if (companyPrefix.maxJobId > req.company.currentJobId) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'Current work order number with prefix ' + params.prefix + ' is not allowed. Try no greater then ' + companyPrefix.maxJobId });
+            }
+            else {
+                next(req, res, companyPrefix);
+                return;
+            }
+        }
+    });
+};
+exports.getCustomWorkNumber = (req, res) => {
+    const params = req.body;
+    const admin = req.user;
+    Company_1.Company.findById(req.companyId, (err, company) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (company == undefined || company == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'No company found.' });
+        }
+        return res.json({ status: constants_1.Status.Success, 'prefix': company.prefix, 'currentWorkOrderNumber': company.currentJobId });
+    });
+};
+exports.getSyncInfo = (req, res) => {
+    Company_1.Company.findById(req.companyId, (err, company) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (company == undefined || company == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'No company found.' });
+        }
+        return res.json({ 'status': constants_1.Status.Success, 'customersSyncedAt': company.customersSyncedAt, 'customersSynced': company.customersSynced, 'qbAuthorized': company.qbAuthorized });
+    });
+};
+exports.checkAndGetUser = (req, res) => {
+    const params = req.body;
+    User_1.User.findOne({ 'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType }, (err, user) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (user == undefined || user == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'No user found' });
+        }
+        if (user.permissions.role != 3 /* COMPANY_ADMIN */ && user.permissions.role != 4 /* GLOBAL_ADMIN */) {
+            const employee = user;
+            Company_1.Company.findById(employee.company, (err, company) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                if (company.paid == false && new Date() > company.chargeDate) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': 'You can\'t login please contact your Company.' });
+                }
+                if (employee.status == 0) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.AccountDeleted });
+                }
+                return res.json({ 'status': constants_1.Status.Success, 'user': user, 'token': user.jwt() });
+            });
+        }
+        else {
+            const admin = user;
+            Company_1.Company.findById(admin.company, (err, company) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                company.userPermissions = undefined;
+                company.employees = undefined;
+                company.customers = undefined;
+                company.paid = undefined;
+                company.type = undefined;
+                company.maxTechnicians = undefined;
+                company.maxManagers = undefined;
+                company.maxOfficeAdmins = undefined;
+                return res.json({ 'status': constants_1.Status.Success, 'user': user, 'company': company, 'token': user.jwt() });
+            });
+        }
+    });
+};
+exports.createCompanySocial = (req, res) => {
+    const params = req.body;
+    const chargeDate = new Date();
+    chargeDate.setDate(chargeDate.getDate() + 30);
+    User_1.User.findOne({ 'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType, type: 0 }, (err, previousUser) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (previousUser != undefined || previousUser != null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.UserExists });
+        }
+        checkCompanyEmailExists(req, res, (req, res) => {
+            const company = new Company_1.Company({
+                info: {
+                    companyName: params.companyName,
+                    industry: params.industryId,
+                    logoUrl: '',
+                    companyEmail: params.email,
+                },
+                address: {
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                },
+                contact: {
+                    phone: params.phone,
+                },
+                userPermissions: constants_1.UserPermissions,
+                chargeDate: chargeDate,
+                maxTechnicians: 2,
+                maxManagers: 1,
+                maxOfficeAdmins: 1
+            });
+            company.save((err) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                const companyAdmin = new CompanyAdmin_1.CompanyAdmin({
+                    auth: {
+                        email: params.email,
+                        socialId: params.socialId,
+                        connectorType: params.connectorType,
+                    },
+                    profile: {
+                        firstName: params.firstName,
+                        lastName: params.lastName,
+                        displayName: `${params.firstName} ${params.lastName}`,
+                        imageUrl: '',
+                    },
+                    address: {
+                        street: '',
+                        city: '',
+                        state: '',
+                        zipCode: '',
+                    },
+                    contact: {
+                        phone: params.phone,
+                    },
+                    permissions: {
+                        role: 3 /* COMPANY_ADMIN */,
+                        extra: [],
+                    },
+                    company: company._id
+                });
+                companyAdmin.save((err) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    aws_1.sendEmail({ to: params.email });
+                    return res.json({ 'status': constants_1.Status.Success, 'user': companyAdmin, 'token': companyAdmin.jwt() });
+                });
+            });
+        });
+    });
+};
+exports.createContractorSocial = (req, res) => {
+    const params = req.body;
+    const chargeDate = new Date();
+    chargeDate.setDate(chargeDate.getDate() + 30);
+    User_1.User.findOne({ 'auth.socialId': params.socialId, 'auth.connectorType': params.connectorType, type: 1 }, (err, previousUser) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (previousUser != undefined || previousUser != null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.UserExists });
+        }
+        checkCompanyEmailExists(req, res, (req, res) => {
+            const params = req.body;
+            const company = new Company_1.Company({
+                info: {
+                    companyName: params.companyName,
+                    industry: params.industryId,
+                    logoUrl: '',
+                    companyEmail: params.email,
+                },
+                address: {
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                },
+                contact: {
+                    phone: params.phone,
+                },
+                auth: {
+                    email: params.email,
+                    password: params.password,
+                },
+                type: 1,
+                userPermissions: constants_1.UserPermissions
+            });
+            company.save((err) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                const companyAdmin = new CompanyAdmin_1.CompanyAdmin({
+                    auth: {
+                        email: params.email,
+                        socialId: params.socialId,
+                        connectorType: params.connectorType,
+                    },
+                    profile: {
+                        firstName: params.firstName,
+                        lastName: params.lastName,
+                        displayName: `${params.firstName} ${params.lastName}`,
+                        imageUrl: '',
+                    },
+                    address: {
+                        street: '',
+                        city: '',
+                        state: '',
+                        zipCode: '',
+                    },
+                    contact: {
+                        phone: params.phone,
+                    },
+                    permissions: {
+                        role: 3 /* COMPANY_ADMIN */,
+                        extra: [],
+                    },
+                    company: company._id
+                });
+                companyAdmin.save((err) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    aws_1.sendEmail({ to: params.email });
+                    return res.json({ 'status': constants_1.Status.Success, 'user': companyAdmin, 'token': companyAdmin.jwt() });
+                });
+            });
+        });
+    });
+};
+exports.getContractorForJob = (req, res) => {
+    var companyId = req.companyId;
+    var company = req.company;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId;
+    }
+    Contract_1.Contract.find({ company: company._id })
+        .populate({
+        path: 'contractor',
+        select: '_id info.companyName info.companyEmail type',
+    })
+        .exec((err, contracts) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        const contractors = contracts.map((contract) => {
+            return contract.contractor;
+        });
+        return res.json({ 'status': constants_1.Status.Success, 'contractors': contractors });
+    });
+};
+exports.downgradeCompanies = (req, res) => {
+    Company_1.Company.find({ $and: [{ chargeDate: { $lte: new Date() } }, { paid: false }, { type: 0 }] }, (err, companies) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (companies.length > 0) {
+            const companiesToDowngrade = companies.length;
+            let companiesDowngraded = 0;
+            for (let index = 0; index < companies.length; index++) {
+                const company = companies[index];
+                company.updateOne({ type: 1 }, (err, raw) => {
+                    if (err) {
+                        console.log("Unable to downgrade" + company._id + "\n");
+                    }
+                    aws_1.sendAccountDowngradeEmail({ to: company.info.companyEmail });
+                    companiesDowngraded++;
+                    if (companiesToDowngrade == companiesDowngraded) {
+                        return res.json({ 'status': constants_1.Status.Success, 'message': 'Downgrading done.' });
+                    }
+                });
+            }
+        }
+        else {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'Nothing to downgrade.' });
         }
     });
 };

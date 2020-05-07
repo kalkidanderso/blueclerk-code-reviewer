@@ -2,16 +2,24 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Status = {
     Error: 0,
-    Success: 1
+    Success: 1,
+    TagAssociated: 2,
+    TagNotAssociated: 3,
+    QBUnauthorized: 4
 };
 exports.Messages = {
     MissingParams: 'Parameters are missing.',
     InvalidEmailPassword: 'Invalid email/password.',
     GenericError: 'Can\'t process now. Please try again later.',
     DuplicateEmail: 'Email address already registered. Please try with some other email address',
+    CompanyDuplicateEmail: 'Company Email address already registered. Please try with some other email address',
     UnAuthorized: 'You are not authorized for this action. Please contact admin for more details.',
     AccountDeleted: 'You account has been deleted. Please contact admin for more details.',
     AgreeToTermAndConditions: 'You must agree to terms and conditions of blueclerk.',
+    UserExists: 'User already exists.',
+    TagAssociated: 'Tag is associated with customer',
+    TagNotAssociated: 'Tag is not associated with customer',
+    QBUnAuthorized: 'Quickbooks authorization failed',
 };
 exports.ContractorPermissions = {
     on: [
@@ -32,6 +40,11 @@ exports.ContractorPermissions = {
         39 /* Job_Finish */,
         40 /* Job_Detail */,
         41 /* Image_Upload */,
+        71 /* Get_Service_Tickets */,
+        72 /* Create_Service_Ticket */,
+        73 /* Update_Service_Ticket */,
+        74 /* Get_Ticket_Detail */,
+        76 /* Get_Customer_Detail */
     ]
 };
 exports.UserPermissions = {
@@ -96,6 +109,16 @@ exports.UserPermissions = {
             57 /* Tags_Get_Orders */,
             58 /* Subscription_Buy */,
             59 /* Subscription_Cancel */,
+            71 /* Get_Service_Tickets */,
+            72 /* Create_Service_Ticket */,
+            73 /* Update_Service_Ticket */,
+            74 /* Get_Ticket_Detail */,
+            75 /* Get_Contractors_For_Job */,
+            76 /* Get_Customer_Detail */,
+            77 /* Get_Job_Report */,
+            80 /* Scan_Tag */,
+            81 /* Get_Custom_Work_No */,
+            83 /* Get_Sync_Info */
         ],
         off: [0 /* None */],
     },
@@ -160,6 +183,16 @@ exports.UserPermissions = {
             57 /* Tags_Get_Orders */,
             58 /* Subscription_Buy */,
             59 /* Subscription_Cancel */,
+            71 /* Get_Service_Tickets */,
+            72 /* Create_Service_Ticket */,
+            73 /* Update_Service_Ticket */,
+            74 /* Get_Ticket_Detail */,
+            75 /* Get_Contractors_For_Job */,
+            76 /* Get_Customer_Detail */,
+            77 /* Get_Job_Report */,
+            80 /* Scan_Tag */,
+            81 /* Get_Custom_Work_No */,
+            83 /* Get_Sync_Info */
         ],
         off: [0 /* None */],
     },
@@ -227,6 +260,16 @@ exports.UserPermissions = {
             57 /* Tags_Get_Orders */,
             58 /* Subscription_Buy */,
             59 /* Subscription_Cancel */,
+            71 /* Get_Service_Tickets */,
+            72 /* Create_Service_Ticket */,
+            73 /* Update_Service_Ticket */,
+            74 /* Get_Ticket_Detail */,
+            75 /* Get_Contractors_For_Job */,
+            76 /* Get_Customer_Detail */,
+            77 /* Get_Job_Report */,
+            80 /* Scan_Tag */,
+            81 /* Get_Custom_Work_No */,
+            83 /* Get_Sync_Info */
         ],
         off: [0 /* None */],
     },
@@ -296,7 +339,24 @@ exports.UserPermissions = {
             64 /* Add_Contractor_Permission */,
             66 /* Get_Company_Contracts */,
             63 /* Cancel_Finish_Contract */,
-            68 /* Company_Subscribe */
+            68 /* Company_Subscribe */,
+            69 /* Custom_work_Order_Number */,
+            70 /* Customer_Import */,
+            71 /* Get_Service_Tickets */,
+            72 /* Create_Service_Ticket */,
+            73 /* Update_Service_Ticket */,
+            74 /* Get_Ticket_Detail */,
+            75 /* Get_Contractors_For_Job */,
+            76 /* Get_Customer_Detail */,
+            65 /* Get_All_Contracts */,
+            62 /* Accept_Reject_Contract */,
+            77 /* Get_Job_Report */,
+            78 /* Get_QB_Customers */,
+            79 /* Create_QB_customer */,
+            80 /* Scan_Tag */,
+            81 /* Get_Custom_Work_No */,
+            82 /* Get_QB_Uri */,
+            83 /* Get_Sync_Info */
         ],
         off: [0 /* None */],
     }

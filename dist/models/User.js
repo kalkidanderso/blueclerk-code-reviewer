@@ -24,10 +24,17 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const bcrypt_nodejs_1 = __importDefault(require("bcrypt-nodejs"));
 const UserSchema = new mongoose_1.Schema({
     auth: {
-        email: { type: String, required: true, unique: true },
-        password: { type: String, required: true },
+        email: { type: String },
+        password: { type: String },
         resetPasswordToken: String,
         resetPasswordExpires: Date,
+        socialId: String,
+        connectorType: {
+            type: Number,
+            default: 0
+            // 0 for facebook
+            // 1 for google
+        }
     },
     profile: {
         firstName: String,

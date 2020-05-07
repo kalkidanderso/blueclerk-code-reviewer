@@ -28,7 +28,7 @@ exports.sendEmail = function (options) {
                 },
                 Body: {
                     Html: {
-                        Data: "Welcome to Blueclerk.com! Please click on the link to confirm your email https://blueclerk.com",
+                        Data: "Welcome to Blueclerk.com! Please click on the link to confirm your email https://app.blueclerk.com",
                     },
                 },
             },
@@ -64,7 +64,7 @@ exports.sendEmployeeEmail = function (options) {
                 },
                 Body: {
                     Html: {
-                        Data: "<p>Welcome to BlueClerk!  You have been added as a user to the organization " + options.company + "</p><p>Your Role: " + options.role + "</p> <p>Below are your login credentials</p> <a href=\"https://app.blueclerk.com/login/\ target=\"_blank\">app.blueclerk.com</a> <p>Login ID: " + options.to + "</p><p>Temporary Password: " + options.password + "</p><p>We encourage you to download our app on either Android or iOS (links) to fully optimize the system</p><p>Please login to your account and add information for your organization.  If you have any questions about the system, we have a variety of helpful tools.</p><p>Please refer to our help desk <a href=\"dasolgroup.zendesk.com\" target=\"_blank\">dasolgroup.zendesk.com</a></p><p>If you require further assistance, please contact us via Zendesk through the website.  We can also be reached by phone at 512-846-6035</p> <p>For up to date information, we encourage you to like us on <a href=\"www.facebook.com/blueclerk\" target=\"_blank\">Facebook</a> </p>",
+                        Data: "<p>Welcome to BlueClerk! You have been added as a user to the organization " + options.company + "</p><p>Your Role: " + options.role + "</p> <p>Below are your login credentials</p> <a href=\"https://app.blueclerk.com/login/\ target=\"_blank\">app.blueclerk.com</a> <p>Login ID: " + options.to + "</p><p>Temporary Password: " + options.password + "</p><p>We encourage you to download our app on either <a href=\"https://play.google.com/store/apps/details?id=com.blueclerk.app\" target=\"_blank\">Android</a> or iOS (links) to fully optimize the system</p><p>Please login to your account and add information for your organization.  If you have any questions about the system, we have a variety of helpful tools.</p><p>Please refer to our help desk <a href=\"www.blueclerk.com/helpdesk\" target=\"_blank\">helpdesk</a></p><p>If you require further assistance, please contact us via chat through the website. We can also be reached by phone at 512-846-6035. For up to date information, we encourage you to like us on <a href=\"www.facebook.com/blueclerk\" target=\"_blank\">Facebook</a> </p>",
                     },
                 },
             },
@@ -133,12 +133,12 @@ exports.sendContractStartEmail = function (options) {
             },
             Message: {
                 Subject: {
-                    Data: "Offer contract from " + options.company + " on Blueclerk",
+                    Data: "Added as vendor by " + options.company + " on Blueclerk",
                 },
                 Body: {
                     Html: {
                         Data: "<p>Hi! " + options.contractor + "</p>\
-              <p>" + options.company + " has sent you a contract offer you can view the details by login in. Click the link to login:<a href=\"https://app.blueclerk.com/login/\ target=\"_blank\">app.blueclerk.com</a></p>",
+              <p>" + options.company + " has sent you an invitation to become a vendor for their organization. Please login to view details <a href=\"https://app.blueclerk.com/login/\ target=\"_blank\">app.blueclerk.com</a></p>",
                     },
                 },
             },
@@ -170,12 +170,12 @@ exports.sendContractStatusChangeEmailToContractor = function (options) {
             },
             Message: {
                 Subject: {
-                    Data: "Contract updated by " + options.company + " on Blueclerk",
+                    Data: "Alert: Vendor status on BlueClerk has changed",
                 },
                 Body: {
                     Html: {
                         Data: "<p>Hi! " + options.contractor + "</p>\
-              <p>" + options.company + " has changed the contract status to " + options.contractStatus + "</p>",
+              <p>You have " + options.contractStatus + " to be a vendor of " + options.company + ". If you did not accept this change, please login and change your password immediately  </p>",
                     },
                 },
             },
@@ -207,12 +207,12 @@ exports.sendContractStatusChangeEmailToCompany = function (options) {
             },
             Message: {
                 Subject: {
-                    Data: "Contract updated by " + options.contractor + " on Blueclerk",
+                    Data: "Alert: Vendor status on BlueClerk has changed",
                 },
                 Body: {
                     Html: {
                         Data: "<p>Hi! " + options.company + "</p>\
-              <p>" + options.contractor + " has changed the contract status to " + options.contractStatus + "</p>",
+              <p>" + options.contractor + " has " + options.contractStatus + " to be a vendor for your organization.  If feel this was in error, please login and change your password immediately.</p>",
                     },
                 },
             },
@@ -296,6 +296,150 @@ exports.uploadImageInS3 = function (req, res, next) {
         if (err)
             return next(err);
         next(null, req.file.location);
+    });
+};
+exports.sendJobEmailToAssignee = function (options) {
+    const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
+    aws_sdk_1.default.config.update({
+        region: AWS_REGION,
+        accessKeyId: AWS_SES_ACCESSKEYID,
+        secretAccessKey: AWS_SES_SECRETACCESSKEY,
+    });
+    const ses = new aws_sdk_1.default.SES({ apiVersion: '2012-10-17' });
+    return new Promise((resolve, reject) => {
+        ses.sendEmail({
+            Source: APP_EMAIL_NOREPLY,
+            Destination: {
+                CcAddresses: [],
+                ToAddresses: [options.to],
+            },
+            Message: {
+                Subject: {
+                    Data: "New Job Assigned via BlueClerk",
+                },
+                Body: {
+                    Html: {
+                        Data: "<p>Dear " + options.assigneeName + "!</p><p>This email is to inform you that a job has been assigned and scheduled to you by (" + options.companyName + ").  Job details below:</p><p>Customer : " + options.customerName + "</p><p>Job Type : " + options.jobType + "</p><p>Notes : " + options.notes + "</p> <p>Date : " + options.dateTime + "</p> <p>If you have any questions, please reach out to the company who has assigned you to this job.  Thank you.</p><br/><br/> <p> <a href=\"https:\/\/blueclerk.com/privacy-policy\" target=\"_blank\">Privacy policy</a> </p>",
+                    },
+                },
+            },
+            ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        }, (err, info) => {
+            if (err) {
+                reject(err);
+            }
+            else {
+                resolve(info);
+            }
+        });
+    });
+};
+exports.sendJobEmailToCustomer = function (options) {
+    const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
+    aws_sdk_1.default.config.update({
+        region: AWS_REGION,
+        accessKeyId: AWS_SES_ACCESSKEYID,
+        secretAccessKey: AWS_SES_SECRETACCESSKEY,
+    });
+    const ses = new aws_sdk_1.default.SES({ apiVersion: '2012-10-17' });
+    return new Promise((resolve, reject) => {
+        ses.sendEmail({
+            Source: APP_EMAIL_NOREPLY,
+            Destination: {
+                CcAddresses: [],
+                ToAddresses: [options.to],
+            },
+            Message: {
+                Subject: {
+                    Data: "Job Scheduled via BlueClerk",
+                },
+                Body: {
+                    Html: {
+                        Data: "<p>Dear " + options.customerName + "!</p><p>This email is to inform you that a job has been scheduled with (" + options.companyName + ").  Job details below:</p><p>Assigned To : " + options.assigneeName + "</p><p>Job Type : " + options.jobType + "</p><p>Notes : " + options.notes + "</p> <p>Date : " + options.dateTime + "</p> <p>If you have any questions, please reach out to the company who has assigned you to this job.  Thank you.</p><br/><br/> <p> <a href=\"https:\/\/blueclerk.com/privacy-policy\" target=\"_blank\">Privacy policy</a> </p>",
+                    },
+                },
+            },
+            ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        }, (err, info) => {
+            if (err) {
+                reject(err);
+            }
+            else {
+                resolve(info);
+            }
+        });
+    });
+};
+exports.sendJobEmailToCompanyAdmin = function (options) {
+    const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
+    aws_sdk_1.default.config.update({
+        region: AWS_REGION,
+        accessKeyId: AWS_SES_ACCESSKEYID,
+        secretAccessKey: AWS_SES_SECRETACCESSKEY,
+    });
+    const ses = new aws_sdk_1.default.SES({ apiVersion: '2012-10-17' });
+    return new Promise((resolve, reject) => {
+        ses.sendEmail({
+            Source: APP_EMAIL_NOREPLY,
+            Destination: {
+                CcAddresses: [],
+                ToAddresses: [options.to],
+            },
+            Message: {
+                Subject: {
+                    Data: "Job Scheduled via BlueClerk",
+                },
+                Body: {
+                    Html: {
+                        Data: "<p>Dear " + options.contactPerson + "!</p><p>This email is to inform you that a job has been scheduled with (" + options.assigneeName + ") by " + options.vendorName + ".  Job details below:</p><p>Company : " + options.companyName + "</p><p>Customer : " + options.customerName + "</p><p>Job Type : " + options.jobType + "</p><p>Notes : " + options.notes + "</p> <p>Date : " + options.dateTime + "</p> <p>If you have any questions, please reach out to the vendor who has created this job.  Thank you.</p><br/><br/> <p> <a href=\"https:\/\/blueclerk.com/privacy-policy\" target=\"_blank\">Privacy policy</a> </p>",
+                    },
+                },
+            },
+            ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        }, (err, info) => {
+            if (err) {
+                reject(err);
+            }
+            else {
+                resolve(info);
+            }
+        });
+    });
+};
+exports.sendAccountDowngradeEmail = function (options) {
+    const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
+    aws_sdk_1.default.config.update({
+        region: AWS_REGION,
+        accessKeyId: AWS_SES_ACCESSKEYID,
+        secretAccessKey: AWS_SES_SECRETACCESSKEY,
+    });
+    const ses = new aws_sdk_1.default.SES({ apiVersion: '2012-10-17' });
+    return new Promise((resolve, reject) => {
+        ses.sendEmail({
+            Source: APP_EMAIL_NOREPLY,
+            Destination: {
+                CcAddresses: [],
+                ToAddresses: [options.to],
+            },
+            Message: {
+                Subject: {
+                    Data: "BlueClerk Alert: Account status change",
+                },
+                Body: {
+                    Html: {
+                        Data: "<p>Your account has been downgraded to the free version. You may still use the software free of charge with limited functionality. All of your data will be saved.</p><p>You can upgrade to a full account at any time.</p><div><a href=\"https://app.blueclerk.com/login/\" target=\"_blank\"><img src=\"https://app.blueclerk.com/assets/img/logo.jpg\" style=\"width: 20%;\" alt='BlueClerk'></a></div>",
+                    },
+                },
+            },
+            ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        }, (err, info) => {
+            if (err) {
+                reject(err);
+            }
+            else {
+                resolve(info);
+            }
+        });
     });
 };
 //# sourceMappingURL=aws.js.map

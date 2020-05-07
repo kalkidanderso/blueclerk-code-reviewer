@@ -15,7 +15,7 @@ import * as swaggerDocument from './swagger.json'
 // const CronJob = require('cron').CronJob;
 import {CronJob} from 'cron'
 import request from 'request';
-
+var http = require('http');
 //Environment config
 dotenv.config()
 
@@ -56,12 +56,27 @@ passportMiddleWare(passport)
 
 //Logger
 app.use(logger('dev'))
-
 //Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+const server = http.createServer(app);
+const sio = require("socket.io")(server, {
+  handlePreflightRequest: (req:any, res: any) => {
+    const headers = {
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Origin": req.headers.origin, //or the specific origin you want to give access to,
+        "Access-Control-Allow-Credentials": true
+    };
+    res.writeHead(200, headers);
+    res.end();
+  }
+});
+
+sio.on("connection", () => {
+  console.log("Connected!");
+});
 //Router
-app.use('/api/v1', routesV1)
+app.use('/api/v1', routesV1(sio))
 
 new CronJob('0 0 1 * *', function() {
   // console.log('You will see this message every second');
@@ -73,8 +88,14 @@ new CronJob('0 0 1 * *', function() {
 
 }, null, true, 'America/Los_Angeles');
 
+new CronJob('59 23 * * *', function() {
+    request('http://localhost:'+app.get('port')+'/api/v1/downgradeCompanies', function (response: any) {
+      console.log(response);
+    });
+}, null, true, 'America/Los_Angeles');
+
 //Starting the server
-app.listen(
+server.listen(
   app.get('port'),
   (err: any) => {
 

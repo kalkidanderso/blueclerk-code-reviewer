@@ -30,10 +30,14 @@ exports.checkUserPermissions = (permissionId) => {
             return;
         }
         // check if get contracts
-        if (user.permissions.role == 3 /* COMPANY */) {
-            Company_1.Company.findById(user._id, (err, company) => {
+        if (user.permissions.role == 3 /* COMPANY_ADMIN */) {
+            const companyAdmin = req.user;
+            Company_1.Company.findById(companyAdmin.company, (err, company) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': "Unable to find your company. Contact BlueClerk admin for more." });
+                }
                 if (company.type == 1) {
-                    // it is contractor check contractor permissions
+                    // it is contractor check contractor permissions from default or contract
                     if (permissionId == 65 /* Get_All_Contracts */ || permissionId == 62 /* Accept_Reject_Contract */ || permissionId == 67 /* Upgrade_To_Company */) {
                         next();
                         return;
@@ -101,6 +105,9 @@ exports.checkUserPermissions = (permissionId) => {
         }
         else {
             Employee_1.Employee.findById(user._id, (err, employee) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
                 if (employee.extraPermissions != undefined) {
                     if (employee.extraPermissions.on.includes(permissionId)) {
                         next();
@@ -110,6 +117,9 @@ exports.checkUserPermissions = (permissionId) => {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.UnAuthorized });
                     }
                     Company_1.Company.findById(employee.company, (err, company) => {
+                        if (err) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                        }
                         switch (user.permissions.role) {
                             case 0:
                                 if (!company.userPermissions[0].on.includes(permissionId)) {
@@ -144,103 +154,6 @@ exports.checkUserPermissions = (permissionId) => {
                 }
             });
         }
-        // if(user.permissions.role == Role.)
-        // if (user.permissions.role == Role.CONTRACTOR) {
-        //     if(permissionId == Permissions.Get_All_Contracts || permissionId == Permissions.Accept_Reject_Contract || permissionId == Permissions.Upgrade_To_Company) {
-        //         next()
-        //         return
-        //     }
-        //     Contract.findOne( {company: req.otherCompanyId, contractor: user._id},
-        //     (err: any, contract: IContract)=>{
-        //         if (err) {
-        //             return res.json({'status': Status.Error, 'message': Messages.GenericError})
-        //         }
-        //         if (contract == undefined || contract == null) {
-        //             return res.json({'status': Status.Error, 'message': 'No Contract found.'})
-        //         }
-        //         if (contract.status == ContractStatus.CANCELED || contract.status == ContractStatus.FINISHED) {
-        //             return res.json({'status': Status.Error, 'message': 'Your contract is no more valid.'})
-        //         }
-        //         if (contract.extraPermissions == undefined) {
-        //             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
-        //         }
-        //         if (!contract.extraPermissions.includes(permissionId)) {
-        //             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
-        //         }
-        //         next()
-        //         return
-        //     })
-        // }
-        // if(permissionId == Permissions.Get_Company_Contracts) {
-        //     next()
-        //     return
-        // }
-        // if (req.otherCompanyId != undefined) {
-        //     if( permissionId == Permissions.Cancel_Finish_Contract) {
-        //         next()
-        //         return
-        //     }
-        //     Contract.findOne( {company: req.otherCompanyId, contractor: req.companyId},
-        //     (err: any, contract: IContract)=>{
-        //         if (err) {
-        //             return res.json({'status': Status.Error, 'message': Messages.GenericError})
-        //         }
-        //         if (contract == undefined || contract == null) {
-        //             return res.json({'status': Status.Error, 'message': 'No Contract found.'})
-        //         }
-        //         if (contract.extraPermissions == undefined) {
-        //             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
-        //         }
-        //         if (!contract.extraPermissions.includes(permissionId)) {
-        //             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
-        //         }
-        //         next()
-        //         return
-        //     })
-        // }
-        // const employee = <IEmployee>user
-        // if(employee.extraPermissions != undefined ){
-        //     if(employee.extraPermissions.on.includes(permissionId)) {
-        //         next()
-        //         return
-        //     }
-        //     if(employee.extraPermissions.off.includes(permissionId)) {
-        //         return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
-        //     }
-        // } 
-        // Company.findById(req.companyId, 
-        // (err: any, company: ICompany)=>{
-        //     switch (user.permissions.role) {
-        //         case 0:
-        //             if (!company.userPermissions[0].on.includes(permissionId)) {
-        //                 return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
-        //             }
-        //             next()
-        //             break;
-        //         case 1:
-        //             if (!company.userPermissions[1].on.includes(permissionId)) {
-        //                 return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
-        //             }
-        //             next()
-        //             break;
-        //         case 2:
-        //             if (!company.userPermissions[2].on.includes(permissionId)) {
-        //                 return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
-        //             }
-        //             next()
-        //             break;
-        //         case 3:
-        //             if (!company.userPermissions[3].on.includes(permissionId)) {
-        //                 return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
-        //             }
-        //             next()
-        //             break;
-        //         default:
-        //                 // return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
-        //                 break;
-        //         }
-        //         return
-        //     })
     });
 };
 //# sourceMappingURL=permissions.js.map

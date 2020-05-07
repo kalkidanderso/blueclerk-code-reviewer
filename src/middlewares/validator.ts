@@ -21,30 +21,54 @@ export const validate = (validations: ValidationChain[]) => {
 
 export const Validations = {
   //Auth
+  signUp: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('password').exists(), check('companyName').exists(), check('industryId').exists()],
+  
   login: [check('email').exists(), check('email').isEmail(), check('password').exists()],
-  // companySubscribe: [check('agreedStatus').exists()],
+
+  socialLogin: [check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric()],
+  
+  socialSignUp: [check('email').exists(), check('email').isEmail(), check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
+  
+  customerImport: [check('customerSheet').exists()],
+  
   agree: [check('agreedStatus').exists()],
-  signUp: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
+  
   adminSignUp: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
+  
   contractorSignup: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
+  
+  contractorSocialSignUp: [check('email').exists(), check('email').isEmail(), check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
+  
   searchContractor: [check('email').exists(), check('email').isEmail()],
+  
   inviteContractor: [check('contractorId').exists()],
+  
   updateContract: [check('contractId').exists(), check('status').exists()],
+  
   contractorPermissions: [check('contractorId').exists(), check('permissions').exists()],
+  
   upgradeToCompany: [check('token').exists(), check('ending').exists()],
+  
   //Users
   createManager: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
+  
   createTechnician: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
+  
   createOfficeAdmin: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
 
-  updateProfile: [check('firstName').exists(), check('lastName').exists(), check('imageUrl').exists()],
+  updateProfile: [check('firstName').exists(), check('lastName').exists()],
+  
   changePassword: [check('currentPassword').exists(), check('newPassword').exists()],
-  updateCompanyProfile: [check('companyName').exists(), check('logoUrl').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('phone').exists(), check('fax').exists()],
+  
+  updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('phone').exists()],
+  
   deleteEmployee: [check('employeeId').exists()],
+  
   forgotPassword: [check('email').exists()],
 
   //Industry
   createIndustry: [check('title').exists()],
+  
   removeIndustry: [check('industryId').exists()],
 
   //Equipment Type
@@ -55,30 +79,45 @@ export const Validations = {
 
   //Customers
   createCustomer: [check('name').exists()],
+  
   updateCustomer: [check('customerId').exists(), check('name').exists()],
-  // createCustomer: [check('email').exists(), check('email').isEmail(), check('name').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('contactName').exists(), check('phone').exists()],
+  
   getCustomers: [check('includeActive').exists(), check('includeNonActive').exists()],
 
+  getCustomerDetail: [check('customerId').exists()],
+
   //Customer Equipment
-  createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('imageUrl').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists(), check('location').exists()],
+  createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists(), check('location').exists(), check('images').exists()],
+
   getCustomerEquipments: [check('customerId').exists()],
-  linkEquipmentJob: [check('nfcTag').exists(), check('jobId').exists()],
+  
+  getCustomerEquipmentInfo: [check('nfcTag').exists()],
+
+  linkEquipmentJob: [check('nfcTag').exists(), check('jobId').exists(), check('comment').exists()],
+
   getCustomerEquipmentJobs: [check('nfcTag').exists()],
 
   //Job Type
   createJobType: [check('title').exists()],
 
   //Job
-  createJob: [check('dateTime').exists(), check('technicianId').exists(), check('customerId').exists(), check('jobTypeId').exists()],
+  createJob: [check('dateTime').exists(), check('technicianId').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric()],
+
   generalJob: [check('jobId').exists()],
+
   updateJob: [check('status').exists(), check('comment').exists(), check('jobId').exists()],
+
   editJob: [check('jobId').exists(), check('technicianId').exists(), check('dateTime').exists()],
+
   technicianJobs: [check('employeeId').exists()],
   
   //Group
   createGroup: [check('title').exists()],
+
   groupGeneric: [check('groupId').exists()],
+
   addManager: [check('groupId').exists(), check('managerId').exists()],
+
   memberGeneric: [check('groupId').exists(), check('memberId').exists()],
   
   //Company Equipemnt
@@ -95,13 +134,26 @@ export const Validations = {
 
   // Company Cards
   addCompanyCard: [ check('token').exists(), check('ending').exists()],
+
   removeCompanyCard: [ check('cardId').exists()],
+
   subscribe: [ check('cardId').exists(), check('planId').exists()],
- 
  
   buySubscriptions: [ check('noOfOfficeAdmins').exists(),check('noOfTechnicians').exists(),check('noOfManagers').exists(),],
 
   updateDefaultPermissions: [check('onPermissions').exists(), check('offPermissions').exists(), check('role').exists()],
+ 
   udpateUserPermissions: [check('onPermissions').exists(), check('offPermissions').exists()],
+ 
   employeePermissions: [check('employeeId').exists()],
+   
+  createTicket: [check('customerId').exists()],
+ 
+  updateTicket: [check('ticketId').exists(), check('note').exists()],
+ 
+  getTicketDetail: [check('ticketId').exists()],
+ 
+  getJobReport: [check('jobId').exists()],
+
+  createQBCustomer: [check('name').exists(),  check('name').not().isEmpty(),],
 }

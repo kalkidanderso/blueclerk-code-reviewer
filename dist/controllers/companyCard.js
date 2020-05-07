@@ -10,7 +10,7 @@ exports.createCompanyCard = (req, res) => {
     if (company.stripeId) {
         return addCardToCompany(req, res);
     }
-    stripe_1.createCustomer(company.auth.email, 'company ' + company.profile.displayName, params.token, (status, customer) => {
+    stripe_1.createCustomer(company.info.companyEmail, 'company ' + company.info.companyName, params.token, (status, customer) => {
         if (status == 1) {
             company.updateOne({ stripeId: customer.id })
                 .exec((err) => {

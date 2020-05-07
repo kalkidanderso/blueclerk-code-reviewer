@@ -1,8 +1,11 @@
 import {Request, Response} from 'express'
-import { Status, Messages } from '../common/constants'
+import { Status, Messages, Role} from '../common/constants'
 
 import { Customer, ICustomer } from '../models/Customer'
 import {  Company, ICompany } from '../models/Company'
+import {  CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
+import { User, IUser } from '../models/User'
+import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 
 export const createCustomer = (req: Request, res: Response) => {
 
@@ -11,11 +14,17 @@ export const createCustomer = (req: Request, res: Response) => {
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
+    
     const customer = new Customer(
         {
             info: {
-                name: params.name,
                 email: params.email,
+            },
+            profile:{
+                firstName: params.name,
+                lastName: params.name,
+                displayName: params.name,
+                imageUrl: '',
             },
             address: {
                 street: params.street,
@@ -24,39 +33,37 @@ export const createCustomer = (req: Request, res: Response) => {
                 zipCode: params.zipCode,
             },
             contact: {
-                name: params.contactName,
                 phone: params.phone,
             },
-            company: companyId
+            company: companyId,
+            permissions: {
+                role: Role.CUSTOMER,
+                extra: [],
+            },
         }
     )
 
     customer.save((err: any) => {
 
         if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            return res.json({'status': Status.Error, 'message': Messages.GenericError, 'error' : err})
         }
-        Company.findById(req.companyId, function(err: any, company: ICompany){
+        
+        // create company customer here
+        const companyCustomer = new CompanyCustomer({
+            company: companyId,
+            customer: customer._id,
+            createdAt: Date.now()
+        })
+
+        companyCustomer.save((err: any) => {
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            company.customers.push(customer._id)
-                
-            company.updateOne(
-                {customers: company.customers},
-                (err: any, raw: any)=> {
-                    
-                    if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                    }
-            
-                    return res.json({'status': Status.Success, 'message': 'Customer created successfully.'})
-                }
-            )
+            return res.json({'status': Status.Success, 'message': 'Customer created successfully.'})
         })
-
     })
 
 }
@@ -80,21 +87,34 @@ export const getCustomers = (req: Request, res: Response) => {
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-    Company.findOne({_id: companyId})
-    .populate({
-        path: 'customers',
-        match: filter,
-      })
-    .exec((err: any, company: ICompany) => {
-
-        if (err || !company) {
+    
+    CompanyCustomer.find({company: companyId}, 
+    (err: any, companyCustomers: ICompanyCustomer[])=>{
+        if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
+        
+        if (companyCustomers.length == 0) {
+            return res.json({'status': Status.Error, 'message': 'No customer found.'})
+        }
+        const customerIds = companyCustomers.map((obj: any)=>{
+                
+            return obj.customer
+        })
+        
+        User.find({_id : {$in: customerIds}},
+            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode contact.phone permissions.role',
+            (err: any, users: IUser[]) =>{
+            
+            if (err) {
+                
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
 
-        res.json({'status': Status.Success, 'customers': company.customers})    
+            return res.json({'status': Status.Success, 'customers': users}) 
+        })
 
-    })
-    
+    })    
 }
 
 export const updateCustomer = (req: Request, res: Response) => {
@@ -109,13 +129,14 @@ export const updateCustomer = (req: Request, res: Response) => {
 
         customer.updateOne(
             {
-                'info.name': params.name,
                 'info.email': params.email,
+                'profile.firstName': params.name,
+                'profile.lastName': params.name,
+                'profile.displayName': params.name,
                 'address.street': params.street,
                 'address.city': params.city,
                 'address.state': params.state,
                 'address.zipCode': params.zipCode,
-                'contact.name': params.contactName,
                 'contact.phone': params.phone,
             },
             (err: any, raw: any)=> {
@@ -124,7 +145,44 @@ export const updateCustomer = (req: Request, res: Response) => {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
         
-                return res.json({'status': Status.Success, 'message': 'Customer data updated successfully.'})
+                return res.json({'status': Status.Success, 'message': 'Customer updated successfully.'})
             })
+    })
+}
+
+export const customerDetail = (req: Request, res: Response) => {
+
+    const params = req.body
+
+    var companyId = req.companyId;
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+    
+    CompanyCustomer.findOne({ 'customer': params.customerId, company: companyId})
+    .populate({
+        path: 'customer'
+    })
+    .exec((err: any, companyCustomer: ICompanyCustomer)=>{
+        if (err) {
+            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }
+        
+        if (companyCustomer == undefined || companyCustomer == null) {
+            return res.json({'status': Status.Error, 'message': 'No customer found'})
+        }
+        const customer: any = companyCustomer.customer
+
+        if(customer.permissions.role == Role.CUSTOMER) {
+
+            customer.populate('equipments', function(err: any) {
+                if (err) {
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                }
+
+                return res.json({'status': Status.Success, 'customer': customer})
+            });
+        }
+        
     })
 }

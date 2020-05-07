@@ -22,6 +22,8 @@ tags:
     description: For customers of a company
   - name: Customer Equipment
     description: For equipments of a customer
+  - name: Customer Equipment Detail
+    description: For Limited information of customer equipment and jobs
   - name: Company Equipment
   - name: Company Card
     description: For payment methods of a company
@@ -31,8 +33,12 @@ tags:
     description: For Inventory of company equipments
   - name: Job Type
     description: For job types
+  - name: Service Ticket
+    description: For creting and getting service tickets
   - name: Job
     description: For scheduled jobs
+  - name: Reports
+    description: For job and other reports
   - name: Image
     description: For images
   - name: Group
@@ -44,6 +50,10 @@ tags:
     description: For employee or company permissions
   - name: Contractor
     description: For contractor login, signup and details
+  - name: Import Customer
+    description: For import customers through excel file
+  - name: Quickbooks Integration
+    description: For Quickbooks customers integration
     
 paths:
   /login:
@@ -74,7 +84,7 @@ paths:
     post:
       tags:
         - Auth
-      summary: Sign up for company
+      summary: Sign up as company Admin and creates company
       description: ''
       consumes:
         - application/x-www-form-urlencoded
@@ -85,22 +95,27 @@ paths:
           in: formData
           required: true
           type: string
+          description: email address of admin of a company
         - name: password
           in: formData
           required: true
           type: string
+          description: password for company admin login
         - name: firstName
           in: formData
           required: true
           type: string
+          description: first Name of admin of company
         - name: lastName
           in: formData
           required: true
           type: string
+          description: last Name of admin of company
         - name: phone
           in: formData
           required: true
           type: string
+          description: phone number of admin of company
         - name: companyName
           in: formData
           required: true
@@ -392,6 +407,187 @@ paths:
           description: Success
           schema:
             $ref: '#/definitions/AuthAPIResponse'
+  /checkAndGet:
+    post:
+      tags:
+        - Auth
+      summary: Check if user has already signed up using Facebook or google
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: socialId
+          in: formData
+          description: 'Social id returned by facebook or google sdk'
+          required: true
+          type: string
+        - name: connectorType
+          in: formData
+          description: '0 for Facebook and 1 for Google'
+          required: true
+          type: number
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/AuthAPIResponse'
+  /signUpSocial:
+    post:
+      tags:
+        - Auth
+      summary: Sign up for company using Facebook or Google
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: email
+          in: formData
+          required: true
+          type: string
+          description: email address of admin of a company
+        - name: firstName
+          in: formData
+          required: true
+          type: string
+          description: first Name of admin of company
+        - name: lastName
+          in: formData
+          required: true
+          type: string
+          description: last Name of admin of company
+        - name: phone
+          in: formData
+          required: true
+          type: string
+          description: phone number of admin of company
+        - name: companyName
+          in: formData
+          required: true
+          type: string
+        - name: industryId
+          in: formData
+          description: >-
+            Id of the selected industry from the industries fetched with
+            /getIndustries api
+          required: true
+          type: string
+        - name: socialId
+          in: formData
+          description: >-
+            Social id from Facebook or Google sdk
+          required: true
+          type: string
+        - name: connectorType
+          in: formData
+          description: >-
+            0 for Facebook and 1 for Google
+          required: true
+          type: number
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/AuthAPIResponse'
+  /contractorSignUpSocial:
+    post:
+      tags:
+        - Auth
+      summary: Sign up for contractor using Facebook or Google
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: email
+          in: formData
+          required: true
+          type: string
+        - name: firstName
+          in: formData
+          required: true
+          type: string
+        - name: lastName
+          in: formData
+          required: true
+          type: string
+        - name: phone
+          in: formData
+          required: true
+          type: string
+        - name: companyName
+          in: formData
+          required: true
+          type: string
+        - name: industryId
+          in: formData
+          description: >-
+            Id of the selected industry from the industries fetched with
+            /getIndustries api
+          required: true
+          type: string
+        - name: socialId
+          in: formData
+          description: >-
+            Social id from Facebook or Google sdk
+          required: true
+          type: string
+        - name: connectorType
+          in: formData
+          description: >-
+            0 for Facebook and 1 for Google
+          required: true
+          type: number
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/AuthAPIResponse'
+  /setCustomWorkOrderNumber:
+    post:
+      tags:
+        - Auth
+      summary: Setting custom work order number for service tickets and job
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: workOrderNumber
+          in: formData
+          type: number
+        - name: prefix
+          in: formData
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getCurrentJobId:
+    post:
+      tags:
+        - Auth
+      summary: Getting latest custom work order number for service tickets and job
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/WorkOrderNumberResponse'
+      security:
+        - Bearer: []
   # /adminSignUp:
   #   post:
   #     tags:
@@ -690,7 +886,21 @@ paths:
           type: string
         - name: imageUrl
           in: formData
-          required: true
+          type: string
+        - name: street
+          in: formData
+          type: string
+        - name: city
+          in: formData
+          type: string
+        - name: state
+          in: formData
+          type: string
+        - name: zipCode
+          in: formData
+          type: string
+        - name: phone
+          in: formData
           type: string
       responses:
         '200':
@@ -837,6 +1047,30 @@ paths:
                       $ref: '#/definitions/User'
       security:
         - Bearer: []
+  /getContractorsForJob:
+    post:
+      tags:
+        - Users
+      summary: To get all contractors of a company for assigning them a job
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/definitions/User'
+      security:
+        - Bearer: []
   /updateCompanyProfile:
     post:
       tags:
@@ -852,25 +1086,25 @@ paths:
           in: formData
           required: true
           type: string
-        - name: logoUrl
+        - name: companyEmail
           in: formData
           required: true
+          type: string
+          description: email address of company
+        - name: logoUrl
+          in: formData
           type: string
         - name: street
           in: formData
-          required: true
           type: string
         - name: city
           in: formData
-          required: true
           type: string
         - name: state
           in: formData
-          required: true
           type: string
         - name: zipCode
           in: formData
-          required: true
           type: string
         - name: phone
           in: formData
@@ -878,7 +1112,6 @@ paths:
           type: string
         - name: fax
           in: formData
-          required: true
           type: string
       responses:
         '200':
@@ -1052,9 +1285,6 @@ paths:
         - name: zipCode
           in: formData
           type: string
-        - name: contactName
-          in: formData
-          type: string
         - name: phone
           in: formData
           type: string
@@ -1097,9 +1327,6 @@ paths:
           in: formData
           type: string
         - name: zipCode
-          in: formData
-          type: string
-        - name: contactName
           in: formData
           type: string
         - name: phone
@@ -1150,6 +1377,38 @@ paths:
               - $ref: '#/definitions/GeneralAPIResponse'
               - type: object
                 properties:
+                  customer:
+                    $ref: '#/definitions/Customer'
+      security:
+        - Bearer: []
+  /getCustomerDetail:
+    post:
+      tags:
+        - Customer
+      summary: >-
+        To get detail of a customer.
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: customerId
+          in: formData
+          type: string
+          description: 'Id of customer for getting detail'
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
                   customers:
                     type: array
                     items:
@@ -1183,10 +1442,11 @@ paths:
           in: formData
           required: true
           type: string
-        - name: imageUrl
+        - name: images
           in: formData
           required: true
           type: string
+          description: comma seprated image Urls
         - name: equipmentTypeId
           in: formData
           required: true
@@ -1252,6 +1512,213 @@ paths:
                       $ref: '#/definitions/CustomerEquipment'
       security:
         - Bearer: []
+  /getCustomerEquipmentJobs:
+    post:
+      tags:
+        - Customer Equipment
+      summary: To get history of jobs performed on current equipment
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: nfcTag
+          in: formData
+          required: true
+          type: string
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
+      responses:
+        '200':
+          description: Success
+          schema:
+           allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  equipment:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                      info:
+                        type: object
+                        properties:
+                          model:
+                            type: string
+                          serialNumber:
+                            type: string
+                          nfcTag:
+                            type: string
+                          imageUrl:
+                            type: string
+                      maintenance:
+                        type: object
+                        properties:
+                          interval:
+                            type: string
+                          nextDate:
+                            type: string
+                            format: date-time
+                      type:
+                        type: string
+                        description: Id of equipment type
+                      brand:
+                        type: string
+                        description: Id of equipment brand
+                      customer:
+                        type: string
+                        description: Id of customer
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/definitions/Scan'
+      security:
+        - Bearer: []
+  /scanTag:
+    post:
+      tags:
+        - Customer Equipment
+      summary: To check if the tag is linked to some equipment or not
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: nfcTag
+          in: formData
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/CheckTagResponse'
+      security:
+        - Bearer: []
+  /getEquipmentInfo:
+    post:
+      tags:
+        - Customer Equipment Detail
+      summary: To get detail of equipment by nfc tag
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: nfcTag
+          in: formData
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  equipment:
+                    type: object
+                    properties:
+                      info:  
+                        type: object
+                        properties:
+                          model:
+                            type: string
+                            description: model number of equipment scanned
+                          serialNumber:
+                            type: string
+                            description: serialNumber number of equipment scanned
+                          location:
+                            type: string
+                            description: location of equipment
+                      images:
+                        type: array
+                        items:
+                          type: string
+                      type:
+                        type: object
+                        properties:
+                          title: 
+                            type: string
+                      brand:
+                        type: object
+                        properties:
+                          title: 
+                            type: string
+                      customer:
+                        type: object
+                        properties:
+                          profile:
+                            type: object
+                            properties:
+                              displayName: 
+                                type: string
+                          address:
+                            type: object
+                            properties:
+                              street: 
+                                type: string
+                              city:
+                                type: string
+                              state:
+                                type: string
+                              zipCode:
+                                type: string
+      security:
+        - Bearer: []
+  /getEquipmentJobs:
+    post:
+      tags:
+        - Customer Equipment Detail
+      summary: To get jobs performed on equipment by nfc tag
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: nfcTag
+          in: formData
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  scans:
+                    type: array
+                    items:
+                      properties:
+                        jobId:
+                          type: string
+                        description:
+                          type: string
+                        status:
+                          type: boolean
+                        dateTime:
+                          type: string
+                          format: date
+                        customer:  
+                          type: object
+                          properties:
+                            profile:
+                              type: object
+                              properties:
+                                displayName:
+                                  type: string
+      security:
+        - Bearer: []
   /createJobType:
     post:
       tags:
@@ -1267,6 +1734,10 @@ paths:
           in: formData
           required: true
           type: string
+        - name: industryId
+          in: formData
+          type: string
+          description: pass indutry id if you are global admin and make this job type available for that industry
       responses:
         '200':
           description: Success
@@ -1305,6 +1776,141 @@ paths:
                       $ref: '#/definitions/JobType'
       security:
         - Bearer: []
+  /createServiceTicket:
+    post:
+      tags:
+        - Service Ticket
+      summary: To create a service ticket
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: customerId
+          in: formData
+          required: true
+          type: string
+          description: >-
+            Id of a customer selected from the list received by /getCustomers
+            api
+        - name: note
+          in: formData
+          type: string
+        - name: technicianId
+          in: formData
+          type: string
+          description: >-
+            Id of a technician / admin
+        - name: scheduleDateTime
+          in: formData
+          type: string
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getServiceTickets:
+    post:
+      tags:
+        - Service Ticket
+      summary: To get all service tickets of a company or company of employee.
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/definitions/ServiceTicket'
+      security:
+        - Bearer: []
+  /getServiceTicketDetail:
+    post:
+      tags:
+        - Service Ticket
+      summary: To get service ticket details with customer and company info.
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: ticketId
+          in: formData
+          required: true
+          type: string
+          description: 'Id of tickett you want to get detail of'
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/definitions/ServiceTicket'
+      security:
+        - Bearer: []
+  /updateServiceTicket:
+    post:
+      tags:
+        - Service Ticket
+      summary: To update service ticket
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: ticketId
+          in: formData
+          required: true
+          type: string
+          description: Id of ticket to update
+        - name: note
+          in: formData
+          required: true
+          type: string
+          description: Additional note for the service ticket
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /createJob:
     post:
       tags:
@@ -1321,6 +1927,18 @@ paths:
           required: true
           type: string
           description: 'date time of job. e.g. 2019-12-22 20:30:00'
+        - name: ticketId
+          in: formData
+          required: true
+          type: string
+          description: >-
+            Id of a service ticket fetched by
+            /getServiceTickets api
+        - name: equipmentId
+          in: formData
+          type: string
+          description: >-
+            Id of a equipment for single scan
         - name: technicianId
           in: formData
           required: true
@@ -1345,6 +1963,11 @@ paths:
           # required: true
           type: string
           description: Description of the job 
+        - name: employeeType
+          in: formData
+          required: true
+          type: number
+          description: 0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor
         - name: companyId
           in: formData
           type: string
@@ -1594,39 +2217,31 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
-  /getCustomerEquipmentJobs:
+  /getJobReport:
     post:
       tags:
-        - Customer Equipment
-      summary: To get history of jobs performed on current equipment
+        - Reports
+      summary: Get report of a finshed job
       description: ''
       consumes:
         - application/x-www-form-urlencoded
       produces:
         - application/json
       parameters:
-        - name: nfcTag
+        - name: jobId
           in: formData
           required: true
           type: string
-        - name: companyId
-          in: formData
-          type: string
-          description: 'Id of company if contractor is hitting for other company'
+          description: >-
+            Id of job to get report (job must be finished and have tags scaned)
       responses:
         '200':
           description: Success
           schema:
-           allOf:
-              - $ref: '#/definitions/GeneralAPIResponse'
-              - type: object
-                properties:
-                  jobs:
-                    type: array
-                    items:
-                      $ref: '#/definitions/Scan'
+            $ref: '#/definitions/JobReport'
       security:
         - Bearer: []
+  
   /uploadImage:
     post:
       tags:
@@ -1656,6 +2271,30 @@ paths:
                 properties:
                   imageUrl:
                     type: string
+      security:
+        - Bearer: []
+  /importCustomer:
+    post:
+      tags:
+        - Import Customer
+      summary: To upload an image
+      description: ''
+      consumes:
+        - multipart/form-data
+      produces:
+        - application/json
+      parameters:
+        - name: customerSheet
+          in: formData
+          required: true
+          type: file
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
       security:
         - Bearer: []
   /createGroup:
@@ -2354,6 +2993,80 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
           - Bearer: []
+  /getQBCustomers:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Get quickbooks customers for the first time
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /syncQBCustomers:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Manually syncing quickbooks customers
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /createQBCustomer:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Creating customer in quickbooks
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: email
+          in: formData
+          type: string
+        - name: name
+          in: formData
+          required: true
+          type: string
+        - name: street
+          in: formData
+          type: string
+        - name: city
+          in: formData
+          type: string
+        - name: state
+          in: formData
+          type: string
+        - name: zipCode
+          in: formData
+          type: string
+        - name: phone
+          in: formData
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
 securityDefinitions:
   Bearer:
     type: apiKey
@@ -2521,11 +3234,6 @@ definitions:
       customer:
         type: string
         description: Id of customer
-      jobs:
-        type: array
-        items:
-          type: string
-          description: Id's of jobs done on customers equipment
   JobType:
     type: object
     properties:
@@ -2533,6 +3241,9 @@ definitions:
         type: string
       title:
         type: string
+      industry:
+        type: string
+        description: industry id for whome the job type was created
       createdBy:
         type: string
         description: >-
@@ -2561,6 +3272,35 @@ definitions:
       status:
         type: string
         description: Current status of job
+      company:
+        type: string
+        description: Id of company who created it
+  ServiceTicket:
+    type: object
+    properties:
+      _id:
+        type: string
+      scheduleTime:
+        type: string
+        format: date-time
+      createdAt:
+        type: string
+        format: date-time
+      technician:
+        type: string
+        description: Id of technician
+      customer:
+        type: string
+        description: Id of customer
+      note:
+        type: string
+        description: note added while creating ticket
+      comment:
+        type: string
+        description: Comment by employee who completed the ticket
+      createdBy:
+        type: string
+        description: Id of user who created ticket
       company:
         type: string
         description: Id of company who created it
@@ -2714,6 +3454,236 @@ definitions:
         type: string
         format: date-time
         description: time when the equipment was scanned
+  JobReport:
+    type: object
+    properties:
+      id:
+        type: string
+      jobId:
+        type: string
+        description: Auto generated job id from sevice ticket number
+      status:
+        type: number
+        description: Status of job if it is finshed or not
+      employeeType:
+        type: boolean
+        description: If false that means assigned to employee if true that means job is assigned to vendor or vendors employee 
+      dateTime:
+        type: string
+        format: date-time
+        description: Time when job was scheduled
+      description:
+        type: string
+      createdAt:
+        type: string
+        format: date-time
+      ticket:
+        type: object
+        properties:
+          scheduleDateTime:
+            type: string
+            format: date-time
+            description: Time when ticket was scheduled
+          note:  
+            type: string
+            description: Additional note added by person who created ticket
+          ticketId:
+            type: string
+            description: Auto generated ticket number using prefix defined by user
+      technician:
+        type: object
+        properties:
+          auth:
+            type: object
+            properties:
+              email:  
+                type: string
+                description: Email address of technician
+          profile:
+            type: object
+            properties:
+              displayName:  
+                type: string
+                description: Name of technician
+          contact:
+            type: object
+            properties:
+              phone:  
+                type: string
+                description: Phone number of technician
+          permissions:
+            type: object
+            properties:
+              role:  
+                type: string
+                description: Role of technician in his company/organization
+      customer:
+        type: object
+        properties:
+          auth:
+            type: object
+            properties:
+              email:  
+                type: string
+                description: Email address of customer or from info.email
+          info:
+            type: object
+            properties:
+              email:  
+                type: string
+                description: Email address of customer if present
+          profile:
+            type: object
+            properties:
+              displayName:  
+                type: string
+                description: Name of customer
+          contact:
+            type: object
+            properties:
+              phone:  
+                type: string
+                description: Phone number of customer if present
+          address:
+            type: object
+            properties:
+              street:
+                type: string
+              city:  
+                type: string
+              state:
+                type: string
+              zipCode:
+                type: string
+      type:
+        type: object
+        properties:
+          title:
+            type: string
+            description: Title of job type
+      company:
+        type: object
+        properties:
+          auth:
+            type: object
+            properties:
+              email:  
+                type: string
+                description: Email address of company
+          info:
+            type: object
+            properties:
+              companyName:  
+                type: string
+                description: Name of company
+              logoUrl:
+                type: string
+                description: Logo of company
+          contact:
+            type: object
+            properties:
+              phone:  
+                type: string
+                description: Phone number of company
+          permissions:
+            type: object
+            properties:
+              role:  
+                type: string
+          address:
+            type: object
+            properties:
+              street:
+                type: string
+              city:  
+                type: string
+              state:
+                type: string
+              zipCode:
+                type: string
+      createdBy:
+        type: object
+        properties:
+          auth:
+            type: object
+            properties:
+              email:  
+                type: string
+                description: Email address of person who created job
+          info:
+            type: object
+            properties:
+              companyName:  
+                type: string
+                description: Name of company
+          profile:
+            type: object
+            properties:
+              displayName:  
+                type: string
+          contact:
+            type: object
+            properties:
+              phone:  
+                type: string
+          permissions:
+            type: object
+            properties:
+              role:  
+                type: string
+                description: Role of person who created job in his company/organization
+          address:
+            type: object
+            properties:
+              street:
+                type: string
+              city:  
+                type: string
+              state:
+                type: string
+              zipCode:
+                type: string
+      scans:
+        type: object
+        properties:
+          comment:
+            type: string
+            description: comment added by person who scanned the equipment
+          timeOfScan:
+            type: string
+            format: date-time
+          equipment:
+            type: object
+            properties:
+              info:  
+                type: object
+                properties:
+                  model:
+                    type: string
+                    description: model number of equipment scanned
+                  serialNumber:
+                    type: string
+                    description: serialNumber number of equipment scanned
+                  nfcTag:
+                    type: string
+                    description: nfcTag of equipment scanned
+                  location:
+                    type: string
+                    description: location of equipment
+              images:
+                type: array
+                items:
+                  type: string
+              type:
+                type: object
+                properties:
+                  title: 
+                    type: string
+              brand:
+                type: object
+                properties:
+                  title: 
+                    type: string
   GeneralAPIResponse:
     type: object
     properties:
@@ -2724,6 +3694,46 @@ definitions:
         enum:
           - 0
           - 1
+      message:
+        type: string
+        description: Error message in case of operation failure
+  CheckTagResponse:
+    type: object
+    properties:
+      status:
+        type: integer
+        format: int32
+        description: 'Status of operation, 0 -> failure 1 -> success'
+        enum:
+          - 0
+          - 1
+      tagStatus:
+        type: integer
+        format: int32
+        description: 'Status of tag, 2 -> associated 3 -> not associated'
+        enum:
+          - 2
+          - 3
+      message:
+        type: string
+        description: Error message in case of operation failure
+  WorkOrderNumberResponse:
+    type: object
+    properties:
+      status:
+        type: integer
+        format: int32
+        description: 'Status of operation, 0 -> failure 1 -> success'
+        enum:
+          - 0
+          - 1
+      currentWorkOrderNumber:
+        type: integer
+        format: int32
+        description: 'The lastest work order number'
+      prefix:
+        type: string
+        description: 'This will be returned if the company has set the prefix'
       message:
         type: string
         description: Error message in case of operation failure

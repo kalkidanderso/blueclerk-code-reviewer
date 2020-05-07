@@ -26,6 +26,7 @@ const swaggerDocument = __importStar(require("./swagger.json"));
 // const CronJob = require('cron').CronJob;
 const cron_1 = require("cron");
 const request_1 = __importDefault(require("request"));
+var http = require('http');
 //Environment config
 dotenv_1.default.config();
 //Database connection
@@ -57,16 +58,36 @@ passport_2.default(passport_1.default);
 app.use(morgan_1.default('dev'));
 //Swagger
 app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swaggerDocument));
+const server = http.createServer(app);
+const sio = require("socket.io")(server, {
+    handlePreflightRequest: (req, res) => {
+        const headers = {
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            "Access-Control-Allow-Origin": req.headers.origin,
+            "Access-Control-Allow-Credentials": true
+        };
+        res.writeHead(200, headers);
+        res.end();
+    }
+});
+sio.on("connection", () => {
+    console.log("Connected!");
+});
 //Router
-app.use('/api/v1', v1_1.default);
+app.use('/api/v1', v1_1.default(sio));
 new cron_1.CronJob('0 0 1 * *', function () {
     // console.log('You will see this message every second');
     request_1.default('http://localhost:' + app.get('port') + '/api/v1/chargeSubscription', function (response) {
         console.log(response);
     });
 }, null, true, 'America/Los_Angeles');
+new cron_1.CronJob('59 23 * * *', function () {
+    request_1.default('http://localhost:' + app.get('port') + '/api/v1/downgradeCompanies', function (response) {
+        console.log(response);
+    });
+}, null, true, 'America/Los_Angeles');
 //Starting the server
-app.listen(app.get('port'), (err) => {
+server.listen(app.get('port'), (err) => {
     if (err)
         return console.log(`Server start error: ${err}`);
     console.log(`Server started at port: ${app.get('port')}`);

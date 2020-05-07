@@ -11,20 +11,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const Company_1 = require("../models/Company");
 const constants_1 = require("../common/constants");
-// export const getCompnayId = () => {
-//     return async (req: Request, res: Response, next: NextFunction) => {
-//         const user = <IUser>req.user
-//         const employee = <IEmployee>req.user
-//         var companyId
-//         if (employee.company) {
-//             companyId = employee.company
-//         } else {
-//             companyId = user._id
-//         }
-//         req.companyId = companyId
-//         next()
-//     }
-// }
 exports.getCompnayId = () => {
     return (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         const user = req.user;
@@ -33,8 +19,12 @@ exports.getCompnayId = () => {
         if (req.body.companyId != undefined) {
             req.otherCompanyId = req.body.companyId;
         }
-        if (user.permissions.role == 3 /* COMPANY */) {
-            Company_1.Company.findById(user._id, (err, company) => {
+        if (user.permissions.role == 3 /* COMPANY_ADMIN */) {
+            const comapnyAdmin = req.user;
+            Company_1.Company.findById(comapnyAdmin.company, (err, company) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': "Unable to find your company. Contact BlueClerk admin for more." });
+                }
                 if (company.type == 1 && (req.body.companyId == undefined || req.body.companyId == null)) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': 'Company id is required.' });
                 }
@@ -49,6 +39,9 @@ exports.getCompnayId = () => {
         else if (user.permissions.role != 4 /* GLOBAL_ADMIN */) {
             const employee = req.user;
             Company_1.Company.findById(employee.company, (err, company) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': "Unable to find your company. Contact BlueClerk admin for more." });
+                }
                 req.company = company;
                 req.companyId = company._id;
                 next();

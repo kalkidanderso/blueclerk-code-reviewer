@@ -10,13 +10,18 @@ before_script:
   - chmod 600 ~/.ssh/id_rsa
   - ssh-keyscan -H 'deploy.blueclerk.com' >> ~/.ssh/known_hosts
 
+variables:
+  GIT_DEPTH: 0
+
 stages:
-  - dev
+  - deus
 
 deploy_to_dokku_dev:
-  stage: dev
+  stage: deus
   script:
     - git checkout -b dev
     - git pull origin dev
     - git branch --set-upstream-to dev
-    - git push -f dokku@deploy.blueclerk.com:blueclerk-node-api dev:master
+    - git push dokku@deploy.blueclerk.com:blueclerk-backend-api-dev dev:master
+
+   # - git push -f dokku@deploy.blueclerk.com:blueclerk-node-api-dev HEAD:refs/heads/dev

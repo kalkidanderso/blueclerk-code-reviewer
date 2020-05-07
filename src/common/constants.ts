@@ -2,7 +2,10 @@ import { check } from 'express-validator'
 
 export const Status = {
     Error: 0,
-    Success: 1
+    Success: 1,
+    TagAssociated: 2,
+    TagNotAssociated: 3,
+    QBUnauthorized: 4
 }
 
 export const Messages = {
@@ -10,17 +13,23 @@ export const Messages = {
     InvalidEmailPassword: 'Invalid email/password.',
     GenericError: 'Can\'t process now. Please try again later.',
     DuplicateEmail: 'Email address already registered. Please try with some other email address',
+    CompanyDuplicateEmail: 'Company Email address already registered. Please try with some other email address',
     UnAuthorized: 'You are not authorized for this action. Please contact admin for more details.',
     AccountDeleted: 'You account has been deleted. Please contact admin for more details.',
     AgreeToTermAndConditions: 'You must agree to terms and conditions of blueclerk.',
+    UserExists: 'User already exists.',
+    TagAssociated: 'Tag is associated with customer',
+    TagNotAssociated: 'Tag is not associated with customer',
+    QBUnAuthorized: 'Quickbooks authorization failed',
 }
 
 export const enum Role {
     OFFICE_ADMIN,
     TECHNICIAN,
     MANAGER,
-    COMPANY,
-    GLOBAL_ADMIN
+    COMPANY_ADMIN,
+    GLOBAL_ADMIN,
+    CUSTOMER
 }
 
 export const enum OrderStatus {
@@ -120,6 +129,22 @@ export const enum Permissions {
     Get_Company_Contracts,
     Upgrade_To_Company,
     Company_Subscribe,
+    Custom_work_Order_Number,
+    Customer_Import,
+    Get_Service_Tickets,
+    Create_Service_Ticket,
+    Update_Service_Ticket,
+    Get_Ticket_Detail,
+    Get_Contractors_For_Job,
+    Get_Customer_Detail,
+    Get_Job_Report,
+    Get_QB_Customers,
+    Create_QB_customer,
+    Scan_Tag,
+    Get_Custom_Work_No,
+    Get_QB_Uri,
+    Get_Sync_Info
+
 }
 
 export const ContractorPermissions = {
@@ -141,6 +166,11 @@ export const ContractorPermissions = {
         Permissions.Job_Finish,
         Permissions.Job_Detail,
         Permissions.Image_Upload,
+        Permissions.Get_Service_Tickets,
+        Permissions.Create_Service_Ticket,
+        Permissions.Update_Service_Ticket,
+        Permissions.Get_Ticket_Detail,
+        Permissions.Get_Customer_Detail
     ]
 }
 export const UserPermissions = {
@@ -205,6 +235,16 @@ export const UserPermissions = {
             Permissions.Tags_Get_Orders,
             Permissions.Subscription_Buy,
             Permissions.Subscription_Cancel,
+            Permissions.Get_Service_Tickets,
+            Permissions.Create_Service_Ticket,
+            Permissions.Update_Service_Ticket,
+            Permissions.Get_Ticket_Detail,
+            Permissions.Get_Contractors_For_Job,
+            Permissions.Get_Customer_Detail,
+            Permissions.Get_Job_Report,
+            Permissions.Scan_Tag,
+            Permissions.Get_Custom_Work_No,
+            Permissions.Get_Sync_Info
         ],
         off: [Permissions.None],
     },
@@ -269,6 +309,16 @@ export const UserPermissions = {
             Permissions.Tags_Get_Orders,
             Permissions.Subscription_Buy,
             Permissions.Subscription_Cancel,
+            Permissions.Get_Service_Tickets,
+            Permissions.Create_Service_Ticket,
+            Permissions.Update_Service_Ticket,
+            Permissions.Get_Ticket_Detail,
+            Permissions.Get_Contractors_For_Job,
+            Permissions.Get_Customer_Detail,
+            Permissions.Get_Job_Report,
+            Permissions.Scan_Tag,
+            Permissions.Get_Custom_Work_No,
+            Permissions.Get_Sync_Info
         ],
         off: [Permissions.None],
     },
@@ -336,6 +386,16 @@ export const UserPermissions = {
             Permissions.Tags_Get_Orders,
             Permissions.Subscription_Buy,
             Permissions.Subscription_Cancel,
+            Permissions.Get_Service_Tickets,
+            Permissions.Create_Service_Ticket,
+            Permissions.Update_Service_Ticket,
+            Permissions.Get_Ticket_Detail,
+            Permissions.Get_Contractors_For_Job,
+            Permissions.Get_Customer_Detail,
+            Permissions.Get_Job_Report,
+            Permissions.Scan_Tag,
+            Permissions.Get_Custom_Work_No,
+            Permissions.Get_Sync_Info
         ],
         off: [Permissions.None],
     },
@@ -405,7 +465,24 @@ export const UserPermissions = {
             Permissions.Add_Contractor_Permission,
             Permissions.Get_Company_Contracts,
             Permissions.Cancel_Finish_Contract,
-            Permissions.Company_Subscribe
+            Permissions.Company_Subscribe,
+            Permissions.Custom_work_Order_Number,
+            Permissions.Customer_Import,
+            Permissions.Get_Service_Tickets,
+            Permissions.Create_Service_Ticket,
+            Permissions.Update_Service_Ticket,
+            Permissions.Get_Ticket_Detail,
+            Permissions.Get_Contractors_For_Job,
+            Permissions.Get_Customer_Detail,
+            Permissions.Get_All_Contracts,
+            Permissions.Accept_Reject_Contract,
+            Permissions.Get_Job_Report,
+            Permissions.Get_QB_Customers,
+            Permissions.Create_QB_customer,
+            Permissions.Scan_Tag,
+            Permissions.Get_Custom_Work_No,
+            Permissions.Get_QB_Uri,
+            Permissions.Get_Sync_Info
         ],
         off: [Permissions.None],
     }

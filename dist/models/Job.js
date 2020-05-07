@@ -10,6 +10,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const JobSchema = new mongoose_1.Schema({
     dateTime: Date,
+    jobId: String,
+    ticket: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'ServiceTicket',
+        required: true
+    },
     technician: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
@@ -17,7 +23,7 @@ const JobSchema = new mongoose_1.Schema({
     },
     customer: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Customer',
+        ref: 'User',
         required: true
     },
     type: {
@@ -30,14 +36,6 @@ const JobSchema = new mongoose_1.Schema({
         ref: 'Company',
         required: true
     },
-    equipmentId: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'CustomerEquipment',
-        default: null
-    },
-    comment: {
-        type: String
-    },
     description: {
         type: String
     },
@@ -48,9 +46,17 @@ const JobSchema = new mongoose_1.Schema({
     createdAt: {
         type: Date
     },
-    timeOfScan: {
-        type: Date
+    createdBy: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     },
+    // employee type 0 for company employee
+    // employee type 1 for external employee
+    employeeType: {
+        type: Boolean,
+        default: false
+    }
 });
 exports.Job = mongoose_1.default.model('Job', JobSchema);
 //# sourceMappingURL=Job.js.map
