@@ -6,7 +6,7 @@ info:
 host: 'blueclerk-node-api.deploy.blueclerk.com'
 basePath: /api/v1
 schemes:
-  - http
+  - https
 tags:
   - name: Auth
     description: For login and signup
