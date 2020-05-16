@@ -7,8 +7,6 @@ import { CompanyCustomer } from '../models/CompanyCustomer'
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");
-var http = require('http');
-var io = require("socket.io")
 
 export const getQBCustomers = (req: Request, res: Response) => {
     
@@ -113,7 +111,16 @@ export const getQBCustomers = (req: Request, res: Response) => {
                                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
                             }
 
-                            return res.json({'status': Status.Success, 'message': "Customers Synced successfully"})
+                            company.updateOne({
+                                'customersSynced': true,
+                                'customersSyncedAt': Date.now(),
+                            },
+                                (err: any, raw: any) => {
+                                    if (err) {
+                                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                    }
+                                    return res.json({ 'status': Status.Success, 'message': "Customers synced successfully" })
+                                })
                         })
 
                     }
@@ -243,6 +250,7 @@ export const syncQBCustomers = (req: Request, res: Response) => {
                                 }
                                 
                                 company.updateOne({
+                                    'customersSynced': true,
                                     'customersSyncedAt': Date.now(),
                                 },
                                 (err: any, raw: any) => {
