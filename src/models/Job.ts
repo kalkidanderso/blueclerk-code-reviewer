@@ -15,6 +15,12 @@ export interface IJob extends Document {
     createdAt: Date,
     createdBy: Schema.Types.ObjectId,
     employeeType: boolean
+    isFixed: boolean
+    hourlyRate: number
+    charges: number
+    startTime: Date
+    endTime: Date
+    timeSpent: number
 }
 
 const JobSchema = new Schema({
@@ -63,9 +69,27 @@ const JobSchema = new Schema({
     },
     // employee type 0 for company employee
     // employee type 1 for external employee
-    employeeType:{
+    employeeType: {
         type: Boolean,
         default: false
+    },
+    isFixed: {
+        type: Boolean,
+        default: true
+    },
+    hourlyRate:{
+        type: Number,
+        default: 0
+    },
+    charges: {
+        type: Number,
+        default: 0
+    },
+    startTime: Date,
+    endTime: Date,
+    timeSpent: {
+        type: Number,
+        default: 0
     }
 
 })

@@ -26,9 +26,7 @@ exports.getQBCustomers = (req, res) => {
             return res.json({ 'status': constants_1.Status.QBUnauthorized, 'message': constants_1.Messages.QBUnAuthorized });
         }
         _getCustomers(req, res, company, (req, res, error, errorMessage, customers) => {
-            console.log("after get customer");
             if (error == 0) {
-                console.log("inside errror is 0");
                 return res.json({ 'status': constants_1.Status.Error, 'message': errorMessage });
             }
             if (error == 400) {
@@ -112,7 +110,6 @@ exports.getQBCustomers = (req, res) => {
     });
 };
 exports.syncQBCustomers = (req, res) => {
-    console.log("syn customers is called");
     var companyId = req.companyId;
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
@@ -138,9 +135,7 @@ exports.syncQBCustomers = (req, res) => {
                 });
             }
             _getCustomers(req, res, company, (req, res, error, errorMessage, customers) => {
-                console.log("after get customer");
                 if (error == 0) {
-                    console.log("inside errror is 0");
                     return res.json({ 'status': constants_1.Status.Error, 'message': errorMessage });
                 }
                 if (error == 400) {

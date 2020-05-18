@@ -7,6 +7,7 @@ import { Company, ICompany } from '../models/Company'
 import { Employee, IEmployee } from '../models/Employee'
 import { Contract, IContract } from '../models/Contract'
 import { ObjectId } from 'mongodb'
+import { privateKey } from '../common/config'
 
 export const getAllPermissions = (req: Request, res: Response) => {
 
@@ -261,4 +262,32 @@ export const addContractorPermissions = (req: Request, res: Response) => {
             return res.json({'status': Status.Success, 'message': 'Contractor permissions added successfully.'})   
         })
     })
+}
+
+
+export const updateAllCompaniesPermissions = (req: Request, res: Response) => {
+    const params = req.body
+    if (params.first == 'ZAhhNlQ561' && params.second == privateKey.key) {
+
+        Company.find({}, (err: any, companies: ICompany[]) => {
+            if(err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+            const count = companies.length
+    
+            let loopcount = 0;
+            companies.forEach(company => {
+                company.updateOne({userPermissions: UserPermissions}, (err: any, raw: any) => {
+                    if(err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    }
+                    loopcount ++;
+                    if(loopcount == count) {
+                        return res.json({'status': Status.Error, 'message': 'Default permissions updated'})
+                    }
+    
+                })
+            });
+        })
+    }
 }

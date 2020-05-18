@@ -33,9 +33,7 @@ export const getQBCustomers = (req: Request, res: Response) => {
         }
 
         _getCustomers(req, res, company, (req: Request, res: Response, error: number, errorMessage: string, customers: any) =>{
-            console.log("after get customer")
             if(error == 0) {
-                console.log("inside errror is 0")
                 return res.json({'status': Status.Error, 'message': errorMessage})
             }
 
@@ -134,7 +132,6 @@ export const getQBCustomers = (req: Request, res: Response) => {
 
 
 export const syncQBCustomers = (req: Request, res: Response) => {
-    console.log("syn customers is called")
     var companyId = req.companyId;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
@@ -167,9 +164,8 @@ export const syncQBCustomers = (req: Request, res: Response) => {
             }
           
             _getCustomers(req, res, company, (req: Request, res: Response, error: number, errorMessage: string, customers: any) =>{
-                console.log("after get customer")
+                
                 if(error == 0) {
-                    console.log("inside errror is 0")
                     return res.json({'status': Status.Error, 'message': errorMessage})
                 }
 

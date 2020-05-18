@@ -63,6 +63,10 @@
       "description": "For job types"
     },
     {
+      "name": "Job Charges",
+      "description": "For job charges"
+    },
+    {
       "name": "Service Ticket",
       "description": "For creting and getting service tickets"
     },
@@ -73,6 +77,14 @@
     {
       "name": "Reports",
       "description": "For job and other reports"
+    },
+    {
+      "name": "Sales Tax",
+      "description": "For salesTax"
+    },
+    {
+      "name": "Invoice",
+      "description": "For invoices of jobs"
     },
     {
       "name": "Image",
@@ -906,6 +918,74 @@
             "description": "Success",
             "schema": {
               "$ref": "#/definitions/WorkOrderNumberResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/setCustomInvoiceNumber": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Setting custom invoce number for invoices",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "invoiceNumber",
+            "in": "formData",
+            "type": "number"
+          },
+          {
+            "name": "invoicePrefix",
+            "in": "formData",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getCurrentIvoiceNumber": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Getting current invoice numbe for company",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/InvoiceNumberResponse"
             }
           }
         },
@@ -2760,6 +2840,361 @@
         ]
       }
     },
+    "/createJobCharges": {
+      "post": {
+        "tags": [
+          "Job Charges"
+        ],
+        "summary": "To create charges on the basis of job type",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "jobTypeId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "pass job type id fetched from getjobtypes api"
+          },
+          {
+            "name": "isFixed",
+            "in": "formData",
+            "required": true,
+            "type": "boolean",
+            "description": "Either the job is fixed price or hourly. true->if fixed false->is hourly"
+          },
+          {
+            "name": "charges",
+            "in": "formData",
+            "required": true,
+            "type": "number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getJobCharges": {
+      "post": {
+        "tags": [
+          "Job Charges"
+        ],
+        "summary": "To get job charges",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "charges": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/JobCharges"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateJobCharges": {
+      "post": {
+        "tags": [
+          "Job Charges"
+        ],
+        "summary": "To update charges on the basis of job type",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "jobChargesId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of job charges you want to edit"
+          },
+          {
+            "name": "isFixed",
+            "in": "formData",
+            "required": true,
+            "type": "boolean",
+            "description": "Either the job is fixed price or hourly. true->if fixed false->is hourly"
+          },
+          {
+            "name": "charges",
+            "in": "formData",
+            "required": true,
+            "type": "number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/deleteJobCharges": {
+      "post": {
+        "tags": [
+          "Job Charges"
+        ],
+        "summary": "To delete charges on the basis of job type",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "jobChargesId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of job charges you want to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createSalesTax": {
+      "post": {
+        "tags": [
+          "Sales Tax"
+        ],
+        "summary": "To create sales tax for a state",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "state",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Name of the state you want to create tax for"
+          },
+          {
+            "name": "tax",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "Tax percentage you want to apply for this state"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getSalesTax": {
+      "post": {
+        "tags": [
+          "Sales Tax"
+        ],
+        "summary": "To get sales taxes",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "taxes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/SaleTax"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateSalesTax": {
+      "post": {
+        "tags": [
+          "Sales Tax"
+        ],
+        "summary": "To update sales tax",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "salesTaxId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of sales tax you want to update"
+          },
+          {
+            "name": "state",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Name of the state you want to create tax for"
+          },
+          {
+            "name": "tax",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "Tax percentage you want to apply for this state"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/deleteSalesTax": {
+      "post": {
+        "tags": [
+          "Sales Tax"
+        ],
+        "summary": "To delete slaes tax",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "salesTaxId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of sales tax you want to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/createServiceTicket": {
       "post": {
         "tags": [
@@ -3045,6 +3480,19 @@
             "required": true,
             "type": "number",
             "description": "0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor"
+          },
+          {
+            "name": "isFixed",
+            "in": "formData",
+            "required": true,
+            "type": "boolean",
+            "description": "Either the job is fixed price or hourly. true->if fixed false->is hourly"
+          },
+          {
+            "name": "charges",
+            "in": "formData",
+            "type": "number",
+            "description": "Enter charges amount if you want to customize for this job"
           },
           {
             "name": "companyId",
@@ -3370,6 +3818,19 @@
             "description": "date time of job. e.g. 2019-12-22 20:30:00"
           },
           {
+            "name": "isFixed",
+            "in": "formData",
+            "required": true,
+            "type": "boolean",
+            "description": "Either the job is fixed price or hourly. true->if fixed false->is hourly"
+          },
+          {
+            "name": "charges",
+            "in": "formData",
+            "type": "number",
+            "description": "Enter charges amount if you want to customize for this job"
+          },
+          {
             "name": "companyId",
             "in": "formData",
             "type": "string",
@@ -3474,6 +3935,205 @@
             "description": "Success",
             "schema": {
               "$ref": "#/definitions/JobReport"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createInvoice": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To create invoice of a job",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Pass job id fetched from getjobs api"
+          },
+          {
+            "name": "tax",
+            "in": "formData",
+            "type": "number",
+            "description": "Percentage of tax to be applied on total cost of job"
+          },
+          {
+            "name": "charges",
+            "in": "formData",
+            "type": "number",
+            "description": "Charges if you want to change the charge amount for the invoice"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getInvoices": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To get invoice",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "invoices": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Invoice"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateInvoice": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To update invoice of a job",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of invoice you want to edit"
+          },
+          {
+            "name": "tax",
+            "in": "formData",
+            "type": "number",
+            "description": "Percentage of tax to be applied on total cost of job"
+          },
+          {
+            "name": "charges",
+            "in": "formData",
+            "type": "number",
+            "description": "Charges if you want to change the charge amount for the invoice"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getInvoiceDetail": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To get detail of invoice",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of invoice"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "invoice": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/InvoiceDetail"
+                      }
+                    },
+                    "scans": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/ScanDetail"
+                      }
+                    }
+                  }
+                }
+              ]
             }
           }
         },
@@ -5093,6 +5753,490 @@
         }
       }
     },
+    "JobCharges": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "isFixed": {
+          "type": "string",
+          "description": "If the job is fixed or hourly"
+        },
+        "charges": {
+          "type": "number",
+          "description": "Charges form job type or if entered custom charges while creating a job"
+        },
+        "jobType": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "Title of jo type"
+            }
+          }
+        }
+      }
+    },
+    "Invoice": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "invoiceId": {
+          "type": "string",
+          "description": "Custom invoice id to be shown on invoice"
+        },
+        "job": {
+          "type": "string",
+          "description": "Id of job from which the invoice was created"
+        },
+        "customer": {
+          "type": "string",
+          "description": "Id of cusomer from whom the invoice was created"
+        },
+        "company": {
+          "type": "string",
+          "description": "Id of company to whom this invoice belongs"
+        },
+        "charges": {
+          "type": "number",
+          "description": "Charges amount from job or if you have customized while creating invoice"
+        },
+        "taxPercentage": {
+          "type": "number",
+          "description": "Tax percentage applied to invoice default will be 0"
+        },
+        "tax": {
+          "type": "number",
+          "description": "Tax amount to be added in charges to caculate the total invoice"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total amount to be charged to customer"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Id of employee of company who has created this invoice"
+        },
+        "createdat": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date time when the invoice was created"
+        }
+      }
+    },
+    "InvoiceDetail": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "invoiceId": {
+          "type": "string",
+          "description": "Custom invoice id to be shown on invoice"
+        },
+        "charges": {
+          "type": "number",
+          "description": "Charges amount from job or if you have customized while creating invoice"
+        },
+        "taxPercentage": {
+          "type": "number",
+          "description": "Tax percentage applied to invoice default will be 0"
+        },
+        "tax": {
+          "type": "number",
+          "description": "Tax amount to be added in charges to caculate the total invoice"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total amount to be charged to customer"
+        },
+        "createdat": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date time when the invoice was created"
+        },
+        "customer": {
+          "type": "object",
+          "properties": {
+            "auth": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "description": "Email address of customer or from info.email"
+                }
+              }
+            },
+            "info": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "description": "Email address of customer if present"
+                }
+              }
+            },
+            "profile": {
+              "type": "object",
+              "properties": {
+                "displayName": {
+                  "type": "string",
+                  "description": "Name of customer"
+                }
+              }
+            },
+            "contact": {
+              "type": "object",
+              "properties": {
+                "phone": {
+                  "type": "string",
+                  "description": "Phone number of customer if present"
+                }
+              }
+            },
+            "address": {
+              "type": "object",
+              "properties": {
+                "street": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "zipCode": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "company": {
+          "type": "object",
+          "properties": {
+            "auth": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "description": "Email address of company"
+                }
+              }
+            },
+            "info": {
+              "type": "object",
+              "properties": {
+                "companyName": {
+                  "type": "string",
+                  "description": "Name of company"
+                },
+                "logoUrl": {
+                  "type": "string",
+                  "description": "Logo of company"
+                }
+              }
+            },
+            "contact": {
+              "type": "object",
+              "properties": {
+                "phone": {
+                  "type": "string",
+                  "description": "Phone number of company"
+                }
+              }
+            },
+            "permissions": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string"
+                }
+              }
+            },
+            "address": {
+              "type": "object",
+              "properties": {
+                "street": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "zipCode": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "createdBy": {
+          "type": "object",
+          "properties": {
+            "auth": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "description": "Email address of person who created job"
+                }
+              }
+            },
+            "info": {
+              "type": "object",
+              "properties": {
+                "companyName": {
+                  "type": "string",
+                  "description": "Name of company"
+                }
+              }
+            },
+            "profile": {
+              "type": "object",
+              "properties": {
+                "displayName": {
+                  "type": "string"
+                }
+              }
+            },
+            "contact": {
+              "type": "object",
+              "properties": {
+                "phone": {
+                  "type": "string"
+                }
+              }
+            },
+            "permissions": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "description": "Role of person who created job in his company/organization"
+                }
+              }
+            },
+            "address": {
+              "type": "object",
+              "properties": {
+                "street": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "zipCode": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "job": {
+          "type": "object",
+          "properties": {
+            "_id": {
+              "type": "string"
+            },
+            "jobId": {
+              "type": "string",
+              "description": "Auto generated job id from sevice ticket number"
+            },
+            "status": {
+              "type": "number",
+              "description": "Status of job if it is finshed or not"
+            },
+            "employeeType": {
+              "type": "boolean",
+              "description": "If false that means assigned to employee if true that means job is assigned to vendor or vendors employee"
+            },
+            "dateTime": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Time when job was scheduled"
+            },
+            "description": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "type": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "Title of job type"
+                }
+              }
+            },
+            "ticket": {
+              "type": "object",
+              "properties": {
+                "scheduleDateTime": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Time when ticket was scheduled"
+                },
+                "note": {
+                  "type": "string",
+                  "description": "Additional note added by person who created ticket"
+                },
+                "ticketId": {
+                  "type": "string",
+                  "description": "Auto generated ticket number using prefix defined by user"
+                }
+              }
+            },
+            "technician": {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "type": "string",
+                      "description": "Email address of technician"
+                    }
+                  }
+                },
+                "profile": {
+                  "type": "object",
+                  "properties": {
+                    "displayName": {
+                      "type": "string",
+                      "description": "Name of technician"
+                    }
+                  }
+                },
+                "contact": {
+                  "type": "object",
+                  "properties": {
+                    "phone": {
+                      "type": "string",
+                      "description": "Phone number of technician"
+                    }
+                  }
+                },
+                "permissions": {
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "description": "Role of technician in his company/organization"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ScanDetail": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "comment": {
+          "type": "string",
+          "description": "comment added by person who scanned the equipment"
+        },
+        "timeOfScan": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "equipment": {
+          "type": "object",
+          "properties": {
+            "info": {
+              "type": "object",
+              "properties": {
+                "model": {
+                  "type": "string",
+                  "description": "model number of equipment scanned"
+                },
+                "serialNumber": {
+                  "type": "string",
+                  "description": "serialNumber number of equipment scanned"
+                },
+                "nfcTag": {
+                  "type": "string",
+                  "description": "nfcTag of equipment scanned"
+                },
+                "location": {
+                  "type": "string",
+                  "description": "location of equipment"
+                }
+              }
+            },
+            "images": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "type": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                }
+              }
+            },
+            "brand": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "SaleTax": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string",
+          "description": "Name of the state"
+        },
+        "tax": {
+          "type": "number",
+          "description": "Tax percentage"
+        },
+        "company": {
+          "type": "string",
+          "description": "Id of the company who has created this sales tax"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Id of the member of company who has created this sales tax"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date time when the sales tax was created"
+        }
+      }
+    },
     "Job": {
       "type": "object",
       "properties": {
@@ -5102,10 +6246,6 @@
         "dateTime": {
           "type": "string",
           "format": "date-time"
-        },
-        "technician": {
-          "type": "string",
-          "description": "Id of technician"
         },
         "customer": {
           "type": "string",
@@ -5126,6 +6266,24 @@
         "company": {
           "type": "string",
           "description": "Id of company who created it"
+        },
+        "isFixed": {
+          "type": "string",
+          "description": "If the job is fixed or hourly"
+        },
+        "charges": {
+          "type": "number",
+          "description": "Charges form job type or if entered custom charges while creating a job"
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time when the job was started"
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time when the job was finished"
         }
       }
     },
@@ -5388,7 +6546,7 @@
     "JobReport": {
       "type": "object",
       "properties": {
-        "id": {
+        "_id": {
           "type": "string"
         },
         "jobId": {
@@ -5795,6 +6953,33 @@
         "prefix": {
           "type": "string",
           "description": "This will be returned if the company has set the prefix"
+        },
+        "message": {
+          "type": "string",
+          "description": "Error message in case of operation failure"
+        }
+      }
+    },
+    "InvoiceNumberResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Status of operation, 0 -> failure 1 -> success",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "currentInvoiceNumber": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The lastest invoice number"
+        },
+        "invoicePrefix": {
+          "type": "string",
+          "description": "This will be returned if the company has set the invoicePrefix"
         },
         "message": {
           "type": "string",

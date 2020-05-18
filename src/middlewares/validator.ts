@@ -101,13 +101,13 @@ export const Validations = {
   createJobType: [check('title').exists()],
 
   //Job
-  createJob: [check('dateTime').exists(), check('technicianId').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric()],
+  createJob: [check('dateTime').exists(), check('technicianId').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric(), check('isFixed').exists()],
 
   generalJob: [check('jobId').exists()],
 
   updateJob: [check('status').exists(), check('comment').exists(), check('jobId').exists()],
 
-  editJob: [check('jobId').exists(), check('technicianId').exists(), check('dateTime').exists()],
+  editJob: [check('jobId').exists(), check('technicianId').exists(), check('dateTime').exists(), check('isFixed').exists()],
 
   technicianJobs: [check('employeeId').exists()],
   
@@ -155,5 +155,23 @@ export const Validations = {
  
   getJobReport: [check('jobId').exists()],
 
-  createQBCustomer: [check('name').exists(),  check('name').not().isEmpty(),],
+  createQBCustomer: [check('name').exists(), check('name').not().isEmpty()],
+  
+  createSaleTax: [check('state').exists(), check('tax').exists()],
+  
+  updateSaleTax: [check('salesTaxId').exists(), check('state').exists(), check('tax').exists()],
+  
+  deleteSaleTax: [check('salesTaxId').exists()],
+  
+  createJobCharges: [check('jobTypeId').exists(), check('charges').exists(), check('isFixed').exists()],
+  
+  updateJobCharges: [check('jobChargesId').exists(), check('charges').exists(), check('isFixed').exists()],
+  
+  deleteJobCharges: [check('jobChargesId').exists()],
+
+  createInvoice: [check('jobId')],
+
+  updateInvoice: [check('invoiceId').exists()],
+  
+  getInvoiceDetail: [check('invoiceId').exists()],
 }
