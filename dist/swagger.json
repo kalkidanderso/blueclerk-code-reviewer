@@ -16,6 +16,10 @@
             "description": "For login and signup"
         },
         {
+            "name": "Social Auth",
+            "description": "For social login and signup"
+        },
+        {
             "name": "Industry",
             "description": "For the industry company works in"
         },
@@ -668,7 +672,7 @@
         "/checkAndGet": {
             "post": {
                 "tags": [
-                    "Auth"
+                    "Social Auth"
                 ],
                 "summary": "Check if user has already signed up using Facebook or google",
                 "description": "",
@@ -707,7 +711,7 @@
         "/signUpSocial": {
             "post": {
                 "tags": [
-                    "Auth"
+                    "Social Auth"
                 ],
                 "summary": "Sign up for company using Facebook or Google",
                 "description": "",
@@ -787,7 +791,7 @@
         "/contractorSignUpSocial": {
             "post": {
                 "tags": [
-                    "Auth"
+                    "Social Auth"
                 ],
                 "summary": "Sign up for contractor using Facebook or Google",
                 "description": "",
@@ -863,7 +867,7 @@
         "/setCustomWorkOrderNumber": {
             "post": {
                 "tags": [
-                    "Auth"
+                    "Job"
                 ],
                 "summary": "Setting custom work order number for service tickets and job",
                 "description": "",
@@ -903,7 +907,7 @@
         "/getCurrentJobId": {
             "post": {
                 "tags": [
-                    "Auth"
+                    "Job"
                 ],
                 "summary": "Getting latest custom work order number for service tickets and job",
                 "description": "",
@@ -931,7 +935,7 @@
         "/setCustomInvoiceNumber": {
             "post": {
                 "tags": [
-                    "Auth"
+                    "Invoice"
                 ],
                 "summary": "Setting custom invoce number for invoices",
                 "description": "",
@@ -971,7 +975,7 @@
         "/getCurrentIvoiceNumber": {
             "post": {
                 "tags": [
-                    "Auth"
+                    "Invoice"
                 ],
                 "summary": "Getting current invoice numbe for company",
                 "description": "",

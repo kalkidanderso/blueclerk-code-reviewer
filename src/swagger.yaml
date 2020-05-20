@@ -10,6 +10,8 @@ schemes:
 tags:
   - name: Auth
     description: For login and signup
+  - name: Social Auth
+    description: For social login and signup
   - name: Industry
     description: For the industry company works in
   - name: Users
@@ -416,7 +418,7 @@ paths:
   /checkAndGet:
     post:
       tags:
-        - Auth
+        - Social Auth
       summary: Check if user has already signed up using Facebook or google
       description: ''
       consumes:
@@ -442,7 +444,7 @@ paths:
   /signUpSocial:
     post:
       tags:
-        - Auth
+        - Social Auth
       summary: Sign up for company using Facebook or Google
       description: ''
       consumes:
@@ -501,7 +503,7 @@ paths:
   /contractorSignUpSocial:
     post:
       tags:
-        - Auth
+        - Social Auth
       summary: Sign up for contractor using Facebook or Google
       description: ''
       consumes:
@@ -556,7 +558,7 @@ paths:
   /setCustomWorkOrderNumber:
     post:
       tags:
-        - Auth
+        - Job
       summary: Setting custom work order number for service tickets and job
       description: ''
       consumes:
@@ -580,7 +582,7 @@ paths:
   /getCurrentJobId:
     post:
       tags:
-        - Auth
+        - Job
       summary: Getting latest custom work order number for service tickets and job
       description: ''
       consumes:
@@ -597,7 +599,7 @@ paths:
   /setCustomInvoiceNumber:
     post:
       tags:
-        - Auth
+        - Invoice
       summary: Setting custom invoce number for invoices
       description: ''
       consumes:
@@ -621,7 +623,7 @@ paths:
   /getCurrentIvoiceNumber:
     post:
       tags:
-        - Auth
+        - Invoice
       summary: Getting current invoice numbe for company
       description: ''
       consumes:
