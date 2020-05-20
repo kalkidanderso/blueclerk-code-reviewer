@@ -6,30 +6,31 @@ import { User, IUser } from '../models/User'
 import { Company, ICompany } from '../models/Company'
 import { Employee, IEmployee } from '../models/Employee'
 import { ObjectId } from 'mongodb'
-import { Order } from '../models/Order'
+// import { Order } from '../models/Order'
 import { CompanyCard } from '../models/CompanyCard'
-import { CompanyEquipmentHistory } from '../models/CompanyEquipmentHistory'
-import { CompanyEquipmentInventory } from '../models/CompanyEquipmentInventory'
-import { CompanyEquipment } from '../models/CompanyEquipment'
-import { CustomerEquipment } from '../models/CustomerEquipment'
-import { Customer } from '../models/Customer'
-import { Group } from '../models/Group'
-import { Job } from '../models/Job'
-import { JobType } from '../models/JobType'
-import { EquipmentBrand } from '../models/EquipmentBrand'
-import { EquipmentType } from '../models/EquipmentType'
-import { privateKey } from '../common/config'
+// import { CompanyEquipmentHistory } from '../models/CompanyEquipmentHistory'
+// import { CompanyEquipmentInventory } from '../models/CompanyEquipmentInventory'
+// import { CompanyEquipment } from '../models/CompanyEquipment'
+// import { CustomerEquipment } from '../models/CustomerEquipment'
+// import { Customer } from '../models/Customer'
+// import { Group } from '../models/Group'
+// import { Job } from '../models/Job'
+// import { JobType } from '../models/JobType'
+// import { EquipmentBrand } from '../models/EquipmentBrand'
+// import { EquipmentType } from '../models/EquipmentType'
+// import { privateKey } from '../common/config'
 import { Contract, IContract } from '../models/Contract'
 import { CompanyCustomer } from '../models/CompanyCustomer'
 import { CompanyAdmin, ICompanyAdmin } from '../models/CompanyAdmin'
-import { CompanyPrefix, ICompanyPrefix } from '../models/CompanyPrefix'
-import { Scan } from '../models/Scan'
-import { ServiceTicket } from '../models/ServiceTicket'
-import { Industry } from '../models/Industry'
+// import { CompanyPrefix, ICompanyPrefix } from '../models/CompanyPrefix'
+// import { Scan } from '../models/Scan'
+// import { ServiceTicket } from '../models/ServiceTicket'
+// import { Industry } from '../models/Industry'
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
 import { addCustomerAndCharge, addCustomerSource, chargeSubscription } from '../services/stripe'
-import { param } from 'express-validator'
+import { Industry, IIndustry } from '../models/Industry'
+const Hubspot = require('hubspot')
 
 export const login = (req: Request, res: Response) => {
 
@@ -248,7 +249,7 @@ export const createCompany = (req: Request, res: Response) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
-
+                    _createHubSpotContact(company, companyAdmin)
                     sendEmail({ to: params.email })
                     login(req, res)
                 })
@@ -259,6 +260,29 @@ export const createCompany = (req: Request, res: Response) => {
 
     })
 
+}
+
+const _createHubSpotContact = (company: ICompany, companyAdmin: ICompanyAdmin) => {
+
+    const hubspot = new Hubspot({
+        apiKey: '163d5d65-83c0-4d5f-9dcf-55b052f9ef4d'
+    })
+
+    Industry.findById(company.info.industry).exec((err: any, industry: IIndustry) => {
+        const contactObj = {
+            "properties": [
+                { "property": 'email', "value": company.info.companyEmail },
+                { "property": 'firstname', "value": companyAdmin.profile.firstName },
+                { "property": 'lastname', "value": companyAdmin.profile.lastName },
+                { "property": 'company', "value": company.info.companyName },
+                { "property": 'phone', "value": company.contact.phone },
+                { "property": 'industry', "value": industry.title },
+            ]
+        };
+      
+        hubspot.contacts.create(contactObj)
+        
+    })
 }
 
 export const createManager = (req: Request, res: Response) => {

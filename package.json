@@ -42,6 +42,7 @@
     "express": "^4.17.1",
     "express-validator": "^6.2.0",
     "generate-password": "^1.4.2",
+    "hubspot": "2.3.12",
     "intuit-oauth": "^2.1.0",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.6.12",

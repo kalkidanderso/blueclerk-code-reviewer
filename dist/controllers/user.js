@@ -6,13 +6,31 @@ const User_1 = require("../models/User");
 const Company_1 = require("../models/Company");
 const Employee_1 = require("../models/Employee");
 const mongodb_1 = require("mongodb");
+// import { Order } from '../models/Order'
 const CompanyCard_1 = require("../models/CompanyCard");
+// import { CompanyEquipmentHistory } from '../models/CompanyEquipmentHistory'
+// import { CompanyEquipmentInventory } from '../models/CompanyEquipmentInventory'
+// import { CompanyEquipment } from '../models/CompanyEquipment'
+// import { CustomerEquipment } from '../models/CustomerEquipment'
+// import { Customer } from '../models/Customer'
+// import { Group } from '../models/Group'
+// import { Job } from '../models/Job'
+// import { JobType } from '../models/JobType'
+// import { EquipmentBrand } from '../models/EquipmentBrand'
+// import { EquipmentType } from '../models/EquipmentType'
+// import { privateKey } from '../common/config'
 const Contract_1 = require("../models/Contract");
 const CompanyCustomer_1 = require("../models/CompanyCustomer");
 const CompanyAdmin_1 = require("../models/CompanyAdmin");
+// import { CompanyPrefix, ICompanyPrefix } from '../models/CompanyPrefix'
+// import { Scan } from '../models/Scan'
+// import { ServiceTicket } from '../models/ServiceTicket'
+// import { Industry } from '../models/Industry'
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
 const stripe_1 = require("../services/stripe");
+const Industry_1 = require("../models/Industry");
+const Hubspot = require('hubspot');
 exports.login = (req, res) => {
     const params = req.body;
     User_1.User.findOne({ 'auth.email': params.email }, (err, user) => {
@@ -181,11 +199,30 @@ exports.createCompany = (req, res) => {
                     if (err) {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
+                    _createHubSpotContact(company, companyAdmin);
                     aws_1.sendEmail({ to: params.email });
                     exports.login(req, res);
                 });
             });
         });
+    });
+};
+const _createHubSpotContact = (company, companyAdmin) => {
+    const hubspot = new Hubspot({
+        apiKey: '163d5d65-83c0-4d5f-9dcf-55b052f9ef4d'
+    });
+    Industry_1.Industry.findById(company.info.industry).exec((err, industry) => {
+        const contactObj = {
+            "properties": [
+                { "property": 'email', "value": company.info.companyEmail },
+                { "property": 'firstname', "value": companyAdmin.profile.firstName },
+                { "property": 'lastname', "value": companyAdmin.profile.lastName },
+                { "property": 'company', "value": company.info.companyName },
+                { "property": 'phone', "value": company.contact.phone },
+                { "property": 'industry', "value": industry.title },
+            ]
+        };
+        hubspot.contacts.create(contactObj);
     });
 };
 exports.createManager = (req, res) => {
