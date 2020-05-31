@@ -9,6 +9,8 @@ import { IUser } from '../models/User'
 import { ServiceTicket ,IServiceTicket } from '../models/ServiceTicket'
 import { Scan ,IScan } from '../models/Scan'
 import { JobCharges ,IJobCharges } from '../models/JobCharges'
+
+
 // import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 
 // export const createJob = (req: Request, res: Response) => {
@@ -717,3 +719,51 @@ export const getJobReport = (req: Request, res: Response) => {
     )
 }
 
+export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
+
+    var date = new Date()
+    date.setHours(0, 0, 0, 0)
+    var endDate = new Date()
+    endDate.setHours(23, 59, 59, 59)
+    
+    const params = req.body
+    
+    Job.find({ technician: params.employeeId, $and: [ { status: { $ne: 2 } }, { status: { $ne: 3 } } ], dateTime: {
+        $gte: date,
+        $lte: endDate
+    } })
+        .populate({
+            path: 'ticket',
+        })
+        .populate({
+            path: 'technician',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode'
+        })
+        .populate({
+            path: 'type',
+            select: 'title'
+        })
+        .populate({
+            path: 'company',
+            select: 'info.companyName'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'profile.displayName'
+        })
+        .exec((err: any, jobs: IJob[])=>{
+
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+
+            return res.json({'status': Status.Success, 'jobs': jobs})    
+
+        }
+    )
+
+}

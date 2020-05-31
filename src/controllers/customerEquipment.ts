@@ -219,7 +219,13 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
     const params = req.body
     const user = <IUser>req.user
 
-    CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
+    Job.findById(params.jobId)
+    .exec((err: any, job: IJob) => {
+        if (err) {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
+
+        CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag, customer: job.customer })
         .exec((err: any, customerEquipment: ICustomerEquipment) => {
 
             if (err) {
@@ -227,19 +233,8 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
             }
             
             if (customerEquipment == undefined || customerEquipment == null) {
-                return res.json({ 'status': Status.Error, 'message': "Customer Equipment not found"})
+                return res.json({ 'status': Status.InvalidEquipment, 'message': "Invalid Customer Equipment"})
             }
-
-            // Job.findById(params.jobId,
-            //     (err: any, job: IJob) => {
-            //         if (err) {
-            //             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            //         }
-
-            //         if (job != undefined && job != null) {
-            //             return res.json({ 'status': Status.Error, 'message': "Equipment already scanned for this job."})
-            //         }
-            // })
 
             Scan.findOne({equipmentId: customerEquipment._id, job: params.jobId}, 
                 (err: any, scan: IScan) => {
@@ -267,6 +262,9 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
                 })
     
         })
+    })
+
+    
 
 }
 

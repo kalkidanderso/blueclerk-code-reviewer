@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../common/constants");
 const CustomerEquipment_1 = require("../models/CustomerEquipment");
 const Customer_1 = require("../models/Customer");
+const Job_1 = require("../models/Job");
 const Scan_1 = require("../models/Scan");
 const mongodb_1 = require("mongodb");
 const util_1 = require("util");
@@ -154,43 +155,40 @@ exports.getCustomerEquipmentJobs = (req, res) => {
 exports.linkJobToEquipment = (req, res) => {
     const params = req.body;
     const user = req.user;
-    CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
-        .exec((err, customerEquipment) => {
+    Job_1.Job.findById(params.jobId)
+        .exec((err, job) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        if (customerEquipment == undefined || customerEquipment == null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': "Customer Equipment not found" });
-        }
-        // Job.findById(params.jobId,
-        //     (err: any, job: IJob) => {
-        //         if (err) {
-        //             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        //         }
-        //         if (job != undefined && job != null) {
-        //             return res.json({ 'status': Status.Error, 'message': "Equipment already scanned for this job."})
-        //         }
-        // })
-        Scan_1.Scan.findOne({ equipmentId: customerEquipment._id, job: params.jobId }, (err, scan) => {
+        CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag, customer: job.customer })
+            .exec((err, customerEquipment) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            if (scan != undefined && scan != null) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': "Equipment already scanned for this job." });
+            if (customerEquipment == undefined || customerEquipment == null) {
+                return res.json({ 'status': constants_1.Status.InvalidEquipment, 'message': "Invalid Customer Equipment" });
             }
-            // create new scan
-            const newScan = new Scan_1.Scan({
-                equipment: customerEquipment._id,
-                job: params.jobId,
-                comment: params.comment,
-                user: user._id,
-                timeOfScan: Date.now()
-            });
-            newScan.save((err) => {
+            Scan_1.Scan.findOne({ equipmentId: customerEquipment._id, job: params.jobId }, (err, scan) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Equipment scanned successfully.' });
+                if (scan != undefined && scan != null) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': "Equipment already scanned for this job." });
+                }
+                // create new scan
+                const newScan = new Scan_1.Scan({
+                    equipment: customerEquipment._id,
+                    job: params.jobId,
+                    comment: params.comment,
+                    user: user._id,
+                    timeOfScan: Date.now()
+                });
+                newScan.save((err) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Equipment scanned successfully.' });
+                });
             });
         });
     });

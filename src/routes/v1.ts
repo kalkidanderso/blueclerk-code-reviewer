@@ -428,6 +428,15 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/getTechnicianJobsToday',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Job_Get_Technician),
+        validate(Validations.technicianJobs),
+        jobController.getTodaysJobsByTechnicianId
+    )
+
+    router.post(
         '/updateJob',
         passport.authenticate('jwt', { session: false }),
         getCompnayId(),

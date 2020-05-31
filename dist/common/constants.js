@@ -5,7 +5,8 @@ exports.Status = {
     Success: 1,
     TagAssociated: 2,
     TagNotAssociated: 3,
-    QBUnauthorized: 4
+    QBUnauthorized: 4,
+    InvalidEquipment: 5
 };
 exports.Messages = {
     MissingParams: 'Parameters are missing.',

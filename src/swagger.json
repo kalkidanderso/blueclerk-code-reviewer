@@ -3629,6 +3629,58 @@
         ]
       }
     },
+    "/getTechnicianJobsToday": {
+      "post": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "To get all jobs of a technician schedulled for today.",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "employeeId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of technician fetched from getEmployeesForJob"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Job"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getJobDetails": {
       "post": {
         "tags": [

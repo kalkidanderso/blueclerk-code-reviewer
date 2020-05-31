@@ -544,4 +544,44 @@ exports.getJobReport = (req, res) => {
         });
     });
 };
+exports.getTodaysJobsByTechnicianId = (req, res) => {
+    var date = new Date();
+    date.setHours(0, 0, 0, 0);
+    var endDate = new Date();
+    endDate.setHours(23, 59, 59, 59);
+    const params = req.body;
+    Job_1.Job.find({ technician: params.employeeId, $and: [{ status: { $ne: 2 } }, { status: { $ne: 3 } }], dateTime: {
+            $gte: date,
+            $lte: endDate
+        } })
+        .populate({
+        path: 'ticket',
+    })
+        .populate({
+        path: 'technician',
+        select: 'profile.displayName'
+    })
+        .populate({
+        path: 'customer',
+        select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode'
+    })
+        .populate({
+        path: 'type',
+        select: 'title'
+    })
+        .populate({
+        path: 'company',
+        select: 'info.companyName'
+    })
+        .populate({
+        path: 'createdBy',
+        select: 'profile.displayName'
+    })
+        .exec((err, jobs) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        return res.json({ 'status': constants_1.Status.Success, 'jobs': jobs });
+    });
+};
 //# sourceMappingURL=job.js.map
