@@ -71,6 +71,7 @@ exports.Validations = {
     generalJob: [express_validator_1.check('jobId').exists()],
     updateJob: [express_validator_1.check('status').exists(), express_validator_1.check('comment').exists(), express_validator_1.check('jobId').exists()],
     editJob: [express_validator_1.check('jobId').exists(), express_validator_1.check('technicianId').exists(), express_validator_1.check('dateTime').exists(), express_validator_1.check('isFixed').exists()],
+    updateJobTime: [express_validator_1.check('jobId').exists()],
     technicianJobs: [express_validator_1.check('employeeId').exists()],
     //Group
     createGroup: [express_validator_1.check('title').exists()],
@@ -94,6 +95,7 @@ exports.Validations = {
     udpateUserPermissions: [express_validator_1.check('onPermissions').exists(), express_validator_1.check('offPermissions').exists()],
     employeePermissions: [express_validator_1.check('employeeId').exists()],
     createTicket: [express_validator_1.check('customerId').exists()],
+    editTicket: [express_validator_1.check('ticketId').exists(), express_validator_1.check('status').exists(), express_validator_1.check('status').isNumeric()],
     updateTicket: [express_validator_1.check('ticketId').exists(), express_validator_1.check('note').exists()],
     getTicketDetail: [express_validator_1.check('ticketId').exists()],
     getJobReport: [express_validator_1.check('jobId').exists()],

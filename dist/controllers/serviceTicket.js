@@ -72,11 +72,36 @@ exports.updateServiceTicket = (req, res) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
+        if (serviceTicket.status == 1 /* CANCELED */) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'Ticket is canceled' });
+        }
         serviceTicket.updateOne({ note: params.note }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
             return res.json({ 'status': constants_1.Status.Success, 'message': 'Ticket updated successfully.' });
+        });
+    });
+};
+exports.editServiceTicket = (req, res) => {
+    const params = req.body;
+    const user = req.user;
+    var companyId = req.companyId;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId;
+    }
+    ServiceTicket_1.ServiceTicket.findOne({ _id: params.ticketId, company: companyId }, (err, serviceTicket) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (params.status != 1 /* CANCELED */ && params.status != 0 /* ACTIVE */ && params.status != 2 /* REACTIVE */) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid ticket status' });
+        }
+        serviceTicket.updateOne({ status: params.status, editedBy: user._id, editedAt: Date.now() }, (err, raw) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            return res.json({ 'status': constants_1.Status.Success, 'message': 'Ticket status changed successfully.' });
         });
     });
 };
@@ -93,6 +118,10 @@ exports.getServiceTicketDetail = (req, res) => {
     })
         .populate({
         path: 'createdBy',
+        select: 'profile.displayName'
+    })
+        .populate({
+        path: 'editedBy',
         select: 'profile.displayName'
     })
         .exec((err, serviceTicket) => {

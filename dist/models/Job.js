@@ -74,6 +74,13 @@ const JobSchema = new mongoose_1.Schema({
     timeSpent: {
         type: Number,
         default: 0
+    },
+    timeUpdatedBy: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    timeUpdatedAt: {
+        type: Date
     }
 });
 exports.Job = mongoose_1.default.model('Job', JobSchema);

@@ -2183,6 +2183,34 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /editServiceTicket:
+    post:
+      tags:
+        - Service Ticket
+      summary: To update service ticket status
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: ticketId
+          in: formData
+          required: true
+          type: string
+          description: Id of ticket to update
+        - name: status
+          in: formData
+          required: true
+          type: string
+          description: default status is 0=> active, you can set status 1 => canceled 2 => reactivated ticket
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /createJob:
     post:
       tags:
@@ -2496,6 +2524,46 @@ paths:
           in: formData
           type: string
           description: 'Id of company if contractor is hitting for other company'
+        - name: startTime
+          in: formData
+          type: string
+          description: 'Job start time if you want to change it'
+        - name: endTime
+          in: formData
+          type: string
+          description: 'Job end time if you want to change it'
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateJobTime:
+    post:
+      tags:
+        - Job
+      summary: To update job start or end time
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: jobId
+          in: formData
+          required: true
+          type: string
+          description: >-
+            Id of job to edit
+        - name: startTime
+          in: formData
+          type: string
+          description: 'Job start time if you want to change it'
+        - name: endTime
+          in: formData
+          type: string
+          description: 'Job end time if you want to change it'
       responses:
         '200':
           description: Success

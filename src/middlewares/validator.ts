@@ -108,6 +108,8 @@ export const Validations = {
   updateJob: [check('status').exists(), check('comment').exists(), check('jobId').exists()],
 
   editJob: [check('jobId').exists(), check('technicianId').exists(), check('dateTime').exists(), check('isFixed').exists()],
+  
+  updateJobTime: [check('jobId').exists()],
 
   technicianJobs: [check('employeeId').exists()],
   
@@ -148,6 +150,8 @@ export const Validations = {
   employeePermissions: [check('employeeId').exists()],
    
   createTicket: [check('customerId').exists()],
+  
+  editTicket: [check('ticketId').exists(), check('status').exists(), check('status').isNumeric()],
  
   updateTicket: [check('ticketId').exists(), check('note').exists()],
  

@@ -21,6 +21,8 @@ export interface IJob extends Document {
     startTime: Date
     endTime: Date
     timeSpent: number
+    timeUpdatedBy: Schema.Types.ObjectId
+    timeUpdatedAt: Date
 }
 
 const JobSchema = new Schema({
@@ -90,6 +92,13 @@ const JobSchema = new Schema({
     timeSpent: {
         type: Number,
         default: 0
+    },
+    timeUpdatedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    timeUpdatedAt: {
+        type: Date
     }
 
 })

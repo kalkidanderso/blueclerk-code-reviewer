@@ -53,6 +53,12 @@ export const enum JobStatus {
     CANCELED
 }
 
+export const enum ServiceTicketStatus {
+    ACTIVE,
+    CANCELED,
+    REACTIVE
+}
+
 export const enum ContractStatus {
     PENDING,
     ACCEPTED,
@@ -134,6 +140,7 @@ export const enum Permissions {
     Customer_Import,
     Get_Service_Tickets,
     Create_Service_Ticket,
+    Edit_Service_Ticket,
     Update_Service_Ticket,
     Get_Ticket_Detail,
     Get_Contractors_For_Job,
@@ -183,6 +190,7 @@ export const ContractorPermissions = {
         Permissions.Image_Upload,
         Permissions.Get_Service_Tickets,
         Permissions.Create_Service_Ticket,
+        Permissions.Edit_Service_Ticket,
         Permissions.Update_Service_Ticket,
         Permissions.Get_Ticket_Detail,
         Permissions.Get_Customer_Detail
@@ -252,6 +260,7 @@ export const UserPermissions = {
             Permissions.Subscription_Cancel,
             Permissions.Get_Service_Tickets,
             Permissions.Create_Service_Ticket,
+            Permissions.Edit_Service_Ticket,
             Permissions.Update_Service_Ticket,
             Permissions.Get_Ticket_Detail,
             Permissions.Get_Contractors_For_Job,
@@ -340,6 +349,7 @@ export const UserPermissions = {
             Permissions.Subscription_Cancel,
             Permissions.Get_Service_Tickets,
             Permissions.Create_Service_Ticket,
+            Permissions.Edit_Service_Ticket,
             Permissions.Update_Service_Ticket,
             Permissions.Get_Ticket_Detail,
             Permissions.Get_Contractors_For_Job,
@@ -431,6 +441,7 @@ export const UserPermissions = {
             Permissions.Subscription_Cancel,
             Permissions.Get_Service_Tickets,
             Permissions.Create_Service_Ticket,
+            Permissions.Edit_Service_Ticket,
             Permissions.Update_Service_Ticket,
             Permissions.Get_Ticket_Detail,
             Permissions.Get_Contractors_For_Job,
@@ -527,6 +538,7 @@ export const UserPermissions = {
             Permissions.Customer_Import,
             Permissions.Get_Service_Tickets,
             Permissions.Create_Service_Ticket,
+            Permissions.Edit_Service_Ticket,
             Permissions.Update_Service_Ticket,
             Permissions.Get_Ticket_Detail,
             Permissions.Get_Contractors_For_Job,

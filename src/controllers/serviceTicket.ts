@@ -1,5 +1,5 @@
 import {Request, Response} from 'express'
-import { Status, Role, Messages } from '../common/constants'
+import { Status, Messages, ServiceTicketStatus } from '../common/constants'
 
 import { ICompany } from '../models/Company'
 import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket'
@@ -100,6 +100,10 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
            
+            if (serviceTicket.status == ServiceTicketStatus.CANCELED) {
+                return res.json({'status': Status.Error, 'message': 'Ticket is canceled'})
+            }
+           
             serviceTicket.updateOne(
                 {note: params.note},
                 (err: any, raw: any)=> {
@@ -109,6 +113,43 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     }
     
                     return res.json({'status': Status.Success, 'message': 'Ticket updated successfully.'})
+                }
+            )
+        }
+    )
+}
+
+export const editServiceTicket = (req: Request, res: Response) => {
+
+    const params = req.body
+    const user = <IUser>req.user
+
+    var companyId = req.companyId;
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+
+    ServiceTicket.findOne(
+        { _id: params.ticketId , company: companyId},
+        (err: any, serviceTicket: IServiceTicket)=>{
+
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+            
+            if(params.status != ServiceTicketStatus.CANCELED && params.status != ServiceTicketStatus.ACTIVE && params.status != ServiceTicketStatus.REACTIVE ) {
+                return res.json({'status': Status.Error, 'message': 'Invalid ticket status'})
+            }
+
+            serviceTicket.updateOne(
+                {status: params.status, editedBy: user._id, editedAt: Date.now() },
+                (err: any, raw: any)=> {
+                    
+                    if (err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    }
+    
+                    return res.json({'status': Status.Success, 'message': 'Ticket status changed successfully.'})
                 }
             )
         }
@@ -133,6 +174,10 @@ export const getServiceTicketDetail = (req: Request, res: Response) => {
         })
         .populate({
             path: 'createdBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'editedBy',
             select: 'profile.displayName'
         })
         .exec((err: any, serviceTicket: IServiceTicket)=>{

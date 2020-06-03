@@ -82,7 +82,7 @@ function default_1(sio) {
     //Customers
     router.post('/createCustomer', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(24 /* Customer_Create */), validator_1.validate(validator_1.Validations.createCustomer), customerController.createCustomer);
     router.post('/getCustomers', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(26 /* Customer_Get_All */), validator_1.validate(validator_1.Validations.getCustomers), customerController.getCustomers);
-    router.post('/getCustomerDetail', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(76 /* Get_Customer_Detail */), validator_1.validate(validator_1.Validations.getCustomerDetail), customerController.customerDetail);
+    router.post('/getCustomerDetail', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(77 /* Get_Customer_Detail */), validator_1.validate(validator_1.Validations.getCustomerDetail), customerController.customerDetail);
     router.post('/updateCustomer', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(25 /* Customer_Update */), validator_1.validate(validator_1.Validations.updateCustomer), customerController.updateCustomer);
     //Customer equipments
     router.post('/createCustomerEquipment', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(27 /* Customer_Equipment_Create */), validator_1.validate(validator_1.Validations.createCustomerEquipment), customerEquipmentController.createCustomerEquipment);
@@ -91,7 +91,7 @@ function default_1(sio) {
     router.post('/getEquipmentInfo', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(28 /* Customer_Equipment_Get_All */), validator_1.validate(validator_1.Validations.getCustomerEquipmentInfo), customerEquipmentController.getCustomerEquipmentInfo);
     router.post('/getEquipmentJobs', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(28 /* Customer_Equipment_Get_All */), validator_1.validate(validator_1.Validations.getCustomerEquipmentInfo), customerEquipmentController.getEquipmentJobs);
     router.post('/scanJobEquipment', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(30 /* Customer_Equipment_Assign_Job */), validator_1.validate(validator_1.Validations.linkEquipmentJob), customerEquipmentController.linkJobToEquipment);
-    router.post('/scanTag', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(80 /* Scan_Tag */), validator_1.validate(validator_1.Validations.getCustomerEquipmentJobs), customerEquipmentController.checkTagAssociation);
+    router.post('/scanTag', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(81 /* Scan_Tag */), validator_1.validate(validator_1.Validations.getCustomerEquipmentJobs), customerEquipmentController.checkTagAssociation);
     //Job types
     router.post('/createJobType', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(31 /* Job_Type_Create */), validator_1.validate(validator_1.Validations.createJobType), jobTypeController.createJobType);
     router.post('/getJobTypes', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(32 /* Job_Type_Get */), jobTypeController.getJobTypes);
@@ -104,7 +104,8 @@ function default_1(sio) {
     router.post('/startJob', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(38 /* Job_Start */), validator_1.validate(validator_1.Validations.generalJob), jobController.startJob);
     router.post('/getJobDetails', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(40 /* Job_Detail */), validator_1.validate(validator_1.Validations.generalJob), jobController.getJobDetails);
     router.post('/editJob', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(37 /* Job_Edit */), validator_1.validate(validator_1.Validations.editJob), jobController.editJob);
-    router.post('/getJobReport', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(77 /* Get_Job_Report */), validator_1.validate(validator_1.Validations.getJobReport), jobController.getJobReport);
+    router.post('/updateJobTime', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(37 /* Job_Edit */), validator_1.validate(validator_1.Validations.updateJobTime), jobController.updateJobTime);
+    router.post('/getJobReport', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(78 /* Get_Job_Report */), validator_1.validate(validator_1.Validations.getJobReport), jobController.getJobReport);
     //Image upload
     router.post('/uploadImage', passport_1.default.authenticate('jwt', { session: false }), 
     // getCompnayId(),
@@ -158,47 +159,48 @@ function default_1(sio) {
     // Service Ticket
     router.post('/getServiceTickets', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(71 /* Get_Service_Tickets */), serviceTicketController.getServiceTickets);
     router.post('/createServiceTicket', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(72 /* Create_Service_Ticket */), validator_1.validate(validator_1.Validations.createTicket), serviceTicketController.createServiceTicket);
-    router.post('/updateServiceTicket', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(73 /* Update_Service_Ticket */), validator_1.validate(validator_1.Validations.updateTicket), serviceTicketController.updateServiceTicket);
-    router.post('/getServiceTicketDetail', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(74 /* Get_Ticket_Detail */), validator_1.validate(validator_1.Validations.getTicketDetail), serviceTicketController.getServiceTicketDetail);
+    router.post('/editServiceTicket', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(73 /* Edit_Service_Ticket */), validator_1.validate(validator_1.Validations.editTicket), serviceTicketController.editServiceTicket);
+    router.post('/updateServiceTicket', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(74 /* Update_Service_Ticket */), validator_1.validate(validator_1.Validations.updateTicket), serviceTicketController.updateServiceTicket);
+    router.post('/getServiceTicketDetail', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(75 /* Get_Ticket_Detail */), validator_1.validate(validator_1.Validations.getTicketDetail), serviceTicketController.getServiceTicketDetail);
     // Quickbooks
-    router.post('/getQBCustomers', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(78 /* Get_QB_Customers */), 
+    router.post('/getQBCustomers', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(79 /* Get_QB_Customers */), 
     // validate(Validations.getQBCustomers),
     quickBookController.getQBCustomers);
-    router.post('/syncQBCustomers', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(78 /* Get_QB_Customers */), 
+    router.post('/syncQBCustomers', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(79 /* Get_QB_Customers */), 
     // validate(Validations.getQBCustomers),
     quickBookController.syncQBCustomers);
-    router.post('/createQBCustomer', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(79 /* Create_QB_customer */), validator_1.validate(validator_1.Validations.createQBCustomer), quickBookController.createQBCustomer);
-    router.post('/getQBUri', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(82 /* Get_QB_Uri */), quickBookController.getQBUri);
+    router.post('/createQBCustomer', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(80 /* Create_QB_customer */), validator_1.validate(validator_1.Validations.createQBCustomer), quickBookController.createQBCustomer);
+    router.post('/getQBUri', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(83 /* Get_QB_Uri */), quickBookController.getQBUri);
     router.get('/callback', (req, res) => {
         quickBookController.getCallBackToken(req, res, sio);
     });
     // Company
-    router.post('/getContractorsForJob', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(75 /* Get_Contractors_For_Job */), companyController.getContractorForJob);
+    router.post('/getContractorsForJob', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(76 /* Get_Contractors_For_Job */), companyController.getContractorForJob);
     router.post('/getCompanyContracts', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(66 /* Get_Company_Contracts */), companyController.getCompanyContracts);
     router.post('/updateCompanyProfile', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(19 /* Update_Company_Profile */), validator_1.validate(validator_1.Validations.updateCompanyProfile), companyController.updateCompanyProfile);
     router.post('/setCustomWorkOrderNumber', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(69 /* Custom_work_Order_Number */), companyController.setCustomWorkNumber);
-    router.post('/getCurrentJobId', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(81 /* Get_Custom_Work_No */), companyController.getCustomWorkNumber);
-    router.post('/getSyncInfo', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(81 /* Get_Custom_Work_No */), companyController.getSyncInfo);
+    router.post('/getCurrentJobId', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(82 /* Get_Custom_Work_No */), companyController.getCustomWorkNumber);
+    router.post('/getSyncInfo', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(82 /* Get_Custom_Work_No */), companyController.getSyncInfo);
     router.post('/getAllEmployees', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(18 /* User_Get_All_Employees */), companyController.getAllEmployees);
     router.post('/getEmployeesForJob', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(18 /* User_Get_All_Employees */), companyController.getEmployeesForJob);
     router.get('/downgradeCompanies', companyController.downgradeCompanies);
-    router.post('/setCustomInvoiceNumber', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(88 /* Set_Invoice_Number */), companyController.setCustomInvoiceNumber);
-    router.post('/getCurrentIvoiceNumber', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(89 /* Get_Current_Invoice_Number */), companyController.getInvoiceNumber);
+    router.post('/setCustomInvoiceNumber', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(89 /* Set_Invoice_Number */), companyController.setCustomInvoiceNumber);
+    router.post('/getCurrentIvoiceNumber', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(90 /* Get_Current_Invoice_Number */), companyController.getInvoiceNumber);
     // Sales Taxes
-    router.post('/createSalesTax', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(84 /* Create_Sales_Tax */), validator_1.validate(validator_1.Validations.createSaleTax), companyController.createSalesTax);
-    router.post('/updateSalesTax', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(85 /* Update_Sales_Tax */), validator_1.validate(validator_1.Validations.updateSaleTax), companyController.updateSalesTax);
-    router.post('/deleteSalesTax', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(86 /* Delete_Sales_Tax */), validator_1.validate(validator_1.Validations.deleteSaleTax), companyController.deleteSalesTax);
-    router.post('/getSalesTax', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(87 /* Get_Sales_Taxes */), companyController.getSalesTaxes);
+    router.post('/createSalesTax', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(85 /* Create_Sales_Tax */), validator_1.validate(validator_1.Validations.createSaleTax), companyController.createSalesTax);
+    router.post('/updateSalesTax', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(86 /* Update_Sales_Tax */), validator_1.validate(validator_1.Validations.updateSaleTax), companyController.updateSalesTax);
+    router.post('/deleteSalesTax', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(87 /* Delete_Sales_Tax */), validator_1.validate(validator_1.Validations.deleteSaleTax), companyController.deleteSalesTax);
+    router.post('/getSalesTax', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(88 /* Get_Sales_Taxes */), companyController.getSalesTaxes);
     // Job Charges
-    router.post('/createJobCharges', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(90 /* Create_Job_Charges */), validator_1.validate(validator_1.Validations.createJobCharges), companyController.createJobCharges);
-    router.post('/updateJobCharges', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(91 /* Update_Job_Charges */), validator_1.validate(validator_1.Validations.updateJobCharges), companyController.updateJobCharges);
-    router.post('/deleteJobCharges', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(92 /* Delete_Job_Charges */), validator_1.validate(validator_1.Validations.deleteJobCharges), companyController.deleteJobCharges);
-    router.post('/getJobCharges', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(93 /* Get_Job_Charges */), companyController.getJobCharges);
+    router.post('/createJobCharges', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(91 /* Create_Job_Charges */), validator_1.validate(validator_1.Validations.createJobCharges), companyController.createJobCharges);
+    router.post('/updateJobCharges', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(92 /* Update_Job_Charges */), validator_1.validate(validator_1.Validations.updateJobCharges), companyController.updateJobCharges);
+    router.post('/deleteJobCharges', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(93 /* Delete_Job_Charges */), validator_1.validate(validator_1.Validations.deleteJobCharges), companyController.deleteJobCharges);
+    router.post('/getJobCharges', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(94 /* Get_Job_Charges */), companyController.getJobCharges);
     // Invoice
-    router.post('/createInvoice', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(94 /* Create_Invoice */), validator_1.validate(validator_1.Validations.createInvoice), companyController.createInvoice);
-    router.post('/updateInvoice', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(95 /* Update_Invoice */), validator_1.validate(validator_1.Validations.updateInvoice), companyController.updateInvoice);
-    router.post('/getInvoiceDetail', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(96 /* Get_Invoice_Detail */), companyController.getInvoiceDetail);
-    router.post('/getInvoices', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(97 /* Get_Invoices */), companyController.getInvoices);
+    router.post('/createInvoice', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(95 /* Create_Invoice */), validator_1.validate(validator_1.Validations.createInvoice), companyController.createInvoice);
+    router.post('/updateInvoice', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(96 /* Update_Invoice */), validator_1.validate(validator_1.Validations.updateInvoice), companyController.updateInvoice);
+    router.post('/getInvoiceDetail', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(97 /* Get_Invoice_Detail */), companyController.getInvoiceDetail);
+    router.post('/getInvoices', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(98 /* Get_Invoices */), companyController.getInvoices);
     router.post('/updateCompaniesDefaultPermissions', permissionController.updateAllCompaniesPermissions);
     return router;
 }

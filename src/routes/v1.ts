@@ -471,6 +471,15 @@ export default function (sio: any) {
         validate(Validations.editJob),
         jobController.editJob
     )
+    
+    router.post(
+        '/updateJobTime',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Job_Edit),
+        validate(Validations.updateJobTime),
+        jobController.updateJobTime
+    )
 
     router.post(
         '/getJobReport',
@@ -785,6 +794,15 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Create_Service_Ticket),
         validate(Validations.createTicket),
         serviceTicketController.createServiceTicket
+    )
+  
+    router.post(
+        '/editServiceTicket',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Edit_Service_Ticket),
+        validate(Validations.editTicket),
+        serviceTicketController.editServiceTicket
     )
 
     router.post(

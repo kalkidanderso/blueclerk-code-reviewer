@@ -31,6 +31,17 @@ const ServiceTicketSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
     },
+    status: {
+        type: Number,
+        default: 0
+    },
+    editedBy: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    editedAt: {
+        type: Date
+    },
     ticketId: String,
     jobCreated: {
         type: Boolean,
