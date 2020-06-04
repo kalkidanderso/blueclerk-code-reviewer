@@ -257,7 +257,16 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
                         if (err) {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
-                        return res.json({ 'status': Status.Success, 'message': 'Equipment scanned successfully.' })
+
+                        job.updateOne({equipment_scanned: true})
+                        .exec((err: any, raw: any) => {
+                            if (err) {
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            }
+
+                            return res.json({ 'status': Status.Success, 'message': 'Equipment scanned successfully.' })
+                        })
+
                     })
                 })
     

@@ -84,6 +84,10 @@ const JobSchema = new mongoose_1.Schema({
     },
     timeUpdatedAt: {
         type: Date
+    },
+    equipment_scanned: {
+        type: Boolean,
+        default: false
     }
 });
 exports.Job = mongoose_1.default.model('Job', JobSchema);

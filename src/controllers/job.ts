@@ -177,6 +177,7 @@ export const getJobs = (req: Request, res: Response) => {
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
+
     Job.find({ company: companyId })
         .populate({
             path: 'ticket',
@@ -209,7 +210,6 @@ export const getJobs = (req: Request, res: Response) => {
             }
 
             return res.json({'status': Status.Success, 'jobs': jobs})    
-
         }
     )
 
@@ -458,7 +458,21 @@ export const getJobDetails = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': "Invalid job id"})
             }
 
-            return res.json({'status': Status.Success, 'job': job})    
+
+            Scan.find({ job: job._id}, 'comment timeOfScan')
+            .populate({
+                path: 'equipment',
+                select: 'info.model info.serialNumber info.nfcTag images info.location',
+                populate: [{ path: 'brand', select: 'title' },{ path: 'type', select: 'title' }],
+                
+            })
+            .exec ((err: any, scans: IScan[]) => {
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                }
+
+                return res.json({ 'status': Status.Success, 'job': job, 'scans': scans  })
+            })
 
         }
     )

@@ -187,7 +187,13 @@ exports.linkJobToEquipment = (req, res) => {
                     if (err) {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
-                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Equipment scanned successfully.' });
+                    job.updateOne({ equipment_scanned: true })
+                        .exec((err, raw) => {
+                        if (err) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                        }
+                        return res.json({ 'status': constants_1.Status.Success, 'message': 'Equipment scanned successfully.' });
+                    });
                 });
             });
         });

@@ -335,7 +335,18 @@ exports.getJobDetails = (req, res) => {
         if (job == undefined || job == null) {
             return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid job id" });
         }
-        return res.json({ 'status': constants_1.Status.Success, 'job': job });
+        Scan_1.Scan.find({ job: job._id }, 'comment timeOfScan')
+            .populate({
+            path: 'equipment',
+            select: 'info.model info.serialNumber info.nfcTag images info.location',
+            populate: [{ path: 'brand', select: 'title' }, { path: 'type', select: 'title' }],
+        })
+            .exec((err, scans) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            return res.json({ 'status': constants_1.Status.Success, 'job': job, 'scans': scans });
+        });
     });
 };
 exports.getJobReport = (req, res) => {
