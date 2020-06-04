@@ -226,7 +226,7 @@ exports.updateJob = (req, res) => {
             timeSpent = ((Math.ceil(diffMs / interval) * interval) / 60000) / 60;
             newcharges = job.hourlyRate * timeSpent;
         }
-        job.updateOne({ description: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges }, (err, raw) => {
+        job.updateOne({ comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
