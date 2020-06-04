@@ -299,7 +299,7 @@ export const updateJob = (req: Request, res: Response) => {
             }
 
             job.updateOne(
-                {comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges},
+                {description: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges},
                 (err: any, raw: any)=> {
                     
                     if (err) {

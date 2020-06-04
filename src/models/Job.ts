@@ -12,7 +12,6 @@ export interface IJob extends Document {
     equipmentId: string
     description: string
     status: number,
-    comment: string
     createdAt: Date,
     createdBy: Schema.Types.ObjectId,
     employeeType: boolean
@@ -61,9 +60,6 @@ const JobSchema = new Schema({
     status: {
         type: Number,
         default: 0
-    },
-    comment: {
-        type: String
     },
     createdAt: {
         type: Date
