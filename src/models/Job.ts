@@ -25,6 +25,7 @@ export interface IJob extends Document {
     timeUpdatedBy: Schema.Types.ObjectId
     timeUpdatedAt: Date
     equipment_scanned: boolean
+    no_of_equipment_scanned: number
 }
 
 const JobSchema = new Schema({
@@ -108,6 +109,10 @@ const JobSchema = new Schema({
     equipment_scanned: {
         type: Boolean,
         default: false
+    },
+    no_of_equipment_scanned: {
+        type: Number,
+        default: 0
     }
 
 })

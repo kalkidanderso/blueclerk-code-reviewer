@@ -168,7 +168,7 @@ exports.linkJobToEquipment = (req, res) => {
             if (customerEquipment == undefined || customerEquipment == null) {
                 return res.json({ 'status': constants_1.Status.InvalidEquipment, 'message': "Invalid Customer Equipment" });
             }
-            Scan_1.Scan.findOne({ equipmentId: customerEquipment._id, job: params.jobId }, (err, scan) => {
+            Scan_1.Scan.findOne({ equipment: customerEquipment._id, job: params.jobId }, (err, scan) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
@@ -187,7 +187,7 @@ exports.linkJobToEquipment = (req, res) => {
                     if (err) {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
-                    job.updateOne({ equipment_scanned: true })
+                    job.updateOne({ equipment_scanned: true, no_of_equipment_scanned: job.no_of_equipment_scanned + 1 })
                         .exec((err, raw) => {
                         if (err) {
                             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -234,7 +234,6 @@ exports.getEquipmentJobs = (req, res) => {
         Scan_1.Scan.find({ equipment: customerEquipment._id }, '_id')
             .populate({
             path: 'job',
-            select: 'jobId description status dateTime',
             populate: [{ path: 'customer', select: 'profile.displayName' }],
         })
             .exec((err, scans) => {

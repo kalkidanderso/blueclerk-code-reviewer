@@ -21,8 +21,8 @@ export const createCustomerEquipment = (req: Request, res: Response) => {
         
         if(customerEquipment != undefined && !isNull(customerEquipment)){
             return res.json({ 'status': Status.Error, 'message': 'Equipment already added.'})
-            
         }
+
         const equipment = new CustomerEquipment(
             {
                 info: {
@@ -236,7 +236,7 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.InvalidEquipment, 'message': "Invalid Customer Equipment"})
             }
 
-            Scan.findOne({equipmentId: customerEquipment._id, job: params.jobId}, 
+            Scan.findOne({equipment: customerEquipment._id, job: params.jobId}, 
                 (err: any, scan: IScan) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -245,6 +245,7 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
                     if (scan != undefined && scan != null) {
                         return res.json({ 'status': Status.Error, 'message': "Equipment already scanned for this job."})
                     }
+
                     // create new scan
                     const newScan = new Scan({
                         equipment: customerEquipment._id,
@@ -258,7 +259,7 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
 
-                        job.updateOne({equipment_scanned: true})
+                        job.updateOne({equipment_scanned: true, no_of_equipment_scanned: job.no_of_equipment_scanned+1 })
                         .exec((err: any, raw: any) => {
                             if (err) {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -324,7 +325,6 @@ export const getEquipmentJobs = (req: Request, res: Response) => {
             Scan.find({equipment: customerEquipment._id}, '_id')
             .populate({
                 path: 'job',
-                select: 'jobId description status dateTime',
                 populate: [{ path: 'customer', select: 'profile.displayName' }],
             })
             .exec((err:any, scans: IScan[])=>{

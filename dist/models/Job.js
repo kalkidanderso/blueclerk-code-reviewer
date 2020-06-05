@@ -88,6 +88,10 @@ const JobSchema = new mongoose_1.Schema({
     equipment_scanned: {
         type: Boolean,
         default: false
+    },
+    no_of_equipment_scanned: {
+        type: Number,
+        default: 0
     }
 });
 exports.Job = mongoose_1.default.model('Job', JobSchema);
