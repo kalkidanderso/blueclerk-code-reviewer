@@ -76,7 +76,8 @@ const _createJob = (req: Request, res: Response, jobId: string, serviceTicket: I
             createdAt: Date.now(),
             createdBy: user._id,
             employeeType: params.employeeType,
-            isFixed: params.isFixed
+            isFixed: params.isFixed,
+            salesTax: charges.salesTax
         }
     )
 

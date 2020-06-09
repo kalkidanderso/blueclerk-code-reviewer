@@ -54,7 +54,8 @@ const _createJob = (req, res, jobId, serviceTicket, charges, next) => {
         createdAt: Date.now(),
         createdBy: user._id,
         employeeType: params.employeeType,
-        isFixed: params.isFixed
+        isFixed: params.isFixed,
+        salesTax: charges.salesTax
     });
     if (params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
         job.equipmentId = params.equipmentId;

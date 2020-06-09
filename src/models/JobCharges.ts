@@ -8,6 +8,7 @@ export interface IJobCharges extends Document {
     company: Schema.Types.ObjectId
     createdBy: Schema.Types.ObjectId
     createdAt: Date
+    salesTax: Schema.Types.ObjectId
 }
 
 const JobChargesSchema = new Schema({
@@ -36,7 +37,12 @@ const JobChargesSchema = new Schema({
     },
     createdAt: {
         type: Date
-    }
+    },
+    salesTax: {
+        type: Schema.Types.ObjectId,
+        ref: 'SaleTax',
+        required: false
+    },
 
 })
 

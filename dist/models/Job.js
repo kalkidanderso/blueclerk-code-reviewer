@@ -72,6 +72,11 @@ const JobSchema = new mongoose_1.Schema({
         type: Number,
         default: 0
     },
+    salesTax: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'SaleTax',
+        required: false
+    },
     startTime: Date,
     endTime: Date,
     timeSpent: {

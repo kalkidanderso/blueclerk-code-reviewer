@@ -573,12 +573,37 @@ exports.createJobCharges = (req, res) => {
             createdAt: Date.now(),
             isFixed: params.isFixed
         });
-        charges.save((err, charge) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            return res.json({ 'status': constants_1.Status.Success, 'message': "Job charges created successfully." });
-        });
+        if (params.sales_tax_id != undefined && params.sales_tax_id !== null && params.sales_tax_id !== '""') {
+            _getSalesTax(req, res, params.sales_tax_id, (req, res, saleTax) => {
+                charges.salesTax = saleTax._id;
+                charges.save((err, charge) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    return res.json({ 'status': constants_1.Status.Success, 'message': "Job charges created successfully." });
+                });
+            });
+        }
+        else {
+            charges.save((err, charge) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                return res.json({ 'status': constants_1.Status.Success, 'message': "Job charges created successfully." });
+            });
+        }
+    });
+};
+const _getSalesTax = (req, res, sales_tax_id, next) => {
+    SaleTax_1.SaleTax.findById(sales_tax_id, (err, saleTax) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (saleTax == undefined || saleTax == null) {
+            return res.json({ 'status': constants_1.Status.Success, 'message': "Invalid sales tax id." });
+        }
+        next(req, res, saleTax);
+        return;
     });
 };
 exports.updateJobCharges = (req, res) => {
@@ -590,15 +615,29 @@ exports.updateJobCharges = (req, res) => {
         if (jobCharges == undefined || jobCharges == null) {
             return res.json({ 'status': constants_1.Status.Success, 'message': "Invalid job Charge id." });
         }
-        jobCharges.updateOne({
-            charges: params.charges,
-            isFixed: params.isFixed
-        }, (err, raw) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        jobCharges.charges = params.charges;
+        jobCharges.isFixed = params.isFixed;
+        if (params.sales_tax_id != undefined && params.sales_tax_id !== null && params.sales_tax_id !== '""') {
+            if (params.sales_tax_id != undefined && params.sales_tax_id !== null && params.sales_tax_id !== '""') {
+                _getSalesTax(req, res, params.sales_tax_id, (req, res, saleTax) => {
+                    jobCharges.salesTax = saleTax._id;
+                    jobCharges.updateOne(jobCharges, (err, raw) => {
+                        if (err) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                        }
+                        return res.json({ 'status': constants_1.Status.Success, 'message': "Job charges updated successfully." });
+                    });
+                });
             }
-            return res.json({ 'status': constants_1.Status.Success, 'message': "Job charges updated successfully." });
-        });
+            else {
+                jobCharges.updateOne(jobCharges, (err, raw) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    return res.json({ 'status': constants_1.Status.Success, 'message': "Job charges updated successfully." });
+                });
+            }
+        }
     });
 };
 exports.deleteJobCharges = (req, res) => {
@@ -624,6 +663,10 @@ exports.getJobCharges = (req, res) => {
         .populate({
         path: 'jobType',
         select: 'title',
+    })
+        .populate({
+        path: 'salesTax',
+        select: 'state tax',
     })
         .exec((err, jobCharges) => {
         if (err) {

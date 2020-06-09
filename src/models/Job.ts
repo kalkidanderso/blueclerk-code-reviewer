@@ -19,6 +19,7 @@ export interface IJob extends Document {
     isFixed: boolean
     hourlyRate: number
     charges: number
+    salesTax: Schema.Types.ObjectId
     startTime: Date
     endTime: Date
     timeSpent: number
@@ -92,6 +93,11 @@ const JobSchema = new Schema({
     charges: {
         type: Number,
         default: 0
+    },
+    salesTax: {
+        type: Schema.Types.ObjectId,
+        ref: 'SaleTax',
+        required: false
     },
     startTime: Date,
     endTime: Date,

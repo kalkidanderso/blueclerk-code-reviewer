@@ -33,7 +33,12 @@ const JobChargesSchema = new mongoose_1.Schema({
     },
     createdAt: {
         type: Date
-    }
+    },
+    salesTax: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'SaleTax',
+        required: false
+    },
 });
 exports.JobCharges = mongoose_1.default.model('JobCharges', JobChargesSchema);
 //# sourceMappingURL=JobCharges.js.map

@@ -1852,6 +1852,10 @@ paths:
           in: formData
           required: true
           type: number
+        - name: sales_tax_id
+          in: formData
+          type: string
+          description: pass sales tax id fetched from getSalesTax api
       responses:
         '200':
           description: Success
@@ -1910,6 +1914,10 @@ paths:
           in: formData
           required: true
           type: number
+        - name: sales_tax_id
+          in: formData
+          type: string
+          description: pass sales tax id fetched from getSalesTax api
       responses:
         '200':
           description: Success
