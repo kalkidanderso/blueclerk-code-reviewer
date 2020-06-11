@@ -277,6 +277,8 @@ const _createHubSpotContact = (company: ICompany, companyAdmin: ICompanyAdmin) =
                 { "property": 'company', "value": company.info.companyName },
                 { "property": 'phone', "value": company.contact.phone },
                 { "property": 'industry', "value": industry.title },
+                { "property": 'lifecyclestage', "value": 'customer' },
+                { "property": 'customer_type', "value": 'Free' },
             ]
         };
       
@@ -920,7 +922,7 @@ export const createContractor = (req: Request, res: Response) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
-
+                    _createHubSpotContact(company, companyAdmin)
                     sendEmail({ to: params.email })
                     login(req, res)
                 })
@@ -1256,6 +1258,8 @@ export const upgradeToCompany = (req: Request, res: Response) => {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                             }
 
+                            _upgradeHubSpotContact(contractor)
+
                             return res.json({ status: Status.Success, message: "Account upgraded successfully." });
                         })
                     })
@@ -1270,6 +1274,23 @@ export const upgradeToCompany = (req: Request, res: Response) => {
     )
 }
 
+const _upgradeHubSpotContact = (company: ICompany) => {
+
+    const hubspot = new Hubspot({
+        apiKey: '163d5d65-83c0-4d5f-9dcf-55b052f9ef4d'
+    })
+
+    hubspot.contacts.updateByEmail(company.info.companyEmail, {
+        "properties": [
+          {
+            "property": "customer_type",
+            "value": "Company"
+          }
+        ]
+      })
+      .then((response: any) => console.log(response))
+      .catch((error: any) => console.error(error))
+}
 
 export const agreeToTermAndConditions = (req: Request, res: Response) => {
 

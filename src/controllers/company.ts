@@ -14,6 +14,7 @@ import { Invoice, IInvoice } from '../models/Invoice'
 import { Job, IJob } from '../models/Job'
 import { Scan, IScan } from '../models/Scan'
 import { IUser } from '../models/User'
+const Hubspot = require('hubspot')
 
 export const updateCompanyProfile = (req: Request, res: Response) => {
 
@@ -261,7 +262,7 @@ export const downgradeCompanies = (req: Request, res: Response) => {
                             console.log("Unable to downgrade" + company._id + "\n")
                         }
                         sendAccountDowngradeEmail({ to: company.info.companyEmail })
-    
+                        _downgradeHubSpotContact(company)
                         companiesDowngraded ++;
                         if(companiesToDowngrade == companiesDowngraded) {
                             return res.json({'status': Status.Success, 'message': 'Downgrading done.'})
@@ -273,6 +274,24 @@ export const downgradeCompanies = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': 'Nothing to downgrade.'})
             }           
         })
+}
+
+const _downgradeHubSpotContact = (company: ICompany) => {
+
+    const hubspot = new Hubspot({
+        apiKey: '163d5d65-83c0-4d5f-9dcf-55b052f9ef4d'
+    })
+
+    hubspot.contacts.updateByEmail(company.info.companyEmail, {
+        "properties": [
+          {
+            "property": "customer_type",
+            "value": "Expired"
+          }
+        ]
+      })
+      .then((response: any) => console.log(response))
+      .catch((error: any) => console.error(error))
 }
 
 export const setCustomWorkNumber = (req: Request, res: Response) => {

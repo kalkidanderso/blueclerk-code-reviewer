@@ -220,6 +220,8 @@ const _createHubSpotContact = (company, companyAdmin) => {
                 { "property": 'company', "value": company.info.companyName },
                 { "property": 'phone', "value": company.contact.phone },
                 { "property": 'industry', "value": industry.title },
+                { "property": 'lifecyclestage', "value": 'customer' },
+                { "property": 'customer_type', "value": 'Free' },
             ]
         };
         hubspot.contacts.create(contactObj);
@@ -683,6 +685,7 @@ exports.createContractor = (req, res) => {
                     if (err) {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
+                    _createHubSpotContact(company, companyAdmin);
                     aws_1.sendEmail({ to: params.email });
                     exports.login(req, res);
                 });
@@ -916,6 +919,7 @@ exports.upgradeToCompany = (req, res) => {
                         if (err) {
                             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                         }
+                        _upgradeHubSpotContact(contractor);
                         return res.json({ status: constants_1.Status.Success, message: "Account upgraded successfully." });
                     });
                 });
@@ -925,6 +929,21 @@ exports.upgradeToCompany = (req, res) => {
             }
         });
     });
+};
+const _upgradeHubSpotContact = (company) => {
+    const hubspot = new Hubspot({
+        apiKey: '163d5d65-83c0-4d5f-9dcf-55b052f9ef4d'
+    });
+    hubspot.contacts.updateByEmail(company.info.companyEmail, {
+        "properties": [
+            {
+                "property": "customer_type",
+                "value": "Company"
+            }
+        ]
+    })
+        .then((response) => console.log(response))
+        .catch((error) => console.error(error));
 };
 exports.agreeToTermAndConditions = (req, res) => {
     const params = req.body;

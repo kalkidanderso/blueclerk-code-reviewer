@@ -13,6 +13,7 @@ const JobCharges_1 = require("../models/JobCharges");
 const Invoice_1 = require("../models/Invoice");
 const Job_1 = require("../models/Job");
 const Scan_1 = require("../models/Scan");
+const Hubspot = require('hubspot');
 exports.updateCompanyProfile = (req, res) => {
     const params = req.body;
     Company_1.Company.findById(req.companyId, function (err, company) {
@@ -186,6 +187,7 @@ exports.downgradeCompanies = (req, res) => {
                         console.log("Unable to downgrade" + company._id + "\n");
                     }
                     aws_1.sendAccountDowngradeEmail({ to: company.info.companyEmail });
+                    _downgradeHubSpotContact(company);
                     companiesDowngraded++;
                     if (companiesToDowngrade == companiesDowngraded) {
                         return res.json({ 'status': constants_1.Status.Success, 'message': 'Downgrading done.' });
@@ -197,6 +199,21 @@ exports.downgradeCompanies = (req, res) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Nothing to downgrade.' });
         }
     });
+};
+const _downgradeHubSpotContact = (company) => {
+    const hubspot = new Hubspot({
+        apiKey: '163d5d65-83c0-4d5f-9dcf-55b052f9ef4d'
+    });
+    hubspot.contacts.updateByEmail(company.info.companyEmail, {
+        "properties": [
+            {
+                "property": "customer_type",
+                "value": "Expired"
+            }
+        ]
+    })
+        .then((response) => console.log(response))
+        .catch((error) => console.error(error));
 };
 exports.setCustomWorkNumber = (req, res) => {
     const params = req.body;
