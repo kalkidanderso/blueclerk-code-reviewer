@@ -234,7 +234,7 @@ exports.getEquipmentJobs = (req, res) => {
         Scan_1.Scan.find({ equipment: customerEquipment._id }, '_id')
             .populate({
             path: 'job',
-            populate: [{ path: 'customer', select: 'profile.displayName' }],
+            populate: [{ path: 'customer', select: 'profile.displayName' }, { path: 'type', select: 'title' }],
         })
             .exec((err, scans) => {
             if (err) {
