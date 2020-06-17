@@ -737,9 +737,9 @@ exports.createInvoice = (req, res) => {
                 invoiceId = 'Invoice ' + company.invoicePrefix + '-' + (currentInvoiceId + 1);
             }
             if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
-                charges = params.charges;
-                taxAmount = params.charges * params.tax / 100;
-                total = params.charges + taxAmount;
+                charges = parseInt(params.charges);
+                taxAmount = (params.charges * params.tax) / 100;
+                total = charges + taxAmount;
             }
             var invoice = new Invoice_1.Invoice({
                 invoiceId: invoiceId,
@@ -751,8 +751,22 @@ exports.createInvoice = (req, res) => {
                 tax: taxAmount,
                 taxPercentage: params.tax,
                 createdBy: user._id,
-                createdAt: Date.now()
+                createdAt: Date.now(),
+                isFixed: job.isFixed,
+                timeSpent: params.timeSpent
             });
+            if (!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'Hourly rate is required' });
+            }
+            else if (!job.isFixed) {
+                invoice.hourlyRate = parseInt(params.hourlyRate);
+            }
+            if (!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'Time spent is required' });
+            }
+            else if (!job.isFixed) {
+                invoice.timeSpent = params.timeSpent;
+            }
             invoice.save((invoiceError, newInvoice) => {
                 if (invoiceError) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -797,17 +811,33 @@ exports.updateInvoice = (req, res) => {
             else if ((params.charges != undefined && params.charges !== null && params.charges !== '""') &&
                 (params.tax == undefined || params.tax == null || params.tax == '""')) {
                 tax = (params.charges * taxPercentage) / 100;
-                charges = params.charges;
+                charges = parseInt(params.charges);
                 total = charges + tax;
             }
             else {
                 // update tax and charges
-                charges = params.charges;
+                charges = parseInt(params.charges);
                 taxPercentage = params.tax;
-                tax = (params.charges * params.tax) / 100;
+                tax = (charges * params.tax) / 100;
                 total = charges + tax;
             }
-            invoice.updateOne({ tax: tax, taxPercentage: taxPercentage, charges: charges, total: total }, (err, raw) => {
+            invoice.tax = tax;
+            invoice.taxPercentage = taxPercentage;
+            invoice.charges = charges;
+            invoice.total = total;
+            if (!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'Hourly rate is required' });
+            }
+            else if (!job.isFixed) {
+                invoice.hourlyRate = params.hourlyRate;
+            }
+            if (!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'Time spent is required' });
+            }
+            else if (!job.isFixed) {
+                invoice.timeSpent = params.timeSpent;
+            }
+            invoice.updateOne(invoice, (err, raw) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }

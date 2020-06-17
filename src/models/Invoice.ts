@@ -11,7 +11,10 @@ export interface IInvoice extends Document {
     tax: number
     taxPercentage: number
     createdBy: Schema.Types.ObjectId
-    createdAt: Date
+    createdAt: Date,
+    timeSpent: number
+    isFixed: boolean
+    hourlyRate: number
 }
 
 const InvoiceSchema = new Schema({
@@ -54,8 +57,19 @@ const InvoiceSchema = new Schema({
     createdAt: {
         type: Date,
         default: Date.now()
-    }
-
+    },
+    timeSpent: {
+        type: Number,
+        default: 0
+    },
+    isFixed: {
+        type: Boolean,
+        default: false
+    },    
+    hourlyRate: {
+        type: Number,
+        default: 0
+    },
 })
 
 export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema)

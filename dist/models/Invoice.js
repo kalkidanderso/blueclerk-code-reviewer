@@ -47,7 +47,19 @@ const InvoiceSchema = new mongoose_1.Schema({
     createdAt: {
         type: Date,
         default: Date.now()
-    }
+    },
+    timeSpent: {
+        type: Number,
+        default: 0
+    },
+    isFixed: {
+        type: Boolean,
+        default: false
+    },
+    hourlyRate: {
+        type: Number,
+        default: 0
+    },
 });
 exports.Invoice = mongoose_1.default.model('Invoice', InvoiceSchema);
 //# sourceMappingURL=Invoice.js.map
