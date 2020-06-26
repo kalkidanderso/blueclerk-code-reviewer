@@ -86,7 +86,7 @@ const _createJob = (req: Request, res: Response, jobId: string, serviceTicket: I
     }
     
 
-    if(params.isFixed == 'false') {
+    if(!params.isFixed) {
         if(params.charges != undefined && params.charges !== null && params.charges !== '""') {
             job.hourlyRate = params.charges
         

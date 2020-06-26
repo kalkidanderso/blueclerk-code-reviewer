@@ -60,7 +60,7 @@ const _createJob = (req, res, jobId, serviceTicket, charges, next) => {
     if (params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
         job.equipmentId = params.equipmentId;
     }
-    if (params.isFixed == 'false') {
+    if (!params.isFixed) {
         if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
             job.hourlyRate = params.charges;
         }
