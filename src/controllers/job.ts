@@ -9,6 +9,7 @@ import { IUser } from '../models/User'
 import { ServiceTicket ,IServiceTicket } from '../models/ServiceTicket'
 import { Scan ,IScan } from '../models/Scan'
 import { JobCharges ,IJobCharges } from '../models/JobCharges'
+import { PurchaseOrder } from '../models/PurchaseOrder'
 
 export const createJob = (req: Request, res: Response) => {
 
@@ -56,7 +57,7 @@ export const createJob = (req: Request, res: Response) => {
 const _createJob = (req: Request, res: Response, jobId: string, serviceTicket: IServiceTicket, charges: IJobCharges, next: (req: Request, res: Response, job: IJob) => void) => {
 
     const params = req.body
-    console.log(params);
+    
     const user = <IUser>req.user
     var companyId = req.companyId;
     
@@ -295,7 +296,7 @@ export const updateJob = (req: Request, res: Response) => {
                 
                 let diffMs = ( ending - starting);
                 let interval = 15 * 60 * 1000;
-                timeSpent = ((Math.ceil(diffMs / interval)*interval)/60000)/60;
+                timeSpent = ((Math.ceil(diffMs / interval)*interval)/60000)/60
                 newcharges = job.hourlyRate * timeSpent
             }
 
@@ -449,34 +450,43 @@ export const getJobDetails = (req: Request, res: Response) => {
             path: 'company',
             select: 'info profile address contact'
         })
-        .exec((err: any, job: IJob)=>{
+        .then((job: any)=>{
 
-            if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-            }
-            
             if (job == undefined || job == null) {
-                return res.json({'status': Status.Error, 'message': "Invalid job id"})
+                throw new Error ('Invalid job id')
+                // return res.json({'status': Status.Error, 'message': "Invalid job id"})
             }
 
 
-            Scan.find({ job: job._id}, 'comment timeOfScan')
+            const scansPrmoise = Scan.find({ job: job._id}, 'comment timeOfScan')
             .populate({
                 path: 'equipment',
                 select: 'info.model info.serialNumber info.nfcTag images info.location',
                 populate: [{ path: 'brand', select: 'title' },{ path: 'type', select: 'title' }],
                 
             })
-            .exec ((err: any, scans: IScan[]) => {
-                if (err) {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                }
-
-                return res.json({ 'status': Status.Success, 'job': job, 'scans': scans  })
+            
+            const POPromise = PurchaseOrder.find({
+                job: params.jobId
             })
 
-        }
-    )
+            return Promise.all([job, scansPrmoise, POPromise])
+        })
+        .then((result: any) => {
+
+            const job = result[0]
+            const scans = result[1]
+            const POs = result[2]
+            return res.json({ 'status': Status.Success, 'job': job, 'scans': scans, 'purchaseOrders': POs })
+
+        })
+        .catch((error: any) => {
+            if(error.message != undefined) {
+                return res.json({ 'status': Status.Error, 'message': error.message })
+            }else{
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+        })
 
 }
 
@@ -513,41 +523,47 @@ export const getJobReport = (req: Request, res: Response) => {
             path: 'createdBy',
             select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone'
         })
-        .exec((err: any, job: IJob)=>{
-
-            if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-            }
+        .then((job: any)=>{
 
             if (job == undefined || job == null) {
-                return res.json({'status': Status.Error, 'message': "Invalid job id"})
+                throw new Error ('Invalid job id')
             }
 
             if (job.status != JobStatus.FINISHED) {
-                return res.json({'status': Status.Error, 'message': "Job is not finished yet"})
+                throw new Error ('Job is not finished yet')
             }
 
-            // scans
-            Scan.find({ job: job._id}, 'comment timeOfScan')
+            const scansPrmoise = Scan.find({ job: job._id}, 'comment timeOfScan')
             .populate({
                 path: 'equipment',
                 select: 'info.model info.serialNumber info.nfcTag images info.location',
                 populate: [{ path: 'brand', select: 'title' },{ path: 'type', select: 'title' }],
-                
             })
-            .exec ((err: any, scans: IScan[]) => {
-                if (err) {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                }
-                
-                if (scans.length == 0) {
-                    return res.json({ 'status': Status.Error, 'message': "No equipment scanned for this job."})
-                }
+            
+            const POPromise = PurchaseOrder.find({
+                job: params.jobId
+            })
 
-                return res.json({ 'status': Status.Success, 'job': job, 'scans': scans  })
-            })
-        }
-    )
+            return Promise.all([job, scansPrmoise, POPromise])
+        })
+        .then((result: any) => {
+            const job = result[0]
+            const scans = result[1]
+            const POs = result[2]
+
+            if(scans.length == 0) {
+                return res.json({ 'status': Status.Error, 'message': "No equipment scanned for this job."})
+            }else{
+                return res.json({ 'status': Status.Success, 'job': job, 'scans': scans, 'purchaseOrders': POs })
+            }
+        })
+        .catch((error: any) => {
+            if(error.message != undefined) {
+                return res.json({ 'status': Status.Error, 'message': error.message })
+            }else{
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+        })
 }
 
 export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {

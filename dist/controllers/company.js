@@ -13,6 +13,7 @@ const JobCharges_1 = require("../models/JobCharges");
 const Invoice_1 = require("../models/Invoice");
 const Job_1 = require("../models/Job");
 const Scan_1 = require("../models/Scan");
+const PurchaseOrder_1 = require("../models/PurchaseOrder");
 const Hubspot = require('hubspot');
 exports.updateCompanyProfile = (req, res) => {
     const params = req.body;
@@ -703,31 +704,204 @@ exports.getInvoiceNumber = (req, res) => {
         return res.json({ status: constants_1.Status.Success, 'invoicePrefix': company.invoicePrefix, 'currentInvoiceNumber': company.currentInvoiceId });
     });
 };
-// Invoices
+// Job Invoices
 exports.createInvoice = (req, res) => {
     const params = req.body;
     const user = req.user;
     const company = req.company;
-    Invoice_1.Invoice.findOne({ 'job': params.jobId, 'company': req.companyId }, (err, previousInvoice) => {
+    Invoice_1.Invoice.findOne({ 'job': params.jobId, 'company': req.companyId })
+        .then((previousInvoice) => {
+        if (previousInvoice != undefined || previousInvoice != null) {
+            throw new Error('Invoice already created for this job');
+        }
+        const jobPrmoies = Job_1.Job.findById(params.jobId);
+        const POPromise = PurchaseOrder_1.PurchaseOrder.find({
+            job: params.jobId
+        });
+        return Promise.all([jobPrmoies, POPromise]);
+    })
+        .then((result) => {
+        const job = result[0];
+        const purchaseOrders = result[1];
+        if (job == undefined || job == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid job id' });
+        }
+        let taxAmount = 0;
+        let charges = job.charges;
+        if (params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) {
+            taxAmount = job.charges * params.tax / 100;
+        }
+        let total = job.charges + taxAmount;
+        let currentInvoiceId = 0;
+        if (company.currentInvoiceId) {
+            currentInvoiceId = company.currentInvoiceId;
+        }
+        let invoiceId = 'Invoice ' + (currentInvoiceId + 1);
+        if (company.invoicePrefix != undefined && company.invoicePrefix != null && company.invoicePrefix == '""') {
+            invoiceId = 'Invoice ' + company.invoicePrefix + '-' + (currentInvoiceId + 1);
+        }
+        if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
+            charges = parseInt(params.charges);
+            taxAmount = (params.charges * params.tax) / 100;
+            total = charges + taxAmount;
+        }
+        var invoice = new Invoice_1.Invoice({
+            invoiceId: invoiceId,
+            job: params.jobId,
+            jobPurchaseOrder: [],
+            customer: job.customer,
+            company: req.companyId,
+            charges: charges,
+            total: total,
+            tax: taxAmount,
+            taxPercentage: params.tax,
+            createdBy: user._id,
+            createdAt: Date.now(),
+            isFixed: job.isFixed,
+            invoiceType: 1,
+            timeSpent: params.timeSpent
+        });
+        if (params.includePO) {
+            let purchaseOrderIds = [];
+            if (purchaseOrders != null && purchaseOrders.length > 0) {
+                purchaseOrders.map((PO) => {
+                    purchaseOrderIds.push(PO._id);
+                });
+                invoice.jobPurchaseOrders = purchaseOrderIds;
+            }
+        }
+        if (!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'Hourly rate is required' });
+        }
+        else if (!job.isFixed) {
+            invoice.hourlyRate = params.hourlyRate;
+        }
+        if (!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'Time spent is required' });
+        }
+        else if (!job.isFixed) {
+            invoice.timeSpent = params.timeSpent;
+        }
+        invoice.save((invoiceError, newInvoice) => {
+            if (invoiceError) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
+                .exec((companyError, raw) => {
+                if (companyError) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                return res.json({ 'status': constants_1.Status.Success, 'message': "Invoice created successfully." });
+            });
+        });
+    })
+        .catch((error) => {
+        if (error.message != undefined) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': error.message });
+        }
+        else {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+    });
+};
+// export const createInvoice = (req: Request, res: Response) => {
+//     const params = req.body
+//     const user = <IUser>req.user
+//     const company = <ICompany>req.company
+//     Invoice.findOne({'job': params.jobId, 'company': req.companyId}, 
+//     (err: any, previousInvoice: IInvoice) => {
+//         if (err) {
+//             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+//         }
+//         if(previousInvoice != undefined || previousInvoice != null) {
+//             return res.json({'status': Status.Success, 'message': "Invoice already created for this job."})
+//         }
+//         Job.findById(params.jobId, (jobError: any, job: IJob) => {
+//             if (jobError) {
+//                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+//             }
+//             if(job == undefined || job == null) {
+//                 return res.json({ 'status': Status.Error, 'message': 'Invalid job id' })
+//             }
+//             let taxAmount: number = 0;
+//             let charges: number = job.charges;
+//             if(params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) {
+//                 taxAmount = job.charges * params.tax / 100
+//             }
+//             let total: number = job.charges + taxAmount
+//             let currentInvoiceId = 0;
+//             if(company.currentInvoiceId) {
+//                 currentInvoiceId = company.currentInvoiceId 
+//             }
+//             let invoiceId = 'Invoice '+ (currentInvoiceId+1)
+//             if(company.invoicePrefix != undefined && company.invoicePrefix != null && company.invoicePrefix == '""') {
+//                 invoiceId = 'Invoice '+company.invoicePrefix+'-'+(currentInvoiceId+1)
+//             }
+//             if(params.charges != undefined && params.charges !== null && params.charges !== '""') {
+//                 charges = parseInt(params.charges)
+//                 taxAmount = (params.charges  * params.tax) / 100
+//                 total  = charges + taxAmount
+//             }
+//             var invoice = new Invoice({
+//                 invoiceId : invoiceId,
+//                 job : params.jobId,
+//                 jobPurchaseOrder: [],
+//                 customer: job.customer,
+//                 company: req.companyId,
+//                 charges: charges,
+//                 total: total,
+//                 tax: taxAmount,
+//                 taxPercentage: params.tax,
+//                 createdBy: user._id,
+//                 createdAt: Date.now(),
+//                 isFixed: job.isFixed,
+//                 invoiceType: 1,
+//                 timeSpent: params.timeSpent
+//             })
+//             if(!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""' )) {
+//                 return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
+//             }else if(!job.isFixed){
+//                 invoice.hourlyRate = params.hourlyRate
+//             }
+//             if(!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""' )) {
+//                 return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
+//             }else if(!job.isFixed){
+//                 invoice.timeSpent = params.timeSpent
+//             }
+//             invoice.save((invoiceError: any, newInvoice: IInvoice) => {
+//                 if (invoiceError) {
+//                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
+//                 }
+//                 company.updateOne({currentInvoiceId: currentInvoiceId+1 })
+//                 .exec((companyError: any, raw: any)=>{
+//                     if (companyError) {
+//                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
+//                     }
+//                     return res.json({'status': Status.Success, 'message': "Invoice created successfully."})
+//                 })
+//             })
+//         })
+//     });
+// }
+// PO Invoices
+exports.createPOInvoice = (req, res) => {
+    const params = req.body;
+    const user = req.user;
+    const company = req.company;
+    Invoice_1.Invoice.findOne({ 'purchaseOrder': params.purchaseOrderId, 'company': req.companyId }, (err, previousInvoice) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         if (previousInvoice != undefined || previousInvoice != null) {
-            return res.json({ 'status': constants_1.Status.Success, 'message': "Invoice already created for this job." });
+            return res.json({ 'status': constants_1.Status.Success, 'message': "Invoice already created for this purchase order." });
         }
-        Job_1.Job.findById(params.jobId, (jobError, job) => {
-            if (jobError) {
+        PurchaseOrder_1.PurchaseOrder.findById(params.purchaseOrderId, (POError, PO) => {
+            if (POError) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            if (job == undefined || job == null) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid job id' });
+            if (PO == undefined || PO == null) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid purchase order id' });
             }
-            let taxAmount = 0;
-            let charges = job.charges;
-            if (params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) {
-                taxAmount = job.charges * params.tax / 100;
-            }
-            let total = job.charges + taxAmount;
             let currentInvoiceId = 0;
             if (company.currentInvoiceId) {
                 currentInvoiceId = company.currentInvoiceId;
@@ -736,37 +910,16 @@ exports.createInvoice = (req, res) => {
             if (company.invoicePrefix != undefined && company.invoicePrefix != null && company.invoicePrefix == '""') {
                 invoiceId = 'Invoice ' + company.invoicePrefix + '-' + (currentInvoiceId + 1);
             }
-            if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
-                charges = parseInt(params.charges);
-                taxAmount = (params.charges * params.tax) / 100;
-                total = charges + taxAmount;
-            }
             var invoice = new Invoice_1.Invoice({
                 invoiceId: invoiceId,
-                job: params.jobId,
-                customer: job.customer,
+                purchaseOrder: params.purchaseOrderId,
+                customer: PO.customer,
                 company: req.companyId,
-                charges: charges,
-                total: total,
-                tax: taxAmount,
-                taxPercentage: params.tax,
+                total: PO.total,
                 createdBy: user._id,
                 createdAt: Date.now(),
-                isFixed: job.isFixed,
-                timeSpent: params.timeSpent
+                invoiceType: 1
             });
-            if (!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': 'Hourly rate is required' });
-            }
-            else if (!job.isFixed) {
-                invoice.hourlyRate = parseInt(params.hourlyRate);
-            }
-            if (!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': 'Time spent is required' });
-            }
-            else if (!job.isFixed) {
-                invoice.timeSpent = params.timeSpent;
-            }
             invoice.save((invoiceError, newInvoice) => {
                 if (invoiceError) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -776,7 +929,7 @@ exports.createInvoice = (req, res) => {
                     if (companyError) {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
-                    return res.json({ 'status': constants_1.Status.Success, 'message': "Invoice created successfully." });
+                    return res.json({ 'status': constants_1.Status.Success, 'message': "Purchase order invoice created successfully." });
                 });
             });
         });

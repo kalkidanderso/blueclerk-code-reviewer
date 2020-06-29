@@ -3,7 +3,10 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface IInvoice extends Document {
 
     invoiceId: string
+    invoiceType: number
     job: Schema.Types.ObjectId
+    purchaseOrder: Schema.Types.ObjectId
+    jobPurchaseOrders: [Schema.Types.ObjectId]
     customer: Schema.Types.ObjectId
     company: Schema.Types.ObjectId
     charges: number
@@ -20,11 +23,27 @@ export interface IInvoice extends Document {
 const InvoiceSchema = new Schema({
 
     invoiceId: String,
+    // 0 for job invoice
+    // 1 for PO invoice
+    invoiceType: {
+        type: Number,
+        default: 0
+    },
     job: {
         type: Schema.Types.ObjectId,
         ref: 'Job',
-        required: true
+        required: false
     },
+    purchaseOrder :{
+        type: Schema.Types.ObjectId,
+        ref: 'PurchaseOrder',
+        required: false
+    },
+    jobPurchaseOrders :[{
+        type: Schema.Types.ObjectId,
+        ref: 'PurchaseOrder',
+        required: false
+    }],
     customer: {
         type: Schema.Types.ObjectId,
         ref: 'User',
@@ -36,7 +55,8 @@ const InvoiceSchema = new Schema({
         required: true
     },
     charges:{
-        type: Number
+        type: Number,
+        default: 0
     },
     total: {
         type: Number

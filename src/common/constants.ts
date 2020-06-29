@@ -66,6 +66,13 @@ export const enum ContractStatus {
     REJECTED,
     FINISHED
 }
+
+export const enum PurchaseOrderStatus {
+    PENDING,
+    APPROVED,
+    CANCELED
+}
+
 export const enum Permissions {
     None,
     Permission_Get_All,
@@ -165,7 +172,15 @@ export const enum Permissions {
     Create_Invoice,
     Update_Invoice,
     Get_Invoice_Detail,
-    Get_Invoices
+    Get_Invoices,
+    Get_Parts,
+    Create_Part,
+    Update_Part,
+    Remove_Part,
+    Create_Purchase_Order,
+    Update_Purchase_Order,
+    Update_Status_Purchase_Order,
+    Get_Purchase_Order,
 
 }
 
@@ -282,7 +297,15 @@ export const UserPermissions = {
             Permissions.Create_Invoice,
             Permissions.Update_Invoice,
             Permissions.Get_Invoice_Detail,
-            Permissions.Get_Invoices
+            Permissions.Get_Invoices,
+            Permissions.Get_Parts,
+            Permissions.Create_Part,
+            Permissions.Update_Part,
+            Permissions.Remove_Part,
+            Permissions.Create_Purchase_Order,
+            Permissions.Update_Purchase_Order,
+            Permissions.Update_Status_Purchase_Order,
+            Permissions.Get_Purchase_Order,
         ],
         off: [Permissions.None],
     },
@@ -371,7 +394,15 @@ export const UserPermissions = {
             Permissions.Create_Invoice,
             Permissions.Update_Invoice,
             Permissions.Get_Invoice_Detail,
-            Permissions.Get_Invoices
+            Permissions.Get_Invoices,
+            Permissions.Get_Parts,
+            Permissions.Create_Part,
+            Permissions.Update_Part,
+            Permissions.Remove_Part,
+            Permissions.Create_Purchase_Order,
+            Permissions.Update_Purchase_Order,
+            Permissions.Update_Status_Purchase_Order,
+            Permissions.Get_Purchase_Order,
         ],
         off: [Permissions.None],
     },
@@ -463,7 +494,15 @@ export const UserPermissions = {
             Permissions.Create_Invoice,
             Permissions.Update_Invoice,
             Permissions.Get_Invoice_Detail,
-            Permissions.Get_Invoices
+            Permissions.Get_Invoices,
+            Permissions.Get_Parts,
+            Permissions.Create_Part,
+            Permissions.Update_Part,
+            Permissions.Remove_Part,
+            Permissions.Create_Purchase_Order,
+            Permissions.Update_Purchase_Order,
+            Permissions.Update_Status_Purchase_Order,
+            Permissions.Get_Purchase_Order,
         ],
         off: [Permissions.None],
     },
@@ -565,7 +604,15 @@ export const UserPermissions = {
             Permissions.Create_Invoice,
             Permissions.Update_Invoice,
             Permissions.Get_Invoice_Detail,
-            Permissions.Get_Invoices
+            Permissions.Get_Invoices,
+            Permissions.Get_Parts,
+            Permissions.Create_Part,
+            Permissions.Update_Part,
+            Permissions.Remove_Part,
+            Permissions.Create_Purchase_Order,
+            Permissions.Update_Purchase_Order,
+            Permissions.Update_Status_Purchase_Order,
+            Permissions.Get_Purchase_Order,
         ],
         off: [Permissions.None],
     }

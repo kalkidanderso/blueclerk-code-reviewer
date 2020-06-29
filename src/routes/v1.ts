@@ -27,6 +27,8 @@ import * as customerImportController from '../controllers/customerImport'
 import * as serviceTicketController from '../controllers/serviceTicket'
 import * as quickBookController from '../controllers/quickbook'
 import * as companyController from '../controllers/company'
+import * as partController from '../controllers/part'
+import * as purchaseOrderController from '../controllers/purchaseOrder'
 import { Personalize } from 'aws-sdk'
 
 export default function (sio: any) {
@@ -1037,6 +1039,15 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/createPOInvoice',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Create_Invoice),
+        validate(Validations.createPOInvoice),
+        companyController.createPOInvoice
+    )
+
+    router.post(
         '/updateInvoice',
         passport.authenticate('jwt', { session: false }),
         getCompnayId(),
@@ -1066,7 +1077,79 @@ export default function (sio: any) {
         permissionController.updateAllCompaniesPermissions
     )
 
+    //Parts Inventory
+
+    router.post(
+        '/getParts',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Parts),
+        partController.getPartInventory
+    )
     
+    router.post(
+        '/createPart',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Create_Part),
+        validate(Validations.createPartInventory),
+        partController.createPartInventory
+    )
+    
+    router.post(
+        '/updatePart',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Update_Part),
+        validate(Validations.udpatePartInventory),
+        partController.updatePartInventory
+    )
+
+    router.post(
+        '/removePart',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Remove_Part),
+        validate(Validations.removePartInventory),
+        partController.removePartInventory
+    )
+
+    // Purchase Order
+    router.post(
+        '/createPurchaseOrder',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Create_Purchase_Order),
+        validate(Validations.createPurchaseOrder),
+        purchaseOrderController.createPO
+    )
+    
+    router.post(
+        '/getAllPurchaseOrder',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Purchase_Order),
+        purchaseOrderController.getAllPO
+    )
+    
+    router.post(
+        '/updatePurchaseOrderStatus',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Update_Status_Purchase_Order),
+        validate(Validations.udpatePurchaseOrderStatus),
+        purchaseOrderController.updatePOStatus
+    )
+    
+    router.post(
+        '/updatePurchaseOrder',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Update_Purchase_Order),
+        validate(Validations.udpatePurchaseOrder),
+        purchaseOrderController.updatePO
+    )
+  
     return router
 
 }

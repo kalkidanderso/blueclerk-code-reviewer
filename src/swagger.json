@@ -79,6 +79,14 @@
       "description": "For scheduled jobs"
     },
     {
+      "name": "Part Inventory",
+      "description": "For parts inventory"
+    },
+    {
+      "name": "Purchase Order",
+      "description": "For company purchase orders"
+    },
+    {
       "name": "Reports",
       "description": "For job and other reports"
     },
@@ -3211,6 +3219,453 @@
         ]
       }
     },
+    "/createPart": {
+      "post": {
+        "tags": [
+          "Part Inventory"
+        ],
+        "summary": "To create inventory of a part",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Name of the part"
+          },
+          {
+            "name": "itemCode",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Item code or SKU number of a part, it must be unique"
+          },
+          {
+            "name": "description",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "cost",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "amount at which part was purchased"
+          },
+          {
+            "name": "price",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "sale price of the part"
+          },
+          {
+            "name": "totalQuantity",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "total quantity of the part to add in inventory"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getParts": {
+      "post": {
+        "tags": [
+          "Part Inventory"
+        ],
+        "summary": "To get parts inventories",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "taxes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Part"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updatePart": {
+      "post": {
+        "tags": [
+          "Part Inventory"
+        ],
+        "summary": "To update part inventory",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "partId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of part you want to update"
+          },
+          {
+            "name": "name",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Name of the part"
+          },
+          {
+            "name": "itemCode",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "unique item code of the part"
+          },
+          {
+            "name": "description",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "description of the part"
+          },
+          {
+            "name": "cost",
+            "in": "formData",
+            "required": false,
+            "type": "number",
+            "description": "cost of the part"
+          },
+          {
+            "name": "price",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "price of the part"
+          },
+          {
+            "name": "totalQuantity",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "total quantity of the part"
+          },
+          {
+            "name": "availableQuantity",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "available quantity of the part"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/deletePart": {
+      "post": {
+        "tags": [
+          "Part Inventory"
+        ],
+        "summary": "To delete part inventory",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "partId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of part you want to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createPurchaseOrder": {
+      "post": {
+        "tags": [
+          "Purchase Order"
+        ],
+        "summary": "To create purchase order",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "items",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Json string of the items e.g [{\"name\": \"test part2\", \"itemCode\": \"23423\", \"quantity\":2, \"cost\": 123, \"price\": 150}]"
+          },
+          {
+            "name": "job",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of the job purchase order is linked to. (Optional)"
+          },
+          {
+            "name": "customer",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of the customer purchase order is linked to"
+          },
+          {
+            "name": "total",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "total amount of the purchase order"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getAllPurchaseOrder": {
+      "post": {
+        "tags": [
+          "Purchase Order"
+        ],
+        "summary": "To get purchase orders",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "taxes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/PurchaseOrder"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updatePurchaseOrder": {
+      "post": {
+        "tags": [
+          "Purchase Order"
+        ],
+        "summary": "To update purchase order",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "purchaseOrderId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of purchase order you want to update"
+          },
+          {
+            "name": "items",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Json string of the items e.g [{\"name\": \"test part2\", \"itemCode\": \"23423\", \"quantity\":2, \"cost\": 123, \"price\": 150}]"
+          },
+          {
+            "name": "job",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of the job purchase order linked to"
+          },
+          {
+            "name": "customer",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "id of the customer purchase order is linked to"
+          },
+          {
+            "name": "total",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "total amount of the purchase order"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updatePurchaseOrderStatus": {
+      "post": {
+        "tags": [
+          "Purchase Order"
+        ],
+        "summary": "To update purchase order status",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "purchaseOrderId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of purchase order you want to update"
+          },
+          {
+            "name": "status",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "status of purchase order default is 0 => pending, you can update to 1=> approved by customer, 2=> cancelled by customer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/createServiceTicket": {
       "post": {
         "tags": [
@@ -4164,6 +4619,12 @@
             "required": true,
             "type": "number",
             "description": "Hourly rate to be charges to customer pass default from finished job if you dont want to change"
+          },
+          {
+            "name": "includePO",
+            "in": "formData",
+            "type": "boolean",
+            "description": "select if you want to include purchase orders linked to this job in this invoice"
           }
         ],
         "responses": {
@@ -4335,6 +4796,43 @@
                   }
                 }
               ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createPOInvoice": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To create invoice of a purchase order only",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "purchaseOrderId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Pass purchase order id fetched from getAllPurchaseOrders api"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
             }
           }
         },
@@ -5989,9 +6487,23 @@
           "type": "string",
           "description": "Custom invoice id to be shown on invoice"
         },
+        "inoviceType": {
+          "type": "number",
+          "description": "0 for the invoice for job and 1 for the invoice of purchase order"
+        },
         "job": {
           "type": "string",
           "description": "Id of job from which the invoice was created"
+        },
+        "purchaseOrder": {
+          "type": "string",
+          "description": "Id of the purchase order if the invoic is for purchase order only"
+        },
+        "jobPurchaseOrders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "customer": {
           "type": "string",
@@ -6438,6 +6950,124 @@
         "company": {
           "type": "string",
           "description": "Id of the company who has created this sales tax"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Id of the member of company who has created this sales tax"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date time when the sales tax was created"
+        }
+      }
+    },
+    "Part": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the part"
+        },
+        "itemCode": {
+          "type": "string",
+          "description": "Unique item code or sku number of the part"
+        },
+        "description": {
+          "type": "string",
+          "description": "description of the part"
+        },
+        "cost": {
+          "type": "number",
+          "description": "puchase amount of the part"
+        },
+        "price": {
+          "type": "number",
+          "description": "sale price of the part"
+        },
+        "totalQuantity": {
+          "type": "number",
+          "description": "total quantity of the part company owned"
+        },
+        "availableQuantity": {
+          "type": "number",
+          "description": "available quantity of the part company have"
+        },
+        "company": {
+          "type": "string",
+          "description": "Id of the company to whom the part belongs"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Id of the member of company who has created this sales tax"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date time when the sales tax was created"
+        }
+      }
+    },
+    "PurchaseOrder": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "part": {
+                "type": "string",
+                "description": "Optional id of the part if selected from parts inventory"
+              },
+              "name": {
+                "type": "string",
+                "description": "Name of the part if not selected from inventory list"
+              },
+              "itemCode": {
+                "type": "string",
+                "description": "Unique item code or sku number of the part"
+              },
+              "quantity": {
+                "type": "number",
+                "description": "quantity of the part added"
+              },
+              "cost": {
+                "type": "number",
+                "description": "puchase amount of the part for this purchase order"
+              },
+              "price": {
+                "type": "number",
+                "description": "sale price of the part"
+              }
+            }
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "status of purchase order 0 => pending, 1 => approved by customer, 2 => cancelled by customer"
+        },
+        "total": {
+          "type": "number",
+          "description": "total amount of the purchase order"
+        },
+        "jbo": {
+          "type": "string",
+          "description": "Id of the job to which current purchase order is linked (optional)"
+        },
+        "customer": {
+          "type": "string",
+          "description": "Id of the customer for whom the purchase order is created"
+        },
+        "company": {
+          "type": "string",
+          "description": "Id of the company to whom the part belongs"
         },
         "createdBy": {
           "type": "string",

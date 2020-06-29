@@ -173,9 +173,23 @@ export const Validations = {
   
   deleteJobCharges: [check('jobChargesId').exists()],
 
-  createInvoice: [check('jobId')],
+  createInvoice: [check('jobId').exists(), check('includePO').exists()],
+  
+  createPOInvoice: [check('purchaseOrderId').exists()],
 
   updateInvoice: [check('invoiceId').exists()],
   
   getInvoiceDetail: [check('invoiceId').exists()],
+  
+  createPartInventory: [check('name').exists(), check('itemCode').exists(), check('cost').exists(), check('price').exists(), check('totalQuantity').exists()],
+  
+  udpatePartInventory: [check('partId').exists(), check('name').exists(), check('itemCode').exists(), check('cost').exists(), check('price').exists(), check('totalQuantity').exists()],
+  
+  removePartInventory: [check('partId').exists()],
+  
+  createPurchaseOrder: [check('total').exists(), check('job').exists(), check('customer').exists(), check('items').exists()],
+  
+  udpatePurchaseOrder: [check('purchaseOrderId').exists(), check('total').exists(), check('job').exists(), check('customer').exists(), check('items').exists()],
+  
+  udpatePurchaseOrderStatus: [check('purchaseOrderId').exists(), check('status').exists()],
 }

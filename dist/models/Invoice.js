@@ -10,11 +10,27 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const InvoiceSchema = new mongoose_1.Schema({
     invoiceId: String,
+    // 0 for job invoice
+    // 1 for PO invoice
+    invoiceType: {
+        type: Number,
+        default: 0
+    },
     job: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Job',
-        required: true
+        required: false
     },
+    purchaseOrder: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'PurchaseOrder',
+        required: false
+    },
+    jobPurchaseOrders: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'PurchaseOrder',
+            required: false
+        }],
     customer: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
@@ -26,7 +42,8 @@ const InvoiceSchema = new mongoose_1.Schema({
         required: true
     },
     charges: {
-        type: Number
+        type: Number,
+        default: 0
     },
     total: {
         type: Number

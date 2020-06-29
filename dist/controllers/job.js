@@ -5,6 +5,7 @@ const Job_1 = require("../models/Job");
 const ServiceTicket_1 = require("../models/ServiceTicket");
 const Scan_1 = require("../models/Scan");
 const JobCharges_1 = require("../models/JobCharges");
+const PurchaseOrder_1 = require("../models/PurchaseOrder");
 exports.createJob = (req, res) => {
     const params = req.body;
     ServiceTicket_1.ServiceTicket.findById(params.ticketId, (err, serviceTicket) => {
@@ -36,7 +37,6 @@ exports.createJob = (req, res) => {
 };
 const _createJob = (req, res, jobId, serviceTicket, charges, next) => {
     const params = req.body;
-    console.log(params);
     const user = req.user;
     var companyId = req.companyId;
     if (req.otherCompanyId != undefined) {
@@ -329,25 +329,35 @@ exports.getJobDetails = (req, res) => {
         path: 'company',
         select: 'info profile address contact'
     })
-        .exec((err, job) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
+        .then((job) => {
         if (job == undefined || job == null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid job id" });
+            throw new Error('Invalid job id');
+            // return res.json({'status': Status.Error, 'message': "Invalid job id"})
         }
-        Scan_1.Scan.find({ job: job._id }, 'comment timeOfScan')
+        const scansPrmoise = Scan_1.Scan.find({ job: job._id }, 'comment timeOfScan')
             .populate({
             path: 'equipment',
             select: 'info.model info.serialNumber info.nfcTag images info.location',
             populate: [{ path: 'brand', select: 'title' }, { path: 'type', select: 'title' }],
-        })
-            .exec((err, scans) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            return res.json({ 'status': constants_1.Status.Success, 'job': job, 'scans': scans });
         });
+        const POPromise = PurchaseOrder_1.PurchaseOrder.find({
+            job: params.jobId
+        });
+        return Promise.all([job, scansPrmoise, POPromise]);
+    })
+        .then((result) => {
+        const job = result[0];
+        const scans = result[1];
+        const POs = result[2];
+        return res.json({ 'status': constants_1.Status.Success, 'job': job, 'scans': scans, 'purchaseOrders': POs });
+    })
+        .catch((error) => {
+        if (error.message != undefined) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': error.message });
+        }
+        else {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
     });
 };
 exports.getJobReport = (req, res) => {
@@ -381,32 +391,42 @@ exports.getJobReport = (req, res) => {
         path: 'createdBy',
         select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone'
     })
-        .exec((err, job) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
+        .then((job) => {
         if (job == undefined || job == null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid job id" });
+            throw new Error('Invalid job id');
         }
         if (job.status != 2 /* FINISHED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': "Job is not finished yet" });
+            throw new Error('Job is not finished yet');
         }
-        // scans
-        Scan_1.Scan.find({ job: job._id }, 'comment timeOfScan')
+        const scansPrmoise = Scan_1.Scan.find({ job: job._id }, 'comment timeOfScan')
             .populate({
             path: 'equipment',
             select: 'info.model info.serialNumber info.nfcTag images info.location',
             populate: [{ path: 'brand', select: 'title' }, { path: 'type', select: 'title' }],
-        })
-            .exec((err, scans) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            if (scans.length == 0) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': "No equipment scanned for this job." });
-            }
-            return res.json({ 'status': constants_1.Status.Success, 'job': job, 'scans': scans });
         });
+        const POPromise = PurchaseOrder_1.PurchaseOrder.find({
+            job: params.jobId
+        });
+        return Promise.all([job, scansPrmoise, POPromise]);
+    })
+        .then((result) => {
+        const job = result[0];
+        const scans = result[1];
+        const POs = result[2];
+        if (scans.length == 0) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': "No equipment scanned for this job." });
+        }
+        else {
+            return res.json({ 'status': constants_1.Status.Success, 'job': job, 'scans': scans, 'purchaseOrders': POs });
+        }
+    })
+        .catch((error) => {
+        if (error.message != undefined) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': error.message });
+        }
+        else {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
     });
 };
 exports.getTodaysJobsByTechnicianId = (req, res) => {
