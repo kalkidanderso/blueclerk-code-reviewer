@@ -8,7 +8,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const PurcahseOrderSchema = new mongoose_1.Schema({
+const EstimateSchema = new mongoose_1.Schema({
     items: [{
             part: {
                 type: mongoose_1.Schema.Types.ObjectId,
@@ -36,13 +36,12 @@ const PurcahseOrderSchema = new mongoose_1.Schema({
                 required: false
             }
         }],
+    note: {
+        type: String,
+        required: true
+    },
     total: {
         type: Number
-    },
-    estimate: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Estimate',
-        required: false
     },
     // 0 => pending
     // 1 => approved by customer
@@ -50,11 +49,6 @@ const PurcahseOrderSchema = new mongoose_1.Schema({
     status: {
         type: Number,
         default: 0
-    },
-    job: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Job',
-        required: false
     },
     customer: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -75,5 +69,5 @@ const PurcahseOrderSchema = new mongoose_1.Schema({
         type: Date
     }
 });
-exports.PurchaseOrder = mongoose_1.default.model('PurchaseOrder', PurcahseOrderSchema);
-//# sourceMappingURL=PurchaseOrder.js.map
+exports.Estimate = mongoose_1.default.model('Estimate', EstimateSchema);
+//# sourceMappingURL=Estimate.js.map

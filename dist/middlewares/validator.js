@@ -106,7 +106,7 @@ exports.Validations = {
     createJobCharges: [express_validator_1.check('jobTypeId').exists(), express_validator_1.check('charges').exists(), express_validator_1.check('isFixed').exists()],
     updateJobCharges: [express_validator_1.check('jobChargesId').exists(), express_validator_1.check('charges').exists(), express_validator_1.check('isFixed').exists()],
     deleteJobCharges: [express_validator_1.check('jobChargesId').exists()],
-    createInvoice: [express_validator_1.check('jobId').exists(), express_validator_1.check('includePO').exists()],
+    //createInvoice: [],
     createPOInvoice: [express_validator_1.check('purchaseOrderId').exists()],
     updateInvoice: [express_validator_1.check('invoiceId').exists()],
     getInvoiceDetail: [express_validator_1.check('invoiceId').exists()],
@@ -114,7 +114,12 @@ exports.Validations = {
     udpatePartInventory: [express_validator_1.check('partId').exists(), express_validator_1.check('name').exists(), express_validator_1.check('itemCode').exists(), express_validator_1.check('cost').exists(), express_validator_1.check('price').exists(), express_validator_1.check('totalQuantity').exists()],
     removePartInventory: [express_validator_1.check('partId').exists()],
     createPurchaseOrder: [express_validator_1.check('total').exists(), express_validator_1.check('job').exists(), express_validator_1.check('customer').exists(), express_validator_1.check('items').exists()],
-    udpatePurchaseOrder: [express_validator_1.check('purchaseOrderId').exists(), express_validator_1.check('total').exists(), express_validator_1.check('job').exists(), express_validator_1.check('customer').exists(), express_validator_1.check('items').exists()],
+    udpatePurchaseOrder: [express_validator_1.check('purchaseOrderId').exists(), express_validator_1.check('total').exists(), express_validator_1.check('items').exists()],
     udpatePurchaseOrderStatus: [express_validator_1.check('purchaseOrderId').exists(), express_validator_1.check('status').exists()],
+    createPurchaseOrderEstimate: [express_validator_1.check('estimateId').exists()],
+    udpateEstimate: [express_validator_1.check('estimateId').exists(), express_validator_1.check('total').exists(), express_validator_1.check('customer').exists()],
+    udpateEstimateStatus: [express_validator_1.check('estimateId').exists()],
+    createEstimate: [express_validator_1.check('total').exists(), express_validator_1.check('customer').exists(), express_validator_1.check('note').exists()],
+    removeEstimate: [express_validator_1.check('estimateId').exists()],
 };
 //# sourceMappingURL=validator.js.map

@@ -173,7 +173,7 @@ export const Validations = {
   
   deleteJobCharges: [check('jobChargesId').exists()],
 
-  createInvoice: [check('jobId').exists(), check('includePO').exists()],
+  //createInvoice: [],
   
   createPOInvoice: [check('purchaseOrderId').exists()],
 
@@ -189,7 +189,18 @@ export const Validations = {
   
   createPurchaseOrder: [check('total').exists(), check('job').exists(), check('customer').exists(), check('items').exists()],
   
-  udpatePurchaseOrder: [check('purchaseOrderId').exists(), check('total').exists(), check('job').exists(), check('customer').exists(), check('items').exists()],
+  udpatePurchaseOrder: [check('purchaseOrderId').exists(), check('total').exists(), check('items').exists()],
   
   udpatePurchaseOrderStatus: [check('purchaseOrderId').exists(), check('status').exists()],
+  
+  createPurchaseOrderEstimate: [check('estimateId').exists()],
+
+  udpateEstimate: [check('estimateId').exists(), check('total').exists(), check('customer').exists()],
+  
+  udpateEstimateStatus: [check('estimateId').exists()],
+
+  createEstimate:  [check('total').exists(), check('customer').exists(), check('note').exists()],
+
+  removeEstimate: [check('estimateId').exists()],
+  
 }

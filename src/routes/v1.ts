@@ -29,6 +29,7 @@ import * as quickBookController from '../controllers/quickbook'
 import * as companyController from '../controllers/company'
 import * as partController from '../controllers/part'
 import * as purchaseOrderController from '../controllers/purchaseOrder'
+import * as EstimateController from '../controllers/Estimate'
 import { Personalize } from 'aws-sdk'
 
 export default function (sio: any) {
@@ -1034,7 +1035,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompnayId(),
         checkUserPermissions(Permissions.Create_Invoice),
-        validate(Validations.createInvoice),
+        //validate(Validations.createInvoice),
         companyController.createInvoice
     )
 
@@ -1142,6 +1143,15 @@ export default function (sio: any) {
     )
     
     router.post(
+        '/createPOEstimate',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Create_Purchase_Order_From_Estimate),
+        validate(Validations.createPurchaseOrderEstimate),
+        purchaseOrderController.createPOEstimate
+    )
+
+    router.post(
         '/updatePurchaseOrder',
         passport.authenticate('jwt', { session: false }),
         getCompnayId(),
@@ -1149,7 +1159,60 @@ export default function (sio: any) {
         validate(Validations.udpatePurchaseOrder),
         purchaseOrderController.updatePO
     )
+
+    router.post(
+        '/updateEstimate',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Update_Estimate),
+        validate(Validations.udpateEstimate),
+        EstimateController.updateEstimate
+    )
+
+    router.post(
+        '/updateEstimateStatus',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Update_Status_Estimate),
+        validate(Validations.udpateEstimateStatus),
+        EstimateController.updateEstimateStatus
+    )
+
+    router.post(
+        '/createEstimate',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Create_Estimate),
+        validate(Validations.createEstimate),
+        EstimateController.createEstimate
+    )
   
+    router.post(
+        '/getEstimate',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Estimate),
+        EstimateController.getEstimates
+    )
+
+    router.post(
+        '/removeEstimate',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        validate(Validations.removeEstimate),
+        checkUserPermissions(Permissions.Delete_Estimate),
+        EstimateController.removeEstimate
+    )
+
+    router.post(
+        '/getCompanyContractorActivity',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Company_Contractor_Activity),
+        companyController.getCompanyContractorActivity
+    )
+
     return router
 
 }
+

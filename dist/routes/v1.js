@@ -38,6 +38,7 @@ const quickBookController = __importStar(require("../controllers/quickbook"));
 const companyController = __importStar(require("../controllers/company"));
 const partController = __importStar(require("../controllers/part"));
 const purchaseOrderController = __importStar(require("../controllers/purchaseOrder"));
+const EstimateController = __importStar(require("../controllers/Estimate"));
 function default_1(sio) {
     const router = express_1.default.Router();
     //Auth
@@ -199,7 +200,9 @@ function default_1(sio) {
     router.post('/deleteJobCharges', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(93 /* Delete_Job_Charges */), validator_1.validate(validator_1.Validations.deleteJobCharges), companyController.deleteJobCharges);
     router.post('/getJobCharges', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(94 /* Get_Job_Charges */), companyController.getJobCharges);
     // Invoice
-    router.post('/createInvoice', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(95 /* Create_Invoice */), validator_1.validate(validator_1.Validations.createInvoice), companyController.createInvoice);
+    router.post('/createInvoice', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(95 /* Create_Invoice */), 
+    //validate(Validations.createInvoice),
+    companyController.createInvoice);
     router.post('/createPOInvoice', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(95 /* Create_Invoice */), validator_1.validate(validator_1.Validations.createPOInvoice), companyController.createPOInvoice);
     router.post('/updateInvoice', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(96 /* Update_Invoice */), validator_1.validate(validator_1.Validations.updateInvoice), companyController.updateInvoice);
     router.post('/getInvoiceDetail', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(97 /* Get_Invoice_Detail */), companyController.getInvoiceDetail);
@@ -212,9 +215,16 @@ function default_1(sio) {
     router.post('/removePart', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(102 /* Remove_Part */), validator_1.validate(validator_1.Validations.removePartInventory), partController.removePartInventory);
     // Purchase Order
     router.post('/createPurchaseOrder', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(103 /* Create_Purchase_Order */), validator_1.validate(validator_1.Validations.createPurchaseOrder), purchaseOrderController.createPO);
-    router.post('/getAllPurchaseOrder', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(106 /* Get_Purchase_Order */), purchaseOrderController.getAllPO);
+    router.post('/getAllPurchaseOrder', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(107 /* Get_Purchase_Order */), purchaseOrderController.getAllPO);
     router.post('/updatePurchaseOrderStatus', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(105 /* Update_Status_Purchase_Order */), validator_1.validate(validator_1.Validations.udpatePurchaseOrderStatus), purchaseOrderController.updatePOStatus);
+    router.post('/createPOEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(106 /* Create_Purchase_Order_From_Estimate */), validator_1.validate(validator_1.Validations.createPurchaseOrderEstimate), purchaseOrderController.createPOEstimate);
     router.post('/updatePurchaseOrder', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(104 /* Update_Purchase_Order */), validator_1.validate(validator_1.Validations.udpatePurchaseOrder), purchaseOrderController.updatePO);
+    router.post('/updateEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(109 /* Update_Estimate */), validator_1.validate(validator_1.Validations.udpateEstimate), EstimateController.updateEstimate);
+    router.post('/updateEstimateStatus', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(110 /* Update_Status_Estimate */), validator_1.validate(validator_1.Validations.udpateEstimateStatus), EstimateController.updateEstimateStatus);
+    router.post('/createEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(108 /* Create_Estimate */), validator_1.validate(validator_1.Validations.createEstimate), EstimateController.createEstimate);
+    router.post('/getEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(111 /* Get_Estimate */), EstimateController.getEstimates);
+    router.post('/removeEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.removeEstimate), permissions_1.checkUserPermissions(112 /* Delete_Estimate */), EstimateController.removeEstimate);
+    router.post('/getCompanyContractorActivity', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(113 /* Get_Company_Contractor_Activity */), companyController.getCompanyContractorActivity);
     return router;
 }
 exports.default = default_1;

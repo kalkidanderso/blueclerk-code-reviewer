@@ -73,6 +73,12 @@ export const enum PurchaseOrderStatus {
     CANCELED
 }
 
+export const enum EstimateStatus {
+    PENDING,
+    APPROVED,
+    CANCELED
+}
+
 export const enum Permissions {
     None,
     Permission_Get_All,
@@ -180,7 +186,14 @@ export const enum Permissions {
     Create_Purchase_Order,
     Update_Purchase_Order,
     Update_Status_Purchase_Order,
+    Create_Purchase_Order_From_Estimate,
     Get_Purchase_Order,
+    Create_Estimate,
+    Update_Estimate,
+    Update_Status_Estimate,
+    Get_Estimate,
+    Delete_Estimate,
+    Get_Company_Contractor_Activity
 
 }
 
@@ -305,7 +318,14 @@ export const UserPermissions = {
             Permissions.Create_Purchase_Order,
             Permissions.Update_Purchase_Order,
             Permissions.Update_Status_Purchase_Order,
+            Permissions.Create_Purchase_Order_From_Estimate,
             Permissions.Get_Purchase_Order,
+            Permissions.Create_Estimate,
+            Permissions.Update_Estimate,
+            Permissions.Update_Status_Estimate,
+            Permissions.Get_Estimate,
+            Permissions.Delete_Estimate,
+            Permissions.Get_Company_Contractor_Activity
         ],
         off: [Permissions.None],
     },
@@ -402,7 +422,14 @@ export const UserPermissions = {
             Permissions.Create_Purchase_Order,
             Permissions.Update_Purchase_Order,
             Permissions.Update_Status_Purchase_Order,
+            Permissions.Create_Purchase_Order_From_Estimate,
             Permissions.Get_Purchase_Order,
+            Permissions.Create_Estimate,
+            Permissions.Update_Estimate,
+            Permissions.Update_Status_Estimate,
+            Permissions.Get_Estimate,
+            Permissions.Delete_Estimate,
+            Permissions.Get_Company_Contractor_Activity
         ],
         off: [Permissions.None],
     },
@@ -502,7 +529,14 @@ export const UserPermissions = {
             Permissions.Create_Purchase_Order,
             Permissions.Update_Purchase_Order,
             Permissions.Update_Status_Purchase_Order,
+            Permissions.Create_Purchase_Order_From_Estimate,
             Permissions.Get_Purchase_Order,
+            Permissions.Create_Estimate,
+            Permissions.Update_Estimate,
+            Permissions.Update_Status_Estimate,
+            Permissions.Get_Estimate,
+            Permissions.Delete_Estimate,
+            Permissions.Get_Company_Contractor_Activity
         ],
         off: [Permissions.None],
     },
@@ -612,7 +646,14 @@ export const UserPermissions = {
             Permissions.Create_Purchase_Order,
             Permissions.Update_Purchase_Order,
             Permissions.Update_Status_Purchase_Order,
+            Permissions.Create_Purchase_Order_From_Estimate,
             Permissions.Get_Purchase_Order,
+            Permissions.Create_Estimate,
+            Permissions.Update_Estimate,
+            Permissions.Update_Status_Estimate,
+            Permissions.Get_Estimate,
+            Permissions.Delete_Estimate,
+            Permissions.Get_Company_Contractor_Activity
         ],
         off: [Permissions.None],
     }

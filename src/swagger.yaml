@@ -45,6 +45,8 @@ tags:
     description: For parts inventory
   - name: Purchase Order
     description: For company purchase orders
+  - name: Estimate
+    description: For Estimate
   - name: Reports
     description: For job and other reports
   - name: Sales Tax
@@ -258,6 +260,30 @@ paths:
                     type: array
                     items:
                       $ref: '#/definitions/Contract'
+      security:
+        - Bearer: []
+  /getCompanyContractorActivity:
+    post:
+      tags:
+        - Contractor
+      summary: To get all company contractors activity
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  contractorActivity:
+                    type: array
+                    items:
+                      $ref: '#/definitions/ContractorActivity'
       security:
         - Bearer: []
   /acceptOrRejectContract:
@@ -2250,6 +2276,29 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /createPOEstimate:
+    post:
+      tags:
+        - Purchase Order
+      summary: To create estimate purchase order
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: estimateId
+          in: formData
+          required: true
+          type: string
+          description: Id of the estimate to create purchase order 
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []      
   /getAllPurchaseOrder:
     post:
       tags:
@@ -2268,7 +2317,7 @@ paths:
               - $ref: '#/definitions/GeneralAPIResponse'
               - type: object
                 properties:
-                  taxes:
+                  purchaseOrders:
                     type: array
                     items:
                       $ref: '#/definitions/PurchaseOrder'
@@ -2297,14 +2346,9 @@ paths:
           description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 123, "price": 150}]'
         - name: job
           in: formData
-          required: true
+          required: false
           type: string
           description: Id of the job purchase order linked to
-        - name: customer
-          in: formData
-          required: true
-          type: string
-          description: id of the customer purchase order is linked to
         - name: total
           in: formData
           required: true
@@ -2338,6 +2382,168 @@ paths:
           required: true
           type: number
           description: status of purchase order default is 0 => pending, you can update to 1=> approved by customer, 2=> cancelled by customer
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /createEstimate:
+    post:
+      tags:
+        - Estimate
+      summary: To create Estimate
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: items
+          in: formData
+          required: false
+          type: string
+          description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 123, "price": 150}] optional' 
+        - name: note
+          in: formData
+          required: true
+          type: string
+          description: note for the estimate.
+        - name: customer
+          in: formData
+          required: true
+          type: string
+          description: Id of the customer purchase order is linked to
+        - name: total
+          in: formData
+          required: true
+          type: number
+          description: total amount of the purchase order
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getEstimate:
+    post:
+      tags:
+        - Estimate
+      summary: To get Estimate
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: customer
+          in: formData
+          required: false
+          type: string
+          description: 'Id of the customer (Optional)' 
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/definitions/Estimate'
+      security:
+        - Bearer: []
+  /updateEstimate:
+    post:
+      tags:
+        - Estimate
+      summary: To update Estimate
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: estimateId
+          in: formData
+          required: true
+          type: string
+          description: Id of estimate you want to update
+        - name: items
+          in: formData
+          required: false
+          type: string
+          description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 123, "price": 150}]'
+        - name: note
+          in: formData
+          required: true
+          type: string
+          description: note for the job
+        - name: customer
+          in: formData
+          required: true
+          type: string
+          description: id of the customer for whom the estimate is created
+        - name: total
+          in: formData
+          required: true
+          type: number
+          description: total amount of the estimate
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateEstimateStatus:
+    post:
+      tags:
+        - Estimate
+      summary: To update Estimate status
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: estimateId
+          in: formData
+          required: true
+          type: string
+          description: Id of estimate you want to update
+        - name: status
+          in: formData
+          required: true
+          type: number
+          description: status of estimate default is 0 => pending, you can update to 1=> approved by customer, 2=> cancelled by customer
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /removeEstimate:
+    post:
+      tags:
+        - Estimate
+      summary: To delete Estimate
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: estimateId
+          in: formData
+          required: true
+          type: string
+          description: Id of estimate you want to delete
       responses:
         '200':
           description: Success
@@ -2934,7 +3140,7 @@ paths:
     post:
       tags:
         - Invoice
-      summary: To create invoice of a job
+      summary: To create invoice of a job, purchase order, estimate, manual invoice
       description: ''
       consumes:
         - application/x-www-form-urlencoded
@@ -2943,9 +3149,29 @@ paths:
       parameters:
         - name: jobId
           in: formData
+          required: false
+          type: string
+          description: Pass job id to create job invoice (optional)
+        - name: purchaseOrderId
+          in: formData
+          required: false
+          type: string
+          description: Pass purchase order id to create purchase order invoice (optional)
+        - name: estimateId
+          in: formData
+          required: false
+          type: string
+          description: Pass estimate id to create estimate invoice (optional)
+        - name: customerId
+          in: formData
           required: true
           type: string
-          description: Pass job id fetched from getjobs api
+          description: Pass customer id to create invoice 
+        - name: description
+          in: formData
+          required: false
+          type: string
+          description: Pass description if create manual invoice (required in manual invoice) 
         - name: tax
           in: formData
           type: number
@@ -2956,13 +3182,13 @@ paths:
           description: Charges if you want to change the charge amount for the invoice
         - name: timeSpent
           in: formData
-          required: true
+          required: false
           type: number
           description: >-
             No of hours spend on that job pass default from finished job if you dont want to change
         - name: hourlyRate
           in: formData
-          required: true
+          required: false
           type: number
           description: >-
             Hourly rate to be charges to customer pass default from finished job if you dont want to change
@@ -4142,6 +4368,9 @@ definitions:
       purchaseOrder:
         type: string
         description: Id of the purchase order if the invoic is for purchase order only
+      estimate:
+        type: string
+        description: Id of the estimate if the invoic is for estimate only
       jobPurchaseOrders:
         type: array
         items:
@@ -4521,6 +4750,9 @@ definitions:
             price:
               type: number
               description: sale price of the part
+      estimate:
+        type: string
+        description: Id of the estimate if the purchase order is for  estimate only
       status:
         type: string
         description: status of purchase order 0 => pending, 1 => approved by customer, 2 => cancelled by customer
@@ -4543,6 +4775,81 @@ definitions:
         type: string
         format: date-time
         description: Date time when the sales tax was created
+  Estimate:
+    type: object
+    properties:
+      _id:
+        type: string
+      items:
+        type: array
+        items:
+          type: object
+          properties:
+            part:
+              type: string
+              description: Optional id of the part if selected from parts inventory
+            name:
+              type: string
+              description: Name of the part if not selected from inventory list
+            itemCode:
+              type: string
+              description: Unique item code or sku number of the part
+            quantity:
+              type: number
+              description: quantity of the part added 
+            cost:
+              type: number
+              description: estimate amount of the part for this estimate
+            price:
+              type: number
+              description: sale price of the part
+      note:
+        type: string
+        description: Note fot the estimate
+      status:
+        type: string
+        description: status of estimate 0 => pending, 1 => approved by customer, 2 => cancelled by customer
+      total:
+        type: number
+        description: total amount of the estimate
+      customer:
+        type: string
+        description: Id of the customer for whom the estimate is created
+      company:
+        type: string
+        description: Id of the company to whom the estimate belongs
+      createdBy:
+        type: string
+        description: Id of the member of company who has created this estimate
+      createdAt:
+        type: string
+        format: date-time
+        description: Date time when the estimate was created
+  ContractorActivity:
+    type: object
+    properties:
+      _id:
+        type: string
+      job:
+        type: string
+        description: Id of job that contractor updated
+      contractor:
+        type: string
+        description: Id of the contractor who changed the job
+      startTime:
+        type: string
+        format: time
+        description: Time when the job is started
+      endTime:
+        type: string
+        format: time
+        description: Time when the job is ended
+      jobType:
+        type: string
+        description: Id of the job type
+      customer:
+        type: string
+        description: Id of customer for whom the job was created
   Job:
     type: object
     properties:
@@ -4551,6 +4858,9 @@ definitions:
       dateTime:
         type: string
         format: date-time
+      estimate:
+        type: string
+        description: Id of the estimate if the Job is Created by estimate
       customer:
         type: string
         description: Id of customer
