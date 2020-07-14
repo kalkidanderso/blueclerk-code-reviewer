@@ -6,32 +6,35 @@ const Estimate_1 = require("../models/Estimate");
 exports.createPO = (req, res) => {
     const params = req.body;
     const user = req.user;
-    var items = JSON.parse(params.items);
-    if (items.length == 0) {
-        return res.json({ 'status': constants_1.Status.Error, 'message': 'items are required' });
+    var items = [];
+    if (params.items != undefined) {
+        items = JSON.parse(params.items);
     }
     let POItems = [];
-    for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if ((!item.hasOwnProperty('part') || !item.hasOwnProperty('cost') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('itemCode') || !item.hasOwnProperty('cost') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'items format is invalid' });
+    if (items.length > 0) {
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if ((!item.hasOwnProperty('part') || !item.hasOwnProperty('cost') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('itemCode') || !item.hasOwnProperty('cost') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'items format is invalid' });
+            }
+            let obj = {};
+            if (item.part == undefined || item.part == null) {
+                obj.name = item.name;
+                obj.itemCode = item.itemCode;
+                obj.cost = item.cost;
+                obj.price = item.price;
+                obj.quantity = item.quantity;
+            }
+            else {
+                obj.part = item.part;
+                obj.quantity = item.quantity;
+            }
+            POItems.push(obj);
         }
-        let obj = {};
-        if (item.part == undefined || item.part == null) {
-            obj.name = item.name;
-            obj.itemCode = item.itemCode;
-            obj.cost = item.cost;
-            obj.price = item.price;
-            obj.quantity = item.quantity;
-        }
-        else {
-            obj.part = item.part;
-            obj.quantity = item.quantity;
-        }
-        POItems.push(obj);
     }
     const purchaseOrder = new PurchaseOrder_1.PurchaseOrder({
         items: POItems,
+        note: params.note,
         total: params.total,
         job: params.job,
         customer: params.customer,
@@ -69,8 +72,8 @@ exports.createPOEstimate = (req, res) => {
                 return res.json({ 'status': constants_1.Status.Error, 'message': 'you can\'t create purchase order from canceled estimate. It should be appproved' });
             }
             var items = estimate.items;
-            if (items.length < 1) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': 'This estimate must have some items to create purchase order from estimate' });
+            if (items.length < 1 && estimate.note == undefined && estimate.note == '""') {
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'This estimate must have some items or note to create purchase order from estimate' });
             }
             let POItems = [];
             for (let i = 0; i < items.length; i++) {
@@ -94,6 +97,7 @@ exports.createPOEstimate = (req, res) => {
             const purchaseOrder = new PurchaseOrder_1.PurchaseOrder({
                 items: POItems,
                 total: estimate.total,
+                note: estimate.note,
                 estimate: estimate._id,
                 customer: estimate.customer,
                 company: req.companyId,
@@ -175,14 +179,14 @@ exports.updatePO = (req, res) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': "You can\'t change canceled purchase order." });
         }
         var items;
+        if (params.items == undefined) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'Items are required' });
+        }
         try {
             items = JSON.parse(params.items);
         }
         catch (error) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Items json is invalid' });
-        }
-        if (items.length == 0) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'items are required' });
         }
         let POItems = [];
         for (let i = 0; i < items.length; i++) {
@@ -206,7 +210,7 @@ exports.updatePO = (req, res) => {
             }
             POItems.push(obj);
         }
-        purchaseOrder.update({ items: POItems, total: params.total, job: params.job }, (err, raw) => {
+        purchaseOrder.update({ items: POItems, total: params.total, job: params.job, note: params.note }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }

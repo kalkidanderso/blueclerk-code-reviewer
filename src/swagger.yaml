@@ -2251,14 +2251,19 @@ paths:
       parameters:
         - name: items
           in: formData
-          required: true
+          required: false
           type: string
           description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 123, "price": 150}]' 
         - name: job
           in: formData
-          required: true
+          required: false
           type: string
           description: Id of the job purchase order is linked to. (Optional)
+        - name: note
+          in: formData
+          required: true
+          type: string
+          description: add note for the required item if items is not added (required if items not added)
         - name: customer
           in: formData
           required: true
@@ -2344,6 +2349,11 @@ paths:
           required: true
           type: string
           description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 123, "price": 150}]'
+        - name: note
+          in: formData
+          required: true
+          type: string
+          description: add note for the required item if items is not added (required if items not added)
         - name: job
           in: formData
           required: false
@@ -3164,21 +3174,23 @@ paths:
           description: Pass estimate id to create estimate invoice (optional)
         - name: customerId
           in: formData
-          required: true
+          required: false
           type: string
           description: Pass customer id to create invoice 
-        - name: description
+        - name: note
           in: formData
           required: false
           type: string
-          description: Pass description if create manual invoice (required in manual invoice) 
+          description: Pass note if create manual invoice (required in manual invoice) 
         - name: tax
           in: formData
           type: number
+          required: false
           description: Percentage of tax to be applied on total cost of job
         - name: charges
           in: formData
           type: number
+          required: false
           description: Charges if you want to change the charge amount for the invoice
         - name: timeSpent
           in: formData
@@ -3195,6 +3207,7 @@ paths:
         - name: includePO
           in: formData
           type: boolean
+          required: false
           description: select if you want to include purchase orders linked to this job in this invoice
       responses:
         '200':
@@ -3246,23 +3259,35 @@ paths:
         - name: tax
           in: formData
           type: number
+          required: false
           description: Percentage of tax to be applied on total cost of job
         - name: charges
           in: formData
           type: number
+          required: false
           description: Charges if you want to change the charge amount for the invoice
+        - name: note
+          in: formData
+          type: number
+          required: false
+          description: Pass note if update manual invoice (required in manual invoice)
         - name: timeSpent
           in: formData
-          required: true
+          required: false
           type: number
           description: >-
             No of hours spend on that job pass default from finished job if you dont want to change
         - name: hourlyRate
           in: formData
-          required: true
+          required: false
           type: number
           description: >-
             Hourly rate to be charges to customer pass default from finished job if you dont want to change
+        - name: includePO
+          in: formData
+          type: boolean
+          required: false
+          description: select if you want to include purchase orders linked to this job in this invoice
       responses:
         '200':
           description: Success

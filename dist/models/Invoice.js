@@ -31,6 +31,10 @@ const InvoiceSchema = new mongoose_1.Schema({
             ref: 'PurchaseOrder',
             required: false
         }],
+    note: {
+        type: String,
+        required: false
+    },
     customer: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',

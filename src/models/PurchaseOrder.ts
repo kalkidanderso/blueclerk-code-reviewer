@@ -11,6 +11,7 @@ export interface IPurchaseOrder extends Document {
     }]
     status: Number
     estimate: Schema.Types.ObjectId
+    note: string
     total: Number
     job: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId
@@ -46,6 +47,9 @@ const PurcahseOrderSchema = new Schema({
             required: false
         }
     }],
+    note : {
+        type : String,
+    },
     total: {
         type: Number
     },

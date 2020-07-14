@@ -1,7 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose'
 
 export interface IInvoice extends Document {
-
     invoiceId: string
     invoiceType: number
     job: Schema.Types.ObjectId
@@ -10,6 +9,7 @@ export interface IInvoice extends Document {
     customer: Schema.Types.ObjectId
     company: Schema.Types.ObjectId
     charges: number
+    note : String
     total: number
     tax: number
     taxPercentage: number
@@ -44,6 +44,10 @@ const InvoiceSchema = new Schema({
         ref: 'PurchaseOrder',
         required: false
     }],
+    note: {
+        type: String,
+        required: false
+    },
     customer: {
         type: Schema.Types.ObjectId,
         ref: 'User',

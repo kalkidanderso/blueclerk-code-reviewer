@@ -36,6 +36,9 @@ const PurcahseOrderSchema = new mongoose_1.Schema({
                 required: false
             }
         }],
+    note: {
+        type: String,
+    },
     total: {
         type: Number
     },

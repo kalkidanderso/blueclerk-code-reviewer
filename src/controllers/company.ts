@@ -1024,7 +1024,8 @@ export const createInvoice = (req: Request, res: Response) => {
                     createdAt: Date.now(),
                     isFixed: job.isFixed,
                     invoiceType: 0,
-                    timeSpent: params.timeSpent
+                    timeSpent: params.timeSpent,
+                    note : params.note
                 })
 
                 if (params.includePO) {
@@ -1110,6 +1111,7 @@ export const createInvoice = (req: Request, res: Response) => {
 
                 var invoice = new Invoice({
                     invoiceId: invoiceId,
+                    note : params.note,
                     purchaseOrder: params.purchaseOrderId,
                     customer: PO.customer,
                     company: req.companyId,
@@ -1175,6 +1177,7 @@ export const createInvoice = (req: Request, res: Response) => {
 
                 var invoice = new Invoice({
                     invoiceId: invoiceId,
+                    note : params.note,
                     estimate: params.estimateId,
                     customer: estimate.customer,
                     company: req.companyId,
@@ -1241,7 +1244,7 @@ export const createInvoice = (req: Request, res: Response) => {
         var invoice = new Invoice({
             invoiceId: invoiceId,
             customer: params.customerId,
-            description : params.description,
+            note : params.note,
             company: req.companyId,
             charges: charges,
             total: total,
@@ -1417,6 +1420,7 @@ export const createPOInvoice = (req: Request, res: Response) => {
                     company: req.companyId,
                     total: PO.total,
                     createdBy: user._id,
+                    note : params.note,
                     createdAt: Date.now(),
                     invoiceType: 1
                 })
@@ -1447,22 +1451,105 @@ export const updateInvoice = (req: Request, res: Response) => {
 
     const params = req.body
 
-    Invoice.findOne({'_id': params.invoiceId, 'company': req.companyId}, 
-    (err: any, invoice: IInvoice) => {
-        if (err) {
+    Invoice.findOne({'_id': params.invoiceId, 'company': req.companyId},  
+    (err: any, invoice: IInvoice) => { 
+        if (err) { 
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
-
+        
         if(invoice == undefined || invoice == null) {
             return res.json({'status': Status.Success, 'message': "Invalid invoice id."})
         }
 
-        
-        Job.findById(invoice.job, (err: any, job: IJob) => {
+        if(invoice.invoiceType == 0) {
+            
+            Job.findById(invoice.job)
+            .then((job : any) => {
+                if (job == undefined || job == null) {
+                    throw new Error('job for this invoice is not fount')
+                }
 
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            }
+                const POPromise = PurchaseOrder.find({
+                    job: invoice.job
+                })
+                return Promise.all([job, POPromise])
+            })
+            .then((result : any ) => {
+                let job = result[0]
+                let purchaseOrders = result[1]
+
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                }
+    
+                if ((params.charges == undefined || params.charges == null || params.charges == '""' ) && (params.tax == undefined || params.tax == null || params.tax == '""' )) {
+                    return res.json({'status': Status.Error, 'message': 'Tax Percentage or charges are required'})
+                }
+                let tax: number = invoice.tax;
+                let taxPercentage: number = invoice.taxPercentage;
+                let charges: number = invoice.charges;
+                let total: number = invoice.total;
+                
+                if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) && 
+                (params.charges == undefined || params.charges == null || params.charges == '""' )) {
+                
+                    taxPercentage = params.tax
+                    tax = (charges * params.tax) /100
+                    total = charges + tax
+                    
+                } else if ((params.charges != undefined && params.charges !== null && params.charges !== '""' ) && 
+                (params.tax == undefined || params.tax == null || params.tax == '""' )) {
+                    
+                    tax = (params.charges * taxPercentage) / 100
+                    charges = parseInt(params.charges)
+                    total = charges + tax
+                    
+                }else{
+                    
+                    // update tax and charges
+                    charges = parseInt(params.charges)
+                    taxPercentage = params.tax
+                    tax = (charges * params.tax) /100
+                    total = charges + tax
+                }
+    
+                invoice.tax = tax
+                invoice.taxPercentage = taxPercentage
+                invoice.charges = charges
+                invoice.total = total
+    
+                if(!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""' )) {
+                    return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
+                }else if(!job.isFixed){
+                    invoice.hourlyRate = params.hourlyRate
+                }
+    
+                if(!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""' )) {
+                    return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
+                }else if(!job.isFixed){
+                    invoice.timeSpent = params.timeSpent
+                }
+                if (params.includePO) {
+                    let purchaseOrderIds: any = []
+                    if (purchaseOrders != null && purchaseOrders.length > 0) {
+                        purchaseOrders.map((PO: any) => {
+                            purchaseOrderIds.push(PO._id)
+                        })
+                        invoice.jobPurchaseOrders = purchaseOrderIds
+                    }
+                }
+    
+                invoice.updateOne(
+                    invoice,
+                    (err: any, raw: any) => {
+                    if (err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    }
+        
+                    return res.json({'status': Status.Success, 'message': "Invoice updated successfully."})
+                })
+            })
+        } else {
 
             if ((params.charges == undefined || params.charges == null || params.charges == '""' ) && (params.tax == undefined || params.tax == null || params.tax == '""' )) {
                 return res.json({'status': Status.Error, 'message': 'Tax Percentage or charges are required'})
@@ -1488,30 +1575,17 @@ export const updateInvoice = (req: Request, res: Response) => {
                 
             }else{
                 
-                // update tax and charges
                 charges = parseInt(params.charges)
                 taxPercentage = params.tax
                 tax = (charges * params.tax) /100
                 total = charges + tax
             }
-
+            
             invoice.tax = tax
             invoice.taxPercentage = taxPercentage
             invoice.charges = charges
             invoice.total = total
-
-            if(!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""' )) {
-                return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
-            }else if(!job.isFixed){
-                invoice.hourlyRate = params.hourlyRate
-            }
-
-            if(!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""' )) {
-                return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
-            }else if(!job.isFixed){
-                invoice.timeSpent = params.timeSpent
-            }
-
+            invoice.note = params.note
             invoice.updateOne(
                 invoice,
                 (err: any, raw: any) => {
@@ -1521,8 +1595,8 @@ export const updateInvoice = (req: Request, res: Response) => {
     
                 return res.json({'status': Status.Success, 'message': "Invoice updated successfully."})
             })
-        })
-        
+            
+        }
     });
 }
 
