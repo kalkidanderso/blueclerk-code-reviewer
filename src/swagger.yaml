@@ -2271,7 +2271,7 @@ paths:
           description: Id of the customer purchase order is linked to
         - name: total
           in: formData
-          required: true
+          required: false
           type: number
           description: total amount of the purchase order
       responses:

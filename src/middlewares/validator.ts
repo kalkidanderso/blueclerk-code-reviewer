@@ -187,7 +187,7 @@ export const Validations = {
   
   removePartInventory: [check('partId').exists()],
   
-  createPurchaseOrder: [check('total').exists(), check('customer').exists(), check('note').exists()],
+  createPurchaseOrder: [check('customer').exists(), check('note').exists()],
   
   udpatePurchaseOrder: [check('purchaseOrderId').exists(), check('total').exists(), check('note').exists(), check('items').exists()],
   

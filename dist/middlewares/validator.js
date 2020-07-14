@@ -113,7 +113,7 @@ exports.Validations = {
     createPartInventory: [express_validator_1.check('name').exists(), express_validator_1.check('itemCode').exists(), express_validator_1.check('cost').exists(), express_validator_1.check('price').exists(), express_validator_1.check('totalQuantity').exists()],
     udpatePartInventory: [express_validator_1.check('partId').exists(), express_validator_1.check('name').exists(), express_validator_1.check('itemCode').exists(), express_validator_1.check('cost').exists(), express_validator_1.check('price').exists(), express_validator_1.check('totalQuantity').exists()],
     removePartInventory: [express_validator_1.check('partId').exists()],
-    createPurchaseOrder: [express_validator_1.check('total').exists(), express_validator_1.check('customer').exists(), express_validator_1.check('note').exists()],
+    createPurchaseOrder: [express_validator_1.check('customer').exists(), express_validator_1.check('note').exists()],
     udpatePurchaseOrder: [express_validator_1.check('purchaseOrderId').exists(), express_validator_1.check('total').exists(), express_validator_1.check('note').exists(), express_validator_1.check('items').exists()],
     udpatePurchaseOrderStatus: [express_validator_1.check('purchaseOrderId').exists(), express_validator_1.check('status').exists()],
     createPurchaseOrderEstimate: [express_validator_1.check('estimateId').exists()],
