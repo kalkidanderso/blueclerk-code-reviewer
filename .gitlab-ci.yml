@@ -1,7 +1,47 @@
+image: docker:latest
+
 variables:
-  CI_AWS_ECS_CLUSTER: blueclerk
-  CI_AWS_ECS_SERVICE: blueclerk-api
-  CI_AWS_ECS_TASK_DEFINITION: blueclerk-backend
-  
-include:
-  - template: AWS/Deploy-ECS.gitlab-ci.yml
+  REPOSITORY_URL: 744236993133.dkr.ecr.us-east-1.amazonaws.com/blueclerk-backend
+  REGION: us-east-1
+  TASK_DEFINITION_NAME: blueclerk-backend
+  CLUSTER_NAME: blueclerk
+  SERVICE_NAME: blueclerk-api
+
+services:
+- docker:dind
+
+before_script:
+  - apk add --no-cache curl jq python py-pip
+  - pip install awscli
+  - $(aws ecr get-login --no-include-email --region "${REGION}")
+  - IMAGE_TAG="$(echo $CI_COMMIT_SHA | head -c 8)"
+
+stages:
+  - build
+  - deploy
+
+build:
+  stage: build
+  script:
+    - echo "Building image..."
+    - docker build -t $REPOSITORY_URL:latest .
+    - echo "Tagging image..."
+    - docker tag $REPOSITORY_URL:latest $REPOSITORY_URL:$IMAGE_TAG
+    - echo "Pushing image..."
+    - docker push $REPOSITORY_URL:latest
+    - docker push $REPOSITORY_URL:$IMAGE_TAG
+  only:
+    - master
+
+deploy:
+  stage: deploy
+  script:
+    - echo $REPOSITORY_URL:$IMAGE_TAG
+    - TASK_DEFINITION_NAME=$(aws ecs describe-task-definition --task-definition "$TASK_DEFINTION_NAME" --region "${REGION}")
+    - NEW_CONTAINER_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$REPOSITORY_URL:$IMAGE_TAG" '.taskDefinition.containerDefinitions[0].image = $IMAGE | .taskDefinition.containerDefinitions[0]')
+    - echo "Registering new container definition..."
+    - aws ecs register-task-definition --region "${REGION}" --family "${TASK_DEFINITION_NAME}" --container-definitions "${NEW_CONTAINER_DEFINITION}"
+    - echo "Updating the service..."
+    - aws ecs update-service --region "${REGION}" --cluster "${CLUSTER_NAME}" --service "${SERVICE_NAME}"  --task-definition "${TASK_DEFINITION_NAME}"
+  only:
+    - master
