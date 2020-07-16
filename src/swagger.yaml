@@ -62,8 +62,8 @@ tags:
   - name: Subscription
   - name: Permission
     description: For employee or company permissions
-  - name: Contractor
-    description: For contractor login, signup and details
+  - name: Vendor
+    description: For vendor login, signup and details
   - name: Import Customer
     description: For import customers through excel file
   - name: Quickbooks Integration
@@ -149,9 +149,9 @@ paths:
   /searchContractor:
     post:
       tags:
-        - Contractor
-      summary: Search for contractor
-      description: 'Company can serach contractors'
+        - Vendor
+      summary: Search for vendors
+      description: 'Company can serach vendor'
       consumes:
         - application/x-www-form-urlencoded
       produces:
@@ -171,9 +171,9 @@ paths:
   /inviteContractor:
     post:
       tags:
-        - Contractor
-      summary: To invite contractor to join BlueClerk
-      description: A company can invite a contractor
+        - Vendor
+      summary: To invite vendor to join BlueClerk
+      description: A company can invite a vendor
       consumes:
         - application/x-www-form-urlencoded
       produces:
@@ -181,7 +181,7 @@ paths:
       parameters:
         - name: email
           in: formData
-          description: email of contractor to invite
+          description: email of vendor to invite
           required: true
           type: string
       responses:
@@ -194,9 +194,9 @@ paths:
   /startContract:
     post:
       tags:
-        - Contractor
-      summary: To send offer to a contractor
-      description: A company can initiate a contract with contractor
+        - Vendor
+      summary: To send offer to a vendor
+      description: A company can initiate a contract with vendor
       consumes:
         - application/x-www-form-urlencoded
       produces:
@@ -204,7 +204,7 @@ paths:
       parameters:
         - name: contractorId
           in: formData
-          description: Id of a contractor fetched with /searchContractor api
+          description: Id of a vendor fetched with /searchContractor api
           required: true
           type: string
       responses:
@@ -217,8 +217,8 @@ paths:
   /getContracts:
     post:
       tags:
-        - Contractor
-      summary: To get all contracts by contractor
+        - Vendor
+      summary: To get all contracts by vendor
       description: ''
       consumes:
         - application/x-www-form-urlencoded
@@ -241,7 +241,7 @@ paths:
   /getCompanyContracts:
     post:
       tags:
-        - Contractor
+        - Vendor
       summary: To get all contracts by company
       description: ''
       consumes:
@@ -265,8 +265,8 @@ paths:
   /getCompanyContractorActivity:
     post:
       tags:
-        - Contractor
-      summary: To get all company contractors activity
+        - Vendor
+      summary: To get all company vendors activity
       description: ''
       consumes:
         - application/x-www-form-urlencoded
@@ -289,8 +289,8 @@ paths:
   /acceptOrRejectContract:
     post:
       tags:
-        - Contractor
-      summary: Accepting or rejecting a contract by contractor
+        - Vendor
+      summary: Accepting or rejecting a contract by vendor
       # description: Only a global admin can create an industry
       consumes:
         - application/x-www-form-urlencoded
@@ -317,7 +317,7 @@ paths:
   /CancelOrFinish:
     post:
       tags:
-        - Contractor
+        - Vendor
       summary: Canceling of Finishing contract by company
       # description: Only a global admin can create an industry
       consumes:
@@ -345,8 +345,8 @@ paths:
   /upgradeToCompany:
     post:
       tags:
-        - Contractor
-      summary: Canceling of Finishing contract by company
+        - Vendor
+      summary: Upgrading from vendor to company account
       # description: Only a global admin can create an industry
       consumes:
         - application/x-www-form-urlencoded

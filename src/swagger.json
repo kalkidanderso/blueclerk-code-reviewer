@@ -122,8 +122,8 @@
       "description": "For employee or company permissions"
     },
     {
-      "name": "Contractor",
-      "description": "For contractor login, signup and details"
+      "name": "Vendor",
+      "description": "For vendor login, signup and details"
     },
     {
       "name": "Import Customer",
@@ -248,10 +248,10 @@
     "/searchContractor": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
-        "summary": "Search for contractor",
-        "description": "Company can serach contractors",
+        "summary": "Search for vendors",
+        "description": "Company can serach vendor",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -284,10 +284,10 @@
     "/inviteContractor": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
-        "summary": "To invite contractor to join BlueClerk",
-        "description": "A company can invite a contractor",
+        "summary": "To invite vendor to join BlueClerk",
+        "description": "A company can invite a vendor",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -298,7 +298,7 @@
           {
             "name": "email",
             "in": "formData",
-            "description": "email of contractor to invite",
+            "description": "email of vendor to invite",
             "required": true,
             "type": "string"
           }
@@ -321,10 +321,10 @@
     "/startContract": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
-        "summary": "To send offer to a contractor",
-        "description": "A company can initiate a contract with contractor",
+        "summary": "To send offer to a vendor",
+        "description": "A company can initiate a contract with vendor",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -335,7 +335,7 @@
           {
             "name": "contractorId",
             "in": "formData",
-            "description": "Id of a contractor fetched with /searchContractor api",
+            "description": "Id of a vendor fetched with /searchContractor api",
             "required": true,
             "type": "string"
           }
@@ -358,9 +358,9 @@
     "/getContracts": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
-        "summary": "To get all contracts by contractor",
+        "summary": "To get all contracts by vendor",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -401,7 +401,7 @@
     "/getCompanyContracts": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
         "summary": "To get all contracts by company",
         "description": "",
@@ -444,9 +444,9 @@
     "/getCompanyContractorActivity": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
-        "summary": "To get all company contractors activity",
+        "summary": "To get all company vendors activity",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -487,9 +487,9 @@
     "/acceptOrRejectContract": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
-        "summary": "Accepting or rejecting a contract by contractor",
+        "summary": "Accepting or rejecting a contract by vendor",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -530,7 +530,7 @@
     "/CancelOrFinish": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
         "summary": "Canceling of Finishing contract by company",
         "consumes": [
@@ -573,9 +573,9 @@
     "/upgradeToCompany": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
-        "summary": "Canceling of Finishing contract by company",
+        "summary": "Upgrading from vendor to company account",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
