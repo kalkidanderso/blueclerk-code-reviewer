@@ -101,13 +101,15 @@ export const Validations = {
   createJobType: [check('title').exists()],
 
   //Job
-  createJob: [check('dateTime').exists(), check('technicianId').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric()],
+  createJob: [check('dateTime').exists(), check('technicianId').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric(), check('isFixed').exists()],
 
   generalJob: [check('jobId').exists()],
 
   updateJob: [check('status').exists(), check('comment').exists(), check('jobId').exists()],
 
-  editJob: [check('jobId').exists(), check('technicianId').exists(), check('dateTime').exists()],
+  editJob: [check('jobId').exists(), check('technicianId').exists(), check('dateTime').exists(), check('isFixed').exists()],
+  
+  updateJobTime: [check('jobId').exists()],
 
   technicianJobs: [check('employeeId').exists()],
   
@@ -148,6 +150,8 @@ export const Validations = {
   employeePermissions: [check('employeeId').exists()],
    
   createTicket: [check('customerId').exists()],
+  
+  editTicket: [check('ticketId').exists(), check('status').exists(), check('status').isNumeric()],
  
   updateTicket: [check('ticketId').exists(), check('note').exists()],
  
@@ -155,5 +159,48 @@ export const Validations = {
  
   getJobReport: [check('jobId').exists()],
 
-  createQBCustomer: [check('name').exists(),  check('name').not().isEmpty(),],
+  createQBCustomer: [check('name').exists(), check('name').not().isEmpty()],
+  
+  createSaleTax: [check('state').exists(), check('tax').exists()],
+  
+  updateSaleTax: [check('salesTaxId').exists(), check('state').exists(), check('tax').exists()],
+  
+  deleteSaleTax: [check('salesTaxId').exists()],
+  
+  createJobCharges: [check('jobTypeId').exists(), check('charges').exists(), check('isFixed').exists()],
+  
+  updateJobCharges: [check('jobChargesId').exists(), check('charges').exists(), check('isFixed').exists()],
+  
+  deleteJobCharges: [check('jobChargesId').exists()],
+
+  //createInvoice: [],
+  
+  createPOInvoice: [check('purchaseOrderId').exists()],
+
+  updateInvoice: [check('invoiceId').exists()],
+  
+  getInvoiceDetail: [check('invoiceId').exists()],
+  
+  createPartInventory: [check('name').exists(), check('itemCode').exists(), check('cost').exists(), check('price').exists(), check('totalQuantity').exists()],
+  
+  udpatePartInventory: [check('partId').exists(), check('name').exists(), check('itemCode').exists(), check('cost').exists(), check('price').exists(), check('totalQuantity').exists()],
+  
+  removePartInventory: [check('partId').exists()],
+  
+  createPurchaseOrder: [check('customer').exists(), check('note').exists()],
+  
+  udpatePurchaseOrder: [check('purchaseOrderId').exists(), check('total').exists(), check('note').exists(), check('items').exists()],
+  
+  udpatePurchaseOrderStatus: [check('purchaseOrderId').exists(), check('status').exists()],
+  
+  createPurchaseOrderEstimate: [check('estimateId').exists()],
+
+  udpateEstimate: [check('estimateId').exists(), check('total').exists(), check('customer').exists()],
+  
+  udpateEstimateStatus: [check('estimateId').exists()],
+
+  createEstimate:  [check('total').exists(), check('customer').exists(), check('note').exists()],
+
+  removeEstimate: [check('estimateId').exists()],
+  
 }

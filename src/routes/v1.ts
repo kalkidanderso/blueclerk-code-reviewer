@@ -26,12 +26,16 @@ import * as permissionController from '../controllers/permission'
 import * as customerImportController from '../controllers/customerImport'
 import * as serviceTicketController from '../controllers/serviceTicket'
 import * as quickBookController from '../controllers/quickbook'
+import * as companyController from '../controllers/company'
+import * as partController from '../controllers/part'
+import * as purchaseOrderController from '../controllers/purchaseOrder'
+import * as EstimateController from '../controllers/Estimate'
 import { Personalize } from 'aws-sdk'
 
-export default function(sio: any) {
+export default function (sio: any) {
 
-const router: express.Router = express.Router()
- 
+    const router: express.Router = express.Router()
+
     //Auth
     router.post(
         '/login',
@@ -220,18 +224,12 @@ const router: express.Router = express.Router()
         validate(Validations.changePassword),
         userController.changePassword)
 
-        router.post(
+    router.post(
         '/forgotPassword',
         validate(Validations.forgotPassword),
         userController.fogotPassword)
 
-    router.post(
-        '/updateCompanyProfile',
-        passport.authenticate('jwt', { session: false }),
-        getCompnayId(),
-        checkUserPermissions(Permissions.Update_Company_Profile),
-        validate(Validations.updateCompanyProfile),
-        userController.updateCompanyProfile)
+
 
     router.post(
         '/deleteEmployee',
@@ -249,19 +247,7 @@ const router: express.Router = express.Router()
         validate(Validations.deleteEmployee),
         userController.activateEmployee)
 
-        router.post(
-        '/getAllEmployees',
-        passport.authenticate('jwt', { session: false }),
-        getCompnayId(),
-        checkUserPermissions(Permissions.User_Get_All_Employees),
-        userController.getAllEmployees)
-        
-        router.post(
-        '/getEmployeesForJob',
-        passport.authenticate('jwt', { session: false }),
-        getCompnayId(),
-        checkUserPermissions(Permissions.User_Get_All_Employees),
-        userController.getEmployeesForJob)
+
 
     //Equipment types
     router.post(
@@ -390,6 +376,15 @@ const router: express.Router = express.Router()
         customerEquipmentController.linkJobToEquipment
     )
 
+    router.post(
+        '/scanTag',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Scan_Tag),
+        validate(Validations.getCustomerEquipmentJobs),
+        customerEquipmentController.checkTagAssociation
+    )
+
     //Job types
     router.post(
         '/createJobType',
@@ -405,7 +400,8 @@ const router: express.Router = express.Router()
         passport.authenticate('jwt', { session: false }),
         getCompnayId(),
         checkUserPermissions(Permissions.Job_Type_Get),
-        jobTypeController.getJobTypes)
+        jobTypeController.getJobTypes
+    )
 
     //Job
     router.post(
@@ -415,7 +411,7 @@ const router: express.Router = express.Router()
         checkUserPermissions(Permissions.Job_Create),
         validate(Validations.createJob),
         jobController.createJob
-        )
+    )
 
     router.post(
         '/getJobs',
@@ -423,15 +419,24 @@ const router: express.Router = express.Router()
         getCompnayId(),
         checkUserPermissions(Permissions.Job_Get_All),
         jobController.getJobs
-        )
-        
-        router.post(
+    )
+
+    router.post(
         '/getTechnicianJobs',
         passport.authenticate('jwt', { session: false }),
         getCompnayId(),
         checkUserPermissions(Permissions.Job_Get_Technician),
         validate(Validations.technicianJobs),
         jobController.getJobsByTechnicianId
+    )
+
+    router.post(
+        '/getTechnicianJobsToday',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Job_Get_Technician),
+        validate(Validations.technicianJobs),
+        jobController.getTodaysJobsByTechnicianId
     )
 
     router.post(
@@ -468,6 +473,24 @@ const router: express.Router = express.Router()
         checkUserPermissions(Permissions.Job_Edit),
         validate(Validations.editJob),
         jobController.editJob
+    )
+    
+    router.post(
+        '/updateJobTime',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Job_Edit),
+        validate(Validations.updateJobTime),
+        jobController.updateJobTime
+    )
+
+    router.post(
+        '/getJobReport',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Job_Report),
+        validate(Validations.getJobReport),
+        jobController.getJobReport
     )
 
     //Image upload
@@ -694,13 +717,7 @@ const router: express.Router = express.Router()
         checkUserPermissions(Permissions.Get_All_Contracts),
         userController.getAllContracts
     )
-    router.post(
-        '/getCompanyContracts',
-        passport.authenticate('jwt', { session: false }),
-        getCompnayId(),
-        checkUserPermissions(Permissions.Get_Company_Contracts),
-        userController.getCompanyContracts
-    )
+
     // limit only for contractors
     router.post(
         '/acceptOrRejectContract',
@@ -738,30 +755,6 @@ const router: express.Router = express.Router()
     )
 
     router.post(
-        '/setCustomWorkOrderNumber',
-        passport.authenticate('jwt', { session: false }),
-        getCompnayId(),
-        checkUserPermissions(Permissions.Custom_work_Order_Number),
-        userController.setCustomWorkNumber
-    )
-
-    router.post(
-        '/getCurrentJobId',
-        passport.authenticate('jwt', { session: false }),
-        getCompnayId(),
-        checkUserPermissions(Permissions.Get_Custom_Work_No),
-        userController.getCustomWorkNumber
-    )
-
-    router.post(
-        '/getSyncInfo',
-        passport.authenticate('jwt', { session: false }),
-        getCompnayId(),
-        checkUserPermissions(Permissions.Get_Custom_Work_No),
-        userController.getSyncInfo
-    )
-
-    router.post(
         '/checkAndGet',
         validate(Validations.socialLogin),
         userController.checkAndGetUser
@@ -788,6 +781,7 @@ const router: express.Router = express.Router()
         customerImportController.uploadfile
     )
 
+    // Service Ticket
     router.post(
         '/getServiceTickets',
         passport.authenticate('jwt', { session: false }),
@@ -803,6 +797,15 @@ const router: express.Router = express.Router()
         checkUserPermissions(Permissions.Create_Service_Ticket),
         validate(Validations.createTicket),
         serviceTicketController.createServiceTicket
+    )
+  
+    router.post(
+        '/editServiceTicket',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Edit_Service_Ticket),
+        validate(Validations.editTicket),
+        serviceTicketController.editServiceTicket
     )
 
     router.post(
@@ -822,23 +825,8 @@ const router: express.Router = express.Router()
         serviceTicketController.getServiceTicketDetail
     )
 
-    router.post(
-        '/getContractorsForJob',
-        passport.authenticate('jwt', { session: false }),
-        getCompnayId(),
-        checkUserPermissions(Permissions.Get_Contractors_For_Job),
-        userController.getContractorForJob
-    )
 
-    router.post(
-        '/getJobReport',
-        passport.authenticate('jwt', { session: false }),
-        getCompnayId(),
-        checkUserPermissions(Permissions.Get_Job_Report),
-        validate(Validations.getJobReport),
-        jobController.getJobReport
-    )
-
+    // Quickbooks
     router.post(
         '/getQBCustomers',
         passport.authenticate('jwt', { session: false }),
@@ -867,15 +855,6 @@ const router: express.Router = express.Router()
     )
 
     router.post(
-        '/scanTag',
-        passport.authenticate('jwt', { session: false }),
-        getCompnayId(),
-        checkUserPermissions(Permissions.Scan_Tag),
-        validate(Validations.getCustomerEquipmentJobs),
-        customerEquipmentController.checkTagAssociation
-    )
-
-    router.post(
         '/getQBUri',
         passport.authenticate('jwt', { session: false }),
         getCompnayId(),
@@ -890,10 +869,350 @@ const router: express.Router = express.Router()
         }
     )
 
+    // Company
+
+    router.post(
+        '/getContractorsForJob',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Contractors_For_Job),
+        companyController.getContractorForJob
+    )
+
+    router.post(
+        '/getCompanyContracts',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Company_Contracts),
+        companyController.getCompanyContracts
+    )
+
+    router.post(
+        '/updateCompanyProfile',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Update_Company_Profile),
+        validate(Validations.updateCompanyProfile),
+        companyController.updateCompanyProfile
+    )
+
+    router.post(
+        '/setCustomWorkOrderNumber',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Custom_work_Order_Number),
+        companyController.setCustomWorkNumber
+    )
+
+    router.post(
+        '/getCurrentJobId',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Custom_Work_No),
+        companyController.getCustomWorkNumber
+    )
+
+    router.post(
+        '/getSyncInfo',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Custom_Work_No),
+        companyController.getSyncInfo
+    )
+
+    router.post(
+        '/getAllEmployees',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.User_Get_All_Employees),
+        companyController.getAllEmployees
+    )
+
+    router.post(
+        '/getEmployeesForJob',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.User_Get_All_Employees),
+        companyController.getEmployeesForJob
+    )
+
     router.get(
         '/downgradeCompanies',
-        userController.downgradeCompanies
+        companyController.downgradeCompanies
     )
+
+    router.post(
+        '/setCustomInvoiceNumber',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Set_Invoice_Number),
+        companyController.setCustomInvoiceNumber
+    )
+
+    router.post(
+        '/getCurrentIvoiceNumber',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Current_Invoice_Number),
+        companyController.getInvoiceNumber
+    )
+
+    // Sales Taxes
+    router.post(
+        '/createSalesTax',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Create_Sales_Tax),
+        validate(Validations.createSaleTax),
+        companyController.createSalesTax
+    )
+
+    router.post(
+        '/updateSalesTax',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Update_Sales_Tax),
+        validate(Validations.updateSaleTax),
+        companyController.updateSalesTax
+    )
+
+    router.post(
+        '/deleteSalesTax',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Delete_Sales_Tax),
+        validate(Validations.deleteSaleTax),
+        companyController.deleteSalesTax
+    )
+
+    router.post(
+        '/getSalesTax',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Sales_Taxes),
+        companyController.getSalesTaxes
+    )
+
+    // Job Charges
+    router.post(
+        '/createJobCharges',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Create_Job_Charges),
+        validate(Validations.createJobCharges),
+        companyController.createJobCharges
+    )
+
+    router.post(
+        '/updateJobCharges',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Update_Job_Charges),
+        validate(Validations.updateJobCharges),
+        companyController.updateJobCharges
+    )
+
+    router.post(
+        '/deleteJobCharges',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Delete_Job_Charges),
+        validate(Validations.deleteJobCharges),
+        companyController.deleteJobCharges
+    )
+
+    router.post(
+        '/getJobCharges',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Job_Charges),
+        companyController.getJobCharges
+    )
+
+    // Invoice
+    router.post(
+        '/createInvoice',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Create_Invoice),
+        //validate(Validations.createInvoice),
+        companyController.createInvoice
+    )
+
+    router.post(
+        '/createPOInvoice',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Create_Invoice),
+        validate(Validations.createPOInvoice),
+        companyController.createPOInvoice
+    )
+
+    router.post(
+        '/updateInvoice',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Update_Invoice),
+        validate(Validations.updateInvoice),
+        companyController.updateInvoice
+    )
+
+    router.post(
+        '/getInvoiceDetail',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Invoice_Detail),
+        companyController.getInvoiceDetail
+    )
+
+    router.post(
+        '/getInvoices',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        companyController.getInvoices
+    )
+
+    router.post(
+        '/updateCompaniesDefaultPermissions',
+        permissionController.updateAllCompaniesPermissions
+    )
+
+    //Parts Inventory
+
+    router.post(
+        '/getParts',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Parts),
+        partController.getPartInventory
+    )
+    
+    router.post(
+        '/createPart',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Create_Part),
+        validate(Validations.createPartInventory),
+        partController.createPartInventory
+    )
+    
+    router.post(
+        '/updatePart',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Update_Part),
+        validate(Validations.udpatePartInventory),
+        partController.updatePartInventory
+    )
+
+    router.post(
+        '/removePart',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Remove_Part),
+        validate(Validations.removePartInventory),
+        partController.removePartInventory
+    )
+
+    // Purchase Order
+    router.post(
+        '/createPurchaseOrder',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Create_Purchase_Order),
+        validate(Validations.createPurchaseOrder),
+        purchaseOrderController.createPO
+    )
+    
+    router.post(
+        '/getAllPurchaseOrder',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Purchase_Order),
+        purchaseOrderController.getAllPO
+    )
+    
+    router.post(
+        '/updatePurchaseOrderStatus',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Update_Status_Purchase_Order),
+        validate(Validations.udpatePurchaseOrderStatus),
+        purchaseOrderController.updatePOStatus
+    )
+    
+    router.post(
+        '/createPOEstimate',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Create_Purchase_Order_From_Estimate),
+        validate(Validations.createPurchaseOrderEstimate),
+        purchaseOrderController.createPOEstimate
+    )
+
+    router.post(
+        '/updatePurchaseOrder',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Update_Purchase_Order),
+        validate(Validations.udpatePurchaseOrder),
+        purchaseOrderController.updatePO
+    )
+
+    router.post(
+        '/updateEstimate',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Update_Estimate),
+        validate(Validations.udpateEstimate),
+        EstimateController.updateEstimate
+    )
+
+    router.post(
+        '/updateEstimateStatus',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Update_Status_Estimate),
+        validate(Validations.udpateEstimateStatus),
+        EstimateController.updateEstimateStatus
+    )
+
+    router.post(
+        '/createEstimate',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Create_Estimate),
+        validate(Validations.createEstimate),
+        EstimateController.createEstimate
+    )
+  
+    router.post(
+        '/getEstimate',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Estimate),
+        EstimateController.getEstimates
+    )
+
+    router.post(
+        '/removeEstimate',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        validate(Validations.removeEstimate),
+        checkUserPermissions(Permissions.Delete_Estimate),
+        EstimateController.removeEstimate
+    )
+
+    router.post(
+        '/getCompanyContractorActivity',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Company_Contractor_Activity),
+        companyController.getCompanyContractorActivity
+    )
+
     return router
 
 }
+

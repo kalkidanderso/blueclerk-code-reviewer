@@ -5,15 +5,19 @@
     "description": "APIs for both app and website",
     "version": "1.0.0"
   },
-  "host": "blueclerk-node-api.deploy.blueclerk.com:3006",
+  "host": "blueclerk-node-api.deploy.blueclerk.com",
   "basePath": "/api/v1",
   "schemes": [
-    "http"
+    "https"
   ],
   "tags": [
     {
       "name": "Auth",
       "description": "For login and signup"
+    },
+    {
+      "name": "Social Auth",
+      "description": "For social login and signup"
     },
     {
       "name": "Industry",
@@ -63,6 +67,10 @@
       "description": "For job types"
     },
     {
+      "name": "Job Charges",
+      "description": "For job charges"
+    },
+    {
       "name": "Service Ticket",
       "description": "For creting and getting service tickets"
     },
@@ -71,8 +79,28 @@
       "description": "For scheduled jobs"
     },
     {
+      "name": "Part Inventory",
+      "description": "For parts inventory"
+    },
+    {
+      "name": "Purchase Order",
+      "description": "For company purchase orders"
+    },
+    {
+      "name": "Estimate",
+      "description": "For Estimate"
+    },
+    {
       "name": "Reports",
       "description": "For job and other reports"
+    },
+    {
+      "name": "Sales Tax",
+      "description": "For salesTax"
+    },
+    {
+      "name": "Invoice",
+      "description": "For invoices of jobs"
     },
     {
       "name": "Image",
@@ -94,8 +122,8 @@
       "description": "For employee or company permissions"
     },
     {
-      "name": "Contractor",
-      "description": "For contractor login, signup and details"
+      "name": "Vendor",
+      "description": "For vendor login, signup and details"
     },
     {
       "name": "Import Customer",
@@ -220,10 +248,10 @@
     "/searchContractor": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
-        "summary": "Search for contractor",
-        "description": "Company can serach contractors",
+        "summary": "Search for vendors",
+        "description": "Company can serach vendor",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -256,10 +284,10 @@
     "/inviteContractor": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
-        "summary": "To invite contractor to join BlueClerk",
-        "description": "A company can invite a contractor",
+        "summary": "To invite vendor to join BlueClerk",
+        "description": "A company can invite a vendor",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -270,7 +298,7 @@
           {
             "name": "email",
             "in": "formData",
-            "description": "email of contractor to invite",
+            "description": "email of vendor to invite",
             "required": true,
             "type": "string"
           }
@@ -293,10 +321,10 @@
     "/startContract": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
-        "summary": "To send offer to a contractor",
-        "description": "A company can initiate a contract with contractor",
+        "summary": "To send offer to a vendor",
+        "description": "A company can initiate a contract with vendor",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -307,7 +335,7 @@
           {
             "name": "contractorId",
             "in": "formData",
-            "description": "Id of a contractor fetched with /searchContractor api",
+            "description": "Id of a vendor fetched with /searchContractor api",
             "required": true,
             "type": "string"
           }
@@ -330,9 +358,9 @@
     "/getContracts": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
-        "summary": "To get all contracts by contractor",
+        "summary": "To get all contracts by vendor",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -373,7 +401,7 @@
     "/getCompanyContracts": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
         "summary": "To get all contracts by company",
         "description": "",
@@ -413,12 +441,55 @@
         ]
       }
     },
+    "/getCompanyContractorActivity": {
+      "post": {
+        "tags": [
+          "Vendor"
+        ],
+        "summary": "To get all company vendors activity",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "contractorActivity": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/ContractorActivity"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/acceptOrRejectContract": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
-        "summary": "Accepting or rejecting a contract by contractor",
+        "summary": "Accepting or rejecting a contract by vendor",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -459,7 +530,7 @@
     "/CancelOrFinish": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
         "summary": "Canceling of Finishing contract by company",
         "consumes": [
@@ -502,9 +573,9 @@
     "/upgradeToCompany": {
       "post": {
         "tags": [
-          "Contractor"
+          "Vendor"
         ],
-        "summary": "Canceling of Finishing contract by company",
+        "summary": "Upgrading from vendor to company account",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -656,7 +727,7 @@
     "/checkAndGet": {
       "post": {
         "tags": [
-          "Auth"
+          "Social Auth"
         ],
         "summary": "Check if user has already signed up using Facebook or google",
         "description": "",
@@ -695,7 +766,7 @@
     "/signUpSocial": {
       "post": {
         "tags": [
-          "Auth"
+          "Social Auth"
         ],
         "summary": "Sign up for company using Facebook or Google",
         "description": "",
@@ -775,7 +846,7 @@
     "/contractorSignUpSocial": {
       "post": {
         "tags": [
-          "Auth"
+          "Social Auth"
         ],
         "summary": "Sign up for contractor using Facebook or Google",
         "description": "",
@@ -851,7 +922,7 @@
     "/setCustomWorkOrderNumber": {
       "post": {
         "tags": [
-          "Auth"
+          "Job"
         ],
         "summary": "Setting custom work order number for service tickets and job",
         "description": "",
@@ -891,7 +962,7 @@
     "/getCurrentJobId": {
       "post": {
         "tags": [
-          "Auth"
+          "Job"
         ],
         "summary": "Getting latest custom work order number for service tickets and job",
         "description": "",
@@ -906,6 +977,74 @@
             "description": "Success",
             "schema": {
               "$ref": "#/definitions/WorkOrderNumberResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/setCustomInvoiceNumber": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "Setting custom invoce number for invoices",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "invoiceNumber",
+            "in": "formData",
+            "type": "number"
+          },
+          {
+            "name": "invoicePrefix",
+            "in": "formData",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getCurrentIvoiceNumber": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "Getting current invoice numbe for company",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/InvoiceNumberResponse"
             }
           }
         },
@@ -2760,6 +2899,1120 @@
         ]
       }
     },
+    "/createJobCharges": {
+      "post": {
+        "tags": [
+          "Job Charges"
+        ],
+        "summary": "To create charges on the basis of job type",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "jobTypeId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "pass job type id fetched from getjobtypes api"
+          },
+          {
+            "name": "isFixed",
+            "in": "formData",
+            "required": true,
+            "type": "boolean",
+            "description": "Either the job is fixed price or hourly. true->if fixed false->is hourly"
+          },
+          {
+            "name": "charges",
+            "in": "formData",
+            "required": true,
+            "type": "number"
+          },
+          {
+            "name": "sales_tax_id",
+            "in": "formData",
+            "type": "string",
+            "description": "pass sales tax id fetched from getSalesTax api"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getJobCharges": {
+      "post": {
+        "tags": [
+          "Job Charges"
+        ],
+        "summary": "To get job charges",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "charges": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/JobCharges"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateJobCharges": {
+      "post": {
+        "tags": [
+          "Job Charges"
+        ],
+        "summary": "To update charges on the basis of job type",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "jobChargesId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of job charges you want to edit"
+          },
+          {
+            "name": "isFixed",
+            "in": "formData",
+            "required": true,
+            "type": "boolean",
+            "description": "Either the job is fixed price or hourly. true->if fixed false->is hourly"
+          },
+          {
+            "name": "charges",
+            "in": "formData",
+            "required": true,
+            "type": "number"
+          },
+          {
+            "name": "sales_tax_id",
+            "in": "formData",
+            "type": "string",
+            "description": "pass sales tax id fetched from getSalesTax api"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/deleteJobCharges": {
+      "post": {
+        "tags": [
+          "Job Charges"
+        ],
+        "summary": "To delete charges on the basis of job type",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "jobChargesId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of job charges you want to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createSalesTax": {
+      "post": {
+        "tags": [
+          "Sales Tax"
+        ],
+        "summary": "To create sales tax for a state",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "state",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Name of the state you want to create tax for"
+          },
+          {
+            "name": "tax",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "Tax percentage you want to apply for this state"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getSalesTax": {
+      "post": {
+        "tags": [
+          "Sales Tax"
+        ],
+        "summary": "To get sales taxes",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "taxes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/SaleTax"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateSalesTax": {
+      "post": {
+        "tags": [
+          "Sales Tax"
+        ],
+        "summary": "To update sales tax",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "salesTaxId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of sales tax you want to update"
+          },
+          {
+            "name": "state",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Name of the state you want to create tax for"
+          },
+          {
+            "name": "tax",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "Tax percentage you want to apply for this state"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/deleteSalesTax": {
+      "post": {
+        "tags": [
+          "Sales Tax"
+        ],
+        "summary": "To delete slaes tax",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "salesTaxId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of sales tax you want to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createPart": {
+      "post": {
+        "tags": [
+          "Part Inventory"
+        ],
+        "summary": "To create inventory of a part",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Name of the part"
+          },
+          {
+            "name": "itemCode",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Item code or SKU number of a part, it must be unique"
+          },
+          {
+            "name": "description",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "cost",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "amount at which part was purchased"
+          },
+          {
+            "name": "price",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "sale price of the part"
+          },
+          {
+            "name": "totalQuantity",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "total quantity of the part to add in inventory"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getParts": {
+      "post": {
+        "tags": [
+          "Part Inventory"
+        ],
+        "summary": "To get parts inventories",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "taxes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Part"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updatePart": {
+      "post": {
+        "tags": [
+          "Part Inventory"
+        ],
+        "summary": "To update part inventory",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "partId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of part you want to update"
+          },
+          {
+            "name": "name",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Name of the part"
+          },
+          {
+            "name": "itemCode",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "unique item code of the part"
+          },
+          {
+            "name": "description",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "description of the part"
+          },
+          {
+            "name": "cost",
+            "in": "formData",
+            "required": false,
+            "type": "number",
+            "description": "cost of the part"
+          },
+          {
+            "name": "price",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "price of the part"
+          },
+          {
+            "name": "totalQuantity",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "total quantity of the part"
+          },
+          {
+            "name": "availableQuantity",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "available quantity of the part"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/deletePart": {
+      "post": {
+        "tags": [
+          "Part Inventory"
+        ],
+        "summary": "To delete part inventory",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "partId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of part you want to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createPurchaseOrder": {
+      "post": {
+        "tags": [
+          "Purchase Order"
+        ],
+        "summary": "To create purchase order",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "items",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Json string of the items e.g [{\"name\": \"test part2\", \"itemCode\": \"23423\", \"quantity\":2, \"cost\": 123, \"price\": 150}]"
+          },
+          {
+            "name": "job",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Id of the job purchase order is linked to. (Optional)"
+          },
+          {
+            "name": "note",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "add note for the required item if items is not added (required if items not added)"
+          },
+          {
+            "name": "customer",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of the customer purchase order is linked to"
+          },
+          {
+            "name": "total",
+            "in": "formData",
+            "required": false,
+            "type": "number",
+            "description": "total amount of the purchase order"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createPOEstimate": {
+      "post": {
+        "tags": [
+          "Purchase Order"
+        ],
+        "summary": "To create estimate purchase order",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "estimateId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of the estimate to create purchase order"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getAllPurchaseOrder": {
+      "post": {
+        "tags": [
+          "Purchase Order"
+        ],
+        "summary": "To get purchase orders",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "purchaseOrders": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/PurchaseOrder"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updatePurchaseOrder": {
+      "post": {
+        "tags": [
+          "Purchase Order"
+        ],
+        "summary": "To update purchase order",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "purchaseOrderId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of purchase order you want to update"
+          },
+          {
+            "name": "items",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Json string of the items e.g [{\"name\": \"test part2\", \"itemCode\": \"23423\", \"quantity\":2, \"cost\": 123, \"price\": 150}]"
+          },
+          {
+            "name": "note",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "add note for the required item if items is not added (required if items not added)"
+          },
+          {
+            "name": "job",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Id of the job purchase order linked to"
+          },
+          {
+            "name": "total",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "total amount of the purchase order"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updatePurchaseOrderStatus": {
+      "post": {
+        "tags": [
+          "Purchase Order"
+        ],
+        "summary": "To update purchase order status",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "purchaseOrderId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of purchase order you want to update"
+          },
+          {
+            "name": "status",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "status of purchase order default is 0 => pending, you can update to 1=> approved by customer, 2=> cancelled by customer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createEstimate": {
+      "post": {
+        "tags": [
+          "Estimate"
+        ],
+        "summary": "To create Estimate",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "items",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Json string of the items e.g [{\"name\": \"test part2\", \"itemCode\": \"23423\", \"quantity\":2, \"cost\": 123, \"price\": 150}] optional"
+          },
+          {
+            "name": "note",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "note for the estimate."
+          },
+          {
+            "name": "customer",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of the customer purchase order is linked to"
+          },
+          {
+            "name": "total",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "total amount of the purchase order"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getEstimate": {
+      "post": {
+        "tags": [
+          "Estimate"
+        ],
+        "summary": "To get Estimate",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "customer",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Id of the customer (Optional)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Estimate"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateEstimate": {
+      "post": {
+        "tags": [
+          "Estimate"
+        ],
+        "summary": "To update Estimate",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "estimateId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of estimate you want to update"
+          },
+          {
+            "name": "items",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Json string of the items e.g [{\"name\": \"test part2\", \"itemCode\": \"23423\", \"quantity\":2, \"cost\": 123, \"price\": 150}]"
+          },
+          {
+            "name": "note",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "note for the job"
+          },
+          {
+            "name": "customer",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "id of the customer for whom the estimate is created"
+          },
+          {
+            "name": "total",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "total amount of the estimate"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateEstimateStatus": {
+      "post": {
+        "tags": [
+          "Estimate"
+        ],
+        "summary": "To update Estimate status",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "estimateId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of estimate you want to update"
+          },
+          {
+            "name": "status",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "status of estimate default is 0 => pending, you can update to 1=> approved by customer, 2=> cancelled by customer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/removeEstimate": {
+      "post": {
+        "tags": [
+          "Estimate"
+        ],
+        "summary": "To delete Estimate",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "estimateId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of estimate you want to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/createServiceTicket": {
       "post": {
         "tags": [
@@ -2978,6 +4231,50 @@
         ]
       }
     },
+    "/editServiceTicket": {
+      "post": {
+        "tags": [
+          "Service Ticket"
+        ],
+        "summary": "To update service ticket status",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "ticketId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of ticket to update"
+          },
+          {
+            "name": "status",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "default status is 0=> active, you can set status 1 => canceled 2 => reactivated ticket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/createJob": {
       "post": {
         "tags": [
@@ -3045,6 +4342,19 @@
             "required": true,
             "type": "number",
             "description": "0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor"
+          },
+          {
+            "name": "isFixed",
+            "in": "formData",
+            "required": true,
+            "type": "boolean",
+            "description": "Either the job is fixed price or hourly. true->if fixed false->is hourly"
+          },
+          {
+            "name": "charges",
+            "in": "formData",
+            "type": "number",
+            "description": "Enter charges amount if you want to customize for this job"
           },
           {
             "name": "companyId",
@@ -3145,6 +4455,58 @@
             "in": "formData",
             "type": "string",
             "description": "Id of company if contractor is hitting for other company"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Job"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getTechnicianJobsToday": {
+      "post": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "To get all jobs of a technician schedulled for today.",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "employeeId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of technician fetched from getEmployeesForJob"
           }
         ],
         "responses": {
@@ -3370,10 +4732,84 @@
             "description": "date time of job. e.g. 2019-12-22 20:30:00"
           },
           {
+            "name": "isFixed",
+            "in": "formData",
+            "required": true,
+            "type": "boolean",
+            "description": "Either the job is fixed price or hourly. true->if fixed false->is hourly"
+          },
+          {
+            "name": "charges",
+            "in": "formData",
+            "type": "number",
+            "description": "Enter charges amount if you want to customize for this job"
+          },
+          {
             "name": "companyId",
             "in": "formData",
             "type": "string",
             "description": "Id of company if contractor is hitting for other company"
+          },
+          {
+            "name": "startTime",
+            "in": "formData",
+            "type": "string",
+            "description": "Job start time if you want to change it"
+          },
+          {
+            "name": "endTime",
+            "in": "formData",
+            "type": "string",
+            "description": "Job end time if you want to change it"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateJobTime": {
+      "post": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "To update job start or end time",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of job to edit"
+          },
+          {
+            "name": "startTime",
+            "in": "formData",
+            "type": "string",
+            "description": "Job start time if you want to change it"
+          },
+          {
+            "name": "endTime",
+            "in": "formData",
+            "type": "string",
+            "description": "Job end time if you want to change it"
           }
         ],
         "responses": {
@@ -3474,6 +4910,323 @@
             "description": "Success",
             "schema": {
               "$ref": "#/definitions/JobReport"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createInvoice": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To create invoice of a job, purchase order, estimate, manual invoice",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Pass job id to create job invoice (optional)"
+          },
+          {
+            "name": "purchaseOrderId",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Pass purchase order id to create purchase order invoice (optional)"
+          },
+          {
+            "name": "estimateId",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Pass estimate id to create estimate invoice (optional)"
+          },
+          {
+            "name": "customerId",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Pass customer id to create invoice"
+          },
+          {
+            "name": "note",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Pass note if create manual invoice (required in manual invoice)"
+          },
+          {
+            "name": "tax",
+            "in": "formData",
+            "type": "number",
+            "required": false,
+            "description": "Percentage of tax to be applied on total cost of job"
+          },
+          {
+            "name": "charges",
+            "in": "formData",
+            "type": "number",
+            "required": false,
+            "description": "Charges if you want to change the charge amount for the invoice"
+          },
+          {
+            "name": "timeSpent",
+            "in": "formData",
+            "required": false,
+            "type": "number",
+            "description": "No of hours spend on that job pass default from finished job if you dont want to change"
+          },
+          {
+            "name": "hourlyRate",
+            "in": "formData",
+            "required": false,
+            "type": "number",
+            "description": "Hourly rate to be charges to customer pass default from finished job if you dont want to change"
+          },
+          {
+            "name": "includePO",
+            "in": "formData",
+            "type": "boolean",
+            "required": false,
+            "description": "select if you want to include purchase orders linked to this job in this invoice"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getInvoices": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To get invoice",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "invoices": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Invoice"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateInvoice": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To update invoice of a job",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of invoice you want to edit"
+          },
+          {
+            "name": "tax",
+            "in": "formData",
+            "type": "number",
+            "required": false,
+            "description": "Percentage of tax to be applied on total cost of job"
+          },
+          {
+            "name": "charges",
+            "in": "formData",
+            "type": "number",
+            "required": false,
+            "description": "Charges if you want to change the charge amount for the invoice"
+          },
+          {
+            "name": "note",
+            "in": "formData",
+            "type": "number",
+            "required": false,
+            "description": "Pass note if update manual invoice (required in manual invoice)"
+          },
+          {
+            "name": "timeSpent",
+            "in": "formData",
+            "required": false,
+            "type": "number",
+            "description": "No of hours spend on that job pass default from finished job if you dont want to change"
+          },
+          {
+            "name": "hourlyRate",
+            "in": "formData",
+            "required": false,
+            "type": "number",
+            "description": "Hourly rate to be charges to customer pass default from finished job if you dont want to change"
+          },
+          {
+            "name": "includePO",
+            "in": "formData",
+            "type": "boolean",
+            "required": false,
+            "description": "select if you want to include purchase orders linked to this job in this invoice"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getInvoiceDetail": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To get detail of invoice",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of invoice"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "invoice": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/InvoiceDetail"
+                      }
+                    },
+                    "scans": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/ScanDetail"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createPOInvoice": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To create invoice of a purchase order only",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "purchaseOrderId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Pass purchase order id fetched from getAllPurchaseOrders api"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
             }
           }
         },
@@ -5093,6 +6846,745 @@
         }
       }
     },
+    "JobCharges": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "isFixed": {
+          "type": "string",
+          "description": "If the job is fixed or hourly"
+        },
+        "charges": {
+          "type": "number",
+          "description": "Charges form job type or if entered custom charges while creating a job"
+        },
+        "jobType": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "Title of jo type"
+            }
+          }
+        }
+      }
+    },
+    "Invoice": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "invoiceId": {
+          "type": "string",
+          "description": "Custom invoice id to be shown on invoice"
+        },
+        "inoviceType": {
+          "type": "number",
+          "description": "0 for the invoice for job and 1 for the invoice of purchase order"
+        },
+        "job": {
+          "type": "string",
+          "description": "Id of job from which the invoice was created"
+        },
+        "purchaseOrder": {
+          "type": "string",
+          "description": "Id of the purchase order if the invoic is for purchase order only"
+        },
+        "estimate": {
+          "type": "string",
+          "description": "Id of the estimate if the invoic is for estimate only"
+        },
+        "jobPurchaseOrders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "customer": {
+          "type": "string",
+          "description": "Id of cusomer from whom the invoice was created"
+        },
+        "company": {
+          "type": "string",
+          "description": "Id of company to whom this invoice belongs"
+        },
+        "charges": {
+          "type": "number",
+          "description": "Charges amount from job or if you have customized while creating invoice"
+        },
+        "taxPercentage": {
+          "type": "number",
+          "description": "Tax percentage applied to invoice default will be 0"
+        },
+        "tax": {
+          "type": "number",
+          "description": "Tax amount to be added in charges to caculate the total invoice"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total amount to be charged to customer"
+        },
+        "timeSpent": {
+          "type": "number",
+          "description": "No of hourse spent on that job"
+        },
+        "isFixed": {
+          "type": "boolean",
+          "description": "true if the job was fixed and will be false if the job was hourly"
+        },
+        "hourlyRate": {
+          "type": "number",
+          "description": "Hourly job rate the is going to be the charged in invoice"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Id of employee of company who has created this invoice"
+        },
+        "createdat": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date time when the invoice was created"
+        }
+      }
+    },
+    "InvoiceDetail": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "invoiceId": {
+          "type": "string",
+          "description": "Custom invoice id to be shown on invoice"
+        },
+        "charges": {
+          "type": "number",
+          "description": "Charges amount from job or if you have customized while creating invoice"
+        },
+        "taxPercentage": {
+          "type": "number",
+          "description": "Tax percentage applied to invoice default will be 0"
+        },
+        "tax": {
+          "type": "number",
+          "description": "Tax amount to be added in charges to caculate the total invoice"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total amount to be charged to customer"
+        },
+        "createdat": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date time when the invoice was created"
+        },
+        "customer": {
+          "type": "object",
+          "properties": {
+            "auth": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "description": "Email address of customer or from info.email"
+                }
+              }
+            },
+            "info": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "description": "Email address of customer if present"
+                }
+              }
+            },
+            "profile": {
+              "type": "object",
+              "properties": {
+                "displayName": {
+                  "type": "string",
+                  "description": "Name of customer"
+                }
+              }
+            },
+            "contact": {
+              "type": "object",
+              "properties": {
+                "phone": {
+                  "type": "string",
+                  "description": "Phone number of customer if present"
+                }
+              }
+            },
+            "address": {
+              "type": "object",
+              "properties": {
+                "street": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "zipCode": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "company": {
+          "type": "object",
+          "properties": {
+            "auth": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "description": "Email address of company"
+                }
+              }
+            },
+            "info": {
+              "type": "object",
+              "properties": {
+                "companyName": {
+                  "type": "string",
+                  "description": "Name of company"
+                },
+                "logoUrl": {
+                  "type": "string",
+                  "description": "Logo of company"
+                }
+              }
+            },
+            "contact": {
+              "type": "object",
+              "properties": {
+                "phone": {
+                  "type": "string",
+                  "description": "Phone number of company"
+                }
+              }
+            },
+            "permissions": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string"
+                }
+              }
+            },
+            "address": {
+              "type": "object",
+              "properties": {
+                "street": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "zipCode": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "createdBy": {
+          "type": "object",
+          "properties": {
+            "auth": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "description": "Email address of person who created job"
+                }
+              }
+            },
+            "info": {
+              "type": "object",
+              "properties": {
+                "companyName": {
+                  "type": "string",
+                  "description": "Name of company"
+                }
+              }
+            },
+            "profile": {
+              "type": "object",
+              "properties": {
+                "displayName": {
+                  "type": "string"
+                }
+              }
+            },
+            "contact": {
+              "type": "object",
+              "properties": {
+                "phone": {
+                  "type": "string"
+                }
+              }
+            },
+            "permissions": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "description": "Role of person who created job in his company/organization"
+                }
+              }
+            },
+            "address": {
+              "type": "object",
+              "properties": {
+                "street": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "zipCode": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "job": {
+          "type": "object",
+          "properties": {
+            "_id": {
+              "type": "string"
+            },
+            "jobId": {
+              "type": "string",
+              "description": "Auto generated job id from sevice ticket number"
+            },
+            "status": {
+              "type": "number",
+              "description": "Status of job if it is finshed or not"
+            },
+            "employeeType": {
+              "type": "boolean",
+              "description": "If false that means assigned to employee if true that means job is assigned to vendor or vendors employee"
+            },
+            "dateTime": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Time when job was scheduled"
+            },
+            "description": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "type": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "Title of job type"
+                }
+              }
+            },
+            "ticket": {
+              "type": "object",
+              "properties": {
+                "scheduleDateTime": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Time when ticket was scheduled"
+                },
+                "note": {
+                  "type": "string",
+                  "description": "Additional note added by person who created ticket"
+                },
+                "ticketId": {
+                  "type": "string",
+                  "description": "Auto generated ticket number using prefix defined by user"
+                }
+              }
+            },
+            "technician": {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "type": "string",
+                      "description": "Email address of technician"
+                    }
+                  }
+                },
+                "profile": {
+                  "type": "object",
+                  "properties": {
+                    "displayName": {
+                      "type": "string",
+                      "description": "Name of technician"
+                    }
+                  }
+                },
+                "contact": {
+                  "type": "object",
+                  "properties": {
+                    "phone": {
+                      "type": "string",
+                      "description": "Phone number of technician"
+                    }
+                  }
+                },
+                "permissions": {
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "description": "Role of technician in his company/organization"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ScanDetail": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "comment": {
+          "type": "string",
+          "description": "comment added by person who scanned the equipment"
+        },
+        "timeOfScan": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "equipment": {
+          "type": "object",
+          "properties": {
+            "info": {
+              "type": "object",
+              "properties": {
+                "model": {
+                  "type": "string",
+                  "description": "model number of equipment scanned"
+                },
+                "serialNumber": {
+                  "type": "string",
+                  "description": "serialNumber number of equipment scanned"
+                },
+                "nfcTag": {
+                  "type": "string",
+                  "description": "nfcTag of equipment scanned"
+                },
+                "location": {
+                  "type": "string",
+                  "description": "location of equipment"
+                }
+              }
+            },
+            "images": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "type": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                }
+              }
+            },
+            "brand": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "SaleTax": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string",
+          "description": "Name of the state"
+        },
+        "tax": {
+          "type": "number",
+          "description": "Tax percentage"
+        },
+        "company": {
+          "type": "string",
+          "description": "Id of the company who has created this sales tax"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Id of the member of company who has created this sales tax"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date time when the sales tax was created"
+        }
+      }
+    },
+    "Part": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the part"
+        },
+        "itemCode": {
+          "type": "string",
+          "description": "Unique item code or sku number of the part"
+        },
+        "description": {
+          "type": "string",
+          "description": "description of the part"
+        },
+        "cost": {
+          "type": "number",
+          "description": "puchase amount of the part"
+        },
+        "price": {
+          "type": "number",
+          "description": "sale price of the part"
+        },
+        "totalQuantity": {
+          "type": "number",
+          "description": "total quantity of the part company owned"
+        },
+        "availableQuantity": {
+          "type": "number",
+          "description": "available quantity of the part company have"
+        },
+        "company": {
+          "type": "string",
+          "description": "Id of the company to whom the part belongs"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Id of the member of company who has created this sales tax"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date time when the sales tax was created"
+        }
+      }
+    },
+    "PurchaseOrder": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "part": {
+                "type": "string",
+                "description": "Optional id of the part if selected from parts inventory"
+              },
+              "name": {
+                "type": "string",
+                "description": "Name of the part if not selected from inventory list"
+              },
+              "itemCode": {
+                "type": "string",
+                "description": "Unique item code or sku number of the part"
+              },
+              "quantity": {
+                "type": "number",
+                "description": "quantity of the part added"
+              },
+              "cost": {
+                "type": "number",
+                "description": "puchase amount of the part for this purchase order"
+              },
+              "price": {
+                "type": "number",
+                "description": "sale price of the part"
+              }
+            }
+          }
+        },
+        "estimate": {
+          "type": "string",
+          "description": "Id of the estimate if the purchase order is for  estimate only"
+        },
+        "status": {
+          "type": "string",
+          "description": "status of purchase order 0 => pending, 1 => approved by customer, 2 => cancelled by customer"
+        },
+        "total": {
+          "type": "number",
+          "description": "total amount of the purchase order"
+        },
+        "jbo": {
+          "type": "string",
+          "description": "Id of the job to which current purchase order is linked (optional)"
+        },
+        "customer": {
+          "type": "string",
+          "description": "Id of the customer for whom the purchase order is created"
+        },
+        "company": {
+          "type": "string",
+          "description": "Id of the company to whom the part belongs"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Id of the member of company who has created this sales tax"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date time when the sales tax was created"
+        }
+      }
+    },
+    "Estimate": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "part": {
+                "type": "string",
+                "description": "Optional id of the part if selected from parts inventory"
+              },
+              "name": {
+                "type": "string",
+                "description": "Name of the part if not selected from inventory list"
+              },
+              "itemCode": {
+                "type": "string",
+                "description": "Unique item code or sku number of the part"
+              },
+              "quantity": {
+                "type": "number",
+                "description": "quantity of the part added"
+              },
+              "cost": {
+                "type": "number",
+                "description": "estimate amount of the part for this estimate"
+              },
+              "price": {
+                "type": "number",
+                "description": "sale price of the part"
+              }
+            }
+          }
+        },
+        "note": {
+          "type": "string",
+          "description": "Note fot the estimate"
+        },
+        "status": {
+          "type": "string",
+          "description": "status of estimate 0 => pending, 1 => approved by customer, 2 => cancelled by customer"
+        },
+        "total": {
+          "type": "number",
+          "description": "total amount of the estimate"
+        },
+        "customer": {
+          "type": "string",
+          "description": "Id of the customer for whom the estimate is created"
+        },
+        "company": {
+          "type": "string",
+          "description": "Id of the company to whom the estimate belongs"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Id of the member of company who has created this estimate"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date time when the estimate was created"
+        }
+      }
+    },
+    "ContractorActivity": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "job": {
+          "type": "string",
+          "description": "Id of job that contractor updated"
+        },
+        "contractor": {
+          "type": "string",
+          "description": "Id of the contractor who changed the job"
+        },
+        "startTime": {
+          "type": "string",
+          "format": "time",
+          "description": "Time when the job is started"
+        },
+        "endTime": {
+          "type": "string",
+          "format": "time",
+          "description": "Time when the job is ended"
+        },
+        "jobType": {
+          "type": "string",
+          "description": "Id of the job type"
+        },
+        "customer": {
+          "type": "string",
+          "description": "Id of customer for whom the job was created"
+        }
+      }
+    },
     "Job": {
       "type": "object",
       "properties": {
@@ -5103,9 +7595,9 @@
           "type": "string",
           "format": "date-time"
         },
-        "technician": {
+        "estimate": {
           "type": "string",
-          "description": "Id of technician"
+          "description": "Id of the estimate if the Job is Created by estimate"
         },
         "customer": {
           "type": "string",
@@ -5126,6 +7618,24 @@
         "company": {
           "type": "string",
           "description": "Id of company who created it"
+        },
+        "isFixed": {
+          "type": "string",
+          "description": "If the job is fixed or hourly"
+        },
+        "charges": {
+          "type": "number",
+          "description": "Charges form job type or if entered custom charges while creating a job"
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time when the job was started"
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time when the job was finished"
         }
       }
     },
@@ -5388,7 +7898,7 @@
     "JobReport": {
       "type": "object",
       "properties": {
-        "id": {
+        "_id": {
           "type": "string"
         },
         "jobId": {
@@ -5795,6 +8305,33 @@
         "prefix": {
           "type": "string",
           "description": "This will be returned if the company has set the prefix"
+        },
+        "message": {
+          "type": "string",
+          "description": "Error message in case of operation failure"
+        }
+      }
+    },
+    "InvoiceNumberResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Status of operation, 0 -> failure 1 -> success",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "currentInvoiceNumber": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The lastest invoice number"
+        },
+        "invoicePrefix": {
+          "type": "string",
+          "description": "This will be returned if the company has set the invoicePrefix"
         },
         "message": {
           "type": "string",

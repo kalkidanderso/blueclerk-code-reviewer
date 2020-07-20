@@ -21,8 +21,8 @@ export const createCustomerEquipment = (req: Request, res: Response) => {
         
         if(customerEquipment != undefined && !isNull(customerEquipment)){
             return res.json({ 'status': Status.Error, 'message': 'Equipment already added.'})
-            
         }
+
         const equipment = new CustomerEquipment(
             {
                 info: {
@@ -219,7 +219,13 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
     const params = req.body
     const user = <IUser>req.user
 
-    CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
+    Job.findById(params.jobId)
+    .exec((err: any, job: IJob) => {
+        if (err) {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
+
+        CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag, customer: job.customer })
         .exec((err: any, customerEquipment: ICustomerEquipment) => {
 
             if (err) {
@@ -227,21 +233,10 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
             }
             
             if (customerEquipment == undefined || customerEquipment == null) {
-                return res.json({ 'status': Status.Error, 'message': "Customer Equipment not found"})
+                return res.json({ 'status': Status.InvalidEquipment, 'message': "Invalid Customer Equipment"})
             }
 
-            // Job.findById(params.jobId,
-            //     (err: any, job: IJob) => {
-            //         if (err) {
-            //             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            //         }
-
-            //         if (job != undefined && job != null) {
-            //             return res.json({ 'status': Status.Error, 'message': "Equipment already scanned for this job."})
-            //         }
-            // })
-
-            Scan.findOne({equipmentId: customerEquipment._id, job: params.jobId}, 
+            Scan.findOne({equipment: customerEquipment._id, job: params.jobId}, 
                 (err: any, scan: IScan) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -250,6 +245,7 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
                     if (scan != undefined && scan != null) {
                         return res.json({ 'status': Status.Error, 'message': "Equipment already scanned for this job."})
                     }
+
                     // create new scan
                     const newScan = new Scan({
                         equipment: customerEquipment._id,
@@ -262,11 +258,23 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
                         if (err) {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
-                        return res.json({ 'status': Status.Success, 'message': 'Equipment scanned successfully.' })
+
+                        job.updateOne({equipment_scanned: true, no_of_equipment_scanned: job.no_of_equipment_scanned+1 })
+                        .exec((err: any, raw: any) => {
+                            if (err) {
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            }
+
+                            return res.json({ 'status': Status.Success, 'message': 'Equipment scanned successfully.' })
+                        })
+
                     })
                 })
     
         })
+    })
+
+    
 
 }
 
@@ -317,8 +325,7 @@ export const getEquipmentJobs = (req: Request, res: Response) => {
             Scan.find({equipment: customerEquipment._id}, '_id')
             .populate({
                 path: 'job',
-                select: 'jobId description status dateTime',
-                populate: [{ path: 'customer', select: 'profile.displayName' }],
+                populate: [{ path: 'customer', select: 'profile.displayName' },{ path: 'type', select: 'title' }],
             })
             .exec((err:any, scans: IScan[])=>{
 
