@@ -29,7 +29,7 @@ import * as quickBookController from '../controllers/quickbook'
 import * as companyController from '../controllers/company'
 import * as partController from '../controllers/part'
 import * as purchaseOrderController from '../controllers/purchaseOrder'
-import * as EstimateController from '../controllers/Estimate'
+import * as EstimateController from '../controllers/estimate'
 import { Personalize } from 'aws-sdk'
 
 export default function (sio: any) {
