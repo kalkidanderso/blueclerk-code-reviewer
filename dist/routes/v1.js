@@ -38,7 +38,7 @@ const quickBookController = __importStar(require("../controllers/quickbook"));
 const companyController = __importStar(require("../controllers/company"));
 const partController = __importStar(require("../controllers/part"));
 const purchaseOrderController = __importStar(require("../controllers/purchaseOrder"));
-const EstimateController = __importStar(require("../controllers/Estimate"));
+const EstimateController = __importStar(require("../controllers/estimate"));
 function default_1(sio) {
     const router = express_1.default.Router();
     //Auth

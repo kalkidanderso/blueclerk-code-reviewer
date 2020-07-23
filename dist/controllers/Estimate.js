@@ -179,4 +179,4 @@ exports.removeEstimate = (req, res) => {
         });
     });
 };
-//# sourceMappingURL=Estimate.js.map
+//# sourceMappingURL=estimate.js.map

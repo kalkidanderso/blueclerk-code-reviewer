@@ -7459,7 +7459,7 @@
           "type": "number",
           "description": "total amount of the purchase order"
         },
-        "jbo": {
+        "job": {
           "type": "string",
           "description": "Id of the job to which current purchase order is linked (optional)"
         },
