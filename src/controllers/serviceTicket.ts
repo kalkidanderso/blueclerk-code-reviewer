@@ -70,6 +70,10 @@ export const getServiceTickets = (req: Request, res: Response) => {
             path: 'technician',
             select: 'profile.displayName'
         })
+        .populate({
+            path: 'editedBy',
+            select: 'profile.displayName'
+        })
         .exec((err: any, serviceTickets: IServiceTicket[])=>{
 
             if (err) {
@@ -174,6 +178,10 @@ export const getServiceTicketDetail = (req: Request, res: Response) => {
         })
         .populate({
             path: 'createdBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'technician',
             select: 'profile.displayName'
         })
         .populate({

@@ -55,6 +55,10 @@ exports.getServiceTickets = (req, res) => {
         path: 'technician',
         select: 'profile.displayName'
     })
+        .populate({
+        path: 'editedBy',
+        select: 'profile.displayName'
+    })
         .exec((err, serviceTickets) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -118,6 +122,10 @@ exports.getServiceTicketDetail = (req, res) => {
     })
         .populate({
         path: 'createdBy',
+        select: 'profile.displayName'
+    })
+        .populate({
+        path: 'technician',
         select: 'profile.displayName'
     })
         .populate({
