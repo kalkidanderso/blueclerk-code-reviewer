@@ -16,6 +16,11 @@ const JobSchema = new mongoose_1.Schema({
         ref: 'ServiceTicket',
         required: true
     },
+    equipmentId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'CustomerEquipment',
+        required: true
+    },
     technician: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',

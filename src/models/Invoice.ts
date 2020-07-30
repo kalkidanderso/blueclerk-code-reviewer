@@ -11,6 +11,7 @@ export interface IInvoice extends Document {
     charges: number
     note : String
     total: number
+    shippingCost: number
     tax: number
     taxPercentage: number
     createdBy: Schema.Types.ObjectId
@@ -64,6 +65,10 @@ const InvoiceSchema = new Schema({
     },
     total: {
         type: Number
+    },
+    shippingCost: {
+        type: Number,
+        default: 0
     },
     tax: {
         type: Number,

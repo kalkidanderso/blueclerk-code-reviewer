@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../common/constants");
 const PurchaseOrder_1 = require("../models/PurchaseOrder");
 const Estimate_1 = require("../models/Estimate");
+const CustomerEquipment_1 = require("../models/CustomerEquipment");
 exports.createPO = (req, res) => {
     const params = req.body;
     const user = req.user;
@@ -32,22 +33,52 @@ exports.createPO = (req, res) => {
             POItems.push(obj);
         }
     }
+    let taxAmount = 0;
+    let total = params.total;
+    if (params.tax != undefined && params.tax != null) {
+        if (params.tax > 0) {
+            taxAmount = total * (params.tax / 100);
+            total = parseInt(total) + taxAmount;
+        }
+    }
     const purchaseOrder = new PurchaseOrder_1.PurchaseOrder({
         items: POItems,
         note: params.note,
-        total: params.total,
+        total: total,
         job: params.job,
         customer: params.customer,
         company: req.companyId,
         createdBy: user._id,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        tax: taxAmount,
+        taxPercentage: params.tax,
     });
-    purchaseOrder.save((err) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
-        return res.json({ 'status': constants_1.Status.Success, 'message': 'Purchase order created successfully.' });
-    });
+    if (params.nfcTag != undefined && params.nfcTag != null) {
+        CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
+            .exec((err, equpiment) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            if (equpiment == null) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid tag scanned' });
+            }
+            purchaseOrder.equipment = equpiment._id;
+            purchaseOrder.save((err) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                return res.json({ 'status': constants_1.Status.Success, 'message': 'Purchase order created successfully.' });
+            });
+        });
+    }
+    else {
+        purchaseOrder.save((err) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            return res.json({ 'status': constants_1.Status.Success, 'message': 'Purchase order created successfully.' });
+        });
+    }
 };
 exports.createPOEstimate = (req, res) => {
     const params = req.body;
@@ -65,12 +96,12 @@ exports.createPOEstimate = (req, res) => {
             if (estimate == undefined || estimate == null) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid estimate id' });
             }
-            if (estimate.status == 0) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': 'You can\'t create purchase order from pending estimate. It should be approved.' });
-            }
-            if (estimate.status == 2) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': 'you can\'t create purchase order from canceled estimate. It should be appproved' });
-            }
+            // if(estimate.status == EstimateStatus.PENDING){
+            //     return res.json({ 'status': Status.Error, 'message': 'You can\'t create purchase order from pending estimate. It should be approved.' })
+            // }
+            // if(estimate.status == EstimateStatus.CANCELED){
+            //     return res.json({ 'status': Status.Error, 'message': 'you can\'t create purchase order from canceled estimate. It should be appproved' })
+            // }
             var items = estimate.items;
             if (items.length < 1 && estimate.note == undefined && estimate.note == '""') {
                 return res.json({ 'status': constants_1.Status.Error, 'message': 'This estimate must have some items or note to create purchase order from estimate' });
@@ -102,7 +133,9 @@ exports.createPOEstimate = (req, res) => {
                 customer: estimate.customer,
                 company: req.companyId,
                 createdBy: user._id,
-                createdAt: Date.now()
+                createdAt: Date.now(),
+                tax: estimate.tax,
+                taxPercentage: estimate.taxPercentage,
             });
             purchaseOrder.save((err) => {
                 if (err) {
@@ -131,6 +164,10 @@ exports.getAllPO = (req, res) => {
         path: 'estimate',
         select: 'total note'
     })
+        .populate({
+        path: 'equipment',
+        select: 'info.model info.serialNumber info.location images'
+    })
         .exec((err, purchaseOrders) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -148,12 +185,12 @@ exports.updatePOStatus = (req, res) => {
         if (purchaseOrder == undefined || purchaseOrder == null) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid purchase order id.' });
         }
-        if (params.status != 1 /* APPROVED */ && params.status != 2 /* CANCELED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid purchase order status.' });
-        }
-        if (purchaseOrder.status == 2 /* CANCELED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': "Purchase orde already canceled" });
-        }
+        // if (params.status != PurchaseOrderStatus.APPROVED && params.status != PurchaseOrderStatus.CANCELED) {
+        //     return res.json({ 'status': Status.Error, 'message': 'Invalid purchase order status.' })
+        // }
+        // if (purchaseOrder.status == PurchaseOrderStatus.CANCELED) {
+        //     return res.json({ 'status': Status.Error, 'message': "Purchase orde already canceled" })
+        // }
         purchaseOrder.updateOne({ status: params.status }, (err) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -172,50 +209,78 @@ exports.updatePO = (req, res) => {
         if (purchaseOrder == undefined || purchaseOrder == null) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid purchase order id.' });
         }
-        if (purchaseOrder.status == 1 /* APPROVED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': "You can\'t change approved purchase order." });
-        }
-        if (purchaseOrder.status == 2 /* CANCELED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': "You can\'t change canceled purchase order." });
-        }
+        // if (purchaseOrder.status == PurchaseOrderStatus.APPROVED) {
+        //     return res.json({ 'status': Status.Error, 'message': "You can\'t change approved purchase order." })
+        // }
+        // if (purchaseOrder.status == PurchaseOrderStatus.CANCELED) {
+        //     return res.json({ 'status': Status.Error, 'message': "You can\'t change canceled purchase order." })
+        // }
         var items;
-        if (params.items == undefined) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Items are required' });
-        }
-        try {
-            items = JSON.parse(params.items);
-        }
-        catch (error) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Items json is invalid' });
-        }
         let POItems = [];
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            if ((!item.hasOwnProperty('part') || !item.hasOwnProperty('cost') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('itemCode') || !item.hasOwnProperty('cost') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': 'items format is invalid' });
+        if (params.items != undefined) {
+            try {
+                items = JSON.parse(params.items);
             }
-            let obj = {};
-            if (item.part == undefined || item.part == null) {
-                obj.name = item.name;
-                obj.itemCode = item.itemCode;
-                obj.cost = item.cost;
-                obj.price = item.price;
-                obj.quantity = item.quantity;
+            catch (error) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'Items json is invalid' });
             }
-            else {
-                obj.part = item.part;
-                obj.cost = item.cost;
-                obj.price = item.price;
-                obj.quantity = item.quantity;
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if ((!item.hasOwnProperty('part') || !item.hasOwnProperty('cost') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('itemCode') || !item.hasOwnProperty('cost') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': 'items format is invalid' });
+                }
+                let obj = {};
+                if (item.part == undefined || item.part == null) {
+                    obj.name = item.name;
+                    obj.itemCode = item.itemCode;
+                    obj.cost = item.cost;
+                    obj.price = item.price;
+                    obj.quantity = item.quantity;
+                }
+                else {
+                    obj.part = item.part;
+                    obj.cost = item.cost;
+                    obj.price = item.price;
+                    obj.quantity = item.quantity;
+                }
+                POItems.push(obj);
             }
-            POItems.push(obj);
         }
-        purchaseOrder.update({ items: POItems, total: params.total, job: params.job, note: params.note }, (err, raw) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        let taxAmount = purchaseOrder.tax;
+        let total = params.total;
+        let taxPercentage = purchaseOrder.taxPercentage;
+        if (params.tax != undefined && params.tax != null) {
+            if (params.tax > 0) {
+                taxAmount = total * (params.tax / 100);
+                total = parseInt(total) + taxAmount;
+                taxPercentage = params.tax;
             }
-            return res.json({ 'status': constants_1.Status.Success, 'message': "Purchase Order updated successfully." });
-        });
+        }
+        if (params.nfcTag != undefined && params.nfcTag != null) {
+            CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
+                .exec((err, equpiment) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                if (equpiment == null) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid tag scanned' });
+                }
+                purchaseOrder.update({ items: POItems, job: params.job, total: total, taxPercentage: taxPercentage, tax: taxAmount, note: params.note, equipment: equpiment._id }, (err, raw) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    return res.json({ 'status': constants_1.Status.Success, 'message': "Purchase Order updated successfully." });
+                });
+            });
+        }
+        else {
+            purchaseOrder.update({ items: POItems, total: total, taxPercentage: taxPercentage, tax: taxAmount, job: params.job, note: params.note }, (err, raw) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                return res.json({ 'status': constants_1.Status.Success, 'message': "Purchase Order updated successfully." });
+            });
+        }
     });
 };
 //# sourceMappingURL=purchaseOrder.js.map

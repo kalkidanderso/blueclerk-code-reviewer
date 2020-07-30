@@ -193,7 +193,9 @@ export const enum Permissions {
     Update_Status_Estimate,
     Get_Estimate,
     Delete_Estimate,
-    Get_Company_Contractor_Activity
+    Get_Company_Contractor_Activity,
+    Get_Items,
+    Update_Item
 
 }
 
@@ -325,7 +327,9 @@ export const UserPermissions = {
             Permissions.Update_Status_Estimate,
             Permissions.Get_Estimate,
             Permissions.Delete_Estimate,
-            Permissions.Get_Company_Contractor_Activity
+            Permissions.Get_Company_Contractor_Activity,
+            Permissions.Get_Items,
+            Permissions.Update_Item
         ],
         off: [Permissions.None],
     },
@@ -429,7 +433,9 @@ export const UserPermissions = {
             Permissions.Update_Status_Estimate,
             Permissions.Get_Estimate,
             Permissions.Delete_Estimate,
-            Permissions.Get_Company_Contractor_Activity
+            Permissions.Get_Company_Contractor_Activity,
+            Permissions.Get_Items,
+            Permissions.Update_Item
         ],
         off: [Permissions.None],
     },
@@ -536,7 +542,9 @@ export const UserPermissions = {
             Permissions.Update_Status_Estimate,
             Permissions.Get_Estimate,
             Permissions.Delete_Estimate,
-            Permissions.Get_Company_Contractor_Activity
+            Permissions.Get_Company_Contractor_Activity,
+            Permissions.Get_Items,
+            Permissions.Update_Item
         ],
         off: [Permissions.None],
     },
@@ -653,7 +661,9 @@ export const UserPermissions = {
             Permissions.Update_Status_Estimate,
             Permissions.Get_Estimate,
             Permissions.Delete_Estimate,
-            Permissions.Get_Company_Contractor_Activity
+            Permissions.Get_Company_Contractor_Activity,
+            Permissions.Get_Items,
+            Permissions.Update_Item
         ],
         off: [Permissions.None],
     }

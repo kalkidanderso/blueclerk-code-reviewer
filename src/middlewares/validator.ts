@@ -189,7 +189,7 @@ export const Validations = {
   
   createPurchaseOrder: [check('customer').exists(), check('note').exists()],
   
-  udpatePurchaseOrder: [check('purchaseOrderId').exists(), check('total').exists(), check('note').exists(), check('items').exists()],
+  udpatePurchaseOrder: [check('purchaseOrderId').exists(), check('total').exists(), check('note').exists()],
   
   udpatePurchaseOrderStatus: [check('purchaseOrderId').exists(), check('status').exists()],
   
@@ -199,8 +199,8 @@ export const Validations = {
   
   udpateEstimateStatus: [check('estimateId').exists()],
 
-  createEstimate:  [check('total').exists(), check('customer').exists(), check('note').exists()],
-
   removeEstimate: [check('estimateId').exists()],
+
+  updateItem: [check('itemId').exists(), check('price').exists(), check('tax').exists()],
   
 }

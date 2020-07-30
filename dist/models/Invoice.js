@@ -52,6 +52,10 @@ const InvoiceSchema = new mongoose_1.Schema({
     total: {
         type: Number
     },
+    shippingCost: {
+        type: Number,
+        default: 0
+    },
     tax: {
         type: Number,
         default: 0

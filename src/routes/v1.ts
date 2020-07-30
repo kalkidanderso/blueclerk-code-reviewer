@@ -402,6 +402,23 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Job_Type_Get),
         jobTypeController.getJobTypes
     )
+    
+    router.post(
+        '/getItems',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Items),
+        jobTypeController.getAllItems
+    )
+
+    router.post(
+        '/updateItem',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Update_Item),
+        validate(Validations.updateItem),
+        jobTypeController.updateItem
+    )
 
     //Job
     router.post(
@@ -1183,7 +1200,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompnayId(),
         checkUserPermissions(Permissions.Create_Estimate),
-        validate(Validations.createEstimate),
         EstimateController.createEstimate
     )
   

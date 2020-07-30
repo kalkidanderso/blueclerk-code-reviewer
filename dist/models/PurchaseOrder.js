@@ -39,6 +39,14 @@ const PurcahseOrderSchema = new mongoose_1.Schema({
     note: {
         type: String,
     },
+    tax: {
+        type: Number,
+        default: 0
+    },
+    taxPercentage: {
+        type: Number,
+        default: 0
+    },
     total: {
         type: Number
     },
@@ -47,12 +55,17 @@ const PurcahseOrderSchema = new mongoose_1.Schema({
         ref: 'Estimate',
         required: false
     },
+    equipment: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'CustomerEquipment',
+        required: false
+    },
     // 0 => pending
     // 1 => approved by customer
     // 2 => declined/rejected by customer
     status: {
         type: Number,
-        default: 0
+        default: 1
     },
     job: {
         type: mongoose_1.Schema.Types.ObjectId,

@@ -5,14 +5,17 @@ export interface IPurchaseOrder extends Document {
         part: Schema.Types.ObjectId
         name: String
         ItemCode: String
-        quantity: Number
-        cost: Number
-        price: Number
+        quantity: number
+        cost: number
+        price: number
     }]
-    status: Number
+    equipment: Schema.Types.ObjectId
+    status: number
     estimate: Schema.Types.ObjectId
     note: string
-    total: Number
+    tax: number
+    taxPercentage: number
+    total: number
     job: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId
     company: Schema.Types.ObjectId
@@ -50,6 +53,14 @@ const PurcahseOrderSchema = new Schema({
     note : {
         type : String,
     },
+    tax: {
+        type: Number,
+        default: 0
+    },
+    taxPercentage: {
+        type: Number,
+        default: 0
+    },
     total: {
         type: Number
     },
@@ -58,12 +69,17 @@ const PurcahseOrderSchema = new Schema({
         ref: 'Estimate',
         required: false
     },
+    equipment:{
+        type: Schema.Types.ObjectId,
+        ref: 'CustomerEquipment',
+        required: false
+    },
     // 0 => pending
     // 1 => approved by customer
     // 2 => declined/rejected by customer
     status: {
         type: Number,
-        default: 0
+        default: 1
     },
     job: {
         type: Schema.Types.ObjectId,

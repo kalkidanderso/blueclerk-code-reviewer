@@ -38,6 +38,11 @@ const JobSchema = new Schema({
         ref: 'ServiceTicket',
         required: true
     },
+    equipmentId: {
+        type: Schema.Types.ObjectId,
+        ref: 'CustomerEquipment',
+        required: true
+    },
     technician: {
         type: Schema.Types.ObjectId,
         ref: 'User',

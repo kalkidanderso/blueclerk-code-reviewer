@@ -3,6 +3,7 @@ import { Status, Role, Messages } from '../common/constants'
 
 import { JobType, IJobType } from '../models/JobType'
 import { IUser } from '../models/User'
+import { Item, IItem } from '../models/Item'
 
 export const createJobType = (req: Request, res: Response) => {
 
@@ -49,8 +50,11 @@ export const createJobType = (req: Request, res: Response) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
+                _createItem(req, res, (req: Request, res: Response) => {
+
+                    return res.json({'status': Status.Success, 'message': 'Job type created successfully.'})
+                })
         
-                return res.json({'status': Status.Success, 'message': 'Job type created successfully.'})
         
             })
         })
@@ -75,8 +79,13 @@ export const createJobType = (req: Request, res: Response) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
-        
-                return res.json({'status': Status.Success, 'message': 'Job type created successfully.'})
+                console.log("creating item");
+                
+                _createItem(req, res, (req: Request, res: Response) => {
+                    console.log("item created");
+                    
+                    return res.json({'status': Status.Success, 'message': 'Job type created successfully.'})
+                })
         
             })
         })
@@ -84,6 +93,33 @@ export const createJobType = (req: Request, res: Response) => {
    
 
 }
+
+const _createItem = (req: Request, res: Response, next: (req: Request, res: Response) => void) => {
+    console.log("inside");
+    
+    const params = req.body
+    var companyId = req.companyId;
+    
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+    
+    const item = new Item(
+        {
+            name: params.title,
+            company: companyId
+        }
+    )
+
+    item.save((err: any) => {
+        if (err) {
+            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }
+        next(req, res)
+        return
+    })    
+}
+
 
 export const getJobTypes = (req: Request, res: Response) => {
 
@@ -118,9 +154,48 @@ export const getJobTypes = (req: Request, res: Response) => {
     
             }
         )
-
     }
+}
 
+export const getAllItems = (req: Request, res: Response) => {
 
+    Item.find({company: req.companyId},
+        (err: any, items: IItem[])=>{
 
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+
+            res.json({'status': Status.Success, 'items': items})    
+
+        }
+    )
+}
+
+export const updateItem = (req: Request, res: Response) => {
+
+    const params = req.body
+    Item.findOne({company: req.companyId, _id: params.itemId},
+        (err: any, item: IItem)=>{
+
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+
+            if (item == null || item == undefined) {
+                return res.json({'status': Status.Error, 'message': 'Invalid item id'})
+            }
+
+            item.updateOne({price: params.price, tax: params.tax, description: params.description},
+            (err: any, raw: any) => {
+                if (err) {
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                }
+
+                return res.json({'status': Status.Success, 'message': 'Item updated successfully'})
+                    
+            })
+
+        }
+    )
 }
