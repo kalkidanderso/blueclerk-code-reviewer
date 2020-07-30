@@ -41,7 +41,7 @@ const JobSchema = new Schema({
     equipmentId: {
         type: Schema.Types.ObjectId,
         ref: 'CustomerEquipment',
-        required: true
+        required: false
     },
     technician: {
         type: Schema.Types.ObjectId,

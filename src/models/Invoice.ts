@@ -5,20 +5,30 @@ export interface IInvoice extends Document {
     invoiceType: number
     job: Schema.Types.ObjectId
     purchaseOrder: Schema.Types.ObjectId
+    estimate: Schema.Types.ObjectId
     jobPurchaseOrders: [Schema.Types.ObjectId]
     customer: Schema.Types.ObjectId
     company: Schema.Types.ObjectId
-    charges: number
     note : String
-    total: number
+    charges: number
     shippingCost: number
     tax: number
+    total: number
     taxPercentage: number
     createdBy: Schema.Types.ObjectId
     createdAt: Date,
     timeSpent: number
     isFixed: boolean
     hourlyRate: number
+    items: [{
+        item: Schema.Types.ObjectId
+        name: String
+        description: String
+        price: number
+        quantity: number
+        tax: number
+        subTotal: number
+    }]
 }
 
 const InvoiceSchema = new Schema({
@@ -38,6 +48,11 @@ const InvoiceSchema = new Schema({
     purchaseOrder :{
         type: Schema.Types.ObjectId,
         ref: 'PurchaseOrder',
+        required: false
+    },
+    estimate :{
+        type: Schema.Types.ObjectId,
+        ref: 'Estimate',
         required: false
     },
     jobPurchaseOrders :[{
@@ -99,6 +114,37 @@ const InvoiceSchema = new Schema({
         type: Number,
         default: 0
     },
+    items: [{
+        item: {
+            type: Schema.Types.ObjectId,
+            ref: 'Item',
+            required: false
+        },
+        name: {
+            type: String,
+            required: false
+        },
+        description: {
+            type: String,
+            required: false
+        },
+        price: {
+            type: Number,
+            required: false
+        },
+        quantity: {
+            type: Number,
+            required: false
+        },
+        tax: {
+            type: Number,
+            required: false
+        },
+        subTotal: {
+            type: Number,
+            required: false
+        },
+    }],
 })
 
 export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema)

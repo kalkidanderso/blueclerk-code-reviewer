@@ -26,6 +26,11 @@ const InvoiceSchema = new mongoose_1.Schema({
         ref: 'PurchaseOrder',
         required: false
     },
+    estimate: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Estimate',
+        required: false
+    },
     jobPurchaseOrders: [{
             type: mongoose_1.Schema.Types.ObjectId,
             ref: 'PurchaseOrder',
@@ -85,6 +90,37 @@ const InvoiceSchema = new mongoose_1.Schema({
         type: Number,
         default: 0
     },
+    items: [{
+            item: {
+                type: mongoose_1.Schema.Types.ObjectId,
+                ref: 'Item',
+                required: false
+            },
+            name: {
+                type: String,
+                required: false
+            },
+            description: {
+                type: String,
+                required: false
+            },
+            price: {
+                type: Number,
+                required: false
+            },
+            quantity: {
+                type: Number,
+                required: false
+            },
+            tax: {
+                type: Number,
+                required: false
+            },
+            subTotal: {
+                type: Number,
+                required: false
+            },
+        }],
 });
 exports.Invoice = mongoose_1.default.model('Invoice', InvoiceSchema);
 //# sourceMappingURL=Invoice.js.map

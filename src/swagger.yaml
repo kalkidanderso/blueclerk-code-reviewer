@@ -2356,29 +2356,29 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
-  /createPOEstimate:
-    post:
-      tags:
-        - Purchase Order
-      summary: To create estimate purchase order
-      description: ''
-      consumes:
-        - application/x-www-form-urlencoded
-      produces:
-        - application/json
-      parameters:
-        - name: estimateId
-          in: formData
-          required: true
-          type: string
-          description: Id of the estimate to create purchase order 
-      responses:
-        '200':
-          description: Success
-          schema:
-            $ref: '#/definitions/GeneralAPIResponse'
-      security:
-        - Bearer: []      
+  # /createPOEstimate:
+  #   post:
+  #     tags:
+  #       - Purchase Order
+  #     summary: To create estimate purchase order
+  #     description: ''
+  #     consumes:
+  #       - application/x-www-form-urlencoded
+  #     produces:
+  #       - application/json
+  #     parameters:
+  #       - name: estimateId
+  #         in: formData
+  #         required: true
+  #         type: string
+  #         description: Id of the estimate to create purchase order 
+  #     responses:
+  #       '200':
+  #         description: Success
+  #         schema:
+  #           $ref: '#/definitions/GeneralAPIResponse'
+  #     security:
+  #       - Bearer: []      
   /getAllPurchaseOrder:
     post:
       tags:
@@ -3434,29 +3434,29 @@ paths:
                       $ref: '#/definitions/ScanDetail'
       security:
         - Bearer: []
-  /createPOInvoice:
-    post:
-      tags:
-        - Invoice
-      summary: To create invoice of a purchase order only
-      description: ''
-      consumes:
-        - application/x-www-form-urlencoded
-      produces:
-        - application/json
-      parameters:
-        - name: purchaseOrderId
-          in: formData
-          required: true
-          type: string
-          description: Pass purchase order id fetched from getAllPurchaseOrders api
-      responses:
-        '200':
-          description: Success
-          schema:
-            $ref: '#/definitions/GeneralAPIResponse'
-      security:
-        - Bearer: []
+  # /createPOInvoice:
+  #   post:
+  #     tags:
+  #       - Invoice
+  #     summary: To create invoice of a purchase order only
+  #     description: ''
+  #     consumes:
+  #       - application/x-www-form-urlencoded
+  #     produces:
+  #       - application/json
+  #     parameters:
+  #       - name: purchaseOrderId
+  #         in: formData
+  #         required: true
+  #         type: string
+  #         description: Pass purchase order id fetched from getAllPurchaseOrders api
+  #     responses:
+  #       '200':
+  #         description: Success
+  #         schema:
+  #           $ref: '#/definitions/GeneralAPIResponse'
+  #     security:
+  #       - Bearer: []
   /uploadImage:
     post:
       tags:

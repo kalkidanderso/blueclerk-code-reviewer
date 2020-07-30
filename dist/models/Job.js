@@ -19,7 +19,7 @@ const JobSchema = new mongoose_1.Schema({
     equipmentId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'CustomerEquipment',
-        required: true
+        required: false
     },
     technician: {
         type: mongoose_1.Schema.Types.ObjectId,
