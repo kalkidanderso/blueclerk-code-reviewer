@@ -4956,6 +4956,13 @@
         ],
         "parameters": [
           {
+            "name": "items",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Json string of the items e.g [{\"name\": \"repair\", \"description\": \"repair description\", \"price\": 100, \"tax\": 0, \"quantity\": 2},{\"name\": \"service\", \"description\": \"repair description\", \"price\": 50, \"tax\": 0, \"quantity\": 1}]  OR [{\"item\": \"5f23240a3a68041ee95d6800\", \"price\": 1000, \"tax\": 0, \"quantity\": 2}]"
+          },
+          {
             "name": "jobId",
             "in": "formData",
             "required": false,
@@ -5113,6 +5120,13 @@
             "description": "Id of invoice you want to edit"
           },
           {
+            "name": "items",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Json string of the items e.g [{\"name\": \"repair\", \"description\": \"repair description\", \"price\": 100, \"tax\": 0, \"quantity\": 2},{\"name\": \"service\", \"description\": \"repair description\", \"price\": 50, \"tax\": 0, \"quantity\": 1}]  OR [{\"item\": \"5f23240a3a68041ee95d6800\", \"price\": 1000, \"tax\": 0, \"quantity\": 2}]"
+          },
+          {
             "name": "tax",
             "in": "formData",
             "type": "number",
@@ -5129,7 +5143,7 @@
           {
             "name": "note",
             "in": "formData",
-            "type": "number",
+            "type": "string",
             "required": false,
             "description": "Pass note if update manual invoice (required in manual invoice)"
           },

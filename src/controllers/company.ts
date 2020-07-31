@@ -1618,6 +1618,54 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, purchaseOrd
         }
     }
 
+
+    var items: any = []
+    if (params.items != undefined) {
+        try {
+            items = JSON.parse(params.items);
+        } catch (error) {
+            return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
+        }
+    }
+    
+    let invoiceItems: any[] = []
+    
+    if (items.length > 0) {
+    
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
+                return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' })
+            }
+            let obj: any = {}
+            let price = parseInt(item.price)
+            let quantity = parseInt(item.quantity)
+            let itemTax =  0
+            let subTotal = price * quantity
+
+            if(item.tax > 0) {
+                itemTax =  parseInt(item.tax)
+                subTotal = subTotal + (subTotal * itemTax /100)
+            }
+            
+            obj.quantity = item.quantity
+            obj.price = item.price
+            obj.tax = item.tax
+            obj.subTotal = subTotal
+            
+            if (item.item == undefined || item.item == null) {
+                obj.name = item.name
+                obj.description = item.description
+            } else {
+                obj.item = item.item
+            }
+            invoiceItems.push(obj)
+
+            total = total + subTotal
+        }
+    }
+
+
     var invoice = new Invoice({
         invoiceId: invoiceId,
         invoiceType: invoiceType,
@@ -1636,7 +1684,8 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, purchaseOrd
         createdAt: Date.now(),
         isFixed: isFixed,
         hourlyRate: hourlyRate,
-        timeSpent: timeSpent
+        timeSpent: timeSpent,
+        items: invoiceItems
     })
 
     next(req, res, invoice, currentInvoiceId)
@@ -1784,7 +1833,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                 invoice.tax = tax
                 invoice.taxPercentage = taxPercentage
                 invoice.charges = charges
-                invoice.total = total
+                // invoice.total = total
     
                 if(!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""' )) {
                     return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
@@ -1797,23 +1846,72 @@ export const updateInvoice = (req: Request, res: Response) => {
                 }else if(!job.isFixed){
                     invoice.timeSpent = params.timeSpent
                 }
+                let purchaseOrderIds: any = []
                 if (params.includePO) {
-                    let purchaseOrderIds: any = []
                     if (purchaseOrders != null && purchaseOrders.length > 0) {
                         purchaseOrders.map((PO: any) => {
                             purchaseOrderIds.push(PO._id)
                         })
-                        invoice.jobPurchaseOrders = purchaseOrderIds
+                        // invoice.jobPurchaseOrders = purchaseOrderIds
                     }
                 }
     
                 if(params.shippingCost != undefined && params.shippingCost != null){
                     invoice.total = invoice.total + parseInt(params.shippingCost)
-                    invoice.shippingCost = params.shippingCost
+                    // invoice.shippingCost = params.shippingCost
                 }
 
-                invoice.updateOne(
-                    invoice,
+                // total = invoice.total
+                var items: any = []
+                if (params.items != undefined) {
+                    try {
+                        items = JSON.parse(params.items);
+                    } catch (error) {
+                        return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
+                    }
+                }
+                
+                let invoiceItems: any[] = []
+                
+                if (items.length > 0) {
+                
+                    for (let i = 0; i < items.length; i++) {
+                        const item = items[i];
+                        if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
+                            return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' })
+                        }
+                        let obj: any = {}
+                        let price = parseInt(item.price)
+                        let quantity = parseInt(item.quantity)
+                        let itemTax =  0
+                        let subTotal = price * quantity
+
+                        if(item.tax > 0) {
+                            itemTax =  parseInt(item.tax)
+                            subTotal = subTotal + (subTotal * itemTax /100)
+                        }
+                        
+                        obj.quantity = item.quantity
+                        obj.price = item.price
+                        obj.tax = item.tax
+                        obj.subTotal = subTotal
+                        
+                        if (item.item == undefined || item.item == null) {
+                            obj.name = item.name
+                            obj.description = item.description
+                        } else {
+                            obj.item = item.item
+                        }
+                        invoiceItems.push(obj)
+
+                        total = total + subTotal
+                    }
+                }
+
+                // invoice.total = total
+
+                invoice.updateOne({total: total, items: invoiceItems, shippingCost: params.shippingCost, jobPurchaseOrders: purchaseOrderIds, tax: tax, taxPercentage: taxPercentage, charges: charges, note: params.note},
+                    
                     (err: any, raw: any) => {
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -1854,18 +1952,65 @@ export const updateInvoice = (req: Request, res: Response) => {
                 total = charges + tax
             }
             
-            invoice.tax = tax
-            invoice.taxPercentage = taxPercentage
-            invoice.charges = charges
-            invoice.total = total
-            invoice.note = params.note
-            if(params.shippingCost != undefined && params.shippingCost != null){
-                invoice.total = invoice.total + parseInt(params.shippingCost)
-                invoice.shippingCost = params.shippingCost
+            // invoice.tax = tax
+            // invoice.taxPercentage = taxPercentage
+            // invoice.charges = charges
+            // invoice.total = total
+            // invoice.note = params.note
+
+            // total = invoice.total
+            var items: any = []
+            if (params.items != undefined) {
+                try {
+                    items = JSON.parse(params.items);
+                } catch (error) {
+                    return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
+                }
             }
             
-            invoice.updateOne(
-                invoice,
+            let invoiceItems: any[] = []
+            
+            if (items.length > 0) {
+            
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
+                        return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' })
+                    }
+                    let obj: any = {}
+                    let price = parseInt(item.price)
+                    let quantity = parseInt(item.quantity)
+                    let itemTax =  0
+                    let subTotal = price * quantity
+
+                    if(item.tax > 0) {
+                        itemTax =  parseInt(item.tax)
+                        subTotal = subTotal + (subTotal * itemTax /100)
+                    }
+                    
+                    obj.quantity = item.quantity
+                    obj.price = item.price
+                    obj.tax = item.tax
+                    obj.subTotal = subTotal
+                    
+                    if (item.item == undefined || item.item == null) {
+                        obj.name = item.name
+                        obj.description = item.description
+                    } else {
+                        obj.item = item.item
+                    }
+                    invoiceItems.push(obj)
+
+                    total = total + subTotal
+                }
+            }
+
+            if(params.shippingCost != undefined && params.shippingCost != null){
+                invoice.total = invoice.total + parseInt(params.shippingCost)
+                // invoice.shippingCost = params.shippingCost
+            }
+            
+            invoice.updateOne({total: total, items: invoiceItems, shippingCost: params.shippingCost, tax: tax, taxPercentage: taxPercentage, charges: charges, note: params.note},
                 (err: any, raw: any) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})

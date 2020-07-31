@@ -1224,6 +1224,46 @@ const _populateInvoiceData = (req, res, job, purchaseOrders, purchaseOrder, esti
             });
         }
     }
+    var items = [];
+    if (params.items != undefined) {
+        try {
+            items = JSON.parse(params.items);
+        }
+        catch (error) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'Items json is invalid' });
+        }
+    }
+    let invoiceItems = [];
+    if (items.length > 0) {
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'Items format is invalid' });
+            }
+            let obj = {};
+            let price = parseInt(item.price);
+            let quantity = parseInt(item.quantity);
+            let itemTax = 0;
+            let subTotal = price * quantity;
+            if (item.tax > 0) {
+                itemTax = parseInt(item.tax);
+                subTotal = subTotal + (subTotal * itemTax / 100);
+            }
+            obj.quantity = item.quantity;
+            obj.price = item.price;
+            obj.tax = item.tax;
+            obj.subTotal = subTotal;
+            if (item.item == undefined || item.item == null) {
+                obj.name = item.name;
+                obj.description = item.description;
+            }
+            else {
+                obj.item = item.item;
+            }
+            invoiceItems.push(obj);
+            total = total + subTotal;
+        }
+    }
     var invoice = new Invoice_1.Invoice({
         invoiceId: invoiceId,
         invoiceType: invoiceType,
@@ -1242,7 +1282,8 @@ const _populateInvoiceData = (req, res, job, purchaseOrders, purchaseOrder, esti
         createdAt: Date.now(),
         isFixed: isFixed,
         hourlyRate: hourlyRate,
-        timeSpent: timeSpent
+        timeSpent: timeSpent,
+        items: invoiceItems
     });
     next(req, res, invoice, currentInvoiceId);
 };
@@ -1354,7 +1395,7 @@ exports.updateInvoice = (req, res) => {
                 invoice.tax = tax;
                 invoice.taxPercentage = taxPercentage;
                 invoice.charges = charges;
-                invoice.total = total;
+                // invoice.total = total
                 if (!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': 'Hourly rate is required' });
                 }
@@ -1367,20 +1408,62 @@ exports.updateInvoice = (req, res) => {
                 else if (!job.isFixed) {
                     invoice.timeSpent = params.timeSpent;
                 }
+                let purchaseOrderIds = [];
                 if (params.includePO) {
-                    let purchaseOrderIds = [];
                     if (purchaseOrders != null && purchaseOrders.length > 0) {
                         purchaseOrders.map((PO) => {
                             purchaseOrderIds.push(PO._id);
                         });
-                        invoice.jobPurchaseOrders = purchaseOrderIds;
+                        // invoice.jobPurchaseOrders = purchaseOrderIds
                     }
                 }
                 if (params.shippingCost != undefined && params.shippingCost != null) {
                     invoice.total = invoice.total + parseInt(params.shippingCost);
-                    invoice.shippingCost = params.shippingCost;
+                    // invoice.shippingCost = params.shippingCost
                 }
-                invoice.updateOne(invoice, (err, raw) => {
+                // total = invoice.total
+                var items = [];
+                if (params.items != undefined) {
+                    try {
+                        items = JSON.parse(params.items);
+                    }
+                    catch (error) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': 'Items json is invalid' });
+                    }
+                }
+                let invoiceItems = [];
+                if (items.length > 0) {
+                    for (let i = 0; i < items.length; i++) {
+                        const item = items[i];
+                        if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': 'Items format is invalid' });
+                        }
+                        let obj = {};
+                        let price = parseInt(item.price);
+                        let quantity = parseInt(item.quantity);
+                        let itemTax = 0;
+                        let subTotal = price * quantity;
+                        if (item.tax > 0) {
+                            itemTax = parseInt(item.tax);
+                            subTotal = subTotal + (subTotal * itemTax / 100);
+                        }
+                        obj.quantity = item.quantity;
+                        obj.price = item.price;
+                        obj.tax = item.tax;
+                        obj.subTotal = subTotal;
+                        if (item.item == undefined || item.item == null) {
+                            obj.name = item.name;
+                            obj.description = item.description;
+                        }
+                        else {
+                            obj.item = item.item;
+                        }
+                        invoiceItems.push(obj);
+                        total = total + subTotal;
+                    }
+                }
+                // invoice.total = total
+                invoice.updateOne({ total: total, items: invoiceItems, shippingCost: params.shippingCost, jobPurchaseOrders: purchaseOrderIds, tax: tax, taxPercentage: taxPercentage, charges: charges, note: params.note }, (err, raw) => {
                     if (err) {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
@@ -1414,16 +1497,57 @@ exports.updateInvoice = (req, res) => {
                 tax = (charges * params.tax) / 100;
                 total = charges + tax;
             }
-            invoice.tax = tax;
-            invoice.taxPercentage = taxPercentage;
-            invoice.charges = charges;
-            invoice.total = total;
-            invoice.note = params.note;
+            // invoice.tax = tax
+            // invoice.taxPercentage = taxPercentage
+            // invoice.charges = charges
+            // invoice.total = total
+            // invoice.note = params.note
+            // total = invoice.total
+            var items = [];
+            if (params.items != undefined) {
+                try {
+                    items = JSON.parse(params.items);
+                }
+                catch (error) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': 'Items json is invalid' });
+                }
+            }
+            let invoiceItems = [];
+            if (items.length > 0) {
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': 'Items format is invalid' });
+                    }
+                    let obj = {};
+                    let price = parseInt(item.price);
+                    let quantity = parseInt(item.quantity);
+                    let itemTax = 0;
+                    let subTotal = price * quantity;
+                    if (item.tax > 0) {
+                        itemTax = parseInt(item.tax);
+                        subTotal = subTotal + (subTotal * itemTax / 100);
+                    }
+                    obj.quantity = item.quantity;
+                    obj.price = item.price;
+                    obj.tax = item.tax;
+                    obj.subTotal = subTotal;
+                    if (item.item == undefined || item.item == null) {
+                        obj.name = item.name;
+                        obj.description = item.description;
+                    }
+                    else {
+                        obj.item = item.item;
+                    }
+                    invoiceItems.push(obj);
+                    total = total + subTotal;
+                }
+            }
             if (params.shippingCost != undefined && params.shippingCost != null) {
                 invoice.total = invoice.total + parseInt(params.shippingCost);
-                invoice.shippingCost = params.shippingCost;
+                // invoice.shippingCost = params.shippingCost
             }
-            invoice.updateOne(invoice, (err, raw) => {
+            invoice.updateOne({ total: total, items: invoiceItems, shippingCost: params.shippingCost, tax: tax, taxPercentage: taxPercentage, charges: charges, note: params.note }, (err, raw) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
