@@ -195,7 +195,8 @@ export const enum Permissions {
     Delete_Estimate,
     Get_Company_Contractor_Activity,
     Get_Items,
-    Update_Item
+    Update_Item,
+    Get_Equipment_Purchase_Order
 
 }
 
@@ -329,7 +330,8 @@ export const UserPermissions = {
             Permissions.Delete_Estimate,
             Permissions.Get_Company_Contractor_Activity,
             Permissions.Get_Items,
-            Permissions.Update_Item
+            Permissions.Update_Item,
+            Permissions.Get_Equipment_Purchase_Order
         ],
         off: [Permissions.None],
     },
@@ -435,7 +437,8 @@ export const UserPermissions = {
             Permissions.Delete_Estimate,
             Permissions.Get_Company_Contractor_Activity,
             Permissions.Get_Items,
-            Permissions.Update_Item
+            Permissions.Update_Item,
+            Permissions.Get_Equipment_Purchase_Order
         ],
         off: [Permissions.None],
     },
@@ -544,7 +547,8 @@ export const UserPermissions = {
             Permissions.Delete_Estimate,
             Permissions.Get_Company_Contractor_Activity,
             Permissions.Get_Items,
-            Permissions.Update_Item
+            Permissions.Update_Item,
+            Permissions.Get_Equipment_Purchase_Order
         ],
         off: [Permissions.None],
     },
@@ -663,7 +667,8 @@ export const UserPermissions = {
             Permissions.Delete_Estimate,
             Permissions.Get_Company_Contractor_Activity,
             Permissions.Get_Items,
-            Permissions.Update_Item
+            Permissions.Update_Item,
+            Permissions.Get_Equipment_Purchase_Order
         ],
         off: [Permissions.None],
     }

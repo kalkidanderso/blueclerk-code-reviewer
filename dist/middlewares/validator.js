@@ -116,6 +116,7 @@ exports.Validations = {
     createPurchaseOrder: [express_validator_1.check('customer').exists(), express_validator_1.check('note').exists()],
     udpatePurchaseOrder: [express_validator_1.check('purchaseOrderId').exists(), express_validator_1.check('total').exists(), express_validator_1.check('note').exists()],
     udpatePurchaseOrderStatus: [express_validator_1.check('purchaseOrderId').exists(), express_validator_1.check('status').exists()],
+    getEquipmentPO: [express_validator_1.check('equipmentId').exists()],
     createPurchaseOrderEstimate: [express_validator_1.check('estimateId').exists()],
     udpateEstimate: [express_validator_1.check('estimateId').exists(), express_validator_1.check('total').exists(), express_validator_1.check('customer').exists()],
     udpateEstimateStatus: [express_validator_1.check('estimateId').exists()],

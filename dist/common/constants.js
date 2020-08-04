@@ -152,7 +152,8 @@ exports.UserPermissions = {
             112 /* Delete_Estimate */,
             113 /* Get_Company_Contractor_Activity */,
             114 /* Get_Items */,
-            115 /* Update_Item */
+            115 /* Update_Item */,
+            116 /* Get_Equipment_Purchase_Order */
         ],
         off: [0 /* None */],
     },
@@ -258,7 +259,8 @@ exports.UserPermissions = {
             112 /* Delete_Estimate */,
             113 /* Get_Company_Contractor_Activity */,
             114 /* Get_Items */,
-            115 /* Update_Item */
+            115 /* Update_Item */,
+            116 /* Get_Equipment_Purchase_Order */
         ],
         off: [0 /* None */],
     },
@@ -367,7 +369,8 @@ exports.UserPermissions = {
             112 /* Delete_Estimate */,
             113 /* Get_Company_Contractor_Activity */,
             114 /* Get_Items */,
-            115 /* Update_Item */
+            115 /* Update_Item */,
+            116 /* Get_Equipment_Purchase_Order */
         ],
         off: [0 /* None */],
     },
@@ -486,7 +489,8 @@ exports.UserPermissions = {
             112 /* Delete_Estimate */,
             113 /* Get_Company_Contractor_Activity */,
             114 /* Get_Items */,
-            115 /* Update_Item */
+            115 /* Update_Item */,
+            116 /* Get_Equipment_Purchase_Order */
         ],
         off: [0 /* None */],
     }

@@ -3636,11 +3636,11 @@
             "description": "Id of the job purchase order is linked to. (Optional)"
           },
           {
-            "name": "nfcTag",
+            "name": "equipmentId",
             "in": "formData",
             "required": false,
             "type": "string",
-            "description": "nfcTag of the customer equipment to which PO is linked (optional)"
+            "description": "customer equipment id to which PO is linked (optional)"
           },
           {
             "name": "note",
@@ -3729,6 +3729,58 @@
         ]
       }
     },
+    "/getEquipmentPurchaseOrder": {
+      "post": {
+        "tags": [
+          "Purchase Order"
+        ],
+        "summary": "To get purchase orders by equipment id",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "equipmentId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of equipment for getting list of purhchase order"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "purchaseOrders": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/PurchaseOrder"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/updatePurchaseOrder": {
       "post": {
         "tags": [
@@ -3763,6 +3815,13 @@
             "required": true,
             "type": "string",
             "description": "add note for the required item if items is not added (required if items not added)"
+          },
+          {
+            "name": "equipmentId",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "customer equipment id to which PO is linked (optional)"
           },
           {
             "name": "job",

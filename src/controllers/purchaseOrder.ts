@@ -62,42 +62,18 @@ export const createPO = (req: Request, res: Response) => {
         taxPercentage: params.tax,
     });
 
-    if(params.nfcTag != undefined && params.nfcTag != null) {
-        CustomerEquipment.findOne({'info.nfcTag' : params.nfcTag })
-        .exec((err: any, equpiment: ICustomerEquipment) => {
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            }
-            
-            if (equpiment == null) {
-                return res.json({ 'status': Status.Error, 'message': 'Invalid tag scanned' })
-            }
-
-            purchaseOrder.equipment = equpiment._id
-            
-            purchaseOrder.save((err: any) => {
-    
-                if (err) {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                }
-        
-                return res.json({ 'status': Status.Success, 'message': 'Purchase order created successfully.' })
-        
-            })
-
-        })
-    }else{
-
-        purchaseOrder.save((err: any) => {
-    
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            }
-    
-            return res.json({ 'status': Status.Success, 'message': 'Purchase order created successfully.' })
-    
-        })
+    if(params.equipmentId != undefined && params.equipmentId != null) {
+        purchaseOrder.equipment = params.equipmentId
     }
+
+    purchaseOrder.save((err: any) => {
+
+        if (err) {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
+
+        return res.json({ 'status': Status.Success, 'message': 'Purchase order created successfully.' })
+    })
 
 }
 
@@ -185,6 +161,41 @@ export const createPOEstimate = (req: Request, res: Response) => {
 export const getAllPO = (req: Request, res: Response) => {
 
     PurchaseOrder.find({ company: req.companyId })
+        .populate({
+            path: 'customer',
+            select: 'profile.displayName info.email'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'info.companyName auth.email profile.displayName'
+        })
+        .populate({
+            path: 'items.part',
+            select: 'name itemCode description cost price'
+        })
+        .populate({
+            path: 'estimate',
+            select: 'total note'
+        })
+        .populate({
+            path: 'equipment',
+            select: 'info.model info.serialNumber info.location images'
+        })
+        .exec((err: any, purchaseOrders: IPurchaseOrder[]) => {
+
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+
+            return res.json({ 'status': Status.Success, 'purchaseOrders': purchaseOrders })
+        })
+}
+
+export const getAllEquipmentPurchaseOrder = (req: Request, res: Response) => {
+
+    const params = req.body
+
+    PurchaseOrder.find({ company: req.companyId, equipment: params.equipmentId })
         .populate({
             path: 'customer',
             select: 'profile.displayName info.email'
@@ -319,26 +330,14 @@ export const updatePO = (req: Request, res: Response) => {
                 }    
             }
 
-            if(params.nfcTag != undefined && params.nfcTag != null) {
-                CustomerEquipment.findOne({'info.nfcTag' : params.nfcTag})
-                .exec((err: any, equpiment: ICustomerEquipment) => {
-                    if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                    }
-                    
-                    if (equpiment == null) {
-                        return res.json({ 'status': Status.Error, 'message': 'Invalid tag scanned' })
-                    }
-        
-                    purchaseOrder.update({items: POItems, job: params.job, total: total, taxPercentage: taxPercentage, tax: taxAmount, note: params.note, equipment: equpiment._id},
-                    (err: any, raw: any) => {
-                            if (err) {
-                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                            }
-        
-                        return res.json({ 'status': Status.Success, 'message': "Purchase Order updated successfully." })
-                    })
-        
+            if(params.equipmentId != undefined && params.equipmentId != null) {
+                purchaseOrder.update({items: POItems, job: params.job, total: total, taxPercentage: taxPercentage, tax: taxAmount, note: params.note, equipment: params.equpimentId},
+                (err: any, raw: any) => {
+                        if (err) {
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
+    
+                    return res.json({ 'status': Status.Success, 'message': "Purchase Order updated successfully." })
                 })
             }else{
         

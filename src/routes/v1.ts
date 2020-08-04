@@ -1151,6 +1151,15 @@ export default function (sio: any) {
     )
     
     router.post(
+        '/getEquipmentPurchaseOrder',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        validate(Validations.getEquipmentPO),
+        checkUserPermissions(Permissions.Get_Equipment_Purchase_Order),
+        purchaseOrderController.getAllEquipmentPurchaseOrder
+    )
+    
+    router.post(
         '/updatePurchaseOrderStatus',
         passport.authenticate('jwt', { session: false }),
         getCompnayId(),

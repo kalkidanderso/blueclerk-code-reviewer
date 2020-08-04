@@ -193,6 +193,8 @@ export const Validations = {
   
   udpatePurchaseOrderStatus: [check('purchaseOrderId').exists(), check('status').exists()],
   
+  getEquipmentPO: [check('equipmentId').exists()],
+  
   createPurchaseOrderEstimate: [check('estimateId').exists()],
 
   udpateEstimate: [check('estimateId').exists(), check('total').exists(), check('customer').exists()],

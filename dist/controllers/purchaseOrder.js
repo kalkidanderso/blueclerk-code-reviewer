@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../common/constants");
 const PurchaseOrder_1 = require("../models/PurchaseOrder");
 const Estimate_1 = require("../models/Estimate");
-const CustomerEquipment_1 = require("../models/CustomerEquipment");
 exports.createPO = (req, res) => {
     const params = req.body;
     const user = req.user;
@@ -53,32 +52,15 @@ exports.createPO = (req, res) => {
         tax: taxAmount,
         taxPercentage: params.tax,
     });
-    if (params.nfcTag != undefined && params.nfcTag != null) {
-        CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
-            .exec((err, equpiment) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            if (equpiment == null) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid tag scanned' });
-            }
-            purchaseOrder.equipment = equpiment._id;
-            purchaseOrder.save((err) => {
-                if (err) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                }
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Purchase order created successfully.' });
-            });
-        });
+    if (params.equipmentId != undefined && params.equipmentId != null) {
+        purchaseOrder.equipment = params.equipmentId;
     }
-    else {
-        purchaseOrder.save((err) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            return res.json({ 'status': constants_1.Status.Success, 'message': 'Purchase order created successfully.' });
-        });
-    }
+    purchaseOrder.save((err) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        return res.json({ 'status': constants_1.Status.Success, 'message': 'Purchase order created successfully.' });
+    });
 };
 exports.createPOEstimate = (req, res) => {
     const params = req.body;
@@ -148,6 +130,36 @@ exports.createPOEstimate = (req, res) => {
 };
 exports.getAllPO = (req, res) => {
     PurchaseOrder_1.PurchaseOrder.find({ company: req.companyId })
+        .populate({
+        path: 'customer',
+        select: 'profile.displayName info.email'
+    })
+        .populate({
+        path: 'createdBy',
+        select: 'info.companyName auth.email profile.displayName'
+    })
+        .populate({
+        path: 'items.part',
+        select: 'name itemCode description cost price'
+    })
+        .populate({
+        path: 'estimate',
+        select: 'total note'
+    })
+        .populate({
+        path: 'equipment',
+        select: 'info.model info.serialNumber info.location images'
+    })
+        .exec((err, purchaseOrders) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        return res.json({ 'status': constants_1.Status.Success, 'purchaseOrders': purchaseOrders });
+    });
+};
+exports.getAllEquipmentPurchaseOrder = (req, res) => {
+    const params = req.body;
+    PurchaseOrder_1.PurchaseOrder.find({ company: req.companyId, equipment: params.equipmentId })
         .populate({
         path: 'customer',
         select: 'profile.displayName info.email'
@@ -256,21 +268,12 @@ exports.updatePO = (req, res) => {
                 taxPercentage = params.tax;
             }
         }
-        if (params.nfcTag != undefined && params.nfcTag != null) {
-            CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
-                .exec((err, equpiment) => {
+        if (params.equipmentId != undefined && params.equipmentId != null) {
+            purchaseOrder.update({ items: POItems, job: params.job, total: total, taxPercentage: taxPercentage, tax: taxAmount, note: params.note, equipment: params.equpimentId }, (err, raw) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                if (equpiment == null) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid tag scanned' });
-                }
-                purchaseOrder.update({ items: POItems, job: params.job, total: total, taxPercentage: taxPercentage, tax: taxAmount, note: params.note, equipment: equpiment._id }, (err, raw) => {
-                    if (err) {
-                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                    }
-                    return res.json({ 'status': constants_1.Status.Success, 'message': "Purchase Order updated successfully." });
-                });
+                return res.json({ 'status': constants_1.Status.Success, 'message': "Purchase Order updated successfully." });
             });
         }
         else {
