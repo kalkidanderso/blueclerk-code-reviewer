@@ -6,6 +6,8 @@ export interface IPurchaseOrder extends Document {
         name: String
         ItemCode: String
         quantity: number
+        tax: number
+        taxPercentage:number
         cost: number
         price: number
     }]
@@ -13,14 +15,13 @@ export interface IPurchaseOrder extends Document {
     status: number
     estimate: Schema.Types.ObjectId
     note: string
-    tax: number
-    taxPercentage: number
     total: number
     job: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId
     company: Schema.Types.ObjectId
     createdBy: Schema.Types.ObjectId
     createdAt: Date
+    invoiceCreated: boolean
 }
 const PurcahseOrderSchema = new Schema({
     items: [{
@@ -45,6 +46,14 @@ const PurcahseOrderSchema = new Schema({
             type: Number,
             required: false
         },
+        tax: {
+            type: Number,
+            default: 0
+        },
+        taxPercentage: {
+            type: Number,
+            default: 0
+        },
         price: {
             type: Number,
             required: false
@@ -52,14 +61,6 @@ const PurcahseOrderSchema = new Schema({
     }],
     note : {
         type : String,
-    },
-    tax: {
-        type: Number,
-        default: 0
-    },
-    taxPercentage: {
-        type: Number,
-        default: 0
     },
     total: {
         type: Number
@@ -103,6 +104,10 @@ const PurcahseOrderSchema = new Schema({
     },
     createdAt: {
         type: Date
+    },
+    invoiceCreated:{
+        type: Boolean,
+        default: false
     }
 })
 

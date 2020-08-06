@@ -201,7 +201,7 @@ export const Validations = {
   
   udpateEstimateStatus: [check('estimateId').exists()],
 
-  removeEstimate: [check('estimateId').exists()],
+  cancelEstimate: [check('estimateId').exists()],
 
   updateItem: [check('itemId').exists(), check('price').exists(), check('tax').exists()],
   

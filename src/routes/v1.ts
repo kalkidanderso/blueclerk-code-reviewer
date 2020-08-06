@@ -1221,12 +1221,12 @@ export default function (sio: any) {
     )
 
     router.post(
-        '/removeEstimate',
+        '/cancelEstimate',
         passport.authenticate('jwt', { session: false }),
         getCompnayId(),
-        validate(Validations.removeEstimate),
-        checkUserPermissions(Permissions.Delete_Estimate),
-        EstimateController.removeEstimate
+        validate(Validations.cancelEstimate),
+        checkUserPermissions(Permissions.Cancel_Estimate),
+        EstimateController.cancelEstimate
     )
 
     router.post(

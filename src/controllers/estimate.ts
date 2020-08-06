@@ -27,44 +27,42 @@ export const createEstimate = (req: Request, res: Response) => {
                     return res.json({ 'status': Status.Error, 'message': 'items format is invalid' })
                 }
                 let obj: any = {}
+                obj.cost = item.cost
+                obj.price = item.price
+                obj.tax = item.tax
+                obj.taxPercentage = item.taxPercentage
+                obj.quantity = item.quantity
+
                 if (item.part == undefined || item.part == null) {
                     obj.name = item.name
                     obj.itemCode = item.itemCode
-                    obj.cost = item.cost
-                    obj.price = item.price
-                    obj.quantity = item.quantity
                 } else {
                     obj.part = item.part
-                    obj.quantity = item.quantity
-                    obj.itemCode = item.itemCode
-                    obj.cost = item.cost
-                    obj.price = item.price
-    
                 }
                 estimateItems.push(obj)
             }
         }
 
-        let taxAmount = 0;
-        let total = params.total;
+        // let taxAmount = 0;
+        // let total = params.total;
         
-        if(params.tax != undefined && params.tax != null) {
-            if(params.tax > 0) {
-                taxAmount = total * (params.tax / 100)
-                total = total + taxAmount
-            }    
-        }
+        // if(params.tax != undefined && params.tax != null) {
+        //     if(params.tax > 0) {
+        //         taxAmount = total * (params.tax / 100)
+        //         total = total + taxAmount
+        //     }    
+        // }
     
         const estimate = new Estimate({
             note: params.note,
             items: estimateItems,
-            total: total,
+            total: params.total,
             customer: params.customer,
             company: req.companyId,
             createdBy: user._id,
             createdAt: Date.now(),
-            tax: taxAmount,
-            taxPercentage: params.tax,
+            // tax: taxAmount,
+            // taxPercentage: params.tax,
         });
     
         estimate.save((err: any) => {
@@ -96,8 +94,8 @@ export const createEstimate = (req: Request, res: Response) => {
                 company: req.companyId,
                 createdBy: user._id,
                 createdAt: Date.now(),
-                tax: purchaseOrder.tax,
-                taxPercentage: purchaseOrder.taxPercentage,
+                // tax: purchaseOrder.tax,
+                // taxPercentage: purchaseOrder.taxPercentage,
             });
         
             estimate.save((err: any) => {
@@ -200,9 +198,9 @@ export const updateEstimate = (req: Request, res: Response) => {
             //     return res.json({ 'status': Status.Error, 'message': "You can\'t change approved Estimate." })
             // }
 
-            // if (estimate.status == EstimateStatus.CANCELED) {
-            //     return res.json({ 'status': Status.Error, 'message': "You can\'t change canceled Estimate." })
-            // }
+            if (estimate.status == EstimateStatus.CANCELED) {
+                return res.json({ 'status': Status.Error, 'message': "You can\'t change canceled Estimate." })
+            }
             let estimateItems: any[] = []
 
             var items: any = []
@@ -218,37 +216,28 @@ export const updateEstimate = (req: Request, res: Response) => {
                         return res.json({ 'status': Status.Error, 'message': 'items format is invalid' })
                     }
                     let obj: any = {}
+                    obj.cost = item.cost
+                    obj.price = item.price
+                    obj.quantity = item.quantity
+                    obj.tax = item.tax
+                    obj.taxPercentage = item.taxPercentage
+
                     if (item.part == undefined || item.part == null) {
                         obj.name = item.name
                         obj.itemCode = item.itemCode
-                        obj.cost = item.cost
-                        obj.price = item.price
-                        obj.quantity = item.quantity
                     } else {
                         obj.part = item.part
-                        obj.quantity = item.quantity
-                        obj.itemCode = item.itemCode
-                        obj.cost = item.cost
-                        obj.price = item.price
                     }
+                    
                     estimateItems.push(obj)
                 }
 
             }
             
-            let taxAmount = estimate.tax;
-            let total = params.total;
-            let taxPercentage = estimate.taxPercentage
             
-            if(params.tax != undefined && params.tax != null) {
-                if(params.tax > 0) {
-                    taxAmount = total * (params.tax / 100)
-                    total = parseInt(total) + taxAmount
-                    taxPercentage = params.tax
-                }    
-            }
+            // let total = params.total;
 
-            estimate.update({ items: estimateItems, total: total, taxPercentage: taxPercentage, tax: taxAmount, customer: params.customer, note: params.note },
+            estimate.updateOne({ items: estimateItems, total: params.total, customer: params.customer, note: params.note },
                 (err: any, raw: any) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': err })
@@ -259,7 +248,7 @@ export const updateEstimate = (req: Request, res: Response) => {
         });
 }
 
-export const removeEstimate = (req: Request, res: Response) => {
+export const cancelEstimate = (req: Request, res: Response) => {
 
     const params = req.body
 
@@ -278,18 +267,18 @@ export const removeEstimate = (req: Request, res: Response) => {
             //     return res.json({ 'status': Status.Error, 'message': 'You can\'t delete approved estimate.' })
             // }
 
-            // if (estimate.status == EstimateStatus.CANCELED){
-            //     return res.json({ 'status': Status.Error, 'message': 'You can\'t delete canceled estimate.' })
-            // }
+            if (estimate.status == EstimateStatus.CANCELED){
+                return res.json({ 'status': Status.Error, 'message': 'Estimate is already canceled.' })
+            }
 
-            Estimate.findOneAndDelete({ _id: params.estimateId })
-                .exec((err: any, estimate: IEstimate) => {
+            estimate.updateOne({ status: EstimateStatus.CANCELED})
+                .exec((err: any, res: any) => {
 
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
 
-                    return res.json({ 'status': Status.Success, 'message': 'Estimate removed successfully.' })
+                    return res.json({ 'status': Status.Success, 'message': 'Estimate canceled.' })
                 })
         })
 }

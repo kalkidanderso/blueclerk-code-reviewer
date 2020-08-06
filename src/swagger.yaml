@@ -2318,7 +2318,7 @@ paths:
           in: formData
           required: false
           type: string
-          description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 123, "price": 150}]' 
+          description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] OR [{"part": "part id from listParts api", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] optional'  
         - name: job
           in: formData
           required: false
@@ -2339,11 +2339,6 @@ paths:
           required: true
           type: string
           description: Id of the customer purchase order is linked to
-        - name: tax
-          in: formData
-          type: number
-          required: false
-          description: Percentage of tax to be added in total
         - name: total
           in: formData
           required: false
@@ -2356,29 +2351,29 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
-  # /createPOEstimate:
-  #   post:
-  #     tags:
-  #       - Purchase Order
-  #     summary: To create estimate purchase order
-  #     description: ''
-  #     consumes:
-  #       - application/x-www-form-urlencoded
-  #     produces:
-  #       - application/json
-  #     parameters:
-  #       - name: estimateId
-  #         in: formData
-  #         required: true
-  #         type: string
-  #         description: Id of the estimate to create purchase order 
-  #     responses:
-  #       '200':
-  #         description: Success
-  #         schema:
-  #           $ref: '#/definitions/GeneralAPIResponse'
-  #     security:
-  #       - Bearer: []      
+  /createPOEstimate:
+    post:
+      tags:
+        - Purchase Order
+      summary: To create purchase order form estimate
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: estimateId
+          in: formData
+          required: true
+          type: string
+          description: Id of the estimate to create purchase order 
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []      
   /getAllPurchaseOrder:
     post:
       tags:
@@ -2453,7 +2448,7 @@ paths:
           in: formData
           required: false
           type: string
-          description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 123, "price": 150}]'
+          description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] OR [{"part": "part id from listParts api", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] optional' 
         - name: note
           in: formData
           required: true
@@ -2469,11 +2464,6 @@ paths:
           required: false
           type: string
           description: Id of the job purchase order linked to
-        - name: tax
-          in: formData
-          type: number
-          required: false
-          description: Percentage of tax to be added in total
         - name: total
           in: formData
           required: true
@@ -2534,7 +2524,7 @@ paths:
           in: formData
           required: false
           type: string
-          description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 123, "price": 150}] optional' 
+          description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] OR [{"part": "part id from listParts api", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] optional' 
         - name: note
           in: formData
           required: false
@@ -2545,11 +2535,6 @@ paths:
           required: false
           type: string
           description: Id of the customer purchase order is linked to
-        - name: tax
-          in: formData
-          type: number
-          required: false
-          description: Percentage of tax to be added in total
         - name: total
           in: formData
           required: false
@@ -2612,7 +2597,7 @@ paths:
           in: formData
           required: false
           type: string
-          description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 123, "price": 150}]'
+          description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] OR [{"part": "part id from listParts api", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] optional' 
         - name: note
           in: formData
           required: true
@@ -2623,11 +2608,6 @@ paths:
           required: true
           type: string
           description: id of the customer for whom the estimate is created
-        - name: tax
-          in: formData
-          type: number
-          required: false
-          description: Percentage of tax to be added in total
         - name: total
           in: formData
           required: true
@@ -2668,11 +2648,11 @@ paths:
   #           $ref: '#/definitions/GeneralAPIResponse'
   #     security:
   #       - Bearer: []
-  /removeEstimate:
+  /cancelEstimate:
     post:
       tags:
         - Estimate
-      summary: To delete Estimate
+      summary: To cancel estimate
       description: ''
       consumes:
         - application/x-www-form-urlencoded
@@ -2683,7 +2663,7 @@ paths:
           in: formData
           required: true
           type: string
-          description: Id of estimate you want to delete
+          description: Id of estimate you want to cancel
       responses:
         '200':
           description: Success

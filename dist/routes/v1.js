@@ -226,7 +226,7 @@ function default_1(sio) {
     router.post('/updateEstimateStatus', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(110 /* Update_Status_Estimate */), validator_1.validate(validator_1.Validations.udpateEstimateStatus), EstimateController.updateEstimateStatus);
     router.post('/createEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(108 /* Create_Estimate */), EstimateController.createEstimate);
     router.post('/getEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(111 /* Get_Estimate */), EstimateController.getEstimates);
-    router.post('/removeEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.removeEstimate), permissions_1.checkUserPermissions(112 /* Delete_Estimate */), EstimateController.removeEstimate);
+    router.post('/cancelEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.cancelEstimate), permissions_1.checkUserPermissions(112 /* Cancel_Estimate */), EstimateController.cancelEstimate);
     router.post('/getCompanyContractorActivity', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(113 /* Get_Company_Contractor_Activity */), companyController.getCompanyContractorActivity);
     return router;
 }

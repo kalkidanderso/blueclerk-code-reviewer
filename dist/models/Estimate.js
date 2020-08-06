@@ -31,6 +31,14 @@ const EstimateSchema = new mongoose_1.Schema({
                 type: Number,
                 required: false
             },
+            tax: {
+                type: Number,
+                default: 0
+            },
+            taxPercentage: {
+                type: Number,
+                default: 0
+            },
             price: {
                 type: Number,
                 required: false
@@ -39,14 +47,6 @@ const EstimateSchema = new mongoose_1.Schema({
     note: {
         type: String,
         required: false
-    },
-    tax: {
-        type: Number,
-        default: 0
-    },
-    taxPercentage: {
-        type: Number,
-        default: 0
     },
     total: {
         type: Number,
@@ -81,6 +81,10 @@ const EstimateSchema = new mongoose_1.Schema({
     },
     createdAt: {
         type: Date
+    },
+    invoiceCreated: {
+        type: Boolean,
+        default: false
     }
 });
 exports.Estimate = mongoose_1.default.model('Estimate', EstimateSchema);

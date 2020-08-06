@@ -8,18 +8,19 @@ export interface IEstimate extends Document {
         itemCode: String
         quantity: number
         cost: number
+        tax: number
+        taxPercentage: number
         price: number
     }]
     note : string
     status: number
     purchaseOrder: Schema.Types.ObjectId
-    tax: number
-    taxPercentage: number
     total: number
     customer: Schema.Types.ObjectId
     company: Schema.Types.ObjectId
     createdBy: Schema.Types.ObjectId
     createdAt: Date
+    invoiceCreated: boolean
 }
 const EstimateSchema = new Schema({
     items: [{
@@ -44,6 +45,14 @@ const EstimateSchema = new Schema({
             type: Number,
             required: false
         },
+        tax: {
+            type: Number,
+            default: 0
+        },
+        taxPercentage: {
+            type: Number,
+            default: 0
+        },
         price: {
             type: Number,
             required: false
@@ -52,14 +61,6 @@ const EstimateSchema = new Schema({
     note : {
         type : String,
         required : false
-    },
-    tax: {
-        type: Number,
-        default: 0
-    },
-    taxPercentage: {
-        type: Number,
-        default: 0
     },
     total: {
         type: Number,
@@ -94,6 +95,10 @@ const EstimateSchema = new Schema({
     },
     createdAt: {
         type: Date
+    },
+    invoiceCreated:{
+        type: Boolean,
+        default: false
     }
 })
 

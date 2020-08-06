@@ -18,39 +18,38 @@ exports.createPO = (req, res) => {
                 return res.json({ 'status': constants_1.Status.Error, 'message': 'items format is invalid' });
             }
             let obj = {};
+            obj.cost = item.cost;
+            obj.price = item.price;
+            obj.quantity = item.quantity;
+            obj.taxPercentage = item.taxPercentage;
+            obj.tax = item.tax;
             if (item.part == undefined || item.part == null) {
                 obj.name = item.name;
                 obj.itemCode = item.itemCode;
-                obj.cost = item.cost;
-                obj.price = item.price;
-                obj.quantity = item.quantity;
             }
             else {
                 obj.part = item.part;
-                obj.quantity = item.quantity;
             }
             POItems.push(obj);
         }
     }
-    let taxAmount = 0;
-    let total = params.total;
-    if (params.tax != undefined && params.tax != null) {
-        if (params.tax > 0) {
-            taxAmount = total * (params.tax / 100);
-            total = parseInt(total) + taxAmount;
-        }
-    }
+    // let taxAmount = 0;
+    // let total = params.total;
+    // if(params.tax != undefined && params.tax != null) {
+    //     if(params.tax > 0) {
+    //         taxAmount = total * (params.tax / 100)
+    //         total = parseInt(total) + taxAmount
+    //     }    
+    // }
     const purchaseOrder = new PurchaseOrder_1.PurchaseOrder({
         items: POItems,
         note: params.note,
-        total: total,
+        total: params.total,
         job: params.job,
         customer: params.customer,
         company: req.companyId,
         createdBy: user._id,
         createdAt: Date.now(),
-        tax: taxAmount,
-        taxPercentage: params.tax,
     });
     if (params.equipmentId != undefined && params.equipmentId != null) {
         purchaseOrder.equipment = params.equipmentId;
@@ -81,9 +80,9 @@ exports.createPOEstimate = (req, res) => {
             // if(estimate.status == EstimateStatus.PENDING){
             //     return res.json({ 'status': Status.Error, 'message': 'You can\'t create purchase order from pending estimate. It should be approved.' })
             // }
-            // if(estimate.status == EstimateStatus.CANCELED){
-            //     return res.json({ 'status': Status.Error, 'message': 'you can\'t create purchase order from canceled estimate. It should be appproved' })
-            // }
+            if (estimate.status == 2 /* CANCELED */) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'you can\'t create purchase order from canceled estimate.' });
+            }
             var items = estimate.items;
             if (items.length < 1 && estimate.note == undefined && estimate.note == '""') {
                 return res.json({ 'status': constants_1.Status.Error, 'message': 'This estimate must have some items or note to create purchase order from estimate' });
@@ -92,18 +91,17 @@ exports.createPOEstimate = (req, res) => {
             for (let i = 0; i < items.length; i++) {
                 const item = items[i];
                 let obj = {};
+                obj.cost = item.cost;
+                obj.price = item.price;
+                obj.quantity = item.quantity;
+                obj.taxPercentage = item.taxPercentage;
+                obj.tax = item.tax;
                 if (item.part == undefined || item.part == null) {
                     obj.name = item.name;
                     obj.itemCode = item.itemCode;
-                    obj.cost = item.cost;
-                    obj.price = item.price;
-                    obj.quantity = item.quantity;
                 }
                 else {
                     obj.part = item.part;
-                    obj.quantity = item.quantity;
-                    obj.cost = item.cost;
-                    obj.price = item.price;
                 }
                 POItems.push(obj);
             }
@@ -116,8 +114,6 @@ exports.createPOEstimate = (req, res) => {
                 company: req.companyId,
                 createdBy: user._id,
                 createdAt: Date.now(),
-                tax: estimate.tax,
-                taxPercentage: estimate.taxPercentage,
             });
             purchaseOrder.save((err) => {
                 if (err) {
@@ -242,34 +238,23 @@ exports.updatePO = (req, res) => {
                     return res.json({ 'status': constants_1.Status.Error, 'message': 'items format is invalid' });
                 }
                 let obj = {};
+                obj.cost = item.cost;
+                obj.price = item.price;
+                obj.quantity = item.quantity;
+                obj.tax = item.tax;
+                obj.taxPercentage = item.taxPercentage;
                 if (item.part == undefined || item.part == null) {
                     obj.name = item.name;
                     obj.itemCode = item.itemCode;
-                    obj.cost = item.cost;
-                    obj.price = item.price;
-                    obj.quantity = item.quantity;
                 }
                 else {
                     obj.part = item.part;
-                    obj.cost = item.cost;
-                    obj.price = item.price;
-                    obj.quantity = item.quantity;
                 }
                 POItems.push(obj);
             }
         }
-        let taxAmount = purchaseOrder.tax;
-        let total = params.total;
-        let taxPercentage = purchaseOrder.taxPercentage;
-        if (params.tax != undefined && params.tax != null) {
-            if (params.tax > 0) {
-                taxAmount = total * (params.tax / 100);
-                total = parseInt(total) + taxAmount;
-                taxPercentage = params.tax;
-            }
-        }
         if (params.equipmentId != undefined && params.equipmentId != null) {
-            purchaseOrder.update({ items: POItems, job: params.job, total: total, taxPercentage: taxPercentage, tax: taxAmount, note: params.note, equipment: params.equpimentId }, (err, raw) => {
+            purchaseOrder.update({ items: POItems, job: params.job, total: params.total, note: params.note, equipment: params.equpimentId }, (err, raw) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
@@ -277,7 +262,7 @@ exports.updatePO = (req, res) => {
             });
         }
         else {
-            purchaseOrder.update({ items: POItems, total: total, taxPercentage: taxPercentage, tax: taxAmount, job: params.job, note: params.note }, (err, raw) => {
+            purchaseOrder.update({ items: POItems, total: params.total, job: params.job, note: params.note }, (err, raw) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }

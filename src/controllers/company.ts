@@ -951,382 +951,6 @@ export const getInvoiceNumber = (req: Request, res: Response) => {
     )
 }
 
-// // Job Invoices
-// export const createInvoice = (req: Request, res: Response) => {
-
-//     const params = req.body
-//     const user = <IUser>req.user
-//     const company = <ICompany>req.company
-    
-//     if(params.hasOwnProperty('jobId') && (params.jobId != null && params.jobId != '""' )){
-        
-//         Invoice.findOne({ 'job': params.jobId, 'company': req.companyId })
-//             .then((previousInvoice: any) => {
-
-//                 if (previousInvoice != undefined || previousInvoice != null) {
-//                     throw new Error('Invoice already created for this job')
-//                 }
-
-//                 const jobPrmoies = Job.findById(params.jobId)
-//                 const POPromise = PurchaseOrder.find({
-//                     job: params.jobId
-//                 })
-//                 return Promise.all([jobPrmoies, POPromise])
-
-//             })
-//             .then((result: any) => {
-
-//                 const job = result[0]
-//                 const purchaseOrders = result[1]
-
-//                 if (job == undefined || job == null) {
-//                     return res.json({ 'status': Status.Error, 'message': 'Invalid job id' })
-//                 }
-//                 _populateInvoiceData(req, res, job, purchaseOrders, (req, res, invoiceData )=>{
-
-//                 })
-
-//                 let taxAmount: number = 0;
-//                 let charges: number = job.charges;
-//                 if (params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) {
-//                     taxAmount = job.charges * params.tax / 100
-//                 }
-
-//                 let total = job.charges + taxAmount
-//                 let currentInvoiceId = 0;
-//                 if (company.currentInvoiceId) {
-//                     currentInvoiceId = company.currentInvoiceId
-//                 }
-//                 let invoiceId = 'Invoice ' + (currentInvoiceId + 1)
-
-//                 if (company.invoicePrefix != undefined && company.invoicePrefix != null && company.invoicePrefix == '""') {
-//                     invoiceId = 'Invoice ' + company.invoicePrefix + '-' + (currentInvoiceId + 1)
-//                 }
-
-//                 if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
-//                     charges = parseInt(params.charges)
-//                     taxAmount = (charges * params.tax) / 100
-//                     total = charges + taxAmount
-//                 }
-
-//                 if(params.shippingCost != undefined && params.shippingCost != null){
-//                     total = total + parseInt(params.shippingCost)
-//                 }
-
-//                 var invoice = new Invoice({
-//                     invoiceId: invoiceId,
-//                     job: params.jobId,
-//                     jobPurchaseOrder: [],
-//                     customer: job.customer,
-//                     company: req.companyId,
-//                     charges: charges,
-//                     total: total,
-//                     tax: taxAmount,
-//                     taxPercentage: params.tax,
-//                     createdBy: user._id,
-//                     createdAt: Date.now(),
-//                     isFixed: job.isFixed,
-//                     invoiceType: 0,
-//                     timeSpent: params.timeSpent,
-//                     note : params.note,
-//                     shippingCost : params.shippingCost
-//                 })
-
-//                 if (params.includePO) {
-//                     let purchaseOrderIds: any = []
-//                     if (purchaseOrders != null && purchaseOrders.length > 0) {
-//                         purchaseOrders.map((PO: any) => {
-//                             purchaseOrderIds.push(PO._id)
-//                         })
-//                         invoice.jobPurchaseOrders = purchaseOrderIds
-//                     }
-//                 }
-
-//                 if (!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
-//                     return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
-//                 } else if (!job.isFixed) {
-//                     invoice.hourlyRate = params.hourlyRate
-//                 }
-
-//                 if (!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
-//                     return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
-//                 } else if (!job.isFixed) {
-//                     invoice.timeSpent = params.timeSpent
-//                 }
-
-//                 invoice.save((invoiceError: any, newInvoice: IInvoice) => {
-//                     if (invoiceError) {
-//                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-//                     }
-
-//                     company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
-//                         .exec((companyError: any, raw: any) => {
-//                             if (companyError) {
-//                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-//                             }
-
-//                             return res.json({ 'status': Status.Success, 'message': "Invoice created successfully." })
-//                         })
-
-
-//                 })
-
-//             })
-//             .catch((error: any) => {
-//                 if (error.message != undefined) {
-//                     return res.json({ 'status': Status.Error, 'message': error.message })
-//                 } else {
-//                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-//                 }
-//             })
-//     }
-//     else if(params.hasOwnProperty('purchaseOrderId') && params.purchaseOrderId != null && params.purchaseOrderId != '""' ){
-
-//         Invoice.findOne({ 'purchaseOrder': params.purchaseOrderId, 'company': req.companyId },
-//         (err: any, previousInvoice: IInvoice) => {
-
-//             if (err) {
-//                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-//             }
-
-//             if (previousInvoice != undefined || previousInvoice != null) {
-//                 return res.json({ 'status': Status.Success, 'message': "Invoice already created for this purchase order." })
-//             }
-
-//             PurchaseOrder.findById(params.purchaseOrderId, (POError: any, PO: IPurchaseOrder) => {
-
-//                 if (POError) {
-//                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-//                 }
-
-//                 if (PO == undefined || PO == null) {
-//                     return res.json({ 'status': Status.Error, 'message': 'Invalid purchase order id' })
-//                 }
-
-//                 let currentInvoiceId = 0;
-//                 if (company.currentInvoiceId) {
-//                     currentInvoiceId = company.currentInvoiceId
-//                 }
-//                 let invoiceId = 'Invoice ' + (currentInvoiceId + 1)
-
-//                 if (company.invoicePrefix != undefined && company.invoicePrefix != null && company.invoicePrefix == '""') {
-//                     invoiceId = 'Invoice ' + company.invoicePrefix + '-' + (currentInvoiceId + 1)
-//                 }
-//                 let total = PO.total
-
-//                 let taxAmount = PO.tax;
-//                 let taxPercentage = PO.taxPercentage
-                
-//                 if(params.tax != undefined && params.tax != null) {
-//                     if(params.tax > 0) {
-//                         taxAmount = total * (params.tax / 100)
-//                         total = total + taxAmount
-//                         taxPercentage = params.tax
-//                     } else {
-//                         total = total + taxAmount
-//                     } 
-//                 }
-
-//                 if(params.shippingCost != undefined && params.shippingCost != null){
-//                     total = total + parseInt(params.shippingCost)
-//                 }
-
-
-//                 var invoice = new Invoice({
-//                     invoiceId: invoiceId,
-//                     note : params.note,
-//                     purchaseOrder: params.purchaseOrderId,
-//                     customer: PO.customer,
-//                     company: req.companyId,
-//                     total: total,
-//                     createdBy: user._id,
-//                     createdAt: Date.now(),
-//                     invoiceType: 1,
-//                     tax: taxAmount,
-//                     taxPercentage: taxPercentage
-//                 })
-
-//                 invoice.save((invoiceError: any, newInvoice: IInvoice) => {
-//                     if (invoiceError) {
-//                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-//                     }
-
-//                     company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
-//                         .exec((companyError: any, raw: any) => {
-//                             if (companyError) {
-//                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-//                             }
-
-//                             return res.json({ 'status': Status.Success, 'message': "Purchase order invoice created successfully." })
-//                         })
-
-
-//                 })
-//             })
-
-
-//         });
-//     }
-//     else if(params.hasOwnProperty('estimateId') && params.estimateId != null && params.estimateId != '""' ){
-
-//         Invoice.findOne({ 'estimate': params.estimateId, 'company': req.companyId },
-//         (err: any, previousInvoice: IInvoice) => {
-
-//             if (err) {
-//                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-//             }
-
-//             if (previousInvoice != undefined || previousInvoice != null) {
-//                 return res.json({ 'status': Status.Success, 'message': "Invoice already created for this purchase order." })
-//             }
-
-//             Estimate.findById(params.estimateId, (estimateError: any, estimate: IEstimate) => {
-
-//                 if (estimateError) {
-//                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-//                 }
-
-//                 if (estimate == undefined || estimate == null) {
-//                     return res.json({ 'status': Status.Error, 'message': 'Invalid estimate id' })
-//                 }
-
-//                 let currentInvoiceId = 0;
-//                 if (company.currentInvoiceId) {
-//                     currentInvoiceId = company.currentInvoiceId
-//                 }
-//                 let invoiceId = 'Invoice ' + (currentInvoiceId + 1)
-
-//                 if (company.invoicePrefix != undefined && company.invoicePrefix != null && company.invoicePrefix == '""') {
-//                     invoiceId = 'Invoice ' + company.invoicePrefix + '-' + (currentInvoiceId + 1)
-//                 }
-                
-//                 let total = estimate.total
-
-
-//                 let taxAmount = estimate.tax;
-//                 let taxPercentage = estimate.taxPercentage
-                
-//                 if(params.tax != undefined && params.tax != null) {
-//                     if(params.tax > 0) {
-//                         taxAmount = total * (params.tax / 100)
-//                         total = total + taxAmount
-//                         taxPercentage = params.tax
-//                     } else {
-//                         total = total + taxAmount
-//                     } 
-//                 }
-
-//                 if(params.shippingCost != undefined && params.shippingCost != null){
-//                     total = total + parseInt(params.shippingCost)
-//                 }
-
-//                 var invoice = new Invoice({
-//                     invoiceId: invoiceId,
-//                     note : params.note,
-//                     estimate: params.estimateId,
-//                     customer: estimate.customer,
-//                     company: req.companyId,
-//                     total: total,
-//                     createdBy: user._id,
-//                     createdAt: Date.now(),
-//                     invoiceType: 2,
-//                     tax: taxAmount,
-//                     taxPercentage: taxPercentage
-//                 })
-
-//                 invoice.save((invoiceError: any, newInvoice: IInvoice) => {
-//                     if (invoiceError) {
-//                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-//                     }
-
-//                     company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
-//                         .exec((companyError: any, raw: any) => {
-//                             if (companyError) {
-//                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-//                             }
-
-//                             return res.json({ 'status': Status.Success, 'message': "Estimate invoice created successfully." })
-//                         })
-
-
-//                 })
-//             })
-
-
-//         });
-//     }
-//     else {
-
-//         let taxAmount: number = 0;
-//         let charges: number = 0;
-//         let total: number = 0
-//         let currentInvoiceId = 0;
-        
-//         if (company.currentInvoiceId) {
-//             currentInvoiceId = company.currentInvoiceId
-//         }
-//         let invoiceId = 'Invoice ' + (currentInvoiceId + 1)
-
-//         if (company.invoicePrefix != undefined && company.invoicePrefix != null && company.invoicePrefix == '""') {
-//             invoiceId = 'Invoice ' + company.invoicePrefix + '-' + (currentInvoiceId + 1)
-//         }
-
-//         if(params.customerId == undefined && params.customerId == null && params.customerId == '""' ){
-//             return res.json({ 'status': Status.Error, 'message': 'customer is required for create invoice' })
-//         }
-
-//         if(params.description == undefined && params.description == null && params.description == '""' ){
-//             return res.json({ 'status': Status.Error, 'message': 'description is required for create invoice' })
-//         }
-        
-//         if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
-//             charges = parseInt(params.charges)
-//             taxAmount = (params.charges * params.tax) / 100
-//             total = charges + taxAmount
-//         } else {
-//             return res.json({ 'status': Status.Error, 'message': 'charges are required for create invoice' })
-//         }
-
-//         if(params.shippingCost != undefined && params.shippingCost != null){
-//             total = total + parseInt(params.shippingCost)
-//         }
-
-//         var invoice = new Invoice({
-//             invoiceId: invoiceId,
-//             customer: params.customerId,
-//             note : params.note,
-//             company: req.companyId,
-//             charges: charges,
-//             total: total,
-//             tax: taxAmount,
-//             taxPercentage: params.tax,
-//             createdBy: user._id,
-//             createdAt: Date.now(),
-//             invoiceType: 3,
-//             timeSpent: params.timeSpent
-//         })
-
-//         invoice.save((invoiceError: any, newInvoice: IInvoice) => {
-//             if (invoiceError) {
-//                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-//             }
-
-//             company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
-//                 .exec((companyError: any, raw: any) => {
-//                     if (companyError) {
-//                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-//                     }
-
-//                     return res.json({ 'status': Status.Success, 'message': " invoice created successfully." })
-//                 })
-
-
-//         })
-        
-//     }
-// }
-
-
 // Job Invoices
 export const createInvoice = (req: Request, res: Response) => {
 
@@ -1408,22 +1032,34 @@ export const createInvoice = (req: Request, res: Response) => {
                     return res.json({ 'status': Status.Error, 'message': 'Invalid purchase order id' })
                 }
 
+                if (purchaseOrder.invoiceCreated) {
+                    return res.json({ 'status': Status.Error, 'message': 'Invoice already created for this purchase order' })
+                }
+
                 _populateInvoiceData(req, res, null, null, purchaseOrder, null, (req, res, invoiceData, currentInvoiceId )=>{
                     
                     invoiceData.save((invoiceError: any, newInvoice: IInvoice, ) => {
+
                         if (invoiceError) {
-                            console.log(invoiceError)
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
-    
-                        company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
-                            .exec((companyError: any, raw: any) => {
+
+                        purchaseOrder.updateOne({ invoiceCreated: true}).exec((poUpdateError: any, raw: any) => {
+                            
+                            if (poUpdateError) {
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            }
+                            
+                            company.updateOne({ currentInvoiceId: currentInvoiceId + 1 }).exec((companyError: any, raw: any) => {
+                            
                                 if (companyError) {
                                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                                 }
     
                                 return res.json({ 'status': Status.Success, 'message': "Purchase order invoice created successfully." })
                             })
+
+                        })
     
     
                     })
@@ -1444,7 +1080,7 @@ export const createInvoice = (req: Request, res: Response) => {
             }
 
             if (previousInvoice != undefined || previousInvoice != null) {
-                return res.json({ 'status': Status.Success, 'message': "Invoice already created for this purchase order." })
+                return res.json({ 'status': Status.Success, 'message': "Invoice already created for this estimate." })
             }
 
             Estimate.findById(params.estimateId, (estimateError: any, estimate: IEstimate) => {
@@ -1456,23 +1092,36 @@ export const createInvoice = (req: Request, res: Response) => {
                 if (estimate == undefined || estimate == null) {
                     return res.json({ 'status': Status.Error, 'message': 'Invalid estimate id' })
                 }
+             
+                if (estimate.invoiceCreated) {
+                    return res.json({ 'status': Status.Error, 'message': 'Invoice already created for this invoice' })
+                }
 
                 _populateInvoiceData(req, res, null, null, null, estimate, (req, res, invoiceData, currentInvoiceId )=>{
                     
                     invoiceData.save((invoiceError: any, newInvoice: IInvoice, ) => {
+                        
                         if (invoiceError) {
-                            console.log(invoiceError)
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
-    
-                        company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
+                        
+                        estimate.updateOne({invoiceCreated: true}).exec((estimateUpdateError: any, raw: any) => {
+                            
+                            if (estimateUpdateError) {
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            }
+
+                            company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
                             .exec((companyError: any, raw: any) => {
+                                
                                 if (companyError) {
                                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                                 }
     
                                 return res.json({ 'status': Status.Success, 'message': "Estimate invoice created successfully." })
                             })
+
+                        })
     
     
                     })
@@ -1482,13 +1131,12 @@ export const createInvoice = (req: Request, res: Response) => {
         });
     }
     else {
-        console.log("inside else");
         
         _populateInvoiceData(req, res, null, null, null, null, (req, res, invoiceData, currentInvoiceId )=>{
                     
             invoiceData.save((invoiceError: any, newInvoice: IInvoice, ) => {
                 if (invoiceError) {
-                    console.log(invoiceError)
+                    
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
 
@@ -1558,20 +1206,31 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, purchaseOrd
     }
 
     if(purchaseOrder != null){
+        if(purchaseOrder.total == undefined || purchaseOrder.total == null || purchaseOrder.total == '""' ){
+            return res.json({ 'status': Status.Error, 'message': 'purchaseOrder total is missing' })
+        }
+        if(purchaseOrder.customer == undefined || purchaseOrder.customer == null || purchaseOrder.customer == '""' ){
+            return res.json({ 'status': Status.Error, 'message': 'purchaseOrder customer is missing' })
+        }
+
         purchaseOrderId = purchaseOrder._id
-        charges = purchaseOrder.total - purchaseOrder.tax
+        charges = purchaseOrder.total
         customer = purchaseOrder.customer
-        taxAmount = purchaseOrder.tax;
-        taxPercentage = purchaseOrder.taxPercentage
         invoiceType = 1
     }
    
     if(estimate != null){
+
+        if(estimate.total == undefined || estimate.total == null || estimate.total == '""' ){
+            return res.json({ 'status': Status.Error, 'message': 'Estimate total is missing' })
+        }
+        if(estimate.customer == undefined || estimate.customer == null || estimate.customer == '""' ){
+            return res.json({ 'status': Status.Error, 'message': 'Estimate customer is missing' })
+        }
+
         estimateId = estimate._id
-        charges = estimate.total - estimate.tax
+        charges = estimate.total
         customer = estimate.customer
-        taxAmount = estimate.tax;
-        taxPercentage = estimate.taxPercentage
         invoiceType = 2
     }
 
@@ -1685,7 +1344,8 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, purchaseOrd
         isFixed: isFixed,
         hourlyRate: hourlyRate,
         timeSpent: timeSpent,
-        items: invoiceItems
+        items: invoiceItems,
+        estimate: estimateId
     })
 
     next(req, res, invoice, currentInvoiceId)
@@ -2087,6 +1747,10 @@ export const getInvoices = (req: Request, res: Response) => {
     .populate({
         path: 'company',
         select: 'info.companyName info.logoUrl info.email permissions.role address.street address.city address.state address.zipCode contact.phone'
+    })
+    .populate({
+        path: 'customer',
+        select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone'
     })
     .populate({
         path: 'estimate',
