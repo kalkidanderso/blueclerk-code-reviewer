@@ -1724,6 +1724,10 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
     .populate({
         path: 'purchaseOrder'
     })
+    .populate({
+        path: 'items.part',
+        select: 'name itemCode note cost price'
+    })
     .exec((err: any, invoice: IInvoice)=>{
 
         if (err) {
@@ -1757,6 +1761,10 @@ export const getInvoices = (req: Request, res: Response) => {
     .populate({
         path: 'job',
         populate: [{ path: 'type', select: 'title' },{ path: 'customer', select: 'info.email auth.email profile.displayName' }, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' }],
+    })
+    .populate({
+        path: 'items.part',
+        select: 'name itemCode note cost price'
     })
     .populate({
         path: 'company',

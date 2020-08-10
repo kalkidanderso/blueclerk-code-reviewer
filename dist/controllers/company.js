@@ -1318,6 +1318,10 @@ exports.getInvoiceDetail = (req, res) => {
         .populate({
         path: 'purchaseOrder'
     })
+        .populate({
+        path: 'items.part',
+        select: 'name itemCode note cost price'
+    })
         .exec((err, invoice) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -1344,6 +1348,10 @@ exports.getInvoices = (req, res) => {
         .populate({
         path: 'job',
         populate: [{ path: 'type', select: 'title' }, { path: 'customer', select: 'info.email auth.email profile.displayName' }, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' }],
+    })
+        .populate({
+        path: 'items.part',
+        select: 'name itemCode note cost price'
     })
         .populate({
         path: 'company',
