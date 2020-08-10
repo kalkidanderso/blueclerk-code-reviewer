@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose'
 
 export interface IEstimate extends Document {
-    
+    estimateId: string
     items: [{
         part: Schema.Types.ObjectId
         name: String
@@ -23,6 +23,9 @@ export interface IEstimate extends Document {
     invoiceCreated: boolean
 }
 const EstimateSchema = new Schema({
+    estimateId:{
+        type: String,
+    },
     items: [{
         part: {
             type: Schema.Types.ObjectId,

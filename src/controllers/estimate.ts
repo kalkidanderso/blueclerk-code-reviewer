@@ -3,11 +3,23 @@ import { Status, Messages, EstimateStatus } from '../common/constants'
 import { IUser } from '../models/User'
 import { Estimate, IEstimate } from '../models/Estimate'
 import { PurchaseOrder, IPurchaseOrder } from '../models/PurchaseOrder'
+import { ICompany } from '../models/Company'
 
 export const createEstimate = (req: Request, res: Response) => {
 
     const params = req.body;
     const user = <IUser>req.user;
+    const company = <ICompany>req.company
+    
+    let estimateId: number
+    if(company.currentEstimateId > company.currentInvoiceId) {
+        estimateId = company.currentEstimateId +1
+    }else{
+        estimateId = company.currentInvoiceId +1
+    }
+
+    estimateId = Math.max(estimateId, 1)
+    
     if(params.purchaseOrderId == null || params.purchaseOrderId == undefined) {
 
         if(params.customer == null || params.customer == undefined) {
@@ -54,6 +66,7 @@ export const createEstimate = (req: Request, res: Response) => {
         // }
     
         const estimate = new Estimate({
+            estimateId: 'Estimate ' + estimateId,
             note: params.note,
             items: estimateItems,
             total: params.total,
@@ -70,9 +83,14 @@ export const createEstimate = (req: Request, res: Response) => {
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
+
+            company.updateOne({currentEstimateId: estimateId}, (err: any, raw: any) => {
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                }
     
-            return res.json({ 'status': Status.Success, 'message': 'Estimate created successfully.' })
-    
+                return res.json({ 'status': Status.Success, 'message': 'Estimate created successfully.' })
+            })
         })
     
     } else {
@@ -87,6 +105,7 @@ export const createEstimate = (req: Request, res: Response) => {
             }
 
             const estimate = new Estimate({
+                estimateId: 'Estimate ' + estimateId,
                 note: purchaseOrder.note,
                 items: purchaseOrder.items,
                 total: purchaseOrder.total,
@@ -103,8 +122,13 @@ export const createEstimate = (req: Request, res: Response) => {
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
+                company.updateOne({currentEstimateId: estimateId}, (err: any, raw: any) => {
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
         
-                return res.json({ 'status': Status.Success, 'message': 'Estimate created successfully.' })
+                    return res.json({ 'status': Status.Success, 'message': 'Estimate created successfully.' })
+                })
         
             })
         })

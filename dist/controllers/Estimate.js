@@ -6,6 +6,15 @@ const PurchaseOrder_1 = require("../models/PurchaseOrder");
 exports.createEstimate = (req, res) => {
     const params = req.body;
     const user = req.user;
+    const company = req.company;
+    let estimateId;
+    if (company.currentEstimateId > company.currentInvoiceId) {
+        estimateId = company.currentEstimateId + 1;
+    }
+    else {
+        estimateId = company.currentInvoiceId + 1;
+    }
+    estimateId = Math.max(estimateId, 1);
     if (params.purchaseOrderId == null || params.purchaseOrderId == undefined) {
         if (params.customer == null || params.customer == undefined) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Customer id is required' });
@@ -46,6 +55,7 @@ exports.createEstimate = (req, res) => {
         //     }    
         // }
         const estimate = new Estimate_1.Estimate({
+            estimateId: 'Estimate ' + estimateId,
             note: params.note,
             items: estimateItems,
             total: params.total,
@@ -58,7 +68,12 @@ exports.createEstimate = (req, res) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            return res.json({ 'status': constants_1.Status.Success, 'message': 'Estimate created successfully.' });
+            company.updateOne({ currentEstimateId: estimateId }, (err, raw) => {
+                if (err) {
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                }
+                return res.json({ 'status': constants_1.Status.Success, 'message': 'Estimate created successfully.' });
+            });
         });
     }
     else {
@@ -71,6 +86,7 @@ exports.createEstimate = (req, res) => {
                 return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid purchase order id.' });
             }
             const estimate = new Estimate_1.Estimate({
+                estimateId: 'Estimate ' + estimateId,
                 note: purchaseOrder.note,
                 items: purchaseOrder.items,
                 total: purchaseOrder.total,
@@ -83,7 +99,12 @@ exports.createEstimate = (req, res) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Estimate created successfully.' });
+                company.updateOne({ currentEstimateId: estimateId }, (err, raw) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Estimate created successfully.' });
+                });
             });
         });
     }

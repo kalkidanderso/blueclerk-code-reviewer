@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose'
 
 export interface IPurchaseOrder extends Document {
+    purchaseOrderId: string
     items: [{
         part: Schema.Types.ObjectId
         name: String
@@ -24,6 +25,9 @@ export interface IPurchaseOrder extends Document {
     invoiceCreated: boolean
 }
 const PurcahseOrderSchema = new Schema({
+    purchaseOrderId: {
+        type: String
+    },
     items: [{
         part: {
             type: Schema.Types.ObjectId,

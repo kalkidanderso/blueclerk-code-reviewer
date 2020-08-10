@@ -10,6 +10,7 @@ export const createPO = (req: Request, res: Response) => {
     
     const params = req.body;
     const user = <IUser>req.user;
+    const company = req.company
 
     var items: any = []    
     if(params.items != undefined){
@@ -50,8 +51,13 @@ export const createPO = (req: Request, res: Response) => {
     //         total = parseInt(total) + taxAmount
     //     }    
     // }
+    let POId: number = 1
+    if(company.currentPOId) {
+        POId = company.currentPOId + 1;
+    }
 
     const purchaseOrder = new PurchaseOrder({
+        purchaseOrderId: 'Purchase Order ' + POId,
         items: POItems,
         note : params.note,
         total: params.total,
@@ -74,15 +80,24 @@ export const createPO = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        return res.json({ 'status': Status.Success, 'message': 'Purchase order created successfully.' })
+        company.updateOne({currentPOId: POId}, (err: any, raw: any) => {
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+
+            return res.json({ 'status': Status.Success, 'message': 'Purchase order created successfully.' })
+        })
+
     })
 
 }
 
 export const createPOEstimate = (req: Request, res: Response) => {
 
-    const params = req.body;
-    const user = <IUser>req.user;
+    const params = req.body
+    const user = <IUser>req.user
+    const company = req.company
+
     PurchaseOrder.findOne({ 'estimate': params.estimateId, 'company': req.companyId })
     .exec((err: any, estimate: IEstimate) => {
         
@@ -136,7 +151,9 @@ export const createPOEstimate = (req: Request, res: Response) => {
 
                     POItems.push(obj)
                 }
+                let POId = company.currentPOId + 1;
                 const purchaseOrder = new PurchaseOrder({
+                    purchaseOrderId: 'Purchase Order ' + POId,
                     items: POItems,
                     total: estimate.total,
                     note : estimate.note,
@@ -154,7 +171,13 @@ export const createPOEstimate = (req: Request, res: Response) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
 
-                    return res.json({ 'status': Status.Success, 'message': 'Purchase order created successfully.' })
+                    company.updateOne({currentPOId: POId}, (err: any, raw: any) => {
+                        if (err) {
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
+            
+                        return res.json({ 'status': Status.Success, 'message': 'Purchase order created successfully.' })
+                    })
 
                 })
             })
@@ -325,7 +348,7 @@ export const updatePO = (req: Request, res: Response) => {
 
 
             if(params.equipmentId != undefined && params.equipmentId != null) {
-                purchaseOrder.update({items: POItems, job: params.job, total: params.total, note: params.note, equipment: params.equpimentId},
+                purchaseOrder.update({items: POItems, job: params.job, total: params.total, note: params.note, equipment: params.equipmentId},
                 (err: any, raw: any) => {
                         if (err) {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })

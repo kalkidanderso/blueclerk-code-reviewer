@@ -6,6 +6,7 @@ const Estimate_1 = require("../models/Estimate");
 exports.createPO = (req, res) => {
     const params = req.body;
     const user = req.user;
+    const company = req.company;
     var items = [];
     if (params.items != undefined) {
         items = JSON.parse(params.items);
@@ -41,7 +42,12 @@ exports.createPO = (req, res) => {
     //         total = parseInt(total) + taxAmount
     //     }    
     // }
+    let POId = 1;
+    if (company.currentPOId) {
+        POId = company.currentPOId + 1;
+    }
     const purchaseOrder = new PurchaseOrder_1.PurchaseOrder({
+        purchaseOrderId: 'Purchase Order ' + POId,
         items: POItems,
         note: params.note,
         total: params.total,
@@ -58,12 +64,18 @@ exports.createPO = (req, res) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        return res.json({ 'status': constants_1.Status.Success, 'message': 'Purchase order created successfully.' });
+        company.updateOne({ currentPOId: POId }, (err, raw) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            return res.json({ 'status': constants_1.Status.Success, 'message': 'Purchase order created successfully.' });
+        });
     });
 };
 exports.createPOEstimate = (req, res) => {
     const params = req.body;
     const user = req.user;
+    const company = req.company;
     PurchaseOrder_1.PurchaseOrder.findOne({ 'estimate': params.estimateId, 'company': req.companyId })
         .exec((err, estimate) => {
         if (estimate != undefined || estimate != null) {
@@ -105,7 +117,9 @@ exports.createPOEstimate = (req, res) => {
                 }
                 POItems.push(obj);
             }
+            let POId = company.currentPOId + 1;
             const purchaseOrder = new PurchaseOrder_1.PurchaseOrder({
+                purchaseOrderId: 'Purchase Order ' + POId,
                 items: POItems,
                 total: estimate.total,
                 note: estimate.note,
@@ -119,7 +133,12 @@ exports.createPOEstimate = (req, res) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Purchase order created successfully.' });
+                company.updateOne({ currentPOId: POId }, (err, raw) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                    }
+                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Purchase order created successfully.' });
+                });
             });
         });
     });
@@ -254,7 +273,7 @@ exports.updatePO = (req, res) => {
             }
         }
         if (params.equipmentId != undefined && params.equipmentId != null) {
-            purchaseOrder.update({ items: POItems, job: params.job, total: params.total, note: params.note, equipment: params.equpimentId }, (err, raw) => {
+            purchaseOrder.update({ items: POItems, job: params.job, total: params.total, note: params.note, equipment: params.equipmentId }, (err, raw) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }

@@ -62,6 +62,8 @@ export interface ICompany extends Document{
     qbRefeshTokenExpiry: Date,
     currentInvoiceId: number,
     invoicePrefix: string,
+    currentPOId: number
+    currentEstimateId: number
 }
 
 const CompanySchema = new Schema({
@@ -156,7 +158,15 @@ const CompanySchema = new Schema({
         type:Number,
         default: 0
     },
-    invoicePrefix: String
+    invoicePrefix: String,
+    currentPOId: {
+        type: Number,
+        default: 0
+    },
+    currentEstimateId: {
+        type: Number,
+        default: 0
+    }
 })
 
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)

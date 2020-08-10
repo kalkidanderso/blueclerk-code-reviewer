@@ -1111,7 +1111,7 @@ export const createInvoice = (req: Request, res: Response) => {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                             }
 
-                            company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
+                            company.updateOne({ currentInvoiceId: currentInvoiceId })
                             .exec((companyError: any, raw: any) => {
                                 
                                 if (companyError) {
@@ -1163,6 +1163,13 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, purchaseOrd
     if (company.currentInvoiceId) {
         currentInvoiceId = company.currentInvoiceId
     }
+
+    if(company.currentEstimateId > company.currentInvoiceId) {
+        currentInvoiceId = company.currentEstimateId
+    }else if(company.currentInvoiceId > company.currentEstimateId){
+        currentInvoiceId = company.currentInvoiceId
+    }
+
     let invoiceId = 'Invoice ' + (currentInvoiceId + 1)
 
     if (company.invoicePrefix != undefined && company.invoicePrefix != null && company.invoicePrefix == '""') {
@@ -1232,6 +1239,13 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, purchaseOrd
         charges = estimate.total
         customer = estimate.customer
         invoiceType = 2
+
+        let idOfEstimate = estimate.estimateId.replace('Estimate ','')
+        invoiceId = 'Invoice ' + idOfEstimate
+
+        if (company.invoicePrefix != undefined && company.invoicePrefix != null && company.invoicePrefix == '""') {
+            invoiceId = 'Invoice ' + company.invoicePrefix + '-' + idOfEstimate
+        }
     }
 
     if(job == null && purchaseOrder == null && estimate == null) {
