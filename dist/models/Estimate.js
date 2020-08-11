@@ -88,6 +88,10 @@ const EstimateSchema = new mongoose_1.Schema({
     invoiceCreated: {
         type: Boolean,
         default: false
+    },
+    POConverted: {
+        type: Boolean,
+        default: false
     }
 });
 exports.Estimate = mongoose_1.default.model('Estimate', EstimateSchema);

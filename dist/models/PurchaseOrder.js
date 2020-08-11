@@ -96,6 +96,10 @@ const PurcahseOrderSchema = new mongoose_1.Schema({
     invoiceCreated: {
         type: Boolean,
         default: false
+    },
+    estimateConverted: {
+        type: Boolean,
+        default: false
     }
 });
 exports.PurchaseOrder = mongoose_1.default.model('PurchaseOrder', PurcahseOrderSchema);

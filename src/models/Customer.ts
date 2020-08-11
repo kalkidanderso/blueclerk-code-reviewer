@@ -7,6 +7,7 @@ export interface ICustomer extends IUser {
     info:{
         email: String
     }
+    contactName: string
     company: Schema.Types.ObjectId
     equipments: [Schema.Types.ObjectId],
     quickbookId: string
@@ -18,6 +19,10 @@ const CustomerSchema = new Schema({
     isActive: {type: Boolean, default: true},
     info:{
         email: String
+    },
+    contactName:{
+        type: String,
+        required: false
     },
     company: {
         type: Schema.Types.ObjectId,

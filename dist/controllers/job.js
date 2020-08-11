@@ -144,7 +144,7 @@ exports.getJobs = (req, res) => {
     })
         .populate({
         path: 'customer',
-        select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode'
+        select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
     })
         .populate({
         path: 'type',
@@ -177,7 +177,7 @@ exports.getJobsByTechnicianId = (req, res) => {
     })
         .populate({
         path: 'customer',
-        select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode'
+        select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
     })
         .populate({
         path: 'type',
@@ -377,7 +377,7 @@ exports.getJobReport = (req, res) => {
     })
         .populate({
         path: 'customer',
-        select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone'
+        select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName'
     })
         .populate({
         path: 'type',
@@ -448,7 +448,7 @@ exports.getTodaysJobsByTechnicianId = (req, res) => {
     })
         .populate({
         path: 'customer',
-        select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode'
+        select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
     })
         .populate({
         path: 'type',

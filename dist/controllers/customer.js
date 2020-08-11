@@ -34,6 +34,7 @@ exports.createCustomer = (req, res) => {
             role: 5 /* CUSTOMER */,
             extra: [],
         },
+        contactName: params.contactName
     });
     customer.save((err) => {
         if (err) {
@@ -108,6 +109,7 @@ exports.updateCustomer = (req, res) => {
             'address.state': params.state,
             'address.zipCode': params.zipCode,
             'contact.phone': params.phone,
+            contactName: params.contactName
         }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });

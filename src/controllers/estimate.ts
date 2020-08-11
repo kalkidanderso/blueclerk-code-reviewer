@@ -74,6 +74,7 @@ export const createEstimate = (req: Request, res: Response) => {
             company: req.companyId,
             createdBy: user._id,
             createdAt: Date.now(),
+            POConverted: true
             // tax: taxAmount,
             // taxPercentage: params.tax,
         });
@@ -147,7 +148,7 @@ export const getEstimates = (req: Request, res: Response) => {
     Estimate.find(where)
         .populate({
             path: 'customer',
-            select: 'profile.displayName info.email'
+            select: 'profile.displayName info.email contactName'
         })
         .populate({
             path: 'createdBy',

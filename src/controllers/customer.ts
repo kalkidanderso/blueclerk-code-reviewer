@@ -40,6 +40,7 @@ export const createCustomer = (req: Request, res: Response) => {
                 role: Role.CUSTOMER,
                 extra: [],
             },
+            contactName: params.contactName
         }
     )
 
@@ -138,6 +139,7 @@ export const updateCustomer = (req: Request, res: Response) => {
                 'address.state': params.state,
                 'address.zipCode': params.zipCode,
                 'contact.phone': params.phone,
+                contactName: params.contactName
             },
             (err: any, raw: any)=> {
                         

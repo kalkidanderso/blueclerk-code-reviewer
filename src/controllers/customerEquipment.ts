@@ -294,7 +294,7 @@ export const getCustomerEquipmentInfo = (req: Request, res: Response) => {
         })
         .populate({
             path: 'customer',
-            select: 'profile.displayName address.street address.city address.state address.zipCode'
+            select: 'profile.displayName address.street address.city address.state address.zipCode contactName'
         })
         .exec((err: any, equipment: ICustomerEquipment) => {
 

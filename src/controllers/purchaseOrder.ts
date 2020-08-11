@@ -162,6 +162,7 @@ export const createPOEstimate = (req: Request, res: Response) => {
                     company: req.companyId,
                     createdBy: user._id,
                     createdAt: Date.now(),
+                    estimateConverted: true
                     // tax: estimate.tax,
                     // taxPercentage: estimate.taxPercentage,
                 });
@@ -190,7 +191,7 @@ export const getAllPO = (req: Request, res: Response) => {
     PurchaseOrder.find({ company: req.companyId })
         .populate({
             path: 'customer',
-            select: 'profile.displayName info.email'
+            select: 'profile.displayName info.email contactName'
         })
         .populate({
             path: 'createdBy',
@@ -225,7 +226,7 @@ export const getAllEquipmentPurchaseOrder = (req: Request, res: Response) => {
     PurchaseOrder.find({ company: req.companyId, equipment: params.equipmentId })
         .populate({
             path: 'customer',
-            select: 'profile.displayName info.email'
+            select: 'profile.displayName info.email contactName'
         })
         .populate({
             path: 'createdBy',

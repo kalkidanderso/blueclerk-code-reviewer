@@ -23,6 +23,7 @@ export interface IPurchaseOrder extends Document {
     createdBy: Schema.Types.ObjectId
     createdAt: Date
     invoiceCreated: boolean
+    estimateConverted: boolean
 }
 const PurcahseOrderSchema = new Schema({
     purchaseOrderId: {
@@ -110,6 +111,10 @@ const PurcahseOrderSchema = new Schema({
         type: Date
     },
     invoiceCreated:{
+        type: Boolean,
+        default: false
+    },
+    estimateConverted: {
         type: Boolean,
         default: false
     }

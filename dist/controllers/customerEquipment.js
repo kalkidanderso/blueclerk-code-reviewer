@@ -212,7 +212,7 @@ exports.getCustomerEquipmentInfo = (req, res) => {
     })
         .populate({
         path: 'customer',
-        select: 'profile.displayName address.street address.city address.state address.zipCode'
+        select: 'profile.displayName address.street address.city address.state address.zipCode contactName'
     })
         .exec((err, equipment) => {
         if (err) {

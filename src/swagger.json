@@ -2095,6 +2095,12 @@
             "type": "string"
           },
           {
+            "name": "contactName",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
             "name": "street",
             "in": "formData",
             "type": "string"
@@ -2159,6 +2165,12 @@
             "name": "name",
             "in": "formData",
             "required": true,
+            "type": "string"
+          },
+          {
+            "name": "contactName",
+            "in": "formData",
+            "required": false,
             "type": "string"
           },
           {
@@ -6855,6 +6867,9 @@
         "company": {
           "type": "string",
           "description": "Id of company who created this customer"
+        },
+        "contactName": {
+          "type": "string"
         }
       }
     },

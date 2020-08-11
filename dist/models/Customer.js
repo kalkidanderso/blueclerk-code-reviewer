@@ -7,6 +7,10 @@ const CustomerSchema = new mongoose_1.Schema({
     info: {
         email: String
     },
+    contactName: {
+        type: String,
+        required: false
+    },
     company: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Company',

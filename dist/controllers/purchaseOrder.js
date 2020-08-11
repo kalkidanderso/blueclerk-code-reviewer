@@ -128,6 +128,9 @@ exports.createPOEstimate = (req, res) => {
                 company: req.companyId,
                 createdBy: user._id,
                 createdAt: Date.now(),
+                estimateConverted: true
+                // tax: estimate.tax,
+                // taxPercentage: estimate.taxPercentage,
             });
             purchaseOrder.save((err) => {
                 if (err) {
@@ -147,7 +150,7 @@ exports.getAllPO = (req, res) => {
     PurchaseOrder_1.PurchaseOrder.find({ company: req.companyId })
         .populate({
         path: 'customer',
-        select: 'profile.displayName info.email'
+        select: 'profile.displayName info.email contactName'
     })
         .populate({
         path: 'createdBy',
@@ -177,7 +180,7 @@ exports.getAllEquipmentPurchaseOrder = (req, res) => {
     PurchaseOrder_1.PurchaseOrder.find({ company: req.companyId, equipment: params.equipmentId })
         .populate({
         path: 'customer',
-        select: 'profile.displayName info.email'
+        select: 'profile.displayName info.email contactName'
     })
         .populate({
         path: 'createdBy',

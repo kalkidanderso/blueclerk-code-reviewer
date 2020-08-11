@@ -60,7 +60,7 @@ export const getServiceTickets = (req: Request, res: Response) => {
     ServiceTicket.find({ company: companyId })
         .populate({
             path: 'customer',
-            select: 'info.email profile.displayName',
+            select: 'info.email profile.displayName contactName',
         })
         .populate({
             path: 'createdBy',
@@ -174,7 +174,7 @@ export const getServiceTicketDetail = (req: Request, res: Response) => {
         { _id: params.ticketId , company: companyId})
         .populate({
             path: 'customer',
-            select: 'info.email profile.displayName'
+            select: 'info.email profile.displayName contactName'
         })
         .populate({
             path: 'createdBy',

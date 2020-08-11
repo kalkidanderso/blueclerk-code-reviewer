@@ -1707,7 +1707,7 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
     })
     .populate({
         path: 'customer',
-        select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone'
+        select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
     })
     .populate({
         path: 'estimate',
@@ -1760,7 +1760,7 @@ export const getInvoices = (req: Request, res: Response) => {
     Invoice.find({'company': req.companyId})
     .populate({
         path: 'job',
-        populate: [{ path: 'type', select: 'title' },{ path: 'customer', select: 'info.email auth.email profile.displayName' }, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' }],
+        populate: [{ path: 'type', select: 'title' },{ path: 'customer', select: 'info.email auth.email profile.displayName contactName' }, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' }],
     })
     .populate({
         path: 'items.part',
@@ -1772,7 +1772,7 @@ export const getInvoices = (req: Request, res: Response) => {
     })
     .populate({
         path: 'customer',
-        select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone'
+        select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
     })
     .populate({
         path: 'estimate',
@@ -1811,7 +1811,7 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
                 })
                 .populate({
                     path: 'customer',
-                    select: 'profile.displayName'
+                    select: 'profile.displayName contactName'
                 })
                 .populate({
                     path: 'type',

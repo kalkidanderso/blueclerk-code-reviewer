@@ -21,6 +21,7 @@ export interface IEstimate extends Document {
     createdBy: Schema.Types.ObjectId
     createdAt: Date
     invoiceCreated: boolean
+    POConverted: boolean
 }
 const EstimateSchema = new Schema({
     estimateId:{
@@ -100,6 +101,10 @@ const EstimateSchema = new Schema({
         type: Date
     },
     invoiceCreated:{
+        type: Boolean,
+        default: false
+    },
+    POConverted:{
         type: Boolean,
         default: false
     }
