@@ -186,7 +186,14 @@ export const updateItem = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': 'Invalid item id'})
             }
 
-            item.updateOne({price: params.price, tax: params.tax, description: params.description},
+            let name
+            if(params.isFixed) {
+                name = item.name + ' - Hourly'
+            }else{
+                name = item.name + ' - Fixed'
+            }
+            
+            item.updateOne({name: name, charges: params.charges, tax: params.tax, isFixed: params.isFixed},
             (err: any, raw: any) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})

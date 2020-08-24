@@ -1906,16 +1906,16 @@ paths:
           in: formData
           required: true
           type: string
-        - name: description
+        - name: isFixed
           in: formData
-          type: string
-          required: false
-          description: id of the item you want to edit
-        - name: price
+          type: boolean
+          required: true
+          description: it is either fixed of hourly
+        - name: charges
           in: formData
           required: true
           type: number
-          description: price of the item to be used in invoice
+          description: charges of the item to be used in invoice
         - name: tax
           in: formData
           required: true
@@ -4506,9 +4506,10 @@ definitions:
         type: string
       name:
         type: string
-      description:
-        type: string
-      price:
+      isFixed:
+        type: boolean
+        description: default will be fixed
+      charges:
         type: number
       tax:
         type: number

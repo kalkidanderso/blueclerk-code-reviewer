@@ -203,6 +203,6 @@ export const Validations = {
 
   cancelEstimate: [check('estimateId').exists()],
 
-  updateItem: [check('itemId').exists(), check('price').exists(), check('tax').exists()],
+  updateItem: [check('itemId').exists(), check('charges').exists(), check('isFixed').exists(), check('tax').exists()],
   
 }

@@ -10,12 +10,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const ItemSchema = new mongoose_1.Schema({
     name: String,
-    description: {
-        type: String,
-        required: false
+    // hourly fixed
+    isFixed: {
+        type: Boolean,
+        default: true
     },
-    type: String,
-    price: {
+    charges: {
         type: Number,
         default: 0
     },

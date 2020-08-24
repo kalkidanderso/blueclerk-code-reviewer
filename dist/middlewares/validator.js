@@ -121,6 +121,6 @@ exports.Validations = {
     udpateEstimate: [express_validator_1.check('estimateId').exists(), express_validator_1.check('total').exists(), express_validator_1.check('customer').exists()],
     udpateEstimateStatus: [express_validator_1.check('estimateId').exists()],
     cancelEstimate: [express_validator_1.check('estimateId').exists()],
-    updateItem: [express_validator_1.check('itemId').exists(), express_validator_1.check('price').exists(), express_validator_1.check('tax').exists()],
+    updateItem: [express_validator_1.check('itemId').exists(), express_validator_1.check('charges').exists(), express_validator_1.check('isFixed').exists(), express_validator_1.check('tax').exists()],
 };
 //# sourceMappingURL=validator.js.map

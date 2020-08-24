@@ -3,9 +3,8 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface IItem extends Document {
 
     name: string
-    description: string
-    type: string
-    price: number
+    isFixed: boolean
+    charges: number
     tax: number
     company: Schema.Types.ObjectId
 
@@ -14,12 +13,12 @@ export interface IItem extends Document {
 const ItemSchema = new Schema({
 
     name: String,
-    description: {
-        type: String,
-        required: false
+    // hourly fixed
+    isFixed: {
+        type: Boolean,
+        default: true
     },
-    type: String,
-    price: {
+    charges: {
         type: Number,
         default: 0
     },

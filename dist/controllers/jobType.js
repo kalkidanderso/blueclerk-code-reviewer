@@ -130,7 +130,14 @@ exports.updateItem = (req, res) => {
         if (item == null || item == undefined) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid item id' });
         }
-        item.updateOne({ price: params.price, tax: params.tax, description: params.description }, (err, raw) => {
+        let name;
+        if (params.isFixed) {
+            name = item.name + ' - Hourly';
+        }
+        else {
+            name = item.name + ' - Fixed';
+        }
+        item.updateOne({ name: name, charges: params.charges, tax: params.tax, isFixed: params.isFixed }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
