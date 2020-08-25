@@ -39,7 +39,7 @@ exports.createJobType = (req, res) => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                _createItem(req, res, (req, res) => {
+                _createItem(req, res, jobType, (req, res) => {
                     return res.json({ 'status': constants_1.Status.Success, 'message': 'Job type created successfully.' });
                 });
             });
@@ -63,7 +63,7 @@ exports.createJobType = (req, res) => {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
                 console.log("creating item");
-                _createItem(req, res, (req, res) => {
+                _createItem(req, res, jobType, (req, res) => {
                     console.log("item created");
                     return res.json({ 'status': constants_1.Status.Success, 'message': 'Job type created successfully.' });
                 });
@@ -71,7 +71,7 @@ exports.createJobType = (req, res) => {
         });
     }
 };
-const _createItem = (req, res, next) => {
+const _createItem = (req, res, jobType, next) => {
     console.log("inside");
     const params = req.body;
     var companyId = req.companyId;
@@ -80,7 +80,8 @@ const _createItem = (req, res, next) => {
     }
     const item = new Item_1.Item({
         name: params.title,
-        company: companyId
+        company: companyId,
+        jobType: jobType._id,
     });
     item.save((err) => {
         if (err) {
@@ -132,10 +133,10 @@ exports.updateItem = (req, res) => {
         }
         let name;
         if (params.isFixed) {
-            name = item.name + ' - Hourly';
+            name = item.name + ' - hourly';
         }
         else {
-            name = item.name + ' - Fixed';
+            name = item.name + ' - fixed';
         }
         item.updateOne({ name: name, charges: params.charges, tax: params.tax, isFixed: params.isFixed }, (err, raw) => {
             if (err) {

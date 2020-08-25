@@ -101,13 +101,13 @@ export const Validations = {
   createJobType: [check('title').exists()],
 
   //Job
-  createJob: [check('dateTime').exists(), check('technicianId').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric(), check('isFixed').exists()],
+  createJob: [check('dateTime').exists(), check('technicianId').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric()],
 
   generalJob: [check('jobId').exists()],
 
   updateJob: [check('status').exists(), check('comment').exists(), check('jobId').exists()],
 
-  editJob: [check('jobId').exists(), check('technicianId').exists(), check('dateTime').exists(), check('isFixed').exists()],
+  editJob: [check('jobId').exists(), check('technicianId').exists(), check('dateTime').exists()],
   
   updateJobTime: [check('jobId').exists()],
 

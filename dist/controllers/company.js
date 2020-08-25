@@ -15,6 +15,7 @@ const Job_1 = require("../models/Job");
 const Scan_1 = require("../models/Scan");
 const PurchaseOrder_1 = require("../models/PurchaseOrder");
 const Estimate_1 = require("../models/Estimate");
+const Item_1 = require("../models/Item");
 const Hubspot = require('hubspot');
 exports.updateCompanyProfile = (req, res) => {
     const params = req.body;
@@ -724,11 +725,17 @@ exports.createInvoice = (req, res) => {
         })
             .then((result) => {
             const job = result[0];
+            const item = Item_1.Item.findOne({ jobType: job.type });
+            return Promise.all([result[0], result[1], item]);
+        })
+            .then((result) => {
+            const job = result[0];
             const purchaseOrders = result[1];
+            const item = result[2];
             if (job == undefined || job == null) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid job id' });
             }
-            _populateInvoiceData(req, res, job, purchaseOrders, null, null, (req, res, invoiceData, currentInvoiceId) => {
+            _populateInvoiceData(req, res, job, item, purchaseOrders, null, null, (req, res, invoiceData, currentInvoiceId) => {
                 invoiceData.save((invoiceError, newInvoice) => {
                     if (invoiceError) {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -770,7 +777,7 @@ exports.createInvoice = (req, res) => {
                 if (purchaseOrder.invoiceCreated) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': 'Invoice already created for this purchase order' });
                 }
-                _populateInvoiceData(req, res, null, null, purchaseOrder, null, (req, res, invoiceData, currentInvoiceId) => {
+                _populateInvoiceData(req, res, null, null, null, purchaseOrder, null, (req, res, invoiceData, currentInvoiceId) => {
                     invoiceData.save((invoiceError, newInvoice) => {
                         if (invoiceError) {
                             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -809,7 +816,7 @@ exports.createInvoice = (req, res) => {
                 if (estimate.invoiceCreated) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': 'Invoice already created for this invoice' });
                 }
-                _populateInvoiceData(req, res, null, null, null, estimate, (req, res, invoiceData, currentInvoiceId) => {
+                _populateInvoiceData(req, res, null, null, null, null, estimate, (req, res, invoiceData, currentInvoiceId) => {
                     invoiceData.save((invoiceError, newInvoice) => {
                         if (invoiceError) {
                             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -832,7 +839,7 @@ exports.createInvoice = (req, res) => {
         });
     }
     else {
-        _populateInvoiceData(req, res, null, null, null, null, (req, res, invoiceData, currentInvoiceId) => {
+        _populateInvoiceData(req, res, null, null, null, null, null, (req, res, invoiceData, currentInvoiceId) => {
             invoiceData.save((invoiceError, newInvoice) => {
                 if (invoiceError) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
@@ -848,7 +855,7 @@ exports.createInvoice = (req, res) => {
         });
     }
 };
-const _populateInvoiceData = (req, res, job, purchaseOrders, purchaseOrder, estimate, next) => {
+const _populateInvoiceData = (req, res, job, jobTypeitem, purchaseOrders, purchaseOrder, estimate, next) => {
     const params = req.body;
     const company = req.company;
     const user = req.user;
@@ -883,19 +890,19 @@ const _populateInvoiceData = (req, res, job, purchaseOrders, purchaseOrder, esti
         invoiceType = 0;
         customer = job.customer;
         jobId = job._id;
-        if (!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
+        if (!jobTypeitem.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Hourly rate is required' });
         }
-        else if (!job.isFixed) {
+        else if (!jobTypeitem.isFixed) {
             hourlyRate = params.hourlyRate;
         }
-        if (!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
+        if (!jobTypeitem.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Time spent is required' });
         }
-        else if (!job.isFixed) {
+        else if (!jobTypeitem.isFixed) {
             timeSpent = params.timeSpent;
         }
-        if (job.isFixed)
+        if (jobTypeitem.isFixed)
             isFixed = true;
     }
     if (purchaseOrder != null) {
@@ -998,6 +1005,24 @@ const _populateInvoiceData = (req, res, job, purchaseOrders, purchaseOrder, esti
             invoiceItems.push(obj);
             total = total + subTotal;
         }
+    }
+    else if (jobTypeitem != null) {
+        let obj = {};
+        let price = parseInt(jobTypeitem.charges);
+        let quantity = parseInt(job.timeSpent);
+        let itemTax = 0;
+        let subTotal = price * quantity;
+        if (jobTypeitem.tax > 0) {
+            itemTax = parseInt(jobTypeitem.tax);
+            subTotal = subTotal + (subTotal * itemTax / 100);
+        }
+        obj.quantity = job.timeSpent;
+        obj.price = price;
+        obj.tax = itemTax;
+        obj.subTotal = subTotal;
+        obj.item = jobTypeitem._id;
+        invoiceItems.push(obj);
+        total = total + subTotal;
     }
     var invoice = new Invoice_1.Invoice({
         invoiceId: invoiceId,
@@ -1319,8 +1344,9 @@ exports.getInvoiceDetail = (req, res) => {
         path: 'purchaseOrder'
     })
         .populate({
-        path: 'items.part',
-        select: 'name itemCode note cost price'
+        path: 'items.item',
+        select: 'name itemCode note cost price',
+        populate: [{ path: 'jobType' }]
     })
         .exec((err, invoice) => {
         if (err) {
@@ -1350,8 +1376,9 @@ exports.getInvoices = (req, res) => {
         populate: [{ path: 'type', select: 'title' }, { path: 'customer', select: 'info.email auth.email profile.displayName contactName' }, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' }],
     })
         .populate({
-        path: 'items.part',
-        select: 'name itemCode note cost price'
+        path: 'items.item',
+        select: 'name itemCode note cost price',
+        populate: [{ path: 'jobType' }]
     })
         .populate({
         path: 'company',

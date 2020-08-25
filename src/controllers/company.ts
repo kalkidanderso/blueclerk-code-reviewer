@@ -17,6 +17,7 @@ import { IUser } from '../models/User'
 import { PurchaseOrder, IPurchaseOrder } from '../models/PurchaseOrder'
 import { IContractorActivity } from '../models/ContractorActivity'
 import { Estimate, IEstimate } from '../models/Estimate'
+import { Item} from '../models/Item'
 const Hubspot = require('hubspot')
 
 export const updateCompanyProfile = (req: Request, res: Response) => {
@@ -975,14 +976,21 @@ export const createInvoice = (req: Request, res: Response) => {
 
             })
             .then((result: any) => {
+                const job = result[0]
+
+                const item = Item.findOne({jobType: job.type})
+                return Promise.all([result[0], result[1], item])
+            })
+            .then((result: any) => {
 
                 const job = result[0]
                 const purchaseOrders = result[1]
+                const item = result[2]
 
                 if (job == undefined || job == null) {
                     return res.json({ 'status': Status.Error, 'message': 'Invalid job id' })
                 }
-                _populateInvoiceData(req, res, job, purchaseOrders, null, null, (req, res, invoiceData, currentInvoiceId )=>{
+                _populateInvoiceData(req, res, job, item, purchaseOrders, null, null, (req, res, invoiceData, currentInvoiceId )=>{
                     
                     invoiceData.save((invoiceError: any, newInvoice: IInvoice, ) => {
                         if (invoiceError) {
@@ -1036,7 +1044,7 @@ export const createInvoice = (req: Request, res: Response) => {
                     return res.json({ 'status': Status.Error, 'message': 'Invoice already created for this purchase order' })
                 }
 
-                _populateInvoiceData(req, res, null, null, purchaseOrder, null, (req, res, invoiceData, currentInvoiceId )=>{
+                _populateInvoiceData(req, res, null, null, null, purchaseOrder, null, (req, res, invoiceData, currentInvoiceId )=>{
                     
                     invoiceData.save((invoiceError: any, newInvoice: IInvoice, ) => {
 
@@ -1097,7 +1105,7 @@ export const createInvoice = (req: Request, res: Response) => {
                     return res.json({ 'status': Status.Error, 'message': 'Invoice already created for this invoice' })
                 }
 
-                _populateInvoiceData(req, res, null, null, null, estimate, (req, res, invoiceData, currentInvoiceId )=>{
+                _populateInvoiceData(req, res, null, null, null, null, estimate, (req, res, invoiceData, currentInvoiceId )=>{
                     
                     invoiceData.save((invoiceError: any, newInvoice: IInvoice, ) => {
                         
@@ -1132,7 +1140,7 @@ export const createInvoice = (req: Request, res: Response) => {
     }
     else {
         
-        _populateInvoiceData(req, res, null, null, null, null, (req, res, invoiceData, currentInvoiceId )=>{
+        _populateInvoiceData(req, res, null, null, null, null, null, (req, res, invoiceData, currentInvoiceId )=>{
                     
             invoiceData.save((invoiceError: any, newInvoice: IInvoice, ) => {
                 if (invoiceError) {
@@ -1153,7 +1161,7 @@ export const createInvoice = (req: Request, res: Response) => {
     }
 }
 
-const _populateInvoiceData = (req: Request, res: Response, job: any, purchaseOrders: any, purchaseOrder: any, estimate: any, next: (req: Request, res: Response, invoice: IInvoice, invoiceId: number) => void) =>{
+const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem: any, purchaseOrders: any, purchaseOrder: any, estimate: any, next: (req: Request, res: Response, invoice: IInvoice, invoiceId: number) => void) =>{
     
     const params = req.body
     const company = req.company
@@ -1196,19 +1204,19 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, purchaseOrd
         customer = job.customer
         jobId = job._id
 
-        if (!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
+        if (!jobTypeitem.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
             return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
-        } else if (!job.isFixed) {
+        } else if (!jobTypeitem.isFixed) {
             hourlyRate = params.hourlyRate
         }
 
-        if (!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
+        if (!jobTypeitem.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
             return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
-        } else if (!job.isFixed) {
+        } else if (!jobTypeitem.isFixed) {
             timeSpent = params.timeSpent
         }
 
-        if(job.isFixed)
+        if(jobTypeitem.isFixed)
         isFixed = true
     }
 
@@ -1336,6 +1344,30 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, purchaseOrd
 
             total = total + subTotal
         }
+    
+    } else if(jobTypeitem != null) {
+        
+        
+        let obj: any = {}
+        let price = parseInt(jobTypeitem.charges)
+        let quantity = parseInt(job.timeSpent)
+        let itemTax =  0
+        let subTotal = price * quantity
+
+        if(jobTypeitem.tax > 0) {
+            itemTax =  parseInt(jobTypeitem.tax)
+            subTotal = subTotal + (subTotal * itemTax /100)
+        }
+        
+        obj.quantity = job.timeSpent
+        obj.price = price
+        obj.tax = itemTax
+        obj.subTotal = subTotal
+        obj.item = jobTypeitem._id
+        
+        invoiceItems.push(obj)
+
+        total = total + subTotal
     }
 
 
@@ -1725,8 +1757,9 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
         path: 'purchaseOrder'
     })
     .populate({
-        path: 'items.part',
-        select: 'name itemCode note cost price'
+        path: 'items.item',
+        select: 'name itemCode note cost price',
+        populate: [{path: 'jobType'}]
     })
     .exec((err: any, invoice: IInvoice)=>{
 
@@ -1763,8 +1796,9 @@ export const getInvoices = (req: Request, res: Response) => {
         populate: [{ path: 'type', select: 'title' },{ path: 'customer', select: 'info.email auth.email profile.displayName contactName' }, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' }],
     })
     .populate({
-        path: 'items.part',
-        select: 'name itemCode note cost price'
+        path: 'items.item',
+        select: 'name itemCode note cost price',
+        populate: [{path: 'jobType'}]
     })
     .populate({
         path: 'company',

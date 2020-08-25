@@ -50,7 +50,7 @@ export const createJobType = (req: Request, res: Response) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
-                _createItem(req, res, (req: Request, res: Response) => {
+                _createItem(req, res, jobType, (req: Request, res: Response) => {
 
                     return res.json({'status': Status.Success, 'message': 'Job type created successfully.'})
                 })
@@ -81,7 +81,7 @@ export const createJobType = (req: Request, res: Response) => {
                 }
                 console.log("creating item");
                 
-                _createItem(req, res, (req: Request, res: Response) => {
+                _createItem(req, res, jobType, (req: Request, res: Response) => {
                     console.log("item created");
                     
                     return res.json({'status': Status.Success, 'message': 'Job type created successfully.'})
@@ -94,7 +94,7 @@ export const createJobType = (req: Request, res: Response) => {
 
 }
 
-const _createItem = (req: Request, res: Response, next: (req: Request, res: Response) => void) => {
+const _createItem = (req: Request, res: Response, jobType: IJobType, next: (req: Request, res: Response) => void) => {
     console.log("inside");
     
     const params = req.body
@@ -107,7 +107,8 @@ const _createItem = (req: Request, res: Response, next: (req: Request, res: Resp
     const item = new Item(
         {
             name: params.title,
-            company: companyId
+            company: companyId,
+            jobType: jobType._id,
         }
     )
 
@@ -188,9 +189,9 @@ export const updateItem = (req: Request, res: Response) => {
 
             let name
             if(params.isFixed) {
-                name = item.name + ' - Hourly'
+                name = item.name + ' - hourly'
             }else{
-                name = item.name + ' - Fixed'
+                name = item.name + ' - fixed'
             }
             
             item.updateOne({name: name, charges: params.charges, tax: params.tax, isFixed: params.isFixed},

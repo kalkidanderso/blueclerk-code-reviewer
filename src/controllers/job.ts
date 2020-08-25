@@ -3,13 +3,12 @@ import { Status, Messages, JobStatus, ServiceTicketStatus } from '../common/cons
 import { sendJobEmailToAssignee, sendJobEmailToCustomer, sendJobEmailToCompanyAdmin } from '../services/aws'
 
 import { Job, IJob } from '../models/Job'
-import { Company, ICompany } from '../models/Company'
-import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
+import { ICompany } from '../models/Company'
 import { IUser } from '../models/User'
 import { ServiceTicket ,IServiceTicket } from '../models/ServiceTicket'
-import { Scan ,IScan } from '../models/Scan'
-import { JobCharges ,IJobCharges } from '../models/JobCharges'
+import { Scan } from '../models/Scan'
 import { PurchaseOrder } from '../models/PurchaseOrder'
+import { Item } from '../models/Item'
 
 export const createJob = (req: Request, res: Response) => {
 
@@ -33,28 +32,34 @@ export const createJob = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': 'Job aleady created for this ticket.'})
             }
 
-            JobCharges.findOne({'company': req.companyId, 'jobType': params.jobTypeId }, (err: any, charges: IJobCharges) => {
-                if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                }
-    
-                if ((charges == undefined || charges == null) && (params.charges == undefined || params.charges == null)) {
-                    return res.json({'status': Status.Error, 'message': 'Job Charges are required'})
-                }
+            var jobId = serviceTicket.ticketId.replace("Ticket",'Job')
 
-                var jobId = serviceTicket.ticketId.replace("Ticket",'Job')
-
-                _createJob(req, res, jobId, serviceTicket, charges, (req: Request, res: Response, newJob: IJob) => {
-                    return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
-                })
-
+            _createJob(req, res, jobId, serviceTicket, (req: Request, res: Response, newJob: IJob) => {
+                return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
             })
+            
+            // JobCharges.findOne({'company': req.companyId, 'jobType': params.jobTypeId }, (err: any, charges: IJobCharges) => {
+            //     if (err) {
+            //         return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            //     }
+    
+            //     if ((charges == undefined || charges == null) && (params.charges == undefined || params.charges == null)) {
+            //         return res.json({'status': Status.Error, 'message': 'Job Charges are required'})
+            //     }
+
+            //     var jobId = serviceTicket.ticketId.replace("Ticket",'Job')
+
+            //     _createJob(req, res, jobId, serviceTicket, charges, (req: Request, res: Response, newJob: IJob) => {
+            //         return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
+            //     })
+
+            // })
            
         }
     )
 }
 
-const _createJob = (req: Request, res: Response, jobId: string, serviceTicket: IServiceTicket, charges: IJobCharges, next: (req: Request, res: Response, job: IJob) => void) => {
+const _createJob = (req: Request, res: Response, jobId: string, serviceTicket: IServiceTicket, next: (req: Request, res: Response, job: IJob) => void) => {
 
     const params = req.body
     
@@ -77,8 +82,7 @@ const _createJob = (req: Request, res: Response, jobId: string, serviceTicket: I
             createdAt: Date.now(),
             createdBy: user._id,
             employeeType: params.employeeType,
-            isFixed: params.isFixed,
-            salesTax: charges.salesTax
+            // salesTax: charges.salesTax
         }
     )
 
@@ -87,21 +91,21 @@ const _createJob = (req: Request, res: Response, jobId: string, serviceTicket: I
     }
     
 
-    if(!params.isFixed) {
-        if(params.charges != undefined && params.charges !== null && params.charges !== '""') {
-            job.hourlyRate = params.charges
+    // if(!params.isFixed) {
+    //     if(params.charges != undefined && params.charges !== null && params.charges !== '""') {
+    //         job.hourlyRate = params.charges
         
-        }else{
-            job.hourlyRate = charges.charges
-        }
-    }else{
-        if(params.charges != undefined && params.charges !== null && params.charges !== '""') {
-            job.charges = params.charges
+    //     }else{
+    //         job.hourlyRate = charges.charges
+    //     }
+    // }else{
+    //     if(params.charges != undefined && params.charges !== null && params.charges !== '""') {
+    //         job.charges = params.charges
         
-        }else{
-            job.charges = charges.charges
-        }
-    }
+    //     }else{
+    //         job.charges = charges.charges
+    //     }
+    // }
     
 
     job.save((err: any) => {
@@ -268,51 +272,62 @@ export const updateJob = (req: Request, res: Response) => {
         companyId = req.otherCompanyId
     }
 
-    Job.findOne(
-        { _id: params.jobId, company: companyId },
-        (err: any, job: IJob)=>{
+    Job.findOne({ _id: params.jobId, company: companyId })
+    .then((job: IJob) => {
+        if (job == undefined || job == null) {
+            throw new Error("Invalid job id")
+        }
 
-            if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-            }
+        if(job.status == JobStatus.FINISHED) {
+            throw new Error("Update job is not allowed once it is finished")
+        }
 
-            if (job == undefined || job == null) {
-                return res.json({'status': Status.Error, 'message': "Invalid job id"})
-            }
+        if(job.status == JobStatus.CANCELED) {
+            throw new Error("Update job is not allowed once it is canceled")
+        }
 
-            if(job.status == JobStatus.FINISHED) {
-                return res.json({'status': Status.Error, 'message': "Edit job is not allowed once it is finished"})
-            }
+        const itemPromise = Item.findOne({jobType: job.type})
 
-            if(job.status == JobStatus.CANCELED) {
-                return res.json({'status': Status.Error, 'message': "Edit job is not allowed once it is canceled"})
-            }
+        return Promise.all([job, itemPromise])
+    })
+    .then((result: any) => {
+        const job = result[0]
+        const item = result[1]
+        
+        let timeSpent: number = 0
+        let newcharges:  number = 0
+        if(item != null && item.charges > 0) {
             
-            let timeSpent: number = 0
-            let newcharges:  number = job.charges
-            if(params.status == 2 && !job.isFixed) {
+            if(params.status == 2 && !item.isFixed) {
                 let starting: any = new Date(job.startTime)
                 let ending: any = Date.now()
                 
                 let diffMs = ( ending - starting);
                 let interval = 15 * 60 * 1000;
                 timeSpent = ((Math.ceil(diffMs / interval)*interval)/60000)/60
-                newcharges = job.hourlyRate * timeSpent
+                newcharges = item.charges * timeSpent
+            
+            } else if(params.status == 2 && item.isFixed) {
+                newcharges = item.charges
             }
 
-            job.updateOne(
-                {comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges},
-                (err: any, raw: any)=> {
-                    
-                    if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                    }
-    
-                    return res.json({'status': Status.Success, 'message': 'Job updated successfully.'})
-                }
-            )
         }
-    )
+
+        return job.updateOne({comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges})
+        
+    })
+    .then((response: any) => {
+        return res.json({'status': Status.Success, 'message': 'Job updated successfully.'})
+    })
+    .catch((err: any) => {
+        if(err.message != undefined) {
+            return res.json({'status': Status.Error, 'message': err.message})
+
+        }else{
+
+            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }
+    })
 }
 
 export const startJob = (req: Request, res: Response) => {
@@ -383,36 +398,20 @@ export const editJob = (req: Request, res: Response) => {
             if(job.status == JobStatus.CANCELED || job.status == JobStatus.FINISHED) {
                 return res.json({'status': Status.Error, 'message': "Edit job is not allowed onece it is cancelled or finished"})
             }
+            job.technician = params.technicianId
+            job.dateTime = params.dateTime
             
-            JobCharges.findOne({'company': req.companyId, 'jobType': job.type }, (err: any, charges: IJobCharges) => {
-                if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                }
-    
-                if ((charges == undefined || charges == null) && (params.charges == undefined || params.charges == null)) {
-                    return res.json({'status': Status.Error, 'message': 'Job Charges are required'})
-                }
-
-                if(params.charges != undefined && params.charges != null){
-                    job.charges = params.charges
-                }
-
-                job.isFixed = params.isFixed
-                job.technician = params.technicianId
-                job.dateTime = params.dateTime
-                
-                job.updateOne(
-                    job,
-                    (err: any, raw: any)=> {
-                        
-                        if (err) {
-                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                        }
-        
-                        return res.json({'status': Status.Success, 'message': 'Job edited successfully.'})
+            job.updateOne(
+                job,
+                (err: any, raw: any)=> {
+                    
+                    if (err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
-                )
-            })
+    
+                    return res.json({'status': Status.Success, 'message': 'Job edited successfully.'})
+                }
+            )
             
         }
     )
@@ -624,68 +623,75 @@ export const updateJobTime = (req: Request, res: Response) => {
         companyId = req.otherCompanyId
     }
 
-    Job.findOne(
-        { _id: params.jobId, company: companyId },
-        (err: any, job: IJob)=>{
-
-            if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-            }
-            
-            if (job == undefined || job == null) {
-                return res.json({'status': Status.Error, 'message': "Invalid job id"})
-            }
-
-            JobCharges.findOne({'company': req.companyId, 'jobType': job.type }, (err: any, charges: IJobCharges) => {
-                if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                }
-    
-                if ((params.startTime == undefined || params.startTime == null) && (params.endTime == undefined || params.endTime == null)) {
-                    return res.json({'status': Status.Error, 'message': 'Start time or end time is required'})
-                }
-
-                let timeSpent: number = 0
-                let newcharges:  number = job.charges
-                if(job.status == 2 && !job.isFixed) {
-                    let starting: any = new Date(job.startTime)
-                    let ending: any = Date.now()
-                    
-                    let diffMs = ( ending - starting);
-                    let interval = 15 * 60 * 1000;
-                    timeSpent = ((Math.ceil(diffMs / interval)*interval)/60000)/60;
-                    newcharges = job.hourlyRate * timeSpent
-
-                    job.timeSpent = timeSpent
-                    job.charges = newcharges
-                }
-
-
-                if(params.startTime != undefined && params.startTime != null && params.startTime != '""') {
-                    job.startTime = params.startTime
-                    job.timeUpdatedBy = user._id
-                    job.timeUpdatedAt = new Date() 
-                }
-
-                if(params.endTime != undefined && params.endTime != null && params.endTime != '""') {
-                    job.endTime = params.endTime
-                    job.timeUpdatedBy = user._id
-                    job.timeUpdatedAt = new Date() 
-                }
-                
-                job.updateOne(
-                    job,
-                    (err: any, raw: any)=> {
-                        
-                        if (err) {
-                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                        }
-        
-                        return res.json({'status': Status.Success, 'message': 'Job time updated successfully.'})
-                    }
-                )
-            })
-            
+    Job.findOne({ _id: params.jobId, company: companyId })
+    .then((job: IJob) => {
+        if (job == undefined || job == null) {
+            throw new Error("Invalid job id")
         }
-    )
+
+        if(job.status == JobStatus.FINISHED) {
+            throw new Error("Edit job is not allowed once it is finished")
+        }
+
+        if(job.status == JobStatus.CANCELED) {
+            throw new Error("Edit job is not allowed once it is canceled")
+        }
+
+        if ((params.startTime == undefined || params.startTime == null) && (params.endTime == undefined || params.endTime == null)) {
+            throw new Error('Start time or end time is required')
+        }
+
+        const itemPromise = Item.findOne({jobType: job.type})
+
+        return Promise.all([job, itemPromise])
+    })
+    .then((result: any) => {
+        const job = result[0]
+        const item = result[1]
+        
+        let timeSpent: number = 0
+        let newcharges:  number = 0
+        let startTime: Date = job.startTime
+        let endTime: Date = job.startTime
+        
+        if(params.startTime != undefined && params.startTime != null && params.startTime != '""') {
+            startTime = params.startTime    
+        }
+
+        if(params.endTime != undefined && params.endTime != null && params.endTime != '""') {
+            endTime = params.endTime    
+        }
+
+        if(item != null && item.charges > 0) {
+            
+            if(params.status == 2 && !item.isFixed) {
+                let starting: any = new Date(startTime)
+                let ending: any = new Date(endTime)
+                
+                let diffMs = ( ending - starting);
+                let interval = 15 * 60 * 1000;
+                timeSpent = ((Math.ceil(diffMs / interval)*interval)/60000)/60
+                newcharges = item.charges * timeSpent
+            
+            } else if(params.status == 2 && item.isFixed) {
+                newcharges = item.charges
+            }
+        }
+
+        const user = <IUser>req.user
+        return job.updateOne({ startTime: startTime, endTime: endTime, timeSpent: timeSpent, charges: newcharges, timeUpdatedBy: user._id, timeUpdatedAt: Date.now() })
+        
+    })
+    .then((response: any) => {
+        return res.json({'status': Status.Success, 'message': 'Job time updated successfully.'})
+    })
+    .catch((err: any) => {
+        if(err.message != undefined) {
+            return res.json({'status': Status.Error, 'message': err.message})
+
+        }else{
+
+            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }
+    })
 }

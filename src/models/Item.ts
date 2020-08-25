@@ -6,6 +6,7 @@ export interface IItem extends Document {
     isFixed: boolean
     charges: number
     tax: number
+    jobType: Schema.Types.ObjectId
     company: Schema.Types.ObjectId
 
 }
@@ -25,6 +26,10 @@ const ItemSchema = new Schema({
     tax: {
         type: Number,
         default: 0
+    },
+    jobType: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobType',
     },
     company: {
         type: Schema.Types.ObjectId,

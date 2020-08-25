@@ -23,6 +23,10 @@ const ItemSchema = new mongoose_1.Schema({
         type: Number,
         default: 0
     },
+    jobType: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'JobType',
+    },
     company: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Company',

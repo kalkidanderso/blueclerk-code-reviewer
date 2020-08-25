@@ -4445,19 +4445,6 @@
             "description": "0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor"
           },
           {
-            "name": "isFixed",
-            "in": "formData",
-            "required": true,
-            "type": "boolean",
-            "description": "Either the job is fixed price or hourly. true->if fixed false->is hourly"
-          },
-          {
-            "name": "charges",
-            "in": "formData",
-            "type": "number",
-            "description": "Enter charges amount if you want to customize for this job"
-          },
-          {
             "name": "companyId",
             "in": "formData",
             "type": "string",
@@ -4831,19 +4818,6 @@
             "required": true,
             "type": "string",
             "description": "date time of job. e.g. 2019-12-22 20:30:00"
-          },
-          {
-            "name": "isFixed",
-            "in": "formData",
-            "required": true,
-            "type": "boolean",
-            "description": "Either the job is fixed price or hourly. true->if fixed false->is hourly"
-          },
-          {
-            "name": "charges",
-            "in": "formData",
-            "type": "number",
-            "description": "Enter charges amount if you want to customize for this job"
           },
           {
             "name": "companyId",
@@ -7746,14 +7720,6 @@
         "company": {
           "type": "string",
           "description": "Id of company who created it"
-        },
-        "isFixed": {
-          "type": "string",
-          "description": "If the job is fixed or hourly"
-        },
-        "charges": {
-          "type": "number",
-          "description": "Charges form job type or if entered custom charges while creating a job"
         },
         "startTime": {
           "type": "string",

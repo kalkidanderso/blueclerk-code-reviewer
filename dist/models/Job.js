@@ -65,14 +65,14 @@ const JobSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false
     },
-    isFixed: {
-        type: Boolean,
-        default: true
-    },
-    hourlyRate: {
-        type: Number,
-        default: 0
-    },
+    // isFixed: {
+    //     type: Boolean,
+    //     default: true
+    // },
+    // hourlyRate:{
+    //     type: Number,
+    //     default: 0
+    // },
     charges: {
         type: Number,
         default: 0
