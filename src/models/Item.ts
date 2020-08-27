@@ -8,7 +8,7 @@ export interface IItem extends Document {
     tax: number
     jobType: Schema.Types.ObjectId
     company: Schema.Types.ObjectId
-
+    isActive: boolean
 }
 
 const ItemSchema = new Schema({
@@ -35,6 +35,10 @@ const ItemSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Company',
     },
+    isActive:{
+        type: Boolean,
+        default: true
+    }
 
 })
 

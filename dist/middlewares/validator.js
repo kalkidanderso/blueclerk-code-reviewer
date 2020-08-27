@@ -66,6 +66,8 @@ exports.Validations = {
     getCustomerEquipmentJobs: [express_validator_1.check('nfcTag').exists()],
     //Job Type
     createJobType: [express_validator_1.check('title').exists()],
+    editJobType: [express_validator_1.check('jobTypeId').exists(), express_validator_1.check('title').exists()],
+    changeJobTypeStatus: [express_validator_1.check('jobTypeId').exists(), express_validator_1.check('status').exists()],
     //Job
     createJob: [express_validator_1.check('dateTime').exists(), express_validator_1.check('technicianId').exists(), express_validator_1.check('customerId').exists(), express_validator_1.check('jobTypeId').exists(), express_validator_1.check('ticketId').exists(), express_validator_1.check('employeeType').exists(), express_validator_1.check('employeeType').isNumeric()],
     generalJob: [express_validator_1.check('jobId').exists()],

@@ -394,6 +394,24 @@ export default function (sio: any) {
         validate(Validations.createJobType),
         jobTypeController.createJobType
     )
+   
+    router.post(
+        '/editJobType',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Job_Type_Create),
+        validate(Validations.editJobType),
+        jobTypeController.editJobType
+    )
+ 
+    router.post(
+        '/changeJobTypeStatus',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Job_Type_Create),
+        validate(Validations.changeJobTypeStatus),
+        jobTypeController.changeJobTypeStatus
+    )
 
     router.post(
         '/getJobTypes',

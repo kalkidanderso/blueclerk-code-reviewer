@@ -1834,6 +1834,60 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /editJobType:
+    post:
+      tags:
+        - Job Type
+      summary: To edit a job type
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: jobTypeId
+          in: formData
+          type: string
+          required: true
+          description: pass job type id fetched from getJobTypes api
+        - name: title
+          in: formData
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /changeJobTypeStatus:
+    post:
+      tags:
+        - Job Type
+      summary: To activate or deactivate a job type
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: jobTypeId
+          in: formData
+          type: string
+          required: true
+          description: pass job type id fetched from getJobTypes api
+        - name: status
+          in: formData
+          required: true
+          type: boolean
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /getJobTypes:
     post:
       tags:

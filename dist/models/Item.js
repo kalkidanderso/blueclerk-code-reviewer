@@ -31,6 +31,10 @@ const ItemSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Company',
     },
+    isActive: {
+        type: Boolean,
+        default: true
+    }
 });
 exports.Item = mongoose_1.default.model('Item', ItemSchema);
 //# sourceMappingURL=Item.js.map
