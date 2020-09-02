@@ -18,6 +18,7 @@ import { PurchaseOrder, IPurchaseOrder } from '../models/PurchaseOrder'
 import { IContractorActivity } from '../models/ContractorActivity'
 import { Estimate, IEstimate } from '../models/Estimate'
 import { Item} from '../models/Item'
+import { Customer, ICustomer } from '../models/Customer'
 const Hubspot = require('hubspot')
 
 export const updateCompanyProfile = (req: Request, res: Response) => {
@@ -133,15 +134,40 @@ export const getAllEmployees = (req: Request, res: Response) => {
 
 export const getEmployeesForJob = (req: Request, res: Response) => {
 
-    Employee.find({ $and: [{ company: new ObjectId(req.companyId) }, { 'permissions.role': { $ne: 0 } }] },
-        'id profile.displayName',
-        (err: any, employees: IEmployee[]) => {
+    Company.findOne({ _id: req.companyId })
+        .populate({
+            path: 'employees',
+            match: { 'permissions.role': { $ne: 0 } },
+            select: '_id profile.displayName',
+        })
+        .populate({
+            path: 'admin',
+            select: '_id profile.displayName',
+        })
+        .exec((err: any, company: ICompany) => {
 
-            if (err) {
+            if (err || !company) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
+            const employees = company.employees
+            const admin = company.admin
+            company.employees = undefined
+            company.userPermissions = undefined
+            company.stripeId = undefined
+            company.employees = undefined
+            company.customers = undefined
+            company.maxTechnicians = undefined
+            company.maxManagers = undefined
+            company.maxOfficeAdmins = undefined
+            company.other = undefined
+            company.paid = undefined
+            company.type = undefined
+            company.currentJobId = undefined
+            company.chargeDate = undefined
+            company.contact = undefined
+            company.address = undefined
 
-            res.json({ 'status': Status.Success, 'employees': employees })
+            res.json({ 'status': Status.Success, 'employees': employees, 'superAdmin': admin })
 
         })
 
@@ -988,26 +1014,63 @@ export const createInvoice = (req: Request, res: Response) => {
                 const item = result[2]
 
                 if (job == undefined || job == null) {
-                    return res.json({ 'status': Status.Error, 'message': 'Invalid job id' })
+                    throw new Error('Invalid job id')
+                    // return res.json({ 'status': Status.Error, 'message': 'Invalid job id' })
                 }
-                _populateInvoiceData(req, res, job, item, purchaseOrders, null, null, (req, res, invoiceData, currentInvoiceId )=>{
-                    
-                    invoiceData.save((invoiceError: any, newInvoice: IInvoice, ) => {
-                        if (invoiceError) {
-                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                        }
-    
-                        company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
-                            .exec((companyError: any, raw: any) => {
-                                if (companyError) {
-                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                                }
-    
-                                return res.json({ 'status': Status.Success, 'message': "Job invoice created successfully." })
-                            })
+                return new Promise((resolve, reject) => {
+                    _populateInvoiceData(req, res, job, item, purchaseOrders, null, null, (req, res, invoiceData, currentInvoiceId )=>{
+                        
+                        invoiceData.save()
+                        .then((newInvoice: IInvoice) =>{
+                            resolve({latestInvoiceId: currentInvoiceId, invoice: newInvoice})
+                        })
+                        .catch((invoiceError: any)=>{
+                            reject('Unable to create invoice, please try again')
+                        })
+                        
                     })
                 })
 
+            })
+            .then((data: any) => {
+                
+                return new Promise((resolve, reject) => {
+                    let invoiceId = data.latestInvoiceId + 1
+                    company.updateOne({ currentInvoiceId: invoiceId })
+                    .then((res: any) => {
+                        resolve(data.invoice)
+                    })
+                    .catch((err: any)=>{
+                        reject()
+                    })
+                })
+            })
+            .then((invoice: any) => {
+
+                return new Promise((resolve, reject) => {
+                    
+                    Customer.findById(invoice.customer)
+                    .then((customer: ICustomer) => {
+                        if(customer == null){
+                            reject()
+                        }else{
+                            let newBalance = customer.balance + invoice.total
+                            customer.updateOne({balance: newBalance})
+                            .then((res: any) => {
+                                resolve()
+                            })
+                            .catch((err: any)=>{
+                                reject()
+                            })
+                        }
+                    })
+                    .catch((err: any)=>{
+                        reject()
+                    })
+                })
+            })
+            .then((response: any) =>{
+                return res.json({ 'status': Status.Success, 'message': "Job invoice created successfully." })
             })
             .catch((error: any) => {
                 if (error.message != undefined) {
@@ -1019,124 +1082,278 @@ export const createInvoice = (req: Request, res: Response) => {
     }
     else if(params.hasOwnProperty('purchaseOrderId') && params.purchaseOrderId != null && params.purchaseOrderId != '""' ){
 
-        Invoice.findOne({ 'purchaseOrder': params.purchaseOrderId, 'company': req.companyId },
-        (err: any, previousInvoice: IInvoice) => {
-
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        Invoice.findOne({ 'purchaseOrder': params.purchaseOrderId, 'company': req.companyId })
+        .then((invoice: IInvoice| null) => {
+            if(invoice != undefined && invoice != null) {
+                throw new Error('Invoice already created for this purchase order')
+            }else{
+                return PurchaseOrder.findById(params.purchaseOrderId)
             }
 
-            if (previousInvoice != undefined || previousInvoice != null) {
-                return res.json({ 'status': Status.Success, 'message': "Invoice already created for this purchase order." })
+        })
+        .then((purchaseOrder: IPurchaseOrder | null) => {
+            if(purchaseOrder == undefined || purchaseOrder == null) {
+                throw new Error('Invalid purchase order id')
             }
 
-            PurchaseOrder.findById(params.purchaseOrderId, (err: any, purchaseOrder: IPurchaseOrder) => {
+            if (purchaseOrder.invoiceCreated) {
+                throw new Error('Invoice already created for this purchase order')
+            }
 
-                if (err) {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                }
-
-                if (purchaseOrder == undefined || purchaseOrder == null) {
-                    return res.json({ 'status': Status.Error, 'message': 'Invalid purchase order id' })
-                }
-
-                if (purchaseOrder.invoiceCreated) {
-                    return res.json({ 'status': Status.Error, 'message': 'Invoice already created for this purchase order' })
-                }
-
+            return new Promise((resolve, reject) => {
                 _populateInvoiceData(req, res, null, null, null, purchaseOrder, null, (req, res, invoiceData, currentInvoiceId )=>{
                     
-                    invoiceData.save((invoiceError: any, newInvoice: IInvoice, ) => {
-
-                        if (invoiceError) {
-                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                        }
-
-                        purchaseOrder.updateOne({ invoiceCreated: true}).exec((poUpdateError: any, raw: any) => {
-                            
-                            if (poUpdateError) {
-                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                            }
-                            
-                            company.updateOne({ currentInvoiceId: currentInvoiceId + 1 }).exec((companyError: any, raw: any) => {
-                            
-                                if (companyError) {
-                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                                }
-    
-                                return res.json({ 'status': Status.Success, 'message': "Purchase order invoice created successfully." })
-                            })
-
-                        })
-    
-    
+                    invoiceData.save()
+                    .then((newInvoice: IInvoice) =>{
+                        resolve({latestInvoiceId: currentInvoiceId, invoice: newInvoice, purchaseOrderId: purchaseOrder._id})
                     })
+                    .catch((err: any)=>{
+                        reject('Unable to create invoice, please try again')
+                    })
+                    
                 })
-
             })
+        })
+        .then((data: any) => {
+            let invoiceId = data.latestInvoiceId + 1
+            
+            const companyUpdate = company.updateOne({ currentInvoiceId: invoiceId })
+            const poUpdate = PurchaseOrder.updateOne({_id: data.purchaseOrderId}, {invoiceCreated: true})
+             
+            return Promise.all([data.invoice, companyUpdate, poUpdate])
+        })
+        .then((response: any) => {
+
+            const invoice = response[0]
+            return new Promise((resolve, reject) => {
+                
+                Customer.findById(invoice.customer)
+                .then((customer: ICustomer) => {
+                    if(customer == null){
+                        reject()
+                    }else{
+                        let newBalance = customer.balance + invoice.total
+                        customer.updateOne({balance: newBalance})
+                        .then((res: any) => {
+                            resolve()
+                        })
+                        .catch((err: any)=>{
+                            reject()
+                        })
+                    }
+                })
+                .catch((err: any)=>{
+                    reject()
+                })
+            })
+        })
+        .then((response: any) =>{
+            return res.json({ 'status': Status.Success, 'message': "Purchase order invoice created successfully." })
+        })
+        .catch((error: any) => {
+            if (error.message != undefined) {
+                return res.json({ 'status': Status.Error, 'message': error.message })
+            } else {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+        })
 
 
-        });
+        // fdasdf
+        // (err: any, previousInvoice: IInvoice) => {
+
+        //     if (err) {
+        //         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        //     }
+
+        //     if (previousInvoice != undefined || previousInvoice != null) {
+        //         return res.json({ 'status': Status.Success, 'message': "Invoice already created for this purchase order." })
+        //     }
+
+        //     PurchaseOrder.findById(params.purchaseOrderId, (err: any, purchaseOrder: IPurchaseOrder) => {
+
+        //         if (err) {
+        //             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        //         }
+
+        //         if (purchaseOrder == undefined || purchaseOrder == null) {
+        //             return res.json({ 'status': Status.Error, 'message': 'Invalid purchase order id' })
+        //         }
+
+        //         if (purchaseOrder.invoiceCreated) {
+        //             return res.json({ 'status': Status.Error, 'message': 'Invoice already created for this purchase order' })
+        //         }
+
+            
+        //         _populateInvoiceData(req, res, null, null, null, purchaseOrder, null, (req, res, invoiceData, currentInvoiceId )=>{
+                    
+        //             invoiceData.save((invoiceError: any, newInvoice: IInvoice, ) => {
+
+        //                 if (invoiceError) {
+        //                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        //                 }
+
+        //                 purchaseOrder.updateOne({ invoiceCreated: true}).exec((poUpdateError: any, raw: any) => {
+                            
+        //                     if (poUpdateError) {
+        //                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        //                     }
+                            
+        //                     company.updateOne({ currentInvoiceId: currentInvoiceId + 1 }).exec((companyError: any, raw: any) => {
+                            
+        //                         if (companyError) {
+        //                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        //                         }
+    
+        //                         return res.json({ 'status': Status.Success, 'message': "Purchase order invoice created successfully." })
+        //                     })
+
+        //                 })
+    
+    
+        //             })
+        //         })
+
+        //     })
+
+
+        // });
     }
     else if(params.hasOwnProperty('estimateId') && params.estimateId != null && params.estimateId != '""' ){
 
-        Invoice.findOne({ 'estimate': params.estimateId, 'company': req.companyId },
-        (err: any, previousInvoice: IInvoice) => {
-
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        Invoice.findOne({ 'estimate': params.estimateId, 'company': req.companyId })
+        .then((invoice: IInvoice| null) => {
+            if(invoice != undefined && invoice != null) {
+                throw new Error('Invoice already created for this estimate')
+            }else{
+                return Estimate.findById(params.estimateId)
             }
 
-            if (previousInvoice != undefined || previousInvoice != null) {
-                return res.json({ 'status': Status.Success, 'message': "Invoice already created for this estimate." })
+        })
+        .then((estimate: IEstimate | null) => {
+            if(estimate == undefined || estimate == null) {
+                throw new Error('Invalid estimate id')
             }
 
-            Estimate.findById(params.estimateId, (estimateError: any, estimate: IEstimate) => {
+            if (estimate.invoiceCreated) {
+                throw new Error('Invoice already created for this estimate')
+            }
 
-                if (estimateError) {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                }
-
-                if (estimate == undefined || estimate == null) {
-                    return res.json({ 'status': Status.Error, 'message': 'Invalid estimate id' })
-                }
-             
-                if (estimate.invoiceCreated) {
-                    return res.json({ 'status': Status.Error, 'message': 'Invoice already created for this invoice' })
-                }
-
+            return new Promise((resolve, reject) => {
                 _populateInvoiceData(req, res, null, null, null, null, estimate, (req, res, invoiceData, currentInvoiceId )=>{
                     
-                    invoiceData.save((invoiceError: any, newInvoice: IInvoice, ) => {
-                        
-                        if (invoiceError) {
-                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                        }
-                        
-                        estimate.updateOne({invoiceCreated: true}).exec((estimateUpdateError: any, raw: any) => {
-                            
-                            if (estimateUpdateError) {
-                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                            }
-
-                            company.updateOne({ currentInvoiceId: currentInvoiceId })
-                            .exec((companyError: any, raw: any) => {
-                                
-                                if (companyError) {
-                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                                }
-    
-                                return res.json({ 'status': Status.Success, 'message': "Estimate invoice created successfully." })
-                            })
-
-                        })
-    
-    
+                    invoiceData.save()
+                    .then((newInvoice: IInvoice) =>{
+                        resolve({latestInvoiceId: currentInvoiceId, invoice: newInvoice, estimateId: estimate._id})
                     })
+                    .catch((err: any)=>{
+                        reject('Unable to create invoice, please try again')
+                    })
+                    
                 })
-
             })
-        });
+        })
+        .then((data: any) => {
+            let invoiceId = data.latestInvoiceId + 1
+            
+            const companyUpdate = company.updateOne({ currentInvoiceId: invoiceId })
+            const estimateUpdate = Estimate.updateOne({_id: data.estimateId}, {invoiceCreated: true})
+             
+            return Promise.all([data.invoice, companyUpdate, estimateUpdate])
+        })
+        .then((response: any) => {
+
+            const invoice = response[0]
+            return new Promise((resolve, reject) => {
+                
+                Customer.findById(invoice.customer)
+                .then((customer: ICustomer) => {
+                    if(customer == null){
+                        reject()
+                    }else{
+                        let newBalance = customer.balance + invoice.total
+                        customer.updateOne({balance: newBalance})
+                        .then((res: any) => {
+                            resolve()
+                        })
+                        .catch((err: any)=>{
+                            reject()
+                        })
+                    }
+                })
+                .catch((err: any)=>{
+                    reject()
+                })
+            })
+        })
+        .then((response: any) =>{
+            return res.json({ 'status': Status.Success, 'message': "Estimate invoice created successfully." })
+        })
+        .catch((error: any) => {
+            if (error.message != undefined) {
+                return res.json({ 'status': Status.Error, 'message': error.message })
+            } else {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+        })
+
+        // Invoice.findOne({ 'estimate': params.estimateId, 'company': req.companyId },
+        // (err: any, previousInvoice: IInvoice) => {
+
+        //     if (err) {
+        //         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        //     }
+
+        //     if (previousInvoice != undefined || previousInvoice != null) {
+        //         return res.json({ 'status': Status.Success, 'message': "Invoice already created for this estimate." })
+        //     }
+
+        //     Estimate.findById(params.estimateId, (estimateError: any, estimate: IEstimate) => {
+
+        //         if (estimateError) {
+        //             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        //         }
+
+        //         if (estimate == undefined || estimate == null) {
+        //             return res.json({ 'status': Status.Error, 'message': 'Invalid estimate id' })
+        //         }
+             
+        //         if (estimate.invoiceCreated) {
+        //             return res.json({ 'status': Status.Error, 'message': 'Invoice already created for this invoice' })
+        //         }
+
+        //         _populateInvoiceData(req, res, null, null, null, null, estimate, (req, res, invoiceData, currentInvoiceId )=>{
+                    
+        //             invoiceData.save((invoiceError: any, newInvoice: IInvoice, ) => {
+                        
+        //                 if (invoiceError) {
+        //                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        //                 }
+                        
+        //                 estimate.updateOne({invoiceCreated: true}).exec((estimateUpdateError: any, raw: any) => {
+                            
+        //                     if (estimateUpdateError) {
+        //                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        //                     }
+
+        //                     company.updateOne({ currentInvoiceId: currentInvoiceId })
+        //                     .exec((companyError: any, raw: any) => {
+                                
+        //                         if (companyError) {
+        //                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        //                         }
+    
+        //                         return res.json({ 'status': Status.Success, 'message': "Estimate invoice created successfully." })
+        //                     })
+
+        //                 })
+    
+    
+        //             })
+        //         })
+
+        //     })
+        // });
     }
     else {
         
@@ -1154,7 +1371,22 @@ export const createInvoice = (req: Request, res: Response) => {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
 
-                        return res.json({ 'status': Status.Success, 'message': "Invoice created successfully." })
+                        Customer.findById(newInvoice.customer)
+                        .exec((err: any, customer: ICustomer) => {
+                            if (err) {
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            }
+                            
+                            let newBalance = customer.balance + newInvoice.total
+                            customer.updateOne({balance: newBalance})
+                            .exec((err: any, res: any) =>{
+                                if (err) {
+                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                }
+
+                                return res.json({ 'status': Status.Success, 'message': "Invoice created successfully." })
+                            })
+                        })
                     })
             })
         })
@@ -1875,4 +2107,40 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
                     res.json({ 'status': Status.Success, 'contractorActivities': contractorActivities })
                 })
         })
+}
+
+export const getInvoicesByCustomerId = (req: Request, res: Response) => {
+
+    const params = req.body
+
+    Invoice.find({'company': req.companyId, customer: params.customer})
+    .populate({
+        path: 'job',
+        populate: [{ path: 'type', select: 'title' },{ path: 'customer', select: 'info.email auth.email profile.displayName contactName' }, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' }],
+    })
+    .populate({
+        path: 'items.item',
+        select: 'name itemCode note cost price',
+        populate: [{path: 'jobType'}]
+    })
+    .populate({
+        path: 'company',
+        select: 'info.companyName info.logoUrl info.email permissions.role address.street address.city address.state address.zipCode contact.phone'
+    })
+    .populate({
+        path: 'customer',
+        select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+    })
+    .populate({
+        path: 'estimate',
+        select: 'total items note status customer company createdBy'
+    })
+    .exec((err: any, invoices: IInvoice[])=>{
+
+        if (err) {
+            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }
+        
+        return res.json({ 'status': Status.Success, 'invoices': invoices })
+    })
 }

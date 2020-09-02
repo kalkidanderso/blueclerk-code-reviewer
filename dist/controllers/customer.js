@@ -84,7 +84,7 @@ exports.getCustomers = (req, res) => {
         const customerIds = companyCustomers.map((obj) => {
             return obj.customer;
         });
-        User_1.User.find({ _id: { $in: customerIds } }, 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode contact.phone permissions.role isActive', (err, users) => {
+        User_1.User.find({ _id: { $in: customerIds } }, 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode contact.phone permissions.role isActive balance', (err, users) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }

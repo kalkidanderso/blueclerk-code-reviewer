@@ -209,4 +209,13 @@ export const Validations = {
 
   updateItem: [check('itemId').exists(), check('charges').exists(), check('isFixed').exists(), check('tax').exists()],
   
+  getInvoiceByCustomer: [check('customer').exists()],
+  
+  recordPayment: [check('amount').exists(), check('referenceNumber').exists(), check('paidAt').exists(), check('customer').exists(), check('invoices').exists()],
+  
+  updatePayment: [check('paymentId').exists(), check('amount').exists(), check('referenceNumber').exists(), check('paidAt').exists(), check('invoices').exists()],
+  
+  getPaymentsByCustomer: [check('customer').exists()],
+
+
 }

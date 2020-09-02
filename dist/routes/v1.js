@@ -38,7 +38,8 @@ const quickBookController = __importStar(require("../controllers/quickbook"));
 const companyController = __importStar(require("../controllers/company"));
 const partController = __importStar(require("../controllers/part"));
 const purchaseOrderController = __importStar(require("../controllers/purchaseOrder"));
-const EstimateController = __importStar(require("../controllers/estimate"));
+const estimateController = __importStar(require("../controllers/estimate"));
+const paymentController = __importStar(require("../controllers/payemnt"));
 function default_1(sio) {
     const router = express_1.default.Router();
     //Auth
@@ -224,12 +225,17 @@ function default_1(sio) {
     router.post('/updatePurchaseOrderStatus', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(105 /* Update_Status_Purchase_Order */), validator_1.validate(validator_1.Validations.udpatePurchaseOrderStatus), purchaseOrderController.updatePOStatus);
     router.post('/createPOEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(106 /* Create_Purchase_Order_From_Estimate */), validator_1.validate(validator_1.Validations.createPurchaseOrderEstimate), purchaseOrderController.createPOEstimate);
     router.post('/updatePurchaseOrder', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(104 /* Update_Purchase_Order */), validator_1.validate(validator_1.Validations.udpatePurchaseOrder), purchaseOrderController.updatePO);
-    router.post('/updateEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(109 /* Update_Estimate */), validator_1.validate(validator_1.Validations.udpateEstimate), EstimateController.updateEstimate);
-    router.post('/updateEstimateStatus', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(110 /* Update_Status_Estimate */), validator_1.validate(validator_1.Validations.udpateEstimateStatus), EstimateController.updateEstimateStatus);
-    router.post('/createEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(108 /* Create_Estimate */), EstimateController.createEstimate);
-    router.post('/getEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(111 /* Get_Estimate */), EstimateController.getEstimates);
-    router.post('/cancelEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.cancelEstimate), permissions_1.checkUserPermissions(112 /* Cancel_Estimate */), EstimateController.cancelEstimate);
+    router.post('/updateEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(109 /* Update_Estimate */), validator_1.validate(validator_1.Validations.udpateEstimate), estimateController.updateEstimate);
+    router.post('/updateEstimateStatus', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(110 /* Update_Status_Estimate */), validator_1.validate(validator_1.Validations.udpateEstimateStatus), estimateController.updateEstimateStatus);
+    router.post('/createEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(108 /* Create_Estimate */), estimateController.createEstimate);
+    router.post('/getEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(111 /* Get_Estimate */), estimateController.getEstimates);
+    router.post('/cancelEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.cancelEstimate), permissions_1.checkUserPermissions(112 /* Cancel_Estimate */), estimateController.cancelEstimate);
     router.post('/getCompanyContractorActivity', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(113 /* Get_Company_Contractor_Activity */), companyController.getCompanyContractorActivity);
+    router.post('/getInvoiceByCustomerId', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.getInvoiceByCustomer), permissions_1.checkUserPermissions(117 /* Get_Customer_Invoices */), companyController.getInvoicesByCustomerId);
+    router.post('/recordPayment', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.recordPayment), permissions_1.checkUserPermissions(118 /* Create_Payment */), paymentController.createPayment);
+    router.post('/updatePayment', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.updatePayment), permissions_1.checkUserPermissions(119 /* Update_Payment */), paymentController.udpatePayment);
+    router.post('/getPaymentsByCustomerId', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.getPaymentsByCustomer), permissions_1.checkUserPermissions(120 /* Get_Customer_Payments */), paymentController.getPaymentsByCustomerId);
+    router.post('/getPayments', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(121 /* Get_Payments */), paymentController.getPayments);
     return router;
 }
 exports.default = default_1;

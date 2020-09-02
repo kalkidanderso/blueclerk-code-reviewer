@@ -153,7 +153,12 @@ exports.UserPermissions = {
             113 /* Get_Company_Contractor_Activity */,
             114 /* Get_Items */,
             115 /* Update_Item */,
-            116 /* Get_Equipment_Purchase_Order */
+            116 /* Get_Equipment_Purchase_Order */,
+            117 /* Get_Customer_Invoices */,
+            118 /* Create_Payment */,
+            119 /* Update_Payment */,
+            120 /* Get_Customer_Payments */,
+            121 /* Get_Payments */
         ],
         off: [0 /* None */],
     },
@@ -260,7 +265,12 @@ exports.UserPermissions = {
             113 /* Get_Company_Contractor_Activity */,
             114 /* Get_Items */,
             115 /* Update_Item */,
-            116 /* Get_Equipment_Purchase_Order */
+            116 /* Get_Equipment_Purchase_Order */,
+            117 /* Get_Customer_Invoices */,
+            118 /* Create_Payment */,
+            119 /* Update_Payment */,
+            120 /* Get_Customer_Payments */,
+            121 /* Get_Payments */
         ],
         off: [0 /* None */],
     },
@@ -370,7 +380,12 @@ exports.UserPermissions = {
             113 /* Get_Company_Contractor_Activity */,
             114 /* Get_Items */,
             115 /* Update_Item */,
-            116 /* Get_Equipment_Purchase_Order */
+            116 /* Get_Equipment_Purchase_Order */,
+            117 /* Get_Customer_Invoices */,
+            118 /* Create_Payment */,
+            119 /* Update_Payment */,
+            120 /* Get_Customer_Payments */,
+            121 /* Get_Payments */
         ],
         off: [0 /* None */],
     },
@@ -490,7 +505,12 @@ exports.UserPermissions = {
             113 /* Get_Company_Contractor_Activity */,
             114 /* Get_Items */,
             115 /* Update_Item */,
-            116 /* Get_Equipment_Purchase_Order */
+            116 /* Get_Equipment_Purchase_Order */,
+            117 /* Get_Customer_Invoices */,
+            118 /* Create_Payment */,
+            119 /* Update_Payment */,
+            120 /* Get_Customer_Payments */,
+            121 /* Get_Payments */
         ],
         off: [0 /* None */],
     }

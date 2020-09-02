@@ -29,7 +29,8 @@ export interface IInvoice extends Document {
         quantity: number
         tax: number
         subTotal: number
-    }]
+    }],
+    paid: boolean
 }
 
 const InvoiceSchema = new Schema({
@@ -145,6 +146,10 @@ const InvoiceSchema = new Schema({
             type: Number,
             required: false
         },
+        paid:{
+            type: Boolean,
+            default: false
+        }
     }],
 })
 

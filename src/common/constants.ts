@@ -196,7 +196,12 @@ export const enum Permissions {
     Get_Company_Contractor_Activity,
     Get_Items,
     Update_Item,
-    Get_Equipment_Purchase_Order
+    Get_Equipment_Purchase_Order,
+    Get_Customer_Invoices,
+    Create_Payment,
+    Update_Payment,
+    Get_Customer_Payments,
+    Get_Payments
 
 }
 
@@ -331,7 +336,12 @@ export const UserPermissions = {
             Permissions.Get_Company_Contractor_Activity,
             Permissions.Get_Items,
             Permissions.Update_Item,
-            Permissions.Get_Equipment_Purchase_Order
+            Permissions.Get_Equipment_Purchase_Order,
+            Permissions.Get_Customer_Invoices,
+            Permissions.Create_Payment,
+            Permissions.Update_Payment,
+            Permissions.Get_Customer_Payments,
+            Permissions.Get_Payments
         ],
         off: [Permissions.None],
     },
@@ -438,7 +448,12 @@ export const UserPermissions = {
             Permissions.Get_Company_Contractor_Activity,
             Permissions.Get_Items,
             Permissions.Update_Item,
-            Permissions.Get_Equipment_Purchase_Order
+            Permissions.Get_Equipment_Purchase_Order,
+            Permissions.Get_Customer_Invoices,
+            Permissions.Create_Payment,
+            Permissions.Update_Payment,
+            Permissions.Get_Customer_Payments,
+            Permissions.Get_Payments
         ],
         off: [Permissions.None],
     },
@@ -548,7 +563,12 @@ export const UserPermissions = {
             Permissions.Get_Company_Contractor_Activity,
             Permissions.Get_Items,
             Permissions.Update_Item,
-            Permissions.Get_Equipment_Purchase_Order
+            Permissions.Get_Equipment_Purchase_Order,
+            Permissions.Get_Customer_Invoices,
+            Permissions.Create_Payment,
+            Permissions.Update_Payment,
+            Permissions.Get_Customer_Payments,
+            Permissions.Get_Payments
         ],
         off: [Permissions.None],
     },
@@ -668,7 +688,12 @@ export const UserPermissions = {
             Permissions.Get_Company_Contractor_Activity,
             Permissions.Get_Items,
             Permissions.Update_Item,
-            Permissions.Get_Equipment_Purchase_Order
+            Permissions.Get_Equipment_Purchase_Order,
+            Permissions.Get_Customer_Invoices,
+            Permissions.Create_Payment,
+            Permissions.Update_Payment,
+            Permissions.Get_Customer_Payments,
+            Permissions.Get_Payments
         ],
         off: [Permissions.None],
     }

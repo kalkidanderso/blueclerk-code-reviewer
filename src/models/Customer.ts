@@ -10,8 +10,8 @@ export interface ICustomer extends IUser {
     contactName: string
     company: Schema.Types.ObjectId
     equipments: [Schema.Types.ObjectId],
-    quickbookId: string
-
+    quickbookId: string,
+    balance: number
 }
 
 const CustomerSchema = new Schema({
@@ -33,6 +33,10 @@ const CustomerSchema = new Schema({
     quickbookId: {
         type: String,
         default: null
+    },
+    balance: {
+        type: Number,
+        default: 0
     }
 
 })

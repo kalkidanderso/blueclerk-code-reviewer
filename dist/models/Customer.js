@@ -20,6 +20,10 @@ const CustomerSchema = new mongoose_1.Schema({
     quickbookId: {
         type: String,
         default: null
+    },
+    balance: {
+        type: Number,
+        default: 0
     }
 });
 exports.Customer = User_1.User.discriminator('Customer', CustomerSchema);

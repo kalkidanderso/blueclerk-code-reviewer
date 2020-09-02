@@ -29,7 +29,8 @@ import * as quickBookController from '../controllers/quickbook'
 import * as companyController from '../controllers/company'
 import * as partController from '../controllers/part'
 import * as purchaseOrderController from '../controllers/purchaseOrder'
-import * as EstimateController from '../controllers/estimate'
+import * as estimateController from '../controllers/estimate'
+import * as paymentController from '../controllers/payemnt'
 import { Personalize } from 'aws-sdk'
 
 export default function (sio: any) {
@@ -1210,7 +1211,7 @@ export default function (sio: any) {
         getCompnayId(),
         checkUserPermissions(Permissions.Update_Estimate),
         validate(Validations.udpateEstimate),
-        EstimateController.updateEstimate
+        estimateController.updateEstimate
     )
 
     router.post(
@@ -1219,7 +1220,7 @@ export default function (sio: any) {
         getCompnayId(),
         checkUserPermissions(Permissions.Update_Status_Estimate),
         validate(Validations.udpateEstimateStatus),
-        EstimateController.updateEstimateStatus
+        estimateController.updateEstimateStatus
     )
 
     router.post(
@@ -1227,7 +1228,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompnayId(),
         checkUserPermissions(Permissions.Create_Estimate),
-        EstimateController.createEstimate
+        estimateController.createEstimate
     )
   
     router.post(
@@ -1235,7 +1236,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompnayId(),
         checkUserPermissions(Permissions.Get_Estimate),
-        EstimateController.getEstimates
+        estimateController.getEstimates
     )
 
     router.post(
@@ -1244,7 +1245,7 @@ export default function (sio: any) {
         getCompnayId(),
         validate(Validations.cancelEstimate),
         checkUserPermissions(Permissions.Cancel_Estimate),
-        EstimateController.cancelEstimate
+        estimateController.cancelEstimate
     )
 
     router.post(
@@ -1253,6 +1254,50 @@ export default function (sio: any) {
         getCompnayId(),
         checkUserPermissions(Permissions.Get_Company_Contractor_Activity),
         companyController.getCompanyContractorActivity
+    )
+
+    router.post(
+        '/getInvoiceByCustomerId',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        validate(Validations.getInvoiceByCustomer),
+        checkUserPermissions(Permissions.Get_Customer_Invoices),
+        companyController.getInvoicesByCustomerId
+    )
+
+    router.post(
+        '/recordPayment',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        validate(Validations.recordPayment),
+        checkUserPermissions(Permissions.Create_Payment),
+        paymentController.createPayment
+    )
+
+    router.post(
+        '/updatePayment',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        validate(Validations.updatePayment),
+        checkUserPermissions(Permissions.Update_Payment),
+        paymentController.udpatePayment
+    )
+
+    router.post(
+        '/getPaymentsByCustomerId',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        validate(Validations.getPaymentsByCustomer),
+        checkUserPermissions(Permissions.Get_Customer_Payments),
+        paymentController.getPaymentsByCustomerId
+    )
+
+    router.post(
+        '/getPayments',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Payments),
+        paymentController.getPayments
     )
 
     return router
