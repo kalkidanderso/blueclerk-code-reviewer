@@ -39,7 +39,7 @@ const companyController = __importStar(require("../controllers/company"));
 const partController = __importStar(require("../controllers/part"));
 const purchaseOrderController = __importStar(require("../controllers/purchaseOrder"));
 const estimateController = __importStar(require("../controllers/estimate"));
-const paymentController = __importStar(require("../controllers/payemnt"));
+const paymentController = __importStar(require("../controllers/payment"));
 function default_1(sio) {
     const router = express_1.default.Router();
     //Auth
@@ -231,7 +231,7 @@ function default_1(sio) {
     router.post('/getEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(111 /* Get_Estimate */), estimateController.getEstimates);
     router.post('/cancelEstimate', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.cancelEstimate), permissions_1.checkUserPermissions(112 /* Cancel_Estimate */), estimateController.cancelEstimate);
     router.post('/getCompanyContractorActivity', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(113 /* Get_Company_Contractor_Activity */), companyController.getCompanyContractorActivity);
-    router.post('/getInvoiceByCustomerId', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.getInvoiceByCustomer), permissions_1.checkUserPermissions(117 /* Get_Customer_Invoices */), companyController.getInvoicesByCustomerId);
+    router.post('/getInvoicesByCustomerId', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.getInvoiceByCustomer), permissions_1.checkUserPermissions(117 /* Get_Customer_Invoices */), companyController.getInvoicesByCustomerId);
     router.post('/recordPayment', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.recordPayment), permissions_1.checkUserPermissions(118 /* Create_Payment */), paymentController.createPayment);
     router.post('/updatePayment', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.updatePayment), permissions_1.checkUserPermissions(119 /* Update_Payment */), paymentController.udpatePayment);
     router.post('/getPaymentsByCustomerId', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.getPaymentsByCustomer), permissions_1.checkUserPermissions(120 /* Get_Customer_Payments */), paymentController.getPaymentsByCustomerId);

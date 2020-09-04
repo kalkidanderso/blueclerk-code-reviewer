@@ -53,10 +53,11 @@ const PaymentSchema = new Schema({
     udpatedBy: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: false
     },
     updatedAt: {
-        type: Date
+        type: Date,
+        required: false
     }
 })
 

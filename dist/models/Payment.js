@@ -46,10 +46,11 @@ const PaymentSchema = new mongoose_1.Schema({
     udpatedBy: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: false
     },
     updatedAt: {
-        type: Date
+        type: Date,
+        required: false
     }
 });
 exports.Payment = mongoose_1.default.model('Payment', PaymentSchema);

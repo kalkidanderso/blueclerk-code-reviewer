@@ -146,11 +146,11 @@ const InvoiceSchema = new Schema({
             type: Number,
             required: false
         },
-        paid:{
-            type: Boolean,
-            default: false
-        }
     }],
+    paid:{
+        type: Boolean,
+        default: false
+    }
 })
 
 export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema)

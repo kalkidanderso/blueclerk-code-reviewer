@@ -120,11 +120,11 @@ const InvoiceSchema = new mongoose_1.Schema({
                 type: Number,
                 required: false
             },
-            paid: {
-                type: Boolean,
-                default: false
-            }
         }],
+    paid: {
+        type: Boolean,
+        default: false
+    }
 });
 exports.Invoice = mongoose_1.default.model('Invoice', InvoiceSchema);
 //# sourceMappingURL=Invoice.js.map

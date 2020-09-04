@@ -107,6 +107,10 @@
             "description": "For invoices of jobs"
         },
         {
+            "name": "Payment",
+            "description": "For payments of invoices"
+        },
+        {
             "name": "Image",
             "description": "For images"
         },
@@ -1687,9 +1691,9 @@
         "/getEmployeesForJob": {
             "post": {
                 "tags": [
-                    "Users"
+                    "Job"
                 ],
-                "summary": "To get all employees other then office admins (technician and manager)",
+                "summary": "To get all employees other then office admins (technician and manager) and super admin of company",
                 "description": "",
                 "consumes": [
                     "application/x-www-form-urlencoded"
@@ -4481,7 +4485,14 @@
                         "in": "formData",
                         "required": true,
                         "type": "string",
-                        "description": "date time of job. e.g. 2019-12-22 20:30:00"
+                        "description": "date time of job. e.g. 2020-08-12 20:30:00"
+                    },
+                    {
+                        "name": "endsAt",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "date time when the job is expected to finish. e.g. if the job is for two hours 2020-08-12 22:30:00"
                     },
                     {
                         "name": "ticketId",
@@ -5379,6 +5390,304 @@
                                     }
                                 }
                             ]
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/getInvoicesByCustomerId": {
+            "post": {
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "To get invoice of customer to record payment",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "customer",
+                        "in": "formData",
+                        "type": "string",
+                        "required": true,
+                        "description": "id of the customer you want to fetch invoices for"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/GeneralAPIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "invoices": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/Invoice"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/recordPayment": {
+            "post": {
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "To record the payment for invoice(s) made by the customer",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "invoices",
+                        "in": "formData",
+                        "description": "comma seprated invoice ids",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "amount",
+                        "in": "formData",
+                        "required": true,
+                        "type": "number",
+                        "description": "Amount how much customer has paid"
+                    },
+                    {
+                        "name": "referenceNumber",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "Reference number of the payment made by client"
+                    },
+                    {
+                        "name": "paymentType",
+                        "in": "formData",
+                        "required": false,
+                        "type": "string",
+                        "description": "Method name how customer has paid"
+                    },
+                    {
+                        "name": "customer",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "Pass customer id to who made the payment"
+                    },
+                    {
+                        "name": "paidAt",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "Time when the customer has made the payment"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/GeneralAPIResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/getPayments": {
+            "post": {
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "To get payments of a company",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/GeneralAPIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "invoices": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/Payment"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/getPaymentsByCustomerId": {
+            "post": {
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "To get payments by customer id",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "customer",
+                        "in": "formData",
+                        "description": "id of the customer you want to fetch payments for",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/GeneralAPIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "invoices": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/Payment"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/updatePayment": {
+            "post": {
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "To update payment record",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "paymentId",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "Id of payment you want to edit"
+                    },
+                    {
+                        "name": "invoices",
+                        "in": "formData",
+                        "description": "comma seprated invoice ids",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "amount",
+                        "in": "formData",
+                        "required": true,
+                        "type": "number",
+                        "description": "Amount how much customer has paid"
+                    },
+                    {
+                        "name": "referenceNumber",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "Reference number of the payment made by client"
+                    },
+                    {
+                        "name": "paymentType",
+                        "in": "formData",
+                        "required": false,
+                        "type": "string",
+                        "description": "Method name how customer has paid"
+                    },
+                    {
+                        "name": "customer",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "Pass customer id to who made the payment"
+                    },
+                    {
+                        "name": "paidAt",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "description": "Time when the customer has made the payment"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/GeneralAPIResponse"
                         }
                     }
                 },
@@ -6930,6 +7239,10 @@
                 },
                 "contactName": {
                     "type": "string"
+                },
+                "balance": {
+                    "type": "number",
+                    "description": "how much customer owe to the company"
                 }
             }
         },
@@ -7447,6 +7760,61 @@
                 }
             }
         },
+        "Payment": {
+            "type": "object",
+            "properties": {
+                "_id": {
+                    "type": "string"
+                },
+                "amount": {
+                    "type": "number",
+                    "description": "The amount that customer has paid"
+                },
+                "referenceNumber": {
+                    "type": "string",
+                    "description": "some reference number aginst the payment made"
+                },
+                "paymentType": {
+                    "type": "string"
+                },
+                "customer": {
+                    "type": "string",
+                    "description": "id of the cutomer who made the payment"
+                },
+                "paidAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "time when the customer has made the payment"
+                },
+                "createdBy": {
+                    "type": "string",
+                    "description": "id of the employee who recorded the payment"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "time when the payment was recorded in system"
+                },
+                "updatedBy": {
+                    "type": "string",
+                    "description": "id of the employee who updated the payemnt record"
+                },
+                "udpatedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "time when the employee updated the payment record"
+                },
+                "invoice": {
+                    "type": "object",
+                    "properties": {
+                        "title": {
+                            "type": "string",
+                            "description": "Title of jo type"
+                        }
+                    }
+                }
+            }
+        },
         "ScanDetail": {
             "type": "object",
             "properties": {
@@ -7782,6 +8150,11 @@
                 "dateTime": {
                     "type": "string",
                     "format": "date-time"
+                },
+                "endsAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Time when the job is exprected to finished or for how long the technician will be scheduled"
                 },
                 "estimate": {
                     "type": "string",

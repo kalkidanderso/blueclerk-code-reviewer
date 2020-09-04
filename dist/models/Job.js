@@ -102,6 +102,14 @@ const JobSchema = new mongoose_1.Schema({
     no_of_equipment_scanned: {
         type: Number,
         default: 0
+    },
+    endsAt: {
+        type: Date,
+        required: true
+    },
+    completeOnTime: {
+        type: Boolean,
+        required: false
     }
 });
 exports.Job = mongoose_1.default.model('Job', JobSchema);

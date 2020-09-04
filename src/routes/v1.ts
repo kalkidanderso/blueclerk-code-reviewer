@@ -30,7 +30,7 @@ import * as companyController from '../controllers/company'
 import * as partController from '../controllers/part'
 import * as purchaseOrderController from '../controllers/purchaseOrder'
 import * as estimateController from '../controllers/estimate'
-import * as paymentController from '../controllers/payemnt'
+import * as paymentController from '../controllers/payment'
 import { Personalize } from 'aws-sdk'
 
 export default function (sio: any) {
@@ -1257,7 +1257,7 @@ export default function (sio: any) {
     )
 
     router.post(
-        '/getInvoiceByCustomerId',
+        '/getInvoicesByCustomerId',
         passport.authenticate('jwt', { session: false }),
         getCompnayId(),
         validate(Validations.getInvoiceByCustomer),

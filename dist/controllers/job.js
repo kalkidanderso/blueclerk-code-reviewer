@@ -8,36 +8,75 @@ const PurchaseOrder_1 = require("../models/PurchaseOrder");
 const Item_1 = require("../models/Item");
 exports.createJob = (req, res) => {
     const params = req.body;
-    ServiceTicket_1.ServiceTicket.findById(params.ticketId, (err, serviceTicket) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
+    ServiceTicket_1.ServiceTicket.findById(params.ticketId)
+        .then((serviceTicket) => {
         if (serviceTicket == undefined || serviceTicket == null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid ticket Id' });
+            throw new Error('Invalid ticket Id');
         }
         if (serviceTicket.status == 1 /* CANCELED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'You can\'t create a job using canceled ticket.' });
+            throw new Error('You can\'t create a job using canceled ticket.');
         }
         if (serviceTicket.jobCreated) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Job aleady created for this ticket.' });
+            throw new Error('Job aleady created for this ticket.');
         }
         var jobId = serviceTicket.ticketId.replace("Ticket", 'Job');
+        return new Promise((resolve, reject) => {
+            Job_1.Job.findOne({ company: req.companyId, technician: params.technicianId, dateTime: { $lte: new Date(params.dateTime) }, endsAt: { $gte: new Date(params.dateTime) } }, (err, job) => {
+                if (job != undefined && job != null) {
+                    reject(new Error('Technician is scheduled at time you selected, try scheduling after ' + job.endsAt));
+                }
+                else {
+                    resolve([jobId, serviceTicket]);
+                }
+            });
+        });
+    })
+        .then((response) => {
+        const jobId = response[0];
+        const serviceTicket = response[1];
         _createJob(req, res, jobId, serviceTicket, (req, res, newJob) => {
             return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
         });
-        // JobCharges.findOne({'company': req.companyId, 'jobType': params.jobTypeId }, (err: any, charges: IJobCharges) => {
-        //     if (err) {
-        //         return res.json({'status': Status.Error, 'message': Messages.GenericError})
-        //     }
-        //     if ((charges == undefined || charges == null) && (params.charges == undefined || params.charges == null)) {
-        //         return res.json({'status': Status.Error, 'message': 'Job Charges are required'})
-        //     }
-        //     var jobId = serviceTicket.ticketId.replace("Ticket",'Job')
-        //     _createJob(req, res, jobId, serviceTicket, charges, (req: Request, res: Response, newJob: IJob) => {
-        //         return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
-        //     })
-        // })
+    })
+        .catch((error) => {
+        if (error.message != undefined) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': error.message });
+        }
+        else {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
     });
+    // ServiceTicket.findById(params.ticketId, (err: any, serviceTicket: IServiceTicket)=>{
+    // if (err) {
+    //     return res.json({'status': Status.Error, 'message': Messages.GenericError})
+    // }
+    // if (serviceTicket == undefined || serviceTicket == null) {
+    //     return res.json({'status': Status.Error, 'message': 'Invalid ticket Id'})
+    // }
+    // if (serviceTicket.status == ServiceTicketStatus.CANCELED) {
+    //     return res.json({'status': Status.Error, 'message': 'You can\'t create a job using canceled ticket.'})
+    // }
+    // if (serviceTicket.jobCreated) {
+    //     return res.json({'status': Status.Error, 'message': 'Job aleady created for this ticket.'})
+    // }
+    // var jobId = serviceTicket.ticketId.replace("Ticket",'Job')
+    // _createJob(req, res, jobId, serviceTicket, (req: Request, res: Response, newJob: IJob) => {
+    //     return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
+    // })
+    // JobCharges.findOne({'company': req.companyId, 'jobType': params.jobTypeId }, (err: any, charges: IJobCharges) => {
+    //     if (err) {
+    //         return res.json({'status': Status.Error, 'message': Messages.GenericError})
+    //     }
+    //     if ((charges == undefined || charges == null) && (params.charges == undefined || params.charges == null)) {
+    //         return res.json({'status': Status.Error, 'message': 'Job Charges are required'})
+    //     }
+    //     var jobId = serviceTicket.ticketId.replace("Ticket",'Job')
+    //     _createJob(req, res, jobId, serviceTicket, charges, (req: Request, res: Response, newJob: IJob) => {
+    //         return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
+    //     })
+    // })
+    // }
+    // )
 };
 const _createJob = (req, res, jobId, serviceTicket, next) => {
     const params = req.body;
@@ -58,34 +97,22 @@ const _createJob = (req, res, jobId, serviceTicket, next) => {
         createdAt: Date.now(),
         createdBy: user._id,
         employeeType: params.employeeType,
+        endsAt: params.endsAt
+        // salesTax: charges.salesTax
     });
     if (params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
         job.equipmentId = params.equipmentId;
     }
-    // if(!params.isFixed) {
-    //     if(params.charges != undefined && params.charges !== null && params.charges !== '""') {
-    //         job.hourlyRate = params.charges
-    //     }else{
-    //         job.hourlyRate = charges.charges
-    //     }
-    // }else{
-    //     if(params.charges != undefined && params.charges !== null && params.charges !== '""') {
-    //         job.charges = params.charges
-    //     }else{
-    //         job.charges = charges.charges
-    //     }
-    // }
     job.save((err) => {
         if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            return next(req, res, constants_1.Messages.GenericError, null);
         }
         serviceTicket.updateOne({ jobCreated: true }, (err, raw) => {
             if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                return next(req, res, constants_1.Messages.GenericError, null);
             }
             _sendJobEmails(req, res, job, (req, res, newJob) => {
-                next(req, res, newJob);
-                return;
+                return next(req, res, null, newJob);
             });
         });
     });
@@ -235,7 +262,12 @@ exports.updateJob = (req, res) => {
                 newcharges = item.charges;
             }
         }
-        return job.updateOne({ comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges });
+        let finishedOnTime = false;
+        let currentTime = Date.now();
+        if (job.endsAt >= currentTime) {
+            finishedOnTime = true;
+        }
+        return job.updateOne({ comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime });
     })
         .then((response) => {
         return res.json({ 'status': constants_1.Status.Success, 'message': 'Job updated successfully.' });
