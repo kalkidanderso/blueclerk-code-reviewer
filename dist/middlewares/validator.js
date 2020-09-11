@@ -69,10 +69,10 @@ exports.Validations = {
     editJobType: [express_validator_1.check('jobTypeId').exists(), express_validator_1.check('title').exists()],
     changeJobTypeStatus: [express_validator_1.check('jobTypeId').exists(), express_validator_1.check('status').exists()],
     //Job
-    createJob: [express_validator_1.check('dateTime').exists(), express_validator_1.check('technicianId').exists(), express_validator_1.check('customerId').exists(), express_validator_1.check('jobTypeId').exists(), express_validator_1.check('ticketId').exists(), express_validator_1.check('employeeType').exists(), express_validator_1.check('employeeType').isNumeric(), express_validator_1.check('endsAt').exists()],
+    createJob: [express_validator_1.check('scheduleDate').exists(), express_validator_1.check('technicianId').exists(), express_validator_1.check('customerId').exists(), express_validator_1.check('jobTypeId').exists(), express_validator_1.check('ticketId').exists(), express_validator_1.check('employeeType').exists(), express_validator_1.check('employeeType').isNumeric()],
     generalJob: [express_validator_1.check('jobId').exists()],
     updateJob: [express_validator_1.check('status').exists(), express_validator_1.check('comment').exists(), express_validator_1.check('jobId').exists()],
-    editJob: [express_validator_1.check('jobId').exists(), express_validator_1.check('technicianId').exists(), express_validator_1.check('dateTime').exists()],
+    editJob: [express_validator_1.check('jobId').exists(), express_validator_1.check('technicianId').exists(), express_validator_1.check('scheduleDate').exists()],
     updateJobTime: [express_validator_1.check('jobId').exists()],
     technicianJobs: [express_validator_1.check('employeeId').exists()],
     //Group

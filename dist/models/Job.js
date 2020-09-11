@@ -9,7 +9,17 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const JobSchema = new mongoose_1.Schema({
-    dateTime: Date,
+    scheduleDate: {
+        type: Date
+    },
+    scheduledStartTime: {
+        type: Date,
+        required: false
+    },
+    scheduledEndTime: {
+        type: Date,
+        required: false
+    },
     jobId: String,
     ticket: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -102,10 +112,6 @@ const JobSchema = new mongoose_1.Schema({
     no_of_equipment_scanned: {
         type: Number,
         default: 0
-    },
-    endsAt: {
-        type: Date,
-        required: true
     },
     completeOnTime: {
         type: Boolean,

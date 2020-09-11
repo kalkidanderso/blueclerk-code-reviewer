@@ -2,7 +2,9 @@ import mongoose, { Document, Schema } from 'mongoose'
 
 export interface IJob extends Document {
 
-    dateTime: Date
+    scheduleDate: Date
+    scheduledStartTime: Date
+    scheduledEndTime: Date
     jobId: string
     ticket: Schema.Types.ObjectId
     technician: Schema.Types.ObjectId
@@ -27,13 +29,22 @@ export interface IJob extends Document {
     timeUpdatedAt: Date
     equipment_scanned: boolean
     no_of_equipment_scanned: number
-    endsAt: Date,
     completeOnTime: boolean
 }
 
 const JobSchema = new Schema({
 
-    dateTime: Date,
+    scheduleDate: { 
+        type: Date
+    },
+    scheduledStartTime: {
+        type: Date,
+        required: false
+    },
+    scheduledEndTime: {
+        type: Date,
+        required: false
+    },
     jobId: String,
     ticket: {
         type: Schema.Types.ObjectId,
@@ -126,10 +137,6 @@ const JobSchema = new Schema({
     no_of_equipment_scanned: {
         type: Number,
         default: 0
-    },
-    endsAt:{
-        type: Date,
-        required: true
     },
     completeOnTime:{
         type: Boolean,

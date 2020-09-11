@@ -16,7 +16,7 @@ exports.createServiceTicket = (req, res) => {
     }
     const serviceTicket = new ServiceTicket_1.ServiceTicket({
         createdAt: Date.now(),
-        scheduleDateTime: params.scheduleDateTime,
+        scheduleDate: new Date(params.scheduleDate),
         customer: params.customerId,
         createdBy: user._id,
         company: companyId,
@@ -79,7 +79,11 @@ exports.updateServiceTicket = (req, res) => {
         if (serviceTicket.status == 1 /* CANCELED */) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Ticket is canceled' });
         }
-        serviceTicket.updateOne({ note: params.note }, (err, raw) => {
+        let scheduleDate = serviceTicket.scheduleDate;
+        if (params.scheduleDate) {
+            scheduleDate = new Date(params.scheduleDate);
+        }
+        serviceTicket.updateOne({ note: params.note, scheduleDate: scheduleDate }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }

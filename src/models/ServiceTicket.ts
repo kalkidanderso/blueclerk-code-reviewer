@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface IServiceTicket extends Document {
 
     createdAt: Date
-    scheduleDateTime: Date
+    scheduleDate: Date
     customer: Schema.Types.ObjectId
     createdBy: Schema.Types.ObjectId
     note: string
@@ -20,7 +20,10 @@ export interface IServiceTicket extends Document {
 const ServiceTicketSchema = new Schema({
 
     createdAt: Date,
-    scheduleDateTime: Date,
+    scheduleDate: {
+        type: Date,
+        required: false
+    },
     customer: {
         type: Schema.Types.ObjectId,
         ref: 'User',

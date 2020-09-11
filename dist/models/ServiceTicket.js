@@ -10,7 +10,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const ServiceTicketSchema = new mongoose_1.Schema({
     createdAt: Date,
-    scheduleDateTime: Date,
+    scheduleDate: {
+        type: Date,
+        required: false
+    },
     customer: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',

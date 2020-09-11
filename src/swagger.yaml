@@ -2761,9 +2761,10 @@ paths:
           type: string
           description: >-
             Id of a technician / admin
-        - name: scheduleDateTime
+        - name: scheduleDate
           in: formData
           type: string
+          description: 'sche date of service ticket. e.g. 2020-08-12'
         - name: companyId
           in: formData
           type: string
@@ -2859,6 +2860,10 @@ paths:
           required: true
           type: string
           description: Additional note for the service ticket
+        - name: scheduleDate
+          in: formData
+          type: string
+          description: 'sche date of service ticket. e.g. 2020-08-12'
         - name: companyId
           in: formData
           type: string
@@ -2909,16 +2914,21 @@ paths:
       produces:
         - application/json
       parameters:
-        - name: dateTime
+        - name: scheduleDate
           in: formData
           required: true
           type: string
-          description: 'date time of job. e.g. 2020-08-12 20:30:00'
-        - name: endsAt
+          description: 'schedule date of job. e.g. 2020-08-12'
+        - name: scheduledStartTime
           in: formData
-          required: true
+          required: false
           type: string
-          description: 'date time when the job is expected to finish. e.g. if the job is for two hours 2020-08-12 22:30:00'
+          description: 'scheduled start time of job. e.g. 13:05:00'
+        - name: scheduledEndTime
+          in: formData
+          required: false
+          type: string
+          description: 'scheduled end time of job. e.g. 15:05:00'
         - name: ticketId
           in: formData
           required: true
@@ -3196,11 +3206,21 @@ paths:
           required: true
           type: string
           description: Id of assignee (employee to whom the job is assigned)
-        - name: dateTime
+        - name: scheduleDate
           in: formData
           required: true
           type: string
-          description: 'date time of job. e.g. 2019-12-22 20:30:00'
+          description: 'date of job. e.g. 2019-12-20'
+        - name: scheduledStartTime
+          in: formData
+          required: false
+          type: string
+          description: 'scheduled start time of job. e.g. 13:05:00'
+        - name: scheduledEndTime
+          in: formData
+          required: false
+          type: string
+          description: 'scheduled end time of job. e.g. 15:05:00'
         # - name: isFixed
         #   in: formData
         #   required: true
@@ -5333,13 +5353,15 @@ definitions:
     properties:
       _id:
         type: string
-      dateTime:
+      scheduleDate:
         type: string
-        format: date-time
-      endsAt:
+        format: date
+      scheduledStartTime:
         type: string
-        format: date-time
-        description: Time when the job is exprected to finished or for how long the technician will be scheduled
+        format: time
+      scheduledEndTime:
+        type: string
+        format: time
       estimate:
         type: string
         description: Id of the estimate if the Job is Created by estimate
@@ -5377,9 +5399,9 @@ definitions:
     properties:
       _id:
         type: string
-      scheduleTime:
+      scheduleDate:
         type: string
-        format: date-time
+        format: date
       createdAt:
         type: string
         format: date-time
