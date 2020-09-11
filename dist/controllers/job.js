@@ -260,7 +260,7 @@ exports.updateJob = (req, res) => {
         }
         let finishedOnTime = false;
         let currentTime = Date.now();
-        if (job.endsAt >= currentTime) {
+        if (job.scheduledEndTime >= currentTime) {
             finishedOnTime = true;
         }
         return job.updateOne({ comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime });

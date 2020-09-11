@@ -323,7 +323,7 @@ export const updateJob = (req: Request, res: Response) => {
         }
         let finishedOnTime = false
         let currentTime = Date.now()
-        if(job.endsAt >= currentTime) {
+        if(job.scheduledEndTime >= currentTime) {
             finishedOnTime = true
         }
 
