@@ -1,11 +1,12 @@
 import { Request, Response } from 'express'
-import { Status, Messages } from '../common/constants'
+import { Status, Messages, TagType } from '../common/constants'
 
 import { ICustomerEquipment, CustomerEquipment } from '../models/CustomerEquipment'
 import { ICustomer, Customer } from '../models/Customer'
 import { Job , IJob} from '../models/Job'
 import { Scan, IScan} from '../models/Scan'
 import { IUser} from '../models/User'
+import { Tag, ITag} from '../models/Tag'
 import { ObjectId } from 'mongodb'
 import { isNull } from 'util'
 
@@ -224,58 +225,111 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
+        const customerEquipment = CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag, customer: job.customer })
+        const locationTag = Tag.findOne({ 'info.nfcTag': params.nfcTag })
 
-        CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag, customer: job.customer })
-        .exec((err: any, customerEquipment: ICustomerEquipment) => {
+        Promise.all([customerEquipment, locationTag])
+        .then((result:  any) => {
+            const equipment = result[0]
+            const tag = result[1]
+            
+            if(equipment != null && equipment != undefined) {
+                
+                return new Promise((resolve, reject) => {
+                
+                    Scan.findOne({equipment: equipment._id, job: params.jobId}, 
+                        (err: any, scan: IScan) => {
+                            if (err) {
+                                reject()
+                            }
+                            
+                            if (scan != undefined && scan != null) {
+                                reject(new Error('Equipment already scanned for this job.'))
+                                // return res.json({ 'status': Status.Error, 'message': "Equipment already scanned for this job."})
+                            }else{
+                                // create new scan
+                                const newScan = new Scan({
+                                    equipment: equipment._id,
+                                    job: params.jobId,
+                                    comment: params.comment,
+                                    user: user._id,
+                                    timeOfScan: Date.now()
+                                })
+                                newScan.save((err: any) => {
+                                    if (err) {
+                                        reject()
+                                        // return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                    }
 
-            if (err) {
+                                    job.updateOne({equipment_scanned: true, no_of_equipment_scanned: job.no_of_equipment_scanned+1 })
+                                    .exec((err: any, raw: any) => {
+                                        if (err) {
+                                            reject(err)
+                                            // return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                        }
+                                        resolve('Equipment scanned successfully')
+                                        // return res.json({ 'status': Status.Success, 'message': 'Equipment scanned successfully.' })
+                                    })
+
+                                })
+                            }
+        
+                            
+                        })
+                })
+            }else if(tag != null && tag != undefined){
+                return new Promise((resolve, reject) => {
+                    Scan.findOne({tag: tag._id, job: params.jobId}, 
+                        (err: any, scan: IScan) => {
+                            if (err) {
+                                reject()
+                            }
+                            
+                            if (scan != undefined && scan != null) {
+                                reject(new Error('Tag already scanned for this job.'))
+                            }else{
+                                // create new scan
+                                const newScan = new Scan({
+                                    tag: tag._id,
+                                    job: params.jobId,
+                                    comment: params.comment,
+                                    user: user._id,
+                                    timeOfScan: Date.now()
+                                })
+                                newScan.save((err: any) => {
+                                    if (err) {
+                                        reject()
+                                    }
+
+                                    job.updateOne({equipment_scanned: true, no_of_equipment_scanned: job.no_of_equipment_scanned+1 })
+                                    .exec((err: any, raw: any) => {
+                                        if (err) {
+                                            reject()
+                                        }
+                                        resolve('Tag scanned successfully')
+                                    })
+
+                                })
+                            }
+        
+                            
+                        })
+                })
+            }else{
+                throw new Error('Tag is not coded for location or equipment')
+            }
+        })
+        .then((response: any) => {
+            return res.json({ 'status': Status.Success, 'message': response })
+        })
+        .catch((error: any) => { 
+            if (error != undefined && error.message != undefined) {
+                return res.json({ 'status': Status.Error, 'message': error.message })
+            } else {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
-            
-            if (customerEquipment == undefined || customerEquipment == null) {
-                return res.json({ 'status': Status.InvalidEquipment, 'message': "Invalid Customer Equipment"})
-            }
-
-            Scan.findOne({equipment: customerEquipment._id, job: params.jobId}, 
-                (err: any, scan: IScan) => {
-                    if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                    }
-                    
-                    if (scan != undefined && scan != null) {
-                        return res.json({ 'status': Status.Error, 'message': "Equipment already scanned for this job."})
-                    }
-
-                    // create new scan
-                    const newScan = new Scan({
-                        equipment: customerEquipment._id,
-                        job: params.jobId,
-                        comment: params.comment,
-                        user: user._id,
-                        timeOfScan: Date.now()
-                    })
-                    newScan.save((err: any) => {
-                        if (err) {
-                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                        }
-
-                        job.updateOne({equipment_scanned: true, no_of_equipment_scanned: job.no_of_equipment_scanned+1 })
-                        .exec((err: any, raw: any) => {
-                            if (err) {
-                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                            }
-
-                            return res.json({ 'status': Status.Success, 'message': 'Equipment scanned successfully.' })
-                        })
-
-                    })
-                })
-    
         })
     })
-
-    
-
 }
 
 
@@ -344,18 +398,47 @@ export const checkTagAssociation = (req: Request, res: Response) => {
 
     const params = req.body
 
-    CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
-        .exec((err: any, equipment: ICustomerEquipment) => {
+    const tagPromise = Tag.findOne({ 'info.nfcTag': params.nfcTag })
+    const equipmentPromise = CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
+    
+    Promise.all([tagPromise, equipmentPromise])
+    .then((response: any) =>{
+    
+        const tag = response[0]
+        const equipment = response[1]
 
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            }
+        if ((tag == undefined || tag == null) && (equipment != undefined && equipment != null)){
+            return res.json({ 'status': Status.Success, 'tagStatus': Status.TagAssociated, 'message': Messages.TagAssociated, 'tagType': TagType.CustomerEquipmentTag })
+        
+        } else if ((equipment == undefined || equipment == null) && (tag != undefined && tag != null)){
+            return res.json({ 'status': Status.Success, 'tagStatus': Status.TagAssociated, 'message': Messages.TagAssociated, 'tagType': TagType.LocationTag })
 
-            if(equipment == undefined || equipment == null) {
-                return res.json({ 'status': Status.Success, 'tagStatus': Status.TagNotAssociated, 'message': Messages.TagNotAssociated })
-            }
+        }else{
+            return res.json({ 'status': Status.Success, 'tagStatus': Status.TagNotAssociated, 'message': Messages.TagNotAssociated })
+        }
+    })
+    .catch((error) => {
+        if (error.message != undefined) {
+            return res.json({ 'status': Status.Error, 'message': error.message });
+        }
+        else {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+        }
+    });
 
-            return res.json({ 'status': Status.Success, 'tagStatus': Status.TagAssociated, 'message': Messages.TagAssociated })
 
-        })
+    // const teasfdv
+    //     .exec((err: any, equipment: ICustomerEquipment) => {
+
+    //         if (err) {
+    //             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+    //         }
+
+    //         if(equipment == undefined || equipment == null) {
+    //             return res.json({ 'status': Status.Success, 'tagStatus': Status.TagNotAssociated, 'message': Messages.TagNotAssociated })
+    //         }
+
+    //         return res.json({ 'status': Status.Success, 'tagStatus': Status.TagAssociated, 'message': Messages.TagAssociated })
+
+    //     })
 }

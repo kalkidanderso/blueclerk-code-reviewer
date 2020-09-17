@@ -158,7 +158,11 @@ exports.UserPermissions = {
             118 /* Create_Payment */,
             119 /* Update_Payment */,
             120 /* Get_Customer_Payments */,
-            121 /* Get_Payments */
+            121 /* Get_Payments */,
+            122 /* Code_Location_Tag */,
+            123 /* Update_Location_Tag */,
+            124 /* Get_Location_Tags */,
+            125 /* Get_Location_Tag_Jobs */
         ],
         off: [0 /* None */],
     },
@@ -270,7 +274,11 @@ exports.UserPermissions = {
             118 /* Create_Payment */,
             119 /* Update_Payment */,
             120 /* Get_Customer_Payments */,
-            121 /* Get_Payments */
+            121 /* Get_Payments */,
+            122 /* Code_Location_Tag */,
+            123 /* Update_Location_Tag */,
+            124 /* Get_Location_Tags */,
+            125 /* Get_Location_Tag_Jobs */
         ],
         off: [0 /* None */],
     },
@@ -385,7 +393,11 @@ exports.UserPermissions = {
             118 /* Create_Payment */,
             119 /* Update_Payment */,
             120 /* Get_Customer_Payments */,
-            121 /* Get_Payments */
+            121 /* Get_Payments */,
+            122 /* Code_Location_Tag */,
+            123 /* Update_Location_Tag */,
+            124 /* Get_Location_Tags */,
+            125 /* Get_Location_Tag_Jobs */
         ],
         off: [0 /* None */],
     },
@@ -510,7 +522,11 @@ exports.UserPermissions = {
             118 /* Create_Payment */,
             119 /* Update_Payment */,
             120 /* Get_Customer_Payments */,
-            121 /* Get_Payments */
+            121 /* Get_Payments */,
+            122 /* Code_Location_Tag */,
+            123 /* Update_Location_Tag */,
+            124 /* Get_Location_Tags */,
+            125 /* Get_Location_Tag_Jobs */
         ],
         off: [0 /* None */],
     }

@@ -9,6 +9,11 @@ export const Status = {
     InvalidEquipment: 5
 }
 
+export const enum TagType {
+    CustomerEquipmentTag,
+    LocationTag
+}
+
 export const Messages = {
     MissingParams: 'Parameters are missing.',
     InvalidEmailPassword: 'Invalid email/password.',
@@ -201,7 +206,11 @@ export const enum Permissions {
     Create_Payment,
     Update_Payment,
     Get_Customer_Payments,
-    Get_Payments
+    Get_Payments,
+    Code_Location_Tag,
+    Update_Location_Tag,
+    Get_Location_Tags,
+    Get_Location_Tag_Jobs
 
 }
 
@@ -341,7 +350,11 @@ export const UserPermissions = {
             Permissions.Create_Payment,
             Permissions.Update_Payment,
             Permissions.Get_Customer_Payments,
-            Permissions.Get_Payments
+            Permissions.Get_Payments,
+            Permissions.Code_Location_Tag,
+            Permissions.Update_Location_Tag,
+            Permissions.Get_Location_Tags,
+            Permissions.Get_Location_Tag_Jobs
         ],
         off: [Permissions.None],
     },
@@ -453,7 +466,11 @@ export const UserPermissions = {
             Permissions.Create_Payment,
             Permissions.Update_Payment,
             Permissions.Get_Customer_Payments,
-            Permissions.Get_Payments
+            Permissions.Get_Payments,
+            Permissions.Code_Location_Tag,
+            Permissions.Update_Location_Tag,
+            Permissions.Get_Location_Tags,
+            Permissions.Get_Location_Tag_Jobs
         ],
         off: [Permissions.None],
     },
@@ -568,7 +585,11 @@ export const UserPermissions = {
             Permissions.Create_Payment,
             Permissions.Update_Payment,
             Permissions.Get_Customer_Payments,
-            Permissions.Get_Payments
+            Permissions.Get_Payments,
+            Permissions.Code_Location_Tag,
+            Permissions.Update_Location_Tag,
+            Permissions.Get_Location_Tags,
+            Permissions.Get_Location_Tag_Jobs
         ],
         off: [Permissions.None],
     },
@@ -693,7 +714,11 @@ export const UserPermissions = {
             Permissions.Create_Payment,
             Permissions.Update_Payment,
             Permissions.Get_Customer_Payments,
-            Permissions.Get_Payments
+            Permissions.Get_Payments,
+            Permissions.Code_Location_Tag,
+            Permissions.Update_Location_Tag,
+            Permissions.Get_Location_Tags,
+            Permissions.Get_Location_Tag_Jobs
         ],
         off: [Permissions.None],
     }

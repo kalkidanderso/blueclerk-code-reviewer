@@ -31,6 +31,7 @@ import * as partController from '../controllers/part'
 import * as purchaseOrderController from '../controllers/purchaseOrder'
 import * as estimateController from '../controllers/estimate'
 import * as paymentController from '../controllers/payment'
+import * as tagController from '../controllers/tag'
 import { Personalize } from 'aws-sdk'
 
 export default function (sio: any) {
@@ -1298,6 +1299,38 @@ export default function (sio: any) {
         getCompnayId(),
         checkUserPermissions(Permissions.Get_Payments),
         paymentController.getPayments
+    )
+
+    router.post(
+        '/codeLocationTag',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        validate(Validations.codeLocationTag),
+        checkUserPermissions(Permissions.Code_Location_Tag),
+        tagController.codeLocationTag
+    )
+    router.post(
+        '/updateLocationTag',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        validate(Validations.updateLocationTag),
+        checkUserPermissions(Permissions.Update_Location_Tag),
+        tagController.updateLocationTag
+    )
+    router.post(
+        '/getLocationTags',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        checkUserPermissions(Permissions.Get_Location_Tags),
+        tagController.getLocationTags
+    )
+    router.post(
+        '/getLocationTagJobs',
+        passport.authenticate('jwt', { session: false }),
+        getCompnayId(),
+        validate(Validations.getLocationTagJobs),
+        checkUserPermissions(Permissions.Get_Location_Tag_Jobs),
+        tagController.getLocationTagJobs
     )
 
     return router

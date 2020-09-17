@@ -5,6 +5,7 @@ const CustomerEquipment_1 = require("../models/CustomerEquipment");
 const Customer_1 = require("../models/Customer");
 const Job_1 = require("../models/Job");
 const Scan_1 = require("../models/Scan");
+const Tag_1 = require("../models/Tag");
 const mongodb_1 = require("mongodb");
 const util_1 = require("util");
 exports.createCustomerEquipment = (req, res) => {
@@ -160,42 +161,98 @@ exports.linkJobToEquipment = (req, res) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag, customer: job.customer })
-            .exec((err, customerEquipment) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            if (customerEquipment == undefined || customerEquipment == null) {
-                return res.json({ 'status': constants_1.Status.InvalidEquipment, 'message': "Invalid Customer Equipment" });
-            }
-            Scan_1.Scan.findOne({ equipment: customerEquipment._id, job: params.jobId }, (err, scan) => {
-                if (err) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                }
-                if (scan != undefined && scan != null) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': "Equipment already scanned for this job." });
-                }
-                // create new scan
-                const newScan = new Scan_1.Scan({
-                    equipment: customerEquipment._id,
-                    job: params.jobId,
-                    comment: params.comment,
-                    user: user._id,
-                    timeOfScan: Date.now()
-                });
-                newScan.save((err) => {
-                    if (err) {
-                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                    }
-                    job.updateOne({ equipment_scanned: true, no_of_equipment_scanned: job.no_of_equipment_scanned + 1 })
-                        .exec((err, raw) => {
+        const customerEquipment = CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag, customer: job.customer });
+        const locationTag = Tag_1.Tag.findOne({ 'info.nfcTag': params.nfcTag });
+        Promise.all([customerEquipment, locationTag])
+            .then((result) => {
+            const equipment = result[0];
+            const tag = result[1];
+            if (equipment != null && equipment != undefined) {
+                return new Promise((resolve, reject) => {
+                    Scan_1.Scan.findOne({ equipment: equipment._id, job: params.jobId }, (err, scan) => {
                         if (err) {
-                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                            reject();
                         }
-                        return res.json({ 'status': constants_1.Status.Success, 'message': 'Equipment scanned successfully.' });
+                        if (scan != undefined && scan != null) {
+                            reject(new Error('Equipment already scanned for this job.'));
+                            // return res.json({ 'status': Status.Error, 'message': "Equipment already scanned for this job."})
+                        }
+                        else {
+                            // create new scan
+                            const newScan = new Scan_1.Scan({
+                                equipment: equipment._id,
+                                job: params.jobId,
+                                comment: params.comment,
+                                user: user._id,
+                                timeOfScan: Date.now()
+                            });
+                            newScan.save((err) => {
+                                if (err) {
+                                    reject();
+                                    // return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                }
+                                job.updateOne({ equipment_scanned: true, no_of_equipment_scanned: job.no_of_equipment_scanned + 1 })
+                                    .exec((err, raw) => {
+                                    if (err) {
+                                        reject(err);
+                                        // return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                    }
+                                    resolve('Equipment scanned successfully');
+                                    // return res.json({ 'status': Status.Success, 'message': 'Equipment scanned successfully.' })
+                                });
+                            });
+                        }
                     });
                 });
-            });
+            }
+            else if (tag != null && tag != undefined) {
+                return new Promise((resolve, reject) => {
+                    Scan_1.Scan.findOne({ tag: tag._id, job: params.jobId }, (err, scan) => {
+                        if (err) {
+                            reject();
+                        }
+                        if (scan != undefined && scan != null) {
+                            reject(new Error('Tag already scanned for this job.'));
+                        }
+                        else {
+                            // create new scan
+                            const newScan = new Scan_1.Scan({
+                                tag: tag._id,
+                                job: params.jobId,
+                                comment: params.comment,
+                                user: user._id,
+                                timeOfScan: Date.now()
+                            });
+                            newScan.save((err) => {
+                                if (err) {
+                                    reject();
+                                }
+                                job.updateOne({ equipment_scanned: true, no_of_equipment_scanned: job.no_of_equipment_scanned + 1 })
+                                    .exec((err, raw) => {
+                                    if (err) {
+                                        reject();
+                                    }
+                                    resolve('Tag scanned successfully');
+                                });
+                            });
+                        }
+                    });
+                });
+            }
+            else {
+                throw new Error('Tag is not coded for location or equipment');
+            }
+        })
+            .then((response) => {
+            return res.json({ 'status': constants_1.Status.Success, 'message': response });
+        })
+            .catch((error) => {
+            if (error != undefined && error.message != undefined) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': error.message });
+            }
+            else {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
         });
     });
 };
@@ -246,15 +303,39 @@ exports.getEquipmentJobs = (req, res) => {
 };
 exports.checkTagAssociation = (req, res) => {
     const params = req.body;
-    CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
-        .exec((err, equipment) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+    const tagPromise = Tag_1.Tag.findOne({ 'info.nfcTag': params.nfcTag });
+    const equipmentPromise = CustomerEquipment_1.CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag });
+    Promise.all([tagPromise, equipmentPromise])
+        .then((response) => {
+        const tag = response[0];
+        const equipment = response[1];
+        if ((tag == undefined || tag == null) && (equipment != undefined && equipment != null)) {
+            return res.json({ 'status': constants_1.Status.Success, 'tagStatus': constants_1.Status.TagAssociated, 'message': constants_1.Messages.TagAssociated, 'tagType': 0 /* CustomerEquipmentTag */ });
         }
-        if (equipment == undefined || equipment == null) {
+        else if ((equipment == undefined || equipment == null) && (tag != undefined && tag != null)) {
+            return res.json({ 'status': constants_1.Status.Success, 'tagStatus': constants_1.Status.TagAssociated, 'message': constants_1.Messages.TagAssociated, 'tagType': 1 /* LocationTag */ });
+        }
+        else {
             return res.json({ 'status': constants_1.Status.Success, 'tagStatus': constants_1.Status.TagNotAssociated, 'message': constants_1.Messages.TagNotAssociated });
         }
-        return res.json({ 'status': constants_1.Status.Success, 'tagStatus': constants_1.Status.TagAssociated, 'message': constants_1.Messages.TagAssociated });
+    })
+        .catch((error) => {
+        if (error.message != undefined) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': error.message });
+        }
+        else {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
     });
+    // const teasfdv
+    //     .exec((err: any, equipment: ICustomerEquipment) => {
+    //         if (err) {
+    //             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+    //         }
+    //         if(equipment == undefined || equipment == null) {
+    //             return res.json({ 'status': Status.Success, 'tagStatus': Status.TagNotAssociated, 'message': Messages.TagNotAssociated })
+    //         }
+    //         return res.json({ 'status': Status.Success, 'tagStatus': Status.TagAssociated, 'message': Messages.TagAssociated })
+    //     })
 };
 //# sourceMappingURL=customerEquipment.js.map

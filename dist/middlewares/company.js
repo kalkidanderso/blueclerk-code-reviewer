@@ -25,15 +25,18 @@ exports.getCompnayId = () => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': "Unable to find your company. Contact BlueClerk admin for more." });
                 }
-                if (company.type == 1 && (req.body.companyId == undefined || req.body.companyId == null)) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': 'Company id is required.' });
-                }
-                else {
-                    req.company = company;
-                    req.companyId = company._id;
-                    next();
-                    return;
-                }
+                // if(company.type == 1 && (req.body.companyId == undefined || req.body.companyId == null) ){
+                //     return res.json({'status': Status.Error, 'message': 'Company id is required.'})
+                // }else{
+                //     req.company = company
+                //     req.companyId = company._id
+                //     next()
+                //     return
+                // }
+                req.company = company;
+                req.companyId = company._id;
+                next();
+                return;
             });
         }
         else if (user.permissions.role != 4 /* GLOBAL_ADMIN */) {

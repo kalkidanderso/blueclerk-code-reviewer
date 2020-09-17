@@ -19,7 +19,12 @@ const ScanSchema = new Schema({
     equipment:{
         type: Schema.Types.ObjectId,
         ref: 'CustomerEquipment',
-        required: true
+        required: false
+    },
+    tag:{
+        type: Schema.Types.ObjectId,
+        ref: 'Tag',
+        required: false
     },
     user:{
         type: Schema.Types.ObjectId,

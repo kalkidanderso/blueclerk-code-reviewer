@@ -40,6 +40,7 @@ const partController = __importStar(require("../controllers/part"));
 const purchaseOrderController = __importStar(require("../controllers/purchaseOrder"));
 const estimateController = __importStar(require("../controllers/estimate"));
 const paymentController = __importStar(require("../controllers/payment"));
+const tagController = __importStar(require("../controllers/tag"));
 function default_1(sio) {
     const router = express_1.default.Router();
     //Auth
@@ -236,6 +237,10 @@ function default_1(sio) {
     router.post('/updatePayment', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.updatePayment), permissions_1.checkUserPermissions(119 /* Update_Payment */), paymentController.udpatePayment);
     router.post('/getPaymentsByCustomerId', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.getPaymentsByCustomer), permissions_1.checkUserPermissions(120 /* Get_Customer_Payments */), paymentController.getPaymentsByCustomerId);
     router.post('/getPayments', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(121 /* Get_Payments */), paymentController.getPayments);
+    router.post('/codeLocationTag', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.codeLocationTag), permissions_1.checkUserPermissions(122 /* Code_Location_Tag */), tagController.codeLocationTag);
+    router.post('/updateLocationTag', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.updateLocationTag), permissions_1.checkUserPermissions(123 /* Update_Location_Tag */), tagController.updateLocationTag);
+    router.post('/getLocationTags', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), permissions_1.checkUserPermissions(124 /* Get_Location_Tags */), tagController.getLocationTags);
+    router.post('/getLocationTagJobs', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompnayId(), validator_1.validate(validator_1.Validations.getLocationTagJobs), permissions_1.checkUserPermissions(125 /* Get_Location_Tag_Jobs */), tagController.getLocationTagJobs);
     return router;
 }
 exports.default = default_1;

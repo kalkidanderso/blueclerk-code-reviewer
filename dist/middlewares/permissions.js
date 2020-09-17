@@ -43,25 +43,29 @@ exports.checkUserPermissions = (permissionId) => {
                         return;
                     }
                     // check other contractor permissions
-                    Contract_1.Contract.findOne({ company: req.otherCompanyId, contractor: company._id }, (err, contract) => {
-                        if (err) {
-                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                        }
-                        if (contract == undefined || contract == null) {
-                            return res.json({ 'status': constants_1.Status.Error, 'message': 'No Contract found.' });
-                        }
-                        if (contract.status == 2 /* CANCELED */ || contract.status == 4 /* FINISHED */) {
-                            return res.json({ 'status': constants_1.Status.Error, 'message': 'Your contract is no more valid.' });
-                        }
-                        if (contract.extraPermissions == undefined) {
-                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.UnAuthorized });
-                        }
-                        if (!contract.extraPermissions.includes(permissionId)) {
-                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.UnAuthorized });
-                        }
-                        next();
-                        return;
-                    });
+                    // Contract.findOne( {company: req.otherCompanyId, contractor: company._id},
+                    //     (err: any, contract: IContract)=>{
+                    //         if (err) {
+                    //             return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    //         }
+                    //         if (contract == undefined || contract == null) {
+                    //             return res.json({'status': Status.Error, 'message': 'No Contract found.'})
+                    //         }
+                    //         if (contract.status == ContractStatus.CANCELED || contract.status == ContractStatus.FINISHED) {
+                    //             return res.json({'status': Status.Error, 'message': 'Your contract is no more valid.'})
+                    //         }
+                    //         if (contract.extraPermissions == undefined) {
+                    //             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
+                    //         }
+                    //         if (!contract.extraPermissions.includes(permissionId)) {
+                    //             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
+                    //         }
+                    //         next()
+                    //         return
+                    //     }
+                    // )
+                    next();
+                    return;
                 }
                 else {
                     if (req.otherCompanyId != undefined || req.otherCompanyId != null) {

@@ -27,16 +27,20 @@ export const getCompnayId = () => {
                         return res.json({ 'status': Status.Error, 'message': "Unable to find your company. Contact BlueClerk admin for more." })
                     }
 
-                    if(company.type == 1 && (req.body.companyId == undefined || req.body.companyId == null) ){
-                        return res.json({'status': Status.Error, 'message': 'Company id is required.'})
+                    // if(company.type == 1 && (req.body.companyId == undefined || req.body.companyId == null) ){
+                    //     return res.json({'status': Status.Error, 'message': 'Company id is required.'})
 
-                    }else{
+                    // }else{
 
-                        req.company = company
-                        req.companyId = company._id
-                        next()
-                        return
-                    }
+                    //     req.company = company
+                    //     req.companyId = company._id
+                    //     next()
+                    //     return
+                    // }
+                    req.company = company
+                    req.companyId = company._id
+                    next()
+                    return
                 }
             )
 

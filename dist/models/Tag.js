@@ -8,34 +8,39 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const ScanSchema = new mongoose_1.Schema({
-    job: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Job',
+const TagSchema = new mongoose_1.Schema({
+    info: {
+        nfcTag: {
+            type: String,
+            required: true
+        }
+    },
+    latitude: {
+        type: String,
         required: true
     },
-    equipment: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'CustomerEquipment',
+    longitude: {
+        type: String,
+        required: true
+    },
+    note: {
+        type: String,
         required: false
     },
-    tag: {
+    company: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Tag',
-        required: false
+        ref: 'Company',
+        required: true
     },
-    user: {
+    createdBy: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    comment: {
-        type: String,
-        default: null
-    },
-    timeOfScan: {
-        type: Date
+    createdAt: {
+        type: Date,
+        default: Date.now()
     }
 });
-exports.Scan = mongoose_1.default.model('Scan', ScanSchema);
-//# sourceMappingURL=Scan.js.map
+exports.Tag = mongoose_1.default.model('Tag', TagSchema);
+//# sourceMappingURL=Tag.js.map

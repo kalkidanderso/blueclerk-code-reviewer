@@ -44,6 +44,10 @@
       "description": "For equipments of a customer"
     },
     {
+      "name": "Location Tags",
+      "description": "For location tags"
+    },
+    {
       "name": "Customer Equipment Detail",
       "description": "For Limited information of customer equipment and jobs"
     },
@@ -2593,6 +2597,211 @@
         ]
       }
     },
+    "/codeLocationTag": {
+      "post": {
+        "tags": [
+          "Location Tags"
+        ],
+        "summary": "To code a location tag",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "latitude",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "longitude",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "nfcTag",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "note",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateLocationTag": {
+      "post": {
+        "tags": [
+          "Location Tags"
+        ],
+        "summary": "To update a location tag",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "nfcTag",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "latitude",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "longitude",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "note",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getLocationTags": {
+      "post": {
+        "tags": [
+          "Location Tags"
+        ],
+        "summary": "To get all location tags",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/LocationTag"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getLocationTagJobs": {
+      "post": {
+        "tags": [
+          "Location Tags"
+        ],
+        "summary": "To get history of jobs performed on current tag",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "nfcTag",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "tag": {
+                      "$ref": "#/definitions/LocationTag"
+                    },
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Scan"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/scanTag": {
       "post": {
         "tags": [
@@ -4240,6 +4449,7 @@
             "name": "scheduleDate",
             "in": "formData",
             "type": "string",
+            "required": true,
             "description": "sche date of service ticket. e.g. 2020-08-12"
           },
           {
@@ -7320,6 +7530,42 @@
         "customer": {
           "type": "string",
           "description": "Id of customer"
+        }
+      }
+    },
+    "LocationTag": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "info": {
+          "type": "object",
+          "properties": {
+            "nfcTag": {
+              "type": "string"
+            }
+          }
+        },
+        "latitude": {
+          "type": "string"
+        },
+        "longitude": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "company": {
+          "type": "string",
+          "description": "Id of comapny to whom tag belongs"
+        },
+        "createdBy": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     },
