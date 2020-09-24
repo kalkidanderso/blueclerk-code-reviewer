@@ -5,6 +5,8 @@ export interface ITag extends Document {
     latitude: string
     longitude: string
     note: string
+    address: string
+    customer: Schema.Types.ObjectId
     info: {
         nfcTag: String
     },
@@ -32,6 +34,15 @@ const TagSchema = new Schema({
     note:{
         type: String,
         required: false
+    },
+    address:{
+        type: String,
+        required: false
+    },
+    customer:{
+        type: Schema.Types.ObjectId,
+        ref: 'Customer',
+        required: true
     },
     company:{
         type: Schema.Types.ObjectId,

@@ -1694,7 +1694,15 @@ paths:
           in: formData
           required: true
           type: string
+        - name: customer
+          in: formData
+          required: true
+          type: string
         - name: note
+          in: formData
+          required: false
+          type: string
+        - name: address
           in: formData
           required: false
           type: string
@@ -1729,6 +1737,10 @@ paths:
           required: true
           type: string
         - name: note
+          in: formData
+          required: false
+          type: string
+        - name: address
           in: formData
           required: false
           type: string
@@ -4895,6 +4907,13 @@ definitions:
         type: string
       note:
         type: string
+        description: note (optional)
+      address:
+        type: string
+        description: addtitional address of the location where tag is coded (optional)
+      customer:
+        type: string
+        description: Id of customer for whome the code is coded for
       company:
         type: string
         description: Id of comapny to whom tag belongs

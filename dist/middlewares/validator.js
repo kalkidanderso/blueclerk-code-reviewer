@@ -128,7 +128,7 @@ exports.Validations = {
     recordPayment: [express_validator_1.check('amount').exists(), express_validator_1.check('referenceNumber').exists(), express_validator_1.check('paidAt').exists(), express_validator_1.check('customer').exists(), express_validator_1.check('invoices').exists()],
     updatePayment: [express_validator_1.check('paymentId').exists(), express_validator_1.check('amount').exists(), express_validator_1.check('referenceNumber').exists(), express_validator_1.check('paidAt').exists(), express_validator_1.check('invoices').exists()],
     getPaymentsByCustomer: [express_validator_1.check('customer').exists()],
-    codeLocationTag: [express_validator_1.check('latitude').exists(), express_validator_1.check('longitude').exists(), express_validator_1.check('nfcTag').exists()],
+    codeLocationTag: [express_validator_1.check('latitude').exists(), express_validator_1.check('longitude').exists(), express_validator_1.check('nfcTag').exists(), express_validator_1.check('customer').exists()],
     updateLocationTag: [express_validator_1.check('nfcTag').exists(), express_validator_1.check('latitude').exists(), express_validator_1.check('longitude').exists(), express_validator_1.check('nfcTag').exists()],
     getLocationTagJobs: [express_validator_1.check('nfcTag').exists()],
 };

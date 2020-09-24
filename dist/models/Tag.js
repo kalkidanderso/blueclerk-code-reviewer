@@ -27,6 +27,15 @@ const TagSchema = new mongoose_1.Schema({
         type: String,
         required: false
     },
+    address: {
+        type: String,
+        required: false
+    },
+    customer: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Customer',
+        required: true
+    },
     company: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Company',

@@ -24,6 +24,8 @@ export const codeLocationTag = (req: Request, res: Response) => {
             latitude : params.latitude,
             longitude : params.longitude,
             note: params.note,
+            customer: params.customer,
+            address: params.address,
             company: req.companyId,
             createdBy: user._id,
             createdAt: Date.now()
@@ -52,7 +54,7 @@ export const updateLocationTag = (req: Request, res: Response) => {
             return res.json({'status': Status.Success, 'message': "Invalid tag id."})
         }
 
-        tag.updateOne({ latitude : params.latitude, longitude : params.longitude, note: params.note },
+        tag.updateOne({ latitude : params.latitude, longitude : params.longitude, note: params.note, address: params.address },
         (err: any, raw: any) => {
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -65,7 +67,12 @@ export const updateLocationTag = (req: Request, res: Response) => {
 
 export const getLocationTags = (req: Request, res: Response) => {
 
-    Tag.find({'company': req.companyId}, (err: any, tags: ITag[]) => {
+    Tag.find({'company': req.companyId})
+    .populate({
+        path: 'customer',
+        select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+    })
+    .exec((err: any, tags: ITag[]) => {
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }

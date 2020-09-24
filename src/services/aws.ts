@@ -178,6 +178,50 @@ export const sendContractStartEmail = function(options: any) {
   })
 }
 
+export const sendContractStartEmailToCompany = function(options: any) {
+
+  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
+
+  AWS.config.update({
+    region: AWS_REGION,
+    accessKeyId: AWS_SES_ACCESSKEYID,
+    secretAccessKey: AWS_SES_SECRETACCESSKEY,
+  })
+
+  const ses = new AWS.SES({ apiVersion: '2012-10-17' })
+
+  return new Promise((resolve, reject) => {
+    ses.sendEmail(
+      {
+        Source: APP_EMAIL_NOREPLY,
+        Destination: {
+          CcAddresses: [],
+          ToAddresses: [options.to],
+        },
+        Message: {
+          Subject: {
+            Data: "Request send to vendor "+options.contractor+" on Blueclerk",
+          },
+          Body: {
+            Html: {
+              Data: "<p>Hi! "+ options.company+"</p>\
+              <p>You have sent a request to "+options.contractor+" to become a vendor for your company. Please login to view details <a href=\"https://app.blueclerk.com/login/\ target=\"_blank\">app.blueclerk.com</a></p>",
+            },
+          },
+        },
+        ReplyToAddresses: [APP_EMAIL_NOREPLY],
+      },
+      (err, info) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(info)
+        }
+      },
+    )
+  })
+}
+
 export const sendContractStatusChangeEmailToContractor = function(options: any) {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
@@ -205,7 +249,7 @@ export const sendContractStatusChangeEmailToContractor = function(options: any) 
           Body: {
             Html: {
               Data: "<p>Hi! "+ options.contractor+"</p>\
-              <p>You have "+ options.contractStatus+" to be a vendor of "+options.company+". If you did not accept this change, please login and change your password immediately  </p>",
+              <p>You have "+ options.contractStatus+" to be a vendor of "+options.company+". If you did not accepted this change, please login and change your password immediately  </p>",
             },
           },
         },

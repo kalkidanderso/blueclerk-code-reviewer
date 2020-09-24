@@ -18,6 +18,8 @@ exports.codeLocationTag = (req, res) => {
             latitude: params.latitude,
             longitude: params.longitude,
             note: params.note,
+            customer: params.customer,
+            address: params.address,
             company: req.companyId,
             createdBy: user._id,
             createdAt: Date.now()
@@ -39,7 +41,7 @@ exports.updateLocationTag = (req, res) => {
         if (tag == undefined || tag == null) {
             return res.json({ 'status': constants_1.Status.Success, 'message': "Invalid tag id." });
         }
-        tag.updateOne({ latitude: params.latitude, longitude: params.longitude, note: params.note }, (err, raw) => {
+        tag.updateOne({ latitude: params.latitude, longitude: params.longitude, note: params.note, address: params.address }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
@@ -48,7 +50,12 @@ exports.updateLocationTag = (req, res) => {
     });
 };
 exports.getLocationTags = (req, res) => {
-    Tag_1.Tag.find({ 'company': req.companyId }, (err, tags) => {
+    Tag_1.Tag.find({ 'company': req.companyId })
+        .populate({
+        path: 'customer',
+        select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+    })
+        .exec((err, tags) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
