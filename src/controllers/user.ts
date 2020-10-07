@@ -1140,7 +1140,7 @@ export const acceptRejectContract = (req: Request, res: Response) => {
                                 const perday = 2/daysInCurrentMonth
                                 amount = amount+ (perday* daysToCharge)
                                 
-                                if (company.stripeId == undefined || company.stripeId == '') {
+                                if (company.stripeId != undefined || company.stripeId != '') {
                                     chargeSubscription(amount, company.stripeId, (status: any, charge: any, message: any) => {
                                         return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
                                     })

@@ -1379,7 +1379,7 @@ export const createInvoice = (req: Request, res: Response) => {
                             
                             let newBalance = customer.balance + newInvoice.total
                             customer.updateOne({balance: newBalance})
-                            .exec((err: any, res: any) =>{
+                            .exec((err: any, result: any) =>{
                                 if (err) {
                                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                                 }

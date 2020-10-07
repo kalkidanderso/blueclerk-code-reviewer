@@ -836,7 +836,7 @@ exports.acceptRejectContract = (req, res) => {
                     const daysToCharge = daysInCurrentMonth - daysRemaining + 1;
                     const perday = 2 / daysInCurrentMonth;
                     amount = amount + (perday * daysToCharge);
-                    if (company.stripeId == undefined || company.stripeId == '') {
+                    if (company.stripeId != undefined || company.stripeId != '') {
                         stripe_1.chargeSubscription(amount, company.stripeId, (status, charge, message) => {
                             return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract ' + params.status + 'ed.' });
                         });

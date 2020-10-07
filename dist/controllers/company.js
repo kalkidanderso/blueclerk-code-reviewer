@@ -1058,7 +1058,7 @@ exports.createInvoice = (req, res) => {
                         }
                         let newBalance = customer.balance + newInvoice.total;
                         customer.updateOne({ balance: newBalance })
-                            .exec((err, res) => {
+                            .exec((err, result) => {
                             if (err) {
                                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                             }
