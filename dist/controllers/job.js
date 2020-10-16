@@ -104,11 +104,11 @@ const _createJob = (req, res, jobId, serviceTicket, next) => {
     }
     job.save((err) => {
         if (err) {
-            return next(req, res, constants_1.Messages.GenericError, null);
+            return next(req, res, err, null);
         }
-        serviceTicket.updateOne({ jobCreated: true }, (err, raw) => {
-            if (err) {
-                return next(req, res, constants_1.Messages.GenericError, null);
+        serviceTicket.updateOne({ jobCreated: true }, (serviceTicketError, raw) => {
+            if (serviceTicketError) {
+                return next(req, res, serviceTicketError, null);
             }
             _sendJobEmails(req, res, job, (req, res, newJob) => {
                 return next(req, res, null, newJob);

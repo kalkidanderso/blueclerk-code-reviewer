@@ -63,7 +63,7 @@ export const createJob = (req: Request, res: Response) => {
             if(err != null){
                 return res.json({'status': Status.Error, 'message': err})
             }
-            
+
             return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
         })
 
@@ -124,12 +124,12 @@ const _createJob = (req: Request, res: Response, jobId: string, serviceTicket: I
 
     job.save((err: any) => {
         if (err) {
-            return next(req, res, Messages.GenericError, null )
+            return next(req, res, err, null )
         }
         
-        serviceTicket.updateOne({jobCreated: true}, (err: any, raw: any) => { 
-            if (err) {
-                return next(req, res, Messages.GenericError, null )
+        serviceTicket.updateOne({jobCreated: true}, (serviceTicketError: any, raw: any) => { 
+            if (serviceTicketError) {
+                return next(req, res, serviceTicketError, null )
             }
 
             _sendJobEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => { 
