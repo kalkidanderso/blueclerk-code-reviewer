@@ -59,12 +59,12 @@ exports.createJob = (req, res) => {
         });
     })
         .catch((error) => {
-        if (error.message != undefined) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': error.message });
-        }
-        else {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
+        return res.json({ 'status': constants_1.Status.Error, 'message': error });
+        // if (error.message != undefined) {
+        //     return res.json({ 'status': Status.Error, 'message': error.message })
+        // } else {
+        //     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        // }
     });
 };
 const _createJob = (req, res, jobId, serviceTicket, next) => {

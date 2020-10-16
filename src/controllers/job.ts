@@ -69,11 +69,12 @@ export const createJob = (req: Request, res: Response) => {
 
     })
     .catch((error: any) => {
-        if (error.message != undefined) {
-            return res.json({ 'status': Status.Error, 'message': error.message })
-        } else {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        }
+        return res.json({ 'status': Status.Error, 'message': error })
+        // if (error.message != undefined) {
+        //     return res.json({ 'status': Status.Error, 'message': error.message })
+        // } else {
+        //     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        // }
     })
 
 }
