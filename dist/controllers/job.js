@@ -51,7 +51,10 @@ exports.createJob = (req, res) => {
         .then((response) => {
         const jobId = response[0];
         const serviceTicket = response[1];
-        _createJob(req, res, jobId, serviceTicket, (req, res, newJob) => {
+        _createJob(req, res, jobId, serviceTicket, (req, res, err, newJob) => {
+            if (err != null) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': err });
+            }
             return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
         });
     })

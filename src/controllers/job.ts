@@ -59,7 +59,11 @@ export const createJob = (req: Request, res: Response) => {
         const jobId = response[0]
         const serviceTicket = response[1]
         
-        _createJob(req, res, jobId, serviceTicket, (req: Request, res: Response, newJob: IJob) => {
+        _createJob(req, res, jobId, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob) => {
+            if(err != null){
+                return res.json({'status': Status.Error, 'message': err})
+            }
+            
             return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
         })
 
