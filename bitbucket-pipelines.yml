@@ -1,0 +1,26 @@
+# This is a sample build configuration for Docker.
+# Check our guides at https://confluence.atlassian.com/x/O1toN for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: atlassian/default-image:2
+
+pipelines:
+  default:
+    - step:
+        services:
+          - docker
+        script:
+
+          # build the image
+          - docker build -t blueclerk-backend .
+
+          # use the pipe to push to AWS ECR
+          - pipe: atlassian/aws-ecr-push-image:1.2.1
+            variables:
+              AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+              AWS_DEFAULT_REGION: us-east-1
+              IMAGE_NAME: blueclerk-backend
+              TAGS: '${BITBUCKET_COMMIT} latest'
+
