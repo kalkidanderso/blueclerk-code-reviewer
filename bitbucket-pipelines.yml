@@ -21,9 +21,17 @@ pipelines:
             # aws login
             - eval $(aws ecr get-login --region ${AWS_DEFAULT_REGION} --no-include-email)
             # docker
-            - export BUILD_ID=$BITBUCKET_BRANCH.$BITBUCKET_COMMIT
-            - export BUILD_LATEST=$BITBUCKET_BRANCH.latest
-            - docker build -t ${REPOSITORY_URL}:$BUILD_ID .
-            - docker push ${REPOSITORY_URL}:$BUILD_ID
-            - docker tag ${REPOSITORY_URL}:$BUILD_ID ${REPOSITORY_URL}:$BUILD_LATEST
-            - docker push ${REPOSITORY_URL}:$BUILD_LATEST
+            - export IMAGE_TAG="${BITBUCKET_COMMIT::7}"
+            - docker build -t ${REPOSITORY_URL}:$IMAGE_TAG .
+            - docker push ${REPOSITORY_URL}:$IMAGE_TAG
+            - docker tag ${REPOSITORY_URL}:$IMAGE_TAG ${REPOSITORY_URL}:latest
+            - docker push ${REPOSITORY_URL}:latest
+            - echo $REPOSITORY_URL:$IMAGE_TAG
+            - TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition "$TASK_DEFINITION_NAME" --region "${REGION}")
+            - NEW_CONTAINER_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$REPOSITORY_URL:$IMAGE_TAG" '.taskDefinition.containerDefinitions[0].image = $IMAGE | .taskDefinition.containerDefinitions[0]')
+            - echo "${NEW_CONTAINER_DEFINITION}"
+            - echo "Registering new container definition..."
+            - aws ecs register-task-definition --region "${REGION}" --family "${TASK_DEFINITION_NAME}" --container-definitions "${NEW_CONTAINER_DEFINITION}"
+            - echo "Updating the service..."
+            - aws ecs update-service --region "${REGION}" --cluster "${CLUSTER_NAME}" --service "${SERVICE_NAME}"  --task-definition "${TASK_DEFINITION_NAME}"
+       
