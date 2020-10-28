@@ -8,28 +8,17 @@ image: atlassian/default-image:2
 pipelines:
   default:
     - step:
-        services:
-          - docker
-        script:
-
-          # build the image
-          - docker build -t blueclerk-backend .
-
-          # use the pipe to push to AWS ECR
-          - pipe: atlassian/aws-ecr-push-image:1.2.1
-            variables:
-              AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
-              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
-              AWS_DEFAULT_REGION: us-east-1
-              IMAGE_NAME: blueclerk-backend
-              TAGS: '${BITBUCKET_COMMIT} latest'
-              
-        
-          - pipe: atlassian/aws-ecs-deploy:1.2.1
-            variables:
-              AWS_DEFAULT_REGION: us-east-1
-              CLUSTER_NAME: 'blueclerk'
-              SERVICE_NAME: 'blueclerk-api'
-              TASK_DEFINITION: 'taskdefinitions.json'
-
-
+              #python image with aws-cli installed
+              image: atlassian/pipelines-awscli
+              services:
+                - docker
+              script:
+                # aws login
+                - eval $(aws ecr get-login --region ${AWS_DEFAULT_REGION} --no-include-email)
+                # docker
+                - export BUILD_ID=$BITBUCKET_BRANCH.$BITBUCKET_COMMIT
+                - export BUILD_LATEST=$BITBUCKET_BRANCH.latest
+                - docker build -t ${AWS_REGISTRY_URL}:$BUILD_ID .
+                - docker push ${AWS_REGISTRY_URL}:$BUILD_ID
+                - docker tag ${AWS_REGISTRY_URL}:$BUILD_ID ${AWS_REGISTRY_URL}:$BUILD_LATEST
+                - docker push ${AWS_REGISTRY_URL}:$BUILD_LATEST
