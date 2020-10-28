@@ -8,17 +8,22 @@ image: atlassian/default-image:2
 pipelines:
   default:
     - step:
-              #python image with aws-cli installed
-              image: atlassian/pipelines-awscli
-              services:
-                - docker
-              script:
-                # aws login
-                - eval $(aws ecr get-login --region ${AWS_DEFAULT_REGION} --no-include-email)
-                # docker
-                - export BUILD_ID=$BITBUCKET_BRANCH.$BITBUCKET_COMMIT
-                - export BUILD_LATEST=$BITBUCKET_BRANCH.latest
-                - docker build -t ${AWS_REGISTRY_URL}:$BUILD_ID .
-                - docker push ${AWS_REGISTRY_URL}:$BUILD_ID
-                - docker tag ${AWS_REGISTRY_URL}:$BUILD_ID ${AWS_REGISTRY_URL}:$BUILD_LATEST
-                - docker push ${AWS_REGISTRY_URL}:$BUILD_LATEST
+          #python image with aws-cli installed
+          image: atlassian/pipelines-awscli
+          services:
+            - docker
+          script:
+            - export REPOSITORY_URL=744236993133.dkr.ecr.us-east-1.amazonaws.com/blueclerk-backend
+            - export REGION=us-east-1
+            - export TASK_DEFINITION_NAME=blueclerk-backend
+            - export CLUSTER_NAME=blueclerk
+            - export SERVICE_NAME=blueclerk-api
+            # aws login
+            - eval $(aws ecr get-login --region ${AWS_DEFAULT_REGION} --no-include-email)
+            # docker
+            - export BUILD_ID=$BITBUCKET_BRANCH.$BITBUCKET_COMMIT
+            - export BUILD_LATEST=$BITBUCKET_BRANCH.latest
+            - docker build -t ${REPOSITORY_URL}:$BUILD_ID .
+            - docker push ${REPOSITORY_URL}:$BUILD_ID
+            - docker tag ${REPOSITORY_URL}:$BUILD_ID ${REPOSITORY_URL}:$BUILD_LATEST
+            - docker push ${REPOSITORY_URL}:$BUILD_LATEST
