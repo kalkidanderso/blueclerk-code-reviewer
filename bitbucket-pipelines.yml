@@ -27,6 +27,7 @@ pipelines:
         
           - pipe: atlassian/aws-ecs-deploy:1.2.1
             variables:
+              AWS_DEFAULT_REGION: us-east-1
               CLUSTER_NAME: 'blueclerk'
               SERVICE_NAME: 'blueclerk-api'
               TASK_DEFINITION: 'taskdefinitions.json'
