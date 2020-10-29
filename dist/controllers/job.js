@@ -154,6 +154,7 @@ const _sendJobEmails = (req, res, jobCreated, next) => {
     });
 };
 exports.getJobs = (req, res) => {
+    console.log('in get jobs');
     var companyId = req.companyId;
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;

@@ -6,7 +6,7 @@ import { Company, ICompany } from '../models/Company'
 import { Status, Messages } from '../common/constants'
 import { ICompanyAdmin } from '../models/CompanyAdmin'
 
-export const getCompnayId = () => {
+export const getCompanyId = () => {
 
     return async (req: Request, res: Response, next: NextFunction) => {
 

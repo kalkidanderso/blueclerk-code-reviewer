@@ -1,6 +1,10 @@
-import { check } from 'express-validator'
-
 export const Status = {
+    OK: 200,
+    Created: 201,
+    MissingParameters: 400,
+    Unauthenticated: 401,
+    Forbidden: 403,
+    InternalError: 500,
     Error: 0,
     Success: 1,
     TagAssociated: 2,
@@ -15,7 +19,7 @@ export const enum TagType {
 }
 
 export const Messages = {
-    MissingParams: 'Parameters are missing.',
+    MissingParams: 'Parameters are missing',
     InvalidEmailPassword: 'Invalid email/password.',
     GenericError: 'Can\'t process now. Please try again later.',
     DuplicateEmail: 'Email address already registered. Please try with some other email address',
@@ -27,6 +31,7 @@ export const Messages = {
     TagAssociated: 'Tag is associated with customer',
     TagNotAssociated: 'Tag is not associated with customer',
     QBUnAuthorized: 'Quickbooks authorization failed',
+    InternalServerError: 'There was an internal server error. Please try again later.'
 }
 
 export const enum Role {

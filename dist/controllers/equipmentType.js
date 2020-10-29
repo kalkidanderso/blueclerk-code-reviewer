@@ -6,8 +6,8 @@ const Company_1 = require("../models/Company");
 exports.createEquipmentType = (req, res) => {
     const params = req.body;
     const user = req.user;
-    var userId = null;
-    var industryId = null;
+    let userId = null;
+    let industryId = null;
     if (user.permissions.role == 3 /* COMPANY_ADMIN */) {
         userId = user._id;
     }
@@ -67,7 +67,7 @@ exports.createEquipmentType = (req, res) => {
 };
 exports.getEquipmentTypes = (req, res) => {
     const user = req.user;
-    var companyId = req.companyId;
+    let companyId = req.companyId;
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
     }
