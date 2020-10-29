@@ -59,12 +59,12 @@ exports.createJob = (req, res) => {
         });
     })
         .catch((error) => {
-        return res.json({ 'status': constants_1.Status.Error, 'message': error });
-        // if (error.message != undefined) {
-        //     return res.json({ 'status': Status.Error, 'message': error.message })
-        // } else {
-        //     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        // }
+        if (error.message != undefined) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': error.message });
+        }
+        else {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
     });
 };
 const _createJob = (req, res, jobId, serviceTicket, next) => {
@@ -99,16 +99,16 @@ const _createJob = (req, res, jobId, serviceTicket, next) => {
         newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime);
         job.scheduledEndTime = newEndTime;
     }
-    if (params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
+    if (params.equipmentId) {
         job.equipmentId = params.equipmentId;
     }
     job.save((err) => {
         if (err) {
-            return next(req, res, err, null);
+            return next(req, res, constants_1.Messages.GenericError, null);
         }
         serviceTicket.updateOne({ jobCreated: true }, (serviceTicketError, raw) => {
             if (serviceTicketError) {
-                return next(req, res, serviceTicketError, null);
+                return next(req, res, constants_1.Messages.GenericError, null);
             }
             _sendJobEmails(req, res, job, (req, res, newJob) => {
                 return next(req, res, null, newJob);

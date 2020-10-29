@@ -69,12 +69,11 @@ export const createJob = (req: Request, res: Response) => {
 
     })
     .catch((error: any) => {
-        return res.json({ 'status': Status.Error, 'message': error })
-        // if (error.message != undefined) {
-        //     return res.json({ 'status': Status.Error, 'message': error.message })
-        // } else {
-        //     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        // }
+        if (error.message != undefined) {
+            return res.json({ 'status': Status.Error, 'message': error.message })
+        } else {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
     })
 
 }
@@ -119,18 +118,18 @@ const _createJob = (req: Request, res: Response, jobId: string, serviceTicket: I
         newEndTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledEndTime)
         job. scheduledEndTime = newEndTime
     }
-    if(params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
+    if(params.equipmentId) {
         job.equipmentId = params.equipmentId
     }
 
     job.save((err: any) => {
         if (err) {
-            return next(req, res, err, null )
+            return next(req, res, Messages.GenericError, null )
         }
         
         serviceTicket.updateOne({jobCreated: true}, (serviceTicketError: any, raw: any) => { 
             if (serviceTicketError) {
-                return next(req, res, serviceTicketError, null )
+                return next(req, res, Messages.GenericError, null )
             }
 
             _sendJobEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => { 
