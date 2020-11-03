@@ -2,7 +2,7 @@ import express from 'express'
 import passport from 'passport'
 
 import { getCompanyId } from '../middleware/company'
-import { create, get } from '../controllers/jobSite'
+import { create, update, get } from '../controllers/jobSite'
 
 const router: express.Router = express.Router()
 
@@ -13,6 +13,13 @@ router.post(
     create
 )
 
-router.get('/', get)
+router.put(
+    '/:id',
+    passport.authenticate('jwt', { session: false }),
+    getCompanyId(),
+    update
+)
+
+router.get('/:id?', get)
 
 export default router

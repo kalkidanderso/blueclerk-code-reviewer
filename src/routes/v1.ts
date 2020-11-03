@@ -39,7 +39,7 @@ import jobSite from './jobSite'
 export default function (sio: any) {
 
     const router: express.Router = express.Router()
-    console.log('got to routes')
+
     router.use('/jobSite', jobSite)
 
     //Auth

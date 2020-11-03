@@ -44,7 +44,6 @@ const tagController = __importStar(require("../controllers/tag"));
 const jobSite_1 = __importDefault(require("./jobSite"));
 function default_1(sio) {
     const router = express_1.default.Router();
-    console.log('got to routes');
     router.use('/jobSite', jobSite_1.default);
     //Auth
     router.post('/login', validator_1.validate(validator_1.Validations.login), userController.login);
