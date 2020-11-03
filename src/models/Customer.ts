@@ -20,7 +20,7 @@ const CustomerSchema = new Schema({
     info:{
         email: String
     },
-    contactName:{
+    contactName: {
         type: String,
         required: false
     },
@@ -30,6 +30,11 @@ const CustomerSchema = new Schema({
         required: true
     },
     equipments: [{ type: Schema.Types.ObjectId, ref: 'CustomerEquipment' }],
+    jobSites: [{
+        type: Schema.Types.ObjectId,
+        ref: 'CustomerJobSite',
+        required: false
+    }],
     quickbookId: {
         type: String,
         default: null

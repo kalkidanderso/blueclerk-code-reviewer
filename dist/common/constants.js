@@ -1,6 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Status = {
+    OK: 200,
+    Created: 201,
+    MissingParameters: 400,
+    Unauthenticated: 401,
+    Forbidden: 403,
+    InternalError: 500,
     Error: 0,
     Success: 1,
     TagAssociated: 2,
@@ -9,7 +15,7 @@ exports.Status = {
     InvalidEquipment: 5
 };
 exports.Messages = {
-    MissingParams: 'Parameters are missing.',
+    MissingParams: 'Parameters are missing',
     InvalidEmailPassword: 'Invalid email/password.',
     GenericError: 'Can\'t process now. Please try again later.',
     DuplicateEmail: 'Email address already registered. Please try with some other email address',
@@ -21,6 +27,7 @@ exports.Messages = {
     TagAssociated: 'Tag is associated with customer',
     TagNotAssociated: 'Tag is not associated with customer',
     QBUnAuthorized: 'Quickbooks authorization failed',
+    InternalServerError: 'There was an internal server error. Please try again later.'
 };
 exports.ContractorPermissions = {
     on: [

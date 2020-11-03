@@ -67,6 +67,10 @@
       "description": "For Inventory of company equipments"
     },
     {
+      "name": "Job Site",
+      "description": "For company Job Sites"
+    },
+    {
       "name": "Job Type",
       "description": "For job types"
     },
@@ -3049,6 +3053,30 @@
         "security": [
           {
             "Bearer": []
+          }
+        ]
+      }
+    },
+    "/jobSite": {
+      "post": {
+        "tags": [
+          "job Site"
+        ],
+        "summary": "Create a customer job site",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Job Site name"
           }
         ]
       }

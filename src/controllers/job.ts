@@ -191,6 +191,7 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
 
 
 export const getJobs = (req: Request, res: Response) => {
+    console.log('in get jobs')
 
     var companyId = req.companyId;
     if(req.otherCompanyId != undefined) {

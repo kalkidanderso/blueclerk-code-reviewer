@@ -17,6 +17,11 @@ const CustomerSchema = new mongoose_1.Schema({
         required: true
     },
     equipments: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'CustomerEquipment' }],
+    jobSites: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'CustomerJobSite',
+            required: false
+        }],
     quickbookId: {
         type: String,
         default: null
