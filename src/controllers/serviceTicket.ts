@@ -29,13 +29,12 @@ export const createServiceTicket = (req: Request, res: Response) => {
         company: companyId,
         note: params.note,
         technician: params.technicianId,
-        ticketId: ticketId
+        ticketId: ticketId,
+        jobSite:params.jobSiteId
     })
 
     serviceTicket.save((err: any) => {
-
         if (err) {
-            
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
         company.updateOne({currentJobId: company.currentJobId+1 })
@@ -111,9 +110,14 @@ export const updateServiceTicket = (req: Request, res: Response) => {
             if(params.scheduleDate) {
                 scheduleDate = new Date(params.scheduleDate)
             }
-            
+
+            let jobSiteId: any = serviceTicket.jobSite
+            if(params.jobSiteId) {
+                jobSiteId = params.jobSiteId
+            }
+
             serviceTicket.updateOne(
-                {note: params.note, scheduleDate: scheduleDate},
+                {note: params.note, scheduleDate: scheduleDate, jobSite: jobSiteId},
                 (err: any, raw: any)=> {
                     
                     if (err) {

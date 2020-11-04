@@ -2907,6 +2907,10 @@ paths:
           in: formData
           type: string
           description: 'Id of company if contractor is hitting for other company'
+        - name: jobSiteId
+          in: formData
+          type: string
+          description: 'Id of job site'
       responses:
         '200':
           description: Success
@@ -3006,6 +3010,10 @@ paths:
           in: formData
           type: string
           description: 'Id of company if contractor is hitting for other company'
+        - name: jobSiteId
+          in: formData
+          type: string
+          description: 'Id of job site'
       responses:
         '200':
           description: Success

@@ -22,7 +22,8 @@ exports.createServiceTicket = (req, res) => {
         company: companyId,
         note: params.note,
         technician: params.technicianId,
-        ticketId: ticketId
+        ticketId: ticketId,
+        jobSite: params.jobSiteId
     });
     serviceTicket.save((err) => {
         if (err) {
@@ -83,7 +84,11 @@ exports.updateServiceTicket = (req, res) => {
         if (params.scheduleDate) {
             scheduleDate = new Date(params.scheduleDate);
         }
-        serviceTicket.updateOne({ note: params.note, scheduleDate: scheduleDate }, (err, raw) => {
+        let jobSiteId = serviceTicket.jobSite;
+        if (params.jobSiteId) {
+            jobSiteId = params.jobSiteId;
+        }
+        serviceTicket.updateOne({ note: params.note, scheduleDate: scheduleDate, jobSite: jobSiteId }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }

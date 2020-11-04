@@ -4503,6 +4503,12 @@
                         "in": "formData",
                         "type": "string",
                         "description": "Id of company if contractor is hitting for other company"
+                    },
+                    {
+                        "name": "jobSiteId",
+                        "in": "formData",
+                        "type": "string",
+                        "description": "Id of job site"
                     }
                 ],
                 "responses": {
@@ -4668,6 +4674,12 @@
                         "in": "formData",
                         "type": "string",
                         "description": "Id of company if contractor is hitting for other company"
+                    },
+                    {
+                        "name": "jobSiteId",
+                        "in": "formData",
+                        "type": "string",
+                        "description": "Id of job site"
                     }
                 ],
                 "responses": {
