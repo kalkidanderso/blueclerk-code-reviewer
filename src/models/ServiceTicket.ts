@@ -15,7 +15,6 @@ export interface IServiceTicket extends Document {
     ticketId: string
     jobSite: Schema.Types.ObjectId
     jobCreated: boolean
-    
 }
 
 const ServiceTicketSchema = new Schema({
