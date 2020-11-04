@@ -50,6 +50,10 @@ const ServiceTicketSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'JobSite',
     },
+    jobType: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'JobType',
+    },
     jobCreated: {
         type: Boolean,
         default: false

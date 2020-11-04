@@ -4509,6 +4509,12 @@
             "in": "formData",
             "type": "string",
             "description": "Id of job site"
+          },
+          {
+            "name": "jobTypeId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of job type selected from the list received by /getJobTypes api"
           }
         ],
         "responses": {
@@ -4680,6 +4686,12 @@
             "in": "formData",
             "type": "string",
             "description": "Id of job site"
+          },
+          {
+            "name": "jobTypeId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of job type selected from the list received by /getJobTypes api"
           }
         ],
         "responses": {

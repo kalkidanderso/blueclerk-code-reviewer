@@ -2911,6 +2911,13 @@ paths:
           in: formData
           type: string
           description: 'Id of job site'
+        - name: jobTypeId
+          in: formData
+          required: true
+          type: string
+          description: >-
+            Id of a job type selected from the list received by /getJobTypes
+            api
       responses:
         '200':
           description: Success
@@ -3014,6 +3021,13 @@ paths:
           in: formData
           type: string
           description: 'Id of job site'
+        - name: jobTypeId
+          in: formData
+          required: true
+          type: string
+          description: >-
+            Id of a job type selected from the list received by /getJobTypes
+            api
       responses:
         '200':
           description: Success
