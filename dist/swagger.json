@@ -4592,7 +4592,7 @@
                         "name": "scheduleDate",
                         "in": "formData",
                         "type": "string",
-                        "required": true,
+                        "required": false,
                         "description": "sche date of service ticket. e.g. 2020-08-12"
                     },
                     {

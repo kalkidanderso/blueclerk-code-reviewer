@@ -14,9 +14,10 @@ exports.createServiceTicket = (req, res) => {
     if (company.prefix != undefined && company.prefix != null && company.prefix == '""') {
         ticketId = 'Ticket ' + company.prefix + '-' + (company.currentJobId + 1);
     }
+    var scheduleDate = params.scheduleDate ? new Date(params.scheduleDate) : null;
     const serviceTicket = new ServiceTicket_1.ServiceTicket({
         createdAt: Date.now(),
-        scheduleDate: new Date(params.scheduleDate),
+        scheduleDate: scheduleDate,
         customer: params.customerId,
         createdBy: user._id,
         company: companyId,
