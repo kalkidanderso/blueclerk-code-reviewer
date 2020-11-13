@@ -41,6 +41,8 @@ tags:
     description: For invoice items
   - name: Job Charges
     description: For job charges
+  - name: Job Site
+    description: For company Job Sites
   - name: Service Ticket
     description: For creting and getting service tickets
   - name: Job
@@ -1947,6 +1949,96 @@ paths:
                                   type: string
       security:
         - Bearer: []
+  /jobSite:
+    post:
+      tags:
+        - job Site
+      summary: Create a customer job site
+      description: ''
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          schema:
+            $ref: '#/definitions/jobSite'
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+  /jobSite/{id}:
+    put:
+      tags:
+        - job Site
+      summary: Update Job site by Id
+      description: ''
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: id
+          type: integer
+          required: true
+        - in: body
+          name: body
+          schema:
+            $ref: '#/definitions/jobSite'
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+    get:
+      tags:
+        - job Site
+      summary: Get Job site by Id
+      description: ''
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: id
+          type: integer
+          required: true
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/definitions/jobSite'
+  /jobSite?companyId={companyId}&customerId={customerId}:
+    get:
+      tags:
+        - job Site
+      summary: Get Job site by companyId and customerId
+      description: ''
+      produces:
+        - application/json
+      parameters:
+        - in: query
+          name: companyId
+          type: integer
+          required: true
+        - in: query
+          name: customerId
+          type: integer
+          required: true
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/definitions/jobSite'
+
   /createJobType:
     post:
       tags:
@@ -5585,6 +5677,33 @@ definitions:
         type: string
         format: date-time
         description: Date and time when the job was finished
+  jobSite:
+    type: object
+    properties:
+      name:
+        type: string
+      contact:
+        type: object
+        properties:
+          name:
+            type: string
+          phone:
+            type: string
+          email:
+            type: string
+      location:
+        type: object
+        properties:
+          lat:
+            type: number
+          long:
+            type: number
+      address:
+        type: string
+      customerId:
+        type: integer
+      companyId:
+        type: integer
   ServiceTicket:
     type: object
     properties:
