@@ -3174,7 +3174,7 @@
             "in": "query",
             "name": "companyId",
             "type": "integer",
-            "required": true
+            "required": false
           },
           {
             "in": "query",
