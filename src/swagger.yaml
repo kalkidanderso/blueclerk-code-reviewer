@@ -1966,7 +1966,7 @@ paths:
         '200':
           description: Success
           schema:
-            $ref: '#/definitions/GeneralAPIResponse'
+            $ref: '#/definitions/jobSite'
   /jobSite/{id}:
     put:
       tags:
@@ -2015,7 +2015,7 @@ paths:
     get:
       tags:
         - job Site
-      summary: Get Job site by companyId and customerId
+      summary: Get Job site by companyId and/or customerId
       description: ''
       produces:
         - application/json
