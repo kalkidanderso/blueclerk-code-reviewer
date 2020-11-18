@@ -67,8 +67,8 @@
       "description": "For Inventory of company equipments"
     },
     {
-      "name": "Job Site",
-      "description": "For company Job Sites"
+      "name": "Job Location",
+      "description": "For company Job locations"
     },
     {
       "name": "Job Type",
@@ -3057,12 +3057,12 @@
         ]
       }
     },
-    "/jobSite": {
+    "/jobLocation": {
       "post": {
         "tags": [
-          "job Site"
+          "Job Location"
         ],
-        "summary": "Create a customer job site",
+        "summary": "Create a customer job location",
         "description": "",
         "produces": [
           "application/json"
@@ -3072,7 +3072,7 @@
             "in": "body",
             "name": "body",
             "schema": {
-              "$ref": "#/definitions/jobSite"
+              "$ref": "#/definitions/jobLocation"
             }
           }
         ],
@@ -3080,18 +3080,18 @@
           "200": {
             "description": "Success",
             "schema": {
-              "$ref": "#/definitions/jobSite"
+              "$ref": "#/definitions/jobLocation"
             }
           }
         }
       }
     },
-    "/jobSite/{id}": {
+    "/jobLocation/{id}": {
       "put": {
         "tags": [
-          "job Site"
+          "Job Location"
         ],
-        "summary": "Update Job site by Id",
+        "summary": "Update Job location by Id",
         "description": "",
         "produces": [
           "application/json"
@@ -3107,7 +3107,7 @@
             "in": "body",
             "name": "body",
             "schema": {
-              "$ref": "#/definitions/jobSite"
+              "$ref": "#/definitions/jobLocation"
             }
           }
         ],
@@ -3122,9 +3122,9 @@
       },
       "get": {
         "tags": [
-          "job Site"
+          "Job Location"
         ],
-        "summary": "Get Job site by Id",
+        "summary": "Get Job location by Id",
         "description": "",
         "produces": [
           "application/json"
@@ -3149,7 +3149,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/jobSite"
+                      "$ref": "#/definitions/jobLocation"
                     }
                   }
                 }
@@ -3159,12 +3159,12 @@
         }
       }
     },
-    "/jobSite?companyId={companyId}&customerId={customerId}": {
+    "/jobLocation?companyId={companyId}&customerId={customerId}": {
       "get": {
         "tags": [
-          "job Site"
+          "Job Location"
         ],
-        "summary": "Get Job site by companyId and/or customerId",
+        "summary": "Get Job location by companyId and/or customerId",
         "description": "",
         "produces": [
           "application/json"
@@ -3195,126 +3195,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/jobSite"
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        }
-      }
-    },
-    "/jobSite/{id}": {
-      "put": {
-        "tags": [
-          "job Site"
-        ],
-        "summary": "Update Job site by Id",
-        "description": "",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "type": "integer",
-            "required": true
-          },
-          {
-            "in": "body",
-            "name": "body",
-            "schema": {
-              "$ref": "#/definitions/jobSite"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "$ref": "#/definitions/GeneralAPIResponse"
-            }
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "job Site"
-        ],
-        "summary": "Get Job site by Id",
-        "description": "",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "type": "integer",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/definitions/GeneralAPIResponse"
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/definitions/jobSite"
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        }
-      }
-    },
-    "/jobSite?companyId={companyId}&customerId={customerId}": {
-      "get": {
-        "tags": [
-          "job Site"
-        ],
-        "summary": "Get Job site by companyId and customerId",
-        "description": "",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "in": "query",
-            "name": "companyId",
-            "type": "integer",
-            "required": true
-          },
-          {
-            "in": "query",
-            "name": "customerId",
-            "type": "integer",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/definitions/GeneralAPIResponse"
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/definitions/jobSite"
+                      "$ref": "#/definitions/jobLocation"
                     }
                   }
                 }
@@ -3793,6 +3674,154 @@
             "Bearer": []
           }
         ]
+      }
+    },
+    "/jobLocation": {
+      "post": {
+        "tags": [
+          "Job Location"
+        ],
+        "summary": "Create a customer job location",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/jobLocation"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/jobLocation"
+            }
+          }
+        }
+      }
+    },
+    "/jobLocation/{id}": {
+      "put": {
+        "tags": [
+          "Job Location"
+        ],
+        "summary": "Update Job location by Id",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/jobLocation"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Job Location"
+        ],
+        "summary": "Get Job location by Id",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "integer",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/jobLocation"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "/jobLocation?companyId={companyId}&customerId={customerId}": {
+      "get": {
+        "tags": [
+          "Job Location"
+        ],
+        "summary": "Get Job location by companyId and/or customerId",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "companyId",
+            "type": "integer",
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "customerId",
+            "type": "integer",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/jobLocation"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
       }
     },
     "/createSalesTax": {
@@ -8791,7 +8820,7 @@
         }
       }
     },
-    "jobSite": {
+    "jobLocation": {
       "type": "object",
       "properties": {
         "name": {
