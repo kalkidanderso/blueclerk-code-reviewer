@@ -3064,21 +3064,264 @@
         ],
         "summary": "Create a customer job site",
         "description": "",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
         "produces": [
           "application/json"
         ],
         "parameters": [
           {
-            "name": "name",
-            "in": "formData",
-            "required": true,
-            "type": "string",
-            "description": "Job Site name"
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/jobSite"
+            }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/jobSite"
+            }
+          }
+        }
+      }
+    },
+    "/jobSite/{id}": {
+      "put": {
+        "tags": [
+          "job Site"
+        ],
+        "summary": "Update Job site by Id",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/jobSite"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "job Site"
+        ],
+        "summary": "Get Job site by Id",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "integer",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/jobSite"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "/jobSite?companyId={companyId}&customerId={customerId}": {
+      "get": {
+        "tags": [
+          "job Site"
+        ],
+        "summary": "Get Job site by companyId and/or customerId",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "companyId",
+            "type": "integer",
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "customerId",
+            "type": "integer",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/jobSite"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "/jobSite/{id}": {
+      "put": {
+        "tags": [
+          "job Site"
+        ],
+        "summary": "Update Job site by Id",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/jobSite"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "job Site"
+        ],
+        "summary": "Get Job site by Id",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "integer",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/jobSite"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "/jobSite?companyId={companyId}&customerId={customerId}": {
+      "get": {
+        "tags": [
+          "job Site"
+        ],
+        "summary": "Get Job site by companyId and costumerId",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "companyId",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "customerId",
+            "type": "integer",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/definitions/jobSite"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
       }
     },
     "/createJobType": {
@@ -8545,6 +8788,48 @@
           "type": "string",
           "format": "date-time",
           "description": "Date and time when the job was finished"
+        }
+      }
+    },
+    "jobSite": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "contact": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "phone": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            }
+          }
+        },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": {
+              "type": "number"
+            },
+            "long": {
+              "type": "number"
+            }
+          }
+        },
+        "address": {
+          "type": "string"
+        },
+        "customerId": {
+          "type": "integer"
+        },
+        "companyId": {
+          "type": "integer"
         }
       }
     },
