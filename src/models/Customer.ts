@@ -30,9 +30,9 @@ const CustomerSchema = new Schema({
         required: true
     },
     equipments: [{ type: Schema.Types.ObjectId, ref: 'CustomerEquipment' }],
-    jobSites: [{
+    jobLocations: [{
         type: Schema.Types.ObjectId,
-        ref: 'CustomerJobSite',
+        ref: 'CustomerJobLocation',
         required: false
     }],
     quickbookId: {

@@ -34,13 +34,13 @@ import * as paymentController from '../controllers/payment'
 import * as tagController from '../controllers/tag'
 import { Personalize } from 'aws-sdk'
 
-import jobSite from './jobSite'
+import jobLocation from './jobLocation'
 
 export default function (sio: any) {
 
     const router: express.Router = express.Router()
 
-    router.use('/jobSite', jobSite)
+    router.use('/jobLocation', jobLocation)
 
     //Auth
     router.post(

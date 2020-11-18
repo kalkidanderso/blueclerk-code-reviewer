@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose'
 
-export interface IJobSite extends Document {
+export interface IJobLocation extends Document {
 
     name: string
     contact: {
@@ -20,7 +20,7 @@ export interface IJobSite extends Document {
 
 }
 
-const JobSiteSchema = new Schema({
+const JobLocationSchema = new Schema({
 
     name: { type: String, required: true},
     contact: {
@@ -58,4 +58,4 @@ const JobSiteSchema = new Schema({
 
 })
 
-export const JobSite = mongoose.model<IJobSite>('JobSite', JobSiteSchema)
+export const JobLocation = mongoose.model<IJobLocation>('JobLocation', JobLocationSchema)

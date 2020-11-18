@@ -41,10 +41,10 @@ const purchaseOrderController = __importStar(require("../controllers/purchaseOrd
 const estimateController = __importStar(require("../controllers/estimate"));
 const paymentController = __importStar(require("../controllers/payment"));
 const tagController = __importStar(require("../controllers/tag"));
-const jobSite_1 = __importDefault(require("./jobSite"));
+const jobLocation_1 = __importDefault(require("./jobLocation"));
 function default_1(sio) {
     const router = express_1.default.Router();
-    router.use('/jobSite', jobSite_1.default);
+    router.use('/jobLocation', jobLocation_1.default);
     //Auth
     router.post('/login', validator_1.validate(validator_1.Validations.login), userController.login);
     router.post('/subscribe', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompanyId(), userController.companySubscribe);

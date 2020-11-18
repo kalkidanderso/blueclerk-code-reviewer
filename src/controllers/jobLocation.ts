@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import { Status, Messages } from '../common/constants'
 
-import { JobSite, IJobSite } from '../models/JobSite'
+import { JobLocation, IJobLocation } from '../models/JobLocation'
 import { ICompany } from '../models/Company'
 
 export const get = (req: Request, res: Response) => {
@@ -20,7 +20,7 @@ export const get = (req: Request, res: Response) => {
         query = { companyId }
     }
 
-    JobSite.find(query, (err: any, jobSites: any) => {
+    JobLocation.find(query, (err: any, jobLocation: any) => {
         if (err) {
             res.status(Status.InternalError)
             res.send(Messages.InternalServerError)
@@ -28,7 +28,7 @@ export const get = (req: Request, res: Response) => {
         }
 
         res.status(Status.OK)
-        res.send(jobSites)
+        res.send(jobLocation)
     })
 }
 
@@ -66,7 +66,7 @@ export const create = (req: Request, res: Response) => {
         return () => {}
     }
 
-    JobSite.create({
+    JobLocation.create({
         name,
         contact: {
             name: contactName,
@@ -79,13 +79,13 @@ export const create = (req: Request, res: Response) => {
         address,
         customerId,
         companyId
-    }, (err: any, jobSite: IJobSite) => {
+    }, (err: any, jobLocation: IJobLocation) => {
         if (err) {
             res.status(Status.InternalError)
             res.send(Messages.InternalServerError)
         } else {
             res.status(Status.OK)
-            res.send(jobSite)
+            res.send(jobLocation)
         }
     })
 }
@@ -125,7 +125,7 @@ export const update = (req: Request, res: Response) => {
         return () => {}
     }
 
-    JobSite.updateOne({ _id: id }, {
+    JobLocation.updateOne({ _id: id }, {
         name,
         contact: {
             name: contactName,

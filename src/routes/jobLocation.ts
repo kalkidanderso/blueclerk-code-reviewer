@@ -2,7 +2,7 @@ import express from 'express'
 import passport from 'passport'
 
 import { getCompanyId } from '../middleware/company'
-import { create, update, get } from '../controllers/jobSite'
+import { create, update, get } from '../controllers/jobLocation'
 
 const router: express.Router = express.Router()
 

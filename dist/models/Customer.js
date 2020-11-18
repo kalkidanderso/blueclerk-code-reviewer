@@ -17,9 +17,9 @@ const CustomerSchema = new mongoose_1.Schema({
         required: true
     },
     equipments: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'CustomerEquipment' }],
-    jobSites: [{
+    jobLocations: [{
             type: mongoose_1.Schema.Types.ObjectId,
-            ref: 'CustomerJobSite',
+            ref: 'CustomerJobLocation',
             required: false
         }],
     quickbookId: {

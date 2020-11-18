@@ -46,9 +46,9 @@ const ServiceTicketSchema = new mongoose_1.Schema({
         type: Date
     },
     ticketId: String,
-    jobSite: {
+    jobLocation: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'JobSite',
+        ref: 'JobLocation',
     },
     jobType: {
         type: mongoose_1.Schema.Types.ObjectId,

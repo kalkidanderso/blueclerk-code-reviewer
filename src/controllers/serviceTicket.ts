@@ -30,7 +30,7 @@ export const createServiceTicket = (req: Request, res: Response) => {
         note: params.note,
         technician: params.technicianId,
         ticketId: ticketId,
-        jobSite:params.jobSiteId,
+        jobLocation:params.jobLocationId,
         jobType:params.jobTypeId,
     })
 
@@ -112,9 +112,9 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                 scheduleDate = new Date(params.scheduleDate)
             }
 
-            let jobSiteId: any = serviceTicket.jobSite
-            if(params.jobSiteId) {
-                jobSiteId = params.jobSiteId
+            let jobLocationId: any = serviceTicket.jobLocation
+            if(params.jobLocationId) {
+                jobLocationId = params.jobLocationId
             }
 
             let jobTypeId: any = serviceTicket.jobType
@@ -123,7 +123,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
             }
             
             serviceTicket.updateOne(
-                {note: params.note, scheduleDate: scheduleDate, jobSite: jobSiteId, jobType: jobTypeId},
+                {note: params.note, scheduleDate: scheduleDate, jobLocation: jobLocationId, jobType: jobTypeId},
                 (err: any, raw: any)=> {
                     
                     if (err) {
