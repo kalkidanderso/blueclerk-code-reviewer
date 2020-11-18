@@ -35,12 +35,14 @@ import * as tagController from '../controllers/tag'
 import { Personalize } from 'aws-sdk'
 
 import jobLocation from './jobLocation'
+import jobSite from './jobSite'
 
 export default function (sio: any) {
 
     const router: express.Router = express.Router()
 
     router.use('/jobLocation', jobLocation)
+    router.use('/jobSite', jobSite)
 
     //Auth
     router.post(
