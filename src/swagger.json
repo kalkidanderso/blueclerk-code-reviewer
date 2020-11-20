@@ -3100,7 +3100,7 @@
           {
             "in": "path",
             "name": "id",
-            "type": "integer",
+            "type": "string",
             "required": true
           },
           {
@@ -3113,10 +3113,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Success",
-            "schema": {
-              "$ref": "#/definitions/GeneralAPIResponse"
-            }
+            "description": "Success"
           }
         }
       },
@@ -3133,7 +3130,7 @@
           {
             "in": "path",
             "name": "id",
-            "type": "integer",
+            "type": "string",
             "required": true
           }
         ],
@@ -3141,19 +3138,7 @@
           "200": {
             "description": "Success",
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/definitions/GeneralAPIResponse"
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/definitions/jobLocation"
-                    }
-                  }
-                }
-              ]
+              "$ref": "#/definitions/jobLocation"
             }
           }
         }
@@ -3173,33 +3158,21 @@
           {
             "in": "query",
             "name": "companyId",
-            "type": "integer",
+            "type": "string",
             "required": false
           },
           {
             "in": "query",
             "name": "customerId",
-            "type": "integer",
-            "required": true
+            "type": "string",
+            "required": false
           }
         ],
         "responses": {
           "200": {
             "description": "Success",
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/definitions/GeneralAPIResponse"
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/definitions/jobLocation"
-                    }
-                  }
-                }
-              ]
+              "$ref": "#/definitions/jobLocation"
             }
           }
         }
@@ -3674,154 +3647,6 @@
             "Bearer": []
           }
         ]
-      }
-    },
-    "/jobLocation": {
-      "post": {
-        "tags": [
-          "Job Location"
-        ],
-        "summary": "Create a customer job location",
-        "description": "",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "in": "body",
-            "name": "body",
-            "schema": {
-              "$ref": "#/definitions/jobLocation"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "$ref": "#/definitions/jobLocation"
-            }
-          }
-        }
-      }
-    },
-    "/jobLocation/{id}": {
-      "put": {
-        "tags": [
-          "Job Location"
-        ],
-        "summary": "Update Job location by Id",
-        "description": "",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "type": "integer",
-            "required": true
-          },
-          {
-            "in": "body",
-            "name": "body",
-            "schema": {
-              "$ref": "#/definitions/jobLocation"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "$ref": "#/definitions/GeneralAPIResponse"
-            }
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "Job Location"
-        ],
-        "summary": "Get Job location by Id",
-        "description": "",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "type": "integer",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/definitions/GeneralAPIResponse"
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/definitions/jobLocation"
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        }
-      }
-    },
-    "/jobLocation?companyId={companyId}&customerId={customerId}": {
-      "get": {
-        "tags": [
-          "Job Location"
-        ],
-        "summary": "Get Job location by companyId and/or customerId",
-        "description": "",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "in": "query",
-            "name": "companyId",
-            "type": "integer",
-            "required": false
-          },
-          {
-            "in": "query",
-            "name": "customerId",
-            "type": "integer",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/definitions/GeneralAPIResponse"
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/definitions/jobLocation"
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        }
       }
     },
     "/createSalesTax": {
