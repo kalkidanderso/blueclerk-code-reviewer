@@ -8692,10 +8692,10 @@
           "type": "string"
         },
         "customerId": {
-          "type": "integer"
+          "type": "string"
         },
         "companyId": {
-          "type": "integer"
+          "type": "string"
         }
       }
     },
