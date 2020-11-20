@@ -4777,6 +4777,12 @@
             "description": "Id of company if contractor is hitting for other company"
           },
           {
+            "name": "jobLocationId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of job location"
+          },
+          {
             "name": "jobSiteId",
             "in": "formData",
             "type": "string",
@@ -4952,6 +4958,12 @@
             "in": "formData",
             "type": "string",
             "description": "Id of company if contractor is hitting for other company"
+          },
+          {
+            "name": "jobLocationId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of job location"
           },
           {
             "name": "jobSiteId",
