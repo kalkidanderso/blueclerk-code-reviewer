@@ -89,6 +89,61 @@ export const getServiceTickets = (req: Request, res: Response) => {
 
 }
 
+export const getServiceTicketsWithPagination = (req: Request, res: Response) => {
+
+            var companyId = req.companyId;
+            if(req.otherCompanyId != undefined) {
+                companyId = req.otherCompanyId
+            }
+            var serviceTickets : any;
+            var maxCount : number;
+            const pageSize = +req.query.pagesize;
+            const currentPage = +req.query.page;
+            var criteria = {
+                company: companyId
+            };
+            var projection = { };
+            var option = {
+                lean: true, 
+                sort: {createdAt : -1}
+            };
+            const Query = ServiceTicket.find(criteria, projection, option);
+            if (pageSize && currentPage) {
+                Query.skip(pageSize * (currentPage - 1)).limit(pageSize);
+            }
+
+            Query.populate({
+                path: 'customer',
+                select: 'info.email profile.displayName contactName address',
+            })
+            .populate({
+                path: 'JobSite'
+            })
+            .populate({
+                path: 'JobLocation'
+            })
+            .populate({
+                path: 'createdBy',
+                select: 'profile.displayName'
+            })
+            .populate({
+                path: 'technician',
+                select: 'profile.displayName'
+            })
+            .populate({
+                path: 'editedBy',
+                select: 'profile.displayName'
+            }).then((documents:any) => {
+                serviceTickets = documents;
+                return ServiceTicket.countDocuments();
+              }).then((count :number) => {
+                maxCount = count;
+                return res.json({'status': Status.Success, 'serviceTickets': serviceTickets , 'Total': maxCount })    
+              }).catch((err:any) => {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            });
+}
+
 
 export const updateServiceTicket = (req: Request, res: Response) => {
 

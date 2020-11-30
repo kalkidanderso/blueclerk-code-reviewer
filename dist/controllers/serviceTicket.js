@@ -70,6 +70,58 @@ exports.getServiceTickets = (req, res) => {
         return res.json({ 'status': constants_1.Status.Success, 'serviceTickets': serviceTickets });
     });
 };
+exports.getServiceTicketsWithPagination = (req, res) => {
+    var companyId = req.companyId;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId;
+    }
+    var serviceTickets;
+    var maxCount;
+    const pageSize = +req.query.pagesize;
+    const currentPage = +req.query.page;
+    var criteria = {
+        company: companyId
+    };
+    var projection = {};
+    var option = {
+        lean: true,
+        sort: { createdAt: -1 }
+    };
+    const Query = ServiceTicket_1.ServiceTicket.find(criteria, projection, option);
+    if (pageSize && currentPage) {
+        Query.skip(pageSize * (currentPage - 1)).limit(pageSize);
+    }
+    Query.populate({
+        path: 'customer',
+        select: 'info.email profile.displayName contactName address',
+    })
+        .populate({
+        path: 'JobSite'
+    })
+        .populate({
+        path: 'JobLocation'
+    })
+        .populate({
+        path: 'createdBy',
+        select: 'profile.displayName'
+    })
+        .populate({
+        path: 'technician',
+        select: 'profile.displayName'
+    })
+        .populate({
+        path: 'editedBy',
+        select: 'profile.displayName'
+    }).then((documents) => {
+        serviceTickets = documents;
+        return ServiceTicket_1.ServiceTicket.countDocuments();
+    }).then((count) => {
+        maxCount = count;
+        return res.json({ 'status': constants_1.Status.Success, 'serviceTickets': serviceTickets, 'Total': maxCount });
+    }).catch((err) => {
+        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+    });
+};
 exports.updateServiceTicket = (req, res) => {
     const params = req.body;
     var companyId = req.companyId;

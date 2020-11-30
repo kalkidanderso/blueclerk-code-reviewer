@@ -834,6 +834,14 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/getServiceTicketsWithPagination',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Service_Tickets),
+        serviceTicketController.getServiceTicketsWithPagination
+    )
+
+    router.post(
         '/createServiceTicket',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
