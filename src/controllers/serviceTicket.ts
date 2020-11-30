@@ -116,19 +116,14 @@ export const updateServiceTicket = (req: Request, res: Response) => {
             }
 
             let jobLocationId: any = serviceTicket.jobLocation
-            if(params.jobLocationId) {
                 jobLocationId = params.jobLocationId
-            }
+ 
 
             let jobSiteId: any = serviceTicket.jobSite
-            if(params.jobSiteId) {
                 jobSiteId = params.jobSiteId
-            }
 
             let jobTypeId: any = serviceTicket.jobType
-            if(params.jobTypeId) {
                 jobTypeId = params.jobTypeId
-            }
             
             serviceTicket.updateOne(
                 {note: params.note, scheduleDate: scheduleDate, jobLocation: jobLocationId, jobSite: jobSiteId, jobType: jobTypeId},

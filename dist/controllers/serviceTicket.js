@@ -88,17 +88,11 @@ exports.updateServiceTicket = (req, res) => {
             scheduleDate = new Date(params.scheduleDate);
         }
         let jobLocationId = serviceTicket.jobLocation;
-        if (params.jobLocationId) {
-            jobLocationId = params.jobLocationId;
-        }
+        jobLocationId = params.jobLocationId;
         let jobSiteId = serviceTicket.jobSite;
-        if (params.jobSiteId) {
-            jobSiteId = params.jobSiteId;
-        }
+        jobSiteId = params.jobSiteId;
         let jobTypeId = serviceTicket.jobType;
-        if (params.jobTypeId) {
-            jobTypeId = params.jobTypeId;
-        }
+        jobTypeId = params.jobTypeId;
         serviceTicket.updateOne({ note: params.note, scheduleDate: scheduleDate, jobLocation: jobLocationId, jobSite: jobSiteId, jobType: jobTypeId }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
