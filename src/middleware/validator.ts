@@ -105,7 +105,7 @@ export const Validations = {
   changeJobTypeStatus: [check('jobTypeId').exists(), check('status').exists()],
 
   //Job
-  createJob: [check('scheduleDate').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric(), body('employeeType').custom((value, { req }) => { if (value == 1) { check('contractorId').exists()} else { check('technicianId').exists()}})],
+  createJob: [check('scheduleDate').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric()],
 
   generalJob: [check('jobId').exists()],
 
