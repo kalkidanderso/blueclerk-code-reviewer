@@ -3,7 +3,6 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface IServiceTicket extends Document {
 
     createdAt: Date
-    scheduleDate: Date
     dueDate: Date
     customer: Schema.Types.ObjectId
     createdBy: Schema.Types.ObjectId
@@ -24,10 +23,6 @@ export interface IServiceTicket extends Document {
 const ServiceTicketSchema = new Schema({
 
     createdAt: Date,
-    scheduleDate: {
-        type: Date,
-        required: false
-    },
     dueDate: {
         type: Date,
         required: false
