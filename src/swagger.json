@@ -4913,9 +4913,16 @@
           {
             "name": "technicianId",
             "in": "formData",
-            "required": true,
+            "required": false,
             "type": "string",
-            "description": "Id of a technician selected from the list received by /getTechnicians api"
+            "description": "Id of a technician selected from the list received by /getEmployeesForJob api"
+          },
+          {
+            "name": "contractorId",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Id of a contractor selected from the list received by /getCompanyContracts api"
           },
           {
             "name": "customerId",

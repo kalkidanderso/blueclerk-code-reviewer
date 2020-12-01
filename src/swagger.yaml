@@ -3195,11 +3195,18 @@ paths:
             Id of a equipment for single scan
         - name: technicianId
           in: formData
-          required: true
+          required: false
           type: string
           description: >-
             Id of a technician selected from the list received by
-            /getTechnicians api
+            /getEmployeesForJob api
+        - name: contractorId
+          in: formData
+          required: false
+          type: string
+          description: >-
+            Id of a contractor selected from the list received by
+            /getCompanyContracts api
         - name: customerId
           in: formData
           required: true
