@@ -9,6 +9,16 @@ const PurchaseOrder_1 = require("../models/PurchaseOrder");
 const Item_1 = require("../models/Item");
 exports.createJob = (req, res) => {
     const params = req.body;
+    if (params.employeeType == 1) {
+        if (params.contractorId == undefined || params.contractorId == null) {
+            throw new Error('Contractor Id must be specified when employeeType is contractor');
+        }
+    }
+    else if (params.employeeType == 0) {
+        if (params.technicianId == undefined || params.technicianId == null) {
+            throw new Error('technicianId Id must be specified when employeeType is employee');
+        }
+    }
     ServiceTicket_1.ServiceTicket.findById(params.ticketId)
         .then((serviceTicket) => {
         if (serviceTicket == undefined || serviceTicket == null) {
