@@ -1,5 +1,5 @@
 import {Request, Response, NextFunction} from 'express'
-import {check, validationResult, ValidationChain} from 'express-validator'
+import {check, validationResult, ValidationChain, body} from 'express-validator'
 import {Status, Messages} from '../common/constants'
 
 export const validate = (validations: ValidationChain[]) => {
@@ -105,7 +105,7 @@ export const Validations = {
   changeJobTypeStatus: [check('jobTypeId').exists(), check('status').exists()],
 
   //Job
-  createJob: [check('scheduleDate').exists(), check('technicianId').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric()],
+  createJob: [check('scheduleDate').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric(), body('employeeType').custom((value, { req }) => { if (value == 1) { check('contractorId').exists()} else { check('technicianId').exists()}})],
 
   generalJob: [check('jobId').exists()],
 

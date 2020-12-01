@@ -12,7 +12,6 @@ import { Item } from '../models/Item'
 
 export const createJob = (req: Request, res: Response) => {
     const params = req.body
-   
     ServiceTicket.findById(params.ticketId)
     .then((serviceTicket: IServiceTicket) => {
         if (serviceTicket == undefined || serviceTicket == null) {
@@ -24,7 +23,6 @@ export const createJob = (req: Request, res: Response) => {
         if (serviceTicket.jobCreated) {
             throw new Error('Job aleady created for this ticket.')
         }
-
         var jobId = serviceTicket.ticketId.replace("Ticket",'Job')
 
         if(params.scheduledStartTime && params.scheduledEndTime) {
@@ -95,6 +93,7 @@ const _createJob = (req: Request, res: Response, jobId: string, serviceTicket: I
             jobId: jobId,
             ticket: params.ticketId,
             technician: params.technicianId,
+            contractor: params.contractorId,
             customer: params.customerId,
             type: params.jobTypeId,
             company: companyId,
@@ -191,7 +190,6 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
 
 
 export const getJobs = (req: Request, res: Response) => {
-    console.log('in get jobs')
 
     var companyId = req.companyId;
     if(req.otherCompanyId != undefined) {
@@ -206,6 +204,10 @@ export const getJobs = (req: Request, res: Response) => {
         .populate({
             path: 'technician',
             select: 'profile.displayName'
+        })
+        .populate({
+            path: 'contractor',
+            select: 'info.companyName info.companyEmail type'
         })
         .populate({
             path: 'customer',

@@ -79,6 +79,7 @@ const _createJob = (req, res, jobId, serviceTicket, next) => {
         jobId: jobId,
         ticket: params.ticketId,
         technician: params.technicianId,
+        contractor: params.contractorId,
         customer: params.customerId,
         type: params.jobTypeId,
         company: companyId,
@@ -154,7 +155,6 @@ const _sendJobEmails = (req, res, jobCreated, next) => {
     });
 };
 exports.getJobs = (req, res) => {
-    console.log('in get jobs');
     var companyId = req.companyId;
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
@@ -167,6 +167,10 @@ exports.getJobs = (req, res) => {
         .populate({
         path: 'technician',
         select: 'profile.displayName'
+    })
+        .populate({
+        path: 'contractor',
+        select: 'info.companyName info.companyEmail type'
     })
         .populate({
         path: 'customer',

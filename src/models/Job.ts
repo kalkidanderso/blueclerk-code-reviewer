@@ -59,7 +59,12 @@ const JobSchema = new Schema({
     technician: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: false
+    },
+    contractor: {
+        type: Schema.Types.ObjectId,
+        ref: 'Company',
+        required: false
     },
     customer: {
         type: Schema.Types.ObjectId,
