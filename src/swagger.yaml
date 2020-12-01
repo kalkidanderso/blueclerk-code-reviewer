@@ -2990,11 +2990,11 @@ paths:
           type: string
           description: >-
             Id of a technician / admin
-        - name: scheduleDate
+        - name: dueDate
           in: formData
           type: string
           required: false
-          description: 'sche date of service ticket. e.g. 2020-08-12'
+          description: 'due date of service ticket. e.g. 2020-08-12'
         - name: companyId
           in: formData
           type: string
@@ -3101,10 +3101,10 @@ paths:
           required: true
           type: string
           description: Additional note for the service ticket
-        - name: scheduleDate
+        - name: dueDate
           in: formData
           type: string
-          description: 'sche date of service ticket. e.g. 2020-08-12'
+          description: 'due date of service ticket. e.g. 2020-08-12'
         - name: companyId
           in: formData
           type: string

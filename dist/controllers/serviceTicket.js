@@ -83,9 +83,9 @@ exports.updateServiceTicket = (req, res) => {
         if (serviceTicket.status == 1 /* CANCELED */) {
             return res.json({ 'status': constants_1.Status.Error, 'message': 'Ticket is canceled' });
         }
-        let scheduleDate = serviceTicket.scheduleDate;
-        if (params.scheduleDate) {
-            scheduleDate = new Date(params.scheduleDate);
+        let dueDate = serviceTicket.dueDate;
+        if (params.dueDate) {
+            dueDate = new Date(params.dueDate);
         }
         let jobLocationId = serviceTicket.jobLocation;
         jobLocationId = params.jobLocationId;
@@ -93,7 +93,7 @@ exports.updateServiceTicket = (req, res) => {
         jobSiteId = params.jobSiteId;
         let jobTypeId = serviceTicket.jobType;
         jobTypeId = params.jobTypeId;
-        serviceTicket.updateOne({ note: params.note, scheduleDate: scheduleDate, jobLocation: jobLocationId, jobSite: jobSiteId, jobType: jobTypeId }, (err, raw) => {
+        serviceTicket.updateOne({ note: params.note, dueDate: dueDate, jobLocation: jobLocationId, jobSite: jobSiteId, jobType: jobTypeId }, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }

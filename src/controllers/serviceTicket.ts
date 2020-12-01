@@ -110,9 +110,9 @@ export const updateServiceTicket = (req: Request, res: Response) => {
             if (serviceTicket.status == ServiceTicketStatus.CANCELED) {
                 return res.json({'status': Status.Error, 'message': 'Ticket is canceled'})
             }
-            let scheduleDate: any = serviceTicket.scheduleDate
-            if(params.scheduleDate) {
-                scheduleDate = new Date(params.scheduleDate)
+            let dueDate: any = serviceTicket.dueDate
+            if(params.dueDate) {
+                dueDate = new Date(params.dueDate)
             }
 
             let jobLocationId: any = serviceTicket.jobLocation
@@ -126,7 +126,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                 jobTypeId = params.jobTypeId
             
             serviceTicket.updateOne(
-                {note: params.note, scheduleDate: scheduleDate, jobLocation: jobLocationId, jobSite: jobSiteId, jobType: jobTypeId},
+                {note: params.note, dueDate: dueDate, jobLocation: jobLocationId, jobSite: jobSiteId, jobType: jobTypeId},
                 (err: any, raw: any)=> {
                     
                     if (err) {
