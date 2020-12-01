@@ -21,11 +21,11 @@ export const createServiceTicket = (req: Request, res: Response) => {
         ticketId = 'Ticket '+company.prefix+'-'+(company.currentJobId+1)
     }
 
-    var scheduleDate = params.scheduleDate ? new Date(params.scheduleDate) : null
+    var dueDate = params.dueDate ? new Date(params.dueDate) : null
 
     const serviceTicket = new ServiceTicket({
         createdAt: Date.now(),
-        scheduleDate: scheduleDate,
+        dueDate: dueDate,
         customer: params.customerId,
         createdBy: user._id,
         company: companyId,
