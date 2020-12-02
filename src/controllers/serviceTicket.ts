@@ -117,23 +117,18 @@ export const getServiceTicketsWithPagination = (req: Request, res: Response) => 
                 select: 'info.email profile.displayName contactName address',
             })
             .populate({
-                path: 'JobSite'
+                path: 'jobSite',
+                select: 'name location address',
             })
             .populate({
-                path: 'JobLocation'
+                path: 'jobLocation',
+                select: 'name location address',
             })
             .populate({
-                path: 'createdBy',
-                select: 'profile.displayName'
+                path: 'jobType',
+                select: 'title isActive'
             })
-            .populate({
-                path: 'technician',
-                select: 'profile.displayName'
-            })
-            .populate({
-                path: 'editedBy',
-                select: 'profile.displayName'
-            }).then((documents:any) => {
+            .then((documents:any) => {
                 serviceTickets = documents;
                 return ServiceTicket.countDocuments();
               }).then((count :number) => {

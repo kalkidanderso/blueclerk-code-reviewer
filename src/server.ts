@@ -24,7 +24,7 @@ const { DB_USER, DB_PASS, DB_HOST, DB_NAME } = process.env
 mongoose.set('useCreateIndex', true)
 mongoose.connect(
   `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`,
-  {useNewUrlParser: true},
+  {useNewUrlParser: true, useUnifiedTopology: true},
   (err: MongoError) => {
 
     if (err) return console.log(`Database connection error: ${err}`)
