@@ -8,6 +8,7 @@ export interface IJob extends Document {
     jobId: string
     ticket: Schema.Types.ObjectId
     technician: Schema.Types.ObjectId
+    contractor: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId
     type: Schema.Types.ObjectId
     company: Schema.Types.ObjectId

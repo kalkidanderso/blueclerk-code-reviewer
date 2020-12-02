@@ -136,6 +136,10 @@ const _sendJobEmails = (req, res, jobCreated, next) => {
         select: 'profile.displayName auth.email'
     })
         .populate({
+        path: 'contractor',
+        select: 'info.companyName info.companyEmail type'
+    })
+        .populate({
         path: 'customer',
         select: 'profile.displayName info.email'
     })
@@ -151,14 +155,27 @@ const _sendJobEmails = (req, res, jobCreated, next) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        var tech = job.technician;
+        var tech;
+        var contractor;
+        var assigneeName;
         var cust = job.customer;
         var type = job.type;
         var creator = job.createdBy;
-        aws_1.sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate });
-        aws_1.sendJobEmailToCustomer({ to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate });
+        if (params.technicianId) {
+            tech = job.technician;
+            assigneeName = tech.profile.displayName;
+        }
+        if (params.contractorId) {
+            contractor = job.contractor;
+            assigneeName = contractor.info.companyName;
+        }
+        if (params.employeeType == 0) {
+            aws_1.sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate });
+        }
+        aws_1.sendJobEmailToCustomer({ to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate });
         if (params.employeeType == 1) {
-            aws_1.sendJobEmailToCompanyAdmin({ to: company.info.companyEmail, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate, vendorName: creator.profile.displayName });
+            aws_1.sendJobEmailToAssignee({ to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate });
+            aws_1.sendJobEmailToCompanyAdmin({ to: company.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate, vendorName: creator.profile.displayName });
         }
         next(req, res, jobCreated);
         return;

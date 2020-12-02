@@ -97,22 +97,20 @@ const _createJob = (req: Request, res: Response, jobId: string, serviceTicket: I
         companyId = req.otherCompanyId
     }
 
-    const job = new Job(
-        {
-            scheduleDate: params.scheduleDate,
-            jobId: jobId,
-            ticket: params.ticketId,
-            technician: params.technicianId,
-            contractor: params.contractorId,
-            customer: params.customerId,
-            type: params.jobTypeId,
-            company: companyId,
-            description: params.description,
-            createdAt: Date.now(),
-            createdBy: user._id,
-            employeeType: params.employeeType,
-        }
-    )
+    const job = new Job({
+        scheduleDate: params.scheduleDate,
+        jobId: jobId,
+        ticket: params.ticketId,
+        technician : params.technicianId,
+        contractor : params.contractorId,
+        customer: params.customerId,
+        type: params.jobTypeId,
+        company: companyId,
+        description: params.description,
+        createdAt: Date.now(),
+        createdBy: user._id,
+        employeeType: params.employeeType,
+    })
 
     let newStartTime: any = null
     let newEndTime: any = null
@@ -162,6 +160,10 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
         select:'profile.displayName auth.email'
     })
     .populate({
+        path: 'contractor',
+        select: 'info.companyName info.companyEmail type'
+    })
+    .populate({
         path:'customer',
         select:'profile.displayName info.email'
     })
@@ -178,18 +180,30 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
-
-        var tech : any= job.technician
+        
+        var tech : any;
+        var contractor : any;
+        var assigneeName: any; 
         var cust : any= job.customer
         var type : any= job.type
         var creator : any = job.createdBy
+        if (params.technicianId) {
+            tech = job.technician
+            assigneeName = tech.profile.displayName
+        }
+        if (params.contractorId) {
+            contractor = job.contractor
+            assigneeName = contractor.info.companyName
+        }
 
-        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
-
-        sendJobEmailToCustomer({to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+        if(params.employeeType == 0) {
+            sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+        }
+        sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
         
         if(params.employeeType == 1) {
-            sendJobEmailToCompanyAdmin({to: company.info.companyEmail, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate, vendorName: creator.profile.displayName})
+            sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+            sendJobEmailToCompanyAdmin({to: company.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate, vendorName: creator.profile.displayName})
         }
         next(req, res, jobCreated)
         return 
