@@ -91,17 +91,27 @@ export const getServiceTickets = (req: Request, res: Response) => {
 
 export const getServiceTicketsWithPagination = (req: Request, res: Response) => {
 
+            var params = req.body
             var companyId = req.companyId;
             if(req.otherCompanyId != undefined) {
                 companyId = req.otherCompanyId
             }
             var serviceTickets : any;
             var maxCount : number;
+            const match : any = {};
             const pageSize = +req.query.pagesize;
             const currentPage = +req.query.page;
-            var criteria = {
-                company: companyId
+            var criteria : any = {
+                company: companyId,
+                jobCreated: false
             };
+            if (params.jobTypeTitle) {
+                match.title = params.jobTypeTitle
+            }
+
+            if(params.dueDate) {
+                criteria.dueDate = params.dueDate
+            }
             var projection = { };
             var option = {
                 lean: true, 
@@ -111,10 +121,10 @@ export const getServiceTicketsWithPagination = (req: Request, res: Response) => 
             if (pageSize && currentPage) {
                 Query.skip(pageSize * (currentPage - 1)).limit(pageSize);
             }
-
             Query.populate({
                 path: 'customer',
-                select: 'info.email profile.displayName contactName address',
+                select: 'info.email profile.displayName contactName',
+                match: { 'profile.displayName': { $in: params.customerNames } },
             })
             .populate({
                 path: 'jobSite',
@@ -126,11 +136,12 @@ export const getServiceTicketsWithPagination = (req: Request, res: Response) => 
             })
             .populate({
                 path: 'jobType',
-                select: 'title isActive'
+                select: 'title isActive',
+                match
             })
-            .then((documents:any) => {
+            .then((documents:IServiceTicket[]) => {
                 serviceTickets = documents;
-                return ServiceTicket.countDocuments();
+                return ServiceTicket.countDocuments(criteria);
               }).then((count :number) => {
                 maxCount = count;
                 return res.json({'status': Status.Success, 'serviceTickets': serviceTickets , 'Total': maxCount })    

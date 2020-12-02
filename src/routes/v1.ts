@@ -838,6 +838,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Service_Tickets),
+        validate(Validations.getServiceTicketsWithPagination),
         serviceTicketController.getServiceTicketsWithPagination
     )
 

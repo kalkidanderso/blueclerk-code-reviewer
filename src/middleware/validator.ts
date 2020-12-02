@@ -8,12 +8,12 @@ export const validate = (validations: ValidationChain[]) => {
 
       await Promise.all(validations.map(validation => validation.run(req)))
   
-      const errors = validationResult(req)
+      const errors:any = validationResult(req)
       if (errors.isEmpty()) {
         return next()
       }
   
-      res.json({'status': Status.Error, 'message': Messages.MissingParams})
+      res.json({'status': Status.Error, 'message': Messages.MissingParams, 'exactError': errors.errors.map((error:any) =>  `${error.param} field have ${error.msg}.` )})
 
     }
 
@@ -223,4 +223,5 @@ export const Validations = {
   
   getLocationTagJobs: [check('nfcTag').exists()],
 
+  getServiceTicketsWithPagination: [check('customerNames').optional().if(check('customerNames').exists()).isArray(), check('jobTypeTitle').optional(), check('dueDate').optional().if(check('dueDate').exists())]
 }
