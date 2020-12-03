@@ -72,12 +72,11 @@ exports.getServiceTickets = (req, res) => {
 };
 exports.getOpenServiceTickets = (req, res) => {
     const params = req.body;
-    const match = {};
     const pageSize = +req.query.pagesize;
     const currentPage = +req.query.page;
     var companyId = req.companyId;
-    var serviceTickets;
-    var totalCount;
+    var serviceTickets = [];
+    var totalCount = 0;
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
     }
@@ -86,7 +85,7 @@ exports.getOpenServiceTickets = (req, res) => {
         jobCreated: false
     };
     if (params.jobTypeTitle) {
-        match.title = params.jobTypeTitle;
+        criteria['jobType.title'] = params.jobTypeTitle;
     }
     if (params.dueDate) {
         criteria.dueDate = { "$gte": new Date(params.dueDate), "$lt": new Date(params.dueDate + ' 23:59:00.000Z') };
@@ -98,38 +97,78 @@ exports.getOpenServiceTickets = (req, res) => {
         }
         criteria.ticketId = { $regex: ticketId, $options: 'i' };
     }
-    var projection = {};
-    var option = {
-        lean: true,
-        sort: { createdAt: -1 }
-    };
-    const Query = ServiceTicket_1.ServiceTicket.find(criteria, projection, option);
-    if (pageSize && currentPage) {
-        Query.skip(pageSize * (currentPage - 1)).limit(pageSize);
+    if (params.customerNames && params.customerNames.length > 0) {
+        criteria['customer.profile.displayName'] = { $in: params.customerNames };
     }
-    Query.populate({
-        path: 'customer',
-        select: 'info.email profile.displayName contactName',
-        match: { 'profile.displayName': { $in: params.customerNames } },
-    })
-        .populate({
-        path: 'jobSite',
-        select: 'name location address',
-    })
-        .populate({
-        path: 'jobLocation',
-        select: 'name location address',
-    })
-        .populate({
-        path: 'jobType',
-        select: 'title isActive',
-        match
-    })
-        .then((documents) => {
-        serviceTickets = documents;
-        return ServiceTicket_1.ServiceTicket.countDocuments(criteria);
-    }).then((count) => {
-        totalCount = count;
+    const Query = ServiceTicket_1.ServiceTicket.aggregate([
+        {
+            $lookup: {
+                from: 'users',
+                localField: "customer",
+                foreignField: "_id",
+                as: "customer"
+            }
+        },
+        {
+            $lookup: {
+                from: 'jobsites',
+                localField: 'jobSite',
+                foreignField: '_id',
+                as: 'jobSite'
+            }
+        },
+        {
+            $lookup: {
+                from: 'joblocations',
+                localField: 'jobLocation',
+                foreignField: '_id',
+                as: 'jobLocation'
+            }
+        },
+        {
+            $lookup: {
+                from: 'jobtypes',
+                localField: 'jobType',
+                foreignField: '_id',
+                as: 'jobType'
+            }
+        },
+        { "$match": criteria },
+        {
+            $project: {
+                "_id": 1,
+                "customer": { $arrayElemAt: ["$customer", 0] },
+                "jobSite": { $arrayElemAt: ["$jobSite", 0] },
+                "jobLocation": { $arrayElemAt: ["$jobLocation", 0] },
+                "jobType": { $arrayElemAt: ["$jobType", 0] },
+                "jobCreated": 1,
+                "dueDate": 1,
+                "createdAt": 1,
+                "note": 1,
+                "ticketId": 1
+            }
+        },
+        {
+            $group: {
+                _id: null,
+                total: { $sum: 1 },
+                serviceTickets: {
+                    $push: '$$ROOT'
+                }
+            }
+        },
+        {
+            $project: {
+                total: 1,
+                serviceTickets: { $slice: ['$serviceTickets', pageSize * (currentPage - 1), pageSize] }
+            }
+        },
+    ]);
+    Query.then((documents) => {
+        if (documents.length > 0) {
+            serviceTickets = documents[0].serviceTickets;
+            totalCount = documents[0].total;
+        }
         return res.json({ 'status': constants_1.Status.Success, 'serviceTickets': serviceTickets, 'total': totalCount });
     }).catch((err) => {
         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
