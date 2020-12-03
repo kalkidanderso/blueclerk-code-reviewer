@@ -13,7 +13,7 @@ export const validate = (validations: ValidationChain[]) => {
         return next()
       }
   
-      res.json({'status': Status.Error, 'message': Messages.MissingParams, 'exactError': errors.errors.map((error:any) =>  `${error.param} field have ${error.msg}.` )})
+      res.json({'status': Status.Error, 'message': Messages.MissingParams})
 
     }
 
@@ -223,5 +223,5 @@ export const Validations = {
   
   getLocationTagJobs: [check('nfcTag').exists()],
 
-  getOpenServiceTickets: [check('customerNames').optional().if(check('customerNames').exists()).isArray(), check('jobTypeTitle').optional(), check('dueDate').optional()]
+  getOpenServiceTickets: [check('page').exists().isNumeric(), check('pagesize').exists().isNumeric(), check('customerNames').optional().if(check('customerNames').exists()).isArray(), check('jobTypeTitle').optional(), check('dueDate').optional(), check('ticketId').optional()]
 }

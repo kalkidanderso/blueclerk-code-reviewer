@@ -154,7 +154,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                 return ServiceTicket.countDocuments(criteria);
               }).then((count :number) => {
                 totalCount = count;
-                return res.json({'status': Status.Success, 'serviceTickets': serviceTickets , 'Total': totalCount })    
+                return res.json({'status': Status.Success, 'serviceTickets': serviceTickets , 'total': totalCount })    
               }).catch((err:any) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             });

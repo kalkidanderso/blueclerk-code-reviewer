@@ -18,7 +18,7 @@ exports.validate = (validations) => {
         if (errors.isEmpty()) {
             return next();
         }
-        res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.MissingParams, 'exactError': errors.errors.map((error) => `${error.param} field have ${error.msg}.`) });
+        res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.MissingParams });
     });
 };
 exports.Validations = {
@@ -131,6 +131,6 @@ exports.Validations = {
     codeLocationTag: [express_validator_1.check('latitude').exists(), express_validator_1.check('longitude').exists(), express_validator_1.check('nfcTag').exists(), express_validator_1.check('customer').exists()],
     updateLocationTag: [express_validator_1.check('nfcTag').exists(), express_validator_1.check('latitude').exists(), express_validator_1.check('longitude').exists(), express_validator_1.check('nfcTag').exists()],
     getLocationTagJobs: [express_validator_1.check('nfcTag').exists()],
-    getOpenServiceTickets: [express_validator_1.check('customerNames').optional().if(express_validator_1.check('customerNames').exists()).isArray(), express_validator_1.check('jobTypeTitle').optional(), express_validator_1.check('dueDate').optional()]
+    getOpenServiceTickets: [express_validator_1.check('page').exists().isNumeric(), express_validator_1.check('pagesize').exists().isNumeric(), express_validator_1.check('customerNames').optional().if(express_validator_1.check('customerNames').exists()).isArray(), express_validator_1.check('jobTypeTitle').optional(), express_validator_1.check('dueDate').optional(), express_validator_1.check('ticketId').optional()]
 };
 //# sourceMappingURL=validator.js.map
