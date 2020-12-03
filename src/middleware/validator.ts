@@ -223,5 +223,5 @@ export const Validations = {
   
   getLocationTagJobs: [check('nfcTag').exists()],
 
-  getServiceTicketsWithPagination: [check('customerNames').optional().if(check('customerNames').exists()).isArray(), check('jobTypeTitle').optional(), check('dueDate').optional().if(check('dueDate').exists())]
+  getOpenServiceTickets: [check('customerNames').optional().if(check('customerNames').exists()).isArray(), check('jobTypeTitle').optional(), check('dueDate').optional()]
 }

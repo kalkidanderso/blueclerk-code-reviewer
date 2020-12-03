@@ -89,18 +89,19 @@ export const getServiceTickets = (req: Request, res: Response) => {
 
 }
 
-export const getServiceTicketsWithPagination = (req: Request, res: Response) => {
+export const getOpenServiceTickets = (req: Request, res: Response) => {
 
-            var params = req.body
+            const params = req.body
             var companyId = req.companyId;
-            if(req.otherCompanyId != undefined) {
-                companyId = req.otherCompanyId
-            }
             var serviceTickets : any;
-            var maxCount : number;
+            var totalCount : number;
             const match : any = {};
             const pageSize = +req.query.pagesize;
             const currentPage = +req.query.page;
+
+            if(req.otherCompanyId != undefined) {
+                companyId = req.otherCompanyId
+            }
             var criteria : any = {
                 company: companyId,
                 jobCreated: false
@@ -109,8 +110,12 @@ export const getServiceTicketsWithPagination = (req: Request, res: Response) => 
                 match.title = params.jobTypeTitle
             }
 
-            if(params.dueDate) {
+            if (params.dueDate) {
                 criteria.dueDate = params.dueDate
+            }
+
+            if (params.ticketId) {
+                criteria.ticketId = params.ticketId
             }
             var projection = { };
             var option = {
@@ -143,8 +148,8 @@ export const getServiceTicketsWithPagination = (req: Request, res: Response) => 
                 serviceTickets = documents;
                 return ServiceTicket.countDocuments(criteria);
               }).then((count :number) => {
-                maxCount = count;
-                return res.json({'status': Status.Success, 'serviceTickets': serviceTickets , 'Total': maxCount })    
+                totalCount = count;
+                return res.json({'status': Status.Success, 'serviceTickets': serviceTickets , 'Total': totalCount })    
               }).catch((err:any) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             });

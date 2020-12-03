@@ -834,12 +834,12 @@ export default function (sio: any) {
     )
 
     router.post(
-        '/getServiceTicketsWithPagination',
+        '/getOpenServiceTickets',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Service_Tickets),
-        validate(Validations.getServiceTicketsWithPagination),
-        serviceTicketController.getServiceTicketsWithPagination
+        validate(Validations.getOpenServiceTickets),
+        serviceTicketController.getOpenServiceTickets
     )
 
     router.post(

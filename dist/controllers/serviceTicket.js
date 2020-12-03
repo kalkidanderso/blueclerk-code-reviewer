@@ -70,18 +70,30 @@ exports.getServiceTickets = (req, res) => {
         return res.json({ 'status': constants_1.Status.Success, 'serviceTickets': serviceTickets });
     });
 };
-exports.getServiceTicketsWithPagination = (req, res) => {
+exports.getOpenServiceTickets = (req, res) => {
+    const params = req.body;
     var companyId = req.companyId;
+    var serviceTickets;
+    var totalCount;
+    const match = {};
+    const pageSize = +req.query.pagesize;
+    const currentPage = +req.query.page;
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
     }
-    var serviceTickets;
-    var maxCount;
-    const pageSize = +req.query.pagesize;
-    const currentPage = +req.query.page;
     var criteria = {
-        company: companyId
+        company: companyId,
+        jobCreated: false
     };
+    if (params.jobTypeTitle) {
+        match.title = params.jobTypeTitle;
+    }
+    if (params.dueDate) {
+        criteria.dueDate = params.dueDate;
+    }
+    if (params.ticketId) {
+        criteria.ticketId = params.ticketId;
+    }
     var projection = {};
     var option = {
         lean: true,
@@ -93,31 +105,28 @@ exports.getServiceTicketsWithPagination = (req, res) => {
     }
     Query.populate({
         path: 'customer',
-        select: 'info.email profile.displayName contactName address',
+        select: 'info.email profile.displayName contactName',
+        match: { 'profile.displayName': { $in: params.customerNames } },
     })
         .populate({
-        path: 'JobSite'
+        path: 'jobSite',
+        select: 'name location address',
     })
         .populate({
-        path: 'JobLocation'
+        path: 'jobLocation',
+        select: 'name location address',
     })
         .populate({
-        path: 'createdBy',
-        select: 'profile.displayName'
+        path: 'jobType',
+        select: 'title isActive',
+        match
     })
-        .populate({
-        path: 'technician',
-        select: 'profile.displayName'
-    })
-        .populate({
-        path: 'editedBy',
-        select: 'profile.displayName'
-    }).then((documents) => {
+        .then((documents) => {
         serviceTickets = documents;
-        return ServiceTicket_1.ServiceTicket.countDocuments();
+        return ServiceTicket_1.ServiceTicket.countDocuments(criteria);
     }).then((count) => {
-        maxCount = count;
-        return res.json({ 'status': constants_1.Status.Success, 'serviceTickets': serviceTickets, 'Total': maxCount });
+        totalCount = count;
+        return res.json({ 'status': constants_1.Status.Success, 'serviceTickets': serviceTickets, 'Total': totalCount });
     }).catch((err) => {
         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
     });

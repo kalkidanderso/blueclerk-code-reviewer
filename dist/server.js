@@ -32,7 +32,7 @@ dotenv_1.default.config();
 //Database connection
 const { DB_USER, DB_PASS, DB_HOST, DB_NAME } = process.env;
 mongoose_1.default.set('useCreateIndex', true);
-mongoose_1.default.connect(`mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`, { useNewUrlParser: true }, (err) => {
+mongoose_1.default.connect(`mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`, { useNewUrlParser: true, useUnifiedTopology: true }, (err) => {
     if (err)
         return console.log(`Database connection error: ${err}`);
     console.log('Database connected successfully');
