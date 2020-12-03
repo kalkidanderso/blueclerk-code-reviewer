@@ -92,12 +92,12 @@ export const getServiceTickets = (req: Request, res: Response) => {
 export const getOpenServiceTickets = (req: Request, res: Response) => {
 
             const params = req.body
-            var companyId = req.companyId;
-            var serviceTickets : any;
-            var totalCount : number;
             const match : any = {};
             const pageSize = +req.query.pagesize;
             const currentPage = +req.query.page;
+            var companyId = req.companyId;
+            var serviceTickets : any;
+            var totalCount : number;
 
             if(req.otherCompanyId != undefined) {
                 companyId = req.otherCompanyId
@@ -111,12 +111,17 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
             }
 
             if (params.dueDate) {
-                criteria.dueDate = params.dueDate
+                criteria.dueDate = {"$gte": new Date(params.dueDate), "$lt": new Date(params.dueDate+ ' 23:59:00.000Z')}
             }
 
             if (params.ticketId) {
-                criteria.ticketId = params.ticketId
+                var ticketId = params.ticketId;
+                if (ticketId.match(/\d/g)) { 
+                    ticketId = 'Ticket '+ticketId.match(/\d/g).join("");
+                }
+                criteria.ticketId = { $regex: ticketId, $options: 'i'}
             }
+            
             var projection = { };
             var option = {
                 lean: true, 

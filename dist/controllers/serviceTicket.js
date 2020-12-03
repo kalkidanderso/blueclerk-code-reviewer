@@ -72,12 +72,12 @@ exports.getServiceTickets = (req, res) => {
 };
 exports.getOpenServiceTickets = (req, res) => {
     const params = req.body;
-    var companyId = req.companyId;
-    var serviceTickets;
-    var totalCount;
     const match = {};
     const pageSize = +req.query.pagesize;
     const currentPage = +req.query.page;
+    var companyId = req.companyId;
+    var serviceTickets;
+    var totalCount;
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
     }
@@ -89,10 +89,14 @@ exports.getOpenServiceTickets = (req, res) => {
         match.title = params.jobTypeTitle;
     }
     if (params.dueDate) {
-        criteria.dueDate = params.dueDate;
+        criteria.dueDate = { "$gte": new Date(params.dueDate), "$lt": new Date(params.dueDate + ' 23:59:00.000Z') };
     }
     if (params.ticketId) {
-        criteria.ticketId = params.ticketId;
+        var ticketId = params.ticketId;
+        if (ticketId.match(/\d/g)) {
+            ticketId = 'Ticket ' + ticketId.match(/\d/g).join("");
+        }
+        criteria.ticketId = { $regex: ticketId, $options: 'i' };
     }
     var projection = {};
     var option = {

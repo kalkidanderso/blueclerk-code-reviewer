@@ -4686,6 +4686,102 @@
         ]
       }
     },
+    "/getOpenServiceTickets": {
+      "post": {
+        "tags": [
+          "Service Ticket"
+        ],
+        "summary": "To get all open service tickets of a company or company of employee.",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required" : true,
+            "schema": { 
+              "type":"integer"
+            },
+            "description": "The number of items to skip e.g. 1"
+          },
+          {
+            "name": "pagesize",
+            "in": "query",
+            "required" : true,
+            "schema": { 
+              "type":"integer"
+            },
+            "description": "The numbers of items to return e.g. 10"
+          },
+          {
+            "name": "jobTypeTitle",
+            "in": "formData",
+            "type": "string",
+            "description": "Title of specific job type"
+          },
+          {
+            "name": "dueDate",
+            "in": "formData",
+            "type": "string",
+            "description": "Due date of service ticket. e.g. 2020-08-12"
+          },
+          {
+            "name": "customerNames",
+            "in": "formData",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of customer's displayNames"
+          },
+          {
+            "name": "ticketId",
+            "in": "formData",
+            "type": "string",
+            "description": "Ticket ID of service ticket e.g. ticket 1390 or 1390"
+          },
+          {
+            "name": "companyId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of company if contractor is hitting for other company"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/ServiceTicket"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getServiceTicketDetail": {
       "post": {
         "tags": [
