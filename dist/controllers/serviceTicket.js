@@ -77,8 +77,12 @@ exports.getOpenServiceTickets = (req, res) => {
     var companyId = req.companyId;
     var serviceTickets = [];
     var totalCount = 0;
+    var customerNames;
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
+    }
+    if (params.customerNames) {
+        customerNames = params.customerNames.split(',');
     }
     var criteria = {
         company: companyId,
@@ -98,7 +102,7 @@ exports.getOpenServiceTickets = (req, res) => {
         criteria.ticketId = { $regex: ticketId, $options: 'i' };
     }
     if (params.customerNames && params.customerNames.length > 0) {
-        criteria['customer.profile.displayName'] = { $in: params.customerNames };
+        criteria['customer.profile.displayName'] = { $in: customerNames };
     }
     const Query = ServiceTicket_1.ServiceTicket.aggregate([
         {

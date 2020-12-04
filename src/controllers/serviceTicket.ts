@@ -97,10 +97,16 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
             var companyId = req.companyId;
             var serviceTickets : any = [];
             var totalCount : number = 0;
+            var customerNames: any;
 
-            if(req.otherCompanyId != undefined) {
+            if (req.otherCompanyId != undefined) {
                 companyId = req.otherCompanyId
             }
+
+            if (params.customerNames) {
+                customerNames = params.customerNames.split(',')
+            }
+
             var criteria : any = {
                 company: companyId,
                 jobCreated: false
@@ -122,7 +128,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
             }
 
             if(params.customerNames && params.customerNames.length >0) {
-                criteria['customer.profile.displayName'] = { $in: params.customerNames } 
+                criteria['customer.profile.displayName'] = { $in: customerNames } 
             }
             
             const Query = ServiceTicket.aggregate([

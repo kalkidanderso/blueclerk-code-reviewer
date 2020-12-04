@@ -131,6 +131,6 @@ exports.Validations = {
     codeLocationTag: [express_validator_1.check('latitude').exists(), express_validator_1.check('longitude').exists(), express_validator_1.check('nfcTag').exists(), express_validator_1.check('customer').exists()],
     updateLocationTag: [express_validator_1.check('nfcTag').exists(), express_validator_1.check('latitude').exists(), express_validator_1.check('longitude').exists(), express_validator_1.check('nfcTag').exists()],
     getLocationTagJobs: [express_validator_1.check('nfcTag').exists()],
-    getOpenServiceTickets: [express_validator_1.check('page').exists().isNumeric(), express_validator_1.check('pagesize').exists().isNumeric(), express_validator_1.check('customerNames').optional().if(express_validator_1.check('customerNames').exists()).isArray(), express_validator_1.check('jobTypeTitle').optional(), express_validator_1.check('dueDate').optional(), express_validator_1.check('ticketId').optional()]
+    getOpenServiceTickets: [express_validator_1.check('page').exists().isNumeric(), express_validator_1.check('pagesize').exists().isNumeric(), express_validator_1.check('customerNames').optional(), express_validator_1.check('jobTypeTitle').optional(), express_validator_1.check('dueDate').optional(), express_validator_1.check('ticketId').optional()]
 };
 //# sourceMappingURL=validator.js.map

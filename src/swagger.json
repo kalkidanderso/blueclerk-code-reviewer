@@ -4737,7 +4737,7 @@
             "items": {
               "type": "string"
             },
-            "description": "List of customer's displayNames"
+            "description": "List of customer's displayNames in comma separated strings. eg. name1, name2"
           },
           {
             "name": "ticketId",
