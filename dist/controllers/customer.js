@@ -6,6 +6,8 @@ const CompanyCustomer_1 = require("../models/CompanyCustomer");
 const User_1 = require("../models/User");
 exports.createCustomer = (req, res) => {
     const params = req.body;
+    var long = params.longitude;
+    var lat = params.latitude;
     var companyId = req.companyId;
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
@@ -25,6 +27,9 @@ exports.createCustomer = (req, res) => {
             city: params.city,
             state: params.state,
             zipCode: params.zipCode,
+        },
+        location: {
+            coordinates: [long, lat]
         },
         contact: {
             phone: params.phone,
@@ -84,7 +89,7 @@ exports.getCustomers = (req, res) => {
         const customerIds = companyCustomers.map((obj) => {
             return obj.customer;
         });
-        User_1.User.find({ _id: { $in: customerIds } }, 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode contact.phone permissions.role isActive balance', (err, users) => {
+        User_1.User.find({ _id: { $in: customerIds } }, 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance', (err, users) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
@@ -94,6 +99,8 @@ exports.getCustomers = (req, res) => {
 };
 exports.updateCustomer = (req, res) => {
     const params = req.body;
+    var long = params.longitude;
+    var lat = params.latitude;
     Customer_1.Customer.findById(params.customerId)
         .exec((err, customer) => {
         if (err) {
@@ -108,6 +115,7 @@ exports.updateCustomer = (req, res) => {
             'address.city': params.city,
             'address.state': params.state,
             'address.zipCode': params.zipCode,
+            'location.coordinates': [long, lat],
             'contact.phone': params.phone,
             contactName: params.contactName
         }, (err, raw) => {

@@ -78,9 +78,9 @@ export const Validations = {
   createEquipmentBrand: [check('title').exists()],
 
   //Customers
-  createCustomer: [check('name').exists()],
+  createCustomer: [check('name').exists(), check('email').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('longitude').exists(), check('latitude').exists()],
   
-  updateCustomer: [check('customerId').exists(), check('name').exists()],
+  updateCustomer: [check('customerId').exists(), check('email').exists(), check('name').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(), check('longitude').exists(), check('latitude').exists()],
   
   getCustomers: [check('includeActive').exists(), check('includeNonActive').exists()],
 

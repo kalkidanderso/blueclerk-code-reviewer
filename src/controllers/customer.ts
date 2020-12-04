@@ -10,6 +10,8 @@ import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipme
 export const createCustomer = (req: Request, res: Response) => {
 
     const params = req.body
+    var long = params.longitude
+    var lat = params.latitude
     var companyId = req.companyId;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
@@ -31,6 +33,9 @@ export const createCustomer = (req: Request, res: Response) => {
                 city: params.city,
                 state: params.state,
                 zipCode: params.zipCode,
+            },
+            location: {
+                coordinates: [long, lat]
             },
             contact: {
                 phone: params.phone,
@@ -104,7 +109,7 @@ export const getCustomers = (req: Request, res: Response) => {
         })
         
         User.find({_id : {$in: customerIds}},
-            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode contact.phone permissions.role isActive balance',
+            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance',
             (err: any, users: IUser[]) =>{
             
             if (err) {
@@ -121,6 +126,8 @@ export const getCustomers = (req: Request, res: Response) => {
 export const updateCustomer = (req: Request, res: Response) => {
 
     const params = req.body
+    var long = params.longitude
+    var lat = params.latitude
 
     Customer.findById(params.customerId)
     .exec((err: any, customer: ICustomer)=>{
@@ -138,6 +145,7 @@ export const updateCustomer = (req: Request, res: Response) => {
                 'address.city': params.city,
                 'address.state': params.state,
                 'address.zipCode': params.zipCode,
+                'location.coordinates': [long, lat],
                 'contact.phone': params.phone,
                 contactName: params.contactName
             },

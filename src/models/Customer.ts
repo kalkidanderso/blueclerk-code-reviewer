@@ -3,14 +3,14 @@ import { User, IUser} from './User'
 
 export interface ICustomer extends IUser {
 
-    isActive: boolean,
+    isActive: boolean
     info:{
         email: String
     }
     contactName: string
     company: Schema.Types.ObjectId
-    equipments: [Schema.Types.ObjectId],
-    quickbookId: string,
+    equipments: [Schema.Types.ObjectId]
+    quickbookId: string
     balance: number
 }
 
