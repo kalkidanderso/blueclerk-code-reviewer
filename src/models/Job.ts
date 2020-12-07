@@ -10,6 +10,8 @@ export interface IJob extends Document {
     technician: Schema.Types.ObjectId
     contractor: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId
+    jobLocation: Schema.Types.ObjectId
+    jobSite: Schema.Types.ObjectId
     type: Schema.Types.ObjectId
     company: Schema.Types.ObjectId
     equipmentId: string
@@ -71,6 +73,14 @@ const JobSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User',
         required: true
+    },
+    jobLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobLocation',
+    },
+    jobSite: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobSite',
     },
     type: {
         type: Schema.Types.ObjectId,

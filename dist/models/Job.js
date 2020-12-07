@@ -46,6 +46,14 @@ const JobSchema = new mongoose_1.Schema({
         ref: 'User',
         required: true
     },
+    jobLocation: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'JobLocation',
+    },
+    jobSite: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'JobSite',
+    },
     type: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'JobType',

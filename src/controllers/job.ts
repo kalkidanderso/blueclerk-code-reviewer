@@ -104,6 +104,8 @@ const _createJob = (req: Request, res: Response, jobId: string, serviceTicket: I
         technician : params.technicianId,
         contractor : params.contractorId,
         customer: params.customerId,
+        jobLocation: params.jobLocationId,
+        jobSite: params.jobSiteId,
         type: params.jobTypeId,
         company: companyId,
         description: params.description,

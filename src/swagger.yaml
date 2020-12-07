@@ -3019,12 +3019,15 @@ paths:
         - name: dueDate
           in: formData
           type: string
-          required: false
           description: 'due date of service ticket. e.g. 2020-08-12'
         - name: companyId
           in: formData
           type: string
           description: 'Id of company if contractor is hitting for other company'
+        - name: jobLocationId
+          in: formData
+          type: string
+          description: 'Id of job location'
         - name: jobSiteId
           in: formData
           type: string
@@ -3194,6 +3197,10 @@ paths:
           in: formData
           type: string
           description: 'Id of company if contractor is hitting for other company'
+        - name: jobLocationId
+          in: formData
+          type: string
+          description: 'Id of job location'
         - name: jobSiteId
           in: formData
           type: string
@@ -3280,14 +3287,12 @@ paths:
             Id of a equipment for single scan
         - name: technicianId
           in: formData
-          required: false
           type: string
           description: >-
             Id of a technician selected from the list received by
             /getEmployeesForJob api
         - name: contractorId
           in: formData
-          required: false
           type: string
           description: >-
             Id of a contractor selected from the list received by
@@ -3299,6 +3304,16 @@ paths:
           description: >-
             Id of a customer selected from the list received by /getCustomers
             api
+        - name: jobLocationId
+          in: formData
+          required: true
+          type: string
+          description: 'Id of job location'
+        - name: jobSiteId
+          in: formData
+          required: true
+          type: string
+          description: 'Id of job site'
         - name: jobTypeId
           in: formData
           required: true
