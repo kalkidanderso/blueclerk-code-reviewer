@@ -137,6 +137,14 @@ exports.getOpenServiceTickets = (req, res) => {
                 as: 'jobType'
             }
         },
+        {
+            $lookup: {
+                from: 'companies',
+                localField: 'company',
+                foreignField: '_id',
+                as: 'companyInfo'
+            }
+        },
         { "$match": criteria },
         {
             $project: {
@@ -145,11 +153,12 @@ exports.getOpenServiceTickets = (req, res) => {
                 "jobSite": { $arrayElemAt: ["$jobSite", 0] },
                 "jobLocation": { $arrayElemAt: ["$jobLocation", 0] },
                 "jobType": { $arrayElemAt: ["$jobType", 0] },
+                "company.info": { $arrayElemAt: ["$companyInfo.info", 0] },
                 "jobCreated": 1,
                 "dueDate": 1,
-                "createdAt": 1,
                 "note": 1,
-                "ticketId": 1
+                "ticketId": 1,
+                "createdAt": 1
             }
         },
         {
