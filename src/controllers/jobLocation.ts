@@ -144,7 +144,7 @@ export const update = (req: Request, res: Response) => {
             res.send(Messages.InternalServerError)
         } else {
             res.status(Status.OK)
-            res.send()
+            res.send('job location has been updated successfully.')
         }
     })
 }

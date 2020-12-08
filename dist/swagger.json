@@ -3117,7 +3117,49 @@
                             "$ref": "#/definitions/jobLocation"
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            },
+            "get": {
+                "tags": [
+                    "Job Location"
+                ],
+                "summary": "Get Job location by companyId and/or customerId",
+                "description": "",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "companyId",
+                        "type": "string",
+                        "required": false
+                    },
+                    {
+                        "in": "query",
+                        "name": "customerId",
+                        "type": "string",
+                        "required": false
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/jobLocation"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
             }
         },
         "/jobLocation/{id}": {
@@ -3149,7 +3191,12 @@
                     "200": {
                         "description": "Success"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
             },
             "get": {
                 "tags": [
@@ -3175,41 +3222,12 @@
                             "$ref": "#/definitions/jobLocation"
                         }
                     }
-                }
-            }
-        },
-        "/jobLocation?companyId={companyId}&customerId={customerId}": {
-            "get": {
-                "tags": [
-                    "Job Location"
-                ],
-                "summary": "Get Job location by companyId and/or customerId",
-                "description": "",
-                "produces": [
-                    "application/json"
-                ],
-                "parameters": [
+                },
+                "security": [
                     {
-                        "in": "query",
-                        "name": "companyId",
-                        "type": "string",
-                        "required": false
-                    },
-                    {
-                        "in": "query",
-                        "name": "customerId",
-                        "type": "string",
-                        "required": false
+                        "Bearer": []
                     }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Success",
-                        "schema": {
-                            "$ref": "#/definitions/jobLocation"
-                        }
-                    }
-                }
+                ]
             }
         },
         "/createJobType": {
@@ -5064,14 +5082,12 @@
                     {
                         "name": "jobLocationId",
                         "in": "formData",
-                        "required": true,
                         "type": "string",
                         "description": "Id of job location"
                     },
                     {
                         "name": "jobSiteId",
                         "in": "formData",
-                        "required": true,
                         "type": "string",
                         "description": "Id of job site"
                     },
@@ -5412,6 +5428,18 @@
                         "in": "formData",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "jobLocationId",
+                        "in": "formData",
+                        "type": "string",
+                        "description": "Id of job location"
+                    },
+                    {
+                        "name": "jobSiteId",
+                        "in": "formData",
+                        "type": "string",
+                        "description": "Id of job site"
                     },
                     {
                         "name": "companyId",
@@ -8840,13 +8868,28 @@
                     }
                 },
                 "address": {
-                    "type": "string"
+                    "type": "object",
+                    "properties": {
+                        "street": {
+                            "type": "string"
+                        },
+                        "city": {
+                            "type": "string"
+                        },
+                        "state": {
+                            "type": "string"
+                        },
+                        "zipcode": {
+                            "type": "string"
+                        }
+                    }
                 },
                 "customerId": {
                     "type": "string"
                 },
                 "companyId": {
-                    "type": "string"
+                    "type": "string",
+                    "required": false
                 }
             }
         },

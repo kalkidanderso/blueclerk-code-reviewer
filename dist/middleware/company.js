@@ -16,7 +16,7 @@ exports.getCompanyId = () => {
         const user = req.user;
         req.otherCompanyId = undefined;
         // check if contractor or organization is making the request
-        if (req.body.companyId != undefined) {
+        if ((req.body.companyId != undefined) || (req.body.companyId !== "")) {
             req.otherCompanyId = req.body.companyId;
         }
         if (user.permissions.role == 3 /* COMPANY_ADMIN */) {

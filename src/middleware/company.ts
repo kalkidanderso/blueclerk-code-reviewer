@@ -14,7 +14,7 @@ export const getCompanyId = () => {
         req.otherCompanyId = undefined
         
         // check if contractor or organization is making the request
-        if(req.body.companyId != undefined) {
+        if((req.body.companyId != undefined) || (req.body.companyId !=="")) {
             req.otherCompanyId = req.body.companyId
         }
     

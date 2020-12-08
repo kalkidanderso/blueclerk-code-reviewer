@@ -300,7 +300,15 @@ exports.updateJob = (req, res) => {
         if (job.scheduledEndTime >= currentTime) {
             finishedOnTime = true;
         }
-        return job.updateOne({ comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime });
+        let data = {};
+        data = { comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime };
+        if (params.jobLocationId) {
+            data.jobLocation = params.jobLocationId;
+        }
+        if (params.jobSiteId) {
+            data.jobSite = params.jobSiteId;
+        }
+        return job.updateOne(data);
     })
         .then((response) => {
         return res.json({ 'status': constants_1.Status.Success, 'message': 'Job updated successfully.' });

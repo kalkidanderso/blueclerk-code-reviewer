@@ -118,7 +118,7 @@ exports.update = (req, res) => {
         }
         else {
             res.status(constants_1.Status.OK);
-            res.send();
+            res.send('job location has been updated successfully.');
         }
     });
 };
