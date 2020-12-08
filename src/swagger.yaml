@@ -3319,7 +3319,6 @@ paths:
           description: Id of a job type selected from the list received by /getJobTypes api
         - name: description
           in: formData
-          # required: true
           type: string
           description: Description of the job 
         - name: employeeType
@@ -3530,6 +3529,14 @@ paths:
           in: formData
           required: true
           type: string
+        - name: jobLocationId
+          in: formData
+          type: string
+          description: 'Id of job location'
+        - name: jobSiteId
+          in: formData
+          type: string
+          description: 'Id of job site'
         - name: companyId
           in: formData
           type: string

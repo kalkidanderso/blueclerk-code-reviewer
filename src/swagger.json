@@ -5412,6 +5412,18 @@
             "type": "string"
           },
           {
+            "name": "jobLocationId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of job location"
+          },
+          {
+            "name": "jobSiteId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of job site"
+          },
+          {
             "name": "companyId",
             "in": "formData",
             "type": "string",
