@@ -360,7 +360,17 @@ export const updateJob = (req: Request, res: Response) => {
             finishedOnTime = true
         }
 
-        return job.updateOne({comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime})
+        let data: any = {}
+        data = {comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime}
+
+        if(params.jobLocationId) {
+            data.jobLocation = params.jobLocationId
+        }
+        if(params.jobSiteId) {
+            data.jobSite = params.jobSiteId
+        }
+
+        return job.updateOne(data)
         
     })
     .then((response: any) => {

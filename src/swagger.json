@@ -5064,14 +5064,12 @@
           {
             "name": "jobLocationId",
             "in": "formData",
-            "required": true,
             "type": "string",
             "description": "Id of job location"
           },
           {
             "name": "jobSiteId",
             "in": "formData",
-            "required": true,
             "type": "string",
             "description": "Id of job site"
           },
