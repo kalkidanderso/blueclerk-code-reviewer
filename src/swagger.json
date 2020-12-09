@@ -7664,6 +7664,45 @@
           }
         ]
       },
+      "get": {
+        "tags": [
+          "Job Site"
+        ],
+        "summary": "Get Job Site by locationId and/or customerId",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "locationId",
+            "type": "string",
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "customerId",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/jobSite"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/jobSite/{id}": {
       "put": {
         "tags": [
           "Job Site"
@@ -7686,6 +7725,34 @@
             "schema": {
               "$ref": "#/definitions/jobSite"
             }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Job Site"
+        ],
+        "summary": "Get Job Site by Id",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "string",
+            "required": true
           }
         ],
         "responses": {

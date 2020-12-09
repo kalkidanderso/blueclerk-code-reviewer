@@ -144,7 +144,7 @@ export const update = async (req: Request, res: Response) => {
             res.send(Messages.InternalServerError)
         } else {
             res.status(Status.OK)
-            res.send()
+            res.send('Job Site has been updated successfully.')
         }
     })
 }

@@ -136,7 +136,7 @@ exports.update = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         }
         else {
             res.status(constants_1.Status.OK);
-            res.send();
+            res.send('Job Site has been updated successfully.');
         }
     });
 });
