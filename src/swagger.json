@@ -148,6 +148,10 @@
     {
       "name": "Quickbooks Integration",
       "description": "For Quickbooks customers integration"
+    },
+    {
+      "name": "Job Site",
+      "description": "For adding, updating and fetching Job Site detail"
     }
   ],
   "paths": {
@@ -7626,8 +7630,80 @@
           }
         ]
       }
-    }
-  },
+    },
+    "/jobSite": {
+      "post": {
+        "tags": [
+          "Job Site"
+        ],
+        "summary": "Create a new job site",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/jobSite"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/jobSite"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Job Site"
+        ],
+        "summary": "Update particular job site detail",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "string",
+            "required": true
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/jobSite"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/jobSite"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+  }
+},
   "securityDefinitions": {
     "Bearer": {
       "type": "apiKey",
@@ -8876,6 +8952,48 @@
         "companyId": {
           "type": "string",
           "required": false
+        }
+      }
+    },
+    "jobSite": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": {
+              "type": "number"
+            },
+            "long": {
+              "type": "number"
+            }
+          }
+        },
+        "address": {
+          "type": "object",
+          "properties": {
+            "street": {
+              "type": "string"
+            },
+            "city": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            },
+            "zipcode": {
+              "type": "string"
+            }
+          }
+        },
+        "locationId": {
+          "type": "string"
+        },
+        "customerId": {
+          "type": "string"
         }
       }
     },
