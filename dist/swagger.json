@@ -2110,43 +2110,36 @@
                     {
                         "name": "street",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "city",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "state",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "zipCode",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "latitude",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "longitude",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "contactName",
                         "in": "formData",
-                        "required": false,
                         "type": "string"
                     },
                     {
@@ -2205,43 +2198,36 @@
                     {
                         "name": "street",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "city",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "state",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "zipCode",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "latitude",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "longitude",
                         "in": "formData",
-                        "required": true,
                         "type": "string"
                     },
                     {
                         "name": "contactName",
                         "in": "formData",
-                        "required": false,
                         "type": "string"
                     },
                     {
