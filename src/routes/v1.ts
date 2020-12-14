@@ -946,6 +946,15 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/getContractorDetail',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Contractor_Detail),
+        validate(Validations.getContractorDetail),
+        companyController.getContractorDetail
+    )
+
+    router.post(
         '/updateCompanyProfile',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),

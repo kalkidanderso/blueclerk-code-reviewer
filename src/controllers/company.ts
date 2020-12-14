@@ -232,6 +232,24 @@ export const getCompanyContracts = (req: Request, res: Response) => {
     )
 }
 
+export const getContractorDetail = (req: Request, res: Response) => {
+    
+    Company.findById(req.body.contractorId,
+        (err: any, company: ICompany) => {
+
+            if (err) {          
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+            
+            if(company == undefined || company == null ) {
+                return res.json({ 'status': Status.Error, 'message': 'No company found.' })
+            }
+
+            return res.json({status: Status.Success, 'details' : company});
+        }
+    )
+}
+
 export const getCustomWorkNumber = (req: Request, res: Response) => {
    
     const params = req.body

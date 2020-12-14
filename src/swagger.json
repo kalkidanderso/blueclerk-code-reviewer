@@ -461,6 +461,58 @@
         ]
       }
     },
+    "/getContractorDetail": {
+      "post": {
+        "tags": [
+          "Vendor"
+        ],
+        "summary": "To get detail of a contractor.",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "contractorId",
+            "in": "formData",
+            "type": "string",
+            "required": true,
+            "description": "Id of contractor for getting detail"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "contractors": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Contractor"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getCompanyContractorActivity": {
       "post": {
         "tags": [

@@ -177,6 +177,17 @@ exports.getCompanyContracts = (req, res) => {
         res.json({ 'status': constants_1.Status.Success, 'contracts': contracts });
     });
 };
+exports.getContractorDetail = (req, res) => {
+    Company_1.Company.findById(req.body.contractorId, (err, company) => {
+        if (err) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
+        if (company == undefined || company == null) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': 'No company found.' });
+        }
+        return res.json({ status: constants_1.Status.Success, 'details': company });
+    });
+};
 exports.getCustomWorkNumber = (req, res) => {
     const params = req.body;
     const admin = req.user;

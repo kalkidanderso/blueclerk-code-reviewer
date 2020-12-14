@@ -118,7 +118,7 @@ export const checkUserPermissions = (permissionId : number) => {
                             })
                     }else{
                         // it is not a contractinig company
-                        if(permissionId == Permissions.Get_Company_Contracts || permissionId == Permissions.Cancel_Finish_Contract ) {
+                        if(permissionId == Permissions.Get_Company_Contracts || permissionId == Permissions.Cancel_Finish_Contract || permissionId == Permissions.Get_Contractor_Detail) {
                             next()
                             return
                         }
