@@ -92,7 +92,7 @@ exports.getOpenServiceTickets = (req, res) => {
         criteria['jobType.title'] = params.jobTypeTitle;
     }
     if (params.dueDate) {
-        criteria.dueDate = { "$gte": new Date(params.dueDate), "$lt": new Date(params.dueDate + ' 23:59:00.000Z') };
+        criteria.$or = [{ dueDate: null }, { dueDate: { "$gte": new Date(params.dueDate), "$lte": new Date(params.dueDate + ' 23:59:00.000Z') } }];
     }
     if (params.ticketId) {
         var ticketId = params.ticketId;

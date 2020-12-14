@@ -116,7 +116,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
             }
 
             if (params.dueDate) {
-                criteria.dueDate = {"$gte": new Date(params.dueDate), "$lt": new Date(params.dueDate+ ' 23:59:00.000Z')}
+                criteria.$or = [{dueDate:null}, {dueDate: {"$gte": new Date(params.dueDate), "$lte": new Date(params.dueDate+ ' 23:59:00.000Z')}}]
             }
 
             if (params.ticketId) {
@@ -130,7 +130,6 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
             if(params.customerNames && params.customerNames.length >0) {
                 criteria['customer.profile.displayName'] = { $in: customerNames } 
             }
-            
             const Query = ServiceTicket.aggregate([
                 { 
                     $lookup: {
