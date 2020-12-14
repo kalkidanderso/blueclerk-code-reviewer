@@ -382,6 +382,12 @@ exports.editJob = (req, res) => {
         if (params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
             job.equipmentId = params.equipmentId;
         }
+        if (params.jobLocationId) {
+            job.jobLocation = params.jobLocationId;
+        }
+        if (params.jobSiteId) {
+            job.jobSite = params.jobSiteId;
+        }
         job.updateOne(job, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });

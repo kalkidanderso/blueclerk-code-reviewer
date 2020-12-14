@@ -5503,6 +5503,18 @@
                         "description": "scheduled end time of job. e.g. 15:05:00"
                     },
                     {
+                        "name": "jobLocationId",
+                        "in": "formData",
+                        "type": "string",
+                        "description": "Id of job location"
+                    },
+                    {
+                        "name": "jobSiteId",
+                        "in": "formData",
+                        "type": "string",
+                        "description": "Id of job site"
+                    },
+                    {
                         "name": "companyId",
                         "in": "formData",
                         "type": "string",

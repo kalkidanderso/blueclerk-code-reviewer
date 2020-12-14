@@ -474,7 +474,12 @@ export const editJob = (req: Request, res: Response) => {
             if(params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
                 job.equipmentId = params.equipmentId
             }
-            
+            if(params.jobLocationId) {
+                job.jobLocation = params.jobLocationId
+            }
+            if(params.jobSiteId) {
+                job.jobSite = params.jobSiteId
+            }
             job.updateOne(
                 job,
                 (err: any, raw: any)=> {
