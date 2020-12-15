@@ -14,34 +14,39 @@ export const createCustomer = (req: Request, res: Response) => {
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-    
-    const customer = new Customer(
-        {
-            info: {
-                email: params.email,
-            },
-            profile:{
-                firstName: params.name,
-                lastName: params.name,
-                displayName: params.name,
-                imageUrl: '',
-            },
-            address: {
-                street: params.street,
-                city: params.city,
-                state: params.state,
-                zipCode: params.zipCode,
-            },
-            contact: {
-                phone: params.phone,
-            },
-            company: companyId,
-            permissions: {
-                role: Role.CUSTOMER,
-                extra: [],
-            },
+    var data: any =  {
+        info: {
+            email: params.email,
+        },
+        profile:{
+            firstName: params.name,
+            lastName: params.name,
+            displayName: params.name,
+            imageUrl: '',
+        },
+        address: {
+            street: params.street,
+            city: params.city,
+            state: params.state,
+            zipCode: params.zipCode,
+        },
+        contact: {
+            phone: params.phone,
+        },
+        company: companyId,
+        permissions: {
+            role: Role.CUSTOMER,
+            extra: [],
+        },
+        contactName: params.contactName
+    };
+
+    if(params.latitude && params.longitude) {
+        data.location = {
+            coordinates: [params.longitude, params.latitude]
         }
-    )
+    }
+    const customer = new Customer(data)
 
     customer.save((err: any) => {
 
@@ -103,7 +108,7 @@ export const getCustomers = (req: Request, res: Response) => {
         })
         
         User.find({_id : {$in: customerIds}},
-            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode contact.phone permissions.role isActive',
+            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance',
             (err: any, users: IUser[]) =>{
             
             if (err) {
@@ -120,31 +125,32 @@ export const getCustomers = (req: Request, res: Response) => {
 export const updateCustomer = (req: Request, res: Response) => {
 
     const params = req.body
-
     Customer.findById(params.customerId)
     .exec((err: any, customer: ICustomer)=>{
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
 
-        customer.updateOne(
-            {
-                'info.email': params.email,
-                'profile.firstName': params.name,
-                'profile.lastName': params.name,
-                'profile.displayName': params.name,
-                'address.street': params.street,
-                'address.city': params.city,
-                'address.state': params.state,
-                'address.zipCode': params.zipCode,
-                'contact.phone': params.phone,
-            },
-            (err: any, raw: any)=> {
-                        
+        var data: any =  {
+            'info.email': params.email,
+            'profile.firstName': params.name,
+            'profile.lastName': params.name,
+            'profile.displayName': params.name,
+            'address.street': params.street,
+            'address.city': params.city,
+            'address.state': params.state,
+            'address.zipCode': params.zipCode,
+            'contact.phone': params.phone,
+            contactName: params.contactName
+        }
+
+        if(params.latitude && params.longitude) {
+            data['location.coordinates'] = [params.longitude, params.latitude]
+        }
+        customer.updateOne(data, (err: any, raw: any)=> {           
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
-        
                 return res.json({'status': Status.Success, 'message': 'Customer updated successfully.'})
             })
     })

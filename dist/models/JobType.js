@@ -18,6 +18,10 @@ const JobTypeSchema = new mongoose_1.Schema({
     createdBy: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Company'
+    },
+    isActive: {
+        type: Boolean,
+        default: true
     }
 });
 exports.JobType = mongoose_1.default.model('JobType', JobTypeSchema);

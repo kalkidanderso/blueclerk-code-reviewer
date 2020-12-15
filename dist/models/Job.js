@@ -9,22 +9,50 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const JobSchema = new mongoose_1.Schema({
-    dateTime: Date,
+    scheduleDate: {
+        type: Date
+    },
+    scheduledStartTime: {
+        type: Date,
+        required: false
+    },
+    scheduledEndTime: {
+        type: Date,
+        required: false
+    },
     jobId: String,
     ticket: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'ServiceTicket',
         required: true
     },
+    equipmentId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'CustomerEquipment',
+        required: false
+    },
     technician: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: false
+    },
+    contractor: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Company',
+        required: false
     },
     customer: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
         required: true
+    },
+    jobLocation: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'JobLocation',
+    },
+    jobSite: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'JobSite',
     },
     type: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -60,14 +88,14 @@ const JobSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false
     },
-    isFixed: {
-        type: Boolean,
-        default: true
-    },
-    hourlyRate: {
-        type: Number,
-        default: 0
-    },
+    // isFixed: {
+    //     type: Boolean,
+    //     default: true
+    // },
+    // hourlyRate:{
+    //     type: Number,
+    //     default: 0
+    // },
     charges: {
         type: Number,
         default: 0
@@ -97,6 +125,10 @@ const JobSchema = new mongoose_1.Schema({
     no_of_equipment_scanned: {
         type: Number,
         default: 0
+    },
+    completeOnTime: {
+        type: Boolean,
+        required: false
     }
 });
 exports.Job = mongoose_1.default.model('Job', JobSchema);

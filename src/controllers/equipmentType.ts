@@ -1,4 +1,4 @@
-import {Request, Response} from 'express'
+import { Request, Response } from 'express'
 import { Status, Role, Messages } from '../common/constants'
 
 import { EquipmentType, IEquipmentType } from '../models/EquipmentType'
@@ -10,8 +10,8 @@ export const createEquipmentType = (req: Request, res: Response) => {
     const params = req.body
     const user = <IUser>req.user
 
-    var userId: any = null
-    var industryId: any = null
+    let userId: any = null
+    let industryId: any = null
 
     if (user.permissions.role == Role.COMPANY_ADMIN) {
         userId = user._id
@@ -21,10 +21,10 @@ export const createEquipmentType = (req: Request, res: Response) => {
         userId = req.companyId
     }
     
-    if(user.permissions.role == Role.GLOBAL_ADMIN) {
-        if(params.industryId == undefined || params.industryId == null) {
+    if (user.permissions.role == Role.GLOBAL_ADMIN) {
+        if (params.industryId == undefined || params.industryId == null) {
             return res.json({ status: Status.Error, message: "Industry Id is required"})
-        }else{
+        } else {
             industryId = params.industryId
         }
     }
@@ -34,7 +34,7 @@ export const createEquipmentType = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
             
-            if(previousEquipmentType != undefined || previousEquipmentType != null) {
+            if (previousEquipmentType != undefined || previousEquipmentType != null) {
                 return res.json({'status': Status.Error, 'message': "Equipment Type already created fot this industry"})
             }
     
@@ -54,13 +54,13 @@ export const createEquipmentType = (req: Request, res: Response) => {
         
             })
         })
-    }else{
+    } else {
         EquipmentType.findOne({title: params.title, createdBy: req.companyId}, (err: any, previousEquipmentType: IEquipmentType) =>{
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
             
-            if(previousEquipmentType != undefined || previousEquipmentType != null) {
+            if (previousEquipmentType != undefined || previousEquipmentType != null) {
                 return res.json({'status': Status.Error, 'message': "Equipment Type already created"})
             }
     
@@ -89,11 +89,11 @@ export const createEquipmentType = (req: Request, res: Response) => {
 export const getEquipmentTypes = (req: Request, res: Response) => {
 
     const user = <IUser>req.user
-    var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
+    let companyId = req.companyId;
+    if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-    if(user.permissions.role == Role.GLOBAL_ADMIN) {
+    if (user.permissions.role == Role.GLOBAL_ADMIN) {
 
         EquipmentType.find({},
             (err: any, types: IEquipmentType[])=>{

@@ -19,7 +19,7 @@ const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const body_parser_1 = __importDefault(require("body-parser"));
 const cors_1 = __importDefault(require("cors"));
 const passport_1 = __importDefault(require("passport"));
-const passport_2 = __importDefault(require("./middlewares/passport"));
+const passport_2 = __importDefault(require("./middleware/passport"));
 const v1_1 = __importDefault(require("./routes/v1"));
 const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 const swaggerDocument = __importStar(require("./swagger.json"));
@@ -32,7 +32,7 @@ dotenv_1.default.config();
 //Database connection
 const { DB_USER, DB_PASS, DB_HOST, DB_NAME } = process.env;
 mongoose_1.default.set('useCreateIndex', true);
-mongoose_1.default.connect(`mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`, { useNewUrlParser: true }, (err) => {
+mongoose_1.default.connect(`mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`, { useNewUrlParser: true, useUnifiedTopology: true }, (err) => {
     if (err)
         return console.log(`Database connection error: ${err}`);
     console.log('Database connected successfully');

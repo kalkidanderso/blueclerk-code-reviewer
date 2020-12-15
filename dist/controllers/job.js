@@ -1,41 +1,83 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../common/constants");
+const aws_1 = require("../services/aws");
 const Job_1 = require("../models/Job");
 const ServiceTicket_1 = require("../models/ServiceTicket");
 const Scan_1 = require("../models/Scan");
-const JobCharges_1 = require("../models/JobCharges");
 const PurchaseOrder_1 = require("../models/PurchaseOrder");
+const Item_1 = require("../models/Item");
 exports.createJob = (req, res) => {
     const params = req.body;
-    ServiceTicket_1.ServiceTicket.findById(params.ticketId, (err, serviceTicket) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+    if (params.employeeType == 1) {
+        if (params.contractorId == undefined || params.contractorId == null) {
+            throw new Error('Contractor Id must be specified when employeeType is contractor');
         }
+    }
+    else if (params.employeeType == 0) {
+        if (params.technicianId == undefined || params.technicianId == null) {
+            throw new Error('technicianId Id must be specified when employeeType is employee');
+        }
+    }
+    ServiceTicket_1.ServiceTicket.findById(params.ticketId)
+        .then((serviceTicket) => {
         if (serviceTicket == undefined || serviceTicket == null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Invalid ticket Id' });
+            throw new Error('Invalid ticket Id');
         }
         if (serviceTicket.status == 1 /* CANCELED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'You can\'t create a job using canceled ticket.' });
+            throw new Error('You can\'t create a job using canceled ticket.');
         }
         if (serviceTicket.jobCreated) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'Job aleady created for this ticket.' });
+            throw new Error('Job aleady created for this ticket.');
         }
-        JobCharges_1.JobCharges.findOne({ 'company': req.companyId, 'jobType': params.jobTypeId }, (err, charges) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        var jobId = serviceTicket.ticketId.replace("Ticket", 'Job');
+        if (params.scheduledStartTime && params.scheduledEndTime) {
+            let newStartTime = null;
+            let newEndTime = null;
+            if (params.scheduledStartTime) {
+                var date = new Date(params.scheduleDate);
+                newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime);
             }
-            if ((charges == undefined || charges == null) && (params.charges == undefined || params.charges == null)) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': 'Job Charges are required' });
+            if (params.scheduledStartTime) {
+                var date = new Date(params.scheduleDate);
+                newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime);
             }
-            var jobId = serviceTicket.ticketId.replace("Ticket", 'Job');
-            _createJob(req, res, jobId, serviceTicket, charges, (req, res, newJob) => {
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
+            return new Promise((resolve, reject) => {
+                Job_1.Job.findOne({ $or: [{ company: req.companyId, technician: params.technicianId, scheduleDate: new Date(params.scheduleDate), scheduledStartTime: { $lte: newStartTime }, scheduledEndTime: { $gte: newStartTime } },
+                        { company: req.companyId, technician: params.technicianId, scheduleDate: new Date(params.scheduleDate), scheduledStartTime: { $lte: newEndTime }, scheduledEndTime: { $gte: newEndTime } }] }, (err, job) => {
+                    if (job != undefined && job != null) {
+                        reject(new Error('Technician is scheduled at time you selected, try scheduling after ' + job.scheduledEndTime));
+                    }
+                    else {
+                        resolve([jobId, serviceTicket]);
+                    }
+                });
             });
+        }
+        else {
+            return [jobId, serviceTicket];
+        }
+    })
+        .then((response) => {
+        const jobId = response[0];
+        const serviceTicket = response[1];
+        _createJob(req, res, jobId, serviceTicket, (req, res, err, newJob) => {
+            if (err != null) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': err });
+            }
+            return res.json({ 'status': constants_1.Status.Success, 'message': 'Job created successfully.' });
         });
+    })
+        .catch((error) => {
+        if (error.message != undefined) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': error.message });
+        }
+        else {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
     });
 };
-const _createJob = (req, res, jobId, serviceTicket, charges, next) => {
+const _createJob = (req, res, jobId, serviceTicket, next) => {
     const params = req.body;
     const user = req.user;
     var companyId = req.companyId;
@@ -43,50 +85,46 @@ const _createJob = (req, res, jobId, serviceTicket, charges, next) => {
         companyId = req.otherCompanyId;
     }
     const job = new Job_1.Job({
-        dateTime: params.dateTime,
+        scheduleDate: params.scheduleDate,
         jobId: jobId,
         ticket: params.ticketId,
         technician: params.technicianId,
+        contractor: params.contractorId,
         customer: params.customerId,
+        jobLocation: params.jobLocationId,
+        jobSite: params.jobSiteId,
         type: params.jobTypeId,
         company: companyId,
         description: params.description,
         createdAt: Date.now(),
         createdBy: user._id,
         employeeType: params.employeeType,
-        isFixed: params.isFixed,
-        salesTax: charges.salesTax
     });
-    if (params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
+    let newStartTime = null;
+    let newEndTime = null;
+    if (params.scheduledStartTime) {
+        var date = new Date(params.scheduleDate);
+        newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime);
+        job.scheduledStartTime = newStartTime;
+    }
+    if (params.scheduledStartTime) {
+        var date = new Date(params.scheduleDate);
+        newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime);
+        job.scheduledEndTime = newEndTime;
+    }
+    if (params.equipmentId) {
         job.equipmentId = params.equipmentId;
-    }
-    if (!params.isFixed) {
-        if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
-            job.hourlyRate = params.charges;
-        }
-        else {
-            job.hourlyRate = charges.charges;
-        }
-    }
-    else {
-        if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
-            job.charges = params.charges;
-        }
-        else {
-            job.charges = charges.charges;
-        }
     }
     job.save((err) => {
         if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            return next(req, res, constants_1.Messages.GenericError, null);
         }
-        serviceTicket.updateOne({ jobCreated: true }, (err, raw) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        serviceTicket.updateOne({ jobCreated: true }, (serviceTicketError, raw) => {
+            if (serviceTicketError) {
+                return next(req, res, constants_1.Messages.GenericError, null);
             }
             _sendJobEmails(req, res, job, (req, res, newJob) => {
-                next(req, res, newJob);
-                return;
+                return next(req, res, null, newJob);
             });
         });
     });
@@ -98,6 +136,10 @@ const _sendJobEmails = (req, res, jobCreated, next) => {
         .populate({
         path: 'technician',
         select: 'profile.displayName auth.email'
+    })
+        .populate({
+        path: 'contractor',
+        select: 'info.companyName info.companyEmail type'
     })
         .populate({
         path: 'customer',
@@ -115,15 +157,28 @@ const _sendJobEmails = (req, res, jobCreated, next) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        var tech = job.technician;
+        var tech;
+        var contractor;
+        var assigneeName;
         var cust = job.customer;
         var type = job.type;
         var creator = job.createdBy;
-        // sendJobEmailToAssignee({to: tech.auth.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime})
-        // sendJobEmailToCustomer({to: cust.info.email, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime})
-        // if(params.employeeType == 1) {
-        //     sendJobEmailToCompanyAdmin({to: company.info.companyEmail, assigneeName: tech.profile.displayName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.dateTime, vendorName: creator.profile.displayName})
-        // }
+        if (params.technicianId) {
+            tech = job.technician;
+            assigneeName = tech.profile.displayName;
+        }
+        if (params.contractorId) {
+            contractor = job.contractor;
+            assigneeName = contractor.info.companyName;
+        }
+        if (params.employeeType == 0) {
+            aws_1.sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate });
+        }
+        aws_1.sendJobEmailToCustomer({ to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate });
+        if (params.employeeType == 1) {
+            aws_1.sendJobEmailToAssignee({ to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate });
+            aws_1.sendJobEmailToCompanyAdmin({ to: company.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate, vendorName: creator.profile.displayName });
+        }
         next(req, res, jobCreated);
         return;
     });
@@ -143,8 +198,12 @@ exports.getJobs = (req, res) => {
         select: 'profile.displayName'
     })
         .populate({
+        path: 'contractor',
+        select: 'info.companyName info.companyEmail type'
+    })
+        .populate({
         path: 'customer',
-        select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode'
+        select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
     })
         .populate({
         path: 'type',
@@ -177,7 +236,7 @@ exports.getJobsByTechnicianId = (req, res) => {
     })
         .populate({
         path: 'customer',
-        select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode'
+        select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
     })
         .populate({
         path: 'type',
@@ -204,35 +263,63 @@ exports.updateJob = (req, res) => {
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
     }
-    Job_1.Job.findOne({ _id: params.jobId, company: companyId }, (err, job) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
+    Job_1.Job.findOne({ _id: params.jobId, company: companyId })
+        .then((job) => {
         if (job == undefined || job == null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid job id" });
+            throw new Error("Invalid job id");
         }
         if (job.status == 2 /* FINISHED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': "Edit job is not allowed once it is finished" });
+            throw new Error("Update job is not allowed once it is finished");
         }
         if (job.status == 3 /* CANCELED */) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': "Edit job is not allowed once it is canceled" });
+            throw new Error("Update job is not allowed once it is canceled");
         }
+        const itemPromise = Item_1.Item.findOne({ jobType: job.type });
+        return Promise.all([job, itemPromise]);
+    })
+        .then((result) => {
+        const job = result[0];
+        const item = result[1];
         let timeSpent = 0;
-        let newcharges = job.charges;
-        if (params.status == 2 && !job.isFixed) {
-            let starting = new Date(job.startTime);
-            let ending = Date.now();
-            let diffMs = (ending - starting);
-            let interval = 15 * 60 * 1000;
-            timeSpent = ((Math.ceil(diffMs / interval) * interval) / 60000) / 60;
-            newcharges = job.hourlyRate * timeSpent;
-        }
-        job.updateOne({ comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges }, (err, raw) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        let newcharges = 0;
+        if (item != null && item.charges > 0) {
+            if (params.status == 2 && !item.isFixed) {
+                let starting = new Date(job.startTime);
+                let ending = Date.now();
+                let diffMs = (ending - starting);
+                let interval = 15 * 60 * 1000;
+                timeSpent = ((Math.ceil(diffMs / interval) * interval) / 60000) / 60;
+                newcharges = item.charges * timeSpent;
             }
-            return res.json({ 'status': constants_1.Status.Success, 'message': 'Job updated successfully.' });
-        });
+            else if (params.status == 2 && item.isFixed) {
+                newcharges = item.charges;
+            }
+        }
+        let finishedOnTime = false;
+        let currentTime = Date.now();
+        if (job.scheduledEndTime >= currentTime) {
+            finishedOnTime = true;
+        }
+        let data = {};
+        data = { comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime };
+        if (params.jobLocationId) {
+            data.jobLocation = params.jobLocationId;
+        }
+        if (params.jobSiteId) {
+            data.jobSite = params.jobSiteId;
+        }
+        return job.updateOne(data);
+    })
+        .then((response) => {
+        return res.json({ 'status': constants_1.Status.Success, 'message': 'Job updated successfully.' });
+    })
+        .catch((err) => {
+        if (err.message != undefined) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': err.message });
+        }
+        else {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
     });
 };
 exports.startJob = (req, res) => {
@@ -278,25 +365,34 @@ exports.editJob = (req, res) => {
         if (job.status == 3 /* CANCELED */ || job.status == 2 /* FINISHED */) {
             return res.json({ 'status': constants_1.Status.Error, 'message': "Edit job is not allowed onece it is cancelled or finished" });
         }
-        JobCharges_1.JobCharges.findOne({ 'company': req.companyId, 'jobType': job.type }, (err, charges) => {
+        job.technician = params.technicianId;
+        job.scheduleDate = params.scheduleDate;
+        let newStartTime = null;
+        let newEndTime = null;
+        if (params.scheduledStartTime) {
+            var date = new Date(params.scheduleDate);
+            newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime);
+            job.scheduledStartTime = newStartTime;
+        }
+        if (params.scheduledStartTime) {
+            var date = new Date(params.scheduleDate);
+            newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime);
+            job.scheduledEndTime = newEndTime;
+        }
+        if (params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
+            job.equipmentId = params.equipmentId;
+        }
+        if (params.jobLocationId) {
+            job.jobLocation = params.jobLocationId;
+        }
+        if (params.jobSiteId) {
+            job.jobSite = params.jobSiteId;
+        }
+        job.updateOne(job, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            if ((charges == undefined || charges == null) && (params.charges == undefined || params.charges == null)) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': 'Job Charges are required' });
-            }
-            if (params.charges != undefined && params.charges != null) {
-                job.charges = params.charges;
-            }
-            job.isFixed = params.isFixed;
-            job.technician = params.technicianId;
-            job.dateTime = params.dateTime;
-            job.updateOne(job, (err, raw) => {
-                if (err) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                }
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Job edited successfully.' });
-            });
+            return res.json({ 'status': constants_1.Status.Success, 'message': 'Job edited successfully.' });
         });
     });
 };
@@ -377,7 +473,7 @@ exports.getJobReport = (req, res) => {
     })
         .populate({
         path: 'customer',
-        select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone'
+        select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName'
     })
         .populate({
         path: 'type',
@@ -448,7 +544,7 @@ exports.getTodaysJobsByTechnicianId = (req, res) => {
     })
         .populate({
         path: 'customer',
-        select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode'
+        select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
     })
         .populate({
         path: 'type',
@@ -476,49 +572,62 @@ exports.updateJobTime = (req, res) => {
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
     }
-    Job_1.Job.findOne({ _id: params.jobId, company: companyId }, (err, job) => {
-        if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-        }
+    Job_1.Job.findOne({ _id: params.jobId, company: companyId })
+        .then((job) => {
         if (job == undefined || job == null) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': "Invalid job id" });
+            throw new Error("Invalid job id");
         }
-        JobCharges_1.JobCharges.findOne({ 'company': req.companyId, 'jobType': job.type }, (err, charges) => {
-            if (err) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-            }
-            if ((params.startTime == undefined || params.startTime == null) && (params.endTime == undefined || params.endTime == null)) {
-                return res.json({ 'status': constants_1.Status.Error, 'message': 'Start time or end time is required' });
-            }
-            let timeSpent = 0;
-            let newcharges = job.charges;
-            if (job.status == 2 && !job.isFixed) {
-                let starting = new Date(job.startTime);
-                let ending = Date.now();
+        if (job.status == 2 /* FINISHED */) {
+            throw new Error("Edit job is not allowed once it is finished");
+        }
+        if (job.status == 3 /* CANCELED */) {
+            throw new Error("Edit job is not allowed once it is canceled");
+        }
+        if ((params.startTime == undefined || params.startTime == null) && (params.endTime == undefined || params.endTime == null)) {
+            throw new Error('Start time or end time is required');
+        }
+        const itemPromise = Item_1.Item.findOne({ jobType: job.type });
+        return Promise.all([job, itemPromise]);
+    })
+        .then((result) => {
+        const job = result[0];
+        const item = result[1];
+        let timeSpent = 0;
+        let newcharges = 0;
+        let startTime = job.startTime;
+        let endTime = job.startTime;
+        if (params.startTime != undefined && params.startTime != null && params.startTime != '""') {
+            startTime = params.startTime;
+        }
+        if (params.endTime != undefined && params.endTime != null && params.endTime != '""') {
+            endTime = params.endTime;
+        }
+        if (item != null && item.charges > 0) {
+            if (params.status == 2 && !item.isFixed) {
+                let starting = new Date(startTime);
+                let ending = new Date(endTime);
                 let diffMs = (ending - starting);
                 let interval = 15 * 60 * 1000;
                 timeSpent = ((Math.ceil(diffMs / interval) * interval) / 60000) / 60;
-                newcharges = job.hourlyRate * timeSpent;
-                job.timeSpent = timeSpent;
-                job.charges = newcharges;
+                newcharges = item.charges * timeSpent;
             }
-            if (params.startTime != undefined && params.startTime != null && params.startTime != '""') {
-                job.startTime = params.startTime;
-                job.timeUpdatedBy = user._id;
-                job.timeUpdatedAt = new Date();
+            else if (params.status == 2 && item.isFixed) {
+                newcharges = item.charges;
             }
-            if (params.endTime != undefined && params.endTime != null && params.endTime != '""') {
-                job.endTime = params.endTime;
-                job.timeUpdatedBy = user._id;
-                job.timeUpdatedAt = new Date();
-            }
-            job.updateOne(job, (err, raw) => {
-                if (err) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
-                }
-                return res.json({ 'status': constants_1.Status.Success, 'message': 'Job time updated successfully.' });
-            });
-        });
+        }
+        const user = req.user;
+        return job.updateOne({ startTime: startTime, endTime: endTime, timeSpent: timeSpent, charges: newcharges, timeUpdatedBy: user._id, timeUpdatedAt: Date.now() });
+    })
+        .then((response) => {
+        return res.json({ 'status': constants_1.Status.Success, 'message': 'Job time updated successfully.' });
+    })
+        .catch((err) => {
+        if (err.message != undefined) {
+            return res.json({ 'status': constants_1.Status.Error, 'message': err.message });
+        }
+        else {
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+        }
     });
 };
 //# sourceMappingURL=job.js.map

@@ -5,7 +5,7 @@ export interface IJobType extends Document {
     title: string
     industry: string
     createdBy: Schema.Types.ObjectId
-
+    isActive: boolean
 }
 
 const JobTypeSchema = new Schema({
@@ -19,6 +19,10 @@ const JobTypeSchema = new Schema({
     createdBy: {
         type: Schema.Types.ObjectId,
         ref: 'Company'
+    },
+    isActive:{
+        type: Boolean,
+        default: true
     }
 
 })

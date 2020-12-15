@@ -17,7 +17,12 @@ const ScanSchema = new mongoose_1.Schema({
     equipment: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'CustomerEquipment',
-        required: true
+        required: false
+    },
+    tag: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Tag',
+        required: false
     },
     user: {
         type: mongoose_1.Schema.Types.ObjectId,

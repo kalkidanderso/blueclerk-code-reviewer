@@ -21,21 +21,24 @@ export const createServiceTicket = (req: Request, res: Response) => {
         ticketId = 'Ticket '+company.prefix+'-'+(company.currentJobId+1)
     }
 
+    var dueDate = params.dueDate ? new Date(params.dueDate) : null
+
     const serviceTicket = new ServiceTicket({
         createdAt: Date.now(),
-        scheduleDateTime: params.scheduleDateTime,
+        dueDate: dueDate,
         customer: params.customerId,
         createdBy: user._id,
         company: companyId,
         note: params.note,
         technician: params.technicianId,
-        ticketId: ticketId
+        ticketId: ticketId,
+        jobLocation: params.jobLocationId,
+        jobSite: params.jobSiteId,
+        jobType: params.jobTypeId,
     })
 
     serviceTicket.save((err: any) => {
-
         if (err) {
-            
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
         company.updateOne({currentJobId: company.currentJobId+1 })
@@ -60,7 +63,7 @@ export const getServiceTickets = (req: Request, res: Response) => {
     ServiceTicket.find({ company: companyId })
         .populate({
             path: 'customer',
-            select: 'info.email profile.displayName',
+            select: 'info.email profile.displayName contactName',
         })
         .populate({
             path: 'createdBy',
@@ -68,6 +71,10 @@ export const getServiceTickets = (req: Request, res: Response) => {
         })
         .populate({
             path: 'technician',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'editedBy',
             select: 'profile.displayName'
         })
         .exec((err: any, serviceTickets: IServiceTicket[])=>{
@@ -80,6 +87,133 @@ export const getServiceTickets = (req: Request, res: Response) => {
         }
     )
 
+}
+
+export const getOpenServiceTickets = (req: Request, res: Response) => {
+
+            const params = req.body
+            const pageSize = +req.query.pagesize;
+            const currentPage = +req.query.page;
+            var companyId = req.companyId;
+            var serviceTickets : any = [];
+            var totalCount : number = 0;
+            var customerNames: any;
+
+            if (req.otherCompanyId != undefined) {
+                companyId = req.otherCompanyId
+            }
+
+            if (params.customerNames) {
+                customerNames = params.customerNames.split(',')
+            }
+
+            var criteria : any = {
+                company: companyId,
+                jobCreated: false
+            };
+            if (params.jobTypeTitle) {
+                criteria['jobType.title'] = params.jobTypeTitle
+            }
+
+            if (params.dueDate) {
+                criteria.$or = [{dueDate:null}, {dueDate: {"$gte": new Date(params.dueDate), "$lte": new Date(params.dueDate+ ' 23:59:00.000Z')}}]
+            }
+
+            if (params.ticketId) {
+                var ticketId = params.ticketId;
+                if (ticketId.match(/\d/g)) { 
+                    ticketId = 'Ticket '+ticketId.match(/\d/g).join("");
+                }
+                criteria.ticketId = { $regex: ticketId, $options: 'i'}
+            }
+
+            if(params.customerNames && params.customerNames.length >0) {
+                criteria['customer.profile.displayName'] = { $in: customerNames } 
+            }
+            
+            const Query = ServiceTicket.aggregate([
+                { 
+                    $lookup: {
+                        from: 'users',
+                        localField: "customer",
+                        foreignField: "_id",
+                        as: "customer"
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'jobsites',
+                        localField: 'jobSite',
+                        foreignField: '_id',
+                        as: 'jobSite'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'joblocations',
+                        localField: 'jobLocation',
+                        foreignField: '_id',
+                        as: 'jobLocation'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'jobtypes',
+                        localField: 'jobType',
+                        foreignField: '_id',
+                        as: 'jobType'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'companies',
+                        localField: 'company',
+                        foreignField: '_id',
+                        as: 'companyInfo'
+                    }
+                },
+                { "$match": criteria },
+                {
+                    $project: {
+                      "_id": 1,
+                      "customer": {$arrayElemAt:["$customer",0]},
+                      "jobSite": {$arrayElemAt:["$jobSite",0]},
+                      "jobLocation": {$arrayElemAt:["$jobLocation",0]},
+                      "jobType": {$arrayElemAt:["$jobType",0]},
+                      "company.info":{$arrayElemAt:["$companyInfo.info",0]}, 
+                      "jobCreated" : 1,
+                      "dueDate" : 1,
+                      "note": 1,
+                      "ticketId": 1,
+                      "createdAt" : 1
+                    }
+                },
+                { 
+                  $group: {
+                    _id: null,
+                    total: { $sum: 1 },
+                    serviceTickets: {
+                      $push: '$$ROOT'
+                    }
+                  }
+                },
+                {
+                    $project: {
+                      total:1,
+                      serviceTickets: {$slice: ['$serviceTickets', pageSize * (currentPage - 1), pageSize]}  
+                    }
+                },
+              ]);
+
+            Query.then((documents: any[]) => {
+                if (documents.length > 0) {
+                    serviceTickets = documents[0].serviceTickets;
+                    totalCount = documents[0].total
+                }
+                return res.json({'status': Status.Success, 'serviceTickets': serviceTickets , 'total': totalCount })    
+              }).catch((err:any) => {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            });
 }
 
 
@@ -103,9 +237,23 @@ export const updateServiceTicket = (req: Request, res: Response) => {
             if (serviceTicket.status == ServiceTicketStatus.CANCELED) {
                 return res.json({'status': Status.Error, 'message': 'Ticket is canceled'})
             }
-           
+            let dueDate: any = serviceTicket.dueDate
+            if(params.dueDate) {
+                dueDate = new Date(params.dueDate)
+            }
+
+            let jobLocationId: any = serviceTicket.jobLocation
+                jobLocationId = params.jobLocationId
+ 
+
+            let jobSiteId: any = serviceTicket.jobSite
+                jobSiteId = params.jobSiteId
+
+            let jobTypeId: any = serviceTicket.jobType
+                jobTypeId = params.jobTypeId
+            
             serviceTicket.updateOne(
-                {note: params.note},
+                {note: params.note, dueDate: dueDate, jobLocation: jobLocationId, jobSite: jobSiteId, jobType: jobTypeId},
                 (err: any, raw: any)=> {
                     
                     if (err) {
@@ -170,10 +318,14 @@ export const getServiceTicketDetail = (req: Request, res: Response) => {
         { _id: params.ticketId , company: companyId})
         .populate({
             path: 'customer',
-            select: 'info.email profile.displayName'
+            select: 'info.email profile.displayName contactName'
         })
         .populate({
             path: 'createdBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'technician',
             select: 'profile.displayName'
         })
         .populate({

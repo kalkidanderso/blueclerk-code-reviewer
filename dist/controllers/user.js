@@ -736,6 +736,7 @@ exports.startContract = (req, res) => {
                 }
                 // ToDo send email to contractor for contract started
                 aws_1.sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName });
+                aws_1.sendContractStartEmailToCompany({ to: req.company.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName });
                 return res.json({ 'status': constants_1.Status.Success, 'message': 'Vendor Added.' });
             });
         });
@@ -826,8 +827,23 @@ exports.acceptRejectContract = (req, res) => {
                     if (err) {
                         return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                     }
-                    aws_1.sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyEmail, company: company.info.companyName, contractStatus: params.status + 'ed' });
-                    return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract ' + params.status + 'ed.' });
+                    aws_1.sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' });
+                    aws_1.sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' });
+                    var amount = 0;
+                    const now = new Date();
+                    const daysRemaining = now.getDate();
+                    const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                    const daysToCharge = daysInCurrentMonth - daysRemaining + 1;
+                    const perday = 2 / daysInCurrentMonth;
+                    amount = amount + (perday * daysToCharge);
+                    if (company.stripeId != undefined || company.stripeId != '') {
+                        stripe_1.chargeSubscription(amount, company.stripeId, (status, charge, message) => {
+                            return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract ' + params.status + 'ed.' });
+                        });
+                    }
+                    else {
+                        return res.json({ 'status': constants_1.Status.Success, 'message': 'Contract ' + params.status + 'ed.' });
+                    }
                 });
             });
         });

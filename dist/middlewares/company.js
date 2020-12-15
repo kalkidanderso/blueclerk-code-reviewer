@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const Company_1 = require("../models/Company");
 const constants_1 = require("../common/constants");
-exports.getCompnayId = () => {
+exports.getCompanyId = () => {
     return (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         const user = req.user;
         req.otherCompanyId = undefined;
@@ -25,15 +25,18 @@ exports.getCompnayId = () => {
                 if (err) {
                     return res.json({ 'status': constants_1.Status.Error, 'message': "Unable to find your company. Contact BlueClerk admin for more." });
                 }
-                if (company.type == 1 && (req.body.companyId == undefined || req.body.companyId == null)) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': 'Company id is required.' });
-                }
-                else {
-                    req.company = company;
-                    req.companyId = company._id;
-                    next();
-                    return;
-                }
+                // if(company.type == 1 && (req.body.companyId == undefined || req.body.companyId == null) ){
+                //     return res.json({'status': Status.Error, 'message': 'Company id is required.'})
+                // }else{
+                //     req.company = company
+                //     req.companyId = company._id
+                //     next()
+                //     return
+                // }
+                req.company = company;
+                req.companyId = company._id;
+                next();
+                return;
             });
         }
         else if (user.permissions.role != 4 /* GLOBAL_ADMIN */) {

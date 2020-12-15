@@ -55,32 +55,34 @@ export const checkUserPermissions = (permissionId : number) => {
     
                     // check other contractor permissions
 
-                    Contract.findOne( {company: req.otherCompanyId, contractor: company._id},
-                        (err: any, contract: IContract)=>{
-                            if (err) {
-                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                            }
+                    // Contract.findOne( {company: req.otherCompanyId, contractor: company._id},
+                    //     (err: any, contract: IContract)=>{
+                    //         if (err) {
+                    //             return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    //         }
             
-                            if (contract == undefined || contract == null) {
-                                return res.json({'status': Status.Error, 'message': 'No Contract found.'})
-                            }
+                    //         if (contract == undefined || contract == null) {
+                    //             return res.json({'status': Status.Error, 'message': 'No Contract found.'})
+                    //         }
             
-                            if (contract.status == ContractStatus.CANCELED || contract.status == ContractStatus.FINISHED) {
-                                return res.json({'status': Status.Error, 'message': 'Your contract is no more valid.'})
-                            }
+                    //         if (contract.status == ContractStatus.CANCELED || contract.status == ContractStatus.FINISHED) {
+                    //             return res.json({'status': Status.Error, 'message': 'Your contract is no more valid.'})
+                    //         }
                             
-                            if (contract.extraPermissions == undefined) {
-                                return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
-                            }
+                    //         if (contract.extraPermissions == undefined) {
+                    //             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
+                    //         }
             
-                            if (!contract.extraPermissions.includes(permissionId)) {
-                                return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
-                            }
+                    //         if (!contract.extraPermissions.includes(permissionId)) {
+                    //             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
+                    //         }
             
-                            next()
-                            return
-                        }
-                    )
+                    //         next()
+                    //         return
+                    //     }
+                    // )
+                    next()
+                    return
     
     
                 } else {

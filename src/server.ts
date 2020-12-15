@@ -7,7 +7,7 @@ import cookieParser from 'cookie-parser'
 import bodyParser from 'body-parser'
 import cors from 'cors'
 import passport from 'passport'
-import passportMiddleWare from './middlewares/passport'
+import passportMiddleWare from './middleware/passport'
 import { MongoError } from 'mongodb'
 import routesV1 from './routes/v1'
 import swaggerUi from 'swagger-ui-express'
@@ -24,7 +24,7 @@ const { DB_USER, DB_PASS, DB_HOST, DB_NAME } = process.env
 mongoose.set('useCreateIndex', true)
 mongoose.connect(
   `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`,
-  {useNewUrlParser: true},
+  {useNewUrlParser: true, useUnifiedTopology: true},
   (err: MongoError) => {
 
     if (err) return console.log(`Database connection error: ${err}`)

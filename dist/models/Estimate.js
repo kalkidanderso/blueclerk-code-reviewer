@@ -9,6 +9,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const EstimateSchema = new mongoose_1.Schema({
+    estimateId: {
+        type: String,
+    },
     items: [{
             part: {
                 type: mongoose_1.Schema.Types.ObjectId,
@@ -31,6 +34,14 @@ const EstimateSchema = new mongoose_1.Schema({
                 type: Number,
                 required: false
             },
+            tax: {
+                type: Number,
+                default: 0
+            },
+            taxPercentage: {
+                type: Number,
+                default: 0
+            },
             price: {
                 type: Number,
                 required: false
@@ -38,17 +49,23 @@ const EstimateSchema = new mongoose_1.Schema({
         }],
     note: {
         type: String,
-        required: true
+        required: false
     },
     total: {
-        type: Number
+        type: Number,
+        default: 0
     },
     // 0 => pending
     // 1 => approved by customer
     // 2 => declined/rejected by customer
     status: {
         type: Number,
-        default: 0
+        default: 1
+    },
+    purchaseOrder: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'PurchaseOrder',
+        required: false
     },
     customer: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -67,6 +84,14 @@ const EstimateSchema = new mongoose_1.Schema({
     },
     createdAt: {
         type: Date
+    },
+    invoiceCreated: {
+        type: Boolean,
+        default: false
+    },
+    POConverted: {
+        type: Boolean,
+        default: false
     }
 });
 exports.Estimate = mongoose_1.default.model('Estimate', EstimateSchema);

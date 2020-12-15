@@ -1,23 +1,36 @@
 import mongoose, { Document, Schema } from 'mongoose'
 
 export interface IInvoice extends Document {
+    invoice: any[]
     invoiceId: string
     invoiceType: number
     job: Schema.Types.ObjectId
     purchaseOrder: Schema.Types.ObjectId
+    estimate: Schema.Types.ObjectId
     jobPurchaseOrders: [Schema.Types.ObjectId]
     customer: Schema.Types.ObjectId
     company: Schema.Types.ObjectId
-    charges: number
     note : String
-    total: number
+    charges: number
+    shippingCost: number
     tax: number
+    total: number
     taxPercentage: number
     createdBy: Schema.Types.ObjectId
     createdAt: Date,
     timeSpent: number
     isFixed: boolean
     hourlyRate: number
+    items: [{
+        item: Schema.Types.ObjectId
+        name: String
+        description: String
+        price: number
+        quantity: number
+        tax: number
+        subTotal: number
+    }],
+    paid: boolean
 }
 
 const InvoiceSchema = new Schema({
@@ -37,6 +50,11 @@ const InvoiceSchema = new Schema({
     purchaseOrder :{
         type: Schema.Types.ObjectId,
         ref: 'PurchaseOrder',
+        required: false
+    },
+    estimate :{
+        type: Schema.Types.ObjectId,
+        ref: 'Estimate',
         required: false
     },
     jobPurchaseOrders :[{
@@ -64,6 +82,10 @@ const InvoiceSchema = new Schema({
     },
     total: {
         type: Number
+    },
+    shippingCost: {
+        type: Number,
+        default: 0
     },
     tax: {
         type: Number,
@@ -94,6 +116,41 @@ const InvoiceSchema = new Schema({
         type: Number,
         default: 0
     },
+    items: [{
+        item: {
+            type: Schema.Types.ObjectId,
+            ref: 'Item',
+            required: false
+        },
+        name: {
+            type: String,
+            required: false
+        },
+        description: {
+            type: String,
+            required: false
+        },
+        price: {
+            type: Number,
+            required: false
+        },
+        quantity: {
+            type: Number,
+            required: false
+        },
+        tax: {
+            type: Number,
+            required: false
+        },
+        subTotal: {
+            type: Number,
+            required: false
+        },
+    }],
+    paid:{
+        type: Boolean,
+        default: false
+    }
 })
 
 export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema)

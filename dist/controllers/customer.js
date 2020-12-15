@@ -10,7 +10,7 @@ exports.createCustomer = (req, res) => {
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId;
     }
-    const customer = new Customer_1.Customer({
+    var data = {
         info: {
             email: params.email,
         },
@@ -34,7 +34,14 @@ exports.createCustomer = (req, res) => {
             role: 5 /* CUSTOMER */,
             extra: [],
         },
-    });
+        contactName: params.contactName
+    };
+    if (params.latitude && params.longitude) {
+        data.location = {
+            coordinates: [params.longitude, params.latitude]
+        };
+    }
+    const customer = new Customer_1.Customer(data);
     customer.save((err) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error': err });
@@ -83,7 +90,7 @@ exports.getCustomers = (req, res) => {
         const customerIds = companyCustomers.map((obj) => {
             return obj.customer;
         });
-        User_1.User.find({ _id: { $in: customerIds } }, 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode contact.phone permissions.role isActive', (err, users) => {
+        User_1.User.find({ _id: { $in: customerIds } }, 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance', (err, users) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
@@ -98,7 +105,7 @@ exports.updateCustomer = (req, res) => {
         if (err) {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        customer.updateOne({
+        var data = {
             'info.email': params.email,
             'profile.firstName': params.name,
             'profile.lastName': params.name,
@@ -108,7 +115,12 @@ exports.updateCustomer = (req, res) => {
             'address.state': params.state,
             'address.zipCode': params.zipCode,
             'contact.phone': params.phone,
-        }, (err, raw) => {
+            contactName: params.contactName
+        };
+        if (params.latitude && params.longitude) {
+            data['location.coordinates'] = [params.longitude, params.latitude];
+        }
+        customer.updateOne(data, (err, raw) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }

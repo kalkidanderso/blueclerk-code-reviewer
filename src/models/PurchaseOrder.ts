@@ -1,25 +1,34 @@
 import mongoose, { Document, Schema } from 'mongoose'
 
 export interface IPurchaseOrder extends Document {
+    purchaseOrderId: string
     items: [{
         part: Schema.Types.ObjectId
         name: String
         ItemCode: String
-        quantity: Number
-        cost: Number
-        price: Number
+        quantity: number
+        tax: number
+        taxPercentage:number
+        cost: number
+        price: number
     }]
-    status: Number
+    equipment: Schema.Types.ObjectId
+    status: number
     estimate: Schema.Types.ObjectId
     note: string
-    total: Number
+    total: number
     job: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId
     company: Schema.Types.ObjectId
     createdBy: Schema.Types.ObjectId
     createdAt: Date
+    invoiceCreated: boolean
+    estimateConverted: boolean
 }
 const PurcahseOrderSchema = new Schema({
+    purchaseOrderId: {
+        type: String
+    },
     items: [{
         part: {
             type: Schema.Types.ObjectId,
@@ -42,6 +51,14 @@ const PurcahseOrderSchema = new Schema({
             type: Number,
             required: false
         },
+        tax: {
+            type: Number,
+            default: 0
+        },
+        taxPercentage: {
+            type: Number,
+            default: 0
+        },
         price: {
             type: Number,
             required: false
@@ -58,12 +75,17 @@ const PurcahseOrderSchema = new Schema({
         ref: 'Estimate',
         required: false
     },
+    equipment:{
+        type: Schema.Types.ObjectId,
+        ref: 'CustomerEquipment',
+        required: false
+    },
     // 0 => pending
     // 1 => approved by customer
     // 2 => declined/rejected by customer
     status: {
         type: Number,
-        default: 0
+        default: 1
     },
     job: {
         type: Schema.Types.ObjectId,
@@ -87,6 +109,14 @@ const PurcahseOrderSchema = new Schema({
     },
     createdAt: {
         type: Date
+    },
+    invoiceCreated:{
+        type: Boolean,
+        default: false
+    },
+    estimateConverted: {
+        type: Boolean,
+        default: false
     }
 })
 

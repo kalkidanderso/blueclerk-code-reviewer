@@ -1,5 +1,5 @@
 import {Request, Response, NextFunction} from 'express'
-import {check, validationResult, ValidationChain} from 'express-validator'
+import {check, validationResult, ValidationChain, body} from 'express-validator'
 import {Status, Messages} from '../common/constants'
 
 export const validate = (validations: ValidationChain[]) => {
@@ -8,7 +8,7 @@ export const validate = (validations: ValidationChain[]) => {
 
       await Promise.all(validations.map(validation => validation.run(req)))
   
-      const errors = validationResult(req)
+      const errors:any = validationResult(req)
       if (errors.isEmpty()) {
         return next()
       }
@@ -78,9 +78,9 @@ export const Validations = {
   createEquipmentBrand: [check('title').exists()],
 
   //Customers
-  createCustomer: [check('name').exists()],
+  createCustomer: [check('name').exists(), check('email').exists()],
   
-  updateCustomer: [check('customerId').exists(), check('name').exists()],
+  updateCustomer: [check('customerId').exists(), check('email').exists(), check('name').exists()],
   
   getCustomers: [check('includeActive').exists(), check('includeNonActive').exists()],
 
@@ -99,15 +99,19 @@ export const Validations = {
 
   //Job Type
   createJobType: [check('title').exists()],
+  
+  editJobType: [check('jobTypeId').exists(), check('title').exists()],
+  
+  changeJobTypeStatus: [check('jobTypeId').exists(), check('status').exists()],
 
   //Job
-  createJob: [check('dateTime').exists(), check('technicianId').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric(), check('isFixed').exists()],
+  createJob: [check('scheduleDate').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric()],
 
   generalJob: [check('jobId').exists()],
 
   updateJob: [check('status').exists(), check('comment').exists(), check('jobId').exists()],
 
-  editJob: [check('jobId').exists(), check('technicianId').exists(), check('dateTime').exists(), check('isFixed').exists()],
+  editJob: [check('jobId').exists(), check('technicianId').exists(), check('scheduleDate').exists()],
   
   updateJobTime: [check('jobId').exists()],
 
@@ -189,9 +193,11 @@ export const Validations = {
   
   createPurchaseOrder: [check('customer').exists(), check('note').exists()],
   
-  udpatePurchaseOrder: [check('purchaseOrderId').exists(), check('total').exists(), check('note').exists(), check('items').exists()],
+  udpatePurchaseOrder: [check('purchaseOrderId').exists(), check('total').exists(), check('note').exists()],
   
   udpatePurchaseOrderStatus: [check('purchaseOrderId').exists(), check('status').exists()],
+  
+  getEquipmentPO: [check('equipmentId').exists()],
   
   createPurchaseOrderEstimate: [check('estimateId').exists()],
 
@@ -199,8 +205,23 @@ export const Validations = {
   
   udpateEstimateStatus: [check('estimateId').exists()],
 
-  createEstimate:  [check('total').exists(), check('customer').exists(), check('note').exists()],
+  cancelEstimate: [check('estimateId').exists()],
 
-  removeEstimate: [check('estimateId').exists()],
+  updateItem: [check('itemId').exists(), check('charges').exists(), check('isFixed').exists(), check('tax').exists()],
   
+  getInvoiceByCustomer: [check('customer').exists()],
+  
+  recordPayment: [check('amount').exists(), check('referenceNumber').exists(), check('paidAt').exists(), check('customer').exists(), check('invoices').exists()],
+  
+  updatePayment: [check('paymentId').exists(), check('amount').exists(), check('referenceNumber').exists(), check('paidAt').exists(), check('invoices').exists()],
+  
+  getPaymentsByCustomer: [check('customer').exists()],
+
+  codeLocationTag: [check('latitude').exists(), check('longitude').exists(), check('nfcTag').exists(), check('customer').exists()],
+  
+  updateLocationTag: [check('nfcTag').exists(), check('latitude').exists(), check('longitude').exists(), check('nfcTag').exists()],
+  
+  getLocationTagJobs: [check('nfcTag').exists()],
+
+  getOpenServiceTickets: [check('page').exists().isNumeric(), check('pagesize').exists().isNumeric(), check('customerNames').optional(), check('jobTypeTitle').optional(), check('dueDate').optional(), check('ticketId').optional()]
 }

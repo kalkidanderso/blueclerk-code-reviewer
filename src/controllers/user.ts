@@ -1,6 +1,6 @@
 import { Request, Response, response } from 'express'
 import { Status, Role, Messages, UserPermissions, ContractStatus, Permissions } from '../common/constants'
-import { sendEmail, sendEmployeeEmail, sendPasswordEmail, sendInvitationToContractor, sendContractStartEmail, sendContractStatusChangeEmailToCompany, sendContractStatusChangeEmailToContractor, sendAccountDowngradeEmail } from '../services/aws'
+import { sendEmail, sendEmployeeEmail, sendPasswordEmail, sendInvitationToContractor, sendContractStartEmail, sendContractStatusChangeEmailToCompany, sendContractStatusChangeEmailToContractor, sendAccountDowngradeEmail, sendContractStartEmailToCompany } from '../services/aws'
 
 import { User, IUser } from '../models/User'
 import { Company, ICompany } from '../models/Company'
@@ -1001,6 +1001,7 @@ export const startContract = (req: Request, res: Response) => {
 
                         // ToDo send email to contractor for contract started
                         sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
+                        sendContractStartEmailToCompany({ to: req.company.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
                         return res.json({ 'status': Status.Success, 'message': 'Vendor Added.' })
 
                     })
@@ -1127,12 +1128,27 @@ export const acceptRejectContract = (req: Request, res: Response) => {
                                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                                 }
 
-                                sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyEmail, company: company.info.companyName, contractStatus: params.status + 'ed' })
-                                return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
+                                sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
+                                sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
+                               
+                                var amount: number = 0;
+                                const now = new Date();
+                                const daysRemaining = now.getDate()
+                                const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate()
+                                const daysToCharge = daysInCurrentMonth-daysRemaining + 1
+                                
+                                const perday = 2/daysInCurrentMonth
+                                amount = amount+ (perday* daysToCharge)
+                                
+                                if (company.stripeId != undefined || company.stripeId != '') {
+                                    chargeSubscription(amount, company.stripeId, (status: any, charge: any, message: any) => {
+                                        return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
+                                    })
+                                }else{
 
+                                    return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
+                                }
                             })
-
-
                         })
                 })
         }

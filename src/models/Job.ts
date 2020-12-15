@@ -2,11 +2,16 @@ import mongoose, { Document, Schema } from 'mongoose'
 
 export interface IJob extends Document {
 
-    dateTime: Date
+    scheduleDate: Date
+    scheduledStartTime: Date
+    scheduledEndTime: Date
     jobId: string
     ticket: Schema.Types.ObjectId
     technician: Schema.Types.ObjectId
+    contractor: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId
+    jobLocation: Schema.Types.ObjectId
+    jobSite: Schema.Types.ObjectId
     type: Schema.Types.ObjectId
     company: Schema.Types.ObjectId
     equipmentId: string
@@ -16,8 +21,8 @@ export interface IJob extends Document {
     createdAt: Date,
     createdBy: Schema.Types.ObjectId,
     employeeType: boolean
-    isFixed: boolean
-    hourlyRate: number
+    // isFixed: boolean
+    // hourlyRate: number
     charges: number
     salesTax: Schema.Types.ObjectId
     startTime: Date
@@ -27,26 +32,55 @@ export interface IJob extends Document {
     timeUpdatedAt: Date
     equipment_scanned: boolean
     no_of_equipment_scanned: number
+    completeOnTime: boolean
 }
 
 const JobSchema = new Schema({
 
-    dateTime: Date,
+    scheduleDate: { 
+        type: Date
+    },
+    scheduledStartTime: {
+        type: Date,
+        required: false
+    },
+    scheduledEndTime: {
+        type: Date,
+        required: false
+    },
     jobId: String,
     ticket: {
         type: Schema.Types.ObjectId,
         ref: 'ServiceTicket',
         required: true
     },
+    equipmentId: {
+        type: Schema.Types.ObjectId,
+        ref: 'CustomerEquipment',
+        required: false
+    },
     technician: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: false
+    },
+    contractor: {
+        type: Schema.Types.ObjectId,
+        ref: 'Company',
+        required: false
     },
     customer: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         required: true
+    },
+    jobLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobLocation',
+    },
+    jobSite: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobSite',
     },
     type: {
         type: Schema.Types.ObjectId,
@@ -82,14 +116,14 @@ const JobSchema = new Schema({
         type: Boolean,
         default: false
     },
-    isFixed: {
-        type: Boolean,
-        default: true
-    },
-    hourlyRate:{
-        type: Number,
-        default: 0
-    },
+    // isFixed: {
+    //     type: Boolean,
+    //     default: true
+    // },
+    // hourlyRate:{
+    //     type: Number,
+    //     default: 0
+    // },
     charges: {
         type: Number,
         default: 0
@@ -119,6 +153,10 @@ const JobSchema = new Schema({
     no_of_equipment_scanned: {
         type: Number,
         default: 0
+    },
+    completeOnTime:{
+        type: Boolean,
+        required: false
     }
 
 })

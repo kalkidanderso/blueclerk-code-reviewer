@@ -99,7 +99,15 @@ const CompanySchema = new mongoose_1.Schema({
         type: Number,
         default: 0
     },
-    invoicePrefix: String
+    invoicePrefix: String,
+    currentPOId: {
+        type: Number,
+        default: 0
+    },
+    currentEstimateId: {
+        type: Number,
+        default: 0
+    }
 });
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)
 exports.Company = mongoose_1.default.model('Company', CompanySchema);

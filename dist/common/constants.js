@@ -1,6 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Status = {
+    OK: 200,
+    Created: 201,
+    MissingParameters: 400,
+    Unauthenticated: 401,
+    Forbidden: 403,
+    InternalError: 500,
     Error: 0,
     Success: 1,
     TagAssociated: 2,
@@ -9,7 +15,7 @@ exports.Status = {
     InvalidEquipment: 5
 };
 exports.Messages = {
-    MissingParams: 'Parameters are missing.',
+    MissingParams: 'Parameters are missing',
     InvalidEmailPassword: 'Invalid email/password.',
     GenericError: 'Can\'t process now. Please try again later.',
     DuplicateEmail: 'Email address already registered. Please try with some other email address',
@@ -21,6 +27,7 @@ exports.Messages = {
     TagAssociated: 'Tag is associated with customer',
     TagNotAssociated: 'Tag is not associated with customer',
     QBUnAuthorized: 'Quickbooks authorization failed',
+    InternalServerError: 'There was an internal server error. Please try again later.'
 };
 exports.ContractorPermissions = {
     on: [
@@ -149,8 +156,20 @@ exports.UserPermissions = {
             109 /* Update_Estimate */,
             110 /* Update_Status_Estimate */,
             111 /* Get_Estimate */,
-            112 /* Delete_Estimate */,
-            113 /* Get_Company_Contractor_Activity */
+            112 /* Cancel_Estimate */,
+            113 /* Get_Company_Contractor_Activity */,
+            114 /* Get_Items */,
+            115 /* Update_Item */,
+            116 /* Get_Equipment_Purchase_Order */,
+            117 /* Get_Customer_Invoices */,
+            118 /* Create_Payment */,
+            119 /* Update_Payment */,
+            120 /* Get_Customer_Payments */,
+            121 /* Get_Payments */,
+            122 /* Code_Location_Tag */,
+            123 /* Update_Location_Tag */,
+            124 /* Get_Location_Tags */,
+            125 /* Get_Location_Tag_Jobs */
         ],
         off: [0 /* None */],
     },
@@ -253,8 +272,20 @@ exports.UserPermissions = {
             109 /* Update_Estimate */,
             110 /* Update_Status_Estimate */,
             111 /* Get_Estimate */,
-            112 /* Delete_Estimate */,
-            113 /* Get_Company_Contractor_Activity */
+            112 /* Cancel_Estimate */,
+            113 /* Get_Company_Contractor_Activity */,
+            114 /* Get_Items */,
+            115 /* Update_Item */,
+            116 /* Get_Equipment_Purchase_Order */,
+            117 /* Get_Customer_Invoices */,
+            118 /* Create_Payment */,
+            119 /* Update_Payment */,
+            120 /* Get_Customer_Payments */,
+            121 /* Get_Payments */,
+            122 /* Code_Location_Tag */,
+            123 /* Update_Location_Tag */,
+            124 /* Get_Location_Tags */,
+            125 /* Get_Location_Tag_Jobs */
         ],
         off: [0 /* None */],
     },
@@ -360,8 +391,20 @@ exports.UserPermissions = {
             109 /* Update_Estimate */,
             110 /* Update_Status_Estimate */,
             111 /* Get_Estimate */,
-            112 /* Delete_Estimate */,
-            113 /* Get_Company_Contractor_Activity */
+            112 /* Cancel_Estimate */,
+            113 /* Get_Company_Contractor_Activity */,
+            114 /* Get_Items */,
+            115 /* Update_Item */,
+            116 /* Get_Equipment_Purchase_Order */,
+            117 /* Get_Customer_Invoices */,
+            118 /* Create_Payment */,
+            119 /* Update_Payment */,
+            120 /* Get_Customer_Payments */,
+            121 /* Get_Payments */,
+            122 /* Code_Location_Tag */,
+            123 /* Update_Location_Tag */,
+            124 /* Get_Location_Tags */,
+            125 /* Get_Location_Tag_Jobs */
         ],
         off: [0 /* None */],
     },
@@ -477,8 +520,20 @@ exports.UserPermissions = {
             109 /* Update_Estimate */,
             110 /* Update_Status_Estimate */,
             111 /* Get_Estimate */,
-            112 /* Delete_Estimate */,
-            113 /* Get_Company_Contractor_Activity */
+            112 /* Cancel_Estimate */,
+            113 /* Get_Company_Contractor_Activity */,
+            114 /* Get_Items */,
+            115 /* Update_Item */,
+            116 /* Get_Equipment_Purchase_Order */,
+            117 /* Get_Customer_Invoices */,
+            118 /* Create_Payment */,
+            119 /* Update_Payment */,
+            120 /* Get_Customer_Payments */,
+            121 /* Get_Payments */,
+            122 /* Code_Location_Tag */,
+            123 /* Update_Location_Tag */,
+            124 /* Get_Location_Tags */,
+            125 /* Get_Location_Tag_Jobs */
         ],
         off: [0 /* None */],
     }

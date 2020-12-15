@@ -7,15 +7,28 @@ const CustomerSchema = new mongoose_1.Schema({
     info: {
         email: String
     },
+    contactName: {
+        type: String,
+        required: false
+    },
     company: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Company',
         required: true
     },
     equipments: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'CustomerEquipment' }],
+    jobLocations: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'CustomerJobLocation',
+            required: false
+        }],
     quickbookId: {
         type: String,
         default: null
+    },
+    balance: {
+        type: Number,
+        default: 0
     }
 });
 exports.Customer = User_1.User.discriminator('Customer', CustomerSchema);

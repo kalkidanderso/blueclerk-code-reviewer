@@ -10,7 +10,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const ServiceTicketSchema = new mongoose_1.Schema({
     createdAt: Date,
-    scheduleDateTime: Date,
+    dueDate: {
+        type: Date,
+        required: false
+    },
     customer: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
@@ -43,6 +46,18 @@ const ServiceTicketSchema = new mongoose_1.Schema({
         type: Date
     },
     ticketId: String,
+    jobLocation: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'JobLocation',
+    },
+    jobSite: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'JobSite',
+    },
+    jobType: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'JobType',
+    },
     jobCreated: {
         type: Boolean,
         default: false

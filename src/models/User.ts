@@ -25,6 +25,7 @@ export interface IUser extends Document {
         state: string
         zipCode: string
     }
+    location: 'Point'
     contact: {
         phone: string
         fax: string
@@ -66,6 +67,17 @@ const UserSchema = new Schema({
         city: String,
         state: String,
         zipCode: String,
+    },
+    location: {
+        type: {
+          type: String,
+          enum: ['Point'],
+          required: false
+        },
+        coordinates: {
+          type: [Number],
+          required: false
+        }
     },
     contact: {
         phone: String,

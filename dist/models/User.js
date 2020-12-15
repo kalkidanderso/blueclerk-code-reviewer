@@ -48,6 +48,17 @@ const UserSchema = new mongoose_1.Schema({
         state: String,
         zipCode: String,
     },
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            required: false
+        },
+        coordinates: {
+            type: [Number],
+            required: false
+        }
+    },
     contact: {
         phone: String,
         fax: String,

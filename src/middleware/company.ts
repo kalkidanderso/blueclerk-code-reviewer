@@ -6,7 +6,7 @@ import { Company, ICompany } from '../models/Company'
 import { Status, Messages } from '../common/constants'
 import { ICompanyAdmin } from '../models/CompanyAdmin'
 
-export const getCompnayId = () => {
+export const getCompanyId = () => {
 
     return async (req: Request, res: Response, next: NextFunction) => {
 
@@ -14,7 +14,7 @@ export const getCompnayId = () => {
         req.otherCompanyId = undefined
         
         // check if contractor or organization is making the request
-        if(req.body.companyId != undefined) {
+        if((req.body.companyId != undefined) || (req.body.companyId !=="")) {
             req.otherCompanyId = req.body.companyId
         }
     
@@ -27,16 +27,20 @@ export const getCompnayId = () => {
                         return res.json({ 'status': Status.Error, 'message': "Unable to find your company. Contact BlueClerk admin for more." })
                     }
 
-                    if(company.type == 1 && (req.body.companyId == undefined || req.body.companyId == null) ){
-                        return res.json({'status': Status.Error, 'message': 'Company id is required.'})
+                    // if(company.type == 1 && (req.body.companyId == undefined || req.body.companyId == null) ){
+                    //     return res.json({'status': Status.Error, 'message': 'Company id is required.'})
 
-                    }else{
+                    // }else{
 
-                        req.company = company
-                        req.companyId = company._id
-                        next()
-                        return
-                    }
+                    //     req.company = company
+                    //     req.companyId = company._id
+                    //     next()
+                    //     return
+                    // }
+                    req.company = company
+                    req.companyId = company._id
+                    next()
+                    return
                 }
             )
 

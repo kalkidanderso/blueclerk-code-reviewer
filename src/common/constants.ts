@@ -1,6 +1,10 @@
-import { check } from 'express-validator'
-
 export const Status = {
+    OK: 200,
+    Created: 201,
+    MissingParameters: 400,
+    Unauthenticated: 401,
+    Forbidden: 403,
+    InternalError: 500,
     Error: 0,
     Success: 1,
     TagAssociated: 2,
@@ -9,8 +13,13 @@ export const Status = {
     InvalidEquipment: 5
 }
 
+export const enum TagType {
+    CustomerEquipmentTag,
+    LocationTag
+}
+
 export const Messages = {
-    MissingParams: 'Parameters are missing.',
+    MissingParams: 'Parameters are missing',
     InvalidEmailPassword: 'Invalid email/password.',
     GenericError: 'Can\'t process now. Please try again later.',
     DuplicateEmail: 'Email address already registered. Please try with some other email address',
@@ -22,6 +31,7 @@ export const Messages = {
     TagAssociated: 'Tag is associated with customer',
     TagNotAssociated: 'Tag is not associated with customer',
     QBUnAuthorized: 'Quickbooks authorization failed',
+    InternalServerError: 'There was an internal server error. Please try again later.'
 }
 
 export const enum Role {
@@ -192,8 +202,20 @@ export const enum Permissions {
     Update_Estimate,
     Update_Status_Estimate,
     Get_Estimate,
-    Delete_Estimate,
-    Get_Company_Contractor_Activity
+    Cancel_Estimate,
+    Get_Company_Contractor_Activity,
+    Get_Items,
+    Update_Item,
+    Get_Equipment_Purchase_Order,
+    Get_Customer_Invoices,
+    Create_Payment,
+    Update_Payment,
+    Get_Customer_Payments,
+    Get_Payments,
+    Code_Location_Tag,
+    Update_Location_Tag,
+    Get_Location_Tags,
+    Get_Location_Tag_Jobs
 
 }
 
@@ -324,8 +346,20 @@ export const UserPermissions = {
             Permissions.Update_Estimate,
             Permissions.Update_Status_Estimate,
             Permissions.Get_Estimate,
-            Permissions.Delete_Estimate,
-            Permissions.Get_Company_Contractor_Activity
+            Permissions.Cancel_Estimate,
+            Permissions.Get_Company_Contractor_Activity,
+            Permissions.Get_Items,
+            Permissions.Update_Item,
+            Permissions.Get_Equipment_Purchase_Order,
+            Permissions.Get_Customer_Invoices,
+            Permissions.Create_Payment,
+            Permissions.Update_Payment,
+            Permissions.Get_Customer_Payments,
+            Permissions.Get_Payments,
+            Permissions.Code_Location_Tag,
+            Permissions.Update_Location_Tag,
+            Permissions.Get_Location_Tags,
+            Permissions.Get_Location_Tag_Jobs
         ],
         off: [Permissions.None],
     },
@@ -428,8 +462,20 @@ export const UserPermissions = {
             Permissions.Update_Estimate,
             Permissions.Update_Status_Estimate,
             Permissions.Get_Estimate,
-            Permissions.Delete_Estimate,
-            Permissions.Get_Company_Contractor_Activity
+            Permissions.Cancel_Estimate,
+            Permissions.Get_Company_Contractor_Activity,
+            Permissions.Get_Items,
+            Permissions.Update_Item,
+            Permissions.Get_Equipment_Purchase_Order,
+            Permissions.Get_Customer_Invoices,
+            Permissions.Create_Payment,
+            Permissions.Update_Payment,
+            Permissions.Get_Customer_Payments,
+            Permissions.Get_Payments,
+            Permissions.Code_Location_Tag,
+            Permissions.Update_Location_Tag,
+            Permissions.Get_Location_Tags,
+            Permissions.Get_Location_Tag_Jobs
         ],
         off: [Permissions.None],
     },
@@ -535,8 +581,20 @@ export const UserPermissions = {
             Permissions.Update_Estimate,
             Permissions.Update_Status_Estimate,
             Permissions.Get_Estimate,
-            Permissions.Delete_Estimate,
-            Permissions.Get_Company_Contractor_Activity
+            Permissions.Cancel_Estimate,
+            Permissions.Get_Company_Contractor_Activity,
+            Permissions.Get_Items,
+            Permissions.Update_Item,
+            Permissions.Get_Equipment_Purchase_Order,
+            Permissions.Get_Customer_Invoices,
+            Permissions.Create_Payment,
+            Permissions.Update_Payment,
+            Permissions.Get_Customer_Payments,
+            Permissions.Get_Payments,
+            Permissions.Code_Location_Tag,
+            Permissions.Update_Location_Tag,
+            Permissions.Get_Location_Tags,
+            Permissions.Get_Location_Tag_Jobs
         ],
         off: [Permissions.None],
     },
@@ -652,8 +710,20 @@ export const UserPermissions = {
             Permissions.Update_Estimate,
             Permissions.Update_Status_Estimate,
             Permissions.Get_Estimate,
-            Permissions.Delete_Estimate,
-            Permissions.Get_Company_Contractor_Activity
+            Permissions.Cancel_Estimate,
+            Permissions.Get_Company_Contractor_Activity,
+            Permissions.Get_Items,
+            Permissions.Update_Item,
+            Permissions.Get_Equipment_Purchase_Order,
+            Permissions.Get_Customer_Invoices,
+            Permissions.Create_Payment,
+            Permissions.Update_Payment,
+            Permissions.Get_Customer_Payments,
+            Permissions.Get_Payments,
+            Permissions.Code_Location_Tag,
+            Permissions.Update_Location_Tag,
+            Permissions.Get_Location_Tags,
+            Permissions.Get_Location_Tag_Jobs
         ],
         off: [Permissions.None],
     }
