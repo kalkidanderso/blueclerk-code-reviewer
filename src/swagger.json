@@ -7842,9 +7842,9 @@
       "produces":["application/json"],
       "parameters": [
         {
-          "name": "userId",
+          "name": "companyId",
           "in": "path",
-          "description": "The _id of the company to retrieve from the database",
+          "description": "The id of the company to retrieve from the database",
           "required": true,
           "type": "string"
         }
