@@ -77,6 +77,12 @@ export default function (sio: any) {
         userController.createGlobalAdmin
     )
 
+    router.get(
+        '/getCompanyProfile/:companyId',
+        passport.authenticate('jwt', { session: false }),
+        userController.getCompanyProfile
+    )
+
     router.post(
         '/getDefaultPermissions',
         passport.authenticate('jwt', { session: false }),

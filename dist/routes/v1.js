@@ -53,6 +53,7 @@ function default_1(sio) {
     router.post('/agreeTermAndCondition', passport_1.default.authenticate('jwt', { session: false }), validator_1.validate(validator_1.Validations.agree), userController.agreeToTermAndConditions);
     router.post('/signup', validator_1.validate(validator_1.Validations.signUp), userController.createCompany);
     router.post('/adminSignUp', validator_1.validate(validator_1.Validations.adminSignUp), userController.createGlobalAdmin);
+    router.get('/getCompanyProfile/:companyId', passport_1.default.authenticate('jwt', { session: false }), userController.getCompanyProfile);
     router.post('/getDefaultPermissions', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompanyId(), permissions_1.checkUserPermissions(1 /* Permission_Get_All */), permissionController.getAllPermissions);
     router.post('/updateDefaultPermissions', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompanyId(), permissions_1.checkUserPermissions(6 /* Permission_Update_Default */), validator_1.validate(validator_1.Validations.updateDefaultPermissions), permissionController.updateDefaultPermissions);
     router.post('/getOfficeAdminPermissions', passport_1.default.authenticate('jwt', { session: false }), company_1.getCompanyId(), permissions_1.checkUserPermissions(2 /* Permission_Get_Office_Admin */), permissionController.getOfficeAdminPermissions);

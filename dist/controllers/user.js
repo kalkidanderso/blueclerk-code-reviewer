@@ -207,6 +207,18 @@ exports.createCompany = (req, res) => {
         });
     });
 };
+exports.getCompanyProfile = (req, res) => {
+    const { companyId } = req.params;
+    Company_1.Company.findById(companyId, (err, company) => {
+        if (err) {
+            return res.status(500).json({ 'status': constants_1.Status.Error, 'message': 'something went wrong' });
+        }
+        if (!company) {
+            return res.status(404).json({ 'status': constants_1.Status.Error, 'message': 'company not found' });
+        }
+        return res.status(200).json({ 'status': constants_1.Status.Success, 'company': company });
+    });
+};
 const _createHubSpotContact = (company, companyAdmin) => {
     const hubspot = new Hubspot({
         apiKey: '163d5d65-83c0-4d5f-9dcf-55b052f9ef4d'

@@ -262,6 +262,20 @@ export const createCompany = (req: Request, res: Response) => {
 
 }
 
+export const getCompanyProfile = (req: Request, res: Response) => {
+    const { companyId } = req.params;
+    Company.findById(companyId, (err: any, company: ICompany) => {
+        if (err) {
+            return res.status(500).json({ 'status': Status.Error, 'message':  'something went wrong'})
+        }
+        if (!company) {
+            return res.status(404).json({ 'status': Status.Error, 'message': 'company not found'})
+        }
+        return res.status(200).json({ 'status': Status.Success, 'company': company });
+    });
+}
+
+
 const _createHubSpotContact = (company: ICompany, companyAdmin: ICompanyAdmin) => {
 
     const hubspot = new Hubspot({
