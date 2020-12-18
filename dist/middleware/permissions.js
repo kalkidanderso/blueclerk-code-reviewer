@@ -38,7 +38,7 @@ exports.checkUserPermissions = (permissionId) => {
                 }
                 if (company.type == 1) {
                     // it is contractor check contractor permissions from default or contract
-                    if (permissionId == 65 /* Get_All_Contracts */ || permissionId == 62 /* Accept_Reject_Contract */ || permissionId == 67 /* Upgrade_To_Company */) {
+                    if (permissionId == 65 /* Get_All_Contracts */ || permissionId == 62 /* Accept_Reject_Contract */ || permissionId == 68 /* Upgrade_To_Company */) {
                         next();
                         return;
                     }
@@ -94,7 +94,7 @@ exports.checkUserPermissions = (permissionId) => {
                     }
                     else {
                         // it is not a contractinig company
-                        if (permissionId == 66 /* Get_Company_Contracts */ || permissionId == 63 /* Cancel_Finish_Contract */) {
+                        if (permissionId == 66 /* Get_Company_Contracts */ || permissionId == 63 /* Cancel_Finish_Contract */ || permissionId == 67 /* Get_Contractor_Detail */) {
                             next();
                             return;
                         }

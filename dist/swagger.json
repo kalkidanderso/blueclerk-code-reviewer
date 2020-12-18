@@ -461,6 +461,58 @@
                 ]
             }
         },
+        "/getContractorDetail": {
+            "post": {
+                "tags": [
+                    "Vendor"
+                ],
+                "summary": "To get detail of a contractor.",
+                "description": "",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "contractorId",
+                        "in": "formData",
+                        "type": "string",
+                        "required": true,
+                        "description": "Id of contractor for getting detail"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/GeneralAPIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "contractors": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/Contractor"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
         "/getCompanyContractorActivity": {
             "post": {
                 "tags": [
@@ -7781,6 +7833,50 @@
                     }
                 ]
             }
+        },
+        "/getCompanyProfile/{companyId}": {
+            "get": {
+                "tags": ["Users"],
+                "summary": "Retrieve a company profile",
+                "description": "Returns a company profile for the specified company id",
+                "produces": ["application/json"],
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "description": "The _id of the company to retrieve from the database",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/company"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
         }
     },
     "securityDefinitions": {
@@ -7791,6 +7887,72 @@
         }
     },
     "definitions": {
+        "company": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "integer"
+                },
+                "company": {
+                    "type": "object",
+                    "properties": {
+                        "info": {
+                            "type": "object",
+                            "properties": {
+                                "companyName": {
+                                    "type": "string"
+                                },
+                                "industry": {
+                                    "type": "string"
+                                },
+                                "logoUrl": {
+                                    "type": "string"
+                                },
+                                "companyEmail": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "address": {
+                            "type": "object",
+                            "properties": {
+                                "street": {
+                                    "type": "string"
+                                },
+                                "city": {
+                                    "type": "string"
+                                },
+                                "state": {
+                                    "type": "string"
+                                },
+                                "zipCode": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "contact": {
+                            "type": "object",
+                            "properties": {
+                                "phone": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "other": {
+                            "type": "object",
+                            "properties": {
+                                "hasCardOnFile": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "userPermissions": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
         "Industry": {
             "type": "object",
             "properties": {

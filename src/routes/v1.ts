@@ -77,6 +77,12 @@ export default function (sio: any) {
         userController.createGlobalAdmin
     )
 
+    router.get(
+        '/getCompanyProfile/:companyId',
+        passport.authenticate('jwt', { session: false }),
+        userController.getCompanyProfile
+    )
+
     router.post(
         '/getDefaultPermissions',
         passport.authenticate('jwt', { session: false }),
@@ -937,6 +943,15 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Company_Contracts),
         companyController.getCompanyContracts
+    )
+
+    router.post(
+        '/getContractorDetail',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Contractor_Detail),
+        validate(Validations.getContractorDetail),
+        companyController.getContractorDetail
     )
 
     router.post(

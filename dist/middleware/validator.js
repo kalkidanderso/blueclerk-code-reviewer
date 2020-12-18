@@ -43,6 +43,7 @@ exports.Validations = {
     createOfficeAdmin: [express_validator_1.check('email').exists(), express_validator_1.check('email').isEmail(), express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists(), express_validator_1.check('phone').exists()],
     updateProfile: [express_validator_1.check('firstName').exists(), express_validator_1.check('lastName').exists()],
     changePassword: [express_validator_1.check('currentPassword').exists(), express_validator_1.check('newPassword').exists()],
+    getContractorDetail: [express_validator_1.check('contractorId').exists()],
     updateCompanyProfile: [express_validator_1.check('companyName').exists(), express_validator_1.check('companyEmail').exists(), express_validator_1.check('companyEmail').isEmail(), express_validator_1.check('phone').exists()],
     deleteEmployee: [express_validator_1.check('employeeId').exists()],
     forgotPassword: [express_validator_1.check('email').exists()],

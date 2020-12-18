@@ -270,6 +270,30 @@ paths:
                       $ref: '#/definitions/Contract'
       security:
         - Bearer: []
+  /getContractorDetail:
+    post:
+      tags:
+        - Vendor
+      summary: To get detail of a contractor
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  industries:
+                    type: array
+                    items:
+                      $ref: '#/definitions/Contractor'
+      security:
+        - Bearer: []
   /getCompanyContractorActivity:
     post:
       tags:
