@@ -2,13 +2,14 @@ import {Request, Response} from 'express'
 import { Status, Role, Messages } from '../common/constants'
 
 import { Customer, ICustomer } from '../models/Customer'
+import {  CompanyCustomer } from '../models/CompanyCustomer'
 import multer from 'multer'
 
 var fs = require('fs');
 var XLSX = require('xlsx')
 
 export const uploadfile = (req: Request, res: Response) => {
-
+    var companyId = req.companyId
     const path = __dirname+'/../uploads/'
     const time = Date.now()
 
@@ -26,8 +27,7 @@ export const uploadfile = (req: Request, res: Response) => {
     })
 
     var upload = multer({ storage: storage })
-    const uploadSingle = upload.single('image')
-    
+    const uploadSingle = upload.single('customerSheet')
     uploadSingle(req, res, (err)=>{
         if (err) {
             return res.json({'status': Status.Error, 'message': "No file available"})
@@ -53,19 +53,18 @@ export const uploadfile = (req: Request, res: Response) => {
                 }
             }
     
-            var defaultColumnHeads: any = [ 'email', 'name', 'street', 'city', 'state', 'zipCode' , 'phone']
+            var defaultColumnHeads: any = [ 'email', 'name', 'street', 'city', 'state', 'zipCode' , 'phone', 'contactName', 'latitude', 'longitude']
             if( !columnsEqual(defaultColumnHeads, columnHeaders)){
-                return res.json({'status': Status.Error, 'message': 'Sheet must contain following columns email, name, street, city, state, zipCode, phone'})
+                return res.json({'status': Status.Error, 'message': 'Sheet must contain following columns email, name, street, city, state, zipCode, phone, contactName, latitude, longitude'})
             }
     
             
             var xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]])
             
-            
             var customers: any = []
             xlData.map((obj: any)=>{
-            
-                customers.push(new Customer({
+                var customer: any = []
+                customer = new Customer({
                     info: {
                         email: obj.email,
                     },
@@ -89,20 +88,38 @@ export const uploadfile = (req: Request, res: Response) => {
                         role: Role.CUSTOMER,
                         extra: [],
                     }
-                })) 
-    
+                })
+                customers.push(customer)
+                
             })
     
             fs.unlinkSync(path+fileName)
-    
-            Customer.collection.insert(customers, function (err, docs) {
-                if (err){ 
-                    console.error(err)
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                } else {
-                    return res.json({'status': Status.Success, 'message': "Customers imported successfully"})
-                }
+
+            customers.map((customer: any)=>{
+                customer.save((err: any) => {
+
+                    if (err) {
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError, 'error' : err})
+                    }
+                    
+                    // create company customer here
+                    const companyCustomer = new CompanyCustomer({
+                        company: companyId,
+                        customer: customer._id,
+                        createdAt: Date.now()
+                    })
+            
+                    companyCustomer.save((err: any) => {
+            
+                        if (err) {
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                        }
+            
+                    })
+                })
             })
+
+            return res.json({'status': Status.Success, 'message': 'Customer created successfully.'})
             
     })
 
