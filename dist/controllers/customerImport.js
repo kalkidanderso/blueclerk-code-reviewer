@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../common/constants");
 const Customer_1 = require("../models/Customer");
 const CompanyCustomer_1 = require("../models/CompanyCustomer");
+const User_1 = require("../models/User");
 const multer_1 = __importDefault(require("multer"));
 var fs = require('fs');
 var XLSX = require('xlsx');
@@ -81,25 +82,40 @@ exports.uploadfile = (req, res) => {
             customers.push(customer);
         });
         fs.unlinkSync(path + fileName);
-        customers.map((customer) => {
-            customer.save((err) => {
+        CompanyCustomer_1.CompanyCustomer.find({ company: companyId }, (err, companyCustomers) => {
+            if (err) {
+                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+            }
+            const customerIds = companyCustomers.length !== 0 ? companyCustomers.map((obj) => {
+                return obj.customer;
+            }) : [];
+            User_1.User.find({ _id: { $in: customerIds } }, 'info.email', (err, users) => {
                 if (err) {
-                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error': err });
+                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
                 }
-                // create company customer here
-                const companyCustomer = new CompanyCustomer_1.CompanyCustomer({
-                    company: companyId,
-                    customer: customer._id,
-                    createdAt: Date.now()
-                });
-                companyCustomer.save((err) => {
-                    if (err) {
-                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                customers.map((customer) => {
+                    if (users.length === 0 || (users.findIndex((element) => element.info.email === customer.info.email) < 0)) {
+                        customer.save((err) => {
+                            if (err) {
+                                return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error': err });
+                            }
+                            // create company customer here
+                            const companyCustomer = new CompanyCustomer_1.CompanyCustomer({
+                                company: companyId,
+                                customer: customer._id,
+                                createdAt: Date.now()
+                            });
+                            companyCustomer.save((err) => {
+                                if (err) {
+                                    return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                                }
+                            });
+                        });
                     }
                 });
+                return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer created successfully.' });
             });
         });
-        return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer created successfully.' });
     });
 };
 function columnsEqual(_arr1, _arr2) {
