@@ -42,21 +42,39 @@ exports.createCustomer = (req, res) => {
         };
     }
     const customer = new Customer_1.Customer(data);
-    customer.save((err) => {
+    CompanyCustomer_1.CompanyCustomer.find({ company: companyId }, (err, companyCustomers) => {
         if (err) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error': err });
+            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
-        // create company customer here
-        const companyCustomer = new CompanyCustomer_1.CompanyCustomer({
-            company: companyId,
-            customer: customer._id,
-            createdAt: Date.now()
-        });
-        companyCustomer.save((err) => {
+        const customerIds = companyCustomers.length !== 0 ? companyCustomers.map((obj) => {
+            return obj.customer;
+        }) : [];
+        User_1.User.find({ _id: { $in: customerIds } }, 'info.email', (err, users) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
-            return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer created successfully.' });
+            if (users.length === 0 || (users.findIndex((element) => element.info.email === customer.info.email) < 0)) {
+                customer.save((err) => {
+                    if (err) {
+                        return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError, 'error': err });
+                    }
+                    // create company customer here
+                    const companyCustomer = new CompanyCustomer_1.CompanyCustomer({
+                        company: companyId,
+                        customer: customer._id,
+                        createdAt: Date.now()
+                    });
+                    companyCustomer.save((err) => {
+                        if (err) {
+                            return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
+                        }
+                        return res.json({ 'status': constants_1.Status.Success, 'message': 'Customer created successfully.' });
+                    });
+                });
+            }
+            else {
+                return res.json({ 'status': constants_1.Status.Error, 'message': 'This email is already registered so please try with other email again' });
+            }
         });
     });
 };
