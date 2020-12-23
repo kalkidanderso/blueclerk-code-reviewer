@@ -44,7 +44,7 @@ exports.createEquipmentBrand = (req, res) => {
         });
     }
     else {
-        EquipmentBrand_1.EquipmentBrand.findOne({ title: params.title, createdBy: req.companyId }, (err, previousEquipmentBrand) => {
+        EquipmentBrand_1.EquipmentBrand.findOne({ title: { $regex: new RegExp(params.title.toLowerCase(), "i") }, createdBy: req.companyId }, (err, previousEquipmentBrand) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
