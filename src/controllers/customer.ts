@@ -48,28 +48,53 @@ export const createCustomer = (req: Request, res: Response) => {
     }
     const customer = new Customer(data)
 
-    customer.save((err: any) => {
-
-        if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError, 'error' : err})
-        }
-        
-        // create company customer here
-        const companyCustomer = new CompanyCustomer({
-            company: companyId,
-            customer: customer._id,
-            createdAt: Date.now()
-        })
-
-        companyCustomer.save((err: any) => {
-
+    CompanyCustomer.find({company: companyId}, 
+        (err: any, companyCustomers: ICompanyCustomer[])=>{
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            return res.json({'status': Status.Success, 'message': 'Customer created successfully.'})
+            const customerIds = companyCustomers.length !== 0 ? companyCustomers.map((obj: any)=>{                        
+                return obj.customer
+            }) : []
+            
+            User.find({_id : {$in: customerIds}},
+                'info.email',
+                (err: any, users: IUser[]) =>{
+                
+                if (err) {                        
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                }
+                if (users.length === 0 || (users.findIndex((element: any) => element.info.email === customer.info.email) < 0)) {
+                    customer.save((err: any) => {
+
+                        if (err) {
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError, 'error' : err})
+                        }
+                        
+                        // create company customer here
+                        const companyCustomer = new CompanyCustomer({
+                            company: companyId,
+                            customer: customer._id,
+                            createdAt: Date.now()
+                        })
+                
+                        companyCustomer.save((err: any) => {
+                
+                            if (err) {
+                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            }
+                
+                            return res.json({'status': Status.Success, 'message': 'Customer created successfully.'})
+                        })
+                    })
+                } else {
+                    return res.json({'status': Status.Error, 'message': 'This email is already registered so please try with other email again'})
+                }                                  
+                
+            })
+    
         })
-    })
 
 }
 
