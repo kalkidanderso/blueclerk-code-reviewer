@@ -58,7 +58,8 @@ export const createJobType = (req: Request, res: Response) => {
             })
         })
     }else{
-        JobType.findOne({title: params.title, createdBy: req.companyId}, (err: any, previousJobType: IJobType) =>{
+        var searchTitle = params.title.toLowerCase()
+        JobType.findOne({ title: { $regex : new RegExp(searchTitle, "i") }, createdBy: req.companyId}, (err: any, previousJobType: IJobType) =>{
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
