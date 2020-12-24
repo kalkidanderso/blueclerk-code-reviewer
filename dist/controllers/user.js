@@ -767,7 +767,7 @@ exports.inviteContractor = (req, res) => {
         }
         // ToDo email email with singup link
         aws_1.sendInvitationToContractor({ to: params.email, company: req.company.info.companyName });
-        return res.json({ 'status': constants_1.Status.Error, 'message': 'Invitation sent.' });
+        return res.json({ 'status': constants_1.Status.Success, 'message': 'Invitation sent.' });
     });
 };
 // get all contracts for contractor
