@@ -56,7 +56,8 @@ export const createEquipmentBrand = (req: Request, res: Response) => {
             })
         })
     }else{
-        EquipmentBrand.findOne({title: { $regex: new RegExp(params.title.toLowerCase(), "i") },  createdBy: req.companyId}, (err: any, previousEquipmentBrand: IEquipmentBrand) =>{
+        var regex = new RegExp(["^", params.title, "$"].join(""), "i");
+        EquipmentBrand.findOne({title: regex,  createdBy: req.companyId}, (err: any, previousEquipmentBrand: IEquipmentBrand) =>{
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }

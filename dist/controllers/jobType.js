@@ -46,8 +46,8 @@ exports.createJobType = (req, res) => {
         });
     }
     else {
-        var searchTitle = params.title.toLowerCase();
-        JobType_1.JobType.findOne({ title: { $regex: new RegExp(searchTitle, "i") }, createdBy: req.companyId }, (err, previousJobType) => {
+        var regex = new RegExp(["^", params.title, "$"].join(""), "i");
+        JobType_1.JobType.findOne({ title: regex, createdBy: req.companyId }, (err, previousJobType) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }

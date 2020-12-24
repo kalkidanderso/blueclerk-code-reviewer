@@ -1044,7 +1044,7 @@ export const inviteContractor = (req: Request, res: Response) => {
 
             // ToDo email email with singup link
             sendInvitationToContractor({ to: params.email, company: req.company.info.companyName })
-            return res.json({ 'status': Status.Error, 'message': 'Invitation sent.' })
+            return res.json({ 'status': Status.Success, 'message': 'Invitation sent.' })
         }
     )
 }
