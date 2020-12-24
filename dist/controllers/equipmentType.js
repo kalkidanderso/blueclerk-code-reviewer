@@ -44,7 +44,7 @@ exports.createEquipmentType = (req, res) => {
         });
     }
     else {
-        EquipmentType_1.EquipmentType.findOne({ title: params.title, createdBy: req.companyId }, (err, previousEquipmentType) => {
+        EquipmentType_1.EquipmentType.findOne({ title: { $regex: new RegExp(params.title.toLowerCase(), "i") }, createdBy: req.companyId }, (err, previousEquipmentType) => {
             if (err) {
                 return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
             }
