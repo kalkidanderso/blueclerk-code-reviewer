@@ -125,7 +125,7 @@ export const getCustomers = (req: Request, res: Response) => {
         }
         
         if (companyCustomers.length == 0) {
-            return res.json({'status': Status.Error, 'message': 'No customer found.'})
+            return res.json({'status': Status.Success, 'customers': []})
         }
         const customerIds = companyCustomers.map((obj: any)=>{
                 

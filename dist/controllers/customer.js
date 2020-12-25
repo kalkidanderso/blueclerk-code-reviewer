@@ -103,7 +103,7 @@ exports.getCustomers = (req, res) => {
             return res.json({ 'status': constants_1.Status.Error, 'message': constants_1.Messages.GenericError });
         }
         if (companyCustomers.length == 0) {
-            return res.json({ 'status': constants_1.Status.Error, 'message': 'No customer found.' });
+            return res.json({ 'status': constants_1.Status.Success, 'customers': [] });
         }
         const customerIds = companyCustomers.map((obj) => {
             return obj.customer;
