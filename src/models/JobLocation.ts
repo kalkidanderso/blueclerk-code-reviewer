@@ -1,8 +1,11 @@
 import mongoose, { Document, Schema } from 'mongoose'
+<<<<<<< HEAD
 import { IContact } from '../common/contact'
 
 
 
+=======
+>>>>>>> feat: add job location & job site fields to locationTag and equipment tags
 export interface IJobLocation extends Document {
     name: string
     contacts: [Schema.Types.ObjectId],
