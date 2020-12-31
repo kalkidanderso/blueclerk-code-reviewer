@@ -7,7 +7,7 @@ export interface ICustomerEquipment extends Document {
         serialNumber: string    
         nfcTag: string
         imageUrl: string
-        location: string
+        // location: string
     }
     maintenance: {
         interval: string,
@@ -17,7 +17,9 @@ export interface ICustomerEquipment extends Document {
     type: Schema.Types.ObjectId
     brand: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId
-    images:[string]
+    images:[string],
+    jobLocation: Schema.Types.ObjectId,
+    jobSite: Schema.Types.ObjectId
     // jobs:[ Schema.Types.ObjectId ]
 
 }
@@ -29,7 +31,7 @@ const CustomerEquipmentSchema = new Schema({
         serialNumber: String,    
         nfcTag: String,
         imageUrl: String,
-        location: String,
+        // location: String,
     },
     maintenance: {
         interval: String,
@@ -51,6 +53,15 @@ const CustomerEquipmentSchema = new Schema({
         required: true
     },
     images: [String],
+    jobLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobLocation',
+        required: true
+    },
+    jobSite: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobSite',
+    }
 
     // jobs:[{ 
     //     type: Schema.Types.ObjectId,

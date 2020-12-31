@@ -133,7 +133,7 @@ export const getCustomers = (req: Request, res: Response) => {
         })
         
         User.find({_id : {$in: customerIds}},
-            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance',
+            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company',
             (err: any, users: IUser[]) =>{
             
             if (err) {
@@ -186,7 +186,7 @@ export const customerDetail = (req: Request, res: Response) => {
     const params = req.body
 
     var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
+    if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
     
@@ -204,9 +204,16 @@ export const customerDetail = (req: Request, res: Response) => {
         }
         const customer: any = companyCustomer.customer
 
-        if(customer.permissions.role == Role.CUSTOMER) {
+        if (customer.permissions.role == Role.CUSTOMER) {
 
-            customer.populate('equipments', function(err: any) {
+            customer
+            .populate({
+                path: 'jobLocations',
+                populate: {
+                    path: 'jobSites'
+                }
+            })
+            .populate('equipments', function(err: any) {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }

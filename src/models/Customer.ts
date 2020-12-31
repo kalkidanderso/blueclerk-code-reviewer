@@ -10,6 +10,7 @@ export interface ICustomer extends IUser {
     contactName: string
     company: Schema.Types.ObjectId
     equipments: [Schema.Types.ObjectId]
+    jobLocations: [Schema.Types.ObjectId]
     quickbookId: string
     balance: number
 }
@@ -32,7 +33,7 @@ const CustomerSchema = new Schema({
     equipments: [{ type: Schema.Types.ObjectId, ref: 'CustomerEquipment' }],
     jobLocations: [{
         type: Schema.Types.ObjectId,
-        ref: 'CustomerJobLocation',
+        ref: 'JobLocation',
         required: false
     }],
     quickbookId: {
