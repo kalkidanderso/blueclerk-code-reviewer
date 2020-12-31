@@ -1,7 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose'
-
 export interface IJobLocation extends Document {
-
     name: string
     contact: {
       name: string
@@ -14,7 +12,8 @@ export interface IJobLocation extends Document {
       state: string,
       street: string,
       zipcode: string
-    }
+    },
+    jobSites?: [Schema.Types.ObjectId]
     customerId: Schema.Types.ObjectId
     companyId: Schema.Types.ObjectId
 
@@ -39,6 +38,11 @@ const JobLocationSchema = new Schema({
         required: false
       }
     },
+    jobSites: [{
+        type: Schema.Types.ObjectId,
+        ref: 'JobSite',
+        required: false 
+    }],
     address: {
       city: String,
       state: String,

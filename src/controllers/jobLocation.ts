@@ -1,8 +1,9 @@
 import { Request, Response } from 'express'
 import { Status, Messages } from '../common/constants'
 
-import { JobLocation, IJobLocation } from '../models/JobLocation'
+import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { ICompany } from '../models/Company'
+import { Customer } from '../models/Customer'
 
 export const get = (req: Request, res: Response) => {
     const { id } = req.params
@@ -29,7 +30,7 @@ export const get = (req: Request, res: Response) => {
 
         res.status(Status.OK)
         res.send(jobLocation)
-    })
+    }).populate('jobSites', 'name location')
 }
 
 export const create = (req: Request, res: Response) => {
@@ -84,6 +85,9 @@ export const create = (req: Request, res: Response) => {
             res.status(Status.InternalError)
             res.send(Messages.InternalServerError)
         } else {
+            Customer.findByIdAndUpdate(customerId, {
+                $push: { jobLocations: jobLocation._id }
+            }).exec()
             res.status(Status.OK)
             res.send(jobLocation)
         }

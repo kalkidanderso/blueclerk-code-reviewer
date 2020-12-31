@@ -1,14 +1,13 @@
 import { Request, Response } from 'express'
 import { Status, Messages, TagType } from '../common/constants'
 
-import { ICustomerEquipment, CustomerEquipment } from '../models/CustomerEquipment'
+import { ICustomerEquipment, CustomerEquipment } from '../models/CustomerEquipment';
 import { ICustomer, Customer } from '../models/Customer'
 import { Job , IJob} from '../models/Job'
 import { Scan, IScan} from '../models/Scan'
 import { IUser} from '../models/User'
 import { Tag, ITag} from '../models/Tag'
 import { ObjectId } from 'mongodb'
-import { isNull } from 'util'
 
 export const createCustomerEquipment = (req: Request, res: Response) => {
 
@@ -20,24 +19,31 @@ export const createCustomerEquipment = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError})
         }
         
-        if(customerEquipment != undefined && !isNull(customerEquipment)){
+        if(customerEquipment != undefined && customerEquipment != null){
             return res.json({ 'status': Status.Error, 'message': 'Equipment already added.'})
         }
 
-        const equipment = new CustomerEquipment(
-            {
-                info: {
-                    model: params.model,
-                    serialNumber: params.serialNumber,
-                    nfcTag: params.nfcTag,
-                    imageUrl: params.imageUrl,
-                    location: params.location,
-                },
-                type: params.equipmentTypeId,
-                brand: params.equipmentBrandId,
-                customer: params.customerId,
-            }
-        )
+        const newCustomerEquipment: any = {
+            info: {
+                model: params.model,
+                serialNumber: params.serialNumber,
+                nfcTag: params.nfcTag,
+                imageUrl: params.imageUrl
+            },
+            type: params.equipmentTypeId,
+            brand: params.equipmentBrandId,
+            customer: params.customerId,
+        };
+
+        if (params.jobLocation) {
+            newCustomerEquipment['jobLocation'] = params.jobLocation;
+        }
+
+        if (params.jobSite) {
+            newCustomerEquipment['jobSite'] = params.jobSite;
+        }
+
+        const equipment = new CustomerEquipment(newCustomerEquipment)
     
         equipment.save((err: any) => {
     
@@ -111,6 +117,14 @@ export const getCustomerEquipments = (req: Request, res: Response) => {
         .populate({
             path: 'customer',
             select: 'profile.displayName'
+        })
+        .populate({
+            path: 'jobLocation',
+            select: 'name location'
+        })
+        .populate({
+            path: 'jobSite',
+            select: 'name location'
         })
         .exec((err: any, customerEquipments: ICustomerEquipment) => {
 
@@ -349,6 +363,14 @@ export const getCustomerEquipmentInfo = (req: Request, res: Response) => {
         .populate({
             path: 'customer',
             select: 'profile.displayName address.street address.city address.state address.zipCode contactName'
+        })
+        .populate({
+            path: 'jobLocation',
+            select: 'name location'
+        })
+        .populate({
+            path: 'jobSite',
+            select: 'name location'
         })
         .exec((err: any, equipment: ICustomerEquipment) => {
 

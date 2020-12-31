@@ -2,17 +2,19 @@ import mongoose, { Document, Schema } from 'mongoose'
 
 export interface ITag extends Document {
 
-    latitude: string
-    longitude: string
+    // latitude: string
+    // longitude: string
     note: string
     address: string
     customer: Schema.Types.ObjectId
     info: {
         nfcTag: String
     },
-    company: Schema.Types.ObjectId
-    createdBy: Schema.Types.ObjectId
-    createdAt: Date    
+    jobLocation: Schema.Types.ObjectId | string
+    jobSite?: Schema.Types.ObjectId | string
+    company: Schema.Types.ObjectId | string
+    createdBy: Schema.Types.ObjectId | string
+    createdAt: Date | number  
 }
 
 const TagSchema = new Schema({
@@ -23,14 +25,23 @@ const TagSchema = new Schema({
             required: true
         }
     },
-    latitude:{
-        type: String,
-        required: true
+    jobLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobLocation',
+        required: true 
     },
-    longitude:{
-        type: String,
-        required: true
+    jobSite: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobSite'
     },
+    // latitude:{
+    //     type: String,
+    //     required: true
+    // },
+    // longitude:{
+    //     type: String,
+    //     required: true
+    // },
     note:{
         type: String,
         required: false

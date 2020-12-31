@@ -1339,6 +1339,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Code_Location_Tag),
         tagController.codeLocationTag
     )
+
     router.post(
         '/updateLocationTag',
         passport.authenticate('jwt', { session: false }),
@@ -1347,6 +1348,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Update_Location_Tag),
         tagController.updateLocationTag
     )
+
     router.post(
         '/getLocationTags',
         passport.authenticate('jwt', { session: false }),
@@ -1354,6 +1356,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Location_Tags),
         tagController.getLocationTags
     )
+    
     router.post(
         '/getLocationTagJobs',
         passport.authenticate('jwt', { session: false }),
