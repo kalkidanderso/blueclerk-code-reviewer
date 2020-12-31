@@ -26,7 +26,6 @@ export const checkUserPermissions = (permissionId : number) => {
     return async (req: Request, res: Response, next: NextFunction) => {
 
         const user = <IUser>req.user
-        
         if (user.permissions.role == Role.GLOBAL_ADMIN) {
             next()
             return

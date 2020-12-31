@@ -17,7 +17,7 @@ export const createEquipmentType = (req: Request, res: Response) => {
         userId = user._id
     } 
 
-    if (user.permissions.role != Role.GLOBAL_ADMIN){
+    if (user.permissions.role != Role.GLOBAL_ADMIN) {
         userId = req.companyId
     }
     

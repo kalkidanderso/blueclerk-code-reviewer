@@ -84,6 +84,9 @@ export const create = async (req: Request, res: Response) => {
             res.status(Status.InternalError)
             res.send(Messages.InternalServerError)
         } else {
+            JobLocation.findByIdAndUpdate(locationId, {
+                $push: { jobSites: jobSite._id }
+            }).exec()
             res.status(Status.OK)
             res.send(jobSite)
         }

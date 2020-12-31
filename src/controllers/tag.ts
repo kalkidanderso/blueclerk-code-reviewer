@@ -15,21 +15,28 @@ export const codeLocationTag = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        if(oldTag != undefined || oldTag != null) {
+        if (oldTag != undefined || oldTag != null) {
             return res.json({'status': Status.Success, 'message': "Tag is already code."})
         }
+
+        const newTag: Partial<ITag> = {
+                info: {
+                    nfcTag: params.nfcTag 
+                },
+                jobLocation: params.jobLocation,
+                note: params.note,
+                customer: params.customer,
+                address: params.address,
+                company: req.companyId,
+                createdBy: user._id,
+                createdAt: Date.now()
+        }
+
+        if (params.jobSite) {
+            newTag['jobSite'] = params.jobSite
+        }
         
-        var tag = new Tag({
-            'info.nfcTag' : params.nfcTag,
-            latitude : params.latitude,
-            longitude : params.longitude,
-            note: params.note,
-            customer: params.customer,
-            address: params.address,
-            company: req.companyId,
-            createdBy: user._id,
-            createdAt: Date.now()
-        })
+        const tag = new Tag(newTag)
 
         tag.save((err: any, tag: ITag) => {
             if (err) {
@@ -66,11 +73,18 @@ export const updateLocationTag = (req: Request, res: Response) => {
 }
 
 export const getLocationTags = (req: Request, res: Response) => {
-
     Tag.find({'company': req.companyId})
     .populate({
         path: 'customer',
         select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+    })
+    .populate({
+        path: 'jobLocation',
+        select: 'name location'
+    })
+    .populate({
+        path: 'jobSite',
+        select: 'name location'
     })
     .exec((err: any, tags: ITag[]) => {
         if (err) {

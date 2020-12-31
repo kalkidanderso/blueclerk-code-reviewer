@@ -12,7 +12,7 @@ export const getCompanyId = () => {
 
         const user = <IUser>req.user
         req.otherCompanyId = undefined
-        
+ 
         // check if contractor or organization is making the request
         if((req.body.companyId != undefined) || (req.body.companyId !=="")) {
             req.otherCompanyId = req.body.companyId
@@ -44,7 +44,7 @@ export const getCompanyId = () => {
                 }
             )
 
-        }else if(user.permissions.role != Role.GLOBAL_ADMIN) {
+        } else if (user.permissions.role != Role.GLOBAL_ADMIN) {
             const employee = <IEmployee>req.user
             Company.findById(employee.company, 
                 (err: any, company: ICompany) => {
@@ -59,7 +59,7 @@ export const getCompanyId = () => {
                     return
                 }
             )
-        }else{
+        } else {
             next()
             return
         }
