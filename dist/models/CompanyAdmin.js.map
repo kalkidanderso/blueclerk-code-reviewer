@@ -1,1 +1,0 @@
-{"version":3,"file":"CompanyAdmin.js","sourceRoot":"","sources":["../../src/models/CompanyAdmin.ts"],"names":[],"mappings":";;AAAA,uCAA2C;AAC3C,iCAAoC;AAOpC,MAAM,kBAAkB,GAAG,IAAI,iBAAM,CAAC;IAElC,OAAO,EAAE;QACL,IAAI,EAAE,iBAAM,CAAC,KAAK,CAAC,QAAQ;QAC3B,GAAG,EAAE,SAAS;QACd,QAAQ,EAAE,IAAI;KACjB;CAEJ,CAAC,CAAA;AAEW,QAAA,YAAY,GAAG,WAAI,CAAC,aAAa,CAAgB,cAAc,EAAE,kBAAkB,CAAC,CAAA"}
