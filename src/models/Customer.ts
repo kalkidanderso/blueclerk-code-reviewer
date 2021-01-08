@@ -43,6 +43,9 @@ const CustomerSchema = new Schema({
     balance: {
         type: Number,
         default: 0
+    },
+    vendorId: {
+        type: String,
     }
 
 })
