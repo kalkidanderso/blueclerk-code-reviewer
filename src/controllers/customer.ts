@@ -38,10 +38,11 @@ export const createCustomer = (req: Request, res: Response) => {
             role: Role.CUSTOMER,
             extra: [],
         },
-        contactName: params.contactName
+        contactName: params.contactName,
+        vendorId: params.vendorId
     };
 
-    if(params.latitude && params.longitude) {
+    if (params.latitude && params.longitude) {
         data.location = {
             coordinates: [params.longitude, params.latitude]
         }
@@ -133,7 +134,7 @@ export const getCustomers = (req: Request, res: Response) => {
         })
         
         User.find({_id : {$in: customerIds}},
-            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company',
+            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId',
             (err: any, users: IUser[]) =>{
             
             if (err) {
@@ -166,13 +167,14 @@ export const updateCustomer = (req: Request, res: Response) => {
             'address.state': params.state,
             'address.zipCode': params.zipCode,
             'contact.phone': params.phone,
-            contactName: params.contactName
+            contactName: params.contactName,
+            vendorId: params.vendorId
         }
 
-        if(params.latitude && params.longitude) {
+        if (params.latitude && params.longitude) {
             data['location.coordinates'] = [params.longitude, params.latitude]
         }
-        customer.updateOne(data, (err: any, raw: any)=> {           
+        customer.updateOne(data, { omitUndefined: true}, (err: any, raw: any)=> {           
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }

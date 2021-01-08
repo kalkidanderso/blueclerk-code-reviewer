@@ -251,6 +251,14 @@ export const getJobs = (req: Request, res: Response) => {
             path: 'createdBy',
             select: 'profile.displayName'
         })
+        .populate({
+            path: 'jobLocation',
+            select: 'name location'
+        })
+        .populate({
+            path: 'jobSite',
+            select: 'name location'
+        })
         .exec((err: any, jobs: IJob[])=>{
 
             if (err) {
@@ -527,6 +535,14 @@ export const getJobDetails = (req: Request, res: Response) => {
         .populate({
             path: 'company',
             select: 'info profile address contact'
+        })
+        .populate({
+            path: 'jobLocation',
+            select: 'name location'
+        })
+        .populate({
+            path: 'jobSite',
+            select: 'name location'
         })
         .then((job: any)=>{
 
