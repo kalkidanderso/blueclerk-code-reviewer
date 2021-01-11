@@ -12,7 +12,9 @@ export interface ICustomer extends IUser {
     equipments: [Schema.Types.ObjectId]
     jobLocations: [Schema.Types.ObjectId]
     quickbookId: string
-    balance: number
+    balance: number,
+    vendorId?: string
+
 }
 
 const CustomerSchema = new Schema({
