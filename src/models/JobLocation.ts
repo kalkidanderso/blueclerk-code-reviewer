@@ -1,13 +1,13 @@
 import mongoose, { Document, Schema } from 'mongoose'
 export interface IJobLocation extends Document {
     name: string
-    contact: {
+    contact?: {
       name: string
       phone: string
       email: string
     }
     location: 'Point'
-    address: {
+    address?: {
       city: string,
       state: string,
       street: string,
