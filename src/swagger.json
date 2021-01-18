@@ -6405,9 +6405,9 @@
     "/importCustomer": {
       "post": {
         "tags": [
-          "Import Customer"
+          "Import Customer Data"
         ],
-        "summary": "To upload an image",
+        "summary": "Upload customer data as an xlsx file",
         "description": "",
         "consumes": [
           "multipart/form-data"
