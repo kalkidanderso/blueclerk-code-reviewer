@@ -174,7 +174,7 @@ export const updateCustomer = (req: Request, res: Response) => {
         if (params.latitude && params.longitude) {
             data['location.coordinates'] = [params.longitude, params.latitude]
         }
-        customer.updateOne(data, { omitUndefined: true}, (err: any, raw: any)=> {           
+        customer.updateOne(data, { omitUndefined: true }, (err: any, raw: any)=> {           
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
