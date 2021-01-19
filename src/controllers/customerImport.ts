@@ -224,14 +224,10 @@ async function handleCustomerXlCreation(
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
                 })
 
-                await Customer.findOneAndUpdate(
-                    { 'info.email': customer.info.email },
-                    { $push: { jobLocations: jobLocations[index]._id } }
-                )
-                    .catch((err) => {
-
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
-                    })
+                const extCustomer = await Customer.findOne({ 'info.email': customer.info.email });
+            
+                extCustomer.jobLocations.push(jobLocations[index]._id)
+                await extCustomer.save()
             }
         }
     }
