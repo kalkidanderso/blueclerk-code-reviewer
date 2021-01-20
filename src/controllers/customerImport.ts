@@ -69,7 +69,7 @@ export const uploadfile = (req: Request, res: Response) => {
 
         var xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]])
         var customers: ICustomer[] = []
-        const jobLocations: IJobLocation[] = []
+        const jobLocations: any[] = []
 
         xlData.map((obj: any) => {
             const customer = new Customer({
@@ -104,9 +104,8 @@ export const uploadfile = (req: Request, res: Response) => {
             })
             customers.push(customer)
 
-            const jobLocation = new JobLocation({
+            const jobLocation = {
                 companyId: companyId,
-                customerId: customer._id,
                 name: obj.jobLocationName || '',
                 contact: {
                     name: obj.jobLocationContactName || '',
@@ -122,7 +121,7 @@ export const uploadfile = (req: Request, res: Response) => {
                 location: {
                     coordinates: [obj.jobLocationLongitude || 0, obj.jobLocationLatitude || 0]
                 }
-            })
+            }
 
             jobLocations.push(jobLocation)
 
@@ -189,7 +188,11 @@ async function handleCustomerXlCreation(
 
         if (users.length === 0 || (users.findIndex((element: any) => element.info.email === customer.info.email) < 0)) {
             // check for customer duplicates on each alteration and only save if the current customer doesn't exist
-            customer.jobLocations.push(jobLocations[index]._id);
+            const selectedJobLocation = jobLocations[index]
+            selectedJobLocation.customerId = customer._id
+
+            const newJobLocation: IJobLocation = new JobLocation(selectedJobLocation)
+            customer.jobLocations.push(newJobLocation._id);
 
             await Customer.create(customer).catch((err) => {
 
@@ -207,17 +210,20 @@ async function handleCustomerXlCreation(
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             })
 
-            await JobLocation.create(jobLocations[index]).catch((err) => {
+            await JobLocation.create(newJobLocation).catch((err) => {
 
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
             })
         } else {
             const extCustomer = await Customer.findOne({ 'info.email': customer.info.email });
+            const selectedJobLocation = jobLocations[index]
+            selectedJobLocation.customerId = extCustomer._id
 
-            extCustomer.jobLocations.push(jobLocations[index]._id)
+            const newJobLocation: IJobLocation = new JobLocation(selectedJobLocation)
+            extCustomer.jobLocations.push(newJobLocation._id)
             await extCustomer.save()
 
-            await JobLocation.create(jobLocations[index]).catch((err) => {
+            await JobLocation.create(newJobLocation).catch((err) => {
 
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
             })
