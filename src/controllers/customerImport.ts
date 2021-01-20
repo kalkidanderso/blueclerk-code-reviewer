@@ -213,21 +213,22 @@ async function handleCustomerXlCreation(
             })
         } else {
             // check for location duplicates on each alteration and only save if the current location doesn't exist
-            const jobLoc = await JobLocation.findOne({ 
+            const jobLoc = await JobLocation.findOne({
+                companyId: companyId,
                 name: jobLocations[index].name,
                 location: jobLocations[index].location
              });
 
             if (!jobLoc) {
-                await JobLocation.create(jobLocations[index]).catch((err) => {
-
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
-                })
-
                 const extCustomer = await Customer.findOne({ 'info.email': customer.info.email });
             
                 extCustomer.jobLocations.push(jobLocations[index]._id)
                 await extCustomer.save()
+
+                await JobLocation.create(jobLocations[index]).catch((err) => {
+
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
+                })
             }
         }
     }

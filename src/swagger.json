@@ -142,7 +142,7 @@
       "description": "For vendor login, signup and details"
     },
     {
-      "name": "Import Customer",
+      "name": "Import Customer Data",
       "description": "For import customers through excel file"
     },
     {
