@@ -2202,6 +2202,11 @@
             "name": "phone",
             "in": "formData",
             "type": "string"
+          },
+          {
+            "name": "vendorId",
+            "in": "formData",
+            "type": "string"
           }
         ],
         "responses": {
@@ -2288,6 +2293,11 @@
           },
           {
             "name": "phone",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "vendorId",
             "in": "formData",
             "type": "string"
           }
