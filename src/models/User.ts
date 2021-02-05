@@ -86,6 +86,9 @@ const UserSchema = new Schema({
     permissions: {
         role: Number,
         extra: [String],
+    },
+    contacts: {
+        type: Array
     }
 
 })

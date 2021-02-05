@@ -39,7 +39,8 @@ export const createCustomer = (req: Request, res: Response) => {
             extra: [],
         },
         contactName: params.contactName,
-        vendorId: params.vendorId
+        vendorId: params.vendorId,
+        contacts: params.contacts
     };
 
     if (params.latitude && params.longitude) {
@@ -166,9 +167,9 @@ export const updateCustomer = (req: Request, res: Response) => {
             'address.city': params.city,
             'address.state': params.state,
             'address.zipCode': params.zipCode,
-            'contact.phone': params.phone,
             contactName: params.contactName,
-            vendorId: params.vendorId
+            vendorId: params.vendorId,
+            contacts: params.contacts
         }
 
         if (params.latitude && params.longitude) {

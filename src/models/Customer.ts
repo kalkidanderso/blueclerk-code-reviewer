@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import { User, IUser} from './User'
+import { Contact } from '../common/contact' 
 
 export interface ICustomer extends IUser {
 
@@ -13,7 +14,10 @@ export interface ICustomer extends IUser {
     jobLocations: [Schema.Types.ObjectId]
     quickbookId: string
     balance: number,
-    vendorId?: string
+    vendorId?: string,
+    contacts: Contact[],
+    phone: string,
+    contactEmail: string
 
 }
 
@@ -48,7 +52,8 @@ const CustomerSchema = new Schema({
     },
     vendorId: {
         type: String,
-    }
+    },
+    contacts: Array
 
 })
 
