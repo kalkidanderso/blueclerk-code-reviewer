@@ -1,11 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { Contact } from '../common/contact'
+
+
 export interface IJobLocation extends Document {
     name: string
-    contact?: {
-      name: string
-      phone: string
-      email: string
-    }
+    contacts: Contact[],
     location: 'Point'
     address?: {
       city: string,
@@ -22,11 +21,12 @@ export interface IJobLocation extends Document {
 const JobLocationSchema = new Schema({
 
     name: { type: String, required: true},
-    contact: {
+    contacts: Array, 
+    /* [{
       name: String,
       phone: String,
       email: String
-    },
+    }] */
     location: {
       type: {
         type: String,

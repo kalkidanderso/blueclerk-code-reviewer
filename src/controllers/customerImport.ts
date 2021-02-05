@@ -11,13 +11,13 @@ var fs = require('fs');
 var XLSX = require('xlsx')
 
 export const uploadfile = (req: Request, res: Response) => {
+    try {
     const companyId = req.companyId
     const path = __dirname + '/../uploads/'
     const time = Date.now()
-
-    if (!fs.existsSync(path)) {
-        fs.mkdirSync(path);
-    }
+    // if (!fs.existsSync(path)) {
+    //     fs.mkdirSync(path);
+    // }
 
     var storage = multer.diskStorage({
         destination: function (req, file, cb) {
@@ -27,27 +27,21 @@ export const uploadfile = (req: Request, res: Response) => {
             cb(null, time + file.originalname)
         }
     })
-
     var upload = multer({ storage: storage })
     const uploadSingle = upload.single('customerSheet')
     uploadSingle(req, res, async (err) => {
         if (err) {
+            console.log(err);
             return res.json({ 'status': Status.Error, 'message': "No file available" })
         }
-
         const fileName = time + req.file.originalname
-
         if (fileName.split('.').pop() != "xlsx") {
             fs.unlinkSync(path + fileName)
             return res.json({ 'status': Status.Error, 'message': "File must be of type xlsx" })
         }
-
         let columnHeaders: any = []
-
         var workbook = XLSX.readFile(path + fileName)
-
         var sheet_name_list = workbook.SheetNames
-
         var worksheet = workbook.Sheets[sheet_name_list[0]]
         for (let key in worksheet) {
             let regEx = new RegExp("^\(\\w\)\(1\){1}$");
@@ -57,17 +51,18 @@ export const uploadfile = (req: Request, res: Response) => {
         }
 
         var defaultColumnHeads: any = [
-            'email', 'name', 'street', 'city', 'state',
+            'email', 'name', 'street', 'city', 'state','vendorNumber',
             'zipCode', 'phone', 'contactName', 'latitude', 'longitude',
-            'jobLocationName', 'jobLocationContactName', 'jobLocationContactEmail', 'jobLocationContactPhone', 'vendorNumber',
+            'jobLocationName', 'jobLocationContactName', 'jobLocationContactEmail', 'jobLocationContactPhone',
             'jobLocationLongitude', 'jobLocationLatitude', 'jobLocationStreet', 'jobLocationCity', 'jobLocationState',
-            'jobLocationZipCode'
+            'jobLocationZipCode', 'contactEmail'
         ]
         if (!columnsEqual(defaultColumnHeads, columnHeaders)) {
             return res.json({ 'status': Status.Error, 'message': `Sheet must contain following columns: ${defaultColumnHeads.join(', ')}` })
         }
 
-        var xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]])
+        var xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]], {raw: true, defval:null})
+        
         var customers: ICustomer[] = []
         const jobLocations: any[] = []
 
@@ -100,18 +95,23 @@ export const uploadfile = (req: Request, res: Response) => {
                 location: {
                     coordinates: [obj.longitude || 0, obj.latitude || 0]
                 },
-                vendorId: obj.vendorNumber || ''
-            })
+                vendorId: obj.vendorNumber || '',
+                contacts: [{
+                    email: obj.contactEmail,
+                    phone: obj.phone,
+                    name: obj.contactName
+                }]
+            })            
             customers.push(customer)
 
             const jobLocation = {
                 companyId: companyId,
                 name: obj.jobLocationName || '',
-                contact: {
+                contacts: [{
                     name: obj.jobLocationContactName || '',
                     phone: obj.jobLocationContactPhone || '',
                     email: obj.jobLocationContactEmail || ''
-                },
+                }],
                 address: {
                     city: obj.jobLocationCity || '',
                     state: obj.jobLocationState || '',
@@ -131,6 +131,10 @@ export const uploadfile = (req: Request, res: Response) => {
 
         await handleCustomerXlCreation(companyId, res, customers, jobLocations)
     })
+    } catch (err) {
+        console.log(err);
+        throw err;
+    }
 }
 
 //**** upload file helper functions ******/ 
@@ -144,8 +148,10 @@ function columnsEqual(_arr1: [any], _arr2: [any]) {
 
     for (var i = 0; i < arr1.length; i++) {
 
-        if (arr1[i] !== arr2[i])
+        if (arr1[i] !== arr2[i]){
             return false;
+        }
+            
 
     }
 
@@ -176,6 +182,8 @@ async function fetchCompanyCustomers(companyId: string, res: Response) {
     return userList
 }
 
+
+
 async function handleCustomerXlCreation(
     companyId: string,
     res: Response,
@@ -185,6 +193,7 @@ async function handleCustomerXlCreation(
     for (let index = 0; index < customers.length; index++) {
         const customer = customers[index];
         const users = await fetchCompanyCustomers(companyId, res);
+        // const fetchedJobLocations = await fetchCompanyJobLocations(companyId);
 
         if (users.length === 0 || (users.findIndex((element: any) => element.info.email === customer.info.email) < 0)) {
             // check for customer duplicates on each alteration and only save if the current customer doesn't exist
@@ -192,8 +201,7 @@ async function handleCustomerXlCreation(
             selectedJobLocation.customerId = customer._id
 
             const newJobLocation: IJobLocation = new JobLocation(selectedJobLocation)
-            customer.jobLocations.push(newJobLocation._id);
-
+            customer.jobLocations.push(newJobLocation._id)
             await Customer.create(customer).catch((err) => {
 
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
@@ -208,23 +216,36 @@ async function handleCustomerXlCreation(
             await CompanyCustomer.create(companyCustomer).catch(() => {
 
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            })
-
-            await JobLocation.create(newJobLocation).catch((err) => {
-
+            })            
+            await JobLocation.create(newJobLocation).catch((err) => {                
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
             })
-        } else {
+        } else {            
+            const customer = customers[index]
             const extCustomer = await Customer.findOne({ 'info.email': customer.info.email });
             const selectedJobLocation = jobLocations[index]
-            selectedJobLocation.customerId = extCustomer._id
 
+            const contactIndex = extCustomer.contacts.findIndex(ele => {
+                return (ele.name === customer.contacts[0].name && ele.email === customer.contacts[0].email)
+            })
+            // Updating the contact inforamtion to the existing customer.
+            if(contactIndex < 0) {
+                extCustomer.contacts.push(customer.contacts[0])
+            }
+
+            //Updating the contact information to the existing Job Location
+            const jobLocationContactIndex = extCustomer.contacts.findIndex(ele => { 
+                return (ele.name === selectedJobLocation.contacts[0].name && ele.email === selectedJobLocation.contacts[0].email )
+            })
+            if(jobLocationContactIndex <0) {
+                extCustomer.contacts.push(selectedJobLocation.contacts[0])
+            }
+            selectedJobLocation.customerId = extCustomer._id
             const newJobLocation: IJobLocation = new JobLocation(selectedJobLocation)
             extCustomer.jobLocations.push(newJobLocation._id)
             await extCustomer.save()
 
-            await JobLocation.create(newJobLocation).catch((err) => {
-
+            await JobLocation.create(newJobLocation).catch((err) => {                 
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
             })
         }
