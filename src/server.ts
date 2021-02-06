@@ -29,7 +29,7 @@ console.log('DB_HOST::::::::', DB_HOST)
 console.log('DB:::::', DB_NAME)
 console.log( `mongodb+srv://${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`)
 mongoose.connect(
-  `mongodb://${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`,
+  `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`,
   {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false},
   (err: MongoError) => {
 
