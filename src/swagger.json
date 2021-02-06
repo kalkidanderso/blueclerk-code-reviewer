@@ -2139,7 +2139,7 @@
     },
     "/addContact": {
       "post":{
-        "tags":  ["Customer"],
+        "tags":  ["Contact"],
         "summary": "Adds a contact to the customer",
         "description": "Adds an array contacts list to the customer",
         "consumes": [
@@ -2173,7 +2173,7 @@
           "200": {
             "description": "Returns new contact information",
             "schema": {
-              "$ref": "#/definations/ContactSchemaResponse" 
+              "$ref": "#/definitions/ContactSchemaResponse" 
             }
           }
         }
