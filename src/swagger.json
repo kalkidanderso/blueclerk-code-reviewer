@@ -2160,6 +2160,14 @@
           "name": "phone",
           "in": "formData",
           "type": "string"
+        },{
+          "name": "type",
+          "in": "formData",
+          "type": "string"
+        },{
+          "name": "referenceNumber",
+          "in": "formData",
+          "type": "string"
         }],
         "responses":{
           "200": {
