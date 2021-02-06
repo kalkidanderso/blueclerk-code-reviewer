@@ -1,10 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose'
-import { Contact } from '../common/contact'
+import { IContact } from '../common/contact'
 
 
 export interface IJobLocation extends Document {
     name: string
-    contacts: Contact[],
+    contacts: IContact[],
     location: 'Point'
     address?: {
       city: string,
