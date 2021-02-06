@@ -33,6 +33,7 @@ import * as estimateController from '../controllers/estimate'
 import * as paymentController from '../controllers/payment'
 import * as tagController from '../controllers/tag'
 import { Personalize } from 'aws-sdk'
+import * as ContactController from '../controllers/contact';
 
 import jobLocation from './jobLocation'
 import jobSite from './jobSite'
@@ -1364,6 +1365,34 @@ export default function (sio: any) {
         validate(Validations.getLocationTagJobs),
         checkUserPermissions(Permissions.Get_Location_Tag_Jobs),
         tagController.getLocationTagJobs
+    )
+
+    router.post(
+        '/addContact',
+        passport.authenticate('jwt', { session: false }),
+        checkUserPermissions(Permissions.Get_Location_Tag_Jobs),
+        ContactController.addContact
+    )
+
+    router.put(
+        '/updateContact',
+        passport.authenticate('jwt', { session: false }),
+        checkUserPermissions(Permissions.Get_Location_Tag_Jobs),
+        ContactController.updateContact
+    ),
+
+    router.get(
+        '/getContacts',
+        passport.authenticate('jwt', { session: false }),
+        checkUserPermissions(Permissions.Get_Location_Tag_Jobs),
+        ContactController.getContacts
+    )
+
+    router.delete(
+        '/removeContact',
+        passport.authenticate('jwt', { session: false }),
+        checkUserPermissions(Permissions.Get_Location_Tag_Jobs),
+        ContactController.removeContact
     )
 
     return router
