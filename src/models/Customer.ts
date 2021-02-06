@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import { User, IUser} from './User'
-import { Contact } from '../common/contact' 
+import { IContact } from '../common/contact' 
 
 export interface ICustomer extends IUser {
 
@@ -15,7 +15,7 @@ export interface ICustomer extends IUser {
     quickbookId: string
     balance: number,
     vendorId?: string,
-    contacts: Contact[],
+    contacts: IContact[],
     phone: string,
     contactEmail: string
 

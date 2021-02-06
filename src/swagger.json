@@ -2137,6 +2137,151 @@
         ]
       }
     },
+    "/addContact": {
+      "post":{
+        "tags":  ["Customer"],
+        "summary": "Adds a contact to the customer",
+        "description": "Adds an array contacts list to the customer",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters":[{
+          "name": "name",
+          "in": "formData",
+          "type": "string"
+        },{
+          "name": "email",
+          "in": "formData",
+          "type": "string"
+        },{
+          "name": "phone",
+          "in": "formData",
+          "type": "string"
+        }],
+        "responses":{
+          "200": {
+            "description": "Returns new contact information",
+            "schema": {
+              "$ref": "#/definations/ContactSchemaResponse" 
+            }
+          }
+        }
+      }
+    },
+    "/getContacts": {
+      "get": {
+        "tags": [
+          "Contact"
+        ],
+        "summary": "Returns list of contacts for the Customer or Job location",
+        "parameters":[{
+          "name": "type",
+          "in": "query",
+          "required": true
+        },{
+          "name": "referenceNumber",
+          "in": "query",
+          "required": true
+        }],
+        "responses":{
+          "200":{
+            "description":" Returns list of contacts for the reference number based on the type",
+            "schema":{
+              "type": "array",
+              "items":{
+                "$ref": "#/definitions/ContactSchemaResponse"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/updateContact": {
+      "put": {
+        "tags":  ["Contact"],
+        "summary": "Adds a contact to the customer",
+        "description": "Adds an array contacts list to the customer",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters":[{
+          "name": "_id",
+          "in": "formData",
+          "type": "string",
+          "required": true
+        },{
+          "name": "name",
+          "in": "formData",
+          "type": "string"
+        },{
+          "name": "email",
+          "in": "formData",
+          "type": "string"
+        },{
+          "name": "phone",
+          "in": "formData",
+          "type": "string"
+        }],
+        "responses":{
+          "200": {
+            "description": "Returns new contact information",
+            "schema": {
+              "$ref": "#/definations/ContactSchemaResponse" 
+            }
+          }
+        }
+      }
+    },
+    "removeContact": {
+      "delete": {
+        "tags": [
+          "Contact"
+        ],
+        "summary": "Removes contact from the Customer or Job location",
+        "description": "Removes the contact from the customer or Job location",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [{
+          "name":"contactId",
+          "in": "formData",
+          "required": true,
+          "type": "string"
+        }, {
+          "name": "type",
+          "in": "formData",
+          "required": "true",
+          "type": "string"
+        }, {
+          "name": "referenceNumber",
+          "in": "formData",
+          "required": "true",
+          "type": "string"
+        }],
+        "responses":{
+          "200": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/createCustomer": {
       "post": {
         "tags": [
@@ -7919,6 +8064,23 @@
     }
   },
   "definitions": {
+    "ContactSchemaResponse": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        }
+      }
+    },
     "company": {
       "type":"object",
       "properties": {
