@@ -53,7 +53,7 @@ export const addContact = async (req: Request, res: Response) => {
         }
     } catch (err) {
         console.log(err)
-        res.json({ 'status': Status.Error, 'message': 'type is invalid'})
+        res.json({ 'status': Status.Error, 'message': 'Contact already added'})
     }
 }
 
