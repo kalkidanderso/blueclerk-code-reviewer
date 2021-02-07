@@ -2151,23 +2151,33 @@
         "parameters":[{
           "name": "name",
           "in": "formData",
-          "type": "string"
+          "type": "string",
+          "example": "Jhon"
         },{
           "name": "email",
           "in": "formData",
-          "type": "string"
+          "type": "string",
+          "example": "jhon@gmail.com"
         },{
           "name": "phone",
           "in": "formData",
-          "type": "string"
+          "type": "string",
+          "example": "9705546998"
         },{
           "name": "type",
           "in": "formData",
-          "type": "string"
+          "type": "string",
+          "example": "Customer"
         },{
           "name": "referenceNumber",
           "in": "formData",
-          "type": "string"
+          "type": "string",
+          "example": "601c9b477c3b392cc2adbd17"
+        },{
+          "name": "Authorization",
+          "in": "headers",
+          "type": "string",
+          "example": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vYXBpLmJsdWVjbGVyay5jb20iLCJpZCI6IjVmMzFiODNlZjdlNDJjYmU5YmVkMDg3ZSIsImlhdCI6MTYxMjI4MTc5NywiZXhwIjoxMDAwMDAwMTYxMjI4MTc5Nn0.XdJEXg9KmH887k81SDyCyPNAf46LJdRNQgOu32jt7D4"
         }],
         "responses":{
           "200": {
