@@ -19,4 +19,4 @@ const ContactSchema = new Schema({
 
 
 
-export const Contract = mongoose.model<IContact>('Contact', ContactSchema)
+export const Contact = mongoose.model<IContact>('Contact', ContactSchema)

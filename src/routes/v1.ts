@@ -1369,22 +1369,22 @@ export default function (sio: any) {
 
     router.post(
         '/addContact',
-        passport.authenticate('jwt', { session: false }),
-        checkUserPermissions(Permissions.Get_Location_Tag_Jobs),
+        passport.authenticate('jwt', { session: false }),        
+        checkUserPermissions(Permissions.Customer_Create),
         ContactController.addContact
     )
 
     router.put(
         '/updateContact',
         passport.authenticate('jwt', { session: false }),
-        checkUserPermissions(Permissions.Get_Location_Tag_Jobs),
+        checkUserPermissions(Permissions.Customer_Create),
         ContactController.updateContact
     ),
 
     router.get(
         '/getContacts',
         passport.authenticate('jwt', { session: false }),
-        checkUserPermissions(Permissions.Get_Location_Tag_Jobs),
+        checkUserPermissions(Permissions.Customer_Create),
         ContactController.getContacts
     )
 
