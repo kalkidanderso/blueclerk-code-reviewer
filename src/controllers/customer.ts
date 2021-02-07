@@ -158,7 +158,7 @@ export const updateCustomer = (req: Request, res: Response) => {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
 
-        var data: any =  {
+        var data: any =  {  
             'info.email': params.email,
             'profile.firstName': params.name,
             'profile.lastName': params.name,

@@ -53,7 +53,11 @@ const CustomerSchema = new Schema({
     vendorId: {
         type: String,
     },
-    contacts: Array
+    contacts: [{ 
+        type: Schema.Types.ObjectId,
+        ref: 'Contact',
+        required: false
+    }]
 
 })
 
