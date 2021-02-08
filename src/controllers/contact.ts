@@ -57,11 +57,21 @@ export const addContact = async (req: Request, res: Response) => {
     }
 }
 
-export const updateContact = (req: Request, res: Response) => {
+export const updateContact = async (req: Request, res: Response) => {
     try {
-
+        const result = await Contact.findByIdAndUpdate(req.body._id, {name: req.body.name, phone: req.body.phone, email: req.body.email}, {
+            new: true
+        })
+        console.log('Result::::')
+        console.log(result)
+        if(result) {
+            res.json({status: Status.Success, contact: result})
+        } else {
+            res.json({status: Status.Error, message: 'Contact not found'})
+        }
     } catch (err) {
-
+        console.log(err)
+        res.json({status: Status.Error, message: 'Error in updating contact'})
     }
 }
 
@@ -85,10 +95,25 @@ export const getContacts = async (req: Request, res: Response) => {
     }
 }
 
-export const removeContact = (req: Request, res: Response) => {
+export const removeContact = async (req: Request, res: Response) => {
     try {
-
+        if(req.body.type === 'Customer') {
+            const customer = await Customer.findOne({_id: req.body.referenceNumber})
+            if(customer) {
+                await Customer.findByIdAndUpdate(req.body.referenceNumber, {$pull: {contacts: req.body._id }}, { new: true})
+                const contactCustomer = await Customer.findOne({contacts: req.body._id})
+                if(!contactCustomer) {
+                    await Contact.findByIdAndRemove(req.body._id)
+                } else {
+                    console.log('Contact removed from the customer only....')
+                }
+            } else {
+                res.json({status: Status.Error, message: 'Customer not found'})
+            }
+        } else {
+            res.json({ status: Status.Error, message: 'Under development'})
+        }
     } catch (err) {
-
+        return res.json({status: Status.Error, message: 'Removed the contact'})
     }
 }
