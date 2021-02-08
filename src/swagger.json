@@ -2178,6 +2178,12 @@
           "in": "headers",
           "type": "string",
           "example": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vYXBpLmJsdWVjbGVyay5jb20iLCJpZCI6IjVmMzFiODNlZjdlNDJjYmU5YmVkMDg3ZSIsImlhdCI6MTYxMjI4MTc5NywiZXhwIjoxMDAwMDAwMTYxMjI4MTc5Nn0.XdJEXg9KmH887k81SDyCyPNAf46LJdRNQgOu32jt7D4"
+        },{
+          "name": "contactId",
+          "in": "formData",
+          "example": "601c9b477c3b392cc2adbd19",
+          "description":"ContactId reference while adding an existing contact to the job location"
+
         }],
         "responses":{
           "200": {
