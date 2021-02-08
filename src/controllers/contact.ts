@@ -100,13 +100,16 @@ export const removeContact = async (req: Request, res: Response) => {
         if(req.body.type === 'Customer') {
             const customer = await Customer.findOne({_id: req.body.referenceNumber})
             if(customer) {
-                await Customer.findByIdAndUpdate(req.body.referenceNumber, {$pull: {contacts: req.body._id }}, { new: true})
-                const contactCustomer = await Customer.findOne({contacts: req.body._id})
+                const result = await Customer.findByIdAndUpdate(req.body.referenceNumber, {$pull: {contacts: req.body.contactId }}, { new: true})
+                console.log(result)
+                const contactCustomer = await Customer.findOne({contacts: req.body.contactId})
                 if(!contactCustomer) {
-                    await Contact.findByIdAndRemove(req.body._id)
+                    await Contact.findByIdAndRemove(req.body.contactId)
+                    console.log('Contact removed permanently.........')
                 } else {
                     console.log('Contact removed from the customer only....')
                 }
+                res.json({ status: Status.Success, message: 'Contact removed successfully'})
             } else {
                 res.json({status: Status.Error, message: 'Customer not found'})
             }
