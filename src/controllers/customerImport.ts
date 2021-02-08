@@ -234,12 +234,12 @@ async function handleCustomerXlCreation(
             }
 
             //Updating the contact information to the existing Job Location
-            const jobLocationContactIndex = extCustomer.contacts.findIndex(ele => { 
+            /*const jobLocationContactIndex = extCustomer.contacts.findIndex(ele => { 
                 return (ele.name === selectedJobLocation.contacts[0].name && ele.email === selectedJobLocation.contacts[0].email )
             })
             if(jobLocationContactIndex <0) {
                 extCustomer.contacts.push(selectedJobLocation.contacts[0])
-            }
+            }*/
             selectedJobLocation.customerId = extCustomer._id
             const newJobLocation: IJobLocation = new JobLocation(selectedJobLocation)
             extCustomer.jobLocations.push(newJobLocation._id)

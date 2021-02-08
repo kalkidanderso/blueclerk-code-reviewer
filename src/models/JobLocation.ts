@@ -4,7 +4,7 @@ import { IContact } from '../common/contact'
 
 export interface IJobLocation extends Document {
     name: string
-    contacts: IContact[],
+    contacts: [Schema.Types.ObjectId],
     location: 'Point'
     address?: {
       city: string,
@@ -21,12 +21,11 @@ export interface IJobLocation extends Document {
 const JobLocationSchema = new Schema({
 
     name: { type: String, required: true},
-    contacts: Array, 
-    /* [{
-      name: String,
-      phone: String,
-      email: String
-    }] */
+    contacts: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Contact',
+      required: false
+    }],    
     location: {
       type: {
         type: String,
