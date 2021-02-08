@@ -3317,7 +3317,7 @@
         "tags": [
           "Job Location"
         ],
-        "summary": "To create a customer",
+        "summary": "To create a Job location",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -3392,6 +3392,45 @@
             "description": "Success",
             "schema": {
               "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Job Location"
+        ],
+        "summary": "Get Job location by companyId and/or customerId",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "companyId",
+            "type": "string",
+            "required": false
+          },{
+            "in": "query",
+            "name": "customerId",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "array",
+              "items":{
+                "$ref": "#/definitions/jobLocation"
+              }              
             }
           }
         },
