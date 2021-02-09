@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose'
 import { IContact } from '../common/contact'
 
 
+
 export interface IJobLocation extends Document {
     name: string
     contacts: [Schema.Types.ObjectId],

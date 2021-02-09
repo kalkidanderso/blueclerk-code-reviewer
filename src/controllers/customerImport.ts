@@ -6,6 +6,8 @@ import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { User, IUser } from '../models/User'
 import multer from 'multer'
 import { JobLocation, IJobLocation } from '../models/JobLocation';
+import { Contact } from '../models/Contact'
+import { IContact } from '../common/contact'
 
 var fs = require('fs');
 var XLSX = require('xlsx')
@@ -51,12 +53,10 @@ export const uploadfile = (req: Request, res: Response) => {
         }
 
         var defaultColumnHeads: any = [
-            'email', 'name', 'street', 'city', 'state','vendorNumber',
-            'zipCode', 'phone', 'contactName', 'latitude', 'longitude',
-            'jobLocationName', 'jobLocationContactName', 'jobLocationContactEmail', 'jobLocationContactPhone',
-            'jobLocationLongitude', 'jobLocationLatitude', 'jobLocationStreet', 'jobLocationCity', 'jobLocationState',
-            'jobLocationZipCode', 'contactEmail'
-        ]
+            'vendorNumber', 'name', 'email', 'contactName', 'contactEmail', 'phone', 'street', 'city', 'state', 'zipCode',
+            'latitude', 'longitude', 'jobLocationName', 'jobLocationContactName', 'jobLocationContactEmail', 'jobLocationContactPhone',
+            'jobLocationStreet', 'jobLocationCity', 'jobLocationState', 'jobLocationZipCode', 'jobLocationLatitude', 'jobLocationLongitude'
+        ]        
         if (!columnsEqual(defaultColumnHeads, columnHeaders)) {
             return res.json({ 'status': Status.Error, 'message': `Sheet must contain following columns: ${defaultColumnHeads.join(', ')}` })
         }
@@ -65,7 +65,8 @@ export const uploadfile = (req: Request, res: Response) => {
         
         var customers: ICustomer[] = []
         const jobLocations: any[] = []
-
+        const customerContacts: IContact[] = []
+        const jobLocationContacts: IContact[] = []        
         xlData.map((obj: any) => {
             const customer = new Customer({
                 contactName: obj.contactName,
@@ -96,22 +97,19 @@ export const uploadfile = (req: Request, res: Response) => {
                     coordinates: [obj.longitude || 0, obj.latitude || 0]
                 },
                 vendorId: obj.vendorNumber || '',
-                contacts: [{
-                    email: obj.contactEmail,
-                    phone: obj.phone,
-                    name: obj.contactName
-                }]
+                contacts: []
             })            
+            const contact = new Contact({
+                name: obj.contactName,
+                phone: obj.phone,
+                email: obj.contactEmail
+            })
             customers.push(customer)
+            customerContacts.push(contact)
 
             const jobLocation = {
                 companyId: companyId,
-                name: obj.jobLocationName || '',
-                contacts: [{
-                    name: obj.jobLocationContactName || '',
-                    phone: obj.jobLocationContactPhone || '',
-                    email: obj.jobLocationContactEmail || ''
-                }],
+                name: obj.jobLocationName || '',                
                 address: {
                     city: obj.jobLocationCity || '',
                     state: obj.jobLocationState || '',
@@ -120,16 +118,20 @@ export const uploadfile = (req: Request, res: Response) => {
                 },
                 location: {
                     coordinates: [obj.jobLocationLongitude || 0, obj.jobLocationLatitude || 0]
-                }
-            }
-
+                }                
+            }            
+            const jobLocationContact = new Contact({            
+                    name: obj.jobLocationContactName || '',
+                    phone: obj.jobLocationContactPhone || '',
+                    email: obj.jobLocationContactEmail || ''                
+            })
+            jobLocationContacts.push(jobLocationContact)
             jobLocations.push(jobLocation)
-
         })
 
         fs.unlinkSync(path + fileName)
 
-        await handleCustomerXlCreation(companyId, res, customers, jobLocations)
+        await handleCustomerXlCreation(companyId, res, customers, jobLocations, customerContacts, jobLocationContacts)
     })
     } catch (err) {
         console.log(err);
@@ -144,10 +146,8 @@ function columnsEqual(_arr1: [any], _arr2: [any]) {
         return false;
 
     var arr1 = _arr1.concat().sort();
-    var arr2 = _arr2.concat().sort();
-
-    for (var i = 0; i < arr1.length; i++) {
-
+    var arr2 = _arr2.concat().sort();    
+    for (var i = 0; i < arr1.length; i++) {        
         if (arr1[i] !== arr2[i]){
             return false;
         }
@@ -182,14 +182,26 @@ async function fetchCompanyCustomers(companyId: string, res: Response) {
     return userList
 }
 
+async function findOrCreateContact(contact: IContact) {
+    let cnt = null
+    cnt = await Contact.findOne(contact)
+    if(!cnt) {
+        cnt = await Contact.create(contact)
+    }
+    return cnt
+}
+
 
 
 async function handleCustomerXlCreation(
     companyId: string,
     res: Response,
     customers: ICustomer[],
-    jobLocations: IJobLocation[]
+    jobLocations: IJobLocation[],
+    customerContacts: IContact[],
+    jobLocationContacts: IContact[]
 ) {
+    try {
     for (let index = 0; index < customers.length; index++) {
         const customer = customers[index];
         const users = await fetchCompanyCustomers(companyId, res);
@@ -199,11 +211,18 @@ async function handleCustomerXlCreation(
             // check for customer duplicates on each alteration and only save if the current customer doesn't exist
             const selectedJobLocation = jobLocations[index]
             selectedJobLocation.customerId = customer._id
-
+            // Creating contact
+            const contact = await findOrCreateContact(customerContacts[index])
+            customer.contacts[0] = contact._id
+            // Creating Job Location
             const newJobLocation: IJobLocation = new JobLocation(selectedJobLocation)
-            customer.jobLocations.push(newJobLocation._id)
-            await Customer.create(customer).catch((err) => {
-
+            const jobLocationContact = await findOrCreateContact(jobLocationContacts[index])
+            if(customer.contacts.indexOf(jobLocationContact._id) < 0) {
+                customer.contacts.push(jobLocationContact._id)    
+            }            
+            newJobLocation.contacts = [jobLocationContact._id]
+            customer.jobLocations.push(newJobLocation._id)            
+            await Customer.create(customer).catch((err) => {                
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
             })
             // create company customer here
@@ -216,42 +235,37 @@ async function handleCustomerXlCreation(
             await CompanyCustomer.create(companyCustomer).catch(() => {
 
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            })            
+            })
             await JobLocation.create(newJobLocation).catch((err) => {                
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
             })
-        } else {            
+        } else {
             const customer = customers[index]
             const extCustomer = await Customer.findOne({ 'info.email': customer.info.email });
             const selectedJobLocation = jobLocations[index]
-
-            const contactIndex = extCustomer.contacts.findIndex(ele => {
-                return (ele.name === customer.contacts[0].name && ele.email === customer.contacts[0].email)
-            })
+            const contact = await findOrCreateContact(jobLocationContacts[index])
+            const contactIndex = extCustomer.contacts.indexOf(contact._id)
             // Updating the contact inforamtion to the existing customer.
             if(contactIndex < 0) {
-                extCustomer.contacts.push(customer.contacts[0])
-            }
-
-            //Updating the contact information to the existing Job Location
-            /*const jobLocationContactIndex = extCustomer.contacts.findIndex(ele => { 
-                return (ele.name === selectedJobLocation.contacts[0].name && ele.email === selectedJobLocation.contacts[0].email )
-            })
-            if(jobLocationContactIndex <0) {
-                extCustomer.contacts.push(selectedJobLocation.contacts[0])
-            }*/
+                extCustomer.contacts.push(contact._id)
+            }            
             selectedJobLocation.customerId = extCustomer._id
+            selectedJobLocation.contacts = [contact._id]
             const newJobLocation: IJobLocation = new JobLocation(selectedJobLocation)
             extCustomer.jobLocations.push(newJobLocation._id)
             await extCustomer.save()
 
-            await JobLocation.create(newJobLocation).catch((err) => {                 
+            await JobLocation.create(newJobLocation).catch((err) => {                
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
             })
         }
     }
 
     return res.json({ 'status': Status.Success, 'message': 'Customer data upload successful.' })
+    } catch (err) {
+        console.log(err)
+        return res.json({ 'status': Status.Error, 'message': err })
+    } 
 }
 //**** upload file helper functions ****//
 
