@@ -17,9 +17,9 @@ export const uploadfile = (req: Request, res: Response) => {
     const companyId = req.companyId
     const path = __dirname + '/../uploads/'
     const time = Date.now()
-    // if (!fs.existsSync(path)) {
-    //     fs.mkdirSync(path);
-    // }
+    if (!fs.existsSync(path)) {
+        fs.mkdirSync(path);
+    }
 
     var storage = multer.diskStorage({
         destination: function (req, file, cb) {
