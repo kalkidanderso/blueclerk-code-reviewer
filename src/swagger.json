@@ -3317,81 +3317,25 @@
         "tags": [
           "Job Location"
         ],
-        "summary": "To create a Job location",
+        "summary": "Create a customer job location",
         "description": "",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
         "produces": [
           "application/json"
         ],
         "parameters": [
           {
-            "name": "email",
-            "in": "formData",
-            "required": true,
-            "type": "object",
-            "properties": {
-              "$ref": "#/definitions/JobCharges"
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "$ref": "#/definitions/jobLocation"
             }
-          },
-          {
-            "name": "name",
-            "in": "formData",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "street",
-            "in": "formData",
-            "type": "string"
-          },
-          {
-            "name": "city",
-            "in": "formData",
-            "type": "string"
-          },
-          {
-            "name": "state",
-            "in": "formData",
-            "type": "string"
-          },
-          {
-            "name": "zipCode",
-            "in": "formData",
-            "type": "string"
-          },
-          {
-            "name": "latitude",
-            "in": "formData",
-            "type": "string"
-          },
-          {
-            "name": "longitude",
-            "in": "formData",
-            "type": "string"
-          },
-          {
-            "name": "contactName",
-            "in": "formData",
-            "type": "string"
-          },
-          {
-            "name": "phone",
-            "in": "formData",
-            "type": "string"
-          },
-          {
-            "name": "vendorId",
-            "in": "formData",
-            "type": "string"
           }
         ],
         "responses": {
           "200": {
             "description": "Success",
             "schema": {
-              "$ref": "#/definitions/GeneralAPIResponse"
+              "$ref": "#/definitions/jobLocation"
             }
           }
         },
@@ -3416,7 +3360,8 @@
             "name": "companyId",
             "type": "string",
             "required": false
-          },{
+          },
+          {
             "in": "query",
             "name": "customerId",
             "type": "string",
@@ -3427,10 +3372,7 @@
           "200": {
             "description": "Success",
             "schema": {
-              "type": "array",
-              "items":{
-                "$ref": "#/definitions/jobLocation"
-              }              
+              "$ref": "#/definitions/jobLocation"
             }
           }
         },
@@ -3455,10 +3397,7 @@
           {
             "in": "path",
             "name": "id",
-            "type": "Object",
-            "properties": {
-
-            },
+            "type": "string",
             "required": true
           },
           {
