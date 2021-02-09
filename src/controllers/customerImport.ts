@@ -239,9 +239,10 @@ async function handleCustomerXlCreation(
             await JobLocation.create(newJobLocation).catch((err) => {                
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
             })
+            
         } else {
             const customer = customers[index]
-            const extCustomer = await Customer.findOne({ 'profile.firstName': customer.profile.firstName });
+            const extCustomer = await Customer.findOne({ 'profile.firstName': customer.profile.firstName, company: companyId });
             const selectedJobLocation = jobLocations[index]
             if(extCustomer.info.email != customer.info.email) {
                 const emailContact = await findOrCreateContact(new Contact({phone: customer.contact.phone, email: customer.info.email}))
@@ -258,7 +259,7 @@ async function handleCustomerXlCreation(
             selectedJobLocation.customerId = extCustomer._id
             selectedJobLocation.contacts = [contact._id]
             const newJobLocation: IJobLocation = new JobLocation(selectedJobLocation)
-            extCustomer.jobLocations.push(newJobLocation._id)
+            extCustomer.jobLocations.push(newJobLocation._id)            
             await extCustomer.save()
 
             await JobLocation.create(newJobLocation).catch((err) => {                
