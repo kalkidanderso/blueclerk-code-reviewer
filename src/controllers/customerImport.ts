@@ -174,7 +174,7 @@ async function fetchCompanyCustomers(companyId: string, res: Response) {
         .catch(() => res.json({ 'status': Status.Error, 'message': Messages.GenericError }))
 
     if (companyCustomerList.length !== 0) {
-        await User.find({ _id: { $in: companyCustomerList } }, 'info.email')
+        await User.find({ _id: { $in: companyCustomerList } }, 'profile.firstName')
             .then((users: IUser[]) => userList = users)
             .catch(() => res.json({ 'status': Status.Error, 'message': Messages.GenericError }))
     }
@@ -183,8 +183,8 @@ async function fetchCompanyCustomers(companyId: string, res: Response) {
 }
 
 async function findOrCreateContact(contact: IContact) {
-    let cnt = null
-    cnt = await Contact.findOne(contact)
+    let cnt = null    
+    cnt = await Contact.findOne({name: contact.name, phone: contact.phone, email: contact.email})
     if(!cnt) {
         cnt = await Contact.create(contact)
     }
@@ -206,8 +206,7 @@ async function handleCustomerXlCreation(
         const customer = customers[index];
         const users = await fetchCompanyCustomers(companyId, res);
         // const fetchedJobLocations = await fetchCompanyJobLocations(companyId);
-
-        if (users.length === 0 || (users.findIndex((element: any) => element.info.email === customer.info.email) < 0)) {
+        if (users.length === 0 || (users.findIndex((element: any) => element.profile.firstName === customer.profile.firstName) < 0)) {
             // check for customer duplicates on each alteration and only save if the current customer doesn't exist
             const selectedJobLocation = jobLocations[index]
             selectedJobLocation.customerId = customer._id
@@ -217,6 +216,7 @@ async function handleCustomerXlCreation(
             // Creating Job Location
             const newJobLocation: IJobLocation = new JobLocation(selectedJobLocation)
             const jobLocationContact = await findOrCreateContact(jobLocationContacts[index])
+            
             if(customer.contacts.indexOf(jobLocationContact._id) < 0) {
                 customer.contacts.push(jobLocationContact._id)    
             }            
@@ -241,10 +241,16 @@ async function handleCustomerXlCreation(
             })
         } else {
             const customer = customers[index]
-            const extCustomer = await Customer.findOne({ 'info.email': customer.info.email });
+            const extCustomer = await Customer.findOne({ 'profile.firstName': customer.profile.firstName });
             const selectedJobLocation = jobLocations[index]
+            if(extCustomer.info.email != customer.info.email) {
+                const emailContact = await findOrCreateContact(new Contact({phone: customer.contact.phone, email: customer.info.email}))
+                if(extCustomer.contacts.indexOf(emailContact._id) < 0) {
+                    extCustomer.contacts.push(emailContact._id)
+                }
+            }
             const contact = await findOrCreateContact(jobLocationContacts[index])
-            const contactIndex = extCustomer.contacts.indexOf(contact._id)
+            const contactIndex = extCustomer.contacts.indexOf(contact._id)            
             // Updating the contact inforamtion to the existing customer.
             if(contactIndex < 0) {
                 extCustomer.contacts.push(contact._id)
