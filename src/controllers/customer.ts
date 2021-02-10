@@ -135,11 +135,7 @@ export const getCustomers = (req: Request, res: Response) => {
         })
         
         User.find({_id : {$in: customerIds}},
-<<<<<<< HEAD
             'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId',
-=======
-            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company',
->>>>>>> feat: add job location & job site fields to locationTag and equipment tags
             (err: any, users: IUser[]) =>{
             
             if (err) {
