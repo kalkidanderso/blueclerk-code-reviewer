@@ -184,7 +184,8 @@ async function fetchCompanyCustomers(companyId: string, res: Response) {
 
 async function findOrCreateContact(contact: IContact) {
     let cnt = null    
-    cnt = await Contact.findOne({name: contact.name, phone: contact.phone, email: contact.email})
+    let { email, phone} = contact 
+    cnt = await Contact.findOne({ email, phone})
     if(!cnt) {
         cnt = await Contact.create(contact)
     }
