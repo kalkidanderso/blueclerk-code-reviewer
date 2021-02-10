@@ -251,21 +251,34 @@ async function handleCustomerXlCreation(
                     extCustomer.contacts.push(emailContact._id)
                 }
             }
-            const contact = await findOrCreateContact(jobLocationContacts[index])
-            const contactIndex = extCustomer.contacts.indexOf(contact._id)            
+
+
+            const contact = await findOrCreateContact(jobLocationContacts[index])            
+            const contactIndex = extCustomer.contacts.indexOf(contact._id)
             // Updating the contact inforamtion to the existing customer.
             if(contactIndex < 0) {
                 extCustomer.contacts.push(contact._id)
-            }            
-            selectedJobLocation.customerId = extCustomer._id
-            selectedJobLocation.contacts = [contact._id]
-            const newJobLocation: IJobLocation = new JobLocation(selectedJobLocation)
-            extCustomer.jobLocations.push(newJobLocation._id)            
+            }
+
+            const extJobLocation = await JobLocation.findOne({name: selectedJobLocation.name, companyId: companyId, customerId: extCustomer._id })
+            if(!extJobLocation) {
+                selectedJobLocation.customerId = extCustomer._id
+                selectedJobLocation.contacts = [contact._id]
+                const newJobLocation: IJobLocation = new JobLocation(selectedJobLocation)
+                extCustomer.jobLocations.push(newJobLocation._id)
+                await JobLocation.create(newJobLocation).catch((err) => {                
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
+                })
+            } else {
+                if(extJobLocation.contacts.indexOf(contact._id) < 0) {
+                    extJobLocation.contacts.push(contact._id)                    
+                }
+            }
+            
+            
             await extCustomer.save()
 
-            await JobLocation.create(newJobLocation).catch((err) => {                
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
-            })
+            
         }
     }
 
