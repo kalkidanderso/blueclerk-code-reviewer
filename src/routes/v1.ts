@@ -848,13 +848,13 @@ export default function (sio: any) {
         validate(Validations.getOpenServiceTickets),
         serviceTicketController.getOpenServiceTickets
     )
-
+    
     router.post(
         '/createServiceTicket',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Create_Service_Ticket),
-        validate(Validations.createTicket),
+       //validate(Validations.createTicket),
         serviceTicketController.createServiceTicket
     )
   

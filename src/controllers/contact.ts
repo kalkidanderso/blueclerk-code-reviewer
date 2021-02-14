@@ -74,8 +74,7 @@ export const addContact = async (req: Request, res: Response) => {
             return res.json({success: Status.Created, contact})
         }
     } catch (err) {
-        console.log(err)
-        res.json({ 'status': Status.Error, 'message': 'Contact already added'})
+        return res.json({ 'status': Status.Error, 'message': 'Contact already added'})
     }
 }
 
@@ -87,13 +86,12 @@ export const updateContact = async (req: Request, res: Response) => {
         console.log('Result::::')
         console.log(result)
         if(result) {
-            res.json({status: Status.Success, contact: result})
+            return res.json({status: Status.Success, contact: result})
         } else {
-            res.json({status: Status.Error, message: 'Contact not found'})
+           return res.json({status: Status.Error, message: 'Contact not found'})
         }
     } catch (err) {
-        console.log(err)
-        res.json({status: Status.Error, message: 'Error in updating contact'})
+        return res.json({status: Status.Error, message: 'Error in updating contact'})
     }
 }
 
@@ -118,8 +116,7 @@ export const getContacts = async (req: Request, res: Response) => {
             })
         }
     } catch (err) {
-        console.log(err)
-        res.json({ status: Status.Error, message: 'Exception error'})
+        return res.json({ status: Status.Error, message: 'Exception error'})
     }
 }
 
@@ -128,8 +125,7 @@ export const removeContact = async (req: Request, res: Response) => {
         if(req.body.type === 'Customer') {
             const customer = await Customer.findOne({_id: req.body.referenceNumber})
             if(customer) {
-                const result = await Customer.findByIdAndUpdate(req.body.referenceNumber, {$pull: {contacts: req.body.contactId }}, { new: true})
-                console.log(result)
+                await Customer.findByIdAndUpdate(req.body.referenceNumber, {$pull: {contacts: req.body.contactId }}, { new: true})
                 const contactCustomer = await Customer.findOne({contacts: req.body.contactId})
                 if(!contactCustomer) {
                     await Contact.findByIdAndRemove(req.body.contactId)
@@ -137,12 +133,12 @@ export const removeContact = async (req: Request, res: Response) => {
                 } else {
                     console.log('Contact removed from the customer only....')
                 }
-                res.json({ status: Status.Success, message: 'Contact removed successfully'})
+                return res.json({ status: Status.Success, message: 'Contact removed successfully'})
             } else {
-                res.json({status: Status.Error, message: 'Customer not found'})
+                return res.json({status: Status.Error, message: 'Customer not found'})
             }
         } else {
-            res.json({ status: Status.Error, message: 'Under development'})
+            return res.json({ status: Status.Error, message: 'Under development'})
         }
     } catch (err) {
         return res.json({status: Status.Error, message: 'Removed the contact'})

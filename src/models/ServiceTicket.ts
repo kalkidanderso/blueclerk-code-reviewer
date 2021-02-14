@@ -7,6 +7,9 @@ export interface IServiceTicket extends Document {
     customer: Schema.Types.ObjectId
     createdBy: Schema.Types.ObjectId
     note: string
+    customerPO: string,
+    customerContactId: Schema.Types.ObjectId,
+    image: string
     company: Schema.Types.ObjectId
     technician: Schema.Types.ObjectId
     status: number

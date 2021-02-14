@@ -1073,7 +1073,7 @@ export const getAllContracts = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'No contract found.' })
             }
 
-            res.json({ 'status': Status.Success, 'contracts': contracts })
+            return res.json({ 'status': Status.Success, 'contracts': contracts })
         }
         )
 }

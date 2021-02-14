@@ -4837,7 +4837,7 @@
         "summary": "To create a service ticket",
         "description": "",
         "consumes": [
-          "application/x-www-form-urlencoded"
+          "multipart/form-data"
         ],
         "produces": [
           "application/json"
@@ -4854,6 +4854,22 @@
             "name": "note",
             "in": "formData",
             "type": "string"
+          },
+          {
+            "name": "customerContactId",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "customerPO",
+            "in": "formData",
+            "type": "string",
+            "description": "Customer PO/Sales Order#"
+          },
+          {
+            "name": "picture",
+            "in": "formData",
+            "type": "file"
           },
           {
             "name": "technicianId",

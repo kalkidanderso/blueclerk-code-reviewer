@@ -33,7 +33,6 @@ export const uploadfile = (req: Request, res: Response) => {
     const uploadSingle = upload.single('customerSheet')
     uploadSingle(req, res, async (err) => {
         if (err) {
-            console.log(err);
             return res.json({ 'status': Status.Error, 'message': "No file available" })
         }
         const fileName = time + req.file.originalname
@@ -171,12 +170,16 @@ async function fetchCompanyCustomers(companyId: string, res: Response) {
                 companyCustomerList = companyCustomers
             }
         })
-        .catch(() => res.json({ 'status': Status.Error, 'message': Messages.GenericError }))
+        .catch(() => {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+        })
 
     if (companyCustomerList.length !== 0) {
         await User.find({ _id: { $in: companyCustomerList } }, 'profile.firstName')
             .then((users: IUser[]) => userList = users)
-            .catch(() => res.json({ 'status': Status.Error, 'message': Messages.GenericError }))
+            .catch(() => {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+            })
     }
 
     return userList
@@ -284,7 +287,6 @@ async function handleCustomerXlCreation(
 
     return res.json({ 'status': Status.Success, 'message': 'Customer data upload successful.' })
     } catch (err) {
-        console.log(err)
         return res.json({ 'status': Status.Error, 'message': err })
     } 
 }

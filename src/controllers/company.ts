@@ -127,7 +127,7 @@ export const getAllEmployees = (req: Request, res: Response) => {
             company.contact = undefined
             company.address = undefined
 
-            res.json({ 'status': Status.Success, 'employees': employees, 'company': company })
+            return res.json({ 'status': Status.Success, 'employees': employees, 'company': company })
 
         })
 }
@@ -167,7 +167,7 @@ export const getEmployeesForJob = (req: Request, res: Response) => {
             company.contact = undefined
             company.address = undefined
 
-            res.json({ 'status': Status.Success, 'employees': employees, 'superAdmin': admin })
+            return res.json({ 'status': Status.Success, 'employees': employees, 'superAdmin': admin })
 
         })
 
@@ -227,7 +227,7 @@ export const getCompanyContracts = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'No contracts found.' })
             }
 
-            res.json({ 'status': Status.Success, 'contracts': contracts})
+            return res.json({ 'status': Status.Success, 'contracts': contracts})
         }
     )
 }
@@ -2122,7 +2122,7 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
 
                         contractorActivities.push(obj)
                     }
-                    res.json({ 'status': Status.Success, 'contractorActivities': contractorActivities })
+                    return res.json({ 'status': Status.Success, 'contractorActivities': contractorActivities })
                 })
         })
 }

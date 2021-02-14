@@ -129,7 +129,7 @@ export const getJobTypes = (req: Request, res: Response) => {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
     
-                res.json({'status': Status.Success, 'types': types})    
+                return res.json({'status': Status.Success, 'types': types})    
     
             }
         )
@@ -143,7 +143,7 @@ export const getJobTypes = (req: Request, res: Response) => {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
     
-                res.json({'status': Status.Success, 'types': types})    
+                return res.json({'status': Status.Success, 'types': types})    
     
             }
         )
@@ -300,7 +300,7 @@ export const getAllItems = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            res.json({'status': Status.Success, 'items': items})    
+            return res.json({'status': Status.Success, 'items': items})    
 
         }
     )
