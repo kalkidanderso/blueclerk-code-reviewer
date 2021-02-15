@@ -395,7 +395,7 @@ export const parseFieldsAndUploadImageInS3 = function(req: Request, res: Respons
     {
       return next({'status': Status.Error, 'message': Messages.MissingParams}, null);
     }
-    const imageUrl = req.file.location;
+    const imageUrl = req.file ? req.file.location : null;
     const body = req.body;
     next(null, {imageUrl, body})
   })

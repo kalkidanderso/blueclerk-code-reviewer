@@ -6,9 +6,9 @@ import {JobLocation} from '../models/JobLocation'
 import {IContact} from '../common/contact'
 
 
-const createContact = async (name:String, email:String, phone:String) => {    
+const createContact = async (name:string, email:string, phone:string) => {
     const contact = new Contact({
-        name: name, 
+        name: name,
         email: email,
         phone: phone
     })
@@ -25,7 +25,7 @@ const createContactForCustomer = async (data: any, customer: ICustomer) => {
         }
 
     } else  {
-        contact = await createContact(data.name, data.email, data.phone)        
+        contact = await createContact(data.name, data.email, data.phone)
     }
     customer.contacts.push(contact._id)
     await customer.save()
@@ -33,7 +33,7 @@ const createContactForCustomer = async (data: any, customer: ICustomer) => {
 }
 
 
-const createContactForJobLocation = async (data: any, jobLocationId: String) => {
+const createContactForJobLocation = async (data: any, jobLocationId: string) => {
     const customer = await Customer.findOne({jobLocations: jobLocationId})
     const contact = await createContactForCustomer(data, customer)
     await JobLocation.findByIdAndUpdate(jobLocationId, {$push:{contacts: contact._id}}, {new: true})
@@ -105,7 +105,7 @@ export const getContacts = async (req: Request, res: Response) => {
                     return res.json({ status: Status.Error, message: 'Customer not found'})
                 }
             })
-            
+
         } else {
             JobLocation.findOne({_id: req.query.referenceNumber}).populate({ path : 'contacts'}).exec((err: any, customer: ICustomer)=> {
                 if (customer) {

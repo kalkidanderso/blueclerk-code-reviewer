@@ -61,7 +61,7 @@ export const createServiceTicket = (req: Request, res: Response) => {
                             _id : customerId,
                             contacts: { $exists: true, $in: [customerContact] } }
                             );
-                if (customerContact) {
+                if (customerWithContact) {
                     serviceTicket.customerContactId = customerContact;
                 }
             }
