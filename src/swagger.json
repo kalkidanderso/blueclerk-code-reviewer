@@ -9472,9 +9472,21 @@
           "type": "string",
           "description": "Id of technician"
         },
+        "image": {
+          "type": "string",
+          "description": "Image of ticket"
+        },
         "customer": {
           "type": "string",
           "description": "Id of customer"
+        },
+        "customerPO" : {
+          "type": "string",
+          "description": "Customer PO/Sales Order#\n\n"
+        },
+        "customerContactId" : {
+          "type" : "string",
+          "description": "Customer Contact Id"
         },
         "note": {
           "type": "string",
