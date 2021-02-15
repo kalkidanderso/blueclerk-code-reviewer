@@ -75,7 +75,6 @@ export const createServiceTicket = (req: Request, res: Response) => {
                         if (err) {
                             return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         }
-                        console.log(serviceTicket);
                         return res.json({'status': Status.Success, 'message': 'Service ticket created successfully.'})
                     })
             })
