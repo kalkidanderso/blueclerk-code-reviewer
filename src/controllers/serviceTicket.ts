@@ -217,6 +217,9 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                       "jobCreated" : 1,
                       "dueDate" : 1,
                       "note": 1,
+                        "image": 1,
+                        "customerPO": 1,
+                        "customerContactId": 1,
                       "ticketId": 1,
                       "createdAt" : 1
                     }
