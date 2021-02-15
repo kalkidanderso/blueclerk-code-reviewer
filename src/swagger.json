@@ -2189,7 +2189,7 @@
           "200": {
             "description": "Returns new contact information",
             "schema": {
-              "$ref": "#/definitions/ContactSchemaResponse" 
+              "$ref": "#/definitions/ContactSchemaResponse"
             }
           }
         }
@@ -2256,7 +2256,7 @@
           "200": {
             "description": "Returns new contact information",
             "schema": {
-              "$ref": "#/definations/ContactSchemaResponse" 
+              "$ref": "#/definations/ContactSchemaResponse"
             }
           }
         }
@@ -4867,7 +4867,7 @@
             "description": "Customer PO/Sales Order#"
           },
           {
-            "name": "picture",
+            "name": "image",
             "in": "formData",
             "type": "file"
           },
@@ -4993,7 +4993,7 @@
             "name": "page",
             "in": "query",
             "required" : true,
-            "schema": { 
+            "schema": {
               "type":"integer"
             },
             "description": "The number of items to skip e.g. 1"
@@ -5002,7 +5002,7 @@
             "name": "pagesize",
             "in": "query",
             "required" : true,
-            "schema": { 
+            "schema": {
               "type":"integer"
             },
             "description": "The numbers of items to return e.g. 10"
