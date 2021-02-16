@@ -1519,9 +1519,9 @@
             "type": "string"
           },
           {
-            "name": "imageUrl",
+            "name": "image",
             "in": "formData",
-            "type": "string"
+            "type": "file"
           },
           {
             "name": "street",

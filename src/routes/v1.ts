@@ -228,7 +228,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.User_Update_Profile),
-        validate(Validations.updateProfile),
+        //validate(Validations.updateProfile),
         userController.updateProfile)
 
     router.post(

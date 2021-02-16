@@ -1,6 +1,17 @@
 import { Request, Response, response } from 'express'
 import { Status, Role, Messages, UserPermissions, ContractStatus, Permissions } from '../common/constants'
-import { sendEmail, sendEmployeeEmail, sendPasswordEmail, sendInvitationToContractor, sendContractStartEmail, sendContractStatusChangeEmailToCompany, sendContractStatusChangeEmailToContractor, sendAccountDowngradeEmail, sendContractStartEmailToCompany } from '../services/aws'
+import {
+    sendEmail,
+    sendEmployeeEmail,
+    sendPasswordEmail,
+    sendInvitationToContractor,
+    sendContractStartEmail,
+    sendContractStatusChangeEmailToCompany,
+    sendContractStatusChangeEmailToContractor,
+    sendAccountDowngradeEmail,
+    sendContractStartEmailToCompany,
+    uploadImageInS3
+} from '../services/aws'
 
 import { User, IUser } from '../models/User'
 import { Company, ICompany } from '../models/Company'
@@ -295,9 +306,9 @@ const _createHubSpotContact = (company: ICompany, companyAdmin: ICompanyAdmin) =
                 { "property": 'customer_type', "value": 'Free' },
             ]
         };
-      
+
         hubspot.contacts.create(contactObj)
-        
+
     })
 }
 
@@ -326,31 +337,38 @@ export const getOfficeAdminsList = (req: Request, res: Response) => {
 }
 
 export const updateProfile = (req: Request, res: Response) => {
-
-    const params = req.body
-    const user = <IUser>req.user
-
-    user.updateOne(
-        {
-            'profile.firstName': params.firstName,
-            'profile.lastName': params.lastName,
-            'profile.imageUrl': params.imageUrl,
-            'profile.displayName': `${params.firstName} ${params.lastName}`,
-            'address.street': params.street,
-            'address.city': params.city,
-            'address.state': params.state,
-            'address.zipCode': params.zipCode,
-            'contact.phone': params.phone,
-        },
-        (err: any, raw: any) => {
-
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            }
-
-            return res.json({ 'status': Status.Success, 'message': 'Profile updated successfully.' })
+    uploadImageInS3(req, res, (err: any, imageUrl?: string)=>{
+       if (err) {
+           return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+       }
+        const params = req.body
+        const user = <IUser>req.user
+        if (! params.firstName || ! params.lastName) {
+            return res.json({'status': Status.Error, 'message': Messages.MissingParams});
         }
-    )
+        let userImage = imageUrl ? imageUrl : user.profile.imageUrl;
+        user.updateOne(
+            {
+                'profile.firstName': params.firstName,
+                'profile.lastName': params.lastName,
+                'profile.imageUrl': userImage,
+                'profile.displayName': `${params.firstName} ${params.lastName}`,
+                'address.street': params.streest,
+                'address.city': params.city,
+                'address.state': params.state,
+                'address.zipCode': params.zipCode,
+                'contact.phone': params.phone
+            },
+            (err: any, raw: any) => {
+
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                }
+
+                return res.json({ 'status': Status.Success, 'message': 'Profile updated successfully.' })
+            }
+        )
+    });
 
 }
 
@@ -1144,16 +1162,16 @@ export const acceptRejectContract = (req: Request, res: Response) => {
 
                                 sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
                                 sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
-                               
+
                                 var amount: number = 0;
                                 const now = new Date();
                                 const daysRemaining = now.getDate()
                                 const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate()
                                 const daysToCharge = daysInCurrentMonth-daysRemaining + 1
-                                
+
                                 const perday = 2/daysInCurrentMonth
                                 amount = amount+ (perday* daysToCharge)
-                                
+
                                 if (company.stripeId != undefined || company.stripeId != '') {
                                     chargeSubscription(amount, company.stripeId, (status: any, charge: any, message: any) => {
                                         return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
