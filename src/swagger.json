@@ -9335,6 +9335,10 @@
           "type": "string",
           "format": "time"
         },
+        "ticket": {
+          "type" : "object",
+          "$ref": "#/definitions/ServiceTicket"
+        },
         "estimate": {
           "type": "string",
           "description": "Id of the estimate if the Job is Created by estimate"
