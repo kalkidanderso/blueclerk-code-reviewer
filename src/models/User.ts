@@ -9,13 +9,13 @@ export interface IUser extends Document {
         email: string
         password: string
         resetPasswordToken: string
-        resetPasswordExpires: Date    
+        resetPasswordExpires: Date
         socialId: string
         connectorType: number
     }
     profile: {
         firstName: string
-        lastName: string    
+        lastName: string
         displayName: string
         imageUrl: string
     }
@@ -58,7 +58,7 @@ const UserSchema = new Schema({
     },
     profile: {
         firstName: String,
-        lastName: String,    
+        lastName: String,
         displayName: String,
         imageUrl: String,
     },
@@ -87,6 +87,13 @@ const UserSchema = new Schema({
         role: Number,
         extra: [String],
     },
+    emailPreferences: {
+      type: Number,
+      default: 0
+      // 0 for email everytime a job is scheduled
+      // 1 for once a day at night
+      // 2 no emails
+    },
     contacts: {
         type: Array
     }
@@ -103,7 +110,7 @@ UserSchema.pre('save', async function(next) {
 
     user.hashPassword(user.auth.password, (err?: any, hash?: string)=>{
 
-        if (err || !hash) return next(err) 
+        if (err || !hash) return next(err)
 
         user.auth.password = hash
         next()
@@ -118,15 +125,15 @@ UserSchema.methods.hashPassword = function(password: string, next: (err?: any, h
 
     try {
         bcrypt.genSalt(
-            saltRounds, 
+            saltRounds,
             (err, salt) => {
 
-                if (err) return next(err) 
+                if (err) return next(err)
 
                 bcrypt.hash(
-                    password, 
-                    salt, 
-                    undefined, 
+                    password,
+                    salt,
+                    undefined,
                     (err: mongoose.Error, hash) => {
 
                         if (err) return next(err)
@@ -144,12 +151,12 @@ UserSchema.methods.hashPassword = function(password: string, next: (err?: any, h
 }
 
 UserSchema.methods.comparePassword = function(password: string, next: (isMatch: boolean)=>void) {
-    
+
     const user = this as IUser
 
     bcrypt.compare(
-        password, 
-        user.auth.password, 
+        password,
+        user.auth.password,
         (err: mongoose.Error, isMatch: boolean) => {
             next(isMatch)
         }
@@ -165,10 +172,10 @@ UserSchema.methods.jwt = function() {
         {
             iss: "http://api.blueclerk.com",
             id: user._id,
-        }, 
-        process.env.jwt_encryption, 
-        { 
-            expiresIn: parseInt(process.env.jwt_expiration) 
+        },
+        process.env.jwt_encryption,
+        {
+            expiresIn: parseInt(process.env.jwt_expiration)
         }
     )
 

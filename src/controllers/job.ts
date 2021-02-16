@@ -159,7 +159,7 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
     Job.findById(jobCreated._id)
     .populate({
         path:'technician',
-        select:'profile.displayName auth.email'
+        select:'profile.displayName auth.email, emailPreferences'
     })
     .populate({
         path: 'contractor',
@@ -167,7 +167,7 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
     })
     .populate({
         path:'customer',
-        select:'profile.displayName info.email'
+        select:'profile.displayName info.email emailPreferences'
     })
     .populate({
         path:'createdBy',
@@ -197,6 +197,9 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             contractor = job.contractor
             assigneeName = contractor.info.companyName
         }
+        let techEmailPreferences = tech.emailPreferences;
+        let customerEmailPreferences = cust.emailPreferences;
+        // TODO: Implement email preferences
 
         if(params.employeeType == 0) {
             sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
