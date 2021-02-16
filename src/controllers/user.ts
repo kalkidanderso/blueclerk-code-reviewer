@@ -365,7 +365,7 @@ export const updateProfile = (req: Request, res: Response) => {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
 
-                return res.json({ 'status': Status.Success, 'message': 'Profile updated successfully.' })
+                return res.json({ 'status': Status.Success, 'message': 'Profile updated successfully.', 'imageUrl': userImage });
             }
         )
     });

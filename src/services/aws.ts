@@ -487,7 +487,7 @@ export const uploadImageInS3 = function(req: Request, res: Response, next: (err:
 
     if (err) return next(err)
 
-    next(null, req.file.location)
+    next(null, req.file ? req.file.location : null)
 
   })
 
