@@ -409,7 +409,7 @@ export default function (sio: any) {
         validate(Validations.createJobType),
         jobTypeController.createJobType
     )
-   
+
     router.post(
         '/editJobType',
         passport.authenticate('jwt', { session: false }),
@@ -418,7 +418,7 @@ export default function (sio: any) {
         validate(Validations.editJobType),
         jobTypeController.editJobType
     )
- 
+
     router.post(
         '/changeJobTypeStatus',
         passport.authenticate('jwt', { session: false }),
@@ -435,7 +435,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Job_Type_Get),
         jobTypeController.getJobTypes
     )
-    
+
     router.post(
         '/getItems',
         passport.authenticate('jwt', { session: false }),
@@ -524,7 +524,7 @@ export default function (sio: any) {
         validate(Validations.editJob),
         jobController.editJob
     )
-    
+
     router.post(
         '/updateJobTime',
         passport.authenticate('jwt', { session: false }),
@@ -848,7 +848,7 @@ export default function (sio: any) {
         validate(Validations.getOpenServiceTickets),
         serviceTicketController.getOpenServiceTickets
     )
-    
+
     router.post(
         '/createServiceTicket',
         passport.authenticate('jwt', { session: false }),
@@ -857,7 +857,7 @@ export default function (sio: any) {
        //validate(Validations.createTicket),
         serviceTicketController.createServiceTicket
     )
-  
+
     router.post(
         '/editServiceTicket',
         passport.authenticate('jwt', { session: false }),
@@ -872,7 +872,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Update_Service_Ticket),
-        validate(Validations.updateTicket),
+        //validate(Validations.updateTicket),
         serviceTicketController.updateServiceTicket
     )
     router.post(
@@ -1155,7 +1155,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Parts),
         partController.getPartInventory
     )
-    
+
     router.post(
         '/createPart',
         passport.authenticate('jwt', { session: false }),
@@ -1164,7 +1164,7 @@ export default function (sio: any) {
         validate(Validations.createPartInventory),
         partController.createPartInventory
     )
-    
+
     router.post(
         '/updatePart',
         passport.authenticate('jwt', { session: false }),
@@ -1192,7 +1192,7 @@ export default function (sio: any) {
         validate(Validations.createPurchaseOrder),
         purchaseOrderController.createPO
     )
-    
+
     router.post(
         '/getAllPurchaseOrder',
         passport.authenticate('jwt', { session: false }),
@@ -1200,7 +1200,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Purchase_Order),
         purchaseOrderController.getAllPO
     )
-    
+
     router.post(
         '/getEquipmentPurchaseOrder',
         passport.authenticate('jwt', { session: false }),
@@ -1209,7 +1209,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Equipment_Purchase_Order),
         purchaseOrderController.getAllEquipmentPurchaseOrder
     )
-    
+
     router.post(
         '/updatePurchaseOrderStatus',
         passport.authenticate('jwt', { session: false }),
@@ -1218,7 +1218,7 @@ export default function (sio: any) {
         validate(Validations.udpatePurchaseOrderStatus),
         purchaseOrderController.updatePOStatus
     )
-    
+
     router.post(
         '/createPOEstimate',
         passport.authenticate('jwt', { session: false }),
@@ -1262,7 +1262,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Create_Estimate),
         estimateController.createEstimate
     )
-  
+
     router.post(
         '/getEstimate',
         passport.authenticate('jwt', { session: false }),
@@ -1357,7 +1357,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Location_Tags),
         tagController.getLocationTags
     )
-    
+
     router.post(
         '/getLocationTagJobs',
         passport.authenticate('jwt', { session: false }),
@@ -1369,7 +1369,7 @@ export default function (sio: any) {
 
     router.post(
         '/addContact',
-        passport.authenticate('jwt', { session: false }),        
+        passport.authenticate('jwt', { session: false }),
         checkUserPermissions(Permissions.Customer_Create),
         ContactController.addContact
     )

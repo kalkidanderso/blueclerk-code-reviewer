@@ -5158,6 +5158,22 @@
             "description": "Additional note for the service ticket"
           },
           {
+            "name": "customerContactId",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "customerPO",
+            "in": "formData",
+            "type": "string",
+            "description": "Customer PO/Sales Order#"
+          },
+          {
+            "name": "image",
+            "in": "formData",
+            "type": "file"
+          },
+          {
             "name": "dueDate",
             "in": "formData",
             "type": "string",

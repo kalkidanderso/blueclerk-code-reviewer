@@ -4,7 +4,7 @@ import { Status, Messages, ServiceTicketStatus } from '../common/constants'
 import { ICompany } from '../models/Company'
 import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket'
 import { IUser } from '../models/User'
-import {parseFieldsAndUploadImageInS3} from '../services/aws';
+import {parseFieldsAndUploadImageInS3, updateFieldsAndUploadImageInS3} from '../services/aws';
 import {Customer} from '../models/Customer';
 import { ObjectId } from 'mongodb'
 
@@ -254,53 +254,81 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
 
 
 export const updateServiceTicket = (req: Request, res: Response) => {
-
-    const params = req.body
-
-    var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
-
-    ServiceTicket.findOne(
-        { _id: params.ticketId , company: companyId},
-        (err: any, serviceTicket: IServiceTicket)=>{
-
-            if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+    updateFieldsAndUploadImageInS3(req, res, async (err: any, data)=>{
+        if (!err) {
+            const params = data.body;
+            let customerContact = params.customerContactId ? params.customerContactId : null
+            if (customerContact) {
+                try {
+                    customerContact = new ObjectId(customerContact);
+                } catch (e) {
+                    return res.json({'status': Status.Error, 'message': Messages.WrongId});
+                }
+            }
+            var companyId = req.companyId;
+            if(req.otherCompanyId != undefined) {
+                companyId = req.otherCompanyId
             }
 
-            if (serviceTicket.status == ServiceTicketStatus.CANCELED) {
-                return res.json({'status': Status.Error, 'message': 'Ticket is canceled'})
-            }
-            let dueDate: any = serviceTicket.dueDate
-            if(params.dueDate) {
-                dueDate = new Date(params.dueDate)
-            }
-
-            let jobLocationId: any = serviceTicket.jobLocation
-                jobLocationId = params.jobLocationId
-
-
-            let jobSiteId: any = serviceTicket.jobSite
-                jobSiteId = params.jobSiteId
-
-            let jobTypeId: any = serviceTicket.jobType
-                jobTypeId = params.jobTypeId
-
-            serviceTicket.updateOne(
-                {note: params.note, dueDate: dueDate, jobLocation: jobLocationId, jobSite: jobSiteId, jobType: jobTypeId},
-                (err: any, raw: any)=> {
+            ServiceTicket.findOne(
+                { _id: params.ticketId , company: companyId},
+                (err: any, serviceTicket: IServiceTicket)=>{
 
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
 
-                    return res.json({'status': Status.Success, 'message': 'Ticket updated successfully.'})
+                    if (serviceTicket.status == ServiceTicketStatus.CANCELED) {
+                        return res.json({'status': Status.Error, 'message': 'Ticket is canceled'})
+                    }
+                    let dueDate: any = serviceTicket.dueDate
+                    if(params.dueDate) {
+                        dueDate = new Date(params.dueDate)
+                    }
+                    let image = data.imageUrl ? data.imageUrl : serviceTicket.image;
+
+                    let customerPO = params.customerPO ? params.customerPO : serviceTicket.customerPO;
+
+                    let customerContactId = customerContact ? customerContact : serviceTicket.customerContactId;
+
+
+
+                    let jobLocationId: any = serviceTicket.jobLocation
+                    jobLocationId = params.jobLocationId
+
+
+                    let jobSiteId: any = serviceTicket.jobSite
+                    jobSiteId = params.jobSiteId
+
+                    let jobTypeId: any = serviceTicket.jobType
+                    jobTypeId = params.jobTypeId
+
+                    serviceTicket.updateOne(
+                        {
+                            note: params.note,
+                            dueDate: dueDate,
+                            jobLocation: jobLocationId,
+                            jobSite: jobSiteId,
+                            jobType: jobTypeId,
+                            image: image,
+                            customerPO: customerPO,
+                            customerContactId: customerContactId
+                        },
+                        (err: any, raw: any)=> {
+
+                            if (err) {
+                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            }
+
+                            return res.json({'status': Status.Success, 'message': 'Ticket updated successfully.'})
+                        }
+                    )
                 }
             )
+        } else {
+            return res.json({'status': Status.Error, 'message': err.message})
         }
-    )
+    });
 }
 
 export const editServiceTicket = (req: Request, res: Response) => {
