@@ -20,6 +20,7 @@ export interface IServiceTicket extends Document {
     jobSite: Schema.Types.ObjectId
     jobType: Schema.Types.ObjectId
     jobCreated: boolean
+    track: any[];
 
 }
 
@@ -61,6 +62,14 @@ const ServiceTicketSchema = new Schema({
         type: Number,
         default: 0
     },
+    track: [{
+        user: {
+         type: Schema.Types.ObjectId,
+         ref: 'User'
+     },
+        action: String
+    }
+    ],
     editedBy: {
         type: Schema.Types.ObjectId,
         ref: 'User'

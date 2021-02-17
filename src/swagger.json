@@ -5169,6 +5169,12 @@
             "description": "Customer PO/Sales Order#"
           },
           {
+            "name" : "status",
+            "in" : "formData",
+            "type": "string",
+            "description": "default status is 0=> active, you can set status 1 => archived  2 => reactivated ticket"
+          },
+          {
             "name": "image",
             "in": "formData",
             "type": "file"

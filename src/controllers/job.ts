@@ -27,7 +27,7 @@ export const createJob = (req: Request, res: Response) => {
         if (serviceTicket == undefined || serviceTicket == null) {
             throw new Error('Invalid ticket Id')
         }
-        if (serviceTicket.status == ServiceTicketStatus.CANCELED) {
+        if (serviceTicket.status == ServiceTicketStatus.ARCHIVED) {
             throw new Error('You can\'t create a job using canceled ticket.')
         }
         if (serviceTicket.jobCreated) {
@@ -544,14 +544,13 @@ export const getJobDetails = (req: Request, res: Response) => {
             path: 'jobSite',
             select: 'name location'
         })
-        .then((job: any)=>{
+        .then(async (job: any)=>{
 
             if (job == undefined || job == null) {
                 throw new Error ('Invalid job id')
                 // return res.json({'status': Status.Error, 'message': "Invalid job id"})
             }
-
-
+            await job.populate('customer.contacts').execPopulate();
             const scansPrmoise = Scan.find({ job: job._id}, 'comment timeOfScan')
             .populate({
                 path: 'equipment',

@@ -3,7 +3,7 @@ import { Status, Messages, ServiceTicketStatus } from '../common/constants'
 
 import { ICompany } from '../models/Company'
 import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket'
-import { IUser } from '../models/User'
+import {IUser, User} from '../models/User'
 import {parseFieldsAndUploadImageInS3, updateFieldsAndUploadImageInS3} from '../services/aws';
 import {Customer} from '../models/Customer';
 import { ObjectId } from 'mongodb'
@@ -254,6 +254,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
 
 
 export const updateServiceTicket = (req: Request, res: Response) => {
+    const user = <IUser>req.user
     updateFieldsAndUploadImageInS3(req, res, async (err: any, data)=>{
         if (!err) {
             const params = data.body;
@@ -277,10 +278,27 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
+                    let status = params.status ? params.status : serviceTicket.status;
+                    let action = '';
 
-                    if (serviceTicket.status == ServiceTicketStatus.CANCELED) {
-                        return res.json({'status': Status.Error, 'message': 'Ticket is canceled'})
+                    let track: any[] = serviceTicket.track ? serviceTicket.track : [];
+                    if(params.status) {
+                        if (params.status == ServiceTicketStatus.ARCHIVED) {
+                            action = 'archived the ticket';
+                        }
+                        if (params.status == ServiceTicketStatus.REACTIVE) {
+                            action = 'reactivated the ticket';
+                        }
+                        track.push({
+                            user: user._id,
+                            action
+                        });
+
                     }
+                    if (serviceTicket.status == ServiceTicketStatus.ARCHIVED && status == ServiceTicketStatus.ARCHIVED) {
+                        return res.json({'status': Status.Error, 'message': 'Ticket is archived'})
+                    }
+
                     let dueDate: any = serviceTicket.dueDate
                     if(params.dueDate) {
                         dueDate = new Date(params.dueDate)
@@ -302,7 +320,6 @@ export const updateServiceTicket = (req: Request, res: Response) => {
 
                     let jobTypeId: any = serviceTicket.jobType
                     jobTypeId = params.jobTypeId
-
                     serviceTicket.updateOne(
                         {
                             note: params.note,
@@ -312,7 +329,9 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             jobType: jobTypeId,
                             image: image,
                             customerPO: customerPO,
-                            customerContactId: customerContactId
+                            customerContactId: customerContactId,
+                            status: status,
+                            track: track
                         },
                         (err: any, raw: any)=> {
 
@@ -349,7 +368,7 @@ export const editServiceTicket = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            if(params.status != ServiceTicketStatus.CANCELED && params.status != ServiceTicketStatus.ACTIVE && params.status != ServiceTicketStatus.REACTIVE ) {
+            if(params.status != ServiceTicketStatus.ARCHIVED && params.status != ServiceTicketStatus.ACTIVE && params.status != ServiceTicketStatus.REACTIVE ) {
                 return res.json({'status': Status.Error, 'message': 'Invalid ticket status'})
             }
 

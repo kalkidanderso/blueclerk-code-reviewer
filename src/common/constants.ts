@@ -66,7 +66,7 @@ export const enum JobStatus {
 
 export const enum ServiceTicketStatus {
     ACTIVE,
-    CANCELED,
+    ARCHIVED,
     REACTIVE
 }
 

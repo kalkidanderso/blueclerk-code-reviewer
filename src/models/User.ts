@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, {Document, Mongoose, Schema} from 'mongoose'
 import jwt from 'jsonwebtoken'
 import { Role } from '../common/constants'
 import bcrypt from "bcrypt-nodejs"
@@ -94,9 +94,11 @@ const UserSchema = new Schema({
       // 1 for once a day at night
       // 2 no emails
     },
-    contacts: {
-        type: Array
-    }
+    contacts: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Contact',
+        required: false
+    }]
 
 })
 
