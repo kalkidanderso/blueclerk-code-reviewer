@@ -5,10 +5,10 @@
     "description": "APIs for both app and website",
     "version": "1.0.0"
   },
-  "host": "localhost:3006",
+  "host": "blueclerk-node-api.deploy.blueclerk.com",
   "basePath": "/api/v1",
   "schemes": [
-    "http"
+    "https"
   ],
   "tags": [
     {
@@ -539,6 +539,13 @@
             "in": "formData",
             "required": true,
             "type": "number"
+          },
+          {
+            "name": "emailTime",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "HH:MM:SS"
           }
         ],
         "responses": {
