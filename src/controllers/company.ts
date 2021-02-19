@@ -747,22 +747,40 @@ export const updateEmployeeEmailPreferences = (req: Request, res: Response) => {
     const company = <ICompany>req.company
     const user = <IUser>req.user
     if(params.employeeId) {
-        Employee.findOne({_id: params.employeeId}).then((e) => {
-           if (e && (JSON.stringify(e.company) == JSON.stringify(company._id))) {
-               if (user.permissions.role == Role.TECHNICIAN ||
-                   user.permissions.role == Role.MANAGER ||
-                   user.permissions.role == Role.COMPANY_ADMIN ||
-                   user.permissions.role == Role.GLOBAL_ADMIN
-               ) {
-                   e.emailPreferences = params.emailPreferences;
-                   e.save().then(() => {
-                       return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
-                   }).catch((err) => {
-                       return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                   })
-               } else {
-                   return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
-               }
+        User.findOne({_id: params.employeeId}).then((e) => {
+           if (e) {
+               Company.findOne(  {
+                   $and : [
+                       { _id : new ObjectId(company._id) },
+                       { $or : [
+                           { admin : new ObjectId(params.employeeId) },
+                               {employees :
+                                       {$in: [new ObjectId(params.employeeId)]}
+                               }
+                               ]
+                       }
+                       ] } ).then((c) => {
+                   if (c) {
+                       if (user.permissions.role == Role.TECHNICIAN ||
+                           user.permissions.role == Role.MANAGER ||
+                           user.permissions.role == Role.COMPANY_ADMIN ||
+                           user.permissions.role == Role.GLOBAL_ADMIN
+                       ) {
+                           e.emailPreferences = params.emailPreferences;
+                           e.save().then(() => {
+                               return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
+                           }).catch((err) => {
+                               return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                           })
+                       } else {
+                           return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
+                       }
+                   } else {
+                       return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
+                   }
+               }).catch((err) => {
+                   return res.json({'status': Status.Error, 'message': Messages.GenericError})
+               });
 
            } else {
                return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
