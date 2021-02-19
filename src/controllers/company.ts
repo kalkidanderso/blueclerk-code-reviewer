@@ -726,9 +726,16 @@ export const updateContractorEmailPreferences =  (req: Request, res: Response) =
     const params = req.body
     const company = <ICompany>req.company
     if(params.contractorId) {
+        if (params.emailPreferences == 1 && !params.emailTime) {
+            return res.json({'status': Status.Error, 'message': "Email time is required for scheduled emails."})
+        }
         Company.findOne({_id: params.contractorId}).then((c) => {
             if (c && c.type == 1 && JSON.stringify(c._id) == JSON.stringify(company._id)) {
-                c.emailPreferences = params.emailPreferences;
+                let sendTime = new Date();
+                let time = params.emailTime ? params.emailTime.split(':') : [];
+                sendTime.setHours(time[0] ? time[0] : 21,time[1] ? time[1] : 0,time[2] ? time[2]: 0);
+                c.emailPreferences.preferences = params.emailPreferences;
+                c.emailPreferences.time = sendTime;
                 c.save().then(() => {
                     return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
                 }).catch((err) => {
@@ -748,7 +755,10 @@ export const updateEmployeeEmailPreferences = (req: Request, res: Response) => {
     const company = <ICompany>req.company
     const user = <IUser>req.user
     if(params.employeeId) {
-        User.findOne({_id: params.employeeId}).then((e) => {
+        if (params.emailPreferences == 1 && !params.emailTime) {
+            return res.json({'status': Status.Error, 'message': "Email time is required for scheduled emails."})
+        }
+            User.findOne({_id: params.employeeId}).then((e) => {
             if (e) {
                 Company.findOne(  {
                     $and : [
@@ -767,11 +777,15 @@ export const updateEmployeeEmailPreferences = (req: Request, res: Response) => {
                             user.permissions.role == Role.COMPANY_ADMIN ||
                             user.permissions.role == Role.GLOBAL_ADMIN
                         ) {
-                            e.emailPreferences = params.emailPreferences;
+                            let sendTime = new Date();
+                            let time = params.emailTime ? params.emailTime.split(':') : [];
+                            sendTime.setHours(time[0] ? time[0] : 21,time[1] ? time[1] : 0,time[2] ? time[2]: 0);
+                            e.emailPreferences.preferences = params.emailPreferences;
+                            e.emailPreferences.time = sendTime;
                             e.save().then(() => {
                                 return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
                             }).catch((err) => {
-                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                                return res.json({'status': Status.Error, 'message': err.message})
                             })
                         } else {
                             return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
@@ -780,14 +794,14 @@ export const updateEmployeeEmailPreferences = (req: Request, res: Response) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
                     }
                 }).catch((err) => {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({'status': Status.Error, 'message': err.message})
                 });
 
             } else {
                 return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
             }
         }).catch((err) => {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            return res.json({'status': Status.Error, 'message': err.message})
         });
     }
 };
@@ -798,12 +812,21 @@ export const updateCustomerEmailPreferences = (req: Request, res: Response) => {
     const company = <ICompany>req.company
     const user = <IUser>req.user
     if(params.customerId) {
+        if(params.emailPreferences == 1 && !params.emailTime) {
+            return res.json({'status': Status.Error, 'message': "Email time is required for scheduled emails."})
+        }
         CompanyCustomer.findOne(
             {company: new ObjectId(company._id), customer: {$in : [new ObjectId(params.customerId)]}})
             .then((companyCustomer) => {
            if (companyCustomer) {
+               let sendTime = new Date();
+               let time = params.emailTime ? params.emailTime.split(':') : [];
+               sendTime.setHours(time[0] ? time[0] : 21,time[1] ? time[1] : 0,time[2] ? time[2]: 0);
                Customer.findOneAndUpdate({_id: companyCustomer.customer},
-                   {emailPreferences: params.emailPreferences}).then((c) => {
+                   {
+                       'emailPreferences.preferences': params.emailPreferences,
+                       'emailPreferences.time': sendTime
+                   }).then((c) => {
                    if (c) {
                        return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
                    } else {

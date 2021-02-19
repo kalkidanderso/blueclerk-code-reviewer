@@ -34,7 +34,10 @@ export interface IUser extends Document {
         role: Role,
         extra: [string]
     },
-    emailPreferences: Number,
+    emailPreferences: {
+        preferences: Number,
+        time: Date
+    },
 
     hashPassword: (password: string, next: (err?: any, hash?: string)=>void)=>void
     comparePassword: (password: string, next: (isMatch: boolean)=>void)=>void
@@ -89,11 +92,16 @@ const UserSchema = new Schema({
         extra: [String],
     },
     emailPreferences: {
-        type: Number,
-        default: 0
-        // 0 for email everytime a job is scheduled
-        // 1 for once a day at night
-        // 2 no emails
+        preferences: {
+            type: Number,
+            default: 0
+            // 0 for email everytime a job is scheduled
+            // 1 for once a day at night
+            // 2 no emails
+        },
+        time: {
+            type: Date
+        }
     },
     contacts: [{
         type: Schema.Types.ObjectId,

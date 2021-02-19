@@ -205,8 +205,8 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             contractor = job.contractor
             assigneeName = contractor.info.companyName
         }
-        let techEmailPreferences = tech ? tech.emailPreferences : null;
-        let contractorEmailPreferences = contractor ? contractor.emailPreferences : null;
+        let techEmailPreferences = tech ? tech.emailPreferences.preferences : null;
+        let contractorEmailPreferences = contractor ? contractor.emailPreferences.preferences : null;
         let currentDate = new Date();
         if(params.employeeType == 0) {
             if (techEmailPreferences) {
@@ -217,7 +217,10 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                         break;
                     }
                     case 1: {
-                        currentDate.setHours(9, 0, 0);
+                        let techEmailTimeHours = tech.emailPreferences.time ? tech.emailPreferences.time.getHours() : 21;
+                        let techEmailTimeMinutes = tech.emailPreferences.time ? tech.emailPreferences.time.getMinutes() : 0;
+                        let techEmailTimeSeconds = tech.emailPreferences.time ? tech.emailPreferences.time.getSeconds() : 0;
+                        currentDate.setHours(techEmailTimeHours, techEmailTimeMinutes, techEmailTimeSeconds);
                         new CronJob(currentDate, function() {
                             sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate});
                         }, null, true, 'America/Los_Angeles');
@@ -232,39 +235,19 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
         }
         currentDate = new Date();
         if(params.employeeType == 1) {
-            switch (contractorEmailPreferences) {
-                case 0: {
-                    sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
-                    break;
-                }
-                case 1: {
-                    currentDate.setHours(9, 0, 0);
-                    new CronJob(currentDate, function() {
-                        sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
-                    }, null, true, 'America/Los_Angeles');
-                    break;
-                }
-                default: {
-                    // User has deactivated the email notification for job schedule
-                    break;
-                }
-            }
-           // For now we shouldn't spam company admins everytime a job is scheduled
-            // sendJobEmailToCompanyAdmin({to: company.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate, vendorName: creator.profile.displayName})
-        }
-
-        //Get admin preferences to send an email to customer or not
-        let customerEmailPreferences = cust ? cust.emailPreferences : null;
-        currentDate = new Date();
-        switch (customerEmailPreferences) {
+            if (contractorEmailPreferences) {
+                switch (contractorEmailPreferences) {
                     case 0: {
-                        sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+                        sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
                         break;
                     }
                     case 1: {
-                        currentDate.setHours(9, 0, 0);
+                        let contractorEmailTimeHours = contractor.emailPreferences.time ? contractor.emailPreferences.time.getHours() : 21;
+                        let contractorEmailTimeMinutes = contractor.emailPreferences.time ? contractor.emailPreferences.time.getMinutes() : 0;
+                        let contractorEmailTimeSeconds = contractor.emailPreferences.time ? contractor.emailPreferences.time.getSeconds() : 0;
+                        currentDate.setHours(contractorEmailTimeHours, contractorEmailTimeMinutes, contractorEmailTimeSeconds);
                         new CronJob(currentDate, function() {
-                            sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+                            sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
                         }, null, true, 'America/Los_Angeles');
                         break;
                     }
@@ -272,8 +255,40 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                         // User has deactivated the email notification for job schedule
                         break;
                     }
-
                 }
+
+            }
+           // For now we shouldn't spam company admins everytime a job is scheduled
+            // sendJobEmailToCompanyAdmin({to: company.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate, vendorName: creator.profile.displayName})
+        }
+
+        //Get admin preferences to send an email to customer or not
+        let customerEmailPreferences = cust ? cust.emailPreferences.preferences : null;
+        currentDate = new Date();
+        if (customerEmailPreferences) {
+            switch (customerEmailPreferences) {
+                case 0: {
+                    sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+                    break;
+                }
+                case 1: {
+                    let customerEmailTimeHours = cust.emailPreferences.time ? cust.emailPreferences.time.getHours() : 21;
+                    let customerEmailTimeMinutes = cust.emailPreferences.time ? cust.emailPreferences.time.getMinutes() : 0;
+                    let customerEmailTimeSeconds = cust.emailPreferences.time ? cust.emailPreferences.time.getSeconds() : 0;
+                    currentDate.setHours(customerEmailTimeHours, customerEmailTimeMinutes, customerEmailTimeSeconds);
+                    new CronJob(currentDate, function() {
+                        sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+                    }, null, true, 'America/Los_Angeles');
+                    break;
+                }
+                default: {
+                    // User has deactivated the email notification for job schedule
+                    break;
+                }
+
+            }
+
+        }
                 next(req, res, jobCreated)
         return
     })

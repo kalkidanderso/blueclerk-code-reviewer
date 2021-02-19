@@ -3,8 +3,7 @@ import { User, IUser } from './User'
 
 export interface ICompanyAdmin extends IUser {
 
-    company: Schema.Types.ObjectId,
-    customerEmailPreferences: Number
+    company: Schema.Types.ObjectId
 }
 
 const CompanyAdminSchema = new Schema({
@@ -13,12 +12,6 @@ const CompanyAdminSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Company',
         required: true
-    },
-    customerEmailPreferences: {
-        type: Number,
-        default: 0
-        // 0 for email everytime a job is scheduled
-        // 1 for no emails
     }
 
 })

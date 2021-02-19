@@ -49,7 +49,10 @@ export interface ICompany extends Document{
             off: [Number],
         },
     },
-    emailPreferences: Number,
+    emailPreferences: {
+        preferences: Number,
+        time: Date
+    },
     currentJobId: number,
     prefix: string,
     admin: Schema.Types.ObjectId,
@@ -160,11 +163,16 @@ const CompanySchema = new Schema({
         default: 0
     },
     emailPreferences: {
-        type: Number,
-        default: 0
-        // 0 for email everytime a job is scheduled
-        // 1 for once a day at night
-        // 2 no emails
+        preferences: {
+            type: Number,
+            default: 0
+            // 0 for email everytime a job is scheduled
+            // 1 for once a day at night
+            // 2 no emails
+        },
+        time: {
+            type: Date
+        }
     },
     invoicePrefix: String,
     currentPOId: {

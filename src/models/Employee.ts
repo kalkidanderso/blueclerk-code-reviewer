@@ -9,9 +9,7 @@ export interface IEmployee extends IUser {
         on:[number],
         off: [number]
     },
-    agreed: boolean,
-    emailPreferences: Number
-
+    agreed: boolean
 }
 
 const EmployeeSchema = new Schema({
