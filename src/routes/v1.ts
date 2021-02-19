@@ -151,6 +151,15 @@ export default function (sio: any) {
         companyController.updateContractorEmailPreferences
     )
     router.post(
+        '/updateCustomerEmailPreferences',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkPermissions(Role.COMPANY_ADMIN),
+        validate(Validations.updateCustomerEmailPreferences),
+        companyController.updateCustomerEmailPreferences
+
+    )
+    router.post(
         '/getEmployeePermissions',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),

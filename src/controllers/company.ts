@@ -19,6 +19,7 @@ import { IContractorActivity } from '../models/ContractorActivity'
 import { Estimate, IEstimate } from '../models/Estimate'
 import { Item} from '../models/Item'
 import { Customer, ICustomer } from '../models/Customer'
+import {CompanyCustomer} from '../models/CompanyCustomer';
 const Hubspot = require('hubspot')
 
 export const updateCompanyProfile = (req: Request, res: Response) => {
@@ -748,45 +749,74 @@ export const updateEmployeeEmailPreferences = (req: Request, res: Response) => {
     const user = <IUser>req.user
     if(params.employeeId) {
         User.findOne({_id: params.employeeId}).then((e) => {
-           if (e) {
-               Company.findOne(  {
-                   $and : [
-                       { _id : new ObjectId(company._id) },
-                       { $or : [
-                           { admin : new ObjectId(params.employeeId) },
-                               {employees :
-                                       {$in: [new ObjectId(params.employeeId)]}
-                               }
-                               ]
-                       }
-                       ] } ).then((c) => {
+            if (e) {
+                Company.findOne(  {
+                    $and : [
+                        { _id : new ObjectId(company._id) },
+                        { $or : [
+                                { admin : new ObjectId(params.employeeId) },
+                                {employees :
+                                        {$in: [new ObjectId(params.employeeId)]}
+                                }
+                            ]
+                        }
+                    ] } ).then((c) => {
+                    if (c) {
+                        if (user.permissions.role == Role.TECHNICIAN ||
+                            user.permissions.role == Role.MANAGER ||
+                            user.permissions.role == Role.COMPANY_ADMIN ||
+                            user.permissions.role == Role.GLOBAL_ADMIN
+                        ) {
+                            e.emailPreferences = params.emailPreferences;
+                            e.save().then(() => {
+                                return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
+                            }).catch((err) => {
+                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            })
+                        } else {
+                            return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
+                        }
+                    } else {
+                        return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
+                    }
+                }).catch((err) => {
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                });
+
+            } else {
+                return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
+            }
+        }).catch((err) => {
+            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        });
+    }
+};
+
+
+export const updateCustomerEmailPreferences = (req: Request, res: Response) => {
+    const params = req.body
+    const company = <ICompany>req.company
+    const user = <IUser>req.user
+    if(params.customerId) {
+        CompanyCustomer.findOne(
+            {company: new ObjectId(company._id), customer: {$in : [new ObjectId(params.customerId)]}})
+            .then((companyCustomer) => {
+           if (companyCustomer) {
+               Customer.findOneAndUpdate({_id: companyCustomer.customer},
+                   {emailPreferences: params.emailPreferences}).then((c) => {
                    if (c) {
-                       if (user.permissions.role == Role.TECHNICIAN ||
-                           user.permissions.role == Role.MANAGER ||
-                           user.permissions.role == Role.COMPANY_ADMIN ||
-                           user.permissions.role == Role.GLOBAL_ADMIN
-                       ) {
-                           e.emailPreferences = params.emailPreferences;
-                           e.save().then(() => {
-                               return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
-                           }).catch((err) => {
-                               return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                           })
-                       } else {
-                           return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
-                       }
+                       return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
                    } else {
-                       return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
+                       return res.json({'status': Status.Success, 'message': Messages.GenericError});
                    }
                }).catch((err) => {
-                   return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                   return res.json({ 'status': Status.Error, 'message': err.message })
                });
-
            } else {
                return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
            }
-        }).catch((err) => {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }).catch((err) => {
+            return res.json({ 'status': Status.Error, 'message': err.message })
         });
     }
 };

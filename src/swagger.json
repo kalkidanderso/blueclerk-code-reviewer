@@ -2574,6 +2574,50 @@
         ]
       }
     },
+    "/updateCustomerEmailPreferences": {
+      "post": {
+        "tags": [
+          "Customer"
+        ],
+        "summary": "This API used to update customer email preferences",
+        "description": "0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "emailPreferences",
+            "in": "formData",
+            "required": true,
+            "type": "number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+
+    },
+
     "/getCustomers": {
       "post": {
         "tags": [
