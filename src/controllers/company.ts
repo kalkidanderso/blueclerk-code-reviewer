@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { Status, Messages } from '../common/constants'
+import {Status, Messages, Role} from '../common/constants'
 import { sendAccountDowngradeEmail } from '../services/aws'
 import { Company, ICompany } from '../models/Company'
 import { Employee, IEmployee } from '../models/Employee'
@@ -745,17 +745,27 @@ export const updateContractorEmailPreferences =  (req: Request, res: Response) =
 export const updateEmployeeEmailPreferences = (req: Request, res: Response) => {
     const params = req.body
     const company = <ICompany>req.company
+    const user = <IUser>req.user
     if(params.employeeId) {
         Employee.findOne({_id: params.employeeId}).then((e) => {
            if (e && (JSON.stringify(e.company) == JSON.stringify(company._id))) {
-               e.emailPreferences = params.emailPreferences;
-               e.save().then(() => {
-                   return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
-               }).catch((err) => {
-                   return res.json({'status': Status.Error, 'message': Messages.GenericError})
-               })
+               if (user.permissions.role == Role.TECHNICIAN ||
+                   user.permissions.role == Role.MANAGER ||
+                   user.permissions.role == Role.COMPANY_ADMIN ||
+                   user.permissions.role == Role.GLOBAL_ADMIN
+               ) {
+                   e.emailPreferences = params.emailPreferences;
+                   e.save().then(() => {
+                       return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
+                   }).catch((err) => {
+                       return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                   })
+               } else {
+                   return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
+               }
+
            } else {
-               return res.json({ 'status': Status.Error, 'message': 'Could not find employee' })
+               return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
            }
         }).catch((err) => {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})

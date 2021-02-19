@@ -519,7 +519,7 @@
           "Vendor"
         ],
         "summary": "This API used to update contractor email preferences",
-        "description": "0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails",
+        "description": "0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails. Needs to be logged in as company admin first",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -531,6 +531,7 @@
             "name": "contractorId",
             "in": "formData",
             "required": true,
+            "description": "The contractor company id",
             "type": "string"
           },
           {

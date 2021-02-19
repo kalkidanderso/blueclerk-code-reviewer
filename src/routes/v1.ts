@@ -138,7 +138,7 @@ export default function (sio: any) {
         '/updateEmployeeEmailPreferences',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        checkPermissions(Role.COMPANY_ADMIN),
+        checkPermissions(Role.TECHNICIAN),
         validate(Validations.updateEmployeeEmailPreferences),
         companyController.updateEmployeeEmailPreferences
     )
