@@ -3,12 +3,16 @@ import { Status, Messages, JobStatus, ServiceTicketStatus } from '../common/cons
 import { sendJobEmailToAssignee, sendJobEmailToCustomer, sendJobEmailToCompanyAdmin } from '../services/aws'
 
 import { Job, IJob } from '../models/Job'
-import { ICompany } from '../models/Company'
-import { IUser } from '../models/User'
+import {Company, ICompany} from '../models/Company'
+import {IUser, User} from '../models/User'
 import { ServiceTicket ,IServiceTicket } from '../models/ServiceTicket'
 import { Scan } from '../models/Scan'
 import { PurchaseOrder } from '../models/PurchaseOrder'
 import { Item } from '../models/Item'
+import {Contract} from '../models/Contract';
+import {CronJob} from 'cron';
+import request from 'request';
+import {CompanyAdmin} from '../models/CompanyAdmin';
 
 export const createJob = (req: Request, res: Response) => {
     const params = req.body
@@ -42,7 +46,7 @@ export const createJob = (req: Request, res: Response) => {
                 var date = new Date(params.scheduleDate)
                 newStartTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledStartTime)
             }
-            if(params.scheduledStartTime){
+            if(params.scheduledEndTime){
                 var date = new Date(params.scheduleDate)
                 newEndTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledEndTime)
             }
@@ -86,23 +90,28 @@ export const createJob = (req: Request, res: Response) => {
 
 }
 
-const _createJob = (req: Request, res: Response, jobId: string, serviceTicket: IServiceTicket, next: (req: Request,res: Response, err: any, job: IJob) => void) => {
+const _createJob = async (req: Request, res: Response, jobId: string, serviceTicket: IServiceTicket, next: (req: Request, res: Response, err: any, job: IJob) => void) => {
 
     const params = req.body
 
     const user = <IUser>req.user
     var companyId = req.companyId;
 
-    if(req.otherCompanyId != undefined) {
+    if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
+    }
+    let contractor = await Company.findOne({_id: params.contractorId});
+    let technicianId = await User.findOne({_id: params.technicianId});
+    if (!contractor && ! technicianId) {
+        return next(req, res, "Contractor/Technician not found!", null)
     }
 
     const job = new Job({
         scheduleDate: params.scheduleDate,
         jobId: jobId,
         ticket: params.ticketId,
-        technician : params.technicianId,
-        contractor : params.contractorId,
+        technician: params.technicianId,
+        contractor: params.contractorId,
         customer: params.customerId,
         jobLocation: params.jobLocationId,
         jobSite: params.jobSiteId,
@@ -116,39 +125,38 @@ const _createJob = (req: Request, res: Response, jobId: string, serviceTicket: I
 
     let newStartTime: any = null
     let newEndTime: any = null
-    if(params.scheduledStartTime){
+    if (params.scheduledStartTime) {
         var date = new Date(params.scheduleDate)
-        newStartTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledStartTime)
-        job. scheduledStartTime = newStartTime
+        newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
+        job.scheduledStartTime = newStartTime
 
     }
-    if(params.scheduledStartTime){
+    if (params.scheduledEndTime) {
         var date = new Date(params.scheduleDate)
-        newEndTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledEndTime)
-        job. scheduledEndTime = newEndTime
+        newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
+        job.scheduledEndTime = newEndTime
     }
-    if(params.equipmentId) {
+    if (params.equipmentId) {
         job.equipmentId = params.equipmentId
     }
 
-    job.save((err: any) => {
+    await job.save((err: any) => {
         if (err) {
-            return next(req, res, Messages.GenericError, null )
+            return next(req, res, Messages.GenericError, null)
         }
 
         serviceTicket.updateOne({jobCreated: true}, (serviceTicketError: any, raw: any) => {
             if (serviceTicketError) {
-                return next(req, res, Messages.GenericError, null )
+                return next(req, res, Messages.GenericError, null)
             }
 
             _sendJobEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => {
                 return next(req, res, null, newJob)
-            } )
+            })
 
         })
     })
 }
-
 
 const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (req: Request, res: Response, job: IJob) => void) => {
 
@@ -197,22 +205,77 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             contractor = job.contractor
             assigneeName = contractor.info.companyName
         }
-        let techEmailPreferences = tech.emailPreferences;
-        let customerEmailPreferences = cust.emailPreferences;
-        // TODO: Implement email preferences
+        let techEmailPreferences = tech ? tech.emailPreferences : null;
+        let contractorEmailPreferences = contractor ? contractor.emailPreferences : null;
 
+        let currentDate;
         if(params.employeeType == 0) {
-            sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+            if (techEmailPreferences) {
+                currentDate = new Date();
+                switch (techEmailPreferences) {
+                    case 0: {
+                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate});
+                        break;
+                    }
+                    case 1: {
+                        currentDate.setHours(9, 0, 0);
+                        new CronJob(currentDate, function() {
+                            sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate});
+                        }, null, true, 'America/Los_Angeles');
+                        break;
+                    }
+                    default: {
+                        // User has deactivated the email notification for job schedule
+                        break;
+                    }
+                }
+            }
         }
-        sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
 
         if(params.employeeType == 1) {
-            sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
-            sendJobEmailToCompanyAdmin({to: company.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate, vendorName: creator.profile.displayName})
+            currentDate = new Date();
+            switch (contractorEmailPreferences) {
+                case 0: {
+                    sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+                    break;
+                }
+                case 1: {
+                    currentDate.setHours(9, 0, 0);
+                    new CronJob(currentDate, function() {
+                        sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+                    }, null, true, 'America/Los_Angeles');
+                    break;
+                }
+                default: {
+                    // User has deactivated the email notification for job schedule
+                    break;
+                }
+            }
+           // For now we shouldn't spam company admins everytime a job is scheduled
+            // sendJobEmailToCompanyAdmin({to: company.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate, vendorName: creator.profile.displayName})
         }
+
+        //Get admin preferences to send an email to customer or not
+        CompanyAdmin.findOne({_id: company.admin}).then((admin) => {
+            if (admin) {
+                let customerEmailPreferences = admin.customerEmailPreferences;
+                switch (customerEmailPreferences) {
+                    case 0: {
+                        sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+                        break;
+                    }
+                    default: {
+                        // User has deactivated the email notification for job schedule
+                        break;
+                    }
+
+                }
+            }
+        }).catch((err) => {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        });
         next(req, res, jobCreated)
         return
-
     })
 
 }
@@ -477,7 +540,7 @@ export const editJob = (req: Request, res: Response) => {
             if(params.scheduledStartTime){
                 var date = new Date(params.scheduleDate)
                 newEndTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledEndTime)
-                job. scheduledEndTime = newEndTime
+                job.scheduledEndTime = newEndTime
             }
             if(params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
                 job.equipmentId = params.equipmentId

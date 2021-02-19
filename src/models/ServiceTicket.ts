@@ -67,7 +67,8 @@ const ServiceTicketSchema = new Schema({
          type: Schema.Types.ObjectId,
          ref: 'User'
      },
-        action: String
+        action: String,
+        date: Date
     }
     ],
     editedBy: {

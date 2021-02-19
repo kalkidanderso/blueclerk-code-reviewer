@@ -284,15 +284,11 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     let track: any[] = serviceTicket.track ? serviceTicket.track : [];
                     if(params.status) {
                         if (params.status == ServiceTicketStatus.ARCHIVED) {
-                            action = 'archived the ticket';
+                            action = '|Ticket archived|';
                         }
                         if (params.status == ServiceTicketStatus.REACTIVE) {
-                            action = 'reactivated the ticket';
+                            action = '|Ticket reactivated|';
                         }
-                        track.push({
-                            user: user._id,
-                            action
-                        });
 
                     }
                     if (serviceTicket.status == ServiceTicketStatus.ARCHIVED && status == ServiceTicketStatus.ARCHIVED) {
@@ -320,6 +316,23 @@ export const updateServiceTicket = (req: Request, res: Response) => {
 
                     let jobTypeId: any = serviceTicket.jobType
                     jobTypeId = params.jobTypeId
+
+                    if (
+                        serviceTicket.dueDate != params.dueDate ||
+                        serviceTicket.image != data.imageUrl ||
+                        params.customerPO != serviceTicket.customerPO ||
+                        serviceTicket.customerContactId != customerContactId ||
+                        params.jobLocationId != serviceTicket.jobLocation ||
+                        params.jobSiteId != serviceTicket.jobSite ||
+                        params.jobTypeId || serviceTicket.jobType
+                    ) {
+                        action += '|Ticket info updated|'
+                    }
+                    track.push({
+                        user: user._id,
+                        action,
+                        date: new Date()
+                    });
                     serviceTicket.updateOne(
                         {
                             note: params.note,
@@ -368,7 +381,27 @@ export const editServiceTicket = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            if(params.status != ServiceTicketStatus.ARCHIVED && params.status != ServiceTicketStatus.ACTIVE && params.status != ServiceTicketStatus.REACTIVE ) {
+            let action = '';
+
+            let track: any[] = serviceTicket.track ? serviceTicket.track : [];
+            if(params.status) {
+                if (params.status == ServiceTicketStatus.ARCHIVED) {
+                    action = 'archived the ticket';
+                }
+                if (params.status == ServiceTicketStatus.REACTIVE) {
+                    action = 'reactivated the ticket';
+                }
+                if (params.status === ServiceTicketStatus.ACTIVE && params.status != serviceTicket.status) {
+                    action = 'reactivated the ticket';
+                }
+            }
+                track.push({
+                    user: user._id,
+                    action,
+                    date: new Date()
+                });
+
+                if(params.status != ServiceTicketStatus.ARCHIVED && params.status != ServiceTicketStatus.ACTIVE && params.status != ServiceTicketStatus.REACTIVE ) {
                 return res.json({'status': Status.Error, 'message': 'Invalid ticket status'})
             }
 

@@ -9,8 +9,9 @@ export interface IEmployee extends IUser {
         on:[number],
         off: [number]
     },
-    agreed: boolean
-    
+    agreed: boolean,
+    emailPreferences: Number
+
 }
 
 const EmployeeSchema = new Schema({
@@ -31,7 +32,14 @@ const EmployeeSchema = new Schema({
     agreed: {
         type: Boolean,
         default: false
-    }
+    },
+    emailPreferences: {
+        type: Number,
+        default: 0
+        // 0 for email everytime a job is scheduled
+        // 1 for once a day at night
+        // 2 no emails
+    },
 
 })
 

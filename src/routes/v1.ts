@@ -1,7 +1,7 @@
 import express from 'express'
 import { validate, Validations } from '../middleware/validator'
 import passport from 'passport'
-import { checkPermissions, checkUserPermissions } from '../middleware/permissions'
+import {checkPermissions, checkUserPermissions, checkUserScanPermissions} from '../middleware/permissions'
 import { getCompanyId } from '../middleware/company'
 
 import { Role, Permissions } from '../common/constants'
@@ -134,6 +134,22 @@ export default function (sio: any) {
         permissionController.updateUserPermissions
     )
 
+    router.post(
+        '/updateEmployeeEmailPreferences',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkPermissions(Role.COMPANY_ADMIN),
+        validate(Validations.updateEmployeeEmailPreferences),
+        companyController.updateEmployeeEmailPreferences
+    )
+    router.post(
+        '/updateContractorEmailPreferences',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkPermissions(Role.COMPANY_ADMIN),
+        validate(Validations.updateContractorEmailPreferences),
+        companyController.updateContractorEmailPreferences
+    )
     router.post(
         '/getEmployeePermissions',
         passport.authenticate('jwt', { session: false }),
@@ -1363,7 +1379,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         validate(Validations.getLocationTagJobs),
-        checkUserPermissions(Permissions.Get_Location_Tag_Jobs),
+        checkUserScanPermissions(Permissions.Get_Location_Tag_Jobs),
         tagController.getLocationTagJobs
     )
 

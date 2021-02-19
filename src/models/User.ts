@@ -16,7 +16,7 @@ export interface IUser extends Document {
     profile: {
         firstName: string
         lastName: string
-        displayName: string
+        displayName: { type : String , unique : true }
         imageUrl: string
     }
     address: {
@@ -86,13 +86,6 @@ const UserSchema = new Schema({
     permissions: {
         role: Number,
         extra: [String],
-    },
-    emailPreferences: {
-      type: Number,
-      default: 0
-      // 0 for email everytime a job is scheduled
-      // 1 for once a day at night
-      // 2 no emails
     },
     contacts: [{
         type: Schema.Types.ObjectId,

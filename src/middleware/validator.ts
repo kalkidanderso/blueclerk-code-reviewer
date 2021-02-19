@@ -77,6 +77,10 @@ export const Validations = {
 
   deleteEmployee: [check('employeeId').exists()],
 
+  updateEmployeeEmailPreferences: [check('employeeId').exists(), check('emailPreferences').isNumeric()],
+
+  updateContractorEmailPreferences: [check('contractorId').exists(), check('emailPreferences').isNumeric()],
+
   forgotPassword: [check('email').exists()],
 
   //Industry

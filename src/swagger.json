@@ -513,6 +513,50 @@
         ]
       }
     },
+    "/updateContractorEmailPreferences": {
+      "post": {
+        "tags": [
+          "Vendor"
+        ],
+        "summary": "This API used to update contractor email preferences",
+        "description": "0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "contractorId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "emailPreferences",
+            "in": "formData",
+            "required": true,
+            "type": "number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+
+    },
+
     "/getCompanyContractorActivity": {
       "post": {
         "tags": [
@@ -1708,6 +1752,49 @@
           }
         ]
       }
+    },
+    "/updateEmployeeEmailPreferences": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "This API used to update employee email preferences",
+        "description": "0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "employeeId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "emailPreferences",
+            "in": "formData",
+            "required": true,
+            "type": "number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+
     },
     "/getAllEmployees": {
       "post": {
