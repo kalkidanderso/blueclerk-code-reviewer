@@ -207,8 +207,7 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
         }
         let techEmailPreferences = tech ? tech.emailPreferences : null;
         let contractorEmailPreferences = contractor ? contractor.emailPreferences : null;
-
-        let currentDate;
+        let currentDate = new Date();
         if(params.employeeType == 0) {
             if (techEmailPreferences) {
                 currentDate = new Date();
@@ -231,9 +230,8 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                 }
             }
         }
-
+        currentDate = new Date();
         if(params.employeeType == 1) {
-            currentDate = new Date();
             switch (contractorEmailPreferences) {
                 case 0: {
                     sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
@@ -256,12 +254,18 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
         }
 
         //Get admin preferences to send an email to customer or not
-        CompanyAdmin.findOne({_id: company.admin}).then((admin) => {
-            if (admin) {
-                let customerEmailPreferences = admin.customerEmailPreferences;
-                switch (customerEmailPreferences) {
+        let customerEmailPreferences = cust ? cust.emailPreferences : null;
+        currentDate = new Date();
+        switch (customerEmailPreferences) {
                     case 0: {
                         sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+                        break;
+                    }
+                    case 1: {
+                        currentDate.setHours(9, 0, 0);
+                        new CronJob(currentDate, function() {
+                            sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+                        }, null, true, 'America/Los_Angeles');
                         break;
                     }
                     default: {
@@ -270,11 +274,7 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                     }
 
                 }
-            }
-        }).catch((err) => {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        });
-        next(req, res, jobCreated)
+                next(req, res, jobCreated)
         return
     })
 
