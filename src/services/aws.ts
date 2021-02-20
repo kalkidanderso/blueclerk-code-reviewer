@@ -32,9 +32,13 @@ export const sendEmail = function(options: any) {
           Body: {
             Html: {
               Data: `<div style="text-align: center;">
-                  <b>Welcome to Blueclerk.com!</b><br />
-                  <strong>Blueclerk Phone: </strong> 512-846-6035 <br />
-                  <strong>Blueclerk Email: </strong> chris.norton@blueclerk.com <br />
+                  <b>Dear <i>${options.to}</i></b> <br />
+                  <b>Welcome to BlueClerk!  Please login to your account at <a href="https://app.blueclerk.com/">app.blueclerk.com</a></b><br />
+                  <p>We encourage you to look at our support articles to better understand our software</p>
+                  <p>If you have any questions, you may reach out for help to:</p>
+                  <strong>chris.norton@blueclerk.com</strong><br />
+                  <strong>512-846-6035</strong><br />
+                  
                    <br />
                   <img src='http://blueclerk.com/wp-content/uploads/2020/07/logo-120x42.png' />
                   </div>`,
