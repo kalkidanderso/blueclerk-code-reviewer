@@ -20,6 +20,7 @@ import { Estimate, IEstimate } from '../models/Estimate'
 import { Item} from '../models/Item'
 import { Customer, ICustomer } from '../models/Customer'
 import {CompanyCustomer} from '../models/CompanyCustomer';
+import {ServiceTicket} from '../models/ServiceTicket';
 const Hubspot = require('hubspot')
 
 export const updateCompanyProfile = (req: Request, res: Response) => {

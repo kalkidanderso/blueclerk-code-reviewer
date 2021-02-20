@@ -83,13 +83,12 @@ sio.on("connection", () => {
 });
 //Router
 app.use('/api/v1', routesV1(sio))
-
 new CronJob('0 0 1 * *', function() {
   // console.log('You will see this message every second');
-  
+
     request('http://localhost:'+app.get('port')+'/api/v1/chargeSubscription', function (response: any) {
       console.log(response);
-      
+
     });
 
 }, null, true, 'America/Los_Angeles');
