@@ -3024,25 +3024,28 @@
         ],
         "parameters": [
           {
-            "name": "latitude",
+            "name": "jobLocationId",
             "in": "formData",
-            "required": true,
+            "required": false,
+            "description": "Job location ID",
             "type": "string"
           },
           {
-            "name": "longitude",
+            "name": "customerId",
             "in": "formData",
             "required": true,
+            "description": "Customer ID",
+            "type": "string"
+          },
+          {
+            "name": "jobSiteId",
+            "in": "formData",
+            "required": false,
+            "description": "Job Site ID",
             "type": "string"
           },
           {
             "name": "nfcTag",
-            "in": "formData",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "customer",
             "in": "formData",
             "required": true,
             "type": "string"

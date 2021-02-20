@@ -236,7 +236,7 @@ export const Validations = {
 
   getPaymentsByCustomer: [check('customer').exists()],
 
-  codeLocationTag: [check('nfcTag').exists(), check('customer').exists(), check('jobLocation').exists()],
+  codeLocationTag: [check('nfcTag').exists(), check('customerId').exists()],
 
   updateLocationTag: [check('nfcTag').exists(), check('latitude').exists(), check('longitude').exists(), check('nfcTag').exists()],
 
