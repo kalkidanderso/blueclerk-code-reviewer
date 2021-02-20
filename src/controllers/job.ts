@@ -105,7 +105,13 @@ const _createJob = async (req: Request, res: Response, jobId: string, serviceTic
     if (!contractor && ! technicianId) {
         return next(req, res, "Contractor/Technician not found!", null)
     }
-
+    let track = [];
+    let action = '|Created A Job|';
+    track.push({
+        user: user._id,
+        action,
+        date: new Date()
+    });
     const job = new Job({
         scheduleDate: params.scheduleDate,
         jobId: jobId,
@@ -120,6 +126,7 @@ const _createJob = async (req: Request, res: Response, jobId: string, serviceTic
         description: params.description,
         createdAt: Date.now(),
         createdBy: user._id,
+        track: track,
         employeeType: params.employeeType,
     })
 
@@ -402,6 +409,7 @@ export const updateJob = (req: Request, res: Response) => {
 
     const params = req.body
     var companyId = req.companyId;
+    const user = <IUser>req.user;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
@@ -453,6 +461,25 @@ export const updateJob = (req: Request, res: Response) => {
         }
 
         let data: any = {}
+        let track = job.track ? job.track : [];
+        let action = '';
+        if (params.status && params.status != job.status) {
+            if(params.status == JobStatus.PENDING) {
+                action = '|Pending the job|';
+            }
+            if (params.status == JobStatus.STARTED) {
+                action = '|Starting the job|';
+            }
+            if (params.status == JobStatus.FINISHED) {
+                action = '|Finishing the job|';
+            }
+            if (params.status == JobStatus.CANCELED) {
+                action = '|Canceling the job|';
+            }
+            if (params.status == JobStatus.ARCHIVED) {
+                action = '|Archiving the job|';
+            }
+        }
         data = {comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime}
 
         if(params.jobLocationId) {
@@ -461,9 +488,20 @@ export const updateJob = (req: Request, res: Response) => {
         if(params.jobSiteId) {
             data.jobSite = params.jobSiteId
         }
-
+        if (
+            job.command != params.comment ||
+            job.jobLocation != params.jobLocationId ||
+            job.jobSite != params.jobSiteId
+        ) {
+            action+='|Job Info Updated|';
+        }
+        track.push({
+            user: user._id,
+            action,
+            date: new Date()
+        })
+        data.track = track;
         return job.updateOne(data)
-
     })
     .then((response: any) => {
         return res.json({'status': Status.Success, 'message': 'Job updated successfully.'})
@@ -482,7 +520,7 @@ export const updateJob = (req: Request, res: Response) => {
 export const startJob = (req: Request, res: Response) => {
 
     const params = req.body
-
+    const user = <IUser>req.user;
     var companyId = req.companyId;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
@@ -507,9 +545,18 @@ export const startJob = (req: Request, res: Response) => {
             if(job.status == JobStatus.CANCELED) {
                 return res.json({'status': Status.Error, 'message': "You can't start this job, it is already canceled"})
             }
-
+            let track = job.track ? job.track : [];
+            let action = '';
+            if (job.status != JobStatus.STARTED) {
+                action = '|Started The Job|';
+            }
+            track.push({
+                user: user._id,
+                action,
+                date: new Date()
+            });
             job.updateOne(
-                {status: JobStatus.STARTED, startTime: Date.now()},
+                {status: JobStatus.STARTED, track: track, startTime: Date.now()},
                 (err: any, raw: any)=> {
 
                     if (err) {
@@ -528,6 +575,7 @@ export const editJob = (req: Request, res: Response) => {
 
     const params = req.body
     var companyId = req.companyId;
+    const user = <IUser>req.user;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
@@ -547,6 +595,9 @@ export const editJob = (req: Request, res: Response) => {
             if(job.status == JobStatus.CANCELED || job.status == JobStatus.FINISHED) {
                 return res.json({'status': Status.Error, 'message': "Edit job is not allowed onece it is cancelled or finished"})
             }
+            let track = job.track ? job.track : [];
+            let action = '';
+
             job.technician = params.technicianId
             job.scheduleDate = params.scheduleDate
 
@@ -555,23 +606,44 @@ export const editJob = (req: Request, res: Response) => {
             if(params.scheduledStartTime){
                 var date = new Date(params.scheduleDate)
                 newStartTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledStartTime)
-                job. scheduledStartTime = newStartTime
+                if(newStartTime != job.scheduledStartTime) {
+                    action +='|Updated ScheduledStartTime|';
+                }
+                job.scheduledStartTime = newStartTime
 
             }
             if(params.scheduledStartTime){
                 var date = new Date(params.scheduleDate)
                 newEndTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledEndTime)
+                if(newEndTime != job.scheduledEndTime) {
+                    action +='|Updated ScheduledEndTime|';
+                }
                 job.scheduledEndTime = newEndTime
             }
             if(params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
+                if (params.equipmentId != job.equipmentId) {
+                    action +='|Updated EquipmentId|';
+                }
                 job.equipmentId = params.equipmentId
             }
             if(params.jobLocationId) {
+                if (params.jobLocationId != job.jobLocation) {
+                    action +='|Updated JobLocationId|';
+                }
                 job.jobLocation = params.jobLocationId
             }
             if(params.jobSiteId) {
+                if (params.jobSiteId != job.jobSite) {
+                    action +='|Updated JobSiteId|';
+                }
                 job.jobSite = params.jobSiteId
             }
+            track.push({
+                user: user._id,
+                action,
+                date: new Date()
+            });
+            job.track = track;
             job.updateOne(
                 job,
                 (err: any, raw: any)=> {
@@ -855,9 +927,20 @@ export const updateJobTime = (req: Request, res: Response) => {
                 newcharges = item.charges
             }
         }
-
-        const user = <IUser>req.user
-        return job.updateOne({ startTime: startTime, endTime: endTime, timeSpent: timeSpent, charges: newcharges, timeUpdatedBy: user._id, timeUpdatedAt: Date.now() })
+        let track = job.track ? job.track : [];
+        let action = '';
+        if (job.startTime != startTime) {
+            action +='|Updated Start Time|';
+        }
+        if (job.endTime != endTime) {
+            action +='|Updated End Time|';
+        }
+        track.push({
+            user: user._id,
+            action,
+            date: new Date()
+        });
+        return job.updateOne({ startTime: startTime, endTime: endTime, timeSpent: timeSpent, charges: newcharges, track: track, timeUpdatedBy: user._id, timeUpdatedAt: Date.now() })
 
     })
     .then((response: any) => {
