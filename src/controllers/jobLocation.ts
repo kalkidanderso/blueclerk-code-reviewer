@@ -38,24 +38,18 @@ export const create = (req: Request, res: Response) => {
     const company = <ICompany>req.company
     const companyId = company ? company._id : null
 
-    const {
-        name,
-        contact: {
-            name: contactName,
-            phone,
-            email
-        },
-        location: {
-            lat,
-            long
-        },
-        address,
-        customerId
-    } = params
+    const name = params.name;
+    const contactName = params.contractName;
+    const contactPhone = params.contractPhone;
+    const contactEmail = params.contractEmail;
+    const locationLat = params.lat;
+    const locationLong = params.long;
+    const address = params.address;
+    const customerId = params.customerPO;
 
     const missingParams = []
     if (!name) missingParams.push('name')
-    if (!(lat && long) || !address) missingParams.push('location or address')
+    if (!(locationLat && locationLong) || !address) missingParams.push('location or address')
     if (!customerId) missingParams.push('customerId')
     if (!companyId) missingParams.push('companyId')
     const isMissingParams = missingParams.length > 0
@@ -71,11 +65,11 @@ export const create = (req: Request, res: Response) => {
         name,
         contact: {
             name: contactName,
-            phone,
-            email
+            contactPhone,
+            contactEmail
         },
         location: {
-            coordinates: [long, lat]
+            coordinates: [locationLong, locationLat]
         },
         address,
         customerId,

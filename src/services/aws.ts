@@ -31,7 +31,13 @@ export const sendEmail = function(options: any) {
           },
           Body: {
             Html: {
-              Data: "Welcome to Blueclerk.com! Please click on the link to confirm your email https://app.blueclerk.com",
+              Data: `<div style="text-align: center;">
+                  <b>Welcome to Blueclerk.com!</b><br />
+                  <strong>Blueclerk Phone: </strong> 512-846-6035 <br />
+                  <strong>Blueclerk Email: </strong> chris.norton@blueclerk.com <br />
+                   <br />
+                  <img src='http://blueclerk.com/wp-content/uploads/2020/07/logo-120x42.png' />
+                  </div>`,
             },
           },
         },

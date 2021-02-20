@@ -215,7 +215,7 @@ export const createCompany = (req: Request, res: Response) => {
         company.save((err: any) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': err.message })
             }
 
             const companyAdmin = new CompanyAdmin(
@@ -250,7 +250,7 @@ export const createCompany = (req: Request, res: Response) => {
             companyAdmin.save((err: any) => {
 
                 if (err) {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    return res.json({ 'status': Status.Error, 'message': err.message })
                 }
 
                 company.updateOne({
@@ -258,7 +258,7 @@ export const createCompany = (req: Request, res: Response) => {
                 }, (err: any, raq: any) => {
 
                     if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        return res.json({ 'status': Status.Error, 'message': err.message })
                     }
                     _createHubSpotContact(company, companyAdmin)
                     sendEmail({ to: params.email })
