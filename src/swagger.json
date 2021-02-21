@@ -2785,9 +2785,15 @@
             "type": "string"
           },
           {
-            "name": "location",
+            "name": "jobLocationId",
             "in": "formData",
-            "required": true,
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "jobSiteId",
+            "in": "formData",
+            "required": false,
             "type": "string"
           },
           {

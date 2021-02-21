@@ -106,7 +106,7 @@ export const Validations = {
   getCustomerDetail: [check('customerId').exists()],
 
   //Customer Equipment
-  createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists(), check('jobLocation').exists(), check('images').exists()],
+  createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists(), check('images').exists()],
 
   getCustomerEquipments: [check('customerId').exists()],
 
