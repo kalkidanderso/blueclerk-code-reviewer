@@ -1097,7 +1097,7 @@ export const getAllContracts = (req: Request, res: Response) => {
 }
 
 // contract accept or reject by contractor /organization
-export const acceptRejectContract = (req: Request, res: Response) => {
+export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
 
     const params = req.body
     const contractor = <ICompany>req.company

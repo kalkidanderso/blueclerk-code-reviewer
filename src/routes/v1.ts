@@ -800,7 +800,9 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Accept_Reject_Contract),
         validate(Validations.updateContract),
-        userController.acceptRejectContract
+        (req, res) => {
+            userController.acceptRejectContract(req, res, sio)
+        }
     )
 
     router.post(

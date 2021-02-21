@@ -35,56 +35,53 @@ export const get = (req: Request, res: Response) => {
 
 export const create = (req: Request, res: Response) => {
     const params = req.body
-    const company = <ICompany>req.company
-    const companyId = company ? company._id : null
-
+    let companyId = req.companyId
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
     const name = params.name;
     const contactName = params.contractName;
     const contactPhone = params.contractPhone;
     const contactEmail = params.contractEmail;
-    const locationLat = params.lat;
-    const locationLong = params.long;
-    const address = params.address;
-    const customerId = params.customerPO;
+    const locationLat = params.locationLat;
+    const locationLong = params.locationLong;
+    const street = params.street;
+    const city = params.city;
+    const state = params.state;
+    const zipcode = params.zipcode;
+    const customerId = params.customerId;
 
-    const missingParams = []
-    if (!name) missingParams.push('name')
-    if (!(locationLat && locationLong) || !address) missingParams.push('location or address')
-    if (!customerId) missingParams.push('customerId')
-    if (!companyId) missingParams.push('companyId')
-    const isMissingParams = missingParams.length > 0
-
-    if (isMissingParams) {
-        const message = `${Messages.MissingParams}: ${missingParams.join(', ')}`
-        res.status(Status.MissingParameters)
-        res.send(message)
-        return () => {}
+    if (!(locationLat && locationLong) && !(street && city && state && zipcode)) {
+        return res.json({ 'status': Status.Error, 'message': "Either location or address is required." })
     }
 
-    JobLocation.create({
+    let jobLocationData: any = {
         name,
         contact: {
             name: contactName,
             contactPhone,
             contactEmail
         },
-        location: {
-            coordinates: [locationLong, locationLat]
+        address: {
+            street: street,
+            city: city,
+            state: state,
+            zipcode: zipcode
         },
-        address,
         customerId,
         companyId
-    }, (err: any, jobLocation: IJobLocation) => {
+    }
+    if(locationLong && locationLat) {
+        jobLocationData.location = {coordinates : [locationLong, locationLat]};
+    }
+    JobLocation.create(jobLocationData, (err: any, jobLocation: IJobLocation) => {
         if (err) {
-            res.status(Status.InternalError)
-            res.send(Messages.InternalServerError)
-        } else {
+            return res.json({ 'status': Status.Error, 'message': err.message});
+        }
             Customer.findByIdAndUpdate(customerId, {
                 $push: { jobLocations: jobLocation._id }
             }).exec()
-            res.status(Status.OK)
-            res.send(jobLocation)
-        }
+        return res.json({ 'status': Status.Success, 'message': "Job Location created successfully!"});
     })
 }
 

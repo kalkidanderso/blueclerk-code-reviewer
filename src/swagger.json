@@ -3481,23 +3481,85 @@
         ],
         "summary": "Create a customer job location",
         "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
         "produces": [
           "application/json"
         ],
         "parameters": [
           {
-            "in": "body",
-            "name": "body",
-            "schema": {
-              "$ref": "#/definitions/jobLocation"
-            }
+            "name": "name",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "contactName",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "contactPhone",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "contactEmail",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "locationLat",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "locationLong",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "street",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "city",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "state",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "zipcode",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "customerId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
           }
         ],
         "responses": {
           "200": {
             "description": "Success",
             "schema": {
-              "$ref": "#/definitions/jobLocation"
+              "$ref": "#/definitions/GeneralAPIResponse"
             }
           }
         },
