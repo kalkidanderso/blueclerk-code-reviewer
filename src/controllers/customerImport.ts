@@ -33,12 +33,12 @@ export const uploadfile = (req: Request, res: Response) => {
     const uploadSingle = upload.single('customerSheet')
     uploadSingle(req, res, async (err) => {
         if (err) {
-            return res.json({ 'status': Status.Error, 'message': "No file available" })
+            return res.json({'status': Status.Error, 'message': err.message})
         }
         const fileName = time + req.file.originalname
         if (fileName.split('.').pop() != "xlsx") {
             fs.unlinkSync(path + fileName)
-            return res.json({ 'status': Status.Error, 'message': "File must be of type xlsx" })
+            return res.json({'status': Status.Error, 'message': "File must be of type xlsx"})
         }
         let columnHeaders: any = []
         var workbook = XLSX.readFile(path + fileName)
@@ -50,65 +50,78 @@ export const uploadfile = (req: Request, res: Response) => {
                 columnHeaders.push(worksheet[key].v);
             }
         }
-
         var defaultColumnHeads: any = [
             'vendorNumber', 'name', 'email', 'contactName', 'contactEmail', 'phone', 'street', 'city', 'state', 'zipCode',
             'latitude', 'longitude', 'jobLocationName', 'jobLocationContactName', 'jobLocationContactEmail', 'jobLocationContactPhone',
             'jobLocationStreet', 'jobLocationCity', 'jobLocationState', 'jobLocationZipCode', 'jobLocationLatitude', 'jobLocationLongitude'
-        ]        
+        ]
         if (!columnsEqual(defaultColumnHeads, columnHeaders)) {
-            return res.json({ 'status': Status.Error, 'message': `Sheet must contain following columns: ${defaultColumnHeads.join(', ')}` })
+            return res.json({
+                'status': Status.Error,
+                'message': `Sheet must contain following columns: ${defaultColumnHeads.join(', ')}`
+            })
         }
 
-        var xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]], {raw: true, defval:null})
-        
+        var xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]], {raw: true, defval: null})
         var customers: ICustomer[] = []
         const jobLocations: any[] = []
         const customerContacts: IContact[] = []
-        const jobLocationContacts: IContact[] = []        
-        xlData.map((obj: any) => {
-            const customer = new Customer({
-                contactName: obj.contactName,
-                info: {
-                    email: obj.email || '',
-                },
-                profile: {
-                    firstName: obj.name,
-                    lastName: obj.name,
-                    displayName: obj.name,
-                    imageUrl: '',
-                },
-                address: {
-                    street: obj.street || '',
-                    city: obj.city || '',
-                    state: obj.state || '',
-                    zipCode: obj.zipCode || '',
-                },
-                contact: {
-                    phone: obj.phone || '',
-                },
-                company: req.companyId,
-                permissions: {
-                    role: Role.CUSTOMER,
-                    extra: [],
-                },
-                location: {
-                    coordinates: [obj.longitude || 0, obj.latitude || 0]
-                },
-                vendorId: obj.vendorNumber || '',
-                contacts: []
-            })            
+        const jobLocationContacts: IContact[] = []
+        try {
+        xlData.map(async (obj: any) => {
+            let checkCustomerExist = (customers.filter((c) => {
+                return c.profile.displayName == obj.name
+            }).length > 0);
+            let customer: ICustomer;
+            if (!checkCustomerExist) {
+                customer = new Customer({
+                    contactName: obj.contactName,
+                    info: {
+                        email: obj.email || 'N/A',
+                    },
+                    profile: {
+                        firstName: obj.name,
+                        lastName: obj.name,
+                        displayName: obj.name,
+                        imageUrl: 'N/A',
+                    },
+                    address: {
+                        street: obj.street || 'N/A',
+                        city: obj.city || 'N/A',
+                        state: obj.state || 'N/A',
+                        zipCode: obj.zipCode || 'N/A',
+                    },
+                    contact: {
+                        phone: obj.phone || 'N/A',
+                    },
+                    company: req.companyId,
+                    permissions: {
+                        role: Role.CUSTOMER,
+                        extra: [],
+                    },
+                    location: {
+                        coordinates: [obj.longitude || 0, obj.latitude || 0]
+                    },
+                    vendorId: obj.vendorNumber || 'N/A',
+                    contacts: []
+                })
+            } else {
+                customer = customers.filter((c: ICustomer) => {
+                    return c.profile.displayName == obj.name
+                })[0];
+            }
             const contact = new Contact({
                 name: obj.contactName,
                 phone: obj.phone,
                 email: obj.contactEmail
-            })
-            customers.push(customer)
-            customerContacts.push(contact)
+            });
+            contact.save().then((c) => {
+                customer.contacts.push(c._id);
+            });
 
-            const jobLocation = {
+            const jobLocation = new JobLocation({
                 companyId: companyId,
-                name: obj.jobLocationName || '',                
+                name: obj.jobLocationName || '',
                 address: {
                     city: obj.jobLocationCity || '',
                     state: obj.jobLocationState || '',
@@ -117,19 +130,41 @@ export const uploadfile = (req: Request, res: Response) => {
                 },
                 location: {
                     coordinates: [obj.jobLocationLongitude || 0, obj.jobLocationLatitude || 0]
-                }                
-            }            
-            const jobLocationContact = new Contact({            
-                    name: obj.jobLocationContactName || '',
-                    phone: obj.jobLocationContactPhone || '',
-                    email: obj.jobLocationContactEmail || ''                
-            })
-            jobLocationContacts.push(jobLocationContact)
-            jobLocations.push(jobLocation)
+                }
+            });
+            await customer.save().then((c: ICustomer) => {
+                jobLocation.customerId = c._id;
+                customer = c;
+            });
+            const jobLocationContact = new Contact({
+                name: obj.jobLocationContactName || '',
+                phone: obj.jobLocationContactPhone || '',
+                email: obj.jobLocationContactEmail || ''
+            });
+            jobLocationContact.save().then((newJobLocationContact) => {
+                jobLocation.contacts.push(newJobLocationContact._id);
+            });
+            jobLocation.save().then(async (j) => {
+                customer.jobLocations.push(j._id);
+                await customer.save().then((c: ICustomer) => {
+                    customer = c;
+                });
+            });
+            if (!checkCustomerExist) {
+                const companyCustomer = new CompanyCustomer({
+                    company: companyId,
+                    customer: customer._id,
+                    createdAt: Date.now()
+                });
+                await companyCustomer.save();
+                customers.push(customer);
+            }
         })
-
+        } catch (err) {
+            return res.json({"status": Status.Error, 'message': err.message});
+        }
         fs.unlinkSync(path + fileName)
-
+        return res.json({"status": Status.Success, 'message': 'Customers imported successfully'});
         await handleCustomerXlCreation(companyId, res, customers, jobLocations, customerContacts, jobLocationContacts)
     })
     } catch (err) {
@@ -138,19 +173,19 @@ export const uploadfile = (req: Request, res: Response) => {
     }
 }
 
-//**** upload file helper functions ******/ 
+//**** upload file helper functions ******/
 function columnsEqual(_arr1: [any], _arr2: [any]) {
 
     if (!Array.isArray(_arr1) || !Array.isArray(_arr2) || _arr1.length !== _arr2.length)
         return false;
 
     var arr1 = _arr1.concat().sort();
-    var arr2 = _arr2.concat().sort();    
-    for (var i = 0; i < arr1.length; i++) {        
+    var arr2 = _arr2.concat().sort();
+    for (var i = 0; i < arr1.length; i++) {
         if (arr1[i] !== arr2[i]){
             return false;
         }
-            
+
 
     }
 
@@ -186,8 +221,8 @@ async function fetchCompanyCustomers(companyId: string, res: Response) {
 }
 
 async function findOrCreateContact(contact: IContact) {
-    let cnt = null    
-    let { email, phone} = contact 
+    let cnt = null
+    let { email, phone} = contact
     cnt = await Contact.findOne({ email, phone})
     if(!cnt) {
         cnt = await Contact.create(contact)
@@ -220,13 +255,13 @@ async function handleCustomerXlCreation(
             // Creating Job Location
             const newJobLocation: IJobLocation = new JobLocation(selectedJobLocation)
             const jobLocationContact = await findOrCreateContact(jobLocationContacts[index])
-            
+
             if(customer.contacts.indexOf(jobLocationContact._id) < 0) {
-                customer.contacts.push(jobLocationContact._id)    
-            }            
+                customer.contacts.push(jobLocationContact._id)
+            }
             newJobLocation.contacts = [jobLocationContact._id]
-            customer.jobLocations.push(newJobLocation._id)            
-            await Customer.create(customer).catch((err) => {                
+            customer.jobLocations.push(newJobLocation._id)
+            await Customer.create(customer).catch((err) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
             })
             // create company customer here
@@ -240,10 +275,10 @@ async function handleCustomerXlCreation(
 
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             })
-            await JobLocation.create(newJobLocation).catch((err) => {                
+            await JobLocation.create(newJobLocation).catch((err) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
             })
-            
+
         } else {
             const customer = customers[index]
             const extCustomer = await Customer.findOne({ 'profile.firstName': customer.profile.firstName, company: companyId });
@@ -256,7 +291,7 @@ async function handleCustomerXlCreation(
             }
 
 
-            const contact = await findOrCreateContact(jobLocationContacts[index])            
+            const contact = await findOrCreateContact(jobLocationContacts[index])
             const contactIndex = extCustomer.contacts.indexOf(contact._id)
             // Updating the contact inforamtion to the existing customer.
             if(contactIndex < 0) {
@@ -269,26 +304,26 @@ async function handleCustomerXlCreation(
                 selectedJobLocation.contacts = [contact._id]
                 const newJobLocation: IJobLocation = new JobLocation(selectedJobLocation)
                 extCustomer.jobLocations.push(newJobLocation._id)
-                await JobLocation.create(newJobLocation).catch((err) => {                
+                await JobLocation.create(newJobLocation).catch((err) => {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
                 })
             } else {
                 if(extJobLocation.contacts.indexOf(contact._id) < 0) {
-                    extJobLocation.contacts.push(contact._id)                    
+                    extJobLocation.contacts.push(contact._id)
                 }
             }
-            
-            
+
+
             await extCustomer.save()
 
-            
+
         }
     }
 
     return res.json({ 'status': Status.Success, 'message': 'Customer data upload successful.' })
     } catch (err) {
         return res.json({ 'status': Status.Error, 'message': err })
-    } 
+    }
 }
 //**** upload file helper functions ****//
 

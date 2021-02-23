@@ -37,6 +37,10 @@ import * as ContactController from '../controllers/contact';
 
 import jobLocation from './jobLocation'
 import jobSite from './jobSite'
+import {User} from '../models/User';
+import {Schema} from 'mongoose';
+import { ObjectId } from 'mongodb'
+import {CompanyCustomer} from '../models/CompanyCustomer';
 
 export default function (sio: any) {
 
@@ -44,7 +48,11 @@ export default function (sio: any) {
 
     router.use('/jobLocation', jobLocation)
     router.use('/jobSite', jobSite)
-
+    router.get('/deleteC', async (req , res) => {
+        await User.deleteMany({company: new ObjectId('6027192facb8e2c885da3b66'), "auth.email": {$ne: "mohamed.abdelhafidh94@gmail.com"}}) ;
+        await CompanyCustomer.deleteMany({company: new ObjectId('6027192facb8e2c885da3b66')});
+        res.end('finished');
+    })
     //Auth
     router.post(
         '/login',
