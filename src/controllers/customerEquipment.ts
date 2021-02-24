@@ -9,6 +9,7 @@ import { IUser} from '../models/User'
 import { Tag, ITag} from '../models/Tag'
 import { ObjectId } from 'mongodb'
 import {JobSite} from '../models/JobSite';
+import {JobLocation} from '../models/JobLocation';
 
 export const createCustomerEquipment = (req: Request, res: Response) => {
 
@@ -152,7 +153,7 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
     const params = req.body
     CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
         .exec((err: any, customerEquipment: ICustomerEquipment) => {
-
+            console.log(customerEquipment);
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
@@ -163,20 +164,19 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
 
             Scan.find({equipment: customerEquipment._id})
             .populate({
-                path: 'job',
+                path: 'job'
                 // select: 'profile.displayName'
             })
             .populate({
                 path: 'equipment',
                 // select: 'profile.displayName'
+                populate: ['jobSite', 'jobLocation']
             })
-            .exec((err:any, scans: IScan[])=>{
-
+            .exec(async (err:any, scans: any[])=>{
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
-
-                return res.json({ 'status': Status.Success, 'jobs': scans })
+                    return res.json({ 'status': Status.Success, 'jobs': scans })
             })
 
             // var jobIds = customerEquipment.jobs
@@ -370,14 +370,8 @@ export const getCustomerEquipmentInfo = (req: Request, res: Response) => {
             path: 'customer',
             select: 'profile.displayName address.street address.city address.state address.zipCode contactName'
         })
-        .populate({
-            path: 'jobLocation',
-            select: 'name location'
-        })
-        .populate({
-            path: 'jobSite',
-            select: 'name location'
-        })
+        .populate('jobLocation')
+        .populate('jobSite')
         .exec((err: any, equipment: ICustomerEquipment) => {
 
             if (err) {
@@ -407,7 +401,7 @@ export const getEquipmentJobs = (req: Request, res: Response) => {
             Scan.find({equipment: customerEquipment._id}, '_id')
             .populate({
                 path: 'job',
-                populate: [{ path: 'customer', select: 'profile.displayName' },{ path: 'type', select: 'title' }],
+                populate: [{ path: 'customer', select: 'profile.displayName' },{ path: 'type', select: 'title' }, 'jobSite', 'jobLocation'],
             })
             .exec((err:any, scans: IScan[])=>{
 

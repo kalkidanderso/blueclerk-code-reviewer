@@ -8653,7 +8653,14 @@
         "customer": {
           "type": "string",
           "description": "Id of customer"
+        },
+        "jobLocation": {
+          "type": "string"
+        },
+        "jobSite": {
+          "type": "string"
         }
+
       }
     },
     "LocationTag": {
