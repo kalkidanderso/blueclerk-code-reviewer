@@ -4,6 +4,7 @@ import multerS3 from 'multer-s3'
 import {Request, Response} from 'express'
 import uuid from 'uuid'
 import {Messages, Status} from '../common/constants';
+import {job} from 'cron';
 
 export const sendEmail = function(options: any) {
 
@@ -516,6 +517,34 @@ export const sendJobEmailToAssignee = function(options: any) {
   const ses = new AWS.SES({ apiVersion: '2012-10-17' })
 
   return new Promise((resolve, reject) => {
+    let jobLocation = options.location;
+    let jobSite = options.jobSite;
+    let contact;
+    if (jobLocation && jobLocation.contacts.length >0) {
+      contact = jobLocation.contacts[0];
+    }
+    let ticket = options.ticket;
+    let coordinates = [];
+    let locationName;
+    let contactName;
+    let contactPhone;
+    let contactEmail;
+    let imageUrl = ticket.image ? ticket.image: null;
+    if(contact) {
+      contactName = contact.name ? contact.name : null;
+      contactPhone = contact.phone ? contact.phone : null;
+      contactEmail = contact.email ? contact.email : null;
+    }
+    let address: any = {};
+    if (jobLocation) {
+      coordinates = jobLocation.location.coordinates;
+      locationName = jobLocation.name;
+      address= jobLocation.address;
+    }
+    if (jobSite) {
+      coordinates = jobSite.coordinates;
+      address = jobSite.address;
+    }
     ses.sendEmail(
       {
         Source: APP_EMAIL_NOREPLY,
@@ -529,7 +558,27 @@ export const sendJobEmailToAssignee = function(options: any) {
           },
           Body: {
             Html: {
-              Data: "<p>Dear "+options.assigneeName+"!</p><p>This email is to inform you that a job has been assigned and scheduled to you by ("+options.companyName+").  Job details below:</p><p>Customer : "+ options.customerName+ "</p><p>Job Type : "+ options.jobType +"</p><p>Notes : "+ options.notes +"</p> <p>Date : "+ options.dateTime +"</p> <p>If you have any questions, please reach out to the company who has assigned you to this job.  Thank you.</p><br/><br/> <p> <a href=\"https:\/\/blueclerk.com/privacy-policy\" target=\"_blank\">Privacy policy</a> </p>",
+              Data: `<p>Dear ${options.assigneeName}!</p>
+                     <p>This email is to inform you that a job has been assigned and scheduled to you by (${options.companyName}).  Job details below:</p>
+                     <p>Customer : ${options.customerName}</p>
+                     <p>Job Type : ${options.jobType}</p>
+                     ${coordinates.length > 0 ? '<p>Longitude: '+ coordinates[0] + ' Latitude: '+ coordinates[1] + '</p>' : ''}
+                     ${locationName ? '<p>Location Name: '+ locationName + '</p>' : ''}
+                     ${address.city ? '<p>City: '+ address.city + '</p>' : ''}
+                     ${address.state ? '<p>State: '+ address.state + '</p>' : ''}
+                     ${address.street ? '<p>Street: '+ address.street + '</p>' : ''}
+                     ${address.zipcode ? '<p>Zipcode: '+ address.zipcode + '</p>' : ''}
+                     ${contactName ? '<p>Contact name: '+ contactName + '</p>' : ''}
+                     ${contactPhone ? '<p>Contact phone: '+ contactPhone + '</p>' : ''}
+                     ${contactEmail ? '<p>Contact email: '+ contactEmail + '</p>' : ''}
+                     ${imageUrl ? '<img src='+imageUrl.toString()+'>' : ''}
+                   
+                     <p>Notes : ${options.notes ? options.notes : 'N/A'}</p>
+                      <p>Date : ${options.dateTime}</p> 
+                      <p>If you have any questions, please reach out to the company who has assigned you to this job.  Thank you.</p>
+                      <comment>You can change the frequency of these emails at any time by going to your preferences in profile</comment>
+                      <br/><br/>
+                      <p> <a href="https://blueclerk.com/privacy-policy" target="_blank">Privacy policy</a> </p>`,
             },
           },
         },

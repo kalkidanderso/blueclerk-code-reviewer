@@ -191,6 +191,12 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
         path:'type',
         select:'title'
     })
+    .populate('jobSite')
+    .populate({
+        path: 'jobLocation',
+        populate: 'contacts'
+    })
+    .populate('ticket')
     .exec((err: any, job: IJob) => {
 
         if (err) {
@@ -218,7 +224,7 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                 currentDate = new Date();
                 switch (techEmailPreferences) {
                     case 0: {
-                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate});
+                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description,location: job.jobLocation, site: job.jobSite,ticket: job.ticket, dateTime: job.scheduleDate});
                         break;
                     }
                     case 1: {
@@ -230,12 +236,12 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                         }
                         currentDate.setHours(21, 0, 0);
                         new CronJob(currentDate, function() {
-                            sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate});
+                            sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, location: job.jobLocation, site: job.jobSite,ticket: job.ticket, notes: job.description, dateTime: job.scheduleDate});
                         }, null, true, 'America/Los_Angeles');
                         break;
                     }
                     default: {
-                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate});
+                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, location: job.jobLocation, site: job.jobSite,ticket: job.ticket, notes: job.description, dateTime: job.scheduleDate});
                         break;
                     }
                 }
