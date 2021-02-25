@@ -420,19 +420,11 @@ export const updateJob = (req: Request, res: Response) => {
             throw new Error("Invalid job id")
         }
 
-        if(job.status == JobStatus.FINISHED) {
-            throw new Error("Update job is not allowed once it is finished")
-        }
-
-        if(job.status == JobStatus.CANCELED) {
-            throw new Error("Update job is not allowed once it is canceled")
-        }
-
         const itemPromise = Item.findOne({jobType: job.type})
 
         return Promise.all([job, itemPromise])
     })
-    .then((result: any) => {
+    .then(async (result: any) => {
         const job = result[0]
         const item = result[1]
 
@@ -465,23 +457,25 @@ export const updateJob = (req: Request, res: Response) => {
         let action = '';
         if (params.status && params.status != job.status) {
             if(params.status == JobStatus.PENDING) {
-                action = '|Pending the job|';
+                action = '|Scheduling the job|';
             }
             if (params.status == JobStatus.STARTED) {
-                action = '|Starting the job|';
+                if(job.status == JobStatus.CANCELED) {
+                    action = '|Re-starting the job|';
+                    await ServiceTicket.findOneAndUpdate({_id: job.ticket}, {jobCreated: true});
+                } else {
+                    action = '|Starting the job|';
+                }
             }
             if (params.status == JobStatus.FINISHED) {
                 action = '|Finishing the job|';
             }
             if (params.status == JobStatus.CANCELED) {
                 action = '|Canceling the job|';
-            }
-            if (params.status == JobStatus.ARCHIVED) {
-                action = '|Archiving the job|';
+                await ServiceTicket.findOneAndUpdate({_id: job.ticket}, {jobCreated: false});
             }
         }
         data = {comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime}
-
         if(params.jobLocationId) {
             data.jobLocation = params.jobLocationId
         }
@@ -592,9 +586,6 @@ export const editJob = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': "Invalid job id"})
             }
 
-            if(job.status == JobStatus.CANCELED || job.status == JobStatus.FINISHED) {
-                return res.json({'status': Status.Error, 'message': "Edit job is not allowed onece it is cancelled or finished"})
-            }
             let track = job.track ? job.track : [];
             let action = '';
 
