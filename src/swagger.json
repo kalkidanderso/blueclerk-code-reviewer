@@ -546,7 +546,15 @@
             "required": false,
             "type": "string",
             "description": "HH:MM:SS"
+          },
+          {
+            "name": "timeZone",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "example: America/Chicago"
           }
+
         ],
         "responses": {
           "200": {
@@ -1793,6 +1801,13 @@
             "required": false,
             "type": "string",
             "description": "HH:MM:SS"
+          },
+          {
+            "name": "timeZone",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "example: America/Chicago"
           }
         ],
         "responses": {
@@ -2620,6 +2635,13 @@
             "required": false,
             "type": "string",
             "description": "HH:MM:SS"
+          },
+          {
+            "name": "timeZone",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "example: America/Chicago"
           }
         ],
         "responses": {

@@ -36,7 +36,8 @@ export interface IUser extends Document {
     },
     emailPreferences: {
         preferences: Number,
-        time: Date
+        time: Date,
+        timeZone: String
     },
 
     hashPassword: (password: string, next: (err?: any, hash?: string)=>void)=>void
@@ -101,7 +102,12 @@ const UserSchema = new Schema({
         },
         time: {
             type: Date
+        },
+        timeZone: {
+            type: String,
+            default: 'America/Chicago'
         }
+
     },
     contacts: [{
         type: Schema.Types.ObjectId,

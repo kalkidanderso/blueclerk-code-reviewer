@@ -6,7 +6,7 @@ export interface ICustomer extends IUser {
 
     isActive: boolean
     info:{
-        email: String
+        email: string
     }
     contactName: string
     company: Schema.Types.ObjectId

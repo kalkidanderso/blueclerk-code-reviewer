@@ -17,17 +17,20 @@ import {CronJob} from 'cron'
 import request from 'request';
 var http = require('http');
 //Environment config
-dotenv.config()
+import moment from 'moment-timezone';
+import {EmailSchedule, IEmailSchedule} from './models/EmailSchedule';
+import {IUser, User} from './models/User';
+import {IJob, Job} from './models/Job';
+import {sendJobEmailToAssignee, sendScheduledJobEmailToAssignee} from './services/aws';
+import {Company} from './models/Company';
+import {Customer} from './models/Customer';
 
+dotenv.config()
+process.env.TZ = 'America/Chicago';
 //Database connection
 const { DB_USER, DB_PASS, DB_HOST, DB_NAME } = process.env
 
 mongoose.set('useCreateIndex', true)
-console.log('DB_USER:::::::', DB_USER)
-console.log('DB_PASS::::::', DB_PASS)
-console.log('DB_HOST::::::::', DB_HOST)
-console.log('DB:::::', DB_NAME)
-console.log( `mongodb+srv://${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`)
 mongoose.connect(
   `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`,
   {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false},
@@ -99,6 +102,70 @@ new CronJob('59 23 * * *', function() {
     });
 }, null, true, 'America/Los_Angeles');
 
+
+/**
+ * This is for email scheduling
+ */
+try {
+    new CronJob('* * * * *', async function() {
+        await EmailSchedule.find({pulled: false}).populate('user').populate('jobs').exec()
+            .then(async (schedules: IEmailSchedule[]) => {
+            if (schedules.length) {
+                // TODO: create a cron job for all users
+                for (let emailSchedule of schedules) {
+                    // Get User Schedule time
+
+                    let user: any = emailSchedule.user;
+                    // either company contractor or employee/admin
+                    let userScheduleTime = user.emailPreferences;
+                    let to: string;
+                    let assigneeName: string;
+                    switch (emailSchedule.type) {
+                        case 1: {
+
+                            let contractor = await Company.findOne({admin: emailSchedule.user});
+                            to = contractor.info.companyEmail;
+                            assigneeName = contractor.info.companyName;
+                            break;
+                        }
+                        case 2: {
+                            let customer = await Customer.findOne({_id: emailSchedule.user});
+                            to = customer.info.email;
+                            assigneeName = customer.contactName;
+                            break;
+                        }
+                        default: {
+                            let employee = await User.findOne({_id: emailSchedule.user});
+                            to = employee.auth.email;
+                            assigneeName = user.profile.displayName;
+                            break;
+                        }
+                    }
+                    let sendDate;
+                    let timeZone = userScheduleTime ? userScheduleTime.timeZone : 'America/Chicago';
+                    if (userScheduleTime) {
+                        let hours = userScheduleTime.time ? userScheduleTime.time.getHours() : 21;
+                        let minutes = userScheduleTime.time ? userScheduleTime.time.getMinutes() : 0;
+                        sendDate = moment().tz(timeZone).hours(hours).minutes(minutes).seconds(58);
+                    } else {
+                        sendDate = moment().tz(timeZone).hours(21).minutes(0).seconds(58);
+                    }
+                    if (!emailSchedule.pulled && moment().tz(timeZone).diff(sendDate) < 0) {
+                        let doc:any = await EmailSchedule.findOneAndUpdate({_id: emailSchedule._id}, {$set:{pulled:true}}, {new: true});
+                            new CronJob(sendDate, async function() {
+                                sendScheduledJobEmailToAssignee(doc.jobs, to, assigneeName);
+                        }, null, true);
+                    }
+                }
+            }
+        });
+    }, null, true);
+
+} catch (err) {
+    console.log({error: err.message});
+
+}
+
 //Starting the server
 server.listen(
   app.get('port'),
@@ -106,7 +173,6 @@ server.listen(
 
     if (err) return console.log(`Server start error: ${err}`)
     console.log(`Server started at port: ${app.get('port')}`)
-
   }
 )
 // Test comment for GitLab and ClickUp task #307pke

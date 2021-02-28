@@ -46,6 +46,8 @@
     "hubspot": "2.3.12",
     "intuit-oauth": "^2.1.0",
     "jsonwebtoken": "^8.5.1",
+    "moment": "^2.29.1",
+    "moment-timezone": "^0.5.33",
     "mongoose": "^5.6.12",
     "morgan": "^1.9.1",
     "multer": "^1.4.2",

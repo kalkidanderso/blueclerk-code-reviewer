@@ -51,7 +51,8 @@ export interface ICompany extends Document{
     },
     emailPreferences: {
         preferences: Number,
-        time: Date
+        time: Date,
+        timeZone: String
     },
     currentJobId: number,
     prefix: string,
@@ -172,6 +173,10 @@ const CompanySchema = new Schema({
         },
         time: {
             type: Date
+        },
+        timeZone: {
+            type: String,
+            default: 'America/Chicago'
         }
     },
     invoicePrefix: String,

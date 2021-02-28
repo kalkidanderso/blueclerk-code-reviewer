@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import {Status, Messages, Role} from '../common/constants'
+import {Status, Messages, Role, Permissions} from '../common/constants'
 import { sendAccountDowngradeEmail } from '../services/aws'
 import { Company, ICompany } from '../models/Company'
 import { Employee, IEmployee } from '../models/Employee'
@@ -726,6 +726,7 @@ const checkInvoicePrefixExists = (req: Request, res: Response, next: (req: Reque
 export const updateContractorEmailPreferences =  (req: Request, res: Response) => {
     const params = req.body
     const company = <ICompany>req.company
+    const user = <IUser>req.user
     if(params.contractorId) {
         if (params.emailPreferences == 1 && !params.emailTime) {
             return res.json({'status': Status.Error, 'message': "Email time is required for scheduled emails."})
@@ -737,16 +738,23 @@ export const updateContractorEmailPreferences =  (req: Request, res: Response) =
                 sendTime.setHours(time[0] ? time[0] : 21,time[1] ? time[1] : 0,time[2] ? time[2]: 0);
                 c.emailPreferences.preferences = params.emailPreferences;
                 c.emailPreferences.time = sendTime;
+                if (user.permissions.role == Role.COMPANY_ADMIN && JSON.stringify(user._id) == JSON.stringify(c.admin)) {
+                    if (params.timeZone) {
+                        c.emailPreferences.timeZone = params.timeZone;
+                    }
+                } else {
+                    return res.json({'status': Status.Error, 'message': Messages.UnAuthorized});
+                }
                 c.save().then(() => {
                     return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
                 }).catch((err) => {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({'status': Status.Error, 'message': err.message})
                 })
             } else {
                 return res.json({ 'status': Status.Error, 'message': 'Could not find contractor' })
             }
         }).catch((err) => {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            return res.json({'status': Status.Error, 'message': err.message})
         });
     }
 
@@ -783,7 +791,13 @@ export const updateEmployeeEmailPreferences = (req: Request, res: Response) => {
                             sendTime.setHours(time[0] ? time[0] : 21,time[1] ? time[1] : 0,time[2] ? time[2]: 0);
                             e.emailPreferences.preferences = params.emailPreferences;
                             e.emailPreferences.time = sendTime;
-                            e.save().then(() => {
+                            if (user.permissions.role == Role.COMPANY_ADMIN && JSON.stringify(user._id) == JSON.stringify(c.admin)) {
+                                if (params.timeZone) {
+                                    e.emailPreferences.timeZone = params.timeZone;
+                                }
+                            } else {
+                                return res.json({'status': Status.Error, 'message': Messages.UnAuthorized});
+                            }                            e.save().then(() => {
                                 return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
                             }).catch((err) => {
                                 return res.json({'status': Status.Error, 'message': err.message})
@@ -811,7 +825,7 @@ export const updateEmployeeEmailPreferences = (req: Request, res: Response) => {
 export const updateCustomerEmailPreferences = (req: Request, res: Response) => {
     const params = req.body
     const company = <ICompany>req.company
-    const user = <IUser>req.user
+    const timeZone = params.timeZone ? params.timeZone : 'America/Chicago';
     if(params.customerId) {
         if(params.emailPreferences == 1 && !params.emailTime) {
             return res.json({'status': Status.Error, 'message': "Email time is required for scheduled emails."})
@@ -826,7 +840,8 @@ export const updateCustomerEmailPreferences = (req: Request, res: Response) => {
                Customer.findOneAndUpdate({_id: companyCustomer.customer},
                    {
                        'emailPreferences.preferences': params.emailPreferences,
-                       'emailPreferences.time': sendTime
+                       'emailPreferences.time': sendTime,
+                       'emailPreferences.timeZone': timeZone
                    }).then((c) => {
                    if (c) {
                        return res.json({'status': Status.Success, 'message': "preferences updated successfully."})

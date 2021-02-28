@@ -1,8 +1,14 @@
 import {Request, Response} from 'express'
 import { Status, Messages, JobStatus, ServiceTicketStatus } from '../common/constants'
-import { sendJobEmailToAssignee, sendJobEmailToCustomer, sendJobEmailToCompanyAdmin } from '../services/aws'
+import {
+    sendJobEmailToAssignee,
+    sendJobEmailToCustomer,
+    sendJobEmailToCompanyAdmin,
+    sendScheduledJobEmailToAssignee
+} from '../services/aws'
 
 import { Job, IJob } from '../models/Job'
+import {IEmailSchedule, EmailSchedule} from '../models/EmailSchedule'
 import {Company, ICompany} from '../models/Company'
 import {IUser, User} from '../models/User'
 import { ServiceTicket ,IServiceTicket } from '../models/ServiceTicket'
@@ -13,6 +19,8 @@ import {Contract} from '../models/Contract';
 import {CronJob} from 'cron';
 import request from 'request';
 import {CompanyAdmin} from '../models/CompanyAdmin';
+import moment from 'moment-timezone';
+import {Customer} from '../models/Customer';
 
 export const createJob = (req: Request, res: Response) => {
     const params = req.body
@@ -156,14 +164,167 @@ const _createJob = async (req: Request, res: Response, jobId: string, serviceTic
             if (serviceTicketError) {
                 return next(req, res, Messages.GenericError, null)
             }
-             _sendJobEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => {
+            scheduleEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => {
                     return next(req, res, null, newJob)
-                })
+                });
 
         })
     })
 }
 
+
+const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (req: Request, res: Response, job: IJob) => void) => {
+    const params = req.body
+    const company = <ICompany>req.company
+
+
+    Job.findById(jobCreated._id)
+        .populate({
+            path:'technician',
+            select:'profile.displayName auth.email emailPreferences'
+        })
+        .populate({
+            path: 'contractor',
+            select: 'info.companyName info.companyEmail type'
+        })
+        .populate({
+            path:'customer',
+            select:'profile.displayName info.email emailPreferences'
+        })
+        .populate({
+            path:'createdBy',
+            select:'profile.displayName'
+        })
+        .populate({
+            path:'type',
+            select:'title'
+        })
+        .populate('jobSite')
+        .populate({
+            path: 'jobLocation',
+            populate: 'contacts'
+        })
+        .populate('ticket')
+        .exec(async (err: any, job: IJob) => {
+
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+
+            var tech : any;
+            var contractor : any;
+            var assigneeName: any;
+            var cust : any= job.customer
+            var type : any= job.type
+            var creator : any = job.createdBy
+            if (params.technicianId) {
+                tech = job.technician
+                assigneeName = tech.profile.displayName
+            }
+            if (params.contractorId) {
+                contractor = job.contractor
+                assigneeName = contractor.info.companyName
+            }
+            let techEmailPreferences = tech ? tech.emailPreferences.preferences : null;
+            let contractorEmailPreferences = contractor ? contractor.emailPreferences.preferences : null;
+            if(params.employeeType == 0) {
+                switch (techEmailPreferences) {
+                    case 0: {
+                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description,location: job.jobLocation, site: job.jobSite,ticket: job.ticket, dateTime: job.scheduleDate});
+                        break;
+                    }
+                    case 1: {
+                        let emailSchedule = await EmailSchedule.findOne({user: tech._id, pulled: false});
+                        if (emailSchedule) {
+                            emailSchedule.jobs.push(job._id)
+                        } else {
+                            emailSchedule = new EmailSchedule({
+                                user: tech._id,
+                                type: 0,
+                                jobs: [job._id]
+                            });
+                        }
+                        await emailSchedule.save();
+                        break;
+                    }
+                    default: {
+                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, location: job.jobLocation, site: job.jobSite,ticket: job.ticket, notes: job.description, dateTime: job.scheduleDate});
+                        break;
+                    }
+                }
+
+            }
+            if(params.employeeType == 1) {
+                switch (contractorEmailPreferences) {
+                    case 0: {
+                        sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+                        break;
+                    }
+                    case 1: {
+                        let emailSchedule = await EmailSchedule.findOne({user: contractor.admin, pulled: false});
+                        if (emailSchedule) {
+                            emailSchedule.jobs.push(job._id)
+                        } else {
+                            emailSchedule = new EmailSchedule({
+                                user: contractor.admin,
+                                type: 1,
+                                jobs: [job._id]
+                            });
+                        }
+                        await emailSchedule.save();
+                        break;                    }
+                    default: {
+                        sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+                        break;
+                    }
+
+
+                }
+                // For now we shouldn't spam company admins everytime a job is scheduled
+                // sendJobEmailToCompanyAdmin({to: company.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate, vendorName: creator.profile.displayName})
+            }
+
+            //Get admin preferences to send an email to customer or not
+            let customerEmailPreferences = cust ? cust.emailPreferences.preferences : null;
+            switch (customerEmailPreferences) {
+                case 0: {
+                    sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate});
+                    break;
+                }
+                case 1: {
+                    let emailSchedule = await EmailSchedule.findOne({user: cust._id, pulled: false});
+                    if (emailSchedule) {
+                        emailSchedule.jobs.push(job._id)
+                    } else {
+                        emailSchedule = new EmailSchedule({
+                            user: cust._id,
+                            type: 2,
+                            jobs: [job._id]
+                        });
+                    }
+                    await emailSchedule.save();
+                    break;
+                }
+                default: {
+                    sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+                    // User has deactivated the email notification for job schedule
+                    break;
+                }
+
+            }
+            next(req, res, jobCreated)
+            return
+        })
+
+}
+
+/**
+ * Unused for now!
+ * @param req
+ * @param res
+ * @param jobCreated
+ * @param next
+ */
 const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (req: Request, res: Response, job: IJob) => void) => {
 
     const params = req.body
@@ -206,8 +367,8 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
         var tech : any;
         var contractor : any;
         var assigneeName: any;
-        var cust : any= job.customer
-        var type : any= job.type
+        var cust : any = job.customer
+        var type : any = job.type
         var creator : any = job.createdBy
         if (params.technicianId) {
             tech = job.technician
@@ -219,25 +380,25 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
         }
         let techEmailPreferences = tech ? tech.emailPreferences.preferences : null;
         let contractorEmailPreferences = contractor ? contractor.emailPreferences.preferences : null;
-        let currentDate = new Date();
         if(params.employeeType == 0) {
-                currentDate = new Date();
                 switch (techEmailPreferences) {
                     case 0: {
                         sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description,location: job.jobLocation, site: job.jobSite,ticket: job.ticket, dateTime: job.scheduleDate});
                         break;
                     }
                     case 1: {
+                        let sendDate;
                         if (techEmailPreferences) {
                             let techEmailTimeHours = tech.emailPreferences.time ? tech.emailPreferences.time.getHours() : 21;
                             let techEmailTimeMinutes = tech.emailPreferences.time ? tech.emailPreferences.time.getMinutes() : 0;
-                            let techEmailTimeSeconds = tech.emailPreferences.time ? tech.emailPreferences.time.getSeconds() : 0;
-                            currentDate.setHours(techEmailTimeHours, techEmailTimeMinutes, techEmailTimeSeconds);
+                            sendDate = moment().tz('America/Chicago').hours(techEmailTimeHours).minutes(techEmailTimeMinutes);
+                        } else {
+                            sendDate = moment().tz('America/Chicago').hours(21).minutes(0);
+
                         }
-                        currentDate.setHours(21, 0, 0);
-                        new CronJob(currentDate, function() {
+                        new CronJob(sendDate, function() {
                             sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, location: job.jobLocation, site: job.jobSite,ticket: job.ticket, notes: job.description, dateTime: job.scheduleDate});
-                        }, null, true, 'America/Los_Angeles');
+                        }, null, true);
                         break;
                     }
                     default: {
@@ -247,7 +408,6 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                 }
 
         }
-        currentDate = new Date();
         if(params.employeeType == 1) {
                 switch (contractorEmailPreferences) {
                     case 0: {
@@ -255,17 +415,18 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                         break;
                     }
                     case 1: {
+                        let sendDate;
                         if (contractorEmailPreferences) {
                             let contractorEmailTimeHours = contractor.emailPreferences.time ? contractor.emailPreferences.time.getHours() : 21;
                             let contractorEmailTimeMinutes = contractor.emailPreferences.time ? contractor.emailPreferences.time.getMinutes() : 0;
-                            let contractorEmailTimeSeconds = contractor.emailPreferences.time ? contractor.emailPreferences.time.getSeconds() : 0;
-                            currentDate.setHours(contractorEmailTimeHours, contractorEmailTimeMinutes, contractorEmailTimeSeconds);
+                            sendDate = moment().tz('America/Chicago').hours(contractorEmailTimeHours).minutes(contractorEmailTimeMinutes);
                         } else {
-                            currentDate.setHours(21, 0, 0);
+                            sendDate = moment().tz('America/Chicago').hours(21).minutes(0);
                         }
-                        new CronJob(currentDate, function() {
+                        new CronJob(sendDate, function() {
+                            console.log('sending now to ', contractor.info.companyEmail);
                             sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
-                        }, null, true, 'America/Los_Angeles');
+                        }, null, true);
                         break;
                     }
                     default: {
@@ -281,24 +442,24 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
 
         //Get admin preferences to send an email to customer or not
         let customerEmailPreferences = cust ? cust.emailPreferences.preferences : null;
-        currentDate = new Date();
             switch (customerEmailPreferences) {
                 case 0: {
                     sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate});
                     break;
                 }
                 case 1: {
+                    let sendDate;
                     if (cust.emailPreferences) {
                         let customerEmailTimeHours = cust.emailPreferences.time ? cust.emailPreferences.time.getHours() : 21;
                         let customerEmailTimeMinutes = cust.emailPreferences.time ? cust.emailPreferences.time.getMinutes() : 0;
-                        let customerEmailTimeSeconds = cust.emailPreferences.time ? cust.emailPreferences.time.getSeconds() : 0;
-                        currentDate.setHours(customerEmailTimeHours, customerEmailTimeMinutes, customerEmailTimeSeconds);
+                        sendDate = moment().tz('America/Chicago').hours(customerEmailTimeHours).minutes(customerEmailTimeMinutes);
+
                     } else {
-                        currentDate.setHours(21,0 ,0);
+                        sendDate = moment().tz('America/Chicago').hours(21).minutes(0);
                     }
-                    new CronJob(currentDate, function() {
+                    new CronJob(sendDate, function() {
                         sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
-                    }, null, true, 'America/Los_Angeles');
+                    }, null, true);
                     break;
                 }
                 default: {

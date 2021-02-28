@@ -5,6 +5,12 @@ import {Request, Response} from 'express'
 import uuid from 'uuid'
 import {Messages, Status} from '../common/constants';
 import {job} from 'cron';
+import {IJob, Job} from '../models/Job';
+import {IUser} from '../models/User';
+import {IJobLocation} from '../models/JobLocation';
+import {IServiceTicket} from '../models/ServiceTicket';
+import {IContact} from '../common/contact';
+import {ICustomer} from '../models/Customer';
 
 export const sendEmail = function(options: any) {
 
@@ -592,6 +598,127 @@ export const sendJobEmailToAssignee = function(options: any) {
         }
       },
     )
+  })
+}
+export const sendScheduledJobEmailToAssignee = function(jobs: any[], to: string, assigneeName: string ) {
+
+  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
+
+  AWS.config.update({
+    region: AWS_REGION,
+    accessKeyId: AWS_SES_ACCESSKEYID,
+    secretAccessKey: AWS_SES_SECRETACCESSKEY,
+  })
+
+  const ses = new AWS.SES({ apiVersion: '2012-10-17' })
+
+  return new Promise(async (resolve, reject) => {
+    let data = `<p>Dear ${assigneeName}!</p>
+                <p>This email is to inform you that a job has been assigned and scheduled to you,  Job details below</p>`;
+        jobs = await Job.find({_id: {$in: jobs}})
+        .populate({
+          path:'technician',
+          select:'profile.displayName auth.email emailPreferences'
+        })
+        .populate({
+          path: 'contractor',
+          select: 'info.companyName info.companyEmail type'
+        })
+        .populate({
+          path:'customer',
+          select:'profile.displayName info.email emailPreferences'
+        })
+        .populate({
+          path:'type',
+          select:'title'
+        })
+        .populate('jobSite')
+        .populate('company')
+        .populate({
+          path: 'jobLocation',
+          populate: 'contacts'
+        })
+        .populate('ticket').exec();
+
+    for(let job of jobs) {
+      let jobLocation: IJobLocation = job.jobLocation;
+      let jobSite = job.jobSite;
+      let ticket: IServiceTicket = job.ticket;
+      let contact: IContact = ticket.customerContactId;
+      let coordinates = [];
+      let contactDetails: any = {};
+      let locationName;
+      let customer: ICustomer = job.customer;
+      let image = ticket.image ? ticket.image: null;
+      if(contact) {
+        contactDetails.contactName = contact.name ? contact.name : null;
+        contactDetails.contactPhone = contact.phone ? contact.phone : null;
+        contactDetails.contactEmail = contact.email ? contact.email : null;
+      }
+      let address: any = {};
+      if (jobLocation) {
+        locationName = jobLocation.name;
+      }
+      if (jobSite) {
+        coordinates = jobSite.coordinates;
+        address = jobSite.address;
+      }
+      if (!jobSite && jobLocation) {
+        coordinates = jobLocation.location.coordinates;
+        address = jobLocation.address;
+      }
+           data += `<p>Company: <b>${job.company.info.companyName}</b></p>
+                    <p>Customer : ${customer.profile.displayName}</p>
+                    <p>Job Type : ${job.type.title}</p>
+                     ${coordinates.length > 0 ? '<p>Longitude: '+ coordinates[0] + ' Latitude: '+ coordinates[1] + '</p>' : ''}
+                     ${locationName ? '<p>Location Name: '+ locationName + '</p>' : ''}
+                     ${address.city ? '<p>City: '+ address.city + '</p>' : ''}
+                     ${address.state ? '<p>State: '+ address.state + '</p>' : ''}
+                     ${address.street ? '<p>Street: '+ address.street + '</p>' : ''}
+                     ${address.zipcode ? '<p>Zipcode: '+ address.zipcode + '</p>' : ''}
+                     ${contactDetails.contactName ? '<p>Contact name: '+ contactDetails.contactName + '</p>' : ''}
+                     ${contactDetails.contactPhone ? '<p>Contact phone: '+ contactDetails.contactPhone + '</p>' : ''}
+                     ${contactDetails.contactEmail ? '<p>Contact email: '+ contactDetails.contactEmail + '</p>' : ''}
+                     ${image ? 'Service ticket image: <img src='+image.toString()+'>' : ''}
+                     <p>Notes : ${job.description ? job.description : 'N/A'}</p>
+                      <p>Date of Job, time  : ${job.scheduleDate ? job.scheduleDate.toLocaleDateString("en-US") : 'N/A'} ${job.scheduledStartTime ? 'Start time: ' + job.scheduledStartTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''} ${job.scheduledEndTime ? 'End time: ' + job.scheduledEndTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</p> 
+                      <br />
+                      <hr>
+                      <br />`
+    }
+    data += `<p>If you have any questions, please reach out to the company who has assigned you to this job.  Thank you.</p>
+                      <comment>You can change the frequency of these emails at any time by going to your preferences in profile</comment>
+                      <br/><br/>
+                      <p> <a href="https://blueclerk.com/privacy-policy" target="_blank">Privacy policy</a> </p>`;
+    if(jobs.length) {
+      ses.sendEmail(
+          {
+            Source: APP_EMAIL_NOREPLY,
+            Destination: {
+              CcAddresses: [],
+              ToAddresses: [to],
+            },
+            Message: {
+              Subject: {
+                Data: "New Assigned Jobs via BlueClerk",
+              },
+              Body: {
+                Html: {
+                  Data: data,
+                },
+              },
+            },
+            ReplyToAddresses: [APP_EMAIL_NOREPLY],
+          },
+          (err, info) => {
+            if (err) {
+              reject(err)
+            } else {
+              resolve(info)
+            }
+          },
+      )
+    }
   })
 }
 
