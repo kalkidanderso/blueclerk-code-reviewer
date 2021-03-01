@@ -575,6 +575,7 @@ export const getJobs = (req: Request, res: Response) => {
         .populate({
             path: 'jobSite',
             select: 'name location'
+        })
         .exec((err: any, jobs: IJob[])=>{
 
             if (err) {
