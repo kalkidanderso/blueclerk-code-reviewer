@@ -11,6 +11,7 @@ import {IJobLocation} from '../models/JobLocation';
 import {IServiceTicket} from '../models/ServiceTicket';
 import {IContact} from '../common/contact';
 import {ICustomer} from '../models/Customer';
+import {EmailSchedule} from '../models/EmailSchedule';
 
 export const sendEmail = function(options: any) {
 
@@ -600,7 +601,7 @@ export const sendJobEmailToAssignee = function(options: any) {
     )
   })
 }
-export const sendScheduledJobEmailToAssignee = function(jobs: any[], to: string, assigneeName: string ) {
+export const sendScheduledJobEmailToAssignee = function(jobs: any[], to: string, assigneeName: string, emailSchedule: any ) {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
 
@@ -719,6 +720,7 @@ export const sendScheduledJobEmailToAssignee = function(jobs: any[], to: string,
           },
       )
     }
+    await EmailSchedule.findOne({_id: emailSchedule._id}, {$set:{pulled:true}}, {new: true});
   })
 }
 

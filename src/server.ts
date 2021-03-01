@@ -151,9 +151,9 @@ try {
                         sendDate = moment().tz(timeZone).hours(21).minutes(0).seconds(58);
                     }
                     if (!emailSchedule.pulled && moment().tz(timeZone).diff(sendDate) < 0) {
-                        let doc:any = await EmailSchedule.findOneAndUpdate({_id: emailSchedule._id}, {$set:{pulled:true}}, {new: true});
                             new CronJob(sendDate, async function() {
-                                sendScheduledJobEmailToAssignee(doc.jobs, to, assigneeName);
+                                let doc:any = await EmailSchedule.findOne({_id: emailSchedule._id});
+                                sendScheduledJobEmailToAssignee(doc.jobs, to, assigneeName, emailSchedule);
                         }, null, true);
                     }
                 }

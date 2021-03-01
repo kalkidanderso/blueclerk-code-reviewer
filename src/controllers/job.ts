@@ -234,6 +234,12 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                         break;
                     }
                     case 1: {
+                        /*    let techSchedule = tech.emailPreferences.time;
+                            let currentDate = moment().tz(tech.emailPreferences.timeZone);
+                            let sendDate = moment().tz(tech.emailPreferences.timeZone).hours(techSchedule.getHours()).minutes(techSchedule.getMinutes()).seconds(58);
+                            const checkEmailSentOrNot = currentDate.diff(sendDate) < 0;
+                            */
+
                         let emailSchedule = await EmailSchedule.findOne({user: tech._id, pulled: false});
                         if (emailSchedule) {
                             emailSchedule.jobs.push(job._id)
@@ -479,10 +485,14 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
 export const getJobs = (req: Request, res: Response) => {
 
     var companyId = req.companyId;
+    const pageSize = req.query.pagesize;
+    const currentPage = req.query.page;
+    let customerName = req.body.customerName ? req.body.customerName : null;
+    let jobId = req.body.jobId ? req.body.jobId : null;
+
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-
     Job.find({ company: companyId })
         .populate('ticket')
         .populate({
@@ -516,14 +526,14 @@ export const getJobs = (req: Request, res: Response) => {
         .populate({
             path: 'jobSite',
             select: 'name location'
-        })
+        }).skip((currentPage - 1) * pageSize)
+        .limit(pageSize)
         .exec((err: any, jobs: IJob[])=>{
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-
-            return res.json({'status': Status.Success, 'jobs': jobs})
+            return res.json({'status': Status.Success, 'jobs': jobs, 'total': jobs.length });
         }
     )
 
