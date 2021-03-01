@@ -481,14 +481,12 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
 
 }
 
-
-export const getJobs = (req: Request, res: Response) => {
-
-    var companyId = req.companyId;
+export const getFilteredJobs = (req:  Request, res: Response) => {
     const pageSize = req.query.pagesize;
     const currentPage = req.query.page;
     let customerName = req.body.customerName ? req.body.customerName : null;
     let jobId = req.body.jobId ? req.body.jobId : null;
+    var companyId = req.companyId;
 
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
@@ -528,6 +526,55 @@ export const getJobs = (req: Request, res: Response) => {
             select: 'name location'
         }).skip((currentPage - 1) * pageSize)
         .limit(pageSize)
+        .exec((err: any, jobs: IJob[])=>{
+
+                if (err) {
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                }
+                return res.json({'status': Status.Success, 'jobs': jobs, 'total': jobs.length });
+            }
+        )
+
+}
+export const getJobs = (req: Request, res: Response) => {
+
+    var companyId = req.companyId;
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+    Job.find({ company: companyId })
+        .populate('ticket')
+        .populate({
+            path: 'technician',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'contractor',
+            select: 'info.companyName info.companyEmail type'
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
+        })
+        .populate({
+            path: 'type',
+            select: 'title'
+        })
+        .populate({
+            path: 'company',
+            select: 'info.companyName'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'jobLocation',
+            select: 'name location'
+        })
+        .populate({
+            path: 'jobSite',
+            select: 'name location'
         .exec((err: any, jobs: IJob[])=>{
 
             if (err) {

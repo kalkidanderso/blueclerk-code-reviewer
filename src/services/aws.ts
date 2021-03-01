@@ -616,7 +616,7 @@ export const sendScheduledJobEmailToAssignee = function(jobs: any[], to: string,
   return new Promise(async (resolve, reject) => {
     let data = `<p>Dear ${assigneeName}!</p>
                 <p>This email is to inform you that a job has been assigned and scheduled to you,  Job details below</p>`;
-        jobs = await Job.find({_id: {$in: jobs}})
+        jobs = await Job.find({_id: {$in: jobs}, status: {$in : [0,1]}})
         .populate({
           path:'technician',
           select:'profile.displayName auth.email emailPreferences'
