@@ -109,13 +109,13 @@ new CronJob('59 23 * * *', function() {
 try {
     let emailQueue: any[] = [];
     new CronJob('* * * * *', async function() {
-        await EmailSchedule.find({pulled: false}).populate('user').populate('jobs').exec()
+        await EmailSchedule.find({pulled: false, _id: {$nin: emailQueue}}).populate('user').populate('jobs').exec()
             .then(async (schedules: IEmailSchedule[]) => {
             if (schedules.length) {
                 // TODO: create a cron job for all users
                 for (let emailSchedule of schedules) {
                     //Check if emailSchedule is already in emailQueue
-                    if (emailQueue.filter((e) => JSON.stringify(e._id) == JSON.stringify(emailSchedule._id)).length == 0) {
+                    if (emailQueue.filter((e) => JSON.stringify(e) == JSON.stringify(emailSchedule._id)).length == 0) {
                         // Get User Schedule time
                         let user: any = emailSchedule.user;
                         // either company contractor or employee/admin
@@ -151,12 +151,12 @@ try {
                         } else {
                             sendDate = moment().tz(timeZone).hours(21).minutes(0).seconds(58);
                         }
-                        emailQueue.push(emailSchedule);
+                        emailQueue.push(emailSchedule._id);
                         if (!emailSchedule.pulled && moment().tz(timeZone).diff(sendDate) < 0) {
                             new CronJob(sendDate, async function() {
                                 let doc:any = await EmailSchedule.findOne({_id: emailSchedule._id});
                                 sendScheduledJobEmailToAssignee(doc.jobs, to, assigneeName, emailSchedule);
-                                emailQueue = emailQueue.filter((e) => JSON.stringify(e._id) !== JSON.stringify(emailSchedule._id));
+                                emailQueue = emailQueue.filter((e) => JSON.stringify(e) !== JSON.stringify(emailSchedule._id));
                             }, null, true);
                         }
                     }
