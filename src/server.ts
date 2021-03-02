@@ -107,54 +107,58 @@ new CronJob('59 23 * * *', function() {
  * This is for email scheduling
  */
 try {
+    let emailQueue: any[] = [];
     new CronJob('* * * * *', async function() {
         await EmailSchedule.find({pulled: false}).populate('user').populate('jobs').exec()
             .then(async (schedules: IEmailSchedule[]) => {
             if (schedules.length) {
                 // TODO: create a cron job for all users
                 for (let emailSchedule of schedules) {
-                    // Get User Schedule time
-
-                    let user: any = emailSchedule.user;
-                    // either company contractor or employee/admin
-                    let userScheduleTime = user.emailPreferences;
-                    let to: string;
-                    let assigneeName: string;
-                    switch (emailSchedule.type) {
-                        case 1: {
-
-                            let contractor = await Company.findOne({admin: emailSchedule.user});
-                            to = contractor.info.companyEmail;
-                            assigneeName = contractor.info.companyName;
-                            break;
+                    //Check if emailSchedule is already in emailQueue
+                    if (emailQueue.filter((e) => JSON.stringify(e._id) == JSON.stringify(emailSchedule._id)).length == 0) {
+                        // Get User Schedule time
+                        let user: any = emailSchedule.user;
+                        // either company contractor or employee/admin
+                        let userScheduleTime = user.emailPreferences;
+                        let to: string;
+                        let assigneeName: string;
+                        switch (emailSchedule.type) {
+                            case 1: {
+                                let contractor = await Company.findOne({admin: emailSchedule.user});
+                                to = contractor.info.companyEmail;
+                                assigneeName = contractor.info.companyName;
+                                break;
+                            }
+                            case 2: {
+                                let customer = await Customer.findOne({_id: emailSchedule.user});
+                                to = customer.info.email;
+                                assigneeName = customer.contactName;
+                                break;
+                            }
+                            default: {
+                                let employee = await User.findOne({_id: emailSchedule.user});
+                                to = employee.auth.email;
+                                assigneeName = user.profile.displayName;
+                                break;
+                            }
                         }
-                        case 2: {
-                            let customer = await Customer.findOne({_id: emailSchedule.user});
-                            to = customer.info.email;
-                            assigneeName = customer.contactName;
-                            break;
+                        let sendDate;
+                        let timeZone = userScheduleTime ? userScheduleTime.timeZone : 'America/Chicago';
+                        if (userScheduleTime) {
+                            let hours = userScheduleTime.time ? userScheduleTime.time.getHours() : 21;
+                            let minutes = userScheduleTime.time ? userScheduleTime.time.getMinutes() : 0;
+                            sendDate = moment().tz(timeZone).hours(hours).minutes(minutes).seconds(58);
+                        } else {
+                            sendDate = moment().tz(timeZone).hours(21).minutes(0).seconds(58);
                         }
-                        default: {
-                            let employee = await User.findOne({_id: emailSchedule.user});
-                            to = employee.auth.email;
-                            assigneeName = user.profile.displayName;
-                            break;
-                        }
-                    }
-                    let sendDate;
-                    let timeZone = userScheduleTime ? userScheduleTime.timeZone : 'America/Chicago';
-                    if (userScheduleTime) {
-                        let hours = userScheduleTime.time ? userScheduleTime.time.getHours() : 21;
-                        let minutes = userScheduleTime.time ? userScheduleTime.time.getMinutes() : 0;
-                        sendDate = moment().tz(timeZone).hours(hours).minutes(minutes).seconds(58);
-                    } else {
-                        sendDate = moment().tz(timeZone).hours(21).minutes(0).seconds(58);
-                    }
-                    if (!emailSchedule.pulled && moment().tz(timeZone).diff(sendDate) < 0) {
+                        emailQueue.push(emailSchedule);
+                        if (!emailSchedule.pulled && moment().tz(timeZone).diff(sendDate) < 0) {
                             new CronJob(sendDate, async function() {
                                 let doc:any = await EmailSchedule.findOne({_id: emailSchedule._id});
                                 sendScheduledJobEmailToAssignee(doc.jobs, to, assigneeName, emailSchedule);
-                        }, null, true);
+                                emailQueue = emailQueue.filter((e) => JSON.stringify(e._id) !== JSON.stringify(emailSchedule._id));
+                            }, null, true);
+                        }
                     }
                 }
             }
