@@ -505,6 +505,15 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/searchJobs',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Get_All),
+        validate(Validations.searchJob),
+        jobController.getFilteredJobs
+    )
+
+    router.post(
         '/getTechnicianJobs',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),

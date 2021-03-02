@@ -5,10 +5,10 @@
     "description": "APIs for both app and website",
     "version": "1.0.0"
   },
-  "host": "blueclerk-node-api.deploy.blueclerk.com",
+  "host": "localhost:3006",
   "basePath": "/api/v1",
   "schemes": [
-    "https"
+    "http"
   ],
   "tags": [
     {
@@ -5657,6 +5657,90 @@
             "in": "formData",
             "type": "string",
             "description": "Id of company if contractor is hitting for other company"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Job"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/searchJobs": {
+      "post": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "To get all jobs of a company or company of employee.",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of company if contractor is hitting for other company"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required" : true,
+            "schema": {
+              "type":"integer"
+            },
+            "description": "The number of the page. example: 1"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required" : true,
+            "schema": {
+              "type":"integer"
+            },
+            "description": "The numbers of items to return per page e.g. 10"
+          },
+          {
+            "name": "customerNames",
+            "in": "formData",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of customer's displayNames in comma separated strings. eg. name1,name2"
+          },
+          {
+            "name": "jobId",
+            "in": "formData",
+            "type": "string",
+            "description": "Job ID e.g. Job 51 or 51"
           }
         ],
         "responses": {

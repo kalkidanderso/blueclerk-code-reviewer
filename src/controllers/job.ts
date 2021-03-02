@@ -16,11 +16,12 @@ import { Scan } from '../models/Scan'
 import { PurchaseOrder } from '../models/PurchaseOrder'
 import { Item } from '../models/Item'
 import {Contract} from '../models/Contract';
-import {CronJob} from 'cron';
+import {CronJob, job} from 'cron';
 import request from 'request';
 import {CompanyAdmin} from '../models/CompanyAdmin';
 import moment from 'moment-timezone';
 import {Customer} from '../models/Customer';
+import {CompanyCustomer} from '../models/CompanyCustomer';
 
 export const createJob = (req: Request, res: Response) => {
     const params = req.body
@@ -481,17 +482,38 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
 
 }
 
-export const getFilteredJobs = (req:  Request, res: Response) => {
-    const pageSize = req.query.pagesize;
-    const currentPage = req.query.page;
-    let customerName = req.body.customerName ? req.body.customerName : null;
+export const getFilteredJobs = async (req: Request, res: Response) => {
+    const pageSize = +req.query.pageSize;
+    const currentPage = +req.query.page;
+    let customerNames = req.body.customerNames ? req.body.customerNames.split(',') : null;
     let jobId = req.body.jobId ? req.body.jobId : null;
     var companyId = req.companyId;
-
-    if(req.otherCompanyId != undefined) {
+    let customers: any;
+    let filteredCustomers: any;
+    if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-    Job.find({ company: companyId })
+    let query: any = {};
+    query.company = companyId;
+
+    if (customerNames && customerNames.length) {
+        customers = await CompanyCustomer.find({}).select('customer -_id');
+        let customersIds = customers.reduce((acc: any, v: any) => {
+            acc.push(v.customer);
+            return acc;
+        }, [])
+        filteredCustomers = await User.find({_id: {$in : customersIds}, 'profile.displayName': {$in: customerNames}}).select('_id');
+        filteredCustomers = filteredCustomers.length ? filteredCustomers : [];
+            query.customer = {$in : filteredCustomers};
+    }
+    if (jobId) {
+            if (jobId.match(/\d/g)) {
+                jobId = 'Job '+jobId.match(/\d/g).join("");
+            }
+        query.jobId = { $regex: jobId, $options: 'i'}
+    }
+    let count = await Job.find(query).countDocuments();
+    await Job.find(query)
         .populate('ticket')
         .populate({
             path: 'technician',
@@ -526,12 +548,12 @@ export const getFilteredJobs = (req:  Request, res: Response) => {
             select: 'name location'
         }).skip((currentPage - 1) * pageSize)
         .limit(pageSize)
-        .exec((err: any, jobs: IJob[])=>{
+        .exec((err: any, jobs: IJob[]) => {
 
                 if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({'status': Status.Error, 'message': err.message})
                 }
-                return res.json({'status': Status.Success, 'jobs': jobs, 'total': jobs.length });
+                return res.json({'status': Status.Success, 'jobs': jobs, 'total': count});
             }
         )
 
