@@ -615,7 +615,9 @@ export const sendScheduledJobEmailToAssignee = function(jobs: any[], to: string,
 
   return new Promise(async (resolve, reject) => {
     let data = `<p>Dear ${assigneeName}!</p>
-                <p>This email is to inform you that a job has been assigned and scheduled to you,  Job details below</p>`;
+                <p>This email is to inform you that a job has been assigned and scheduled to you,  Job details below</p>
+                <br />
+                <hr>`;
         jobs = await Job.find({_id: {$in: jobs}, status: {$in : [0,1]}})
         .populate({
           path:'technician',
@@ -682,7 +684,7 @@ export const sendScheduledJobEmailToAssignee = function(jobs: any[], to: string,
                      ${contactDetails.contactEmail ? '<p>Contact email: '+ contactDetails.contactEmail + '</p>' : ''}
                      ${image ? 'Service ticket image: <img src='+image.toString()+'>' : ''}
                      <p>Notes : ${job.description ? job.description : 'N/A'}</p>
-                      <p>Date of Job, time  : ${job.scheduleDate ? job.scheduleDate.toLocaleDateString("en-US") : 'N/A'} ${job.scheduledStartTime ? 'Start time: ' + job.scheduledStartTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''} ${job.scheduledEndTime ? 'End time: ' + job.scheduledEndTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</p> 
+                      <p>Date of Job : ${job.scheduleDate ? job.scheduleDate.toLocaleDateString("en-US") : 'N/A'}, time:  ${job.scheduledStartTime ? 'Start time: ' + job.scheduledStartTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''} ${job.scheduledEndTime ? 'End time: ' + job.scheduledEndTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</p> 
                       <br />
                       <hr>
                       <br />`
@@ -720,7 +722,7 @@ export const sendScheduledJobEmailToAssignee = function(jobs: any[], to: string,
           },
       )
     }
-    await EmailSchedule.findOne({_id: emailSchedule._id}, {$set:{pulled:true}}, {new: true});
+    await EmailSchedule.findOneAndUpdate({_id: emailSchedule._id}, {$set:{pulled:true}}, {new: true});
   })
 }
 
