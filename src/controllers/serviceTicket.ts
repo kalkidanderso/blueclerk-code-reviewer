@@ -127,6 +127,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
             const params = req.body
             const pageSize = +req.query.pagesize;
             const currentPage = +req.query.page;
+            let contactName: any;
             var companyId = req.companyId;
             var serviceTickets : any = [];
             var totalCount : number = 0;
@@ -144,6 +145,13 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                 company: companyId,
                 jobCreated: false
             };
+
+            if (params.contactName) {
+                contactName = params.contactName;
+                criteria['customer.contactName'] = contactName;
+            }
+
+
             if (params.jobTypeTitle) {
                 criteria['jobType.title'] = params.jobTypeTitle
             }

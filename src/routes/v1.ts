@@ -428,7 +428,7 @@ export default function (sio: any) {
         '/scanTag',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        checkUserScanPermissions(Permissions.Get_Location_Tag_Jobs),
+        checkUserScanPermissions(Permissions.Scan_Tag),
         validate(Validations.getCustomerEquipmentJobs),
         customerEquipmentController.checkTagAssociation
     )
