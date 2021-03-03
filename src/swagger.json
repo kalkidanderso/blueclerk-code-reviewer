@@ -1869,6 +1869,80 @@
         ]
       }
     },
+    "/getEmployeeDetail" : {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get employee details",
+        "description": "",
+        "parameters":[{
+          "name": "employeeId",
+          "in": "query",
+          "required": true,
+          "type": "string"
+        }],
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "users": {
+                      "type": "object",
+                      "properties": {
+                        "firstName": {
+                          "type": "string"
+                        },
+                        "lastName": {
+                          "type" : "string"
+                        },
+                        "email" : {
+                          "type": "string"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "emailPreferences": {
+                          "type": "object",
+                          "properties": {
+                            "preferences": {
+                              "type": "string"
+                            },
+                            "time": {
+                              "type": "string"
+                            },
+                            "timezone": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getEmployeesForJob": {
       "post": {
         "tags": [

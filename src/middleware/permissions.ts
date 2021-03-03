@@ -72,7 +72,6 @@ export const checkUserScanPermissions = (permissionId: number) => {
     }
 
 }
-
 export const checkUserPermissions = (permissionId : number) => {
 
     return async (req: Request, res: Response, next: NextFunction) => {

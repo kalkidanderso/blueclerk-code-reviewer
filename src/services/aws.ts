@@ -27,19 +27,19 @@ export const sendEmail = function(options: any) {
 
   return new Promise((resolve, reject) => {
     ses.sendEmail(
-      {
-        Source: APP_EMAIL_NOREPLY,
-        Destination: {
-          CcAddresses: [],
-          ToAddresses: [options.to],
-        },
-        Message: {
-          Subject: {
-            Data: "Email Confirmation from Blueclerk.com",
+        {
+          Source: APP_EMAIL_NOREPLY,
+          Destination: {
+            CcAddresses: [],
+            ToAddresses: [options.to],
           },
-          Body: {
-            Html: {
-              Data: `<div style="text-align: center;">
+          Message: {
+            Subject: {
+              Data: "Email Confirmation from Blueclerk.com",
+            },
+            Body: {
+              Html: {
+                Data: `<div style="text-align: center;">
                   <b>Dear <i>${options.to}</i></b> <br />
                   <b>Welcome to BlueClerk!  Please login to your account at <a href="https://app.blueclerk.com/">app.blueclerk.com</a></b><br />
                   <p>We encourage you to look at our support articles to better understand our software</p>
@@ -50,22 +50,21 @@ export const sendEmail = function(options: any) {
                    <br />
                   <img src='http://blueclerk.com/wp-content/uploads/2020/07/logo-120x42.png' />
                   </div>`,
+              },
             },
           },
+          ReplyToAddresses: [APP_EMAIL_NOREPLY],
         },
-        ReplyToAddresses: [APP_EMAIL_NOREPLY],
-      },
-      (err, info) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(info)
-        }
-      },
+        (err, info) => {
+          if (err) {
+            reject(err)
+          } else {
+            resolve(info)
+          }
+        },
     )
   })
 }
-
 export const sendEmployeeEmail = function(options: any) {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env

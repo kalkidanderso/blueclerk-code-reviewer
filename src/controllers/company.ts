@@ -96,6 +96,40 @@ export const updateCompanyProfile = (req: Request, res: Response) => {
 
 }
 
+export const getEmployeeDetail = async (req: Request, res: Response) => {
+    try {
+        let employeeData: any = {};
+        let company = <ICompany>req.company;
+        let employeeId = req.query.employeeId;
+        if (employeeId) {
+            let checkUserPermission = await Company.findOne({_id: company._id, employees: {$in: [new ObjectId(employeeId)]}});
+            if(!checkUserPermission) {
+                return res.json({'status': Status.Error, message: Messages.UnAuthorized});
+            }
+
+            let employeeDetails: any = await User.findOne({_id: new ObjectId(employeeId)})
+                .select('profile.firstName profile.lastName auth.email contact.phone emailPreferences').exec();
+            employeeData.firstName = employeeDetails.profile.firstName;
+            employeeData.lastName = employeeDetails.profile.lastName;
+            employeeData.email = employeeDetails.auth.email;
+            employeeData.phone = employeeDetails.contact.phone;
+            employeeData.emailPreferences = {
+                preferences: employeeDetails.emailPreferences.preferences,
+                timeZone : employeeDetails.emailPreferences.timeZone,
+                time: employeeDetails.emailPreferences.time.getHours() + ':' + employeeDetails.emailPreferences.time.getMinutes()
+            }
+            if (employeeDetails) {
+                return res.json({'status': Status.Success, 'employee': employeeData});
+            } else {
+                return res.json({'status': Status.Success, 'message': 'Employee not found!'});
+            }
+        }
+        return res.json({'status': Status.Error, 'message': 'EmployeeId is required!'});
+    } catch (err) {
+        return res.json({'status': Status.Error, 'message': err.message});
+    }
+
+}
 export const getAllEmployees = (req: Request, res: Response) => {
 
     Company.findOne({ _id: req.companyId })

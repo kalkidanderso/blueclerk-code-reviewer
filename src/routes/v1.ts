@@ -432,7 +432,6 @@ export default function (sio: any) {
         validate(Validations.getCustomerEquipmentJobs),
         customerEquipmentController.checkTagAssociation
     )
-
     //Job types
     router.post(
         '/createJobType',
@@ -1039,7 +1038,14 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.User_Get_All_Employees),
         companyController.getAllEmployees
     )
-
+    router.get(
+        '/getEmployeeDetail',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.getEmployeeDetails),
+        checkUserPermissions(Permissions.User_Get_All_Employees),
+        companyController.getEmployeeDetail
+    )
     router.post(
         '/getEmployeesForJob',
         passport.authenticate('jwt', { session: false }),
