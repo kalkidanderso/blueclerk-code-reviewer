@@ -31,7 +31,7 @@ export const checkUserScanPermissions = (permissionId: number) => {
         const tag = req.body.nfcTag;
         const checkTag = await Tag.findOne({"info.nfcTag" : tag});
         if(!checkTag) {
-            return res.json({ 'status': Status.Success, 'tagStatus': Status.TagNotAssociated, 'message': Messages.TagNotAssociated })
+            return res.json({ 'status': Status.Success, 'tagStatus': Status.TagNotAssociated, 'message': 'Tag Not In System' })
         }
         let check = false;
         if (user.permissions.role == Role.GLOBAL_ADMIN) {
