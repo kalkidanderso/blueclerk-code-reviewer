@@ -416,7 +416,7 @@ export const getEquipmentJobs = (req: Request, res: Response) => {
 }
 
 
-export const checkTagAssociation = (req: Request, res: Response) => {
+export const  checkTagAssociation = (req: Request, res: Response) => {
 
     const params = req.body
 
