@@ -43,10 +43,9 @@ import { addCustomerAndCharge, addCustomerSource, chargeSubscription } from '../
 import { Industry, IIndustry } from '../models/Industry'
 const Hubspot = require('hubspot')
 
-export const login = (req: Request, res: Response) => {
-
+export const login = (req: Request, res: Response, sio: any) => {
     const params = req.body
-
+    console.log(sio.id);
     User.findOne(
         { 'auth.email': params.email },
         (err: any, user: IUser) => {
@@ -132,7 +131,7 @@ export const login = (req: Request, res: Response) => {
 
 }
 
-export const createGlobalAdmin = (req: Request, res: Response) => {
+export const createGlobalAdmin = (req: Request, res: Response, sio: any) => {
 
     checkEmailExists(req, res, (req: Request, res: Response) => {
 
@@ -172,7 +171,7 @@ export const createGlobalAdmin = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            login(req, res)
+            login(req, res, sio)
 
         })
 
@@ -180,7 +179,7 @@ export const createGlobalAdmin = (req: Request, res: Response) => {
 
 }
 
-export const createCompany = (req: Request, res: Response) => {
+export const createCompany = (req: Request, res: Response, sio: any) => {
 
     checkCompanyEmailExists(req, res, (req: Request, res: Response) => {
 
@@ -262,7 +261,7 @@ export const createCompany = (req: Request, res: Response) => {
                     }
                     _createHubSpotContact(company, companyAdmin)
                     sendEmail({ to: params.email })
-                    login(req, res)
+                    login(req, res, sio)
                 })
 
             })
@@ -874,7 +873,7 @@ const checkNoOfUsers = (req: Request, res: Response, role: Role, next: (req: Req
 
 
 // new contractor signup
-export const createContractor = (req: Request, res: Response) => {
+export const createContractor = (req: Request, res: Response, sio: any) => {
 
     checkCompanyEmailExists(req, res, (req: Request, res: Response) => {
 
@@ -956,7 +955,7 @@ export const createContractor = (req: Request, res: Response) => {
                     }
                     _createHubSpotContact(company, companyAdmin)
                     sendEmail({ to: params.email })
-                    login(req, res)
+                    login(req, res, sio)
                 })
 
             })

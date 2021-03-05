@@ -1,4 +1,4 @@
-import express from 'express'
+import express, {Request, Response} from 'express'
 import { validate, Validations } from '../middleware/validator'
 import passport from 'passport'
 import {checkPermissions, checkUserPermissions, checkUserScanPermissions} from '../middleware/permissions'
@@ -57,7 +57,9 @@ export default function (sio: any) {
     router.post(
         '/login',
         validate(Validations.login),
-        userController.login
+        (req, res) => {
+            userController.login(req, res, sio)
+        }
     )
 
     router.post(
@@ -77,13 +79,17 @@ export default function (sio: any) {
     router.post(
         '/signup',
         validate(Validations.signUp),
-        userController.createCompany
+        (req, res) => {
+            userController.createCompany(req, res, sio)
+        }
     )
 
     router.post(
         '/adminSignUp',
         validate(Validations.adminSignUp),
-        userController.createGlobalAdmin
+        (req, res) => {
+            userController.createGlobalAdmin(req, res, sio)
+        }
     )
 
     router.get(
@@ -773,7 +779,9 @@ export default function (sio: any) {
     router.post(
         '/contractorSignup',
         validate(Validations.contractorSignup),
-        userController.createContractor
+        (req, res) => {
+            userController.createContractor(req, res, sio)
+        }
     )
 
     router.post(

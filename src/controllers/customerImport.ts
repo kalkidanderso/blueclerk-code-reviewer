@@ -62,15 +62,15 @@ export const uploadfile = (req: Request, res: Response) => {
             })
         }
 
-        var xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]], {raw: true, defval: null})
+        var xlData = await XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]], {raw: true, defval: null})
         var customers: ICustomer[] = []
         const jobLocations: any[] = []
         const customerContacts: IContact[] = []
         const jobLocationContacts: IContact[] = []
         try {
-        xlData.map(async (obj: any) => {
+        for (const obj of xlData) {
             let checkCustomerExist = (customers.filter((c) => {
-                return c.profile.displayName == obj.name
+                return JSON.stringify(c.profile.displayName) == JSON.stringify(obj.name)
             }).length > 0);
             let customer: ICustomer;
             if (!checkCustomerExist) {
@@ -110,41 +110,73 @@ export const uploadfile = (req: Request, res: Response) => {
                     return c.profile.displayName == obj.name
                 })[0];
             }
-            const contact = new Contact({
-                name: obj.contactName,
-                phone: obj.phone,
-                email: obj.contactEmail
-            });
-            contact.save().then((c) => {
-                customer.contacts.push(c._id);
-            });
-
-            const jobLocation = new JobLocation({
-                companyId: companyId,
-                name: obj.jobLocationName || '',
-                address: {
-                    city: obj.jobLocationCity || '',
+            let contact = await Contact.findOne({email: obj.contactEmail, phone: obj.phone, name: obj.contactName});
+            let checkCustomerContact = [];
+            if(!contact) {
+                contact = new Contact({
+                    name: obj.contactName,
+                    phone: obj.phone,
+                    email: obj.contactEmail
+                });
+            } else {
+                checkCustomerContact = await Customer.find({_id: customer._id, contacts: {$in: [contact._id]}}).exec();
+            }
+            if (!checkCustomerContact.length) {
+                await contact.save().then((c) => {
+                    customer.contacts.push(c._id);
+                });
+            }
+            let jobLocationAddress = {
+                city: obj.jobLocationCity || '',
                     state: obj.jobLocationState || '',
                     street: obj.jobLocationStreet || '',
                     zipcode: obj.jobLocationZipCode || ''
-                },
-                location: {
-                    coordinates: [obj.jobLocationLongitude || 0, obj.jobLocationLatitude || 0]
+            };
+            let jobLocationCoordinates =  {
+                coordinates: [obj.jobLocationLongitude || 0, obj.jobLocationLatitude || 0]
+            };
+            let jobLocation = await JobLocation.findOne(
+                {
+                    customerId: customer._id,
+                    companyId: companyId,
+                    name: obj.jobLocationName,
+                    address: jobLocationAddress,
+                    location: jobLocationCoordinates
+                });
+            if (!jobLocation) {
+                jobLocation = new JobLocation({
+                    companyId: companyId,
+                    name: obj.jobLocationName || '',
+                    address: jobLocationAddress,
+                    location: jobLocationCoordinates
+                });
+                await customer.save().then((c: ICustomer) => {
+                    jobLocation.customerId = c._id;
+                    customer = c;
+                });
+            }
+            let jobLocationContact = await Contact.findOne({name: obj.jobLocationContactName, phone: obj.jobLocationContactPhone, email: obj.jobLocationContactEmail});
+            if(jobLocationContact) {
+                let checkContactJobLocation = await JobLocation.findOne({contacts: {$in: [new Object(jobLocationContact._id)]}});
+                if (!checkContactJobLocation) {
+                    jobLocationContact = new Contact({
+                        name: obj.jobLocationContactName || '',
+                        phone: obj.jobLocationContactPhone || '',
+                        email: obj.jobLocationContactEmail || ''
+                    });
                 }
-            });
-            await customer.save().then((c: ICustomer) => {
-                jobLocation.customerId = c._id;
-                customer = c;
-            });
-            const jobLocationContact = new Contact({
-                name: obj.jobLocationContactName || '',
-                phone: obj.jobLocationContactPhone || '',
-                email: obj.jobLocationContactEmail || ''
-            });
-            jobLocationContact.save().then((newJobLocationContact) => {
+            } else {
+                jobLocationContact = new Contact({
+                    name: obj.jobLocationContactName || '',
+                    phone: obj.jobLocationContactPhone || '',
+                    email: obj.jobLocationContactEmail || ''
+                });
+            }
+
+            await jobLocationContact.save().then((newJobLocationContact) => {
                 jobLocation.contacts.push(newJobLocationContact._id);
             });
-            jobLocation.save().then(async (j) => {
+            await jobLocation.save().then(async (j) => {
                 customer.jobLocations.push(j._id);
                 await customer.save().then((c: ICustomer) => {
                     customer = c;
@@ -159,7 +191,7 @@ export const uploadfile = (req: Request, res: Response) => {
                 await companyCustomer.save();
                 customers.push(customer);
             }
-        })
+        }
         } catch (err) {
             return res.json({"status": Status.Error, 'message': err.message});
         }

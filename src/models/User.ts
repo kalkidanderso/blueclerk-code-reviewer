@@ -16,7 +16,7 @@ export interface IUser extends Document {
     profile: {
         firstName: string
         lastName: string
-        displayName: { type : String , unique : true }
+        displayName: { type : String }
         imageUrl: string
     }
     address: {
@@ -49,7 +49,7 @@ export interface IUser extends Document {
 const UserSchema = new Schema({
 
     auth: {
-        email: { type: String },
+        email: { type: String, unique: true },
         password: { type: String },
         resetPasswordToken: String,
         resetPasswordExpires: Date,
