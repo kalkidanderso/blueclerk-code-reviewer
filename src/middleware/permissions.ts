@@ -7,6 +7,7 @@ import { Contract, IContract } from '../models/Contract'
 import { ICompanyAdmin, CompanyAdmin } from '../models/CompanyAdmin'
 import {Tag} from '../models/Tag';
 import {createManager} from '../controllers/user';
+import {CustomerEquipment} from '../models/CustomerEquipment';
 
 export const checkPermissions = (minAuth: Role) => {
 
@@ -30,7 +31,8 @@ export const checkUserScanPermissions = (permissionId: number) => {
         const company =<ICompany>req.company;
         const tag = req.body.nfcTag;
         const checkTag = await Tag.findOne({"info.nfcTag" : tag});
-        if(!checkTag) {
+        const equipmentTag = CustomerEquipment.findOne({ 'info.nfcTag': tag });
+        if(!checkTag && !equipmentTag) {
             return res.json({ 'status': Status.Success, 'tagStatus': Status.TagNotAssociated, 'message': 'Tag Not In System' })
         }
         let check = false;
