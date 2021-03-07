@@ -113,10 +113,12 @@ export const getEmployeeDetail = async (req: Request, res: Response) => {
             employeeData.lastName = employeeDetails.profile.lastName;
             employeeData.email = employeeDetails.auth.email;
             employeeData.phone = employeeDetails.contact.phone;
+            let hours = employeeDetails.emailPreferences.time ? employeeDetails.emailPreferences.time.getHours() : '21';
+            let minutes = employeeDetails.emailPreferences.time ? employeeDetails.emailPreferences.time.getMinutes() : '00';
             employeeData.emailPreferences = {
                 preferences: employeeDetails.emailPreferences.preferences,
                 timeZone : employeeDetails.emailPreferences.timeZone,
-                time: employeeDetails.emailPreferences.time.getHours() + ':' + employeeDetails.emailPreferences.time.getMinutes()
+                time: hours + ':' + minutes
             }
             if (employeeDetails) {
                 return res.json({'status': Status.Success, 'employee': employeeData});
