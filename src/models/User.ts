@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, {Document, Mongoose, Schema} from 'mongoose'
 import jwt from 'jsonwebtoken'
 import { Role } from '../common/constants'
 import bcrypt from "bcrypt-nodejs"
@@ -9,14 +9,14 @@ export interface IUser extends Document {
         email: string
         password: string
         resetPasswordToken: string
-        resetPasswordExpires: Date    
+        resetPasswordExpires: Date
         socialId: string
         connectorType: number
     }
     profile: {
         firstName: string
-        lastName: string    
-        displayName: string
+        lastName: string
+        displayName: { type : String }
         imageUrl: string
     }
     address: {
@@ -33,7 +33,12 @@ export interface IUser extends Document {
     permissions: {
         role: Role,
         extra: [string]
-    }
+    },
+    emailPreferences: {
+        preferences: Number,
+        time: Date,
+        timeZone: String
+    },
 
     hashPassword: (password: string, next: (err?: any, hash?: string)=>void)=>void
     comparePassword: (password: string, next: (isMatch: boolean)=>void)=>void
@@ -44,7 +49,7 @@ export interface IUser extends Document {
 const UserSchema = new Schema({
 
     auth: {
-        email: { type: String },
+        email: { type: String, unique: true },
         password: { type: String },
         resetPasswordToken: String,
         resetPasswordExpires: Date,
@@ -58,7 +63,7 @@ const UserSchema = new Schema({
     },
     profile: {
         firstName: String,
-        lastName: String,    
+        lastName: String,
         displayName: String,
         imageUrl: String,
     },
@@ -87,9 +92,28 @@ const UserSchema = new Schema({
         role: Number,
         extra: [String],
     },
-    contacts: {
-        type: Array
-    }
+    emailPreferences: {
+        preferences: {
+            type: Number,
+            default: 0
+            // 0 for email everytime a job is scheduled
+            // 1 for once a day at night
+            // 2 no emails
+        },
+        time: {
+            type: Date
+        },
+        timeZone: {
+            type: String,
+            default: 'America/Chicago'
+        }
+
+    },
+    contacts: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Contact',
+        required: false
+    }]
 
 })
 
@@ -103,7 +127,7 @@ UserSchema.pre('save', async function(next) {
 
     user.hashPassword(user.auth.password, (err?: any, hash?: string)=>{
 
-        if (err || !hash) return next(err) 
+        if (err || !hash) return next(err)
 
         user.auth.password = hash
         next()
@@ -118,15 +142,15 @@ UserSchema.methods.hashPassword = function(password: string, next: (err?: any, h
 
     try {
         bcrypt.genSalt(
-            saltRounds, 
+            saltRounds,
             (err, salt) => {
 
-                if (err) return next(err) 
+                if (err) return next(err)
 
                 bcrypt.hash(
-                    password, 
-                    salt, 
-                    undefined, 
+                    password,
+                    salt,
+                    undefined,
                     (err: mongoose.Error, hash) => {
 
                         if (err) return next(err)
@@ -144,12 +168,12 @@ UserSchema.methods.hashPassword = function(password: string, next: (err?: any, h
 }
 
 UserSchema.methods.comparePassword = function(password: string, next: (isMatch: boolean)=>void) {
-    
+
     const user = this as IUser
 
     bcrypt.compare(
-        password, 
-        user.auth.password, 
+        password,
+        user.auth.password,
         (err: mongoose.Error, isMatch: boolean) => {
             next(isMatch)
         }
@@ -165,10 +189,10 @@ UserSchema.methods.jwt = function() {
         {
             iss: "http://api.blueclerk.com",
             id: user._id,
-        }, 
-        process.env.jwt_encryption, 
-        { 
-            expiresIn: parseInt(process.env.jwt_expiration) 
+        },
+        process.env.jwt_encryption,
+        {
+            expiresIn: parseInt(process.env.jwt_expiration)
         }
     )
 

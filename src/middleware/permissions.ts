@@ -5,6 +5,9 @@ import { Company, ICompany } from '../models/Company'
 import { IEmployee, Employee } from '../models/Employee'
 import { Contract, IContract } from '../models/Contract'
 import { ICompanyAdmin, CompanyAdmin } from '../models/CompanyAdmin'
+import {Tag} from '../models/Tag';
+import {createManager} from '../controllers/user';
+import {CustomerEquipment} from '../models/CustomerEquipment';
 
 export const checkPermissions = (minAuth: Role) => {
 
@@ -21,6 +24,59 @@ export const checkPermissions = (minAuth: Role) => {
     }
 }
 
+export const checkUserScanPermissions = (permissionId: number) => {
+    return async (req: Request, res: Response, next: NextFunction) => {
+
+        const user = <IUser>req.user
+        const company =<ICompany>req.company;
+        const tag = req.body.nfcTag;
+        const checkTag = await Tag.findOne({"info.nfcTag" : tag});
+        const equipmentTag = CustomerEquipment.findOne({ 'info.nfcTag': tag });
+        if(!checkTag && !equipmentTag) {
+            return res.json({ 'status': Status.Success, 'tagStatus': Status.TagNotAssociated, 'message': 'Tag Not In System' })
+        }
+        let check = false;
+        if (user.permissions.role == Role.GLOBAL_ADMIN) {
+            check = true;
+            next();
+            return ;
+        }
+        // check if it's the company owner
+        if(user.permissions.role == Role.COMPANY_ADMIN && JSON.stringify(company._id) == JSON.stringify(checkTag.company)) {
+            check = true;
+            // check if it's an employee
+        } else if (JSON.stringify(company._id) == JSON.stringify(checkTag.company) && user.permissions.role != Role.COMPANY_ADMIN) {
+            if (
+                user.permissions.role == Role.MANAGER ||
+                user.permissions.role == Role.TECHNICIAN
+            ) {
+                check = true;
+            }
+        } else {
+            // This is a contractor
+            if (company.type == 1) {
+                // verify if there's a contract with it
+                try {
+                    let contract =
+                        await Contract.findOne({company: checkTag.company, contractor: company._id, status: 1});
+                    if (contract) {
+                        check = true;
+                    }
+
+                }catch (err) {
+                    return res.json({"status": Status.Error, "message": err.message});
+                }
+            }
+        }
+        if(!check) {
+            return res.json({"status": Status.Error, "message": Messages.UnAuthorized});
+        } else {
+            next();
+            return ;
+        }
+    }
+
+}
 export const checkUserPermissions = (permissionId : number) => {
 
     return async (req: Request, res: Response, next: NextFunction) => {
@@ -36,22 +92,22 @@ export const checkUserPermissions = (permissionId : number) => {
         if(user.permissions.role == Role.COMPANY_ADMIN){
 
             const companyAdmin = <ICompanyAdmin>req.user
-            
-            Company.findById(companyAdmin.company, 
+
+            Company.findById(companyAdmin.company,
             (err: any, company: ICompany)=>{
-                
+
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': "Unable to find your company. Contact BlueClerk admin for more." })
                 }
 
                 if(company.type == 1){
                     // it is contractor check contractor permissions from default or contract
-    
+
                     if(permissionId == Permissions.Get_All_Contracts || permissionId == Permissions.Accept_Reject_Contract || permissionId == Permissions.Upgrade_To_Company) {
                         next()
                         return
                     }
-    
+
                     // check other contractor permissions
 
                     // Contract.findOne( {company: req.otherCompanyId, contractor: company._id},
@@ -59,31 +115,31 @@ export const checkUserPermissions = (permissionId : number) => {
                     //         if (err) {
                     //             return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     //         }
-            
+
                     //         if (contract == undefined || contract == null) {
                     //             return res.json({'status': Status.Error, 'message': 'No Contract found.'})
                     //         }
-            
+
                     //         if (contract.status == ContractStatus.CANCELED || contract.status == ContractStatus.FINISHED) {
                     //             return res.json({'status': Status.Error, 'message': 'Your contract is no more valid.'})
                     //         }
-                            
+
                     //         if (contract.extraPermissions == undefined) {
                     //             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                     //         }
-            
+
                     //         if (!contract.extraPermissions.includes(permissionId)) {
                     //             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                     //         }
-            
+
                     //         next()
                     //         return
                     //     }
                     // )
                     next()
                     return
-    
-    
+
+
                 } else {
 
                     if(req.otherCompanyId != undefined || req.otherCompanyId != null) {
@@ -99,16 +155,16 @@ export const checkUserPermissions = (permissionId : number) => {
                                 if (err) {
                                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                 }
-                
+
                                 if (contract == undefined || contract == null) {
                                     return res.json({'status': Status.Error, 'message': 'No Contract found.'})
                                 }
-                
+
                                 if (contract.extraPermissions == undefined) {
-                                    
+
                                     return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                                 }
-                
+
                                 if (!contract.extraPermissions.includes(permissionId)) {
                                     return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                                 }
@@ -128,14 +184,14 @@ export const checkUserPermissions = (permissionId : number) => {
                         next()
                         return
                     }
-            
+
                 }
             })
         }else{
 
-            Employee.findById(user._id, 
+            Employee.findById(user._id,
                 (err: any, employee: IEmployee)=>{
-                      
+
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
@@ -146,11 +202,11 @@ export const checkUserPermissions = (permissionId : number) => {
                             next()
                             return
                         }
-                        
+
                         if(employee.extraPermissions.off.includes(permissionId)) {
                             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                         }
-                        Company.findById(employee.company, 
+                        Company.findById(employee.company,
                             (err: any, company: ICompany)=>{
                                 if (err) {
                                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -158,47 +214,47 @@ export const checkUserPermissions = (permissionId : number) => {
 
                                 switch (user.permissions.role) {
                                     case 0:
-                                        
+
                                         if (!company.userPermissions[0].on.includes(permissionId)) {
                                             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                                         }
                                         next()
                                         break;
-                                
+
                                     case 1:
-                                
+
                                         if (!company.userPermissions[1].on.includes(permissionId)) {
                                             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                                         }
                                         next()
                                         break;
-                                    
+
                                     case 2:
-                                      
+
                                         if (!company.userPermissions[2].on.includes(permissionId)) {
                                             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                                         }
                                         next()
                                         break;
-                    
+
                                     case 3:
-                                        
+
                                         if (!company.userPermissions[3].on.includes(permissionId)) {
                                             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                                         }
                                         next()
                                         break;
-                                        
+
                                     default:
                                             // return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                                             break;
                                     }
                                     return
                                 })
-            
-                    } 
-    
-    
+
+                    }
+
+
                 })
         }
     }

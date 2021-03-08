@@ -4,6 +4,7 @@ import { Status, Messages } from '../common/constants'
 import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { ICompany } from '../models/Company'
 import { Customer } from '../models/Customer'
+import { Contact } from '../models/Contact'
 
 export const get = (req: Request, res: Response) => {
     const { id } = req.params
@@ -33,64 +34,63 @@ export const get = (req: Request, res: Response) => {
     }).populate('jobSites', 'name location')
 }
 
-export const create = (req: Request, res: Response) => {
+export const create = async (req: Request, res: Response) => {
     const params = req.body
-    const company = <ICompany>req.company
-    const companyId = company ? company._id : null
-
-    const {
-        name,
-        contact: {
-            name: contactName,
-            phone,
-            email
-        },
-        location: {
-            lat,
-            long
-        },
-        address,
-        customerId
-    } = params
-
-    const missingParams = []
-    if (!name) missingParams.push('name')
-    if (!(lat && long) || !address) missingParams.push('location or address')
-    if (!customerId) missingParams.push('customerId')
-    if (!companyId) missingParams.push('companyId')
-    const isMissingParams = missingParams.length > 0
-
-    if (isMissingParams) {
-        const message = `${Messages.MissingParams}: ${missingParams.join(', ')}`
-        res.status(Status.MissingParameters)
-        res.send(message)
-        return () => {}
+    let companyId = req.companyId
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
     }
+    const name = params.name;
+    const contactName = params.contactName;
+    const contactPhone = params.contactPhone;
+    const contactEmail = params.contactEmail;
+    const locationLat = params.locationLat;
+    const locationLong = params.locationLong;
+    const street = params.street;
+    const city = params.city;
+    const state = params.state;
+    const zipcode = params.zipcode;
+    const customerId = params.customerId;
 
-    JobLocation.create({
+    if (!(locationLat && locationLong) && !(street && city && state && zipcode)) {
+        return res.json({'status': Status.Error, 'message': "Either location or address is required."})
+    }
+    let contact = null;
+
+    let jobLocationData: any = {
         name,
-        contact: {
-            name: contactName,
-            phone,
-            email
+        address: {
+            street: street,
+            city: city,
+            state: state,
+            zipcode: zipcode
         },
-        location: {
-            coordinates: [long, lat]
-        },
-        address,
+        contacts: [],
         customerId,
         companyId
-    }, (err: any, jobLocation: IJobLocation) => {
+    }
+    if (contactName || contactPhone || contactEmail) {
+        contact = new Contact({
+            name: contactName,
+            phone: contactPhone,
+            email: contactEmail
+        });
+        await contact.save().then((c) => {
+            jobLocationData.contacts.push(c._id);
+        });
+    }
+
+    if (locationLong && locationLat) {
+        jobLocationData.location = {coordinates: [locationLong, locationLat]};
+    }
+    await JobLocation.create(jobLocationData, (err: any, jobLocation: IJobLocation) => {
         if (err) {
-            res.status(Status.InternalError)
-            res.send(Messages.InternalServerError)
-        } else {
-            Customer.findByIdAndUpdate(customerId, {
-                $push: { jobLocations: jobLocation._id }
-            }).exec()
-            res.status(Status.OK)
-            res.send(jobLocation)
+            return res.json({'status': Status.Error, 'message': err.message});
         }
+        Customer.findByIdAndUpdate(customerId, {
+            $push: {jobLocations: jobLocation._id}
+        }).exec()
+        return res.json({'status': Status.Success, 'message': "Job Location created successfully!"});
     })
 }
 

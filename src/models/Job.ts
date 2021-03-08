@@ -6,14 +6,14 @@ export interface IJob extends Document {
     scheduledStartTime: Date
     scheduledEndTime: Date
     jobId: string
-    ticket: Schema.Types.ObjectId
+    ticket: Schema.Types.ObjectId | any
     technician: Schema.Types.ObjectId
     contractor: Schema.Types.ObjectId
-    customer: Schema.Types.ObjectId
-    jobLocation: Schema.Types.ObjectId
-    jobSite: Schema.Types.ObjectId
-    type: Schema.Types.ObjectId
-    company: Schema.Types.ObjectId
+    customer: Schema.Types.ObjectId | any
+    jobLocation: Schema.Types.ObjectId | any
+    jobSite: Schema.Types.ObjectId | any
+    type: Schema.Types.ObjectId | any
+    company: Schema.Types.ObjectId | any
     equipmentId: string
     description: string
     status: number,
@@ -33,11 +33,12 @@ export interface IJob extends Document {
     equipment_scanned: boolean
     no_of_equipment_scanned: number
     completeOnTime: boolean
+    track: any[]
 }
 
 const JobSchema = new Schema({
 
-    scheduleDate: { 
+    scheduleDate: {
         type: Date
     },
     scheduledStartTime: {
@@ -99,6 +100,14 @@ const JobSchema = new Schema({
         type: Number,
         default: 0
     },
+    track: [{
+        user: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        action: String,
+        date: Date
+    }],
     comment: {
         type: String
     },

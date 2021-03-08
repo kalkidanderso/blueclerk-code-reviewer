@@ -513,6 +513,66 @@
         ]
       }
     },
+    "/updateContractorEmailPreferences": {
+      "post": {
+        "tags": [
+          "Vendor"
+        ],
+        "summary": "This API used to update contractor email preferences",
+        "description": "0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails. Needs to be logged in as company admin first",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "contractorId",
+            "in": "formData",
+            "required": true,
+            "description": "The contractor company id",
+            "type": "string"
+          },
+          {
+            "name": "emailPreferences",
+            "in": "formData",
+            "required": true,
+            "type": "number"
+          },
+          {
+            "name": "emailTime",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "HH:MM:SS"
+          },
+          {
+            "name": "timeZone",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "example: America/Chicago"
+          }
+
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+
+    },
+
     "/getCompanyContractorActivity": {
       "post": {
         "tags": [
@@ -1519,9 +1579,9 @@
             "type": "string"
           },
           {
-            "name": "imageUrl",
+            "name": "image",
             "in": "formData",
-            "type": "string"
+            "type": "file"
           },
           {
             "name": "street",
@@ -1709,6 +1769,63 @@
         ]
       }
     },
+    "/updateEmployeeEmailPreferences": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "This API used to update employee email preferences",
+        "description": "0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "employeeId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "emailPreferences",
+            "in": "formData",
+            "required": true,
+            "type": "number"
+          },
+          {
+            "name": "emailTime",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "HH:MM:SS"
+          },
+          {
+            "name": "timeZone",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "example: America/Chicago"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+
+    },
     "/getAllEmployees": {
       "post": {
         "tags": [
@@ -1737,6 +1854,80 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/definitions/User"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getEmployeeDetail" : {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get employee details",
+        "description": "",
+        "parameters":[{
+          "name": "employeeId",
+          "in": "query",
+          "required": true,
+          "type": "string"
+        }],
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "users": {
+                      "type": "object",
+                      "properties": {
+                        "firstName": {
+                          "type": "string"
+                        },
+                        "lastName": {
+                          "type" : "string"
+                        },
+                        "email" : {
+                          "type": "string"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "emailPreferences": {
+                          "type": "object",
+                          "properties": {
+                            "preferences": {
+                              "type": "string"
+                            },
+                            "time": {
+                              "type": "string"
+                            },
+                            "timezone": {
+                              "type": "string"
+                            }
+                          }
+                        }
                       }
                     }
                   }
@@ -2189,7 +2380,7 @@
           "200": {
             "description": "Returns new contact information",
             "schema": {
-              "$ref": "#/definitions/ContactSchemaResponse" 
+              "$ref": "#/definitions/ContactSchemaResponse"
             }
           }
         }
@@ -2256,7 +2447,7 @@
           "200": {
             "description": "Returns new contact information",
             "schema": {
-              "$ref": "#/definations/ContactSchemaResponse" 
+              "$ref": "#/definations/ContactSchemaResponse"
             }
           }
         }
@@ -2486,6 +2677,64 @@
         ]
       }
     },
+    "/updateCustomerEmailPreferences": {
+      "post": {
+        "tags": [
+          "Customer"
+        ],
+        "summary": "This API used to update customer email preferences",
+        "description": "0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "emailPreferences",
+            "in": "formData",
+            "required": true,
+            "type": "number"
+          },
+          {
+            "name": "emailTime",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "HH:MM:SS"
+          },
+          {
+            "name": "timeZone",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "example: America/Chicago"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+
+    },
+
     "/getCustomers": {
       "post": {
         "tags": [
@@ -2632,9 +2881,15 @@
             "type": "string"
           },
           {
-            "name": "location",
+            "name": "jobLocationId",
             "in": "formData",
-            "required": true,
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "jobSiteId",
+            "in": "formData",
+            "required": false,
             "type": "string"
           },
           {
@@ -2871,25 +3126,28 @@
         ],
         "parameters": [
           {
-            "name": "latitude",
+            "name": "jobLocationId",
             "in": "formData",
-            "required": true,
+            "required": false,
+            "description": "Job location ID",
             "type": "string"
           },
           {
-            "name": "longitude",
+            "name": "customerId",
             "in": "formData",
             "required": true,
+            "description": "Customer ID",
+            "type": "string"
+          },
+          {
+            "name": "jobSiteId",
+            "in": "formData",
+            "required": false,
+            "description": "Job Site ID",
             "type": "string"
           },
           {
             "name": "nfcTag",
-            "in": "formData",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "customer",
             "in": "formData",
             "required": true,
             "type": "string"
@@ -3319,23 +3577,85 @@
         ],
         "summary": "Create a customer job location",
         "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
         "produces": [
           "application/json"
         ],
         "parameters": [
           {
-            "in": "body",
-            "name": "body",
-            "schema": {
-              "$ref": "#/definitions/jobLocation"
-            }
+            "name": "name",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "contactName",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "contactPhone",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "contactEmail",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "locationLat",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "locationLong",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "street",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "city",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "state",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "zipcode",
+            "in": "formData",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "customerId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
           }
         ],
         "responses": {
           "200": {
             "description": "Success",
             "schema": {
-              "$ref": "#/definitions/jobLocation"
+              "$ref": "#/definitions/GeneralAPIResponse"
             }
           }
         },
@@ -4837,7 +5157,7 @@
         "summary": "To create a service ticket",
         "description": "",
         "consumes": [
-          "application/x-www-form-urlencoded"
+          "multipart/form-data"
         ],
         "produces": [
           "application/json"
@@ -4854,6 +5174,22 @@
             "name": "note",
             "in": "formData",
             "type": "string"
+          },
+          {
+            "name": "customerContactId",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "customerPO",
+            "in": "formData",
+            "type": "string",
+            "description": "Customer PO/Sales Order#"
+          },
+          {
+            "name": "image",
+            "in": "formData",
+            "type": "file"
           },
           {
             "name": "technicianId",
@@ -4977,7 +5313,7 @@
             "name": "page",
             "in": "query",
             "required" : true,
-            "schema": { 
+            "schema": {
               "type":"integer"
             },
             "description": "The number of items to skip e.g. 1"
@@ -4986,7 +5322,7 @@
             "name": "pagesize",
             "in": "query",
             "required" : true,
-            "schema": { 
+            "schema": {
               "type":"integer"
             },
             "description": "The numbers of items to return e.g. 10"
@@ -5011,6 +5347,12 @@
               "type": "string"
             },
             "description": "List of customer's displayNames in comma separated strings. eg. name1, name2"
+          },
+          {
+            "name": "contactName",
+            "in": "formData",
+            "type": "string",
+            "description" : "Contact Name"
           },
           {
             "name": "ticketId",
@@ -5140,6 +5482,28 @@
             "required": true,
             "type": "string",
             "description": "Additional note for the service ticket"
+          },
+          {
+            "name": "customerContactId",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "customerPO",
+            "in": "formData",
+            "type": "string",
+            "description": "Customer PO/Sales Order#"
+          },
+          {
+            "name" : "status",
+            "in" : "formData",
+            "type": "string",
+            "description": "default status is 0=> active, you can set status 1 => archived  2 => reactivated ticket"
+          },
+          {
+            "name": "image",
+            "in": "formData",
+            "type": "file"
           },
           {
             "name": "dueDate",
@@ -5373,6 +5737,90 @@
             "in": "formData",
             "type": "string",
             "description": "Id of company if contractor is hitting for other company"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Job"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/searchJobs": {
+      "post": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "To get all jobs of a company or company of employee.",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of company if contractor is hitting for other company"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required" : true,
+            "schema": {
+              "type":"integer"
+            },
+            "description": "The number of the page. example: 1"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required" : true,
+            "schema": {
+              "type":"integer"
+            },
+            "description": "The numbers of items to return per page e.g. 10"
+          },
+          {
+            "name": "customerNames",
+            "in": "formData",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of customer's displayNames in comma separated strings. eg. name1,name2"
+          },
+          {
+            "name": "jobId",
+            "in": "formData",
+            "type": "string",
+            "description": "Job ID e.g. Job 51 or 51"
           }
         ],
         "responses": {
@@ -5708,9 +6156,16 @@
           {
             "name": "technicianId",
             "in": "formData",
-            "required": true,
+            "required": false,
             "type": "string",
             "description": "Id of assignee (employee to whom the job is assigned)"
+          },
+          {
+            "name": "contractorId",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Id of contractor (whom the job is assigned)"
           },
           {
             "name": "scheduleDate",
@@ -8391,7 +8846,14 @@
         "customer": {
           "type": "string",
           "description": "Id of customer"
+        },
+        "jobLocation": {
+          "type": "string"
+        },
+        "jobSite": {
+          "type": "string"
         }
+
       }
     },
     "LocationTag": {
@@ -9303,6 +9765,10 @@
           "type": "string",
           "format": "time"
         },
+        "ticket": {
+          "type" : "object",
+          "$ref": "#/definitions/ServiceTicket"
+        },
         "estimate": {
           "type": "string",
           "description": "Id of the estimate if the Job is Created by estimate"
@@ -9456,9 +9922,21 @@
           "type": "string",
           "description": "Id of technician"
         },
+        "image": {
+          "type": "string",
+          "description": "Image of ticket"
+        },
         "customer": {
           "type": "string",
           "description": "Id of customer"
+        },
+        "customerPO" : {
+          "type": "string",
+          "description": "Customer PO/Sales Order#\n\n"
+        },
+        "customerContactId" : {
+          "type" : "string",
+          "description": "Customer Contact Id"
         },
         "note": {
           "type": "string",

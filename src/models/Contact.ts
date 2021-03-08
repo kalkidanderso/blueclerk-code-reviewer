@@ -11,12 +11,10 @@ const ContactSchema = new Schema({
         type: String
     },
     email: {
-        type: String
+        type: String,
+        unique: true,
+        index: true
     }
 })
-
-
-
-
 
 export const Contact = mongoose.model<IContact>('Contact', ContactSchema)

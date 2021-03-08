@@ -485,18 +485,18 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
             }, (err: any, raw: any)=>{
                 if(err){
                     sio.emit(company.socketId, {'status': Status.Error, 'message': Messages.GenericError});
-                    res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
                 
                 // sio.emit("authToken", oauth2_token_json);
                 
                 sio.emit(company.socketId, {'status': Status.Success, 'message': 'Quickbooks Connected Successfully'});
-                res.json({'status': 200})
+                return res.json({'status': 200})
             })
         })
     })
     .catch(function (err: any) {
-      console.error(err);
+        return res.json({'status': Status.Error, 'message': err.message ? err.message : Messages.GenericError});
     });
 }
 

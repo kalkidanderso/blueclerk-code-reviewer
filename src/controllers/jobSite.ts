@@ -71,7 +71,7 @@ export const create = async (req: Request, res: Response) => {
     if (!jobLocation) return
     const { customerId = null } = jobLocation || {}
 
-    JobSite.create({
+    await JobSite.create({
         name,
         location: {
             coordinates: [long, lat]
@@ -82,13 +82,13 @@ export const create = async (req: Request, res: Response) => {
     }, (err: any, jobSite: IJobSite) => {
         if (err) {
             res.status(Status.InternalError)
-            res.send(Messages.InternalServerError)
+            return res.send(Messages.InternalServerError)
         } else {
             JobLocation.findByIdAndUpdate(locationId, {
                 $push: { jobSites: jobSite._id }
             }).exec()
             res.status(Status.OK)
-            res.send(jobSite)
+            return res.send(jobSite)
         }
     })
 }

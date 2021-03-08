@@ -1,46 +1,71 @@
 import { Request, Response } from 'express'
-import { Status, Messages } from '../common/constants'
+import {Status, Messages, JobStatus} from '../common/constants'
 import { IUser } from '../models/User'
 import { Tag, ITag } from '../models/Tag'
 import { Scan, IScan } from '../models/Scan'
+import {JobLocation} from '../models/JobLocation';
+import {JobSite} from '../models/JobSite';
+import {Schema} from 'mongoose';
+import { ObjectId } from 'mongodb'
+import {Customer} from '../models/Customer';
 
 
 export const codeLocationTag = (req: Request, res: Response) => {
 
     const params = req.body
     const user = <IUser>req.user
-
-    Tag.findOne({'info.nfcTag': params.nfcTag}, (err: any, oldTag: ITag) => {
+    Tag.findOne({'info.nfcTag': params.nfcTag}, async (err: any, oldTag: ITag) => {
         if (err) {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            return res.json({ 'status': Status.Error, 'message': err.message })
         }
 
         if (oldTag != undefined || oldTag != null) {
-            return res.json({'status': Status.Success, 'message': "Tag is already code."})
+            return res.json({'status': Status.Success, 'message': "Tag is already coded."})
+        }
+        if (!params.jobLocationId && !params.jobSiteId) {
+            return res.json({ 'status': Status.Error, 'message': 'Either jobLocation or jobSite is required' });
+        }
+        let customer = params.customerId;
+        if (!customer) {
+            return res.json({ 'status': Status.Error, 'message': 'CustomerId is required' });
+        }
+        let cust = await Customer.findOne({_id: new ObjectId(customer)});
+        if (!cust) {
+            return res.json({ 'status': Status.Error, 'message': 'Customer was not found' });
+        }
+        let jobLocation;
+        if (params.jobLocationId) {
+            jobLocation = params.jobLocationId;
+        } else {
+            let fullJobSite = await JobSite.findOne({_id: new ObjectId(params.jobSiteId)});
+            if (fullJobSite) {
+                jobLocation = fullJobSite.locationId;
+            } else {
+                return res.json({ 'status': Status.Error, 'message': 'Could not find the job site' });
+            }
         }
 
         const newTag: Partial<ITag> = {
                 info: {
-                    nfcTag: params.nfcTag 
+                    nfcTag: params.nfcTag
                 },
-                jobLocation: params.jobLocation,
+                jobLocation: jobLocation,
                 note: params.note,
-                customer: params.customer,
+                customer: customer,
                 address: params.address,
                 company: req.companyId,
                 createdBy: user._id,
                 createdAt: Date.now()
         }
 
-        if (params.jobSite) {
-            newTag['jobSite'] = params.jobSite
+        if (params.jobSiteId) {
+            newTag['jobSite'] = params.jobSiteId;
         }
-        
         const tag = new Tag(newTag)
 
         tag.save((err: any, tag: ITag) => {
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({'status': Status.Error, 'message': err.message})
             }
 
             return res.json({'status': Status.Success, 'message': "Tag coded successfully."})

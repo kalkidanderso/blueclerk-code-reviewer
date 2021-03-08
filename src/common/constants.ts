@@ -31,7 +31,8 @@ export const Messages = {
     TagAssociated: 'Tag is associated with customer',
     TagNotAssociated: 'Tag is not associated with customer',
     QBUnAuthorized: 'Quickbooks authorization failed',
-    InternalServerError: 'There was an internal server error. Please try again later.'
+    InternalServerError: 'There was an internal server error. Please try again later.',
+    WrongId: 'Id passed must be a single String of 12 bytes or a string of 24 hex characters'
 }
 
 export const enum Role {
@@ -65,7 +66,7 @@ export const enum JobStatus {
 
 export const enum ServiceTicketStatus {
     ACTIVE,
-    CANCELED,
+    ARCHIVED,
     REACTIVE
 }
 

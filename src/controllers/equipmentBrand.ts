@@ -103,7 +103,7 @@ export const getEquipmentBrands = (req: Request, res: Response) => {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
     
-                res.json({'status': Status.Success, 'brands': brands})    
+                return res.json({'status': Status.Success, 'brands': brands})    
     
             }
         )
@@ -126,7 +126,7 @@ export const getEquipmentBrands = (req: Request, res: Response) => {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
         
-                    res.json({'status': Status.Success, 'brands': brands})    
+                    return res.json({'status': Status.Success, 'brands': brands})    
         
                 }
             )

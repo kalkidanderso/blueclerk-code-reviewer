@@ -3,53 +3,86 @@ import { Status, Messages, ServiceTicketStatus } from '../common/constants'
 
 import { ICompany } from '../models/Company'
 import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket'
-import { IUser } from '../models/User'
+import {IUser, User} from '../models/User'
+import {parseFieldsAndUploadImageInS3, updateFieldsAndUploadImageInS3} from '../services/aws';
+import {Customer} from '../models/Customer';
+import { ObjectId } from 'mongodb'
 
 export const createServiceTicket = (req: Request, res: Response) => {
 
-    const params = req.body
-    var companyId = req.companyId;
-    var user = <IUser>req.user
-    var company  = <ICompany>req.company;
-
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
-
-    var ticketId = 'Ticket '+ (company.currentJobId+1)
-    if(company.prefix != undefined && company.prefix != null && company.prefix == '""') {
-        ticketId = 'Ticket '+company.prefix+'-'+(company.currentJobId+1)
-    }
-
-    var dueDate = params.dueDate ? new Date(params.dueDate) : null
-
-    const serviceTicket = new ServiceTicket({
-        createdAt: Date.now(),
-        dueDate: dueDate,
-        customer: params.customerId,
-        createdBy: user._id,
-        company: companyId,
-        note: params.note,
-        technician: params.technicianId,
-        ticketId: ticketId,
-        jobLocation: params.jobLocationId,
-        jobSite: params.jobSiteId,
-        jobType: params.jobTypeId,
-    })
-
-    serviceTicket.save((err: any) => {
-        if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
-        }
-        company.updateOne({currentJobId: company.currentJobId+1 })
-        .exec((err: any, raw: any)=>{
-            if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+    parseFieldsAndUploadImageInS3(req, res, async (err: any, data)=>{
+        if (!err) {
+            const params = data.body
+            var companyId = req.companyId;
+            var user = <IUser>req.user
+            var company  = <ICompany>req.company;
+            let customerContact = params.customerContactId ? params.customerContactId : null
+            if (customerContact) {
+                try {
+                    customerContact = new ObjectId(customerContact);
+                } catch (e) {
+                    return res.json({'status': Status.Error, 'message': Messages.WrongId});
+                }
             }
-            
-            return res.json({'status': Status.Success, 'message': 'Service ticket created successfully.'})
-        })
-    })
+            let customerPo = params.customerPO ? params.customerPO : null;
+            let customerId;
+            try {
+                customerId = new ObjectId(params.customerId)
+            } catch (e) {
+                return res.json({'status': Status.Error, 'message': Messages.WrongId});
+            }
+
+            if(req.otherCompanyId != undefined) {
+                companyId = req.otherCompanyId
+            }
+            var ticketId = 'Ticket '+ (company.currentJobId+1)
+            if(company.prefix != undefined && company.prefix != null && company.prefix == '""') {
+                ticketId = 'Ticket '+company.prefix+'-'+(company.currentJobId+1)
+            }
+
+            var dueDate = params.dueDate ? new Date(params.dueDate) : null
+            let serviceTicket = new ServiceTicket({
+                createdAt: Date.now(),
+                dueDate: dueDate,
+                customer: customerId,
+                createdBy: user._id,
+                company: companyId,
+                note: params.note,
+                technician: params.technicianId,
+                ticketId: ticketId,
+                jobLocation: params.jobLocationId,
+                jobSite: params.jobSiteId,
+                jobType: params.jobTypeId,
+                customerPO : customerPo,
+            })
+            if (customerContact) {
+                const customerWithContact = await Customer.findOne(
+                        {
+                            _id : customerId,
+                            contacts: { $exists: true, $in: [customerContact] } }
+                            );
+                if (customerWithContact) {
+                    serviceTicket.customerContactId = customerContact;
+                }
+            }
+            serviceTicket.image = data.imageUrl ? data.imageUrl : null;
+            await serviceTicket.save(async (err: any) => {
+                if (err) {
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                }
+                await company.updateOne({currentJobId: company.currentJobId+1 })
+                    .exec((err: any, raw: any)=>{
+                        if (err) {
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                        }
+                        return res.json({'status': Status.Success, 'message': 'Service ticket created successfully.'})
+                    })
+            })
+
+        } else {
+            return res.json({'status': Status.Error, 'message': err.message})
+        }
+    });
 }
 
 
@@ -83,7 +116,7 @@ export const getServiceTickets = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            return res.json({'status': Status.Success, 'serviceTickets': serviceTickets})    
+            return res.json({'status': Status.Success, 'serviceTickets': serviceTickets})
         }
     )
 
@@ -94,6 +127,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
             const params = req.body
             const pageSize = +req.query.pagesize;
             const currentPage = +req.query.page;
+            let contactName: any;
             var companyId = req.companyId;
             var serviceTickets : any = [];
             var totalCount : number = 0;
@@ -111,6 +145,13 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                 company: companyId,
                 jobCreated: false
             };
+
+            if (params.contactName) {
+                contactName = params.contactName;
+                criteria['customer.contactName'] = contactName;
+            }
+
+
             if (params.jobTypeTitle) {
                 criteria['jobType.title'] = params.jobTypeTitle
             }
@@ -121,18 +162,18 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
 
             if (params.ticketId) {
                 var ticketId = params.ticketId;
-                if (ticketId.match(/\d/g)) { 
+                if (ticketId.match(/\d/g)) {
                     ticketId = 'Ticket '+ticketId.match(/\d/g).join("");
                 }
                 criteria.ticketId = { $regex: ticketId, $options: 'i'}
             }
 
             if(params.customerNames && params.customerNames.length >0) {
-                criteria['customer.profile.displayName'] = { $in: customerNames } 
+                criteria['customer.profile.displayName'] = { $in: customerNames }
             }
-            
+
             const Query = ServiceTicket.aggregate([
-                { 
+                {
                     $lookup: {
                         from: 'users',
                         localField: "customer",
@@ -180,15 +221,18 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                       "jobSite": {$arrayElemAt:["$jobSite",0]},
                       "jobLocation": {$arrayElemAt:["$jobLocation",0]},
                       "jobType": {$arrayElemAt:["$jobType",0]},
-                      "company.info":{$arrayElemAt:["$companyInfo.info",0]}, 
+                      "company.info":{$arrayElemAt:["$companyInfo.info",0]},
                       "jobCreated" : 1,
                       "dueDate" : 1,
                       "note": 1,
+                        "image": 1,
+                        "customerPO": 1,
+                        "customerContactId": 1,
                       "ticketId": 1,
                       "createdAt" : 1
                     }
                 },
-                { 
+                {
                   $group: {
                     _id: null,
                     total: { $sum: 1 },
@@ -200,7 +244,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                 {
                     $project: {
                       total:1,
-                      serviceTickets: {$slice: ['$serviceTickets', pageSize * (currentPage - 1), pageSize]}  
+                      serviceTickets: {$slice: ['$serviceTickets', pageSize * (currentPage - 1), pageSize]}
                     }
                 },
               ]);
@@ -210,7 +254,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                     serviceTickets = documents[0].serviceTickets;
                     totalCount = documents[0].total
                 }
-                return res.json({'status': Status.Success, 'serviceTickets': serviceTickets , 'total': totalCount })    
+                return res.json({'status': Status.Success, 'serviceTickets': serviceTickets , 'total': totalCount })
               }).catch((err:any) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             });
@@ -218,53 +262,113 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
 
 
 export const updateServiceTicket = (req: Request, res: Response) => {
-
-    const params = req.body
-
-    var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
-
-    ServiceTicket.findOne(
-        { _id: params.ticketId , company: companyId},
-        (err: any, serviceTicket: IServiceTicket)=>{
-
-            if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+    const user = <IUser>req.user
+    updateFieldsAndUploadImageInS3(req, res, async (err: any, data)=>{
+        if (!err) {
+            const params = data.body;
+            let customerContact = params.customerContactId ? params.customerContactId : null
+            if (customerContact) {
+                try {
+                    customerContact = new ObjectId(customerContact);
+                } catch (e) {
+                    return res.json({'status': Status.Error, 'message': Messages.WrongId});
+                }
             }
-           
-            if (serviceTicket.status == ServiceTicketStatus.CANCELED) {
-                return res.json({'status': Status.Error, 'message': 'Ticket is canceled'})
-            }
-            let dueDate: any = serviceTicket.dueDate
-            if(params.dueDate) {
-                dueDate = new Date(params.dueDate)
+            var companyId = req.companyId;
+            if(req.otherCompanyId != undefined) {
+                companyId = req.otherCompanyId
             }
 
-            let jobLocationId: any = serviceTicket.jobLocation
-                jobLocationId = params.jobLocationId
- 
+            ServiceTicket.findOne(
+                { _id: params.ticketId , company: companyId},
+                (err: any, serviceTicket: IServiceTicket)=>{
 
-            let jobSiteId: any = serviceTicket.jobSite
-                jobSiteId = params.jobSiteId
-
-            let jobTypeId: any = serviceTicket.jobType
-                jobTypeId = params.jobTypeId
-            
-            serviceTicket.updateOne(
-                {note: params.note, dueDate: dueDate, jobLocation: jobLocationId, jobSite: jobSiteId, jobType: jobTypeId},
-                (err: any, raw: any)=> {
-                    
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
-    
-                    return res.json({'status': Status.Success, 'message': 'Ticket updated successfully.'})
+                    let status = params.status ? params.status : serviceTicket.status;
+                    let action = '';
+
+                    let track: any[] = serviceTicket.track ? serviceTicket.track : [];
+                    if(params.status) {
+                        if (params.status == ServiceTicketStatus.ARCHIVED) {
+                            action = '|Ticket archived|';
+                        }
+                        if (params.status == ServiceTicketStatus.REACTIVE) {
+                            action = '|Ticket reactivated|';
+                        }
+
+                    }
+                    if (serviceTicket.status == ServiceTicketStatus.ARCHIVED && status == ServiceTicketStatus.ARCHIVED) {
+                        return res.json({'status': Status.Error, 'message': 'Ticket is archived'})
+                    }
+
+                    let dueDate: any = serviceTicket.dueDate
+                    if(params.dueDate) {
+                        dueDate = new Date(params.dueDate)
+                    }
+                    let image = data.imageUrl ? data.imageUrl : serviceTicket.image;
+
+                    let customerPO = params.customerPO ? params.customerPO : serviceTicket.customerPO;
+
+                    let customerContactId = customerContact ? customerContact : serviceTicket.customerContactId;
+
+
+
+                    let jobLocationId: any = serviceTicket.jobLocation
+                    jobLocationId = params.jobLocationId
+
+
+                    let jobSiteId: any = serviceTicket.jobSite
+                    jobSiteId = params.jobSiteId
+
+                    let jobTypeId: any = serviceTicket.jobType
+                    jobTypeId = params.jobTypeId
+
+                    if (
+                        serviceTicket.dueDate != params.dueDate ||
+                        serviceTicket.image != data.imageUrl ||
+                        params.customerPO != serviceTicket.customerPO ||
+                        serviceTicket.customerContactId != customerContactId ||
+                        params.jobLocationId != serviceTicket.jobLocation ||
+                        params.jobSiteId != serviceTicket.jobSite ||
+                        params.jobTypeId || serviceTicket.jobType
+                    ) {
+                        action += '|Ticket info updated|'
+                    }
+                    track.push({
+                        user: user._id,
+                        action,
+                        date: new Date()
+                    });
+                    serviceTicket.updateOne(
+                        {
+                            note: params.note,
+                            dueDate: dueDate,
+                            jobLocation: jobLocationId,
+                            jobSite: jobSiteId,
+                            jobType: jobTypeId,
+                            image: image,
+                            customerPO: customerPO,
+                            customerContactId: customerContactId,
+                            status: status,
+                            track: track
+                        },
+                        (err: any, raw: any)=> {
+
+                            if (err) {
+                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            }
+
+                            return res.json({'status': Status.Success, 'message': 'Ticket updated successfully.'})
+                        }
+                    )
                 }
             )
+        } else {
+            return res.json({'status': Status.Error, 'message': err.message})
         }
-    )
+    });
 }
 
 export const editServiceTicket = (req: Request, res: Response) => {
@@ -284,19 +388,39 @@ export const editServiceTicket = (req: Request, res: Response) => {
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-            
-            if(params.status != ServiceTicketStatus.CANCELED && params.status != ServiceTicketStatus.ACTIVE && params.status != ServiceTicketStatus.REACTIVE ) {
+
+            let action = '';
+
+            let track: any[] = serviceTicket.track ? serviceTicket.track : [];
+            if(params.status) {
+                if (params.status == ServiceTicketStatus.ARCHIVED) {
+                    action = 'archived the ticket';
+                }
+                if (params.status == ServiceTicketStatus.REACTIVE) {
+                    action = 'reactivated the ticket';
+                }
+                if (params.status === ServiceTicketStatus.ACTIVE && params.status != serviceTicket.status) {
+                    action = 'reactivated the ticket';
+                }
+            }
+                track.push({
+                    user: user._id,
+                    action,
+                    date: new Date()
+                });
+
+                if(params.status != ServiceTicketStatus.ARCHIVED && params.status != ServiceTicketStatus.ACTIVE && params.status != ServiceTicketStatus.REACTIVE ) {
                 return res.json({'status': Status.Error, 'message': 'Invalid ticket status'})
             }
 
             serviceTicket.updateOne(
                 {status: params.status, editedBy: user._id, editedAt: Date.now() },
                 (err: any, raw: any)=> {
-                    
+
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
-    
+
                     return res.json({'status': Status.Success, 'message': 'Ticket status changed successfully.'})
                 }
             )

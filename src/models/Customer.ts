@@ -1,12 +1,12 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import { User, IUser} from './User'
-import { IContact } from '../common/contact' 
+import { IContact } from '../common/contact'
 
 export interface ICustomer extends IUser {
 
     isActive: boolean
     info:{
-        email: String
+        email: string
     }
     contactName: string
     company: Schema.Types.ObjectId
@@ -53,7 +53,7 @@ const CustomerSchema = new Schema({
     vendorId: {
         type: String,
     },
-    contacts: [{ 
+    contacts: [{
         type: Schema.Types.ObjectId,
         ref: 'Contact',
         required: false

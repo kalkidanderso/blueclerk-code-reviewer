@@ -8,17 +8,17 @@ import { Scan, IScan} from '../models/Scan'
 import { IUser} from '../models/User'
 import { Tag, ITag} from '../models/Tag'
 import { ObjectId } from 'mongodb'
+import {JobSite} from '../models/JobSite';
 
 export const createCustomerEquipment = (req: Request, res: Response) => {
 
     const params = req.body
 
-    CustomerEquipment.findOne({'info.nfcTag': params.nfcTag, customer: new ObjectId(params.customerId)}, 
-    (err: any, customerEquipment: ICustomerEquipment)=>{
+    CustomerEquipment.findOne({'info.nfcTag': params.nfcTag, customer: new ObjectId(params.customerId)},
+        async (err: any, customerEquipment: ICustomerEquipment)=>{
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError})
         }
-        
         if(customerEquipment != undefined && customerEquipment != null){
             return res.json({ 'status': Status.Error, 'message': 'Equipment already added.'})
         }
@@ -35,36 +35,41 @@ export const createCustomerEquipment = (req: Request, res: Response) => {
             customer: params.customerId,
         };
 
-        if (params.jobLocation) {
-            newCustomerEquipment['jobLocation'] = params.jobLocation;
+        if (!params.jobLocationId && !params.jobSiteId) {
+            return res.json({ 'status': Status.Error, 'message': 'Either jobLocation or jobSite is required' });
         }
-
-        if (params.jobSite) {
-            newCustomerEquipment['jobSite'] = params.jobSite;
+        if (!params.jobLocationId) {
+            let fullJobSite = await JobSite.findOne({_id : new ObjectId(params.jobSiteId)});
+            if (fullJobSite) {
+                newCustomerEquipment['jobLocation'] = fullJobSite.locationId;
+                newCustomerEquipment['jobSite'] = fullJobSite._id;
+            }
+        } else {
+            newCustomerEquipment['jobLocation'] = params.jobLocationId;
         }
 
         const equipment = new CustomerEquipment(newCustomerEquipment)
-    
+
         equipment.save((err: any) => {
-    
+
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
-    
+
             Customer.findOne(
                 { '_id': params.customerId },
                 (err: any, customer: ICustomer) => {
-    
+
                     if (err || !customer) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
-    
+
                     customer.equipments.push(equipment._id)
-    
+
                     customer.updateOne(
                         { equipments: customer.equipments },
                         (err: any, raw: any) => {
-    
+
                             if (err) {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                             }
@@ -73,12 +78,12 @@ export const createCustomerEquipment = (req: Request, res: Response) => {
                                 var images: any = []
                                 var urls = params.images.split(',').map(String)
                                 urls.map((url: any)=>{
-                                    equipment.images.push(url)        
+                                    equipment.images.push(url)
                                 })
                                 equipment.updateOne(
                                     { images: equipment.images },
                                     (err: any, raw: any) => {
-                
+
                                         if (err) {
                                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                                         }
@@ -89,13 +94,13 @@ export const createCustomerEquipment = (req: Request, res: Response) => {
                             } else {
                                 return res.json({ 'status': Status.Success, 'message': 'Customer equipment created successfully.' })
                             }
-    
+
                         }
                     )
-    
+
                 }
             )
-    
+
         })
     })
 
@@ -146,7 +151,7 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
     const params = req.body
     CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
         .exec((err: any, customerEquipment: ICustomerEquipment) => {
-
+            console.log(customerEquipment);
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
@@ -157,20 +162,19 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
 
             Scan.find({equipment: customerEquipment._id})
             .populate({
-                path: 'job',
+                path: 'job'
                 // select: 'profile.displayName'
             })
             .populate({
                 path: 'equipment',
                 // select: 'profile.displayName'
+                populate: ['jobSite', 'jobLocation']
             })
-            .exec((err:any, scans: IScan[])=>{
-
+            .exec(async (err:any, scans: any[])=>{
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
-
-                return res.json({ 'status': Status.Success, 'jobs': scans })
+                    return res.json({ 'status': Status.Success, 'jobs': scans })
             })
 
             // var jobIds = customerEquipment.jobs
@@ -194,34 +198,34 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
             //     select: 'info.companyName'
             // })
             // .exec((err: any, companyJobs: IJob[])=>{
-                
+
             //     if (err || !companyJobs) {
             //         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             //     }
 
             //     Job.find({_id: {$in : jobIds }, company:  { $ne: companyId }}, '_id comment dateTime',)
             //     .exec((err: any, nonCompanyJobs: IJob[])=>{
-                    
+
             //         if (err || !nonCompanyJobs) {
             //             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             //         }
-    
+
             //         var allJobs = companyJobs.concat(nonCompanyJobs)
 
             //         allJobs.sort(function(a, b){
             //             var keyA = new Date(a.dateTime),
             //                 keyB = new Date(b.dateTime);
             //             // Compare the 2 dates
-    
+
             //             if(keyA > keyB) return -1;
             //             if(keyA < keyB) return 1;
             //             return 0;
             //         });
-                    
+
             //         return res.json({ 'status': Status.Success, 'jobs': allJobs })
 
             //     })
-                
+
             // })
 
         })
@@ -246,17 +250,17 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
         .then((result:  any) => {
             const equipment = result[0]
             const tag = result[1]
-            
+
             if(equipment != null && equipment != undefined) {
-                
+
                 return new Promise((resolve, reject) => {
-                
-                    Scan.findOne({equipment: equipment._id, job: params.jobId}, 
+
+                    Scan.findOne({equipment: equipment._id, job: params.jobId},
                         (err: any, scan: IScan) => {
                             if (err) {
                                 reject()
                             }
-                            
+
                             if (scan != undefined && scan != null) {
                                 reject(new Error('Equipment already scanned for this job.'))
                                 // return res.json({ 'status': Status.Error, 'message': "Equipment already scanned for this job."})
@@ -287,18 +291,18 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
 
                                 })
                             }
-        
-                            
+
+
                         })
                 })
             }else if(tag != null && tag != undefined){
                 return new Promise((resolve, reject) => {
-                    Scan.findOne({tag: tag._id, job: params.jobId}, 
+                    Scan.findOne({tag: tag._id, job: params.jobId},
                         (err: any, scan: IScan) => {
                             if (err) {
                                 reject()
                             }
-                            
+
                             if (scan != undefined && scan != null) {
                                 reject(new Error('Tag already scanned for this job.'))
                             }else{
@@ -325,8 +329,8 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
 
                                 })
                             }
-        
-                            
+
+
                         })
                 })
             }else{
@@ -336,7 +340,7 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
         .then((response: any) => {
             return res.json({ 'status': Status.Success, 'message': response })
         })
-        .catch((error: any) => { 
+        .catch((error: any) => {
             if (error != undefined && error.message != undefined) {
                 return res.json({ 'status': Status.Error, 'message': error.message })
             } else {
@@ -364,14 +368,8 @@ export const getCustomerEquipmentInfo = (req: Request, res: Response) => {
             path: 'customer',
             select: 'profile.displayName address.street address.city address.state address.zipCode contactName'
         })
-        .populate({
-            path: 'jobLocation',
-            select: 'name location'
-        })
-        .populate({
-            path: 'jobSite',
-            select: 'name location'
-        })
+        .populate('jobLocation')
+        .populate('jobSite')
         .exec((err: any, equipment: ICustomerEquipment) => {
 
             if (err) {
@@ -401,7 +399,7 @@ export const getEquipmentJobs = (req: Request, res: Response) => {
             Scan.find({equipment: customerEquipment._id}, '_id')
             .populate({
                 path: 'job',
-                populate: [{ path: 'customer', select: 'profile.displayName' },{ path: 'type', select: 'title' }],
+                populate: [{ path: 'customer', select: 'profile.displayName' },{ path: 'type', select: 'title' }, 'jobSite', 'jobLocation'],
             })
             .exec((err:any, scans: IScan[])=>{
 
@@ -416,22 +414,22 @@ export const getEquipmentJobs = (req: Request, res: Response) => {
 }
 
 
-export const checkTagAssociation = (req: Request, res: Response) => {
+export const  checkTagAssociation = (req: Request, res: Response) => {
 
     const params = req.body
 
     const tagPromise = Tag.findOne({ 'info.nfcTag': params.nfcTag })
     const equipmentPromise = CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
-    
+
     Promise.all([tagPromise, equipmentPromise])
     .then((response: any) =>{
-    
+
         const tag = response[0]
         const equipment = response[1]
 
         if ((tag == undefined || tag == null) && (equipment != undefined && equipment != null)){
             return res.json({ 'status': Status.Success, 'tagStatus': Status.TagAssociated, 'message': Messages.TagAssociated, 'tagType': TagType.CustomerEquipmentTag })
-        
+
         } else if ((equipment == undefined || equipment == null) && (tag != undefined && tag != null)){
             return res.json({ 'status': Status.Success, 'tagStatus': Status.TagAssociated, 'message': Messages.TagAssociated, 'tagType': TagType.LocationTag })
 

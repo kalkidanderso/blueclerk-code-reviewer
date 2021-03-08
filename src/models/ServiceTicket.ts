@@ -7,6 +7,9 @@ export interface IServiceTicket extends Document {
     customer: Schema.Types.ObjectId
     createdBy: Schema.Types.ObjectId
     note: string
+    customerPO: string,
+    customerContactId: Schema.Types.ObjectId | any
+    image: string
     company: Schema.Types.ObjectId
     technician: Schema.Types.ObjectId
     status: number
@@ -17,7 +20,8 @@ export interface IServiceTicket extends Document {
     jobSite: Schema.Types.ObjectId
     jobType: Schema.Types.ObjectId
     jobCreated: boolean
-    
+    track: any[];
+
 }
 
 const ServiceTicketSchema = new Schema({
@@ -38,6 +42,13 @@ const ServiceTicketSchema = new Schema({
         required: true
     },
     note: String,
+    customerContactId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Customer',
+        required: false
+    },
+    customerPO : String,
+    image: String,
     company: {
         type: Schema.Types.ObjectId,
         ref: 'Company',
@@ -51,6 +62,15 @@ const ServiceTicketSchema = new Schema({
         type: Number,
         default: 0
     },
+    track: [{
+        user: {
+         type: Schema.Types.ObjectId,
+         ref: 'User'
+     },
+        action: String,
+        date: Date
+    }
+    ],
     editedBy: {
         type: Schema.Types.ObjectId,
         ref: 'User'

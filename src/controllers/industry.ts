@@ -46,7 +46,7 @@ export const getIndustries = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            res.json({'status': Status.Success, 'industries': industries})    
+            return res.json({'status': Status.Success, 'industries': industries})    
 
         }
     )

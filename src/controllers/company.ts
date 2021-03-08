@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { Status, Messages } from '../common/constants'
+import {Status, Messages, Role, Permissions} from '../common/constants'
 import { sendAccountDowngradeEmail } from '../services/aws'
 import { Company, ICompany } from '../models/Company'
 import { Employee, IEmployee } from '../models/Employee'
@@ -13,12 +13,14 @@ import { JobCharges, IJobCharges } from '../models/JobCharges'
 import { Invoice, IInvoice } from '../models/Invoice'
 import { Job, IJob } from '../models/Job'
 import { Scan, IScan } from '../models/Scan'
-import { IUser } from '../models/User'
+import {IUser, User} from '../models/User'
 import { PurchaseOrder, IPurchaseOrder } from '../models/PurchaseOrder'
 import { IContractorActivity } from '../models/ContractorActivity'
 import { Estimate, IEstimate } from '../models/Estimate'
 import { Item} from '../models/Item'
 import { Customer, ICustomer } from '../models/Customer'
+import {CompanyCustomer} from '../models/CompanyCustomer';
+import {ServiceTicket} from '../models/ServiceTicket';
 const Hubspot = require('hubspot')
 
 export const updateCompanyProfile = (req: Request, res: Response) => {
@@ -30,17 +32,17 @@ export const updateCompanyProfile = (req: Request, res: Response) => {
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
-        
+
         if(company.info.companyEmail != params.companyEmail ) {
 
             Company.findOne(
                 { 'info.companyEmail': params.companyEmail },
                 (err: any, previousCompany: ICompany) => {
-                    
+
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
-        
+
                     if (previousCompany) {
                         return res.json({ 'status': Status.Error, 'message': Messages.CompanyDuplicateEmail })
                     }
@@ -57,11 +59,11 @@ export const updateCompanyProfile = (req: Request, res: Response) => {
                             'contact.fax': params.fax,
                         },
                         (err: any, raw: any) => {
-            
+
                             if (err) {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                             }
-            
+
                             return res.json({ 'status': Status.Success, 'message': 'Profile updated successfully.' })
                         }
                     )
@@ -81,11 +83,11 @@ export const updateCompanyProfile = (req: Request, res: Response) => {
                     'contact.fax': params.fax,
                 },
                 (err: any, raw: any) => {
-    
+
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
-    
+
                     return res.json({ 'status': Status.Success, 'message': 'Profile updated successfully.' })
                 }
             )
@@ -94,12 +96,48 @@ export const updateCompanyProfile = (req: Request, res: Response) => {
 
 }
 
+export const getEmployeeDetail = async (req: Request, res: Response) => {
+    try {
+        let employeeData: any = {};
+        let company = <ICompany>req.company;
+        let employeeId = req.query.employeeId;
+        if (employeeId) {
+            let checkUserPermission = await Company.findOne({_id: company._id, employees: {$in: [new ObjectId(employeeId)]}});
+            if(!checkUserPermission) {
+                return res.json({'status': Status.Error, message: Messages.UnAuthorized});
+            }
+
+            let employeeDetails: any = await User.findOne({_id: new ObjectId(employeeId)})
+                .select('profile.firstName profile.lastName auth.email contact.phone emailPreferences').exec();
+            employeeData.firstName = employeeDetails.profile.firstName;
+            employeeData.lastName = employeeDetails.profile.lastName;
+            employeeData.email = employeeDetails.auth.email;
+            employeeData.phone = employeeDetails.contact.phone;
+            let hours = employeeDetails.emailPreferences.time ? employeeDetails.emailPreferences.time.getHours() : '21';
+            let minutes = employeeDetails.emailPreferences.time ? employeeDetails.emailPreferences.time.getMinutes() : '00';
+            employeeData.emailPreferences = {
+                preferences: employeeDetails.emailPreferences.preferences,
+                timeZone : employeeDetails.emailPreferences.timeZone,
+                time: hours + ':' + minutes
+            }
+            if (employeeDetails) {
+                return res.json({'status': Status.Success, 'employee': employeeData});
+            } else {
+                return res.json({'status': Status.Success, 'message': 'Employee not found!'});
+            }
+        }
+        return res.json({'status': Status.Error, 'message': 'EmployeeId is required!'});
+    } catch (err) {
+        return res.json({'status': Status.Error, 'message': err.message});
+    }
+
+}
 export const getAllEmployees = (req: Request, res: Response) => {
 
     Company.findOne({ _id: req.companyId })
         .populate({
             path: 'employees',
-            select: '_id profile.displayName',
+            select: '_id profile.displayName auth.email contact.phone',
         })
         .populate({
             path: 'admin',
@@ -127,7 +165,7 @@ export const getAllEmployees = (req: Request, res: Response) => {
             company.contact = undefined
             company.address = undefined
 
-            res.json({ 'status': Status.Success, 'employees': employees, 'company': company })
+            return res.json({ 'status': Status.Success, 'employees': employees, 'company': company })
 
         })
 }
@@ -167,7 +205,7 @@ export const getEmployeesForJob = (req: Request, res: Response) => {
             company.contact = undefined
             company.address = undefined
 
-            res.json({ 'status': Status.Success, 'employees': employees, 'superAdmin': admin })
+            return res.json({ 'status': Status.Success, 'employees': employees, 'superAdmin': admin })
 
         })
 
@@ -177,7 +215,7 @@ export const getContractorForJob = (req: Request, res: Response) => {
 
     var companyId = req.companyId;
     var company  = <ICompany>req.company;
-    
+
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
@@ -197,7 +235,7 @@ export const getContractorForJob = (req: Request, res: Response) => {
              const contractors = contracts.map((contract)=>{
                 return contract.contractor
             })
-            
+
             return res.json({ 'status': Status.Success, 'contractors': contractors})
         }
     )
@@ -207,7 +245,7 @@ export const getContractorForJob = (req: Request, res: Response) => {
 export const getCompanyContracts = (req: Request, res: Response) => {
 
     const company = <ICompany>req.company
-    
+
     Contract.find({company: company._id})
     .populate({
         path: 'company',
@@ -222,25 +260,25 @@ export const getCompanyContracts = (req: Request, res: Response) => {
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
-            
+
             if(contracts.length == 0 || contracts == undefined ) {
                 return res.json({ 'status': Status.Error, 'message': 'No contracts found.' })
             }
 
-            res.json({ 'status': Status.Success, 'contracts': contracts})
+            return res.json({ 'status': Status.Success, 'contracts': contracts})
         }
     )
 }
 
 export const getContractorDetail = (req: Request, res: Response) => {
-    
+
     Company.findById(req.body.contractorId,
         (err: any, company: ICompany) => {
 
-            if (err) {          
+            if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
-            
+
             if(company == undefined || company == null ) {
                 return res.json({ 'status': Status.Error, 'message': 'No company found.' })
             }
@@ -251,17 +289,17 @@ export const getContractorDetail = (req: Request, res: Response) => {
 }
 
 export const getCustomWorkNumber = (req: Request, res: Response) => {
-   
+
     const params = req.body
     const admin = <ICompanyAdmin>req.user
-    
+
     Company.findById(req.companyId,
         (err: any, company: ICompany) => {
 
-            if (err) {          
+            if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
-            
+
             if(company == undefined || company == null ) {
                 return res.json({ 'status': Status.Error, 'message': 'No company found.' })
             }
@@ -272,14 +310,14 @@ export const getCustomWorkNumber = (req: Request, res: Response) => {
 }
 
 export const getSyncInfo = (req: Request, res: Response) => {
-   
+
     Company.findById(req.companyId,
         (err: any, company: ICompany) => {
 
-            if (err) {          
+            if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
-            
+
             if(company == undefined || company == null ) {
                 return res.json({ 'status': Status.Error, 'message': 'No company found.' })
             }
@@ -301,10 +339,10 @@ export const downgradeCompanies = (req: Request, res: Response) => {
             if(companies.length > 0) {
                 const companiesToDowngrade:number = companies.length
                 let companiesDowngraded: number = 0;
-                
+
                 for (let index = 0; index < companies.length; index++) {
                     const company = companies[index];
-    
+
                     company.updateOne({type: 1}, (err: any, raw: any) =>{
                         if(err) {
                             console.log("Unable to downgrade" + company._id + "\n")
@@ -316,11 +354,11 @@ export const downgradeCompanies = (req: Request, res: Response) => {
                             return res.json({'status': Status.Success, 'message': 'Downgrading done.'})
                         }
                     })
-                    
+
                 }
             }else{
                 return res.json({'status': Status.Error, 'message': 'Nothing to downgrade.'})
-            }           
+            }
         })
 }
 
@@ -343,7 +381,7 @@ const _downgradeHubSpotContact = (company: ICompany) => {
 }
 
 export const setCustomWorkNumber = (req: Request, res: Response) => {
-   
+
     const params = req.body
     const admin = <ICompanyAdmin>req.user
     var oldPrefix: string
@@ -356,56 +394,56 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
     Company.findById(admin.company,
         (err: any, company: ICompany) => {
 
-            if (err) {                
+            if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
-            
+
             if(company == undefined || company == null ) {
                 return res.json({ 'status': Status.Error, 'message': 'No company found.' })
             }
-            
+
             if(typeof params.prefix !== 'undefined' && params.prefix && ( typeof params.workOrderNumber === 'undefined' && !params.workOrderNumber )) {
-            
+
                 if(params.prefix == company.prefix) {
-               
+
                     return res.json({'status': Status.Success, 'message': "Prefix already set there."});
                 }
-                
-                checkPrefixExists(req, res, (req: Request, res: Response, previousPrefix: ICompanyPrefix) => { 
-               
+
+                checkPrefixExists(req, res, (req: Request, res: Response, previousPrefix: ICompanyPrefix) => {
+
                     oldPrefix = company.prefix
-               
+
                     company.updateOne({'prefix':params.prefix}, (err: any, raw: any)=> {
-                        if (err) {                
+                        if (err) {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
-                        
-                  
+
+
                         if(previousPrefix == null && oldPrefix != undefined) {
-                  
+
                             var prefix = new CompanyPrefix({
                                 company : req.companyId,
                                 prefix : oldPrefix,
                                 maxJobId: company.currentJobId
                             })
-                  
+
                             prefix.save((err: any, companyPrefix: ICompanyPrefix) => {
                                 if (err) {
                                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                 }
-                  
+
                                 return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
                             })
-                  
+
                         }else if(previousPrefix != null){
-                  
+
                             previousPrefix.updateOne(
                                 {'prefix' : oldPrefix, 'maxJobId': company.currentJobId},
                                 (err: any, raw: any) => {
                                 if (err) {
                                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                 }
-                            
+
                                 return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
                             })
                         }else{
@@ -413,18 +451,18 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
                             return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
                         }
 
-                        
+
                     })
-                    
+
                 })
             } else if (typeof params.workOrderNumber !== 'undefined' && params.workOrderNumber && (typeof params.prefix === 'undefined' || !params.prefix)){
-          
+
                 if(company.currentJobId > params.workOrderNumber) {
-                    return res.json({'status': Status.Success, 'message': "Work order number can not be less then "+company.currentJobId});      
+                    return res.json({'status': Status.Success, 'message': "Work order number can not be less then "+company.currentJobId});
                 }
 
                 company.updateOne({'currentJobId':params.workOrderNumber}, (err: any, raw: any)=> {
-                    if (err) {                
+                    if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
 
@@ -432,7 +470,7 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
                 })
 
             } else if ((typeof params.prefix !== 'undefined' && params.prefix) && (typeof params.workOrderNumber !== 'undefined' && params.workOrderNumber) ) {
-                
+
                 if (company.prefix == params.prefix) {
 
                     if (company.currentJobId > params.workOrderNumber) {
@@ -440,21 +478,21 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
                     }
 
                     company.updateOne({'currentJobId':params.workOrderNumber}, (err: any, raw: any)=> {
-                        if (err) {                
+                        if (err) {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
-                        
+
                         return res.json({'status': Status.Success, 'message': "Work order number updated successfully."});
                     })
-                
+
                 } else if (company.prefix != params.prefix) {
-                    checkPrefixExists(req, res, (req: Request, res: Response) => { 
+                    checkPrefixExists(req, res, (req: Request, res: Response) => {
 
                         oldPrefix = company.prefix
                         oldJobId = company.currentJobId
 
                         company.updateOne({'prefix':params.prefix, 'currentJobId' : params.workOrderNumber}, (err: any, raw: any)=> {
-                            if (err) {                
+                            if (err) {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                             }
 
@@ -468,19 +506,19 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
                                     if (err) {
                                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                     }
-            
+
                                     return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
                                 })
                             }else if(prefix != null) {
                                 const companyPrefix = <ICompanyPrefix>prefix
-                                
+
                                 companyPrefix.updateOne(
                                     {'prefix' : oldPrefix, 'maxJobId': oldJobId},
                                     (err: any, raw: any) => {
                                     if (err) {
                                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                     }
-            
+
                                     return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
                                 })
                             }else{
@@ -489,7 +527,7 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
                         })
                     })
                 }
-            }         
+            }
         }
     )
 }
@@ -509,7 +547,7 @@ const checkPrefixExists = (req: Request, res: Response, next: (req: Request, res
             if (companyPrefix == undefined || companyPrefix == null) {
                 next(req, res, null)
                 return
-            
+
             }else{
                 if(params.workOrderNumber != undefined && params.workOrderNumber !==null && params.workOrderNumber!= '""') {
                     if (companyPrefix.maxJobId > params.workOrderNumber) {
@@ -521,11 +559,11 @@ const checkPrefixExists = (req: Request, res: Response, next: (req: Request, res
 
                 }else if (companyPrefix.maxJobId > req.company.currentJobId){
                     return res.json({ 'status': Status.Error, 'message': 'Current work order number with prefix '+params.prefix+' is not allowed. Try no greater then '+companyPrefix.maxJobId })
-                
+
                 }else{
                     next(req, res, companyPrefix)
                     return
-                }   
+                }
             }
         }
     )
@@ -533,7 +571,7 @@ const checkPrefixExists = (req: Request, res: Response, next: (req: Request, res
 }
 
 export const setCustomInvoiceNumber = (req: Request, res: Response) => {
-   
+
     const params = req.body
     const admin = <ICompanyAdmin>req.user
     var oldInvoicePrefix: string
@@ -546,56 +584,56 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
     Company.findById(admin.company,
         (err: any, company: ICompany) => {
 
-            if (err) {                
+            if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
-            
+
             if(company == undefined || company == null ) {
                 return res.json({ 'status': Status.Error, 'message': 'No company found.' })
             }
-            
+
             if(typeof params.invoicePrefix !== 'undefined' && params.invoicePrefix && ( typeof params.invoiceNumber === 'undefined' && !params.invoiceNumber )) {
-            
+
                 if(params.invoicePrefix == company.invoicePrefix) {
-               
+
                     return res.json({'status': Status.Success, 'message': "Invoice Prefix already set there."});
                 }
-                
-                checkInvoicePrefixExists(req, res, (req: Request, res: Response, previousPrefix: IInvoicePrefix) => { 
-               
+
+                checkInvoicePrefixExists(req, res, (req: Request, res: Response, previousPrefix: IInvoicePrefix) => {
+
                     oldInvoicePrefix = company.invoicePrefix
-               
+
                     company.updateOne({'invoicePrefix':params.invoicePrefix}, (err: any, raw: any)=> {
-                        if (err) {                
+                        if (err) {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
-                        
-                  
+
+
                         if(previousPrefix == null && oldInvoicePrefix != undefined) {
-                  
+
                             var prefix = new InvoicePrefix({
                                 company : req.companyId,
                                 prefix : oldInvoicePrefix,
                                 maxInvoiceId: company.currentInvoiceId
                             })
-                  
+
                             prefix.save((err: any, invoicePrefix: IInvoicePrefix) => {
                                 if (err) {
                                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                 }
-                  
+
                                 return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
                             })
-                  
+
                         }else if(previousPrefix != null){
-                  
+
                             previousPrefix.updateOne(
                                 {'prefix' : oldInvoicePrefix, 'maxInvoiceId': company.currentInvoiceId},
                                 (err: any, raw: any) => {
                                 if (err) {
                                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                 }
-                            
+
                                 return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
                             })
                         }else{
@@ -603,18 +641,18 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                             return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
                         }
 
-                        
+
                     })
-                    
+
                 })
             } else if (typeof params.invoiceNumber !== 'undefined' && params.invoiceNumber && (typeof params.invoicePrefix === 'undefined' || !params.invoicePrefix)){
-          
+
                 if(company.currentInvoiceId > params.invoiceNumber) {
-                    return res.json({'status': Status.Success, 'message': "Invoice number can not be less then "+company.currentJobId});      
+                    return res.json({'status': Status.Success, 'message': "Invoice number can not be less then "+company.currentJobId});
                 }
 
                 company.updateOne({'currentInvoiceId' : params.invoiceNumber}, (err: any, raw: any)=> {
-                    if (err) {                
+                    if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
 
@@ -622,7 +660,7 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                 })
 
             } else if ((typeof params.invoicePrefix !== 'undefined' && params.invoicePrefix) && (typeof params.invoiceNumber !== 'undefined' && params.invoiceNumber) ) {
-                
+
                 if (company.invoicePrefix == params.invoicePrefix) {
 
                     if (company.currentJobId > params.invoiceNumber) {
@@ -630,21 +668,21 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                     }
 
                     company.updateOne({'currentInvoiceId' : params.invoiceNumber}, (err: any, raw: any)=> {
-                        if (err) {                
+                        if (err) {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
-                        
+
                         return res.json({'status': Status.Success, 'message': "Invoice number updated successfully."});
                     })
-                
+
                 } else if (company.prefix != params.invoicePrefix) {
-                    checkInvoicePrefixExists(req, res, (req: Request, res: Response) => { 
+                    checkInvoicePrefixExists(req, res, (req: Request, res: Response) => {
 
                         oldInvoicePrefix = company.prefix
                         oldInvoiceId = company.currentJobId
 
                         company.updateOne({'invoicePrefix' : params.invoicePrefix, 'currentInvoiceId' : params.invoiceNumber}, (err: any, raw: any)=> {
-                            if (err) {                
+                            if (err) {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                             }
 
@@ -658,18 +696,18 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                                     if (err) {
                                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                     }
-            
+
                                     return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
                                 })
                             }else if(prefix != null) {
                                 const invoicePrefix = <IInvoicePrefix>prefix
-                                
-                                invoicePrefix.updateOne({'prefix' : oldInvoicePrefix, 'maxInvoiceId': oldInvoiceId}, 
+
+                                invoicePrefix.updateOne({'prefix' : oldInvoicePrefix, 'maxInvoiceId': oldInvoiceId},
                                 (err: any, raw: any) => {
                                     if (err) {
                                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                     }
-            
+
                                     return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
                                 })
                             }else{
@@ -678,7 +716,7 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                         })
                     })
                 }
-            }         
+            }
         }
     )
 }
@@ -698,7 +736,7 @@ const checkInvoicePrefixExists = (req: Request, res: Response, next: (req: Reque
             if (invoicePrefix == undefined || invoicePrefix == null) {
                 next(req, res, null)
                 return
-            
+
             }else{
                 if(params.invoiceNumber != undefined && params.invoiceNumber !==null && params.invoiceNumber!= '""') {
                     if (invoicePrefix.maxInvoiceId > params.invoiceNumber) {
@@ -710,16 +748,153 @@ const checkInvoicePrefixExists = (req: Request, res: Response, next: (req: Reque
 
                 }else if (invoicePrefix.maxInvoiceId > req.company.currentJobId){
                     return res.json({ 'status': Status.Error, 'message': 'Current invoice number with prefix '+params.invoicePrefix+' is not allowed. Try no greater then '+invoicePrefix.maxInvoiceId })
-                
+
                 }else{
                     next(req, res, invoicePrefix)
                     return
-                }   
+                }
             }
         }
     )
 
 }
+
+export const updateContractorEmailPreferences =  (req: Request, res: Response) => {
+    const params = req.body
+    const company = <ICompany>req.company
+    const user = <IUser>req.user
+    if(params.contractorId) {
+        if (params.emailPreferences == 1 && !params.emailTime) {
+            return res.json({'status': Status.Error, 'message': "Email time is required for scheduled emails."})
+        }
+        Company.findOne({_id: params.contractorId}).then((c) => {
+            if (c && c.type == 1 && JSON.stringify(c._id) == JSON.stringify(company._id)) {
+                let sendTime = new Date();
+                let time = params.emailTime ? params.emailTime.split(':') : [];
+                sendTime.setHours(time[0] ? time[0] : 21,time[1] ? time[1] : 0,time[2] ? time[2]: 0);
+                c.emailPreferences.preferences = params.emailPreferences;
+                c.emailPreferences.time = sendTime;
+                if (user.permissions.role == Role.COMPANY_ADMIN && JSON.stringify(user._id) == JSON.stringify(c.admin)) {
+                    if (params.timeZone) {
+                        c.emailPreferences.timeZone = params.timeZone;
+                    }
+                } else {
+                    return res.json({'status': Status.Error, 'message': Messages.UnAuthorized});
+                }
+                c.save().then(() => {
+                    return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
+                }).catch((err) => {
+                    return res.json({'status': Status.Error, 'message': err.message})
+                })
+            } else {
+                return res.json({ 'status': Status.Error, 'message': 'Could not find contractor' })
+            }
+        }).catch((err) => {
+            return res.json({'status': Status.Error, 'message': err.message})
+        });
+    }
+
+}
+export const updateEmployeeEmailPreferences = (req: Request, res: Response) => {
+    const params = req.body
+    const company = <ICompany>req.company
+    const user = <IUser>req.user
+    if(params.employeeId) {
+        if (params.emailPreferences == 1 && !params.emailTime) {
+            return res.json({'status': Status.Error, 'message': "Email time is required for scheduled emails."})
+        }
+            User.findOne({_id: params.employeeId}).then((e) => {
+            if (e) {
+                Company.findOne(  {
+                    $and : [
+                        { _id : new ObjectId(company._id) },
+                        { $or : [
+                                { admin : new ObjectId(params.employeeId) },
+                                {employees :
+                                        {$in: [new ObjectId(params.employeeId)]}
+                                }
+                            ]
+                        }
+                    ] } ).then((c) => {
+                    if (c) {
+                        if (user.permissions.role == Role.TECHNICIAN ||
+                            user.permissions.role == Role.MANAGER ||
+                            user.permissions.role == Role.COMPANY_ADMIN ||
+                            user.permissions.role == Role.GLOBAL_ADMIN
+                        ) {
+                            let sendTime = new Date();
+                            let time = params.emailTime ? params.emailTime.split(':') : [];
+                            sendTime.setHours(time[0] ? time[0] : 21,time[1] ? time[1] : 0,time[2] ? time[2]: 0);
+                            e.emailPreferences.preferences = params.emailPreferences;
+                            e.emailPreferences.time = sendTime;
+                            if (user.permissions.role == Role.COMPANY_ADMIN && JSON.stringify(user._id) == JSON.stringify(c.admin)) {
+                                if (params.timeZone) {
+                                    e.emailPreferences.timeZone = params.timeZone;
+                                }
+                            } else {
+                                return res.json({'status': Status.Error, 'message': Messages.UnAuthorized});
+                            }                            e.save().then(() => {
+                                return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
+                            }).catch((err) => {
+                                return res.json({'status': Status.Error, 'message': err.message})
+                            })
+                        } else {
+                            return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
+                        }
+                    } else {
+                        return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
+                    }
+                }).catch((err) => {
+                    return res.json({'status': Status.Error, 'message': err.message})
+                });
+
+            } else {
+                return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
+            }
+        }).catch((err) => {
+            return res.json({'status': Status.Error, 'message': err.message})
+        });
+    }
+};
+
+
+export const updateCustomerEmailPreferences = (req: Request, res: Response) => {
+    const params = req.body
+    const company = <ICompany>req.company
+    const timeZone = params.timeZone ? params.timeZone : 'America/Chicago';
+    if(params.customerId) {
+        if(params.emailPreferences == 1 && !params.emailTime) {
+            return res.json({'status': Status.Error, 'message': "Email time is required for scheduled emails."})
+        }
+        CompanyCustomer.findOne(
+            {company: new ObjectId(company._id), customer: {$in : [new ObjectId(params.customerId)]}})
+            .then((companyCustomer) => {
+           if (companyCustomer) {
+               let sendTime = new Date();
+               let time = params.emailTime ? params.emailTime.split(':') : [];
+               sendTime.setHours(time[0] ? time[0] : 21,time[1] ? time[1] : 0,time[2] ? time[2]: 0);
+               Customer.findOneAndUpdate({_id: companyCustomer.customer},
+                   {
+                       'emailPreferences.preferences': params.emailPreferences,
+                       'emailPreferences.time': sendTime,
+                       'emailPreferences.timeZone': timeZone
+                   }).then((c) => {
+                   if (c) {
+                       return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
+                   } else {
+                       return res.json({'status': Status.Success, 'message': Messages.GenericError});
+                   }
+               }).catch((err) => {
+                   return res.json({ 'status': Status.Error, 'message': err.message })
+               });
+           } else {
+               return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
+           }
+            }).catch((err) => {
+            return res.json({ 'status': Status.Error, 'message': err.message })
+        });
+    }
+};
 
 export const createSalesTax = (req: Request, res: Response) => {
 
@@ -734,7 +909,7 @@ export const createSalesTax = (req: Request, res: Response) => {
         if(saleTax != undefined || saleTax != null) {
             return res.json({'status': Status.Success, 'message': "Sales tax already added."})
         }
-        
+
         var sale = new SaleTax({
             state : params.state,
             tax : params.tax,
@@ -819,7 +994,7 @@ export const createJobCharges = (req: Request, res: Response) => {
     const params = req.body
     const user = <IUser>req.user
 
-    JobCharges.findOne({'jobType': params.jobTypeId, 'company': req.companyId}, 
+    JobCharges.findOne({'jobType': params.jobTypeId, 'company': req.companyId},
     (err: any, jobCharges: IJobCharges) => {
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -827,7 +1002,7 @@ export const createJobCharges = (req: Request, res: Response) => {
         if(jobCharges != undefined || jobCharges != null) {
             return res.json({'status': Status.Success, 'message': "Job charge already added."})
         }
-        
+
         var charges = new JobCharges({
             jobType : params.jobTypeId,
             charges : params.charges,
@@ -838,16 +1013,16 @@ export const createJobCharges = (req: Request, res: Response) => {
         })
 
         if(params.sales_tax_id != undefined && params.sales_tax_id !== null && params.sales_tax_id !== '""') {
-            
-            _getSalesTax(req, res, params.sales_tax_id,(req: Request, res: Response, saleTax: ISaleTax) => { 
-               
+
+            _getSalesTax(req, res, params.sales_tax_id,(req: Request, res: Response, saleTax: ISaleTax) => {
+
                 charges.salesTax = saleTax._id
 
                 charges.save((err: any, charge: IJobCharges) => {
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
-        
+
                     return res.json({'status': Status.Success, 'message': "Job charges created successfully."})
                 })
             } )
@@ -857,18 +1032,18 @@ export const createJobCharges = (req: Request, res: Response) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
-    
+
                 return res.json({'status': Status.Success, 'message': "Job charges created successfully."})
             })
         }
 
-        
+
     });
 }
 
 const _getSalesTax = (req: Request, res: Response, sales_tax_id: string, next: (req: Request, res: Response, salesTax: ISaleTax) => void ) =>{
-    
-    SaleTax.findById(sales_tax_id, 
+
+    SaleTax.findById(sales_tax_id,
         (err: any, saleTax: ISaleTax) => {
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -886,7 +1061,7 @@ export const updateJobCharges = (req: Request, res: Response) => {
 
     const params = req.body
 
-    JobCharges.findOne({'_id': params.jobChargesId, 'company': req.companyId}, 
+    JobCharges.findOne({'_id': params.jobChargesId, 'company': req.companyId},
     (err: any, jobCharges: IJobCharges) => {
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -900,30 +1075,30 @@ export const updateJobCharges = (req: Request, res: Response) => {
         jobCharges.isFixed = params.isFixed
 
         if(params.sales_tax_id != undefined && params.sales_tax_id !== null && params.sales_tax_id !== '""') {
-            
+
 
             if(params.sales_tax_id != undefined && params.sales_tax_id !== null && params.sales_tax_id !== '""') {
-            
-                _getSalesTax(req, res, params.sales_tax_id,(req: Request, res: Response, saleTax: ISaleTax) => { 
-                   
+
+                _getSalesTax(req, res, params.sales_tax_id,(req: Request, res: Response, saleTax: ISaleTax) => {
+
                     jobCharges.salesTax = saleTax._id
-    
+
                     jobCharges.updateOne(jobCharges, (err: any, raw: any) => {
                         if (err) {
                             return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         }
-            
+
                         return res.json({'status': Status.Success, 'message': "Job charges updated successfully."})
                     })
                 } )
-                
+
             }else{
 
                 jobCharges.updateOne(jobCharges, (err: any, raw: any) => {
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
-        
+
                     return res.json({'status': Status.Success, 'message': "Job charges updated successfully."})
                 })
             }
@@ -935,7 +1110,7 @@ export const deleteJobCharges = (req: Request, res: Response) => {
 
     const params = req.body
 
-    JobCharges.findOne({'_id': params.jobChargesId, 'company': req.companyId}, 
+    JobCharges.findOne({'_id': params.jobChargesId, 'company': req.companyId},
     (err: any, jobCharges: IJobCharges) => {
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -947,11 +1122,11 @@ export const deleteJobCharges = (req: Request, res: Response) => {
 
         JobCharges.deleteOne({_id: jobCharges._id})
         .exec((err: any) => {
-    
+
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-    
+
             return res.json({'status': Status.Success, 'message': "Job charge deleted successfully."})
         })
     });
@@ -979,14 +1154,14 @@ export const getJobCharges = (req: Request, res: Response) => {
 }
 
 export const getInvoiceNumber = (req: Request, res: Response) => {
-   
+
     Company.findById(req.companyId,
         (err: any, company: ICompany) => {
 
-            if (err) {          
+            if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
-            
+
             if(company == undefined || company == null ) {
                 return res.json({ 'status': Status.Error, 'message': 'No company found.' })
             }
@@ -1002,9 +1177,9 @@ export const createInvoice = (req: Request, res: Response) => {
     const params = req.body
     const user = <IUser>req.user
     const company = <ICompany>req.company
-    
+
     if(params.hasOwnProperty('jobId') && (params.jobId != null && params.jobId != '""' )){
-        
+
         Invoice.findOne({ 'job': params.jobId, 'company': req.companyId })
             .then((previousInvoice: any) => {
 
@@ -1037,7 +1212,7 @@ export const createInvoice = (req: Request, res: Response) => {
                 }
                 return new Promise((resolve, reject) => {
                     _populateInvoiceData(req, res, job, item, purchaseOrders, null, null, (req, res, invoiceData, currentInvoiceId )=>{
-                        
+
                         invoiceData.save()
                         .then((newInvoice: IInvoice) =>{
                             resolve({latestInvoiceId: currentInvoiceId, invoice: newInvoice})
@@ -1045,13 +1220,13 @@ export const createInvoice = (req: Request, res: Response) => {
                         .catch((invoiceError: any)=>{
                             reject('Unable to create invoice, please try again')
                         })
-                        
+
                     })
                 })
 
             })
             .then((data: any) => {
-                
+
                 return new Promise((resolve, reject) => {
                     let invoiceId = data.latestInvoiceId + 1
                     company.updateOne({ currentInvoiceId: invoiceId })
@@ -1066,7 +1241,7 @@ export const createInvoice = (req: Request, res: Response) => {
             .then((invoice: any) => {
 
                 return new Promise((resolve, reject) => {
-                    
+
                     Customer.findById(invoice.customer)
                     .then((customer: ICustomer) => {
                         if(customer == null){
@@ -1120,7 +1295,7 @@ export const createInvoice = (req: Request, res: Response) => {
 
             return new Promise((resolve, reject) => {
                 _populateInvoiceData(req, res, null, null, null, purchaseOrder, null, (req, res, invoiceData, currentInvoiceId )=>{
-                    
+
                     invoiceData.save()
                     .then((newInvoice: IInvoice) =>{
                         resolve({latestInvoiceId: currentInvoiceId, invoice: newInvoice, purchaseOrderId: purchaseOrder._id})
@@ -1128,23 +1303,23 @@ export const createInvoice = (req: Request, res: Response) => {
                     .catch((err: any)=>{
                         reject('Unable to create invoice, please try again')
                     })
-                    
+
                 })
             })
         })
         .then((data: any) => {
             let invoiceId = data.latestInvoiceId + 1
-            
+
             const companyUpdate = company.updateOne({ currentInvoiceId: invoiceId })
             const poUpdate = PurchaseOrder.updateOne({_id: data.purchaseOrderId}, {invoiceCreated: true})
-             
+
             return Promise.all([data.invoice, companyUpdate, poUpdate])
         })
         .then((response: any) => {
 
             const invoice = response[0]
             return new Promise((resolve, reject) => {
-                
+
                 Customer.findById(invoice.customer)
                 .then((customer: ICustomer) => {
                     if(customer == null){
@@ -1202,9 +1377,9 @@ export const createInvoice = (req: Request, res: Response) => {
         //             return res.json({ 'status': Status.Error, 'message': 'Invoice already created for this purchase order' })
         //         }
 
-            
+
         //         _populateInvoiceData(req, res, null, null, null, purchaseOrder, null, (req, res, invoiceData, currentInvoiceId )=>{
-                    
+
         //             invoiceData.save((invoiceError: any, newInvoice: IInvoice, ) => {
 
         //                 if (invoiceError) {
@@ -1212,23 +1387,23 @@ export const createInvoice = (req: Request, res: Response) => {
         //                 }
 
         //                 purchaseOrder.updateOne({ invoiceCreated: true}).exec((poUpdateError: any, raw: any) => {
-                            
+
         //                     if (poUpdateError) {
         //                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         //                     }
-                            
+
         //                     company.updateOne({ currentInvoiceId: currentInvoiceId + 1 }).exec((companyError: any, raw: any) => {
-                            
+
         //                         if (companyError) {
         //                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         //                         }
-    
+
         //                         return res.json({ 'status': Status.Success, 'message': "Purchase order invoice created successfully." })
         //                     })
 
         //                 })
-    
-    
+
+
         //             })
         //         })
 
@@ -1259,7 +1434,7 @@ export const createInvoice = (req: Request, res: Response) => {
 
             return new Promise((resolve, reject) => {
                 _populateInvoiceData(req, res, null, null, null, null, estimate, (req, res, invoiceData, currentInvoiceId )=>{
-                    
+
                     invoiceData.save()
                     .then((newInvoice: IInvoice) =>{
                         resolve({latestInvoiceId: currentInvoiceId, invoice: newInvoice, estimateId: estimate._id})
@@ -1267,23 +1442,23 @@ export const createInvoice = (req: Request, res: Response) => {
                     .catch((err: any)=>{
                         reject('Unable to create invoice, please try again')
                     })
-                    
+
                 })
             })
         })
         .then((data: any) => {
             let invoiceId = data.latestInvoiceId + 1
-            
+
             const companyUpdate = company.updateOne({ currentInvoiceId: invoiceId })
             const estimateUpdate = Estimate.updateOne({_id: data.estimateId}, {invoiceCreated: true})
-             
+
             return Promise.all([data.invoice, companyUpdate, estimateUpdate])
         })
         .then((response: any) => {
 
             const invoice = response[0]
             return new Promise((resolve, reject) => {
-                
+
                 Customer.findById(invoice.customer)
                 .then((customer: ICustomer) => {
                     if(customer == null){
@@ -1335,38 +1510,38 @@ export const createInvoice = (req: Request, res: Response) => {
         //         if (estimate == undefined || estimate == null) {
         //             return res.json({ 'status': Status.Error, 'message': 'Invalid estimate id' })
         //         }
-             
+
         //         if (estimate.invoiceCreated) {
         //             return res.json({ 'status': Status.Error, 'message': 'Invoice already created for this invoice' })
         //         }
 
         //         _populateInvoiceData(req, res, null, null, null, null, estimate, (req, res, invoiceData, currentInvoiceId )=>{
-                    
+
         //             invoiceData.save((invoiceError: any, newInvoice: IInvoice, ) => {
-                        
+
         //                 if (invoiceError) {
         //                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         //                 }
-                        
+
         //                 estimate.updateOne({invoiceCreated: true}).exec((estimateUpdateError: any, raw: any) => {
-                            
+
         //                     if (estimateUpdateError) {
         //                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         //                     }
 
         //                     company.updateOne({ currentInvoiceId: currentInvoiceId })
         //                     .exec((companyError: any, raw: any) => {
-                                
+
         //                         if (companyError) {
         //                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         //                         }
-    
+
         //                         return res.json({ 'status': Status.Success, 'message': "Estimate invoice created successfully." })
         //                     })
 
         //                 })
-    
-    
+
+
         //             })
         //         })
 
@@ -1374,12 +1549,12 @@ export const createInvoice = (req: Request, res: Response) => {
         // });
     }
     else {
-        
+
         _populateInvoiceData(req, res, null, null, null, null, null, (req, res, invoiceData, currentInvoiceId )=>{
-                    
+
             invoiceData.save((invoiceError: any, newInvoice: IInvoice, ) => {
                 if (invoiceError) {
-                    
+
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
 
@@ -1394,7 +1569,7 @@ export const createInvoice = (req: Request, res: Response) => {
                             if (err) {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                             }
-                            
+
                             let newBalance = customer.balance + newInvoice.total
                             customer.updateOne({balance: newBalance})
                             .exec((err: any, result: any) =>{
@@ -1412,11 +1587,11 @@ export const createInvoice = (req: Request, res: Response) => {
 }
 
 const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem: any, purchaseOrders: any, purchaseOrder: any, estimate: any, next: (req: Request, res: Response, invoice: IInvoice, invoiceId: number) => void) =>{
-    
+
     const params = req.body
     const company = req.company
     const user = <IUser>req.user
-    
+
     let currentInvoiceId = 0;
     if (company.currentInvoiceId) {
         currentInvoiceId = company.currentInvoiceId
@@ -1446,7 +1621,7 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
     let estimateId: string = null
     let isFixed: boolean = false
     let taxPercentage: number = 0
-    
+
 
     if(job != null){
         charges = job.charges;
@@ -1483,7 +1658,7 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
         customer = purchaseOrder.customer
         invoiceType = 1
     }
-   
+
     if(estimate != null){
 
         if(estimate.total == undefined || estimate.total == null || estimate.total == '""' ){
@@ -1511,14 +1686,14 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
         if(params.customerId == undefined || params.customerId == null || params.customerId == '""' ){
             return res.json({ 'status': Status.Error, 'message': 'customer is required' })
         }
-    
+
         if(params.note == undefined || params.note == null || params.note == '""' ){
             return res.json({ 'status': Status.Error, 'message': 'Note is required ' })
         }
-        
+
         if (params.charges == undefined || params.charges == null || params.charges === '""') {
-            return res.json({ 'status': Status.Error, 'message': 'charges are required' })  
-        } 
+            return res.json({ 'status': Status.Error, 'message': 'charges are required' })
+        }
 
         invoiceType = 3
         customer = params.customerId
@@ -1534,13 +1709,13 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
     }
 
     total = charges + taxAmount
-    
+
     if(params.shippingCost != undefined && params.shippingCost != null)
     total = total + parseInt(params.shippingCost)
-    
+
     let purchaseOrderIds: any = []
     if (params.includePO) {
-        
+
         if (purchaseOrders != null && purchaseOrders.length > 0) {
             purchaseOrders.map((PO: any) => {
                 purchaseOrderIds.push(PO._id)
@@ -1558,11 +1733,11 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
             return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
         }
     }
-    
+
     let invoiceItems: any[] = []
-    
+
     if (items.length > 0) {
-    
+
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
             if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
@@ -1578,12 +1753,12 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
                 itemTax =  parseInt(item.tax)
                 subTotal = subTotal + (subTotal * itemTax /100)
             }
-            
+
             obj.quantity = item.quantity
             obj.price = item.price
             obj.tax = item.tax
             obj.subTotal = subTotal
-            
+
             if (item.item == undefined || item.item == null) {
                 obj.name = item.name
                 obj.description = item.description
@@ -1594,10 +1769,10 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
 
             total = total + subTotal
         }
-    
+
     } else if(jobTypeitem != null) {
-        
-        
+
+
         let obj: any = {}
         let price = parseInt(jobTypeitem.charges)
         let quantity = parseInt(job.timeSpent)
@@ -1608,13 +1783,13 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
             itemTax =  parseInt(jobTypeitem.tax)
             subTotal = subTotal + (subTotal * itemTax /100)
         }
-        
+
         obj.quantity = job.timeSpent
         obj.price = price
         obj.tax = itemTax
         obj.subTotal = subTotal
         obj.item = jobTypeitem._id
-        
+
         invoiceItems.push(obj)
 
         total = total + subTotal
@@ -1645,7 +1820,7 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
     })
 
     next(req, res, invoice, currentInvoiceId)
-              
+
 
 }
 // PO Invoices
@@ -1724,18 +1899,18 @@ export const updateInvoice = (req: Request, res: Response) => {
 
     const params = req.body
 
-    Invoice.findOne({'_id': params.invoiceId, 'company': req.companyId},  
-    (err: any, invoice: IInvoice) => { 
-        if (err) { 
+    Invoice.findOne({'_id': params.invoiceId, 'company': req.companyId},
+    (err: any, invoice: IInvoice) => {
+        if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
-        
+
         if(invoice == undefined || invoice == null) {
             return res.json({'status': Status.Success, 'message': "Invalid invoice id."})
         }
 
         if(invoice.invoiceType == 0) {
-            
+
             Job.findById(invoice.job)
             .then((job : any) => {
                 if (job == undefined || job == null) {
@@ -1754,7 +1929,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
-    
+
                 if ((params.charges == undefined || params.charges == null || params.charges == '""' ) && (params.tax == undefined || params.tax == null || params.tax == '""' )) {
                     return res.json({'status': Status.Error, 'message': 'Tax Percentage or charges are required'})
                 }
@@ -1762,41 +1937,41 @@ export const updateInvoice = (req: Request, res: Response) => {
                 let taxPercentage: number = invoice.taxPercentage;
                 let charges: number = invoice.charges;
                 let total: number = invoice.total;
-                
-                if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) && 
+
+                if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
                 (params.charges == undefined || params.charges == null || params.charges == '""' )) {
-                
+
                     taxPercentage = params.tax
                     tax = (charges * params.tax) /100
                     total = charges + tax
-                    
-                } else if ((params.charges != undefined && params.charges !== null && params.charges !== '""' ) && 
+
+                } else if ((params.charges != undefined && params.charges !== null && params.charges !== '""' ) &&
                 (params.tax == undefined || params.tax == null || params.tax == '""' )) {
-                    
+
                     tax = (params.charges * taxPercentage) / 100
                     charges = parseInt(params.charges)
                     total = charges + tax
-                    
+
                 }else{
-                    
+
                     // update tax and charges
                     charges = parseInt(params.charges)
                     taxPercentage = params.tax
                     tax = (charges * params.tax) /100
                     total = charges + tax
                 }
-    
+
                 invoice.tax = tax
                 invoice.taxPercentage = taxPercentage
                 invoice.charges = charges
                 // invoice.total = total
-    
+
                 if(!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""' )) {
                     return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
                 }else if(!job.isFixed){
                     invoice.hourlyRate = params.hourlyRate
                 }
-    
+
                 if(!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""' )) {
                     return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
                 }else if(!job.isFixed){
@@ -1811,7 +1986,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                         // invoice.jobPurchaseOrders = purchaseOrderIds
                     }
                 }
-    
+
                 if(params.shippingCost != undefined && params.shippingCost != null){
                     invoice.total = invoice.total + parseInt(params.shippingCost)
                     // invoice.shippingCost = params.shippingCost
@@ -1826,11 +2001,11 @@ export const updateInvoice = (req: Request, res: Response) => {
                         return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
                     }
                 }
-                
+
                 let invoiceItems: any[] = []
-                
+
                 if (items.length > 0) {
-                
+
                     for (let i = 0; i < items.length; i++) {
                         const item = items[i];
                         if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
@@ -1846,12 +2021,12 @@ export const updateInvoice = (req: Request, res: Response) => {
                             itemTax =  parseInt(item.tax)
                             subTotal = subTotal + (subTotal * itemTax /100)
                         }
-                        
+
                         obj.quantity = item.quantity
                         obj.price = item.price
                         obj.tax = item.tax
                         obj.subTotal = subTotal
-                        
+
                         if (item.item == undefined || item.item == null) {
                             obj.name = item.name
                             obj.description = item.description
@@ -1867,12 +2042,12 @@ export const updateInvoice = (req: Request, res: Response) => {
                 // invoice.total = total
 
                 invoice.updateOne({total: total, items: invoiceItems, shippingCost: params.shippingCost, jobPurchaseOrders: purchaseOrderIds, tax: tax, taxPercentage: taxPercentage, charges: charges, note: params.note},
-                    
+
                     (err: any, raw: any) => {
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
-        
+
                     return res.json({'status': Status.Success, 'message': "Invoice updated successfully."})
                 })
             })
@@ -1885,29 +2060,29 @@ export const updateInvoice = (req: Request, res: Response) => {
             let taxPercentage: number = invoice.taxPercentage;
             let charges: number = invoice.charges;
             let total: number = invoice.total;
-            
-            if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) && 
+
+            if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
             (params.charges == undefined || params.charges == null || params.charges == '""' )) {
-            
+
                 taxPercentage = params.tax
                 tax = (charges * params.tax) /100
                 total = charges + tax
-                
-            } else if ((params.charges != undefined && params.charges !== null && params.charges !== '""' ) && 
+
+            } else if ((params.charges != undefined && params.charges !== null && params.charges !== '""' ) &&
             (params.tax == undefined || params.tax == null || params.tax == '""' )) {
-                
+
                 tax = (params.charges * taxPercentage) / 100
                 charges = parseInt(params.charges)
                 total = charges + tax
-                
+
             }else{
-                
+
                 charges = parseInt(params.charges)
                 taxPercentage = params.tax
                 tax = (charges * params.tax) /100
                 total = charges + tax
             }
-            
+
             // invoice.tax = tax
             // invoice.taxPercentage = taxPercentage
             // invoice.charges = charges
@@ -1923,11 +2098,11 @@ export const updateInvoice = (req: Request, res: Response) => {
                     return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
                 }
             }
-            
+
             let invoiceItems: any[] = []
-            
+
             if (items.length > 0) {
-            
+
                 for (let i = 0; i < items.length; i++) {
                     const item = items[i];
                     if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
@@ -1943,12 +2118,12 @@ export const updateInvoice = (req: Request, res: Response) => {
                         itemTax =  parseInt(item.tax)
                         subTotal = subTotal + (subTotal * itemTax /100)
                     }
-                    
+
                     obj.quantity = item.quantity
                     obj.price = item.price
                     obj.tax = item.tax
                     obj.subTotal = subTotal
-                    
+
                     if (item.item == undefined || item.item == null) {
                         obj.name = item.name
                         obj.description = item.description
@@ -1965,16 +2140,16 @@ export const updateInvoice = (req: Request, res: Response) => {
                 invoice.total = invoice.total + parseInt(params.shippingCost)
                 // invoice.shippingCost = params.shippingCost
             }
-            
+
             invoice.updateOne({total: total, items: invoiceItems, shippingCost: params.shippingCost, tax: tax, taxPercentage: taxPercentage, charges: charges, note: params.note},
                 (err: any, raw: any) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
-    
+
                 return res.json({'status': Status.Success, 'message': "Invoice updated successfully."})
             })
-            
+
         }
     });
 }
@@ -2016,7 +2191,7 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
-        
+
         if (invoice == undefined || invoice == null) {
             return res.json({'status': Status.Error, 'message': 'Invalid invoice id'})
         }
@@ -2026,13 +2201,13 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                 path: 'equipment',
                 select: 'info.model info.serialNumber info.nfcTag images info.location',
                 populate: [{ path: 'brand', select: 'title' },{ path: 'type', select: 'title' }],
-                
+
             })
             .exec ((err: any, scans: IScan[]) => {
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
-                
+
                 return res.json({ 'status': Status.Success, 'invoice': invoice, 'scans': scans })
             })
     })
@@ -2067,7 +2242,7 @@ export const getInvoices = (req: Request, res: Response) => {
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
-        
+
         return res.json({ 'status': Status.Success, 'invoices': invoices })
     })
 }
@@ -2077,7 +2252,7 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
     const company = <ICompany>req.company
 
     Contract.find({ company: company._id })
-    
+
         .exec((err: any, contracts: IContract[]) => {
 
             if (err) {
@@ -2087,7 +2262,7 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
             let contractors  = contracts.map((contract) => {
                 return contract.contractor
             })
-            
+
             Job.find({ technician: { $in: contractors } }).sort({ endtime : 1 , startTime : 1 , dateTime : 1 })
                 .populate({
                     path: 'technician',
@@ -2101,8 +2276,8 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
                     path: 'type',
                     select: 'title'
                 })
-                .exec((err: any, jobs: IJob[]) => {  
- 
+                .exec((err: any, jobs: IJob[]) => {
+
                     if (jobs.length == 0 || jobs == undefined) {
                         return res.json({ 'status': Status.Error, 'message': 'No contractor activity found.' })
                     }
@@ -2115,14 +2290,14 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
                             customer :  job.customer.profile.displayName,
                             contractor : job.technician.profile.displayName,
                             startTime : job.startTime,
-                            endTime : job.endTime, 
+                            endTime : job.endTime,
                             dateTime : job.dateTime,
                             jobType : job.type.title,
                         }
 
                         contractorActivities.push(obj)
                     }
-                    res.json({ 'status': Status.Success, 'contractorActivities': contractorActivities })
+                    return res.json({ 'status': Status.Success, 'contractorActivities': contractorActivities })
                 })
         })
 }
@@ -2158,7 +2333,7 @@ export const getInvoicesByCustomerId = (req: Request, res: Response) => {
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
-        
+
         return res.json({ 'status': Status.Success, 'invoices': invoices })
     })
 }

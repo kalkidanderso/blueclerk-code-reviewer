@@ -1,25 +1,27 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import {IJobLocation} from './JobLocation';
+import {IJobSite} from './JobSite';
 
 export interface ICustomerEquipment extends Document {
 
     info: {
         model: string
-        serialNumber: string    
+        serialNumber: string
         nfcTag: string
         imageUrl: string
         // location: string
     }
     maintenance: {
         interval: string,
-        nextDate: Date,    
+        nextDate: Date,
     }
 
     type: Schema.Types.ObjectId
     brand: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId
     images:[string],
-    jobLocation: Schema.Types.ObjectId,
-    jobSite: Schema.Types.ObjectId
+    jobLocation: Schema.Types.ObjectId | IJobLocation,
+    jobSite: Schema.Types.ObjectId | IJobSite
     // jobs:[ Schema.Types.ObjectId ]
 
 }
@@ -28,14 +30,14 @@ const CustomerEquipmentSchema = new Schema({
 
     info: {
         model: String,
-        serialNumber: String,    
+        serialNumber: String,
         nfcTag: String,
         imageUrl: String,
         // location: String,
     },
     maintenance: {
         interval: String,
-        nextDate: Date,    
+        nextDate: Date,
     },
     type: {
         type: Schema.Types.ObjectId,
@@ -63,7 +65,7 @@ const CustomerEquipmentSchema = new Schema({
         ref: 'JobSite',
     }
 
-    // jobs:[{ 
+    // jobs:[{
     //     type: Schema.Types.ObjectId,
     //     ref: 'Job'
     // }]
