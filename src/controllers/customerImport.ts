@@ -14,7 +14,8 @@ var XLSX = require('xlsx')
 
 export const uploadfile = (req: Request, res: Response) => {
     try {
-    const companyId = req.companyId
+        req.socket.setTimeout(10 * 60 * 1000);
+        const companyId = req.companyId
     const path = __dirname + '/../uploads/'
     const time = Date.now()
     if (!fs.existsSync(path)) {
