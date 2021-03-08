@@ -7,6 +7,7 @@ import {IUser, User} from '../models/User'
 import {parseFieldsAndUploadImageInS3, updateFieldsAndUploadImageInS3} from '../services/aws';
 import {Customer} from '../models/Customer';
 import { ObjectId } from 'mongodb'
+import {Contact} from '../models/Contact';
 
 export const createServiceTicket = (req: Request, res: Response) => {
 
@@ -56,13 +57,9 @@ export const createServiceTicket = (req: Request, res: Response) => {
                 customerPO : customerPo,
             })
             if (customerContact) {
-                const customerWithContact = await Customer.findOne(
-                        {
-                            _id : customerId,
-                            contacts: { $exists: true, $in: [customerContact] } }
-                            );
-                if (customerWithContact) {
-                    serviceTicket.customerContactId = customerContact;
+                let checkContact = await Contact.findOne({_id: customerContact}).exec();
+                if (checkContact) {
+                    serviceTicket.customerContactId = checkContact._id;
                 }
             }
             serviceTicket.image = data.imageUrl ? data.imageUrl : null;
@@ -148,7 +145,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
 
             if (params.contactName) {
                 contactName = params.contactName;
-                criteria['customer.contactName'] = contactName;
+                criteria['customerContactId.name'] = contactName;
             }
 
 

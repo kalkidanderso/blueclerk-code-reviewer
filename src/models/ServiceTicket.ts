@@ -44,7 +44,7 @@ const ServiceTicketSchema = new Schema({
     note: String,
     customerContactId: {
         type: Schema.Types.ObjectId,
-        ref: 'Customer',
+        ref: 'Contact',
         required: false
     },
     customerPO : String,

@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "dev": "npm run tsc && node ./dist/server.js"
   },
   "author": "",
   "license": "ISC",

@@ -7,18 +7,18 @@ image: atlassian/default-image:2
 
 pipelines:
   branches:
-    master:
-    - step:
+    dev:
+      - step:
           #python image with aws-cli installed
           image: atlassian/pipelines-awscli
           services:
             - docker
           script:
-            - export REPOSITORY_URL=744236993133.dkr.ecr.us-east-1.amazonaws.com/blueclerk-backend
+            - export REPOSITORY_URL=744236993133.dkr.ecr.us-east-1.amazonaws.com/blueclerk-staging
             - export REGION=us-east-1
-            - export TASK_DEFINITION_NAME=blueclerk-backend
+            - export TASK_DEFINITION_NAME=blueclerk-staging
             - export CLUSTER_NAME=blueclerk
-            - export SERVICE_NAME=blueclerk-api
+            - export SERVICE_NAME=blueclerk-staging
             # aws login
             - eval $(aws ecr get-login --region ${AWS_DEFAULT_REGION} --no-include-email)
             # docker
@@ -35,4 +35,3 @@ pipelines:
             - aws ecs register-task-definition --region "${REGION}" --family "${TASK_DEFINITION_NAME}" --container-definitions "${NEW_CONTAINER_DEFINITION}"
             - echo "Updating the service..."
             - aws ecs update-service --region "${REGION}" --cluster "${CLUSTER_NAME}" --service "${SERVICE_NAME}"  --task-definition "${TASK_DEFINITION_NAME}"
-       
