@@ -835,10 +835,14 @@ export const editJob = (req: Request, res: Response) => {
 
             let track = job.track ? job.track : [];
             let action = '';
-
-            job.technician = params.technicianId
-            job.scheduleDate = params.scheduleDate
-
+            if (params.technicianId) {
+                job.technician = params.technicianId
+            } else {
+                if (params.contractorId) {
+                    job.contractor = params.contractorId;
+                }
+            }
+            job.scheduleDate = params.scheduleDate;
             let newStartTime: any = null
             let newEndTime: any = null
             if(params.scheduledStartTime){
