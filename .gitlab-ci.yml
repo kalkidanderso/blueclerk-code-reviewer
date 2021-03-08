@@ -1,11 +1,11 @@
 image: docker:latest
 
 variables:
-  REPOSITORY_URL: 744236993133.dkr.ecr.us-east-1.amazonaws.com/blueclerk-staging
+  REPOSITORY_URL: 744236993133.dkr.ecr.us-east-1.amazonaws.com/blueclerk-backend
   REGION: us-east-1
-  TASK_DEFINITION_NAME: blueclerk-staging
+  TASK_DEFINITION_NAME: blueclerk-backend
   CLUSTER_NAME: blueclerk
-  SERVICE_NAME: blueclerk-staging
+  SERVICE_NAME: blueclerk-api
 
 services:
 - docker:dind
@@ -31,7 +31,7 @@ build:
     - docker push $REPOSITORY_URL:latest
     - docker push $REPOSITORY_URL:$IMAGE_TAG
   only:
-    - dev
+    - master
 
 deploy:
   stage: deploy
@@ -45,4 +45,4 @@ deploy:
     - echo "Updating the service..."
     - aws ecs update-service --region "${REGION}" --cluster "${CLUSTER_NAME}" --service "${SERVICE_NAME}"  --task-definition "${TASK_DEFINITION_NAME}"
   only:
-    - dev
+    - master

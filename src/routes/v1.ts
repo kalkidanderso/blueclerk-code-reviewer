@@ -1415,7 +1415,6 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Location_Tags),
         tagController.getLocationTags
     )
-
     router.post(
         '/getLocationTagJobs',
         passport.authenticate('jwt', { session: false }),

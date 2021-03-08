@@ -217,8 +217,6 @@ function columnsEqual(_arr1: [any], _arr2: [any]) {
         if (arr1[i] !== arr2[i]){
             return false;
         }
-
-
     }
 
     return true;
@@ -240,14 +238,12 @@ async function fetchCompanyCustomers(companyId: string, res: Response) {
         .catch(() => {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
         })
-
     if (companyCustomerList.length !== 0) {
         await User.find({ _id: { $in: companyCustomerList } }, 'profile.firstName')
             .then((users: IUser[]) => userList = users)
             .catch(() => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
-            })
-    }
+            })}
 
     return userList
 }
@@ -322,7 +318,6 @@ async function handleCustomerXlCreation(
                 }
             }
 
-
             const contact = await findOrCreateContact(jobLocationContacts[index])
             const contactIndex = extCustomer.contacts.indexOf(contact._id)
             // Updating the contact inforamtion to the existing customer.
@@ -347,7 +342,6 @@ async function handleCustomerXlCreation(
 
 
             await extCustomer.save()
-
 
         }
     }

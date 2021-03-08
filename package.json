@@ -4,7 +4,6 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "npm run tsc && node ./dist/server.js",
     "tsc": "tsc"
   },
   "author": "",

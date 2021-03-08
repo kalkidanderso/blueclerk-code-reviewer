@@ -17,8 +17,4 @@ const ContactSchema = new Schema({
     }
 })
 
-
-
-
-
 export const Contact = mongoose.model<IContact>('Contact', ContactSchema)

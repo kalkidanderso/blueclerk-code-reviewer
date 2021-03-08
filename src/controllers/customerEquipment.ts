@@ -9,7 +9,6 @@ import { IUser} from '../models/User'
 import { Tag, ITag} from '../models/Tag'
 import { ObjectId } from 'mongodb'
 import {JobSite} from '../models/JobSite';
-import {JobLocation} from '../models/JobLocation';
 
 export const createCustomerEquipment = (req: Request, res: Response) => {
 
@@ -20,7 +19,6 @@ export const createCustomerEquipment = (req: Request, res: Response) => {
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError})
         }
-
         if(customerEquipment != undefined && customerEquipment != null){
             return res.json({ 'status': Status.Error, 'message': 'Equipment already added.'})
         }

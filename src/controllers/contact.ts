@@ -32,7 +32,6 @@ const createContactForCustomer = async (data: any, customer: ICustomer) => {
     return contact
 }
 
-
 const createContactForJobLocation = async (data: any, jobLocationId: string) => {
     const customer = await Customer.findOne({jobLocations: jobLocationId})
     const contact = await createContactForCustomer(data, customer)
@@ -105,7 +104,6 @@ export const getContacts = async (req: Request, res: Response) => {
                     return res.json({ status: Status.Error, message: 'Customer not found'})
                 }
             })
-
         } else {
             JobLocation.findOne({_id: req.query.referenceNumber}).populate({ path : 'contacts'}).exec((err: any, customer: ICustomer)=> {
                 if (customer) {
