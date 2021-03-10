@@ -41,6 +41,9 @@ import {User} from '../models/User';
 import {Schema} from 'mongoose';
 import { ObjectId } from 'mongodb'
 import {CompanyCustomer} from '../models/CompanyCustomer';
+import {JobLocation} from '../models/JobLocation';
+import {Contact} from '../models/Contact';
+import {Customer} from '../models/Customer';
 
 export default function (sio: any) {
 
@@ -872,7 +875,22 @@ export default function (sio: any) {
         validate(Validations.contractorSocialSignUp),
         userController.createContractorSocial
     )
-
+ /*   router.get('/cleanTestingImport', async (req:any, res:any) => {
+        let customers = await Customer.find(
+            {"info.email": {$exists: true}, company: new ObjectId('6027192facb8e2c885da3b66')}).populate('jobLocations');
+        for (let c of customers) {
+            for (let jl of c.jobLocations) {
+                let jol:any = jl;
+                    await Contact.deleteMany({_id : {$in : jol.contacts}});
+            }
+        }
+        let cc = await Customer.find({"info.email": {$exists: true}, company: new ObjectId('6027192facb8e2c885da3b66')});
+        for (let ccc of cc) {
+            await JobLocation.deleteMany({_id: {$in : ccc.jobLocations}});
+        }
+        await Customer.deleteMany({"info.email": {$exists: true}, company: new ObjectId('6027192facb8e2c885da3b66')});
+        res.end('finished');
+        });*/
     router.post(
         '/importCustomer',
         passport.authenticate('jwt', { session: false }),

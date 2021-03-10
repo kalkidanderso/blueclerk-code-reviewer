@@ -15,7 +15,7 @@ import * as swaggerDocument from './swagger.json'
 // const CronJob = require('cron').CronJob;
 import {CronJob} from 'cron'
 import request from 'request';
-var http = require('http');
+const http = require('http');
 //Environment config
 import moment from 'moment-timezone';
 import {EmailSchedule, IEmailSchedule} from './models/EmailSchedule';
@@ -24,6 +24,9 @@ import {IJob, Job} from './models/Job';
 import {sendJobEmailToAssignee, sendScheduledJobEmailToAssignee} from './services/aws';
 import {Company} from './models/Company';
 import {Customer} from './models/Customer';
+import {Status} from './common/constants';
+const timeout = require('connect-timeout');
+
 
 dotenv.config()
 process.env.TZ = 'America/Chicago';
@@ -49,6 +52,19 @@ mongoose.connect(
 
 // Application/Server configs
 const app: express.Application = express()
+
+app.use(timeout('1200s'));
+
+app.use(haltOnTimeout);
+
+function haltOnTimeout (req: any, res: any, next: any) {
+    if (!req.timedout) {
+        next()
+    } else {
+        res.json({'Status' : Status.TimeOut, 'message': 'TimeOut! Request took too long'});
+    }
+}
+
 
 //CORS
 app.use(function(req, res, next) {

@@ -15,7 +15,7 @@ export interface ICustomer extends IUser {
     quickbookId: string
     balance: number,
     vendorId?: string,
-    contacts: IContact[],
+    contacts: [Schema.Types.ObjectId],
     phone: string,
     contactEmail: string
 

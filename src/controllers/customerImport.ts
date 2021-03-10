@@ -8,13 +8,15 @@ import multer from 'multer'
 import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { Contact } from '../models/Contact'
 import { IContact } from '../common/contact'
+import {Schema} from 'mongoose';
+import {job} from 'cron';
 
 var fs = require('fs');
 var XLSX = require('xlsx')
 
 export const uploadfile = (req: Request, res: Response) => {
     try {
-        req.socket.setTimeout(10 * 60 * 1000);
+        res.setTimeout(10 * 60 * 1000);
         const companyId = req.companyId
     const path = __dirname + '/../uploads/'
     const time = Date.now()
@@ -64,61 +66,65 @@ export const uploadfile = (req: Request, res: Response) => {
         }
 
         var xlData = await XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]], {raw: true, defval: null})
-        var customers: ICustomer[] = []
-        const jobLocations: any[] = []
-        const customerContacts: IContact[] = []
-        const jobLocationContacts: IContact[] = []
+        var customers:any[] = [];
         try {
         for (const obj of xlData) {
             let checkCustomerExist = (customers.filter((c) => {
-                return JSON.stringify(c.profile.displayName) == JSON.stringify(obj.name)
+                return JSON.stringify(c.profile.displayName ? c.profile.displayName.trim() : '') == JSON.stringify(obj.name ? obj.name.trim() : '')
             }).length > 0);
             let customer: ICustomer;
             if (!checkCustomerExist) {
-                customer = new Customer({
-                    contactName: obj.contactName,
-                    info: {
-                        email: obj.email || 'N/A',
-                    },
-                    profile: {
-                        firstName: obj.name,
-                        lastName: obj.name,
-                        displayName: obj.name,
-                        imageUrl: 'N/A',
-                    },
-                    address: {
-                        street: obj.street || 'N/A',
-                        city: obj.city || 'N/A',
-                        state: obj.state || 'N/A',
-                        zipCode: obj.zipCode || 'N/A',
-                    },
-                    contact: {
-                        phone: obj.phone || 'N/A',
-                    },
-                    company: req.companyId,
-                    permissions: {
-                        role: Role.CUSTOMER,
-                        extra: [],
-                    },
-                    location: {
-                        coordinates: [obj.longitude || 0, obj.latitude || 0]
-                    },
-                    vendorId: obj.vendorNumber || 'N/A',
-                    contacts: []
-                })
+                let customerContactName = obj.contactName ? obj.contactName.trim() : '';
+                let customerFromDb = await Customer.findOne({contactName: customerContactName, company: companyId});
+                if (!customerFromDb) {
+                    customer = new Customer({
+                        contactName: customerContactName,
+                        info: {
+                            email: obj.email || 'N/A',
+                        },
+                        profile: {
+                            firstName: obj.name,
+                            lastName: obj.name,
+                            displayName: obj.name,
+                            imageUrl: 'N/A',
+                        },
+                        address: {
+                            street: obj.street || 'N/A',
+                            city: obj.city || 'N/A',
+                            state: obj.state || 'N/A',
+                            zipCode: obj.zipCode || 'N/A',
+                        },
+                        contact: {
+                            phone: obj.phone || 'N/A',
+                        },
+                        company: companyId,
+                        permissions: {
+                            role: Role.CUSTOMER,
+                            extra: [],
+                        },
+                        location: {
+                            coordinates: [obj.longitude || 0, obj.latitude || 0]
+                        },
+                        vendorId: obj.vendorNumber || 'N/A',
+                        contacts: []
+                    })
+                } else {
+                        customer = customerFromDb;
+                }
             } else {
                 customer = customers.filter((c: ICustomer) => {
                     return c.profile.displayName == obj.name
                 })[0];
             }
-            let contact = await Contact.findOne({email: obj.contactEmail, phone: obj.phone, name: obj.contactName});
+            let contactData = {
+                name: obj.contactName ? obj.contactName.trim() : '',
+                phone: obj.phone ? obj.phone.trim() : '',
+                email: obj.contactEmail ? obj.contactEmail.trim(): ''
+            }
+            let contact = await Contact.findOne(contactData);
             let checkCustomerContact = [];
             if(!contact) {
-                contact = new Contact({
-                    name: obj.contactName,
-                    phone: obj.phone,
-                    email: obj.contactEmail
-                });
+                contact = new Contact(contactData);
             } else {
                 checkCustomerContact = await Customer.find({_id: customer._id, contacts: {$in: [contact._id]}}).exec();
             }
@@ -128,26 +134,29 @@ export const uploadfile = (req: Request, res: Response) => {
                 });
             }
             let jobLocationAddress = {
-                city: obj.jobLocationCity || '',
-                    state: obj.jobLocationState || '',
-                    street: obj.jobLocationStreet || '',
-                    zipcode: obj.jobLocationZipCode || ''
+                    city: obj.jobLocationCity ? obj.jobLocationCity.trim() : '',
+                    state: obj.jobLocationState ? obj.jobLocationState.trim() : '',
+                    street: obj.jobLocationStreet ? obj.jobLocationStreet.trim() : '',
+                    zipcode: obj.jobLocationZipCode ? obj.jobLocationZipCode.trim() : ''
             };
+            let jobLocationLongitude = obj.jobLocationLongitude ? parseFloat(obj.jobLocationLongitude.toString().trim()) : 0;
+            let jobLocationLatitude = obj.jobLocationLatitude ? parseFloat(obj.jobLocationLatitude.toString().trim()) : 0;
             let jobLocationCoordinates =  {
-                coordinates: [obj.jobLocationLongitude || 0, obj.jobLocationLatitude || 0]
+                coordinates: [jobLocationLongitude, jobLocationLatitude]
             };
+            let jlName = obj.jobLocationName ? obj.jobLocationName.trim() : '';
             let jobLocation = await JobLocation.findOne(
                 {
                     customerId: customer._id,
                     companyId: companyId,
-                    name: obj.jobLocationName,
+                    name: jlName,
                     address: jobLocationAddress,
                     location: jobLocationCoordinates
                 });
             if (!jobLocation) {
                 jobLocation = new JobLocation({
                     companyId: companyId,
-                    name: obj.jobLocationName || '',
+                    name: jlName,
                     address: jobLocationAddress,
                     location: jobLocationCoordinates
                 });
@@ -156,27 +165,29 @@ export const uploadfile = (req: Request, res: Response) => {
                     customer = c;
                 });
             }
-            let jobLocationContact = await Contact.findOne({name: obj.jobLocationContactName, phone: obj.jobLocationContactPhone, email: obj.jobLocationContactEmail});
-            if(jobLocationContact) {
-                let checkContactJobLocation = await JobLocation.findOne({contacts: {$in: [new Object(jobLocationContact._id)]}});
-                if (!checkContactJobLocation) {
-                    jobLocationContact = new Contact({
-                        name: obj.jobLocationContactName || '',
-                        phone: obj.jobLocationContactPhone || '',
-                        email: obj.jobLocationContactEmail || ''
-                    });
-                }
-            } else {
-                jobLocationContact = new Contact({
-                    name: obj.jobLocationContactName || '',
-                    phone: obj.jobLocationContactPhone || '',
-                    email: obj.jobLocationContactEmail || ''
+            let jobLocationContactData = {
+                name: obj.jobLocationContactName ? obj.jobLocationContactName.trim() : '',
+                phone: obj.jobLocationContactPhone ? obj.jobLocationContactPhone.trim() : '',
+                email: obj.jobLocationContactEmail ? obj.jobLocationContactEmail.trim() :  ''
+            }
+            let jobLocationContact = await Contact.findOne(jobLocationContactData);
+            if(!jobLocationContact) {
+                jobLocationContact = new Contact(jobLocationContactData);
+                await jobLocationContact.save().then((newJobLocationContact) => {
+                    let checkContactInLocation = jobLocation.contacts.includes(newJobLocationContact._id);
+                    if (!checkContactInLocation) {
+                        jobLocation.contacts.push(newJobLocationContact._id);
+                    }
                 });
+            } else {
+                let checkContactInLocation = jobLocation.contacts.includes(jobLocationContact._id);
+
+                if (!checkContactInLocation) {
+                    jobLocation.contacts.push(jobLocationContact._id);
+                }
+
             }
 
-            await jobLocationContact.save().then((newJobLocationContact) => {
-                jobLocation.contacts.push(newJobLocationContact._id);
-            });
             await jobLocation.save().then(async (j) => {
                 customer.jobLocations.push(j._id);
                 await customer.save().then((c: ICustomer) => {
@@ -184,12 +195,15 @@ export const uploadfile = (req: Request, res: Response) => {
                 });
             });
             if (!checkCustomerExist) {
-                const companyCustomer = new CompanyCustomer({
-                    company: companyId,
-                    customer: customer._id,
-                    createdAt: Date.now()
-                });
-                await companyCustomer.save();
+                let checkCompanyCustomer = await CompanyCustomer.findOne({company: companyId, customer: customer._id});
+                if (!checkCompanyCustomer) {
+                    const companyCustomer = new CompanyCustomer({
+                        company: companyId,
+                        customer: customer._id,
+                        createdAt: Date.now()
+                    });
+                    await companyCustomer.save();
+                }
                 customers.push(customer);
             }
         }
@@ -198,7 +212,6 @@ export const uploadfile = (req: Request, res: Response) => {
         }
         fs.unlinkSync(path + fileName)
         return res.json({"status": Status.Success, 'message': 'Customers imported successfully'});
-        await handleCustomerXlCreation(companyId, res, customers, jobLocations, customerContacts, jobLocationContacts)
     })
     } catch (err) {
         console.log(err);
@@ -261,7 +274,7 @@ async function findOrCreateContact(contact: IContact) {
 
 
 
-async function handleCustomerXlCreation(
+/*async function handleCustomerXlCreation(
     companyId: string,
     res: Response,
     customers: ICustomer[],
@@ -351,6 +364,6 @@ async function handleCustomerXlCreation(
     } catch (err) {
         return res.json({ 'status': Status.Error, 'message': err })
     }
-}
+}*/
 //**** upload file helper functions ****//
 
