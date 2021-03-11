@@ -914,13 +914,15 @@ export const getJobDetails = (req: Request, res: Response) => {
     Job.findOne({_id: params.jobId, company: companyId})
         .populate({
             path: 'ticket',
+            populate: 'customerContactId'
         })
         .populate({
             path: 'technician',
             select: 'profile.displayName'
         })
         .populate({
-            path: 'customer'
+            path: 'customer',
+            populate: 'contacts'
         })
         .populate({
             path: 'type',
@@ -948,7 +950,6 @@ export const getJobDetails = (req: Request, res: Response) => {
                 throw new Error ('Invalid job id')
                 // return res.json({'status': Status.Error, 'message': "Invalid job id"})
             }
-            await job.populate('customer.contacts').execPopulate();
             const scansPrmoise = Scan.find({ job: job._id}, 'comment timeOfScan')
             .populate({
                 path: 'equipment',
@@ -963,7 +964,7 @@ export const getJobDetails = (req: Request, res: Response) => {
 
             return Promise.all([job, scansPrmoise, POPromise])
         })
-        .then((result: any) => {
+        .then(async (result: any) => {
 
             const job = result[0]
             const scans = result[1]

@@ -5,14 +5,12 @@ import { Customer, ICustomer } from '../models/Customer'
 import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { User, IUser } from '../models/User'
 import multer from 'multer'
-import { JobLocation, IJobLocation } from '../models/JobLocation';
+import { JobLocation } from '../models/JobLocation';
 import { Contact } from '../models/Contact'
 import { IContact } from '../common/contact'
-import {Schema} from 'mongoose';
-import {job} from 'cron';
 
-var fs = require('fs');
-var XLSX = require('xlsx')
+let fs = require('fs');
+let XLSX = require('xlsx')
 
 export const uploadfile = (req: Request, res: Response) => {
     try {
