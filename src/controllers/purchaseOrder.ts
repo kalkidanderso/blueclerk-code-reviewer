@@ -7,12 +7,12 @@ import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipme
 
 export const createPO = (req: Request, res: Response) => {
 
-    
+
     const params = req.body;
     const user = <IUser>req.user;
     const company = req.company
 
-    var items: any = []    
+    var items: any = []
     if(params.items != undefined){
         items = JSON.parse(params.items);
     }
@@ -37,19 +37,19 @@ export const createPO = (req: Request, res: Response) => {
             } else {
                 obj.part = item.part
             }
-    
+
             POItems.push(obj)
         }
     }
 
     // let taxAmount = 0;
     // let total = params.total;
-    
+
     // if(params.tax != undefined && params.tax != null) {
     //     if(params.tax > 0) {
     //         taxAmount = total * (params.tax / 100)
     //         total = parseInt(total) + taxAmount
-    //     }    
+    //     }
     // }
     let POId: number = 1
     if(company.currentPOId) {
@@ -100,7 +100,7 @@ export const createPOEstimate = (req: Request, res: Response) => {
 
     PurchaseOrder.findOne({ 'estimate': params.estimateId, 'company': req.companyId })
     .exec((err: any, estimate: IEstimate) => {
-        
+
         if (estimate != undefined || estimate != null) {
             return res.json( {'status' : Status.Error, 'message' : 'Purchase Order already created for this estimate'})
         }
@@ -114,7 +114,7 @@ export const createPOEstimate = (req: Request, res: Response) => {
 
                 if(estimate == undefined || estimate == null ){
                     return res.json({ 'status': Status.Error, 'message': 'Invalid estimate id' })
-                } 
+                }
 
                 // if(estimate.status == EstimateStatus.PENDING){
                 //     return res.json({ 'status': Status.Error, 'message': 'You can\'t create purchase order from pending estimate. It should be approved.' })
@@ -133,15 +133,15 @@ export const createPOEstimate = (req: Request, res: Response) => {
                 let POItems: any[] = []
                 for (let i = 0; i < items.length; i++) {
                     const item = items[i];
-                    
+
                     let obj: any = {}
-                    
+
                     obj.cost = item.cost
                     obj.price = item.price
                     obj.quantity = item.quantity
                     obj.taxPercentage = item.taxPercentage
                     obj.tax = item.tax
-                    
+
                     if (item.part == undefined || item.part == null) {
                         obj.name = item.name
                         obj.itemCode = item.itemCode
@@ -176,7 +176,7 @@ export const createPOEstimate = (req: Request, res: Response) => {
                         if (err) {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
-            
+
                         return res.json({ 'status': Status.Success, 'message': 'Purchase order created successfully.' })
                     })
 
@@ -208,6 +208,21 @@ export const getAllPO = (req: Request, res: Response) => {
         .populate({
             path: 'equipment',
             select: 'info.model info.serialNumber info.location images'
+        })
+        .populate({
+            path: 'job',
+            populate: [
+                {
+                    path: 'ticket',
+                    populate: 'customerContactId'
+                },
+                {
+                    path: 'jobLocation'
+                },
+                {
+                    path: 'jobSite'
+                }
+            ]
         })
         .exec((err: any, purchaseOrders: IPurchaseOrder[]) => {
 
@@ -297,7 +312,7 @@ export const updatePO = (req: Request, res: Response) => {
 
     PurchaseOrder.findOne({ '_id': params.purchaseOrderId, 'company': req.companyId },
         (err: any, purchaseOrder: IPurchaseOrder) => {
-            
+
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
@@ -305,11 +320,11 @@ export const updatePO = (req: Request, res: Response) => {
             if (purchaseOrder == undefined || purchaseOrder == null) {
                 return res.json({ 'status': Status.Error, 'message': 'Invalid purchase order id.' })
             }
-            
+
             // if (purchaseOrder.status == PurchaseOrderStatus.APPROVED) {
             //     return res.json({ 'status': Status.Error, 'message': "You can\'t change approved purchase order." })
             // }
-            
+
             // if (purchaseOrder.status == PurchaseOrderStatus.CANCELED) {
             //     return res.json({ 'status': Status.Error, 'message': "You can\'t change canceled purchase order." })
             // }
@@ -329,20 +344,20 @@ export const updatePO = (req: Request, res: Response) => {
                         return res.json({ 'status': Status.Error, 'message': 'items format is invalid' })
                     }
                     let obj: any = {}
-                    
+
                     obj.cost = item.cost
                     obj.price = item.price
                     obj.quantity = item.quantity
                     obj.tax = item.tax
                     obj.taxPercentage = item.taxPercentage
-                    
+
                     if (item.part == undefined || item.part == null) {
                         obj.name = item.name
                         obj.itemCode = item.itemCode
                     } else {
                         obj.part = item.part
                     }
-            
+
                     POItems.push(obj)
                 }
             }
@@ -354,22 +369,22 @@ export const updatePO = (req: Request, res: Response) => {
                         if (err) {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
-    
+
                     return res.json({ 'status': Status.Success, 'message': "Purchase Order updated successfully." })
                 })
             }else{
-        
+
                 purchaseOrder.update({items: POItems, total: params.total, job: params.job, note: params.note},
                     (err: any, raw: any) => {
                             if (err) {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                             }
-        
+
                         return res.json({ 'status': Status.Success, 'message': "Purchase Order updated successfully." })
                     })
-        
+
             }
 
-            
+
         });
 }

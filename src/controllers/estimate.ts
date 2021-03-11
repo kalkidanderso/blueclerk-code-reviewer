@@ -10,7 +10,7 @@ export const createEstimate = (req: Request, res: Response) => {
     const params = req.body;
     const user = <IUser>req.user;
     const company = <ICompany>req.company
-    
+
     let estimateId: number
     if(company.currentEstimateId > company.currentInvoiceId) {
         estimateId = company.currentEstimateId +1
@@ -19,7 +19,7 @@ export const createEstimate = (req: Request, res: Response) => {
     }
 
     estimateId = Math.max(estimateId, 1)
-    
+
     if(params.purchaseOrderId == null || params.purchaseOrderId == undefined) {
 
         if(params.customer == null || params.customer == undefined) {
@@ -32,7 +32,7 @@ export const createEstimate = (req: Request, res: Response) => {
         }
         let estimateItems: any[] = []
         if (items.length > 0) {
-    
+
             for (let i = 0; i < items.length; i++) {
                 const item = items[i];
                 if ((!item.hasOwnProperty('part') || !item.hasOwnProperty('cost') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('itemCode') || !item.hasOwnProperty('cost') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
@@ -57,14 +57,14 @@ export const createEstimate = (req: Request, res: Response) => {
 
         // let taxAmount = 0;
         // let total = params.total;
-        
+
         // if(params.tax != undefined && params.tax != null) {
         //     if(params.tax > 0) {
         //         taxAmount = total * (params.tax / 100)
         //         total = total + taxAmount
-        //     }    
+        //     }
         // }
-    
+
         const estimate = new Estimate({
             estimateId: 'Estimate ' + estimateId,
             note: params.note,
@@ -78,9 +78,9 @@ export const createEstimate = (req: Request, res: Response) => {
             // tax: taxAmount,
             // taxPercentage: params.tax,
         });
-    
+
         estimate.save((err: any) => {
-    
+
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
@@ -89,18 +89,18 @@ export const createEstimate = (req: Request, res: Response) => {
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
-    
+
                 return res.json({ 'status': Status.Success, 'message': 'Estimate created successfully.' })
             })
         })
-    
+
     } else {
         PurchaseOrder.findById(params.purchaseOrderId)
         .exec((err: any, purchaseOrder: IPurchaseOrder) => {
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
-    
+
             if (purchaseOrder == undefined || purchaseOrder == null) {
                 return res.json({ 'status': Status.Error, 'message': 'Invalid purchase order id.' })
             }
@@ -117,9 +117,9 @@ export const createEstimate = (req: Request, res: Response) => {
                 // tax: purchaseOrder.tax,
                 // taxPercentage: purchaseOrder.taxPercentage,
             });
-        
+
             estimate.save((err: any) => {
-        
+
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
@@ -127,10 +127,10 @@ export const createEstimate = (req: Request, res: Response) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
-        
+
                     return res.json({ 'status': Status.Success, 'message': 'Estimate created successfully.' })
                 })
-        
+
             })
         })
     }
@@ -144,7 +144,7 @@ export const getEstimates = (req: Request, res: Response) => {
     if (params.customer != undefined || params.customer != null) {
         where.customer = params.customer
     }
-    
+
     Estimate.find(where)
         .populate({
             path: 'customer',
@@ -157,6 +157,24 @@ export const getEstimates = (req: Request, res: Response) => {
         .populate({
             path: 'items.part',
             select: 'name itemCode note cost price'
+        })
+        .populate({
+            path: 'purchaseOrder',
+            populate: {
+                path: 'job',
+                populate: [
+                    {
+                        path: 'ticket',
+                        populate: 'customerContactId'
+                    },
+                    {
+                        path: 'jobLocation'
+                    },
+                    {
+                        path: 'jobSite'
+                    }
+                ]
+            }
         })
         .exec((err: any, estimates: IEstimate[]) => {
 
@@ -253,13 +271,13 @@ export const updateEstimate = (req: Request, res: Response) => {
                     } else {
                         obj.part = item.part
                     }
-                    
+
                     estimateItems.push(obj)
                 }
 
             }
-            
-            
+
+
             // let total = params.total;
 
             estimate.updateOne({ items: estimateItems, total: params.total, customer: params.customer, note: params.note },

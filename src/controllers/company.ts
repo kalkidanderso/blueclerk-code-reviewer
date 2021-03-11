@@ -2160,7 +2160,14 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
     Invoice.findOne({ _id: params.invoiceId, 'company': req.companyId})
     .populate({
         path: 'job',
-        populate: [{ path: 'type', select: 'title' }, { path: 'ticket', select: 'ticketId note scheduleDateTime'}, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role'}],
+        populate: [
+            { path: 'type', select: 'title' },
+            { path: 'ticket', select: 'ticketId note scheduleDateTime'},
+            { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role'},
+            { path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId'}},
+            {path: 'jobLocation'},
+            {path: 'jobSite'}
+        ],
     })
     .populate({
         path: 'customer',
@@ -2218,7 +2225,14 @@ export const getInvoices = (req: Request, res: Response) => {
     Invoice.find({'company': req.companyId})
     .populate({
         path: 'job',
-        populate: [{ path: 'type', select: 'title' },{ path: 'customer', select: 'info.email auth.email profile.displayName contactName' }, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' }],
+        populate: [
+            { path: 'type', select: 'title' },
+            { path: 'customer', select: 'info.email auth.email profile.displayName contactName' },
+            { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+            { path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId'}},
+            {path: 'jobLocation'},
+            {path: 'jobSite'}
+        ],
     })
     .populate({
         path: 'items.item',
