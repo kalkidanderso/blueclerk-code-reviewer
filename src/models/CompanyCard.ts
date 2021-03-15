@@ -3,8 +3,8 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface ICompanyCard extends Document {
 
     ending: String
-    expiryMonth: String,
-    expiryYear: String,
+    expirationMonth: String,
+    expirationYear: String,
     cardType: String,
     name: String,
     token: String
@@ -16,8 +16,8 @@ export interface ICompanyCard extends Document {
 const CompanyCardSchema = new Schema({
 
     ending: String,
-    expiryMonth: String,
-    expiryYear: String,
+    expirationMonth: String,
+    expirationYear: String,
     cardType: String,
     name: String,
     token: String,

@@ -1294,8 +1294,8 @@ export const upgradeToCompany = (req: Request, res: Response) => {
                             token: params.token,
                             company: contractor._id,
                             cardStripeId: stripCard.id,
-                            expiryMonth: stripCard.exp_month,
-                            expiryYear: stripCard.exp_year,
+                            expirationMonth: stripCard.exp_month,
+                            expirationYear: stripCard.exp_year,
                             cardType: stripCard.brand,
                             name: stripCard.name
                         })

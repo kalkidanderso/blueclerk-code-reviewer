@@ -5808,6 +5808,13 @@
             "description": "The numbers of items to return per page e.g. 10"
           },
           {
+            "name": "todaysJobs",
+            "in": "formData",
+            "required": false,
+            "type": "boolean",
+            "description": "true for getting today's jobs"
+          },
+          {
             "name": "customerNames",
             "in": "formData",
             "type": "array",

@@ -114,8 +114,8 @@ let addCompanyCard = async (token: any, source: any, res: Response, company: any
         ending: token.card.last4,
         token: token.id,
         cardStripeId: source.id,
-        expiryMonth: source.exp_month,
-        expiryYear: source.exp_year,
+        expirationMonth: source.exp_month,
+        expirationYear: source.exp_year,
         cardType: source.brand,
         name: source.name,
         address: source.address_line1,
@@ -185,7 +185,7 @@ export const getCompanyCards = (req: Request, res: Response) => {
 
     CompanyCard.find(
         {company: new ObjectId(req.companyId)},
-        '_id ending expiryMonth expiryYear name cardType',
+        '_id ending expirationMonth expirationYear name cardType',
         (err: any, cards: ICompanyCard[]) => {
 
             if (err) {

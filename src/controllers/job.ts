@@ -484,12 +484,9 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
 
 export const getFilteredJobs = async (req: Request, res: Response) => {
 
-    let date = new Date()
-    date.setHours(0, 0, 0, 0)
-    let endDate = new Date()
-    endDate.setHours(23, 59, 59, 59)
 
     const pageSize = +req.query.pageSize;
+    const todaysJobs = req.body.todaysJobs;
     const currentPage = +req.query.page;
     let customerNames = req.body.customerNames ? req.body.customerNames.split(',') : null;
     let jobId = req.body.jobId ? req.body.jobId : null;
@@ -501,7 +498,13 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
     }
     let query: any = {};
     query.company = companyId;
-    query.dateTime = {$gte: date, $lte: endDate};
+    if (todaysJobs === "true") {
+        let date = new Date()
+        date.setHours(0, 0, 0, 0)
+        let endDate = new Date()
+        endDate.setHours(23, 59, 59, 59)
+        query.dateTime = {$gte: date, $lte: endDate};
+    }
 
     if (customerNames && customerNames.length) {
         customers = await CompanyCustomer.find({}).select('customer -_id');
