@@ -7640,18 +7640,67 @@
         ],
         "parameters": [
           {
-            "name": "token",
+            "name": "cardNumber",
             "in": "formData",
             "required": true,
             "type": "string",
-            "description": "token fetched by mobile from stripe"
+            "description": "Credit / Debit card number"
           },
           {
-            "name": "ending",
+            "name": "exp",
             "in": "formData",
             "required": true,
             "type": "string",
-            "description": "last 4 digits of company card"
+            "description": "Card expiration date, example: 25/22, format:  mm/yy"
+          },
+          {
+            "name": "cvc",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Card Verification Code, 3-4 digits"
+          },
+          {
+            "name": "name",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Name on card"
+          },
+          {
+            "name": "address",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Billing address line 1"
+          },
+          {
+            "name": "city",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Billing city"
+          },
+          {
+            "name": "state",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Billing state"
+          },
+          {
+            "name": "zipcode",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Billing zipcode"
+          },
+          {
+            "name": "nickName",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Billing method nickName"
           }
         ],
         "responses": {

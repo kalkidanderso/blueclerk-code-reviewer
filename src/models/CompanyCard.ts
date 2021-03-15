@@ -22,6 +22,11 @@ const CompanyCardSchema = new Schema({
     name: String,
     token: String,
     cardStripeId: String,
+    address: String,
+    city: String,
+    state: String,
+    zipcode: String,
+    nickName: String,
     createdAt: {
         type: Date,
         default: Date.now

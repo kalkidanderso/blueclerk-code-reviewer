@@ -163,7 +163,7 @@ export const Validations = {
   placeOrder: [check('noOfTags').exists(), check('total').exists(), check('tax').exists(), check('cardId').exists(),  check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(),],
 
   // Company Cards
-  addCompanyCard: [ check('token').exists(), check('ending').exists()],
+  addCompanyCard: [ check('cardNumber').exists(),check('exp').exists(),check('cvc').exists(), check('name').exists(), check('address').exists(), check('city').exists(), check('state').exists(),check('zipcode').exists()],
 
   removeCompanyCard: [ check('cardId').exists()],
 

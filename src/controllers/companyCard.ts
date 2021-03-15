@@ -1,68 +1,49 @@
 import {Request, Response} from 'express'
 import { Status, Messages } from '../common/constants'
 import { CompanyCard, ICompanyCard } from '../models/CompanyCard'
-import { createCustomer, detachCustomerSource, addCustomerSource} from '../services/stripe'
+import {createCustomer, detachCustomerSource, addCustomerSource, createCard, checkCardExist} from '../services/stripe'
 import { ICompany } from '../models/Company'
 import { ObjectId } from 'mongodb'
 
-export const createCompanyCard = (req: Request, res: Response) => {
+
+export const createCompanyCard = async (req: Request, res: Response) => {
 
     const params = req.body
     const company = <ICompany>req.company
 
-    if(company.stripeId){
+    if (company.stripeId) {
         return addCardToCompany(req, res)
     }
-
-    createCustomer(company.info.companyEmail, 'company '+ company.info.companyName, params.token, (status: any, customer: any)=>{
-        if(status == 1)
-        {
-            company.updateOne({stripeId: customer.id})
-            .exec((err: any)=>{
-                if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                }
-
-                // adding card
-                const card = new CompanyCard({
-                    ending: params.ending,
-                    token: params.token,
-                    company: req.companyId
-                })
-            
-                card.save((err: any) => {
-                    if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                    }
-                    addCustomerSource(customer.id, params.token, (status: any, source: any, message: any)=>{
-                        if(status == 1){
-                            
-                            card.updateOne({
-                                cardStripeId: source.id,
-                                expiryMonth: source.exp_month,
-                                expiryYear: source.exp_year,
-                                cardType: source.brand,
-                                name: source.name
-                            }).exec((err: any, raw: any)=>{
-                                if (err) {
-                                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                                }
-                                return res.json({status: Status.Success, message: "Company card added successfully."});
-                            })
-            
-                        } else {
-                            return res.json({status: Status.Error, message: message})
+    try {
+        const token = await createCard(params.cardNumber, params.exp, params.cvc, params.name, params.address, params.city, params.status, params.zipcode);
+        createCustomer(company.info.companyEmail, 'company ' + company.info.companyName, token.id, (status: any, customer: any) => {
+            if (status == 1) {
+                company.updateOne({stripeId: customer.id})
+                    .exec((err: any) => {
+                        if (err) {
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         }
+
+                        // adding card
+                        addCustomerSource(customer.id, token.id, async (status: any, source: any, message: any) => {
+                            if (status == 1) {
+                                await addCompanyCard(token, source, res, company, params.nickName ? params.nickName : null);
+                            } else {
+                                return res.json({status: Status.Error, message: message})
+                            }
+                        })
+
                     })
-                    
-                })
-            })
-            
-        } else {
-            return res.json({status: Status.Error, message: status})
-        }
-        
-    })
+
+            } else {
+                return res.json({status: Status.Error, message: status})
+            }
+
+        })
+
+    } catch (err) {
+        return res.json({'status': Status.Error, 'message': err.message});
+    }
 
 
     // const card = new CompanyCard({
@@ -84,7 +65,7 @@ export const createCompanyCard = (req: Request, res: Response) => {
     //                 if (err) {
     //                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
     //                 }
-                    
+
     //                 // after customer add card
     //                 card.updateOne({
     //                     cardStripeId: customer.sources.data[0].id
@@ -100,51 +81,56 @@ export const createCompanyCard = (req: Request, res: Response) => {
     //             return res.json({status: Status.Error, message: status})
     //         }
     //     })
-        
+
     // })
 
 }
 
-const addCardToCompany = (req: Request, res: Response) => {
+const addCardToCompany = async (req: Request, res: Response) => {
 
     const params = req.body
     const company = <ICompany>req.company
 
-    const card = new CompanyCard({
-        ending: params.ending,
-        token: params.token,
-        company: req.companyId
-    })
-
-    card.save((err: any) => {
-
-        if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+    try {
+        const token = await createCard(params.cardNumber, params.exp, params.cvc, params.name, params.address, params.city, params.state, params.zipcode);
+        if (await checkCardExist(token, company.stripeId)) {
+            return res.json({status: Status.Success, message: "Card already exist!"});
         }
-
-        addCustomerSource(company.stripeId, params.token, (status: any, source: any, message: any)=>{
+            addCustomerSource(company.stripeId, token.id, async (status: any, source: any, message: any)=>{
             if(status == 1){
-                card.updateOne({
-                    cardStripeId: source.id,
-                    expiryMonth: source.exp_month,
-                    expiryYear: source.exp_year,
-                    cardType: source.brand,
-                    name: source.name
-                }).exec((err: any, raw: any)=>{
-                    if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                    }
-
-                    return res.json({status: Status.Success, message: "Company card added successfully."});
-                })
-
+                await addCompanyCard(token, source, res, company, params.nickName ? params.nickName : null);
             } else {
                 return res.json({status: Status.Error, message: message})
             }
         })
-        
-    })
+    } catch (err) {
+        return res.json({'status': Status.Error, 'message': err.message});
+    }
 
+
+}
+let addCompanyCard = async (token: any, source: any, res: Response, company: any, nickName?: any) => {
+    const card = new CompanyCard({
+        ending: token.card.last4,
+        token: token.id,
+        cardStripeId: source.id,
+        expiryMonth: source.exp_month,
+        expiryYear: source.exp_year,
+        cardType: source.brand,
+        name: source.name,
+        address: source.address_line1,
+        city: source.address_city,
+        state: source.address_state,
+        zipcode: source.address_zip,
+        company: company._id,
+        nickName: nickName ? nickName : ''
+    });
+
+    card.save().then(() => {
+        return res.json({status: Status.Success, message: "Company card added successfully."});
+    }).catch((err) => {
+        return res.json({'status': Status.Error, 'message': err.message});
+    })
 }
 
 export const removeCompanyCard = (req: Request, res: Response) => {
@@ -152,12 +138,12 @@ export const removeCompanyCard = (req: Request, res: Response) => {
     const params = req.body
     const company = <ICompany>req.company
 
-    CompanyCard.findOne({ company: req.companyId, _id: params.cardId}, 
+    CompanyCard.findOne({ company: req.companyId, _id: params.cardId},
         (err: any, card: ICompanyCard)=>{
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-            
+
             if(card == undefined || card == null) {
                 return res.json({'status': Status.Error, 'message': "No Card found"})
             }
@@ -169,23 +155,23 @@ export const removeCompanyCard = (req: Request, res: Response) => {
                             return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         }
 
-                        return res.json({'status': Status.Success, 'message': 'Company card removed successfully.'})    
+                        return res.json({'status': Status.Success, 'message': 'Company card removed successfully.'})
                     })
             }else{
 
                 detachCustomerSource(company.stripeId, card.cardStripeId, (status: any)=>{
-                    
+
                     if(status == 0){
                         CompanyCard.findByIdAndDelete(card._id)
                         .exec((err: any) => {
-    
+
                             if (err) {
                                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
                             }
-    
-                            return res.json({'status': Status.Success, 'message': 'Company card removed successfully.'})    
+
+                            return res.json({'status': Status.Success, 'message': 'Company card removed successfully.'})
                         })
-        
+
                     } else {
                         return res.json({status: Status.Error, message: status})
                     }
@@ -206,7 +192,7 @@ export const getCompanyCards = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            return res.json({'status': Status.Success, 'cards': cards})    
+            return res.json({'status': Status.Success, 'cards': cards})
         }
     )
 }

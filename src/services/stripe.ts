@@ -1,21 +1,74 @@
-import { stripeConfig } from '../common/config' 
+import {stripeConfig} from '../common/config'
 import Stripe from 'stripe';
 
+
+/**
+ * @param number
+ * @param expiration
+ * @param cvc
+ * @param name
+ * @param address
+ * @param city
+ * @param state
+ * @param zipcode
+ */
+export const createCard = async (
+    number: string,
+    expiration: string,
+    cvc: string,
+    name: string,
+    address: string,
+    city: string,
+    state: string,
+    zipcode: string
+) => {
+    const stripe = require('stripe')(stripeConfig.sk_secret);
+    let expirationData = expiration.split('/');
+    let card: any = {
+        number: number,
+        exp_month: expirationData[0],
+        exp_year: expirationData[1],
+        cvc: cvc,
+        name: name,
+        address_line1: address,
+        address_city: city,
+        address_state: state,
+        address_zip: zipcode,
+    };
+    return await stripe.tokens.create({
+        card: card
+    });
+}
+
+export const checkCardExist = async (token: any, customerId: any) => {
+    const stripe = require('stripe')(stripeConfig.sk_secret);
+
+    const tokenObj = await stripe.tokens.retrieve(
+        token.id
+    );
+    const cardFingerPrint = tokenObj.card.fingerprint;
+    const customerCards = await stripe.customers.listSources(
+        customerId,
+        {object: 'card'}
+    );
+    return customerCards.data.filter((cc: any) => {return JSON.stringify(cc.fingerprint)=== JSON.stringify(cardFingerPrint);}).length > 0;
+
+
+}
 export const createCustomer = (email: string, description: string, token: string, callback: Function) => {
 
     const stripe = new Stripe(stripeConfig.sk_secret);
     stripe.customers.create({
         email: email,
         description: description,
-        // source: token // obtained with Stripe.js
-    
+        source: token
+
     }).then(function( customer: any) {
         // asynchronously called
         return callback(1, customer);
-        
+
     }).catch(function(err: any) {
         // asynchronously called
-
         var message= "";
         switch (err.type) {
             case 'StripeCardError':
@@ -37,16 +90,16 @@ export const addCustomerAndCharge = (email: string, description: string, token: 
         email: email,
         description: description,
         source: token
-    
+
     }).then(function( customer: any) {
         // asynchronously called
 
         let total: number = amount * 100;
         total = Math.ceil(total)
         if(total < 100){
-            return callback(0, null, "Total amount must be greater then 1$");    
+            return callback(0, null, "Total amount must be greater then 1$");
         }
-        
+
         stripe.charges.create({
             amount: total,
             currency: "usd",
@@ -55,9 +108,9 @@ export const addCustomerAndCharge = (email: string, description: string, token: 
         }).then(function( charge: any) {
             // asynchronously called
             return callback(1, customer, charge, '');
-            
+
         }).catch(function(err: any) {
-            
+
             var message= "";
             switch (err.type) {
                 case 'StripeCardError':
@@ -70,9 +123,9 @@ export const addCustomerAndCharge = (email: string, description: string, token: 
             }
             return callback(0, null, null, message);
         });
-        
+
         // return callback(1, customer);
-        
+
     }).catch(function(err: any) {
         // asynchronously called
         var message= "";
@@ -96,7 +149,7 @@ export const detachCustomerSource = (stripeId: String, cardId: String, callback:
     stripe.customers.deleteSource(stripeId, cardId)
     .then(function( raw: any) {
         return callback(0);
-        
+
     }).catch(function(err: any) {
         var message= "";
         switch (err.type) {
@@ -118,14 +171,13 @@ export const addCustomerSource = (stripeId: String, token: String, callback: Fun
 
         stripe.customers.createSource(stripeId, {
             source: token // obtained with Stripe.js
-        
+
         }).then(function( source: any) {
             // asynchronously called
             return callback(1, source, '');
-            
+
         }).catch(function(err: any) {
             // asynchronously called
-
             var message= "";
             switch (err.type) {
                 case 'StripeCardError':
@@ -143,13 +195,13 @@ export const addCustomerSource = (stripeId: String, token: String, callback: Fun
 
 export const chargeSubscription = function (amount: any, customerId: String, callback: Function) {
     const stripe = require("stripe")(stripeConfig.sk_secret);
-    
+
     let total: number = amount * 100;
     total = Math.ceil(total)
     if(total < 100){
-        return callback(0, null, "Total amount must be greater then 1$");    
+        return callback(0, null, "Total amount must be greater then 1$");
     }
-    
+
     stripe.charges.create({
         amount: total,
         currency: "usd",
@@ -158,7 +210,7 @@ export const chargeSubscription = function (amount: any, customerId: String, cal
     }).then(function( charge: any) {
         // asynchronously called
         return callback(1, charge, '');
-        
+
     }).catch(function(err: any) {
         var message= "";
         switch (err.type) {
@@ -170,20 +222,20 @@ export const chargeSubscription = function (amount: any, customerId: String, cal
                 message = err.message;
                 break;
         }
-        
+
         return callback(0, null, message);
     });
 }
 
 export const chargeCustomer = function (amount: any, customerId: String,  cardId: String, callback: Function) {
     const stripe = require("stripe")(stripeConfig.sk_secret);
-    
+
     let total: number = amount * 100;
     total = Math.ceil(total)
     if(total < 100){
-        return callback(0, null, "Total amount must be greater then 1$");    
+        return callback(0, null, "Total amount must be greater then 1$");
     }
-    
+
     stripe.charges.create({
         amount: total,
         currency: "usd",
@@ -193,7 +245,7 @@ export const chargeCustomer = function (amount: any, customerId: String,  cardId
     }).then(function( charge: any) {
         // asynchronously called
         return callback(1, charge, '');
-        
+
     }).catch(function(err: any) {
         var message= "";
         switch (err.type) {
@@ -223,10 +275,10 @@ export const chargeCustomer = function (amount: any, customerId: String,  cardId
 //                 interval: plan.interval,
 //                 planDuration: plan.interval_count,
 //                 planName: plan.nickname,
-//             }            
+//             }
 //         })
 //         return callback(1, stripePlans, '');
-        
+
 //     }).catch(function(err: any) {
 //         var message= "";
 //         switch (err.type) {
@@ -240,7 +292,7 @@ export const chargeCustomer = function (amount: any, customerId: String,  cardId
 //         }
 //         return callback(0, null, message);
 //     });
- 
+
 // }
 export const subscribe = function (customerId: String, cardId: String, planId: String, callback: Function) {
 
@@ -261,9 +313,9 @@ export const subscribe = function (customerId: String, cardId: String, planId: S
         .then(function( subscription: any) {
             // asynchronously called
             return callback(1, subscription, '');
-            
+
         }).catch(function(err: any) {
-            
+
             var message= "";
             switch (err.type) {
                 case 'StripeCardError':
@@ -277,7 +329,7 @@ export const subscribe = function (customerId: String, cardId: String, planId: S
             return callback(0, null, message);
         });
         // return callback(1, customer, '');
-        
+
     }).catch(function(err: any) {
         var message= "";
         switch (err.type) {
@@ -291,8 +343,8 @@ export const subscribe = function (customerId: String, cardId: String, planId: S
         }
         return callback(0, null, message);
     });
-    
- 
+
+
 }
 
 export const unsubscribe = function (subscriptionId: String, callback: Function) {
@@ -304,9 +356,9 @@ export const unsubscribe = function (subscriptionId: String, callback: Function)
     .then(function( raw: any) {
         // asynchronously called
         return callback(1, '');
-        
+
     }).catch(function(err: any) {
-        
+
         var message= "";
         switch (err.type) {
             case 'StripeCardError':
@@ -319,7 +371,7 @@ export const unsubscribe = function (subscriptionId: String, callback: Function)
         }
         return callback(0, message);
     });
- 
+
 }
 
 export const listSubscriptions = function (callback: Function) {
@@ -337,11 +389,11 @@ export const listSubscriptions = function (callback: Function) {
                 plan: subscription.plan.id,
                 planName: subscription.plan.nickname,
                 subscriptionDate: new Date(subscription.created*1000),
-            }            
+            }
         })
 
         return callback(1, stripeSubscriptions, '');
-        
+
     }).catch(function(err: any) {
         var message= "";
         switch (err.type) {
@@ -355,7 +407,7 @@ export const listSubscriptions = function (callback: Function) {
         }
         return callback(0, null, message);
     });
- 
+
 }
 
 
