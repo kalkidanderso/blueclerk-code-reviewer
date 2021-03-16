@@ -1,4 +1,4 @@
-import express, {Request, Response} from 'express'
+import express from 'express'
 import { validate, Validations } from '../middleware/validator'
 import passport from 'passport'
 import {checkPermissions, checkUserPermissions, checkUserScanPermissions} from '../middleware/permissions'
@@ -27,23 +27,16 @@ import * as customerImportController from '../controllers/customerImport'
 import * as serviceTicketController from '../controllers/serviceTicket'
 import * as quickBookController from '../controllers/quickbook'
 import * as companyController from '../controllers/company'
+import * as invoiceController from '../controllers/invoice'
 import * as partController from '../controllers/part'
 import * as purchaseOrderController from '../controllers/purchaseOrder'
 import * as estimateController from '../controllers/estimate'
 import * as paymentController from '../controllers/payment'
 import * as tagController from '../controllers/tag'
-import { Personalize } from 'aws-sdk'
 import * as ContactController from '../controllers/contact';
 
 import jobLocation from './jobLocation'
 import jobSite from './jobSite'
-import {User} from '../models/User';
-import {Schema} from 'mongoose';
-import { ObjectId } from 'mongodb'
-import {CompanyCustomer} from '../models/CompanyCustomer';
-import {JobLocation} from '../models/JobLocation';
-import {Contact} from '../models/Contact';
-import {Customer} from '../models/Customer';
 
 export default function (sio: any) {
 
@@ -51,11 +44,7 @@ export default function (sio: any) {
 
     router.use('/jobLocation', jobLocation)
     router.use('/jobSite', jobSite)
-    router.get('/deleteC', async (req , res) => {
-        await User.deleteMany({company: new ObjectId('6027192facb8e2c885da3b66'), "auth.email": {$ne: "mohamed.abdelhafidh94@gmail.com"}}) ;
-        await CompanyCustomer.deleteMany({company: new ObjectId('6027192facb8e2c885da3b66')});
-        res.end('finished');
-    })
+
     //Auth
     router.post(
         '/login',
@@ -875,22 +864,6 @@ export default function (sio: any) {
         validate(Validations.contractorSocialSignUp),
         userController.createContractorSocial
     )
- /*   router.get('/cleanTestingImport', async (req:any, res:any) => {
-        let customers = await Customer.find(
-            {"info.email": {$exists: true}, company: new ObjectId('6027192facb8e2c885da3b66')}).populate('jobLocations');
-        for (let c of customers) {
-            for (let jl of c.jobLocations) {
-                let jol:any = jl;
-                    await Contact.deleteMany({_id : {$in : jol.contacts}});
-            }
-        }
-        let cc = await Customer.find({"info.email": {$exists: true}, company: new ObjectId('6027192facb8e2c885da3b66')});
-        for (let ccc of cc) {
-            await JobLocation.deleteMany({_id: {$in : ccc.jobLocations}});
-        }
-        await Customer.deleteMany({"info.email": {$exists: true}, company: new ObjectId('6027192facb8e2c885da3b66')});
-        res.end('finished');
-        });*/
     router.post(
         '/importCustomer',
         passport.authenticate('jwt', { session: false }),
@@ -1090,15 +1063,15 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Set_Invoice_Number),
-        companyController.setCustomInvoiceNumber
+        invoiceController.setCustomInvoiceNumber
     )
 
     router.post(
-        '/getCurrentIvoiceNumber',
+        '/getCurrentInvoiceNumber',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Current_Invoice_Number),
-        companyController.getInvoiceNumber
+        invoiceController.getInvoiceNumber
     )
 
     // Sales Taxes
@@ -1180,7 +1153,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Create_Invoice),
         //validate(Validations.createInvoice),
-        companyController.createInvoice
+        invoiceController.createInvoice
     )
 
     router.post(
@@ -1189,7 +1162,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Create_Invoice),
         validate(Validations.createPOInvoice),
-        companyController.createPOInvoice
+        invoiceController.createPOInvoice
     )
 
     router.post(
@@ -1198,7 +1171,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Update_Invoice),
         validate(Validations.updateInvoice),
-        companyController.updateInvoice
+        invoiceController.updateInvoice
     )
 
     router.post(
@@ -1206,7 +1179,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Invoice_Detail),
-        companyController.getInvoiceDetail
+        invoiceController.getInvoiceDetail
     )
 
     router.post(
@@ -1214,7 +1187,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Invoices),
-        companyController.getInvoices
+        invoiceController.getInvoices
     )
 
     router.post(
@@ -1370,7 +1343,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getInvoiceByCustomer),
         checkUserPermissions(Permissions.Get_Customer_Invoices),
-        companyController.getInvoicesByCustomerId
+        invoiceController.getInvoicesByCustomerId
     )
 
     router.post(
@@ -1454,7 +1427,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         checkUserPermissions(Permissions.Customer_Create),
         ContactController.updateContact
-    ),
+    )
 
     router.get(
         '/getContacts',
