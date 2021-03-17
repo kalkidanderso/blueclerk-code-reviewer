@@ -1369,7 +1369,7 @@
         ]
       }
     },
-    "/createOfficeAdmin": {
+    "/createAdmin": {
       "post": {
         "tags": [
           "Users"
