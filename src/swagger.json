@@ -5168,7 +5168,7 @@
             "in": "formData",
             "required": true,
             "type": "string",
-            "enum": ["blueclerk", "client"],
+            "enum": ["blueclerk", "web"],
             "description": "Id of a customer selected from the list received by /getCustomers api (Required for platform users)"
           },{
             "name": "customerId",
