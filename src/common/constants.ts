@@ -219,7 +219,6 @@ export const enum Permissions {
     Update_Location_Tag,
     Get_Location_Tags,
     Get_Location_Tag_Jobs
-
 }
 
 export const ContractorPermissions = {

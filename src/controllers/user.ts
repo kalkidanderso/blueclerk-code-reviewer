@@ -45,7 +45,6 @@ const Hubspot = require('hubspot')
 
 export const login = (req: Request, res: Response, sio: any) => {
     const params = req.body
-    console.log(sio.id);
     User.findOne(
         { 'auth.email': params.email },
         (err: any, user: IUser) => {
@@ -321,6 +320,11 @@ export const createTechnician = (req: Request, res: Response) => {
 
 export const createOfficeAdmin = (req: Request, res: Response) => {
     createEmployee(req, res, Role.OFFICE_ADMIN)
+}
+
+// This is an employee admin (won't be able to delete company profile)
+export const createAdmin = (req: Request, res: Response) => {
+    createEmployee(req, res, Role.GLOBAL_ADMIN)
 }
 
 export const getManagersList = (req: Request, res: Response) => {

@@ -229,6 +229,16 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/createEmployeeAdmin',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.User_Create_Office_Admin),
+        validate(Validations.createOfficeAdmin),
+        getCompanyId(),
+        userController.createAdmin
+    )
+
+    router.post(
         '/getManagers',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
