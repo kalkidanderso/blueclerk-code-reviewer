@@ -408,9 +408,8 @@ export const parseFieldsAndUploadImageInS3 = function(req: Request, res: Respons
   uploadSingle(req, res, (err)=>{
 
     if (err) return next(err, null)
-    if(!req.body.customerId)
-    {
-      return next({'status': Status.Error, 'message': Messages.MissingParams}, null);
+    if (req.body.source === "blueclerk" && !req.body.customerId) {
+      return res.json({'status': Status.Error, 'message': 'CustomerId is required for tickets created from the platform'});
     }
     const imageUrl = req.file ? req.file.location : null;
     const body = req.body;

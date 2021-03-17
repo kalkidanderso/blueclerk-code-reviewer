@@ -21,6 +21,7 @@ export interface IServiceTicket extends Document {
     jobType: Schema.Types.ObjectId
     jobCreated: boolean
     track: any[];
+    source: string | null;
 
 }
 
@@ -34,7 +35,7 @@ const ServiceTicketSchema = new Schema({
     customer: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: false
     },
     createdBy: {
         type: Schema.Types.ObjectId,
@@ -94,6 +95,10 @@ const ServiceTicketSchema = new Schema({
     jobCreated: {
         type: Boolean,
         default: false
+    },
+    source: {
+        type: String,
+        default: 'blueclerk'
     }
 
 })

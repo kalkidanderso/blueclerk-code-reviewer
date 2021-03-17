@@ -14,7 +14,7 @@ export const createServiceTicket = (req: Request, res: Response) => {
         if (!err) {
             const params = data.body
             let companyId = req.companyId;
-            let user = <IUser>req.user
+            let user = <IUser>req.user;
             let company  = <ICompany>req.company;
             let customerContact = params.customerContactId ? params.customerContactId : null
             if (customerContact) {
@@ -25,18 +25,20 @@ export const createServiceTicket = (req: Request, res: Response) => {
                 }
             }
             let customerPo = params.customerPO ? params.customerPO : null;
-            let customerId;
-            try {
-                customerId = new ObjectId(params.customerId)
-            } catch (e) {
-                return res.json({'status': Status.Error, 'message': Messages.WrongId});
+            let customerId: any = null;
+            if (params.customerId) {
+                try {
+                    customerId = new ObjectId(params.customerId)
+                } catch (e) {
+                    return res.json({'status': Status.Error, 'message': Messages.WrongId});
+                }
             }
 
             if(req.otherCompanyId != undefined) {
                 companyId = req.otherCompanyId
             }
             let ticketId = 'Ticket '+ (company.currentJobId+1)
-            if(company.prefix != undefined && company.prefix != null && company.prefix == '""') {
+            if(company.prefix != undefined && company.prefix == '""') {
                 ticketId = 'Ticket '+company.prefix+'-'+(company.currentJobId+1)
             }
 
@@ -44,7 +46,6 @@ export const createServiceTicket = (req: Request, res: Response) => {
             let serviceTicket = new ServiceTicket({
                 createdAt: Date.now(),
                 dueDate: dueDate,
-                customer: customerId,
                 createdBy: user._id,
                 company: companyId,
                 note: params.note,
@@ -54,7 +55,10 @@ export const createServiceTicket = (req: Request, res: Response) => {
                 jobSite: params.jobSiteId,
                 jobType: params.jobTypeId,
                 customerPO : customerPo,
-            })
+            });
+            if (customerId) {
+                serviceTicket.customer = customerId;
+            }
             if (customerContact) {
                 let checkContact = await Contact.findOne({_id: customerContact}).exec();
                 if (checkContact) {
@@ -62,6 +66,7 @@ export const createServiceTicket = (req: Request, res: Response) => {
                 }
             }
             serviceTicket.image = data.imageUrl ? data.imageUrl : null;
+            serviceTicket.source = params.source ? params.source : 'blueclerk';
             await serviceTicket.save(async (err: any) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})

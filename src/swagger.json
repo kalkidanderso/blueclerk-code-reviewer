@@ -5164,11 +5164,18 @@
         ],
         "parameters": [
           {
-            "name": "customerId",
+            "name": "source",
             "in": "formData",
             "required": true,
             "type": "string",
-            "description": "Id of a customer selected from the list received by /getCustomers api"
+            "enum": ["blueclerk", "client"],
+            "description": "Id of a customer selected from the list received by /getCustomers api (Required for platform users)"
+          },{
+            "name": "customerId",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Id of a customer selected from the list received by /getCustomers api (Required for platform users)"
           },
           {
             "name": "note",

@@ -1,5 +1,5 @@
 import express from 'express'
-import { validate, Validations } from '../middleware/validator'
+import {validate, Validations} from '../middleware/validator'
 import passport from 'passport'
 import {checkPermissions, checkUserPermissions, checkUserScanPermissions} from '../middleware/permissions'
 import { getCompanyId } from '../middleware/company'
@@ -896,7 +896,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Create_Service_Ticket),
-       //validate(Validations.createTicket),
         serviceTicketController.createServiceTicket
     )
 

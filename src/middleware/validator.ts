@@ -30,6 +30,7 @@ export const validate = (validations: ValidationChain[]) => {
 
 }
 
+
 export const Validations = {
   //Auth
   signUp: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('password').exists(), check('companyName').exists(), check('industryId').exists()],
