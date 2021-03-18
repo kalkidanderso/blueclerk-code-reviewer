@@ -235,7 +235,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.User_Create_Office_Admin),
         validate(Validations.createOfficeAdmin),
         getCompanyId(),
-        userController.createAdmin
+        userController.createAdminEmployee
     )
 
     router.post(
