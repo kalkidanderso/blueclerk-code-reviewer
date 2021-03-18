@@ -5,10 +5,10 @@
     "description": "APIs for both app and website",
     "version": "1.0.0"
   },
-  "host": "blueclerk-node-api.deploy.blueclerk.com",
+  "host": "localhost:3006",
   "basePath": "/api/v1",
   "schemes": [
-    "https"
+    "http"
   ],
   "tags": [
     {
@@ -1369,12 +1369,12 @@
         ]
       }
     },
-    "/createAdmin": {
+    "/createAdminEmployee": {
       "post": {
         "tags": [
           "Users"
         ],
-        "summary": "To create an office admin",
+        "summary": "To create an admin employee",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"

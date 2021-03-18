@@ -229,7 +229,7 @@ export default function (sio: any) {
     )
 
     router.post(
-        '/createEmployeeAdmin',
+        '/createAdminEmployee',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.User_Create_Office_Admin),

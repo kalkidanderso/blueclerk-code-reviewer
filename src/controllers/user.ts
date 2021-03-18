@@ -323,7 +323,7 @@ export const createOfficeAdmin = (req: Request, res: Response) => {
 }
 
 // This is an employee admin (won't be able to delete company profile)
-export const createAdmin = (req: Request, res: Response) => {
+export const createAdminEmployee = (req: Request, res: Response) => {
     createEmployee(req, res, Role.GLOBAL_ADMIN)
 }
 
