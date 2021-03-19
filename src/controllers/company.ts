@@ -155,6 +155,7 @@ export const getAllEmployees = (req: Request, res: Response) => {
             company.employees = undefined
             company.customers = undefined
             company.maxTechnicians = undefined
+            company.maxAdmins = undefined
             company.maxManagers = undefined
             company.maxOfficeAdmins = undefined
             company.other = undefined
@@ -195,6 +196,7 @@ export const getEmployeesForJob = (req: Request, res: Response) => {
             company.employees = undefined
             company.customers = undefined
             company.maxTechnicians = undefined
+            company.maxAdmins = undefined
             company.maxManagers = undefined
             company.maxOfficeAdmins = undefined
             company.other = undefined

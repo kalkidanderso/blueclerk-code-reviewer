@@ -84,7 +84,7 @@ export const login = (req: Request, res: Response, sio: any) => {
                         })
                     })
 
-            } else if (user.permissions.role != Role.GLOBAL_ADMIN) {
+            } else if (user.permissions.role == Role.GLOBAL_ADMIN || user.permissions.role == Role.COMPANY_ADMIN) {
 
                 user.comparePassword(params.password, (isMatching: Boolean) => {
 
@@ -103,6 +103,7 @@ export const login = (req: Request, res: Response, sio: any) => {
                             company.paid = undefined
                             company.type = undefined
                             company.maxTechnicians = undefined
+                            company.maxAdmins = undefined
                             company.maxManagers = undefined
                             company.maxOfficeAdmins = undefined
                             company.qbAccessToken = undefined
@@ -509,7 +510,7 @@ export const activateEmployee = (req: Request, res: Response) => {
 }
 
 const createEmployee = (req: Request, res: Response, role: Role) => {
-
+    console.log('called crete');
     checkNoOfUsers(req, res, role, (req: Request, res: Response) => {
 
         checkEmailExists(req, res, (req: Request, res: Response) => {
@@ -614,7 +615,6 @@ const getEmployeesList = (req: Request, res: Response, role: Role) => {
 }
 
 const checkEmailExists = (req: Request, res: Response, next: (req: Request, res: Response) => void) => {
-
     const params = req.body
 
     var schema = new passwordValidator();
@@ -694,7 +694,7 @@ const checkCompanyEmailExists = (req: Request, res: Response, next: (req: Reques
 
 const checkNoOfUsers = (req: Request, res: Response, role: Role, next: (req: Request, res: Response) => void) => {
 
-    const company = <ICompany>req.company
+    const company = <ICompany>req.company;
     if (company.paid == false && new Date() > company.chargeDate) {
         return res.json({ 'status': Status.Error, 'message': 'You can\'t create users contact blueclerk admin for details.' })
     }
@@ -702,6 +702,7 @@ const checkNoOfUsers = (req: Request, res: Response, role: Role, next: (req: Req
         maxOfficeAdmins: company.maxOfficeAdmins,
         maxManagers: company.maxManagers,
         maxTechnicians: company.maxTechnicians,
+        maxAdmins: company.maxAdmins
     }
 
     if (!company.maxManagers) {
@@ -713,8 +714,12 @@ const checkNoOfUsers = (req: Request, res: Response, role: Role, next: (req: Req
     if (!company.maxOfficeAdmins) {
         dataToUpdate.maxOfficeAdmins = 0
     }
+    if (!company.maxAdmins) {
+        dataToUpdate.maxAdmins = 0
+    }
 
-    if (!company.maxManagers || !company.maxTechnicians || !company.maxOfficeAdmins) {
+
+    if (!company.maxManagers || !company.maxTechnicians || !company.maxOfficeAdmins || !company.maxAdmins) {
 
         company.updateOne(
             dataToUpdate,
@@ -1446,6 +1451,7 @@ export const checkAndGetUser = (req: Request, res: Response) => {
                         company.paid = undefined
                         company.type = undefined
                         company.maxTechnicians = undefined
+                        company.maxAdmins = undefined
                         company.maxManagers = undefined
                         company.maxOfficeAdmins = undefined
                         return res.json({ 'status': Status.Success, 'user': user, 'company': company, 'token': user.jwt() })

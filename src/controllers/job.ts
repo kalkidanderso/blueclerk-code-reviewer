@@ -27,17 +27,17 @@ export const createJob = (req: Request, res: Response) => {
     const params = req.body
 
     if (params.employeeType == 1) {
-        if (params.contractorId == undefined || params.contractorId == null) {
+        if (params.contractorId == undefined) {
             throw new Error('Contractor Id must be specified when employeeType is contractor')
         }
     } else if (params.employeeType == 0) {
-        if (params.technicianId == undefined || params.technicianId == null) {
+        if (params.technicianId == undefined) {
             throw new Error('technicianId Id must be specified when employeeType is employee')
         }
     }
     ServiceTicket.findById(params.ticketId)
     .then((serviceTicket: IServiceTicket) => {
-        if (serviceTicket == undefined || serviceTicket == null) {
+        if (serviceTicket == undefined) {
             throw new Error('Invalid ticket Id')
         }
         if (serviceTicket.status == ServiceTicketStatus.ARCHIVED) {
@@ -51,12 +51,13 @@ export const createJob = (req: Request, res: Response) => {
         if(params.scheduledStartTime && params.scheduledEndTime) {
             let newStartTime: any = null
             let newEndTime: any = null
+            let date;
             if(params.scheduledStartTime){
-                var date = new Date(params.scheduleDate)
+                date = new Date(params.scheduleDate)
                 newStartTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledStartTime)
             }
             if(params.scheduledEndTime){
-                var date = new Date(params.scheduleDate)
+                date = new Date(params.scheduleDate)
                 newEndTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledEndTime)
             }
 
@@ -64,7 +65,7 @@ export const createJob = (req: Request, res: Response) => {
 
                 Job.findOne( { $or: [ { company: req.companyId, technician:params.technicianId, scheduleDate: new Date(params.scheduleDate), scheduledStartTime: { $lte: newStartTime} , scheduledEndTime: { $gte: newStartTime } },
                      { company: req.companyId, technician:params.technicianId, scheduleDate: new Date(params.scheduleDate), scheduledStartTime: { $lte: newEndTime} , scheduledEndTime: { $gte: newEndTime }} ] }, (err: any, job: IJob) => {
-                    if(job != undefined && job != null) {
+                    if(job != undefined) {
                         reject(new Error('Technician is scheduled at time you selected, try scheduling after '+ job.scheduledEndTime))
                     }else{
                         resolve([jobId, serviceTicket])
@@ -535,7 +536,7 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
         })
         .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
+            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contactName contact'
         })
         .populate({
             path: 'type',
@@ -559,7 +560,6 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
         }).skip((currentPage - 1) * pageSize)
         .limit(pageSize)
         .exec((err: any, jobs: IJob[]) => {
-
                 if (err) {
                     return res.json({'status': Status.Error, 'message': err.message})
                 }
