@@ -2,26 +2,21 @@ import {Request, Response} from 'express'
 import { Status, Messages, JobStatus, ServiceTicketStatus } from '../common/constants'
 import {
     sendJobEmailToAssignee,
-    sendJobEmailToCustomer,
-    sendJobEmailToCompanyAdmin,
-    sendScheduledJobEmailToAssignee
+    sendJobEmailToCustomer
 } from '../services/aws'
 
 import { Job, IJob } from '../models/Job'
-import {IEmailSchedule, EmailSchedule} from '../models/EmailSchedule'
+import {EmailSchedule} from '../models/EmailSchedule'
 import {Company, ICompany} from '../models/Company'
 import {IUser, User} from '../models/User'
 import { ServiceTicket ,IServiceTicket } from '../models/ServiceTicket'
 import { Scan } from '../models/Scan'
 import { PurchaseOrder } from '../models/PurchaseOrder'
 import { Item } from '../models/Item'
-import {Contract} from '../models/Contract';
-import {CronJob, job} from 'cron';
-import request from 'request';
-import {CompanyAdmin} from '../models/CompanyAdmin';
+import {CronJob} from 'cron';
 import moment from 'moment-timezone';
-import {Customer} from '../models/Customer';
 import {CompanyCustomer} from '../models/CompanyCustomer';
+import { ObjectId } from 'mongodb'
 
 export const createJob = (req: Request, res: Response) => {
     const params = req.body
@@ -122,6 +117,23 @@ const _createJob = async (req: Request, res: Response, jobId: string, serviceTic
         action,
         date: new Date()
     });
+    if (params.ticketId) {
+        ServiceTicket.findOne({_id: new ObjectId(params.ticketId)}).then((t) => {
+            if (t) {
+                if (!t.jobLocation && params.jobLocation) {
+                    t.jobLocation = params.jobLocation;
+                }
+                if (!t.jobSite && params.jobSite) {
+                    t.jobSite = params.jobSite;
+                }
+                t.save().then(() => {}).catch((err) => {
+                    return res.json({'status': Status.Error, 'message': err.message});
+                })
+            }
+        }).catch((err) => {
+           return res.json({'status': Status.Error, 'message': err.message});
+        });
+    }
     const job = new Job({
         scheduleDate: params.scheduleDate,
         jobId: jobId,
@@ -839,7 +851,7 @@ export const editJob = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            if (job == undefined || job == null) {
+            if (job == undefined) {
                 return res.json({'status': Status.Error, 'message': "Invalid job id"})
             }
 
@@ -855,8 +867,9 @@ export const editJob = (req: Request, res: Response) => {
             job.scheduleDate = params.scheduleDate;
             let newStartTime: any = null
             let newEndTime: any = null
+            let date;
             if(params.scheduledStartTime){
-                var date = new Date(params.scheduleDate)
+                date = new Date(params.scheduleDate)
                 newStartTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledStartTime)
                 if(newStartTime != job.scheduledStartTime) {
                     action +='|Updated ScheduledStartTime|';
@@ -864,15 +877,15 @@ export const editJob = (req: Request, res: Response) => {
                 job.scheduledStartTime = newStartTime
 
             }
-            if(params.scheduledStartTime){
-                var date = new Date(params.scheduleDate)
+            if(params.scheduledEndTime){
+                date = new Date(params.scheduleDate)
                 newEndTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledEndTime)
                 if(newEndTime != job.scheduledEndTime) {
                     action +='|Updated ScheduledEndTime|';
                 }
                 job.scheduledEndTime = newEndTime
             }
-            if(params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
+            if(params.equipmentId != undefined && params.equipmentId !== '""') {
                 if (params.equipmentId != job.equipmentId) {
                     action +='|Updated EquipmentId|';
                 }
@@ -896,6 +909,23 @@ export const editJob = (req: Request, res: Response) => {
                 date: new Date()
             });
             job.track = track;
+            if (job.ticket) {
+                ServiceTicket.findOne({_id: new ObjectId(job.ticket)}).then((t) => {
+                    if (t) {
+                        if (!t.jobLocation && params.jobLocation) {
+                            t.jobLocation = params.jobLocation;
+                        }
+                        if (!t.jobSite && params.jobSite) {
+                            t.jobSite = params.jobSite;
+                        }
+                        t.save().then(() => {}).catch((err) => {
+                            return res.json({'status': Status.Error, 'message': err.message});
+                        })
+                    }
+                }).catch((err) => {
+                    return res.json({'status': Status.Error, 'message': err.message});
+                });
+            }
             job.updateOne(
                 job,
                 (err: any, raw: any)=> {
@@ -956,7 +986,7 @@ export const getJobDetails = (req: Request, res: Response) => {
         })
         .then(async (job: any)=>{
 
-            if (job == undefined || job == null) {
+            if (job == undefined) {
                 throw new Error ('Invalid job id')
                 // return res.json({'status': Status.Error, 'message': "Invalid job id"})
             }
@@ -1121,14 +1151,14 @@ export const updateJobTime = (req: Request, res: Response) => {
 
     const params = req.body
     const user = <IUser>req.user
-    var companyId = req.companyId;
+    let companyId = req.companyId;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
 
     Job.findOne({ _id: params.jobId, company: companyId })
     .then((job: IJob) => {
-        if (job == undefined || job == null) {
+        if (job == undefined) {
             throw new Error("Invalid job id")
         }
 
@@ -1140,7 +1170,7 @@ export const updateJobTime = (req: Request, res: Response) => {
             throw new Error("Edit job is not allowed once it is canceled")
         }
 
-        if ((params.startTime == undefined || params.startTime == null) && (params.endTime == undefined || params.endTime == null)) {
+        if ((params.startTime == undefined) && (params.endTime == undefined)) {
             throw new Error('Start time or end time is required')
         }
 
@@ -1157,11 +1187,11 @@ export const updateJobTime = (req: Request, res: Response) => {
         let startTime: Date = job.startTime
         let endTime: Date = job.startTime
 
-        if(params.startTime != undefined && params.startTime != null && params.startTime != '""') {
+        if(params.startTime != undefined && params.startTime != '""') {
             startTime = params.startTime
         }
 
-        if(params.endTime != undefined && params.endTime != null && params.endTime != '""') {
+        if(params.endTime != undefined && params.endTime != '""') {
             endTime = params.endTime
         }
 
@@ -1196,7 +1226,7 @@ export const updateJobTime = (req: Request, res: Response) => {
         return job.updateOne({ startTime: startTime, endTime: endTime, timeSpent: timeSpent, charges: newcharges, track: track, timeUpdatedBy: user._id, timeUpdatedAt: Date.now() })
 
     })
-    .then((response: any) => {
+    .then(() => {
         return res.json({'status': Status.Success, 'message': 'Job time updated successfully.'})
     })
     .catch((err: any) => {
@@ -1204,7 +1234,6 @@ export const updateJobTime = (req: Request, res: Response) => {
             return res.json({'status': Status.Error, 'message': err.message})
 
         }else{
-
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
     })
