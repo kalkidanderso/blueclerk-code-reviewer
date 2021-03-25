@@ -170,7 +170,9 @@ export const Validations = {
 
   subscribe: [ check('cardId').exists(), check('planId').exists()],
 
-  buySubscriptions: [ check('noOfOfficeAdmins').exists(),check('noOfTechnicians').exists(),check('noOfManagers').exists(),],
+  buySubscriptions: [ check('noOfOfficeAdmins').exists(),check('noOfTechnicians').exists(),check('noOfManagers').exists()],
+
+  removeSubscription: [ check('employeeId').exists(),],
 
   updateDefaultPermissions: [check('onPermissions').exists(), check('offPermissions').exists(), check('role').exists()],
 

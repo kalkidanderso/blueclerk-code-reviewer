@@ -91,6 +91,17 @@ export const enum EstimateStatus {
     CANCELED
 }
 
+
+export const enum EmployeeStatus {
+    INACTIVE,
+    ACTIVE
+}
+
+export const enum CompanyType {
+    SUBSCRIBED,
+    FREE,
+}
+
 export const enum Permissions {
     None,
     Permission_Get_All,

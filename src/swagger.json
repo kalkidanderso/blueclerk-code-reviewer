@@ -7925,6 +7925,13 @@
             "required": true,
             "type": "string",
             "description": "No of technicians company wants to buy or add more subscriptions, if there is none to buy just send 0 otherwise (1,2,3,...)"
+          },
+          {
+            "name": "nbOfAdmins",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "No of admins company wants to buy or add more subscriptions, if there is none to buy just send 0 otherwise (1,2,3,...)"
           }
         ],
         "responses": {
@@ -7957,25 +7964,11 @@
         ],
         "parameters": [
           {
-            "name": "noOfOfficeAdmins",
+            "name": "employeeId",
             "in": "formData",
             "required": true,
             "type": "string",
-            "description": "No of office admins company wants to remove from subscription, if there is none to cancel just send 0 otherwise (1,2,3,...)"
-          },
-          {
-            "name": "noOfManagers",
-            "in": "formData",
-            "required": true,
-            "type": "string",
-            "description": "No of managers company wants to remove from subscription, if there is none to cancel just send 0 otherwise (1,2,3,...)"
-          },
-          {
-            "name": "noOfTechnicians",
-            "in": "formData",
-            "required": true,
-            "type": "string",
-            "description": "No of technicians company wants to remove from subscription, if there is none to cancel just send 0 otherwise (1,2,3,...)"
+            "description": "Id of the Employee That Will be Removed From The Company Subscription"
           }
         ],
         "responses": {

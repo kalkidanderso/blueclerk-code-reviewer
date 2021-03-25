@@ -764,7 +764,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Subscription_Cancel),
-        validate(Validations.buySubscriptions),
+        validate(Validations.removeSubscription),
         subscriptionController.removeCompanySubscriptions
     )
 

@@ -852,3 +852,45 @@ export const sendAccountDowngradeEmail = function(options: any) {
     )
   })
 }
+export const sendAccountUpgradeEmail = function(options: any) {
+
+  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
+
+  AWS.config.update({
+    region: AWS_REGION,
+    accessKeyId: AWS_SES_ACCESSKEYID,
+    secretAccessKey: AWS_SES_SECRETACCESSKEY,
+  })
+
+  const ses = new AWS.SES({ apiVersion: '2012-10-17' })
+
+  return new Promise((resolve, reject) => {
+    ses.sendEmail(
+      {
+        Source: APP_EMAIL_NOREPLY,
+        Destination: {
+          CcAddresses: [],
+          ToAddresses: [options.to],
+        },
+        Message: {
+          Subject: {
+            Data: "BlueClerk Alert: Account status change",
+          },
+          Body: {
+            Html: {
+              Data: "<p>Congratulation! Your account has been upgraded to the full version. You may use all the features of the software now. All of your data will be saved.</p><p>You can downgrade to a free account version at any time.</p><div><a href=\"https://app.blueclerk.com/login/\" target=\"_blank\"><img src=\"https://app.blueclerk.com/assets/img/logo.jpg\" style=\"width: 20%;\" alt='BlueClerk'></a></div>",
+            },
+          },
+        },
+        ReplyToAddresses: [APP_EMAIL_NOREPLY],
+      },
+      (err, info) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(info)
+        }
+      },
+    )
+  })
+}

@@ -444,7 +444,6 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                             sendDate = moment().tz('America/Chicago').hours(21).minutes(0);
                         }
                         new CronJob(sendDate, function() {
-                            console.log('sending now to ', contractor.info.companyEmail);
                             sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
                         }, null, true);
                         break;

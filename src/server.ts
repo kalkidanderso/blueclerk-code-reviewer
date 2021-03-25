@@ -34,11 +34,6 @@ process.env.TZ = 'America/Chicago';
 const { DB_USER, DB_PASS, DB_HOST, DB_NAME } = process.env
 
 mongoose.set('useCreateIndex', true)
-console.log('DB_USER:::::::', DB_USER)
-console.log('DB_PASS::::::', DB_PASS)
-console.log('DB_HOST::::::::', DB_HOST)
-console.log('DB:::::', DB_NAME)
-console.log( `mongodb+srv://${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`)
 mongoose.connect(
   `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`,
   {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false},

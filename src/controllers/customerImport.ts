@@ -212,8 +212,7 @@ export const uploadfile = (req: Request, res: Response) => {
         return res.json({"status": Status.Success, 'message': 'Customers imported successfully'});
     })
     } catch (err) {
-        console.log(err);
-        throw err;
+        return res.json({"status": Status.Success, 'message': err.message});
     }
 }
 

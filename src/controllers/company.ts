@@ -1,26 +1,18 @@
 import { Request, Response } from 'express'
-import {Status, Messages, Role, Permissions} from '../common/constants'
+import {Status, Messages, Role, ContractStatus, EmployeeStatus, CompanyType} from '../common/constants'
 import { sendAccountDowngradeEmail } from '../services/aws'
 import { Company, ICompany } from '../models/Company'
-import { Employee, IEmployee } from '../models/Employee'
 import { ObjectId } from 'mongodb'
 import { Contract, IContract } from '../models/Contract'
 import { ICompanyAdmin } from '../models/CompanyAdmin'
 import { CompanyPrefix, ICompanyPrefix } from '../models/CompanyPrefix'
-import { InvoicePrefix, IInvoicePrefix } from '../models/InvoicePrefix'
 import { SaleTax, ISaleTax } from '../models/SaleTax'
 import { JobCharges, IJobCharges } from '../models/JobCharges'
-import { Invoice, IInvoice } from '../models/Invoice'
 import { Job, IJob } from '../models/Job'
-import { Scan, IScan } from '../models/Scan'
 import {IUser, User} from '../models/User'
-import { PurchaseOrder, IPurchaseOrder } from '../models/PurchaseOrder'
 import { IContractorActivity } from '../models/ContractorActivity'
-import { Estimate, IEstimate } from '../models/Estimate'
-import { Item} from '../models/Item'
-import { Customer, ICustomer } from '../models/Customer'
+import { Customer} from '../models/Customer'
 import {CompanyCustomer} from '../models/CompanyCustomer';
-import {ServiceTicket} from '../models/ServiceTicket';
 const Hubspot = require('hubspot')
 
 export const updateCompanyProfile = (req: Request, res: Response) => {
@@ -58,7 +50,7 @@ export const updateCompanyProfile = (req: Request, res: Response) => {
                             'contact.phone': params.phone,
                             'contact.fax': params.fax,
                         },
-                        (err: any, raw: any) => {
+                        (err: any) => {
 
                             if (err) {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -82,7 +74,7 @@ export const updateCompanyProfile = (req: Request, res: Response) => {
                     'contact.phone': params.phone,
                     'contact.fax': params.fax,
                 },
-                (err: any, raw: any) => {
+                (err: any) => {
 
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -214,13 +206,8 @@ export const getEmployeesForJob = (req: Request, res: Response) => {
 }
 
 export const getContractorForJob = (req: Request, res: Response) => {
+    const company = <ICompany>req.company;
 
-    var companyId = req.companyId;
-    var company  = <ICompany>req.company;
-
-    if(req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
 
     Contract.find({company: company._id})
     .populate({
@@ -263,7 +250,7 @@ export const getCompanyContracts = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            if(contracts.length == 0 || contracts == undefined ) {
+            if(!contracts.length) {
                 return res.json({ 'status': Status.Error, 'message': 'No contracts found.' })
             }
 
@@ -281,7 +268,7 @@ export const getContractorDetail = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            if(company == undefined || company == null ) {
+            if(company == undefined ) {
                 return res.json({ 'status': Status.Error, 'message': 'No company found.' })
             }
 
@@ -292,8 +279,8 @@ export const getContractorDetail = (req: Request, res: Response) => {
 
 export const getCustomWorkNumber = (req: Request, res: Response) => {
 
-    const params = req.body
-    const admin = <ICompanyAdmin>req.user
+
+
 
     Company.findById(req.companyId,
         (err: any, company: ICompany) => {
@@ -302,7 +289,7 @@ export const getCustomWorkNumber = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            if(company == undefined || company == null ) {
+            if(company == undefined ) {
                 return res.json({ 'status': Status.Error, 'message': 'No company found.' })
             }
 
@@ -320,7 +307,7 @@ export const getSyncInfo = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            if(company == undefined || company == null ) {
+            if(company == undefined ) {
                 return res.json({ 'status': Status.Error, 'message': 'No company found.' })
             }
 
@@ -331,39 +318,48 @@ export const getSyncInfo = (req: Request, res: Response) => {
 
 export const downgradeCompanies = (req: Request, res: Response) => {
 
-    Company.find(
-        { $and: [{chargeDate: { $lte: new Date() }}, {paid: false}, {type: 0}] },
-        (err: any, companies: ICompany[])=>{
-            if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-            }
+    Company.find({ $and: [{chargeDate: { $lte: new Date() }}, {type: CompanyType.SUBSCRIBED}] }).populate('employees').then((companies)=>{
+        if(companies.length) {
+            const companiesToDowngrade:number = companies.length
+            let companiesDowngraded: number = 0;
 
-            if(companies.length > 0) {
-                const companiesToDowngrade:number = companies.length
-                let companiesDowngraded: number = 0;
-
-                for (let index = 0; index < companies.length; index++) {
-                    const company = companies[index];
-
-                    company.updateOne({type: 1}, (err: any, raw: any) =>{
-                        if(err) {
-                            console.log("Unable to downgrade" + company._id + "\n")
+            for (let index = 0; index < companies.length; index++) {
+                const company = companies[index];
+                Contract.find({company: company._id, status: {$in: [ContractStatus.ACCEPTED, ContractStatus.PENDING]}}).then((contracts) => {
+                    if (contracts.length) {
+                        for (let contract of contracts) {
+                            // Canceling the available contracts
+                            contract.status = ContractStatus.CANCELED;
+                            contract.save();
                         }
-                        sendAccountDowngradeEmail({ to: company.info.companyEmail })
-                        _downgradeHubSpotContact(company)
-                        companiesDowngraded ++;
-                        if(companiesToDowngrade == companiesDowngraded) {
-                            return res.json({'status': Status.Success, 'message': 'Downgrading done.'})
-                        }
-                    })
-
+                    }
+                }).catch((err) => {
+                    return res.json({'status': Status.Error, 'message': err.message});
+                })
+                for(let employee of company.employees) {
+                    employee.status = EmployeeStatus.INACTIVE;
+                    employee.save();
                 }
-            }else{
-                return res.json({'status': Status.Error, 'message': 'Nothing to downgrade.'})
-            }
-        })
-}
+                company.updateOne({type: CompanyType.FREE, paid: false, maxTechnicians: 0, maxManagers: 0, maxOfficeAdmins:0 ,maxAdmins: 0}, (err: any) =>{
+                    if(err) {
+                        return res.json({'status': Status.Success, 'message': err.message});
+                    }
+                    sendAccountDowngradeEmail({ to: company.info.companyEmail })
+                    _downgradeHubSpotContact(company)
+                    companiesDowngraded++;
+                    if(companiesToDowngrade == companiesDowngraded) {
+                        return res.json({'status': Status.Success, 'message': 'Downgrading done.'})
+                    }
+                })
 
+            }
+        }else{
+            return res.json({'status': Status.Error, 'message': 'Nothing to downgrade.'})
+        }
+    }).catch((err) => {
+        return res.json({'status': Status.Error, 'message': err.message});
+    })
+}
 const _downgradeHubSpotContact = (company: ICompany) => {
 
     const hubspot = new Hubspot({
@@ -386,10 +382,10 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
 
     const params = req.body
     const admin = <ICompanyAdmin>req.user
-    var oldPrefix: string
-    var oldJobId:  number
+    let oldPrefix: string;
+    let oldJobId: number;
 
-    if((params.prefix == undefined || params.prefix === null || params.prefix === '""') && (params.workOrderNumber == undefined || params.workOrderNumber === null || params.workOrderNumber === '""')) {
+    if((params.prefix == undefined || params.prefix === '""') && (params.workOrderNumber == undefined || params.workOrderNumber === '""')) {
         return res.json({ 'status': Status.Error, 'message': "Either prefix or work order number is required." })
     }
 
@@ -400,7 +396,7 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            if(company == undefined || company == null ) {
+            if(company == undefined ) {
                 return res.json({ 'status': Status.Error, 'message': 'No company found.' })
             }
 
@@ -415,7 +411,7 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
 
                     oldPrefix = company.prefix
 
-                    company.updateOne({'prefix':params.prefix}, (err: any, raw: any)=> {
+                    company.updateOne({'prefix':params.prefix}, (err: any)=> {
                         if (err) {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
@@ -423,13 +419,13 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
 
                         if(previousPrefix == null && oldPrefix != undefined) {
 
-                            var prefix = new CompanyPrefix({
-                                company : req.companyId,
-                                prefix : oldPrefix,
+                            const prefix = new CompanyPrefix({
+                                company: req.companyId,
+                                prefix: oldPrefix,
                                 maxJobId: company.currentJobId
-                            })
+                            });
 
-                            prefix.save((err: any, companyPrefix: ICompanyPrefix) => {
+                            prefix.save((err: any) => {
                                 if (err) {
                                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                 }
@@ -441,7 +437,7 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
 
                             previousPrefix.updateOne(
                                 {'prefix' : oldPrefix, 'maxJobId': company.currentJobId},
-                                (err: any, raw: any) => {
+                                (err: any) => {
                                 if (err) {
                                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                 }
@@ -463,7 +459,7 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
                     return res.json({'status': Status.Success, 'message': "Work order number can not be less then "+company.currentJobId});
                 }
 
-                company.updateOne({'currentJobId':params.workOrderNumber}, (err: any, raw: any)=> {
+                company.updateOne({'currentJobId':params.workOrderNumber}, (err: any)=> {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
@@ -479,7 +475,7 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
                         return res.json({'status': Status.Success, 'message': "Work order number can not be less then "+company.currentJobId});
                     }
 
-                    company.updateOne({'currentJobId':params.workOrderNumber}, (err: any, raw: any)=> {
+                    company.updateOne({'currentJobId':params.workOrderNumber}, (err: any)=> {
                         if (err) {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
@@ -493,7 +489,7 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
                         oldPrefix = company.prefix
                         oldJobId = company.currentJobId
 
-                        company.updateOne({'prefix':params.prefix, 'currentJobId' : params.workOrderNumber}, (err: any, raw: any)=> {
+                        company.updateOne({'prefix':params.prefix, 'currentJobId' : params.workOrderNumber}, (err: any)=> {
                             if (err) {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                             }
@@ -504,7 +500,7 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
                                     prefix : oldPrefix,
                                     maxJobId: oldJobId
                                 })
-                                prefix.save((err: any, companyPrefix: ICompanyPrefix) => {
+                                prefix.save((err: any) => {
                                     if (err) {
                                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                     }
@@ -516,7 +512,7 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
 
                                 companyPrefix.updateOne(
                                     {'prefix' : oldPrefix, 'maxJobId': oldJobId},
-                                    (err: any, raw: any) => {
+                                    (err: any) => {
                                     if (err) {
                                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                     }
@@ -546,12 +542,12 @@ const checkPrefixExists = (req: Request, res: Response, next: (req: Request, res
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            if (companyPrefix == undefined || companyPrefix == null) {
+            if (companyPrefix == undefined) {
                 next(req, res, null)
                 return
 
             }else{
-                if(params.workOrderNumber != undefined && params.workOrderNumber !==null && params.workOrderNumber!= '""') {
+                if(params.workOrderNumber != undefined && params.workOrderNumber!= '""') {
                     if (companyPrefix.maxJobId > params.workOrderNumber) {
                         return res.json({ 'status': Status.Error, 'message': 'Work order number with prefix '+params.prefix+' is not allowed. Try no greater then '+companyPrefix.maxJobId })
                     } else {
@@ -724,15 +720,15 @@ export const createSalesTax = (req: Request, res: Response) => {
             return res.json({'status': Status.Success, 'message': "Sales tax already added."})
         }
 
-        var sale = new SaleTax({
-            state : params.state,
-            tax : params.tax,
+        const sale = new SaleTax({
+            state: params.state,
+            tax: params.tax,
             company: req.companyId,
             createdBy: user._id,
             createdAt: Date.now()
-        })
+        });
 
-        sale.save((err: any, tax: ISaleTax) => {
+        sale.save((err: any) => {
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
@@ -751,12 +747,12 @@ export const updateSalesTax = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        if(saleTax == undefined || saleTax == null) {
+        if(saleTax == undefined) {
             return res.json({'status': Status.Success, 'message': "Invalid sale tax id."})
         }
 
         saleTax.updateOne({ state : params.state, tax : params.tax },
-        (err: any, raw: any) => {
+        (err: any) => {
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
@@ -775,7 +771,7 @@ export const deleteSalesTax = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        if(saleTax == undefined || saleTax == null) {
+        if(saleTax == undefined) {
             return res.json({'status': Status.Success, 'message': "Invalid sale tax id."})
         }
 
@@ -817,22 +813,22 @@ export const createJobCharges = (req: Request, res: Response) => {
             return res.json({'status': Status.Success, 'message': "Job charge already added."})
         }
 
-        var charges = new JobCharges({
-            jobType : params.jobTypeId,
-            charges : params.charges,
+        const charges = new JobCharges({
+            jobType: params.jobTypeId,
+            charges: params.charges,
             company: req.companyId,
             createdBy: user._id,
             createdAt: Date.now(),
             isFixed: params.isFixed
-        })
+        });
 
-        if(params.sales_tax_id != undefined && params.sales_tax_id !== null && params.sales_tax_id !== '""') {
+        if(params.sales_tax_id != undefined && params.sales_tax_id !== '""') {
 
             _getSalesTax(req, res, params.sales_tax_id,(req: Request, res: Response, saleTax: ISaleTax) => {
 
                 charges.salesTax = saleTax._id
 
-                charges.save((err: any, charge: IJobCharges) => {
+                charges.save((err: any) => {
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
@@ -842,7 +838,7 @@ export const createJobCharges = (req: Request, res: Response) => {
             } )
 
         }else{
-            charges.save((err: any, charge: IJobCharges) => {
+            charges.save((err: any) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
@@ -863,7 +859,7 @@ const _getSalesTax = (req: Request, res: Response, sales_tax_id: string, next: (
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        if(saleTax == undefined || saleTax == null) {
+        if(saleTax == undefined) {
             return res.json({'status': Status.Success, 'message': "Invalid sales tax id."})
         }
         next(req, res, saleTax)
@@ -881,23 +877,23 @@ export const updateJobCharges = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        if(jobCharges == undefined || jobCharges == null) {
+        if(jobCharges == undefined) {
             return res.json({'status': Status.Success, 'message': "Invalid job Charge id."})
         }
 
         jobCharges.charges = params.charges
         jobCharges.isFixed = params.isFixed
 
-        if(params.sales_tax_id != undefined && params.sales_tax_id !== null && params.sales_tax_id !== '""') {
+        if(params.sales_tax_id != undefined && params.sales_tax_id !== '""') {
 
 
-            if(params.sales_tax_id != undefined && params.sales_tax_id !== null && params.sales_tax_id !== '""') {
+            if(params.sales_tax_id != undefined && params.sales_tax_id !== '""') {
 
                 _getSalesTax(req, res, params.sales_tax_id,(req: Request, res: Response, saleTax: ISaleTax) => {
 
                     jobCharges.salesTax = saleTax._id
 
-                    jobCharges.updateOne(jobCharges, (err: any, raw: any) => {
+                    jobCharges.updateOne(jobCharges, (err: any) => {
                         if (err) {
                             return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         }
@@ -908,7 +904,7 @@ export const updateJobCharges = (req: Request, res: Response) => {
 
             }else{
 
-                jobCharges.updateOne(jobCharges, (err: any, raw: any) => {
+                jobCharges.updateOne(jobCharges, (err: any) => {
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
@@ -930,7 +926,7 @@ export const deleteJobCharges = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        if(jobCharges == undefined || jobCharges == null) {
+        if(jobCharges == undefined) {
             return res.json({'status': Status.Success, 'message': "Invalid job Charge id."})
         }
 
@@ -999,13 +995,13 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
                 })
                 .exec((err: any, jobs: IJob[]) => {
 
-                    if (jobs.length == 0 || jobs == undefined) {
+                    if (!jobs.length) {
                         return res.json({ 'status': Status.Error, 'message': 'No contractor activity found.' })
                     }
-                    var contractorActivities : IContractorActivity[] = []
-                    for (var i = 0; i < jobs.length; i++) {
-                        var job : any = jobs[i];
-                        var obj : any = {};
+                    const contractorActivities: IContractorActivity[] = [];
+                    for (let i = 0; i < jobs.length; i++) {
+                        const job: any = jobs[i];
+                        let obj: any = {};
                         obj = {
                             job : job._id,
                             customer :  job.customer.profile.displayName,

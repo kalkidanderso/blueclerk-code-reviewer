@@ -22,7 +22,7 @@ export interface ICompany extends Document{
         tenantId: string
         hasCardOnFile: boolean
     },
-    employees: [Schema.Types.ObjectId]
+    employees: [Schema.Types.ObjectId] | any[]
     customers: [Schema.Types.ObjectId]
     stripeId: string
     paid: boolean
