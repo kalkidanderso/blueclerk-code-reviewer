@@ -314,7 +314,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
 
                     let customerContactId = customerContact ? customerContact : serviceTicket.customerContactId;
 
-
+                    let customer = params.customerId ? new ObjectId(params.customerId) : serviceTicket.customer;
 
                     let jobLocationId: any = serviceTicket.jobLocation
                     if (params.jobLocationId) {
@@ -357,6 +357,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             image: image,
                             customerPO: customerPO,
                             customerContactId: customerContactId,
+                            customer: customer,
                             status: status,
                             track: track
                         },
