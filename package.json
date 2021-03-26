@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "dev": "npm run tsc && node ./dist/server.js"
   },
   "author": "",
   "license": "ISC",
@@ -34,6 +35,7 @@
     "bcrypt-nodejs": "0.0.3",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
+    "connect-timeout": "^1.9.0",
     "cookie-parser": "^1.4.4",
     "cors": "^2.8.5",
     "cron": "^1.7.2",
@@ -62,5 +64,8 @@
     "typescript": "^3.6.2",
     "uuid": "^3.3.3",
     "xlsx": "^0.15.4"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
   }
 }

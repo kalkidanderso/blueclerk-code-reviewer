@@ -2,42 +2,37 @@ import {Request, Response} from 'express'
 import { Status, Messages, JobStatus, ServiceTicketStatus } from '../common/constants'
 import {
     sendJobEmailToAssignee,
-    sendJobEmailToCustomer,
-    sendJobEmailToCompanyAdmin,
-    sendScheduledJobEmailToAssignee
+    sendJobEmailToCustomer
 } from '../services/aws'
 
 import { Job, IJob } from '../models/Job'
-import {IEmailSchedule, EmailSchedule} from '../models/EmailSchedule'
+import {EmailSchedule} from '../models/EmailSchedule'
 import {Company, ICompany} from '../models/Company'
 import {IUser, User} from '../models/User'
 import { ServiceTicket ,IServiceTicket } from '../models/ServiceTicket'
 import { Scan } from '../models/Scan'
 import { PurchaseOrder } from '../models/PurchaseOrder'
 import { Item } from '../models/Item'
-import {Contract} from '../models/Contract';
-import {CronJob, job} from 'cron';
-import request from 'request';
-import {CompanyAdmin} from '../models/CompanyAdmin';
+import {CronJob} from 'cron';
 import moment from 'moment-timezone';
-import {Customer} from '../models/Customer';
 import {CompanyCustomer} from '../models/CompanyCustomer';
+import { ObjectId } from 'mongodb'
 
 export const createJob = (req: Request, res: Response) => {
     const params = req.body
 
     if (params.employeeType == 1) {
-        if (params.contractorId == undefined || params.contractorId == null) {
+        if (params.contractorId == undefined) {
             throw new Error('Contractor Id must be specified when employeeType is contractor')
         }
     } else if (params.employeeType == 0) {
-        if (params.technicianId == undefined || params.technicianId == null) {
+        if (params.technicianId == undefined) {
             throw new Error('technicianId Id must be specified when employeeType is employee')
         }
     }
     ServiceTicket.findById(params.ticketId)
     .then((serviceTicket: IServiceTicket) => {
-        if (serviceTicket == undefined || serviceTicket == null) {
+        if (serviceTicket == undefined) {
             throw new Error('Invalid ticket Id')
         }
         if (serviceTicket.status == ServiceTicketStatus.ARCHIVED) {
@@ -51,12 +46,13 @@ export const createJob = (req: Request, res: Response) => {
         if(params.scheduledStartTime && params.scheduledEndTime) {
             let newStartTime: any = null
             let newEndTime: any = null
+            let date;
             if(params.scheduledStartTime){
-                var date = new Date(params.scheduleDate)
+                date = new Date(params.scheduleDate)
                 newStartTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledStartTime)
             }
             if(params.scheduledEndTime){
-                var date = new Date(params.scheduleDate)
+                date = new Date(params.scheduleDate)
                 newEndTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledEndTime)
             }
 
@@ -64,7 +60,7 @@ export const createJob = (req: Request, res: Response) => {
 
                 Job.findOne( { $or: [ { company: req.companyId, technician:params.technicianId, scheduleDate: new Date(params.scheduleDate), scheduledStartTime: { $lte: newStartTime} , scheduledEndTime: { $gte: newStartTime } },
                      { company: req.companyId, technician:params.technicianId, scheduleDate: new Date(params.scheduleDate), scheduledStartTime: { $lte: newEndTime} , scheduledEndTime: { $gte: newEndTime }} ] }, (err: any, job: IJob) => {
-                    if(job != undefined && job != null) {
+                    if(job != undefined) {
                         reject(new Error('Technician is scheduled at time you selected, try scheduling after '+ job.scheduledEndTime))
                     }else{
                         resolve([jobId, serviceTicket])
@@ -121,6 +117,23 @@ const _createJob = async (req: Request, res: Response, jobId: string, serviceTic
         action,
         date: new Date()
     });
+    if (params.ticketId) {
+        ServiceTicket.findOne({_id: new ObjectId(params.ticketId)}).then((t) => {
+            if (t) {
+                if (!t.jobLocation && params.jobLocation) {
+                    t.jobLocation = params.jobLocation;
+                }
+                if (!t.jobSite && params.jobSite) {
+                    t.jobSite = params.jobSite;
+                }
+                t.save().then(() => {}).catch((err) => {
+                    return res.json({'status': Status.Error, 'message': err.message});
+                })
+            }
+        }).catch((err) => {
+           return res.json({'status': Status.Error, 'message': err.message});
+        });
+    }
     const job = new Job({
         scheduleDate: params.scheduleDate,
         jobId: jobId,
@@ -431,7 +444,6 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                             sendDate = moment().tz('America/Chicago').hours(21).minutes(0);
                         }
                         new CronJob(sendDate, function() {
-                            console.log('sending now to ', contractor.info.companyEmail);
                             sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
                         }, null, true);
                         break;
@@ -483,7 +495,10 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
 }
 
 export const getFilteredJobs = async (req: Request, res: Response) => {
+
+
     const pageSize = +req.query.pageSize;
+    const todaysJobs = req.body.todaysJobs;
     const currentPage = +req.query.page;
     let customerNames = req.body.customerNames ? req.body.customerNames.split(',') : null;
     let jobId = req.body.jobId ? req.body.jobId : null;
@@ -495,6 +510,13 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
     }
     let query: any = {};
     query.company = companyId;
+    if (todaysJobs === "true") {
+        let date = new Date()
+        date.setHours(0, 0, 0, 0)
+        let endDate = new Date()
+        endDate.setHours(23, 59, 59, 59)
+        query.dateTime = {$gte: date, $lte: endDate};
+    }
 
     if (customerNames && customerNames.length) {
         customers = await CompanyCustomer.find({}).select('customer -_id');
@@ -525,7 +547,7 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
         })
         .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
+            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contactName contact'
         })
         .populate({
             path: 'type',
@@ -549,7 +571,6 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
         }).skip((currentPage - 1) * pageSize)
         .limit(pageSize)
         .exec((err: any, jobs: IJob[]) => {
-
                 if (err) {
                     return res.json({'status': Status.Error, 'message': err.message})
                 }
@@ -829,7 +850,7 @@ export const editJob = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            if (job == undefined || job == null) {
+            if (job == undefined) {
                 return res.json({'status': Status.Error, 'message': "Invalid job id"})
             }
 
@@ -845,8 +866,9 @@ export const editJob = (req: Request, res: Response) => {
             job.scheduleDate = params.scheduleDate;
             let newStartTime: any = null
             let newEndTime: any = null
+            let date;
             if(params.scheduledStartTime){
-                var date = new Date(params.scheduleDate)
+                date = new Date(params.scheduleDate)
                 newStartTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledStartTime)
                 if(newStartTime != job.scheduledStartTime) {
                     action +='|Updated ScheduledStartTime|';
@@ -854,15 +876,15 @@ export const editJob = (req: Request, res: Response) => {
                 job.scheduledStartTime = newStartTime
 
             }
-            if(params.scheduledStartTime){
-                var date = new Date(params.scheduleDate)
+            if(params.scheduledEndTime){
+                date = new Date(params.scheduleDate)
                 newEndTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledEndTime)
                 if(newEndTime != job.scheduledEndTime) {
                     action +='|Updated ScheduledEndTime|';
                 }
                 job.scheduledEndTime = newEndTime
             }
-            if(params.equipmentId != undefined && params.equipmentId !== null && params.equipmentId !== '""') {
+            if(params.equipmentId != undefined && params.equipmentId !== '""') {
                 if (params.equipmentId != job.equipmentId) {
                     action +='|Updated EquipmentId|';
                 }
@@ -886,6 +908,23 @@ export const editJob = (req: Request, res: Response) => {
                 date: new Date()
             });
             job.track = track;
+            if (job.ticket) {
+                ServiceTicket.findOne({_id: new ObjectId(job.ticket)}).then((t) => {
+                    if (t) {
+                        if (!t.jobLocation && params.jobLocation) {
+                            t.jobLocation = params.jobLocation;
+                        }
+                        if (!t.jobSite && params.jobSite) {
+                            t.jobSite = params.jobSite;
+                        }
+                        t.save().then(() => {}).catch((err) => {
+                            return res.json({'status': Status.Error, 'message': err.message});
+                        })
+                    }
+                }).catch((err) => {
+                    return res.json({'status': Status.Error, 'message': err.message});
+                });
+            }
             job.updateOne(
                 job,
                 (err: any, raw: any)=> {
@@ -914,13 +953,15 @@ export const getJobDetails = (req: Request, res: Response) => {
     Job.findOne({_id: params.jobId, company: companyId})
         .populate({
             path: 'ticket',
+            populate: 'customerContactId'
         })
         .populate({
             path: 'technician',
             select: 'profile.displayName'
         })
         .populate({
-            path: 'customer'
+            path: 'customer',
+            populate: 'contacts'
         })
         .populate({
             path: 'type',
@@ -944,11 +985,10 @@ export const getJobDetails = (req: Request, res: Response) => {
         })
         .then(async (job: any)=>{
 
-            if (job == undefined || job == null) {
+            if (job == undefined) {
                 throw new Error ('Invalid job id')
                 // return res.json({'status': Status.Error, 'message': "Invalid job id"})
             }
-            await job.populate('customer.contacts').execPopulate();
             const scansPrmoise = Scan.find({ job: job._id}, 'comment timeOfScan')
             .populate({
                 path: 'equipment',
@@ -963,7 +1003,7 @@ export const getJobDetails = (req: Request, res: Response) => {
 
             return Promise.all([job, scansPrmoise, POPromise])
         })
-        .then((result: any) => {
+        .then(async (result: any) => {
 
             const job = result[0]
             const scans = result[1]
@@ -1110,14 +1150,14 @@ export const updateJobTime = (req: Request, res: Response) => {
 
     const params = req.body
     const user = <IUser>req.user
-    var companyId = req.companyId;
+    let companyId = req.companyId;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
 
     Job.findOne({ _id: params.jobId, company: companyId })
     .then((job: IJob) => {
-        if (job == undefined || job == null) {
+        if (job == undefined) {
             throw new Error("Invalid job id")
         }
 
@@ -1129,7 +1169,7 @@ export const updateJobTime = (req: Request, res: Response) => {
             throw new Error("Edit job is not allowed once it is canceled")
         }
 
-        if ((params.startTime == undefined || params.startTime == null) && (params.endTime == undefined || params.endTime == null)) {
+        if ((params.startTime == undefined) && (params.endTime == undefined)) {
             throw new Error('Start time or end time is required')
         }
 
@@ -1146,11 +1186,11 @@ export const updateJobTime = (req: Request, res: Response) => {
         let startTime: Date = job.startTime
         let endTime: Date = job.startTime
 
-        if(params.startTime != undefined && params.startTime != null && params.startTime != '""') {
+        if(params.startTime != undefined && params.startTime != '""') {
             startTime = params.startTime
         }
 
-        if(params.endTime != undefined && params.endTime != null && params.endTime != '""') {
+        if(params.endTime != undefined && params.endTime != '""') {
             endTime = params.endTime
         }
 
@@ -1185,7 +1225,7 @@ export const updateJobTime = (req: Request, res: Response) => {
         return job.updateOne({ startTime: startTime, endTime: endTime, timeSpent: timeSpent, charges: newcharges, track: track, timeUpdatedBy: user._id, timeUpdatedAt: Date.now() })
 
     })
-    .then((response: any) => {
+    .then(() => {
         return res.json({'status': Status.Success, 'message': 'Job time updated successfully.'})
     })
     .catch((err: any) => {
@@ -1193,7 +1233,6 @@ export const updateJobTime = (req: Request, res: Response) => {
             return res.json({'status': Status.Error, 'message': err.message})
 
         }else{
-
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
     })

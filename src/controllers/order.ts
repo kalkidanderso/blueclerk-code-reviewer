@@ -12,14 +12,16 @@ export const placeOrder = (req: Request, res: Response) => {
 
     const params = req.body
     const company = <ICompany>req.company
+/*
     if (company.paid == false &&  new Date() > company.chargeDate) {
         return res.json({ 'status': Status.Error, 'message': 'You can\'t buy tags contact blueclerk admin for details.' })
-    }
+    }*/
+
     if(company.stripeId == undefined || company.stripeId == ""){
         return res.json({status: Status.Error, message: "Company payment method required."})
     }
 
-    CompanyCard.findById(params.cardId, 
+    CompanyCard.findById(params.cardId,
         (err: any, card: ICompanyCard)=> {
 
             if (err) {
@@ -47,21 +49,21 @@ export const placeOrder = (req: Request, res: Response) => {
                             stripeChargeId: charge.id,
                         }
                     )
-                
+
                     order.save((err: any) => {
-                
+
                         if (err) {
                             return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         }
-                
+
                         // charge the amount to company
-                
+
                         return res.json({'status': Status.Success, 'message': 'Order placed successfully.'})
-                
+
                     })
                     // return res.json({status: Status.Success, message: "Order placed successfully."});
 
-                
+
                 } else {
                     return res.json({status: Status.Error, message: message})
                 }
@@ -82,7 +84,7 @@ export const getOrders = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            return res.json({'status': Status.Success, 'orders': orders})    
+            return res.json({'status': Status.Success, 'orders': orders})
 
         }
     )
