@@ -71,6 +71,15 @@ export const enum ServiceTicketStatus {
     REACTIVE
 }
 
+export const enum ServiceTicketSource {
+    WEB = 'web',
+    BLUECLERK = 'blueclerk'
+}
+
+export const enum SocketMessage {
+    CREATESERVICETICKET = 'createServiceTicketMsg',
+}
+
 export const enum ContractStatus {
     PENDING,
     ACCEPTED,

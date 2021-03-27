@@ -1,5 +1,5 @@
 import {Request, Response} from 'express'
-import { Status, Messages, ServiceTicketStatus } from '../common/constants'
+import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, SocketMessage } from '../common/constants'
 
 import { ICompany } from '../models/Company'
 import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket'
@@ -8,7 +8,7 @@ import {parseFieldsAndUploadImageInS3, updateFieldsAndUploadImageInS3} from '../
 import { ObjectId } from 'mongodb'
 import {Contact} from '../models/Contact';
 
-export const createServiceTicket = (req: Request, res: Response) => {
+export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
     parseFieldsAndUploadImageInS3(req, res, async (err: any, data)=>{
         if (!err) {
@@ -76,6 +76,8 @@ export const createServiceTicket = (req: Request, res: Response) => {
                         if (err) {
                             return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         }
+
+                        if (serviceTicket.source === ServiceTicketSource.WEB) sio.emit(SocketMessage.CREATESERVICETICKET, serviceTicket);
                         return res.json({'status': Status.Success, 'message': 'Service ticket created successfully.'})
                     })
             })
