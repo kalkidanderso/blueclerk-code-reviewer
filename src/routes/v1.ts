@@ -906,7 +906,9 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Create_Service_Ticket),
-        serviceTicketController.createServiceTicket
+        (req, res) => {
+            serviceTicketController.createServiceTicket(req, res, sio)
+        }
     )
 
     router.post(
