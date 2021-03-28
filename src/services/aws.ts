@@ -387,19 +387,22 @@ export const parseFieldsAndUploadImageInS3 = async function (req: Request, res: 
   const s3 = new AWS.S3();
   if (req.body.source != 'blueclerk' && req.body.image) {
       await http.get(req.body.image, async (res: any) => {
-        // Uploading files to the bucket
-        await s3.upload({
-          Bucket: AWS_BUCKET_NAME,
-          Body: res,
-          ACL: 'public-read',
-          ContentType: req.body.fileType,
-          Key: uuidv4()
-        }, function(err: any, data: any) {
-          if (err) {
-            return next(err, null);
-          }
-          return next(null, {imageUrl: data.Location, body: req.body});
-        });
+        if (res.status == 200) {
+            // Uploading files to the bucket
+          await s3.upload({
+            Bucket: AWS_BUCKET_NAME,
+            Body: res,
+            ACL: 'public-read',
+            ContentType: req.body.fileType,
+            Key: uuidv4()
+          }, function (err: any, data: any) {
+            if (err) {
+              return next(err, null);
+            }
+            return next(null, {imageUrl: data.Location, body: req.body});
+          });
+      }
+        return next(null, {imageUrl: null, body: req.body});
       })
 
   } else {
