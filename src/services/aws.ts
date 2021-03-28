@@ -12,6 +12,9 @@ import {IServiceTicket} from '../models/ServiceTicket';
 import {IContact} from '../common/contact';
 import {ICustomer} from '../models/Customer';
 import {EmailSchedule} from '../models/EmailSchedule';
+import { v4 as uuidv4 } from 'uuid';
+const fs = require('fs');
+const http = require("http");
 
 export const sendEmail = function(options: any) {
 
@@ -371,9 +374,9 @@ export const sendPasswordEmail = function(options: any) {
     )
   })
 }
-export const parseFieldsAndUploadImageInS3 = function(req: Request, res: Response, next: (err: any, data: any)=>void) {
+export const parseFieldsAndUploadImageInS3 = async function (req: Request, res: Response, next: (err: any, data: any) => void) {
 
-  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, AWS_BUCKET_NAME, AWS_REGION} = process.env
+  const {AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, AWS_BUCKET_NAME, AWS_REGION} = process.env
 
   AWS.config.update({
     region: AWS_REGION,
@@ -381,40 +384,61 @@ export const parseFieldsAndUploadImageInS3 = function(req: Request, res: Respons
     secretAccessKey: AWS_SES_SECRETACCESSKEY,
   })
 
-  const fileFilter = (req: Request, file: Express.Multer.File, cb: (err: any, success: boolean)=>void) => {
-    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type, only JPEG and PNG is allowed!'), false);
+  const s3 = new AWS.S3();
+  if (req.body.source != 'blueclerk' && req.body.image) {
+      await http.get(req.body.image, async (res: any) => {
+        // Uploading files to the bucket
+        await s3.upload({
+          Bucket: AWS_BUCKET_NAME,
+          Body: res,
+          ACL: 'public-read',
+          ContentType: req.body.fileType,
+          Key: uuidv4()
+        }, function(err: any, data: any) {
+          if (err) {
+            return next(err, null);
+          }
+          return next(null, {imageUrl: data.Location, body: req.body});
+        });
+      })
+
+  } else {
+    const fileFilter = (req: Request, file: Express.Multer.File, cb: (err: any, success: boolean) => void) => {
+      if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+        return cb(null, true);
+      } else {
+        return cb(new Error('Invalid file type, only JPEG and PNG is allowed!'), false);
+      }
     }
+
+
+    const upload = multer({
+      fileFilter,
+      storage: multerS3({
+        s3: s3,
+        bucket: AWS_BUCKET_NAME,
+        acl: 'public-read',
+        contentType: multerS3.AUTO_CONTENT_TYPE,
+        key: function (req, file, cb) {
+          cb(null, uuid())
+        }
+      })
+    })
+
+    const uploadSingle = upload.single('image')
+
+    uploadSingle(req, res, (err) => {
+
+      if (err) return next(err, null)
+      if (req.body.source === "blueclerk" && !req.body.customerId) {
+        return next({message: "Customer is required to create a service ticket"}, null);
+      }
+      const imageUrl = req.file ? req.file.location : null;
+      const body = req.body;
+      return next(null, {imageUrl, body});
+    })
   }
 
-  const s3 = new AWS.S3()
-  const upload = multer({
-    fileFilter,
-    storage: multerS3({
-      s3: s3,
-      bucket: AWS_BUCKET_NAME,
-      acl: 'public-read',
-      contentType: multerS3.AUTO_CONTENT_TYPE,
-      key: function (req, file, cb) {
-        cb(null, uuid())
-      }
-    })
-  })
-
-  const uploadSingle = upload.single('image')
-
-  uploadSingle(req, res, (err)=>{
-
-    if (err) return next(err, null)
-    if (req.body.source === "blueclerk" && !req.body.customerId) {
-      return res.json({'status': Status.Error, 'message': 'Customer is required to create a service ticket'});
-    }
-    const imageUrl = req.file ? req.file.location : null;
-    const body = req.body;
-    next(null, {imageUrl, body})
-  })
 
 }
 export const updateFieldsAndUploadImageInS3 = function(req: Request, res: Response, next: (err: any, data: any)=>void) {
