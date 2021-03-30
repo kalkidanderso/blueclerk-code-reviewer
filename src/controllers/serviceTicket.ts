@@ -72,12 +72,42 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
                 await company.updateOne({currentJobId: company.currentJobId+1 })
-                    .exec((err: any)=>{
-                        if (!err) {
-                            if (serviceTicket.source === ServiceTicketSource.WEB) sio.emit(SocketMessage.CREATESERVICETICKET, serviceTicket);
-                            return res.json({'status': Status.Success, 'message': 'Service ticket created successfully.'})
+                    .exec(async (err: any)=>{
+                        if (err) {
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         }
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+
+                        if (serviceTicket.source === ServiceTicketSource.WEB) {
+                            const serviceTicketDetail = await ServiceTicket.findOne(
+                                { _id: serviceTicket._id , company: companyId})
+                                .populate({
+                                    path: 'customer',
+                                    select: 'info.email profile.displayName contactName'
+                                })
+                                .populate({
+                                    path: 'createdBy',
+                                    select: 'profile.displayName'
+                                })
+                                .populate({
+                                    path: 'technician',
+                                    select: 'profile.displayName'
+                                })
+                                .populate({
+                                    path: 'editedBy',
+                                    select: 'profile.displayName'
+                                })
+                                .exec(async (err: any, serviceTicket: IServiceTicket) => {
+                                    if(err) {
+                                        return null;
+                                    }
+                                    await Promise.all([
+                                        sio.emit(SocketMessage.CREATESERVICETICKET, serviceTicket),
+                                    ])
+                                }
+                            )
+
+                        }
+                        return res.json({'status': Status.Success, 'message': 'Service ticket created successfully.'})
                     })
             })
 
@@ -86,7 +116,6 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
         }
     });
 }
-
 
 export const getServiceTickets = (req: Request, res: Response) => {
 
