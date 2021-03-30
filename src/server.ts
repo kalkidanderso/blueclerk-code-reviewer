@@ -33,8 +33,8 @@ const { DB_USER, DB_PASS, DB_HOST, DB_NAME } = process.env
 
 mongoose.set('useCreateIndex', true)
 mongoose.connect(
-  // 'mongodb://localhost:27017/norton',
-  `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`,
+  'mongodb://localhost:27017/norton',
+  // `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`,
   {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false},
   (err: MongoError) => {
 
@@ -88,7 +88,7 @@ const sio = require("socket.io")(httpServer, {
   handlePreflightRequest: (req:any, res: any) => {
     const headers = {
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Allow-Origin": req.headers.origin, //or the specific origin you want to give access to,
+        "Access-Control-Allow-Origin": "*", //or the specific origin you want to give access to,
         "Access-Control-Allow-Credentials": true
     };
     res.writeHead(200, headers);
