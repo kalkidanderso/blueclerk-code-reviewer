@@ -73,12 +73,11 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 }
                 await company.updateOne({currentJobId: company.currentJobId+1 })
                     .exec((err: any)=>{
-                        if (err) {
-                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                        if (!err) {
+                            if (serviceTicket.source === ServiceTicketSource.WEB) sio.emit(SocketMessage.CREATESERVICETICKET, serviceTicket);
+                            return res.json({'status': Status.Success, 'message': 'Service ticket created successfully.'})
                         }
-
-                        if (serviceTicket.source === ServiceTicketSource.WEB) sio.emit(SocketMessage.CREATESERVICETICKET, serviceTicket);
-                        return res.json({'status': Status.Success, 'message': 'Service ticket created successfully.'})
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     })
             })
 
