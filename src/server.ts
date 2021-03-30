@@ -1,4 +1,3 @@
-import express from 'express'
 import dotenv from 'dotenv'
 import mongoose from 'mongoose'
 import logger from 'morgan'
@@ -15,7 +14,7 @@ import * as swaggerDocument from './swagger.json'
 // const CronJob = require('cron').CronJob;
 import {CronJob} from 'cron'
 import request from 'request';
-const http = require('http');
+
 //Environment config
 import moment from 'moment-timezone';
 import {EmailSchedule, IEmailSchedule} from './models/EmailSchedule';
@@ -27,7 +26,6 @@ import {Customer} from './models/Customer';
 import {Status} from './common/constants';
 const timeout = require('connect-timeout');
 
-
 dotenv.config()
 process.env.TZ = 'America/Chicago';
 //Database connection
@@ -35,6 +33,7 @@ const { DB_USER, DB_PASS, DB_HOST, DB_NAME } = process.env
 
 mongoose.set('useCreateIndex', true)
 mongoose.connect(
+  // 'mongodb://localhost:27017/norton',
   `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`,
   {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false},
   (err: MongoError) => {
@@ -46,7 +45,7 @@ mongoose.connect(
 )
 
 // Application/Server configs
-const app: express.Application = express()
+const app = require('express')();
 
 app.use(timeout('1200s'));
 
@@ -62,7 +61,7 @@ function haltOnTimeout (req: any, res: any, next: any) {
 
 
 //CORS
-app.use(function(req, res, next) {
+app.use(function(req: any, res: any, next: any) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   next();
@@ -84,8 +83,8 @@ app.use(logger('dev'))
 //Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-const server = http.createServer(app);
-const sio = require("socket.io")(server, {
+const httpServer = require('http').createServer(app);
+const sio = require("socket.io")(httpServer, {
   handlePreflightRequest: (req:any, res: any) => {
     const headers = {
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
@@ -97,10 +96,15 @@ const sio = require("socket.io")(server, {
   }
 });
 
-sio.on("connection", () => {
+sio.on("connection", (socket:any) => {
   console.log("Connected!");
+  socket.on('message', () => {
+    console.log('Message received from FE!');
+  });
 });
-//Router
+sio.on('disconnect', (socket:any) => {
+  console.log('Disconnected at ', new Date());
+})
 app.use('/api/v1', routesV1(sio))
 new CronJob('0 0 1 * *', function() {
   // console.log('You will see this message every second');
@@ -187,7 +191,7 @@ try {
 }
 
 //Starting the server
-server.listen(
+httpServer.listen(
   app.get('port'),
   (err: any) => {
 
