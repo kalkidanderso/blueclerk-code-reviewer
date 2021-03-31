@@ -96,6 +96,7 @@ const sio = require("socket.io")(httpServer, {
   }*/
     cors:true,
     origins:["https://blueclerk-frontend-react.deploy.blueclerk.com", 'http://testing.blueclerk.com', 'https://app.blueclerk.com'],
+    transport : ['websocket']
 
 });
 
