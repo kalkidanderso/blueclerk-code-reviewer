@@ -1035,9 +1035,9 @@ export const startContract = async (req: Request, res: Response) => {
     const params = req.body
     const user = <IUser>req.user
     const company = <ICompany>req.company;
-    if (company.paid == false && company.type == 1) {
+/*    if (company.paid == false && company.type == 1) {
         return res.json({'status': Status.Error, 'message': 'Your Free Trial has ended. Please buy Subscription to Add Contractors'});
-    }
+    }*/
     let nbOfAvailableContracts = await Contract.countDocuments({company: company._id, status: {$in: [ContractStatus.ACCEPTED, ContractStatus.PENDING]}});
 
     Company.findById(params.contractorId,
@@ -1077,7 +1077,7 @@ export const startContract = async (req: Request, res: Response) => {
                         }
 
                         // ToDo send email to contractor for contract started
-                        sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
+                        sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName, companyEmail: req.company.info.companyEmail })
                         sendContractStartEmailToCompany({ to: req.company.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
                         return res.json({ 'status': Status.Success, 'message': 'Vendor Added.' })
 
