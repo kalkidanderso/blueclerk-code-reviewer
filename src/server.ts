@@ -72,7 +72,7 @@ app.use(compression())
 app.use(cookieParser())
 app.use(bodyParser.json({limit:'50mb'}));
 app.use(bodyParser.urlencoded({extended:true, limit:'50mb', parameterLimit: 10000000}));
-app.use(cors())
+app.use(cors({origin: "*"}))
 
 //Auth middleware
 app.use(passport.initialize())
@@ -94,10 +94,6 @@ const sio = require("socket.io")(httpServer, {
     res.writeHead(200, headers);
     res.end();
   }*/
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
 
 });
 
