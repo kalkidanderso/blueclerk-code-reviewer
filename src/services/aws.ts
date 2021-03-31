@@ -170,7 +170,7 @@ export const sendContractStartEmail = function(options: any) {
   return new Promise((resolve, reject) => {
     ses.sendEmail(
       {
-        Source: APP_EMAIL_NOREPLY,
+        Source: `${options.company}<${APP_EMAIL_NOREPLY}>`,
         Destination: {
           CcAddresses: [],
           ToAddresses: [options.to],
@@ -186,7 +186,7 @@ export const sendContractStartEmail = function(options: any) {
             },
           },
         },
-        ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        ReplyToAddresses: [options.companyEmail],
       },
       (err, info) => {
         if (err) {
