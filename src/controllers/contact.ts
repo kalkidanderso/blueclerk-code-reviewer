@@ -59,15 +59,12 @@ export const addContact = async (req: Request, res: Response) => {
             return res.json({'status': Status.Created, contact: result})
         } else if(req.body.type === 'JobLocation'){
             const jobLocation = await JobLocation.findOne({_id: req.body.referenceNumber})
-            console.log('Job location::::::')
-            console.log(jobLocation)
             if(!jobLocation) {
                 return res.json({ status: Status.Error, message: 'Job location not found'})
             }
             if(req.body.contactId) {
                 contact = await addContactToTheJobLocation(req.body.contactId, req.body.referenceNumber)
             } else {
-                console.log('Before going to the create contact for the job location::::::::')
                 contact = await createContactForJobLocation({name: req.body.name, email: req.body.email, phone: req.body.phone}, jobLocation._id)
             }
             return res.json({success: Status.Created, contact})
@@ -82,8 +79,6 @@ export const updateContact = async (req: Request, res: Response) => {
         const result = await Contact.findByIdAndUpdate(req.body._id, {name: req.body.name, phone: req.body.phone, email: req.body.email}, {
             new: true
         })
-        console.log('Result::::')
-        console.log(result)
         if(result) {
             return res.json({status: Status.Success, contact: result})
         } else {

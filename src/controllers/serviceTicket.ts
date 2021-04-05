@@ -1,21 +1,21 @@
 import {Request, Response} from 'express'
-import { Status, Messages, ServiceTicketStatus } from '../common/constants'
+import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, SocketMessage } from '../common/constants'
 
 import { ICompany } from '../models/Company'
 import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket'
-import {IUser, User} from '../models/User'
+import {IUser} from '../models/User'
 import {parseFieldsAndUploadImageInS3, updateFieldsAndUploadImageInS3} from '../services/aws';
-import {Customer} from '../models/Customer';
 import { ObjectId } from 'mongodb'
+import {Contact} from '../models/Contact';
 
-export const createServiceTicket = (req: Request, res: Response) => {
+export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
     parseFieldsAndUploadImageInS3(req, res, async (err: any, data)=>{
         if (!err) {
             const params = data.body
-            var companyId = req.companyId;
-            var user = <IUser>req.user
-            var company  = <ICompany>req.company;
+            let companyId = req.companyId;
+            let user = <IUser>req.user;
+            let company  = <ICompany>req.company;
             let customerContact = params.customerContactId ? params.customerContactId : null
             if (customerContact) {
                 try {
@@ -25,26 +25,27 @@ export const createServiceTicket = (req: Request, res: Response) => {
                 }
             }
             let customerPo = params.customerPO ? params.customerPO : null;
-            let customerId;
-            try {
-                customerId = new ObjectId(params.customerId)
-            } catch (e) {
-                return res.json({'status': Status.Error, 'message': Messages.WrongId});
+            let customerId: any = null;
+            if (params.customerId) {
+                try {
+                    customerId = new ObjectId(params.customerId)
+                } catch (e) {
+                    return res.json({'status': Status.Error, 'message': Messages.WrongId});
+                }
             }
 
             if(req.otherCompanyId != undefined) {
                 companyId = req.otherCompanyId
             }
-            var ticketId = 'Ticket '+ (company.currentJobId+1)
-            if(company.prefix != undefined && company.prefix != null && company.prefix == '""') {
+            let ticketId = 'Ticket '+ (company.currentJobId+1)
+            if(company.prefix != undefined && company.prefix == '""') {
                 ticketId = 'Ticket '+company.prefix+'-'+(company.currentJobId+1)
             }
 
-            var dueDate = params.dueDate ? new Date(params.dueDate) : null
+            let dueDate = params.dueDate ? new Date(params.dueDate) : null
             let serviceTicket = new ServiceTicket({
                 createdAt: Date.now(),
                 dueDate: dueDate,
-                customer: customerId,
                 createdBy: user._id,
                 company: companyId,
                 note: params.note,
@@ -54,26 +55,57 @@ export const createServiceTicket = (req: Request, res: Response) => {
                 jobSite: params.jobSiteId,
                 jobType: params.jobTypeId,
                 customerPO : customerPo,
-            })
+            });
+            if (customerId) {
+                serviceTicket.customer = customerId;
+            }
             if (customerContact) {
-                const customerWithContact = await Customer.findOne(
-                        {
-                            _id : customerId,
-                            contacts: { $exists: true, $in: [customerContact] } }
-                            );
-                if (customerWithContact) {
-                    serviceTicket.customerContactId = customerContact;
+                let checkContact = await Contact.findOne({_id: customerContact}).exec();
+                if (checkContact) {
+                    serviceTicket.customerContactId = checkContact._id;
                 }
             }
             serviceTicket.image = data.imageUrl ? data.imageUrl : null;
+            serviceTicket.source = params.source ? params.source : 'blueclerk';
             await serviceTicket.save(async (err: any) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
                 await company.updateOne({currentJobId: company.currentJobId+1 })
-                    .exec((err: any, raw: any)=>{
+                    .exec(async (err: any)=>{
                         if (err) {
                             return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                        }
+
+                        if (serviceTicket.source === ServiceTicketSource.WEB) {
+                            const serviceTicketDetail = await ServiceTicket.findOne(
+                                { _id: serviceTicket._id , company: companyId})
+                                .populate({
+                                    path: 'customer',
+                                    select: 'info.email profile.displayName contactName'
+                                })
+                                .populate({
+                                    path: 'createdBy',
+                                    select: 'profile.displayName'
+                                })
+                                .populate({
+                                    path: 'technician',
+                                    select: 'profile.displayName'
+                                })
+                                .populate({
+                                    path: 'editedBy',
+                                    select: 'profile.displayName'
+                                })
+                                .exec(async (err: any, serviceTicket: IServiceTicket) => {
+                                    if(err) {
+                                        return null;
+                                    }
+                                    await Promise.all([
+                                        sio.emit(SocketMessage.CREATESERVICETICKET, serviceTicket),
+                                    ])
+                                }
+                            )
+
                         }
                         return res.json({'status': Status.Success, 'message': 'Service ticket created successfully.'})
                     })
@@ -85,10 +117,9 @@ export const createServiceTicket = (req: Request, res: Response) => {
     });
 }
 
-
 export const getServiceTickets = (req: Request, res: Response) => {
 
-    var companyId = req.companyId;
+    let companyId = req.companyId;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
@@ -128,10 +159,10 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
             const pageSize = +req.query.pagesize;
             const currentPage = +req.query.page;
             let contactName: any;
-            var companyId = req.companyId;
-            var serviceTickets : any = [];
-            var totalCount : number = 0;
-            var customerNames: any;
+            let companyId = req.companyId;
+            let serviceTickets : any = [];
+            let totalCount : number = 0;
+            let customerNames: any;
 
             if (req.otherCompanyId != undefined) {
                 companyId = req.otherCompanyId
@@ -141,14 +172,14 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                 customerNames = params.customerNames.split(',')
             }
 
-            var criteria : any = {
+            let criteria : any = {
                 company: companyId,
                 jobCreated: false
             };
 
             if (params.contactName) {
                 contactName = params.contactName;
-                criteria['customer.contactName'] = contactName;
+                criteria['customerContactId.name'] = contactName;
             }
 
 
@@ -161,7 +192,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
             }
 
             if (params.ticketId) {
-                var ticketId = params.ticketId;
+                let ticketId = params.ticketId;
                 if (ticketId.match(/\d/g)) {
                     ticketId = 'Ticket '+ticketId.match(/\d/g).join("");
                 }
@@ -256,7 +287,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                 }
                 return res.json({'status': Status.Success, 'serviceTickets': serviceTickets , 'total': totalCount })
               }).catch((err:any) => {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({'status': Status.Error, 'message': err.message})
             });
 }
 
@@ -274,7 +305,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     return res.json({'status': Status.Error, 'message': Messages.WrongId});
                 }
             }
-            var companyId = req.companyId;
+            let companyId = req.companyId;
             if(req.otherCompanyId != undefined) {
                 companyId = req.otherCompanyId
             }
@@ -313,18 +344,23 @@ export const updateServiceTicket = (req: Request, res: Response) => {
 
                     let customerContactId = customerContact ? customerContact : serviceTicket.customerContactId;
 
-
+                    let customer = params.customerId ? new ObjectId(params.customerId) : serviceTicket.customer;
 
                     let jobLocationId: any = serviceTicket.jobLocation
-                    jobLocationId = params.jobLocationId
+                    if (params.jobLocationId) {
+                        jobLocationId = params.jobLocationId
+                    }
 
 
                     let jobSiteId: any = serviceTicket.jobSite
-                    jobSiteId = params.jobSiteId
+                    if (params.jobSiteId) {
+                        jobSiteId = params.jobSiteId
+                    }
 
                     let jobTypeId: any = serviceTicket.jobType
-                    jobTypeId = params.jobTypeId
-
+                    if (params.jobTypeId) {
+                        jobTypeId = params.jobTypeId
+                    }
                     if (
                         serviceTicket.dueDate != params.dueDate ||
                         serviceTicket.image != data.imageUrl ||
@@ -351,10 +387,11 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             image: image,
                             customerPO: customerPO,
                             customerContactId: customerContactId,
+                            customer: customer,
                             status: status,
                             track: track
                         },
-                        (err: any, raw: any)=> {
+                        (err: any)=> {
 
                             if (err) {
                                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -376,7 +413,7 @@ export const editServiceTicket = (req: Request, res: Response) => {
     const params = req.body
     const user = <IUser>req.user
 
-    var companyId = req.companyId;
+    let companyId = req.companyId;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
@@ -414,8 +451,8 @@ export const editServiceTicket = (req: Request, res: Response) => {
             }
 
             serviceTicket.updateOne(
-                {status: params.status, editedBy: user._id, editedAt: Date.now() },
-                (err: any, raw: any)=> {
+                {status: params.status, editedBy: user._id, editedAt: Date.now(), track: track },
+                (err: any)=> {
 
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -433,7 +470,7 @@ export const getServiceTicketDetail = (req: Request, res: Response) => {
 
     const params = req.body
 
-    var companyId = req.companyId;
+    let companyId = req.companyId;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }

@@ -12,6 +12,9 @@ import {IServiceTicket} from '../models/ServiceTicket';
 import {IContact} from '../common/contact';
 import {ICustomer} from '../models/Customer';
 import {EmailSchedule} from '../models/EmailSchedule';
+import { v4 as uuidv4 } from 'uuid';
+const fs = require('fs');
+const http = require("http");
 
 export const sendEmail = function(options: any) {
 
@@ -167,7 +170,7 @@ export const sendContractStartEmail = function(options: any) {
   return new Promise((resolve, reject) => {
     ses.sendEmail(
       {
-        Source: APP_EMAIL_NOREPLY,
+        Source: `${options.company}<${APP_EMAIL_NOREPLY}>`,
         Destination: {
           CcAddresses: [],
           ToAddresses: [options.to],
@@ -183,7 +186,7 @@ export const sendContractStartEmail = function(options: any) {
             },
           },
         },
-        ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        ReplyToAddresses: [options.companyEmail],
       },
       (err, info) => {
         if (err) {
@@ -371,9 +374,9 @@ export const sendPasswordEmail = function(options: any) {
     )
   })
 }
-export const parseFieldsAndUploadImageInS3 = function(req: Request, res: Response, next: (err: any, data: any)=>void) {
+export const parseFieldsAndUploadImageInS3 = async function (req: Request, res: Response, next: (err: any, data: any) => void) {
 
-  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, AWS_BUCKET_NAME, AWS_REGION} = process.env
+  const {AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, AWS_BUCKET_NAME, AWS_REGION} = process.env
 
   AWS.config.update({
     region: AWS_REGION,
@@ -381,41 +384,64 @@ export const parseFieldsAndUploadImageInS3 = function(req: Request, res: Respons
     secretAccessKey: AWS_SES_SECRETACCESSKEY,
   })
 
-  const fileFilter = (req: Request, file: Express.Multer.File, cb: (err: any, success: boolean)=>void) => {
-    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type, only JPEG and PNG is allowed!'), false);
+  const s3 = new AWS.S3();
+  if (req.body.source != 'blueclerk' && req.body.image) {
+      await http.get(req.body.image, async (res: any) => {
+        if (res.status == 200) {
+            // Uploading files to the bucket
+          await s3.upload({
+            Bucket: AWS_BUCKET_NAME,
+            Body: res,
+            ACL: 'public-read',
+            ContentType: req.body.fileType,
+            Key: uuidv4()
+          }, function (err: any, data: any) {
+            if (err) {
+              return next(err, null);
+            }
+            return next(null, {imageUrl: data.Location, body: req.body});
+          });
+      }
+        return next(null, {imageUrl: null, body: req.body});
+      })
+
+  } else {
+    const fileFilter = (req: Request, file: Express.Multer.File, cb: (err: any, success: boolean) => void) => {
+      if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+        return cb(null, true);
+      } else {
+        return cb(new Error('Invalid file type, only JPEG and PNG is allowed!'), false);
+      }
     }
+
+
+    const upload = multer({
+      fileFilter,
+      storage: multerS3({
+        s3: s3,
+        bucket: AWS_BUCKET_NAME,
+        acl: 'public-read',
+        contentType: multerS3.AUTO_CONTENT_TYPE,
+        key: function (req, file, cb) {
+          cb(null, uuid())
+        }
+      })
+    })
+
+    const uploadSingle = upload.single('image')
+
+    uploadSingle(req, res, (err) => {
+
+      if (err) return next(err, null)
+      if (req.body.source === "blueclerk" && !req.body.customerId) {
+        return next({message: "Customer is required to create a service ticket"}, null);
+      }
+      const imageUrl = req.file ? req.file.location : null;
+      const body = req.body;
+      return next(null, {imageUrl, body});
+    })
   }
 
-  const s3 = new AWS.S3()
-  const upload = multer({
-    fileFilter,
-    storage: multerS3({
-      s3: s3,
-      bucket: AWS_BUCKET_NAME,
-      acl: 'public-read',
-      contentType: multerS3.AUTO_CONTENT_TYPE,
-      key: function (req, file, cb) {
-        cb(null, uuid())
-      }
-    })
-  })
-
-  const uploadSingle = upload.single('image')
-
-  uploadSingle(req, res, (err)=>{
-
-    if (err) return next(err, null)
-    if(!req.body.customerId)
-    {
-      return next({'status': Status.Error, 'message': Messages.MissingParams}, null);
-    }
-    const imageUrl = req.file ? req.file.location : null;
-    const body = req.body;
-    next(null, {imageUrl, body})
-  })
 
 }
 export const updateFieldsAndUploadImageInS3 = function(req: Request, res: Response, next: (err: any, data: any)=>void) {
@@ -838,6 +864,48 @@ export const sendAccountDowngradeEmail = function(options: any) {
           Body: {
             Html: {
               Data: "<p>Your account has been downgraded to the free version. You may still use the software free of charge with limited functionality. All of your data will be saved.</p><p>You can upgrade to a full account at any time.</p><div><a href=\"https://app.blueclerk.com/login/\" target=\"_blank\"><img src=\"https://app.blueclerk.com/assets/img/logo.jpg\" style=\"width: 20%;\" alt='BlueClerk'></a></div>",
+            },
+          },
+        },
+        ReplyToAddresses: [APP_EMAIL_NOREPLY],
+      },
+      (err, info) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(info)
+        }
+      },
+    )
+  })
+}
+export const sendAccountUpgradeEmail = function(options: any) {
+
+  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
+
+  AWS.config.update({
+    region: AWS_REGION,
+    accessKeyId: AWS_SES_ACCESSKEYID,
+    secretAccessKey: AWS_SES_SECRETACCESSKEY,
+  })
+
+  const ses = new AWS.SES({ apiVersion: '2012-10-17' })
+
+  return new Promise((resolve, reject) => {
+    ses.sendEmail(
+      {
+        Source: APP_EMAIL_NOREPLY,
+        Destination: {
+          CcAddresses: [],
+          ToAddresses: [options.to],
+        },
+        Message: {
+          Subject: {
+            Data: "BlueClerk Alert: Account status change",
+          },
+          Body: {
+            Html: {
+              Data: "<p>Congratulation! Your account has been upgraded to the full version. You may use all the features of the software now. All of your data will be saved.</p><p>You can downgrade to a free account version at any time.</p><div><a href=\"https://app.blueclerk.com/login/\" target=\"_blank\"><img src=\"https://app.blueclerk.com/assets/img/logo.jpg\" style=\"width: 20%;\" alt='BlueClerk'></a></div>",
             },
           },
         },

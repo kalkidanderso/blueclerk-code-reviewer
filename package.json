@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "dev": "npm run tsc && node ./dist/server.js"
   },
   "author": "",
   "license": "ISC",
@@ -27,6 +28,7 @@
     "@types/passport": "^1.0.1",
     "@types/passport-jwt": "^3.0.1",
     "@types/request": "^2.48.3",
+    "@types/socket.io": "^2.1.13",
     "@types/stripe": "^6.32.8",
     "@types/swagger-ui-express": "^3.0.1",
     "@types/uuid": "^3.4.5",
@@ -34,6 +36,7 @@
     "bcrypt-nodejs": "0.0.3",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
+    "connect-timeout": "^1.9.0",
     "cookie-parser": "^1.4.4",
     "cors": "^2.8.5",
     "cron": "^1.7.2",
@@ -55,12 +58,17 @@
     "passport": "^0.4.0",
     "passport-jwt": "^4.0.0",
     "password-validator": "^5.0.3",
+    "path": "^0.12.7",
     "request": "^2.88.0",
-    "socket.io": "^2.3.0",
+    "socket.io": "^4.0.0",
     "stripe": "^7.9.1",
     "swagger-ui-express": "^4.0.7",
     "typescript": "^3.6.2",
     "uuid": "^3.3.3",
     "xlsx": "^0.15.4"
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.37",
+    "nodemon": "^2.0.7"
   }
 }

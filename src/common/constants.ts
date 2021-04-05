@@ -10,7 +10,8 @@ export const Status = {
     TagAssociated: 2,
     TagNotAssociated: 3,
     QBUnauthorized: 4,
-    InvalidEquipment: 5
+    InvalidEquipment: 5,
+    TimeOut: 503
 }
 
 export const enum TagType {
@@ -70,6 +71,15 @@ export const enum ServiceTicketStatus {
     REACTIVE
 }
 
+export const enum ServiceTicketSource {
+    WEB = 'web',
+    BLUECLERK = 'blueclerk'
+}
+
+export const enum SocketMessage {
+    CREATESERVICETICKET = 'createServiceTicketMsg',
+}
+
 export const enum ContractStatus {
     PENDING,
     ACCEPTED,
@@ -88,6 +98,17 @@ export const enum EstimateStatus {
     PENDING,
     APPROVED,
     CANCELED
+}
+
+
+export const enum EmployeeStatus {
+    INACTIVE,
+    ACTIVE
+}
+
+export const enum CompanyType {
+    SUBSCRIBED,
+    FREE,
 }
 
 export const enum Permissions {
@@ -218,7 +239,6 @@ export const enum Permissions {
     Update_Location_Tag,
     Get_Location_Tags,
     Get_Location_Tag_Jobs
-
 }
 
 export const ContractorPermissions = {

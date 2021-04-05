@@ -22,7 +22,7 @@ export interface ICompany extends Document{
         tenantId: string
         hasCardOnFile: boolean
     },
-    employees: [Schema.Types.ObjectId]
+    employees: [Schema.Types.ObjectId] | any[]
     customers: [Schema.Types.ObjectId]
     stripeId: string
     paid: boolean
@@ -31,6 +31,7 @@ export interface ICompany extends Document{
     maxTechnicians: number
     maxManagers: number
     maxOfficeAdmins: number
+    maxAdmins: number
     userPermissions: {
         0: {
             on: [Number],
@@ -116,6 +117,10 @@ const CompanySchema = new Schema({
         default: 0
     },
     maxOfficeAdmins: {
+        type: Number,
+        default: 0
+    },
+    maxAdmins: {
         type: Number,
         default: 0
     },

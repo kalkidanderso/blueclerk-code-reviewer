@@ -1,5 +1,5 @@
 import { Request, Response, response } from 'express'
-import { Status, Role, Messages, UserPermissions, ContractStatus, Permissions } from '../common/constants'
+import {Status, Role, Messages, UserPermissions, ContractStatus, Permissions, CompanyType} from '../common/constants'
 import {
     sendEmail,
     sendEmployeeEmail,
@@ -45,7 +45,6 @@ const Hubspot = require('hubspot')
 
 export const login = (req: Request, res: Response, sio: any) => {
     const params = req.body
-    console.log(sio.id);
     User.findOne(
         { 'auth.email': params.email },
         (err: any, user: IUser) => {
@@ -85,7 +84,7 @@ export const login = (req: Request, res: Response, sio: any) => {
                         })
                     })
 
-            } else if (user.permissions.role != Role.GLOBAL_ADMIN) {
+            } else if (user.permissions.role == Role.GLOBAL_ADMIN || user.permissions.role == Role.COMPANY_ADMIN) {
 
                 user.comparePassword(params.password, (isMatching: Boolean) => {
 
@@ -104,6 +103,7 @@ export const login = (req: Request, res: Response, sio: any) => {
                             company.paid = undefined
                             company.type = undefined
                             company.maxTechnicians = undefined
+                            company.maxAdmins = undefined
                             company.maxManagers = undefined
                             company.maxOfficeAdmins = undefined
                             company.qbAccessToken = undefined
@@ -206,6 +206,7 @@ export const createCompany = (req: Request, res: Response, sio: any) => {
                 userPermissions: UserPermissions,
                 chargeDate: chargeDate,
                 maxTechnicians: 2,
+                maxAdmins: 1,
                 maxManagers: 1,
                 maxOfficeAdmins: 1
             }
@@ -321,6 +322,11 @@ export const createTechnician = (req: Request, res: Response) => {
 
 export const createOfficeAdmin = (req: Request, res: Response) => {
     createEmployee(req, res, Role.OFFICE_ADMIN)
+}
+
+// This is an employee admin (won't be able to delete company profile)
+export const createAdminEmployee = (req: Request, res: Response) => {
+    createEmployee(req, res, Role.GLOBAL_ADMIN)
 }
 
 export const getManagersList = (req: Request, res: Response) => {
@@ -505,13 +511,12 @@ export const activateEmployee = (req: Request, res: Response) => {
 }
 
 const createEmployee = (req: Request, res: Response, role: Role) => {
-
     checkNoOfUsers(req, res, role, (req: Request, res: Response) => {
 
         checkEmailExists(req, res, (req: Request, res: Response) => {
 
             const params = req.body
-            const roles = ['OfficeAdmin', 'Technician', 'Manager']
+            const roles = ['OfficeAdmin', 'Technician', 'Manager', '', 'Admin'];
 
             var password = generator.generate({
                 length: 8,
@@ -610,7 +615,6 @@ const getEmployeesList = (req: Request, res: Response, role: Role) => {
 }
 
 const checkEmailExists = (req: Request, res: Response, next: (req: Request, res: Response) => void) => {
-
     const params = req.body
 
     var schema = new passwordValidator();
@@ -688,16 +692,18 @@ const checkCompanyEmailExists = (req: Request, res: Response, next: (req: Reques
 
 }
 
+
 const checkNoOfUsers = (req: Request, res: Response, role: Role, next: (req: Request, res: Response) => void) => {
 
-    const company = <ICompany>req.company
+    const company = <ICompany>req.company;
     if (company.paid == false && new Date() > company.chargeDate) {
-        return res.json({ 'status': Status.Error, 'message': 'You can\'t create users contact blueclerk admin for details.' })
+        return res.json({ 'status': Status.Error, 'message': 'To add employees please upgrade your account.' })
     }
     var dataToUpdate = {
         maxOfficeAdmins: company.maxOfficeAdmins,
         maxManagers: company.maxManagers,
         maxTechnicians: company.maxTechnicians,
+        maxAdmins: company.maxAdmins
     }
 
     if (!company.maxManagers) {
@@ -709,8 +715,11 @@ const checkNoOfUsers = (req: Request, res: Response, role: Role, next: (req: Req
     if (!company.maxOfficeAdmins) {
         dataToUpdate.maxOfficeAdmins = 0
     }
+    if (!company.maxAdmins) {
+        dataToUpdate.maxAdmins = 0
+    }
 
-    if (!company.maxManagers || !company.maxTechnicians || !company.maxOfficeAdmins) {
+    if (!company.maxManagers || !company.maxTechnicians || !company.maxOfficeAdmins || !company.maxAdmins) {
 
         company.updateOne(
             dataToUpdate,
@@ -774,6 +783,23 @@ const checkNoOfUsers = (req: Request, res: Response, role: Role, next: (req: Req
                                 next(req, res)
                             });
                         break;
+                    case 4:
+                        if (company.maxAdmins == 0) {
+                            return res.json({ 'status': Status.Error, 'message': 'You dont have any subscription yet. Buy some to add admins.' })
+                        }
+
+                        User.countDocuments({ company: new ObjectId(req.companyId), status: 1, 'permissions.role': 4 },
+                            function (err: any, count: any) {
+                                if (err) {
+                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                }
+
+                                if (count >= company.maxAdmins) {
+                                    return res.json({ 'status': Status.Error, 'message': 'Maximum Nb. of admins already exceeded please buy more subscription to add more.' })
+                                }
+                                next(req, res)
+                            });
+                        break;
 
                     default:
                         break;
@@ -828,6 +854,22 @@ const checkNoOfUsers = (req: Request, res: Response, role: Role, next: (req: Req
 
                         if (count >= company.maxManagers) {
                             return res.json({ 'status': Status.Error, 'message': 'Maximum No. of managers already added please buy more subscription to add more.' })
+                        }
+                        next(req, res)
+                    });
+                break;
+            case 4:
+                if (company.maxAdmins == 0) {
+                    return res.json({ 'status': Status.Error, 'message': 'You dont have any subscription yet. Buy more to add an admin.' })
+                }
+                User.countDocuments({ company: new ObjectId(req.companyId), status: 1, 'permissions.role': 4 },
+                    function (err: any, count: any) {
+                        if (err) {
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
+
+                        if (count >= company.maxAdmins) {
+                            return res.json({ 'status': Status.Error, 'message': 'Maximum Nb. of admins already exceeded please buy more subscription to add an admin.' })
                         }
                         next(req, res)
                     });
@@ -988,10 +1030,15 @@ export const searchContractor = (req: Request, res: Response) => {
 }
 
 // company start / initiate contract for contractor
-export const startContract = (req: Request, res: Response) => {
+export const startContract = async (req: Request, res: Response) => {
 
     const params = req.body
     const user = <IUser>req.user
+    const company = <ICompany>req.company;
+/*    if (company.paid == false && company.type == 1) {
+        return res.json({'status': Status.Error, 'message': 'Your Free Trial has ended. Please buy Subscription to Add Contractors'});
+    }*/
+    let nbOfAvailableContracts = await Contract.countDocuments({company: company._id, status: {$in: [ContractStatus.ACCEPTED, ContractStatus.PENDING]}});
 
     Company.findById(params.contractorId,
         (err: any, contractor: ICompany) => {
@@ -1000,7 +1047,7 @@ export const startContract = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            if (contractor == undefined || contractor == null) {
+            if (contractor == undefined) {
                 return res.json({ 'status': Status.Error, 'message': 'Invalid vendor.' })
             }
 
@@ -1012,10 +1059,9 @@ export const startContract = (req: Request, res: Response) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
 
-                    if (oldcontract != undefined && oldcontract != null) {
+                    if (oldcontract != undefined) {
                         return res.json({ 'status': Status.Error, 'message': 'Vendor already exist.' })
                     }
-
                     const contract = new Contract(
                         {
                             company: req.companyId,
@@ -1031,7 +1077,7 @@ export const startContract = (req: Request, res: Response) => {
                         }
 
                         // ToDo send email to contractor for contract started
-                        sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
+                        sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName, companyEmail: req.company.info.companyEmail })
                         sendContractStartEmailToCompany({ to: req.company.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
                         return res.json({ 'status': Status.Success, 'message': 'Vendor Added.' })
 
@@ -1048,6 +1094,11 @@ export const inviteContractor = (req: Request, res: Response) => {
     const params = req.body
     const user = <IUser>req.user
 
+    const company = <ICompany>req.company;
+    if (company.paid == false && new Date() > company.chargeDate) {
+        return res.json({ 'status': Status.Error, 'message': 'You can\'t invite contractors, please contact blueclerk for details.' });
+    }
+
     Company.findOne({ 'info.companyEmail': params.email },
         (err: any, contractor: ICompany) => {
 
@@ -1055,7 +1106,7 @@ export const inviteContractor = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            if (contractor != undefined && contractor != null) {
+            if (contractor != undefined) {
                 return res.json({ 'status': Status.Error, 'message': 'Email already taken.' })
             }
 
@@ -1086,7 +1137,7 @@ export const getAllContracts = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            if (contracts.length == 0 || contracts == undefined) {
+            if (contracts.length == 0) {
                 return res.json({ 'status': Status.Error, 'message': 'No contract found.' })
             }
 
@@ -1113,77 +1164,101 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
         return res.json({ 'status': Status.Error, 'message': 'Invald contract status' })
     }
 
-    Contract.findOne({ _id: params.contractId, contractor: contractor._id },
-        (err: any, contract: IContract) => {
+    Contract.findOne({ _id: params.contractId, contractor: contractor._id }).populate('company').then(async (contract) => {
 
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            }
+        if (contract == undefined) {
+            return res.json({ 'status': Status.Error, 'message': 'Invalid contract.' })
+        }
 
-            if (contract == undefined || contract == null) {
-                return res.json({ 'status': Status.Error, 'message': 'Invalid contract.' })
-            }
+        if (contract.status == ContractStatus.CANCELED) {
+            return res.json({ 'status': Status.Error, 'message': 'Contract is already canceled.' })
+        }
 
-            if (contract.status == ContractStatus.CANCELED) {
-                return res.json({ 'status': Status.Error, 'message': 'Contract is already canceled.' })
-            }
+        if (contract.status == ContractStatus.REJECTED) {
+            return res.json({ 'status': Status.Error, 'message': 'Contract is already rejected.' })
+        }
 
-            if (contract.status == ContractStatus.REJECTED) {
-                return res.json({ 'status': Status.Error, 'message': 'Contract is already rejected.' })
-            }
+        if (contract.status == ContractStatus.FINISHED) {
+            return res.json({ 'status': Status.Error, 'message': 'Contract is already finished.' })
+        }
 
-            if (contract.status == ContractStatus.FINISHED) {
-                return res.json({ 'status': Status.Error, 'message': 'Contract is already finished.' })
-            }
+        let company = contract.company;
+        let nbCurrentContract = await Contract.countDocuments({company: company._id, status: {$in: [ContractStatus.ACCEPTED, ContractStatus.PENDING]}});
+        if (params.status == ContractStatus.ACCEPTED) {
+                contract.updateOne(
+                    { status: contractStatus },
+                    (err: any, raw: any) => {
+                        if (err) {
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
 
-            contract.updateOne(
-                { status: contractStatus },
-                (err: any, raw: any) => {
-                    if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                    }
+                        // ToDo send email to company /contractor on update
+                        const companyCustomer = new CompanyCustomer({
+                            company: contractor._id,
+                            customer: company._id,
+                        })
+                        companyCustomer.save((err: any) => {
 
-                    // ToDo send email to company /contractor on update
-                    Company.findById(contract.company,
-                        (err: any, company: ICompany) => {
                             if (err) {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                             }
-                            const companyCustomer = new CompanyCustomer({
-                                company: contractor._id,
-                                customer: company._id,
-                            })
-                            companyCustomer.save((err: any) => {
 
-                                if (err) {
-                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                                }
-
-                                sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
-                                sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
-
-                                var amount: number = 0;
+                            sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
+                            sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
+                                let amount: number = 0;
                                 const now = new Date();
                                 const daysRemaining = now.getDate()
                                 const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate()
                                 const daysToCharge = daysInCurrentMonth-daysRemaining + 1
 
-                                const perday = 2/daysInCurrentMonth
+                                const perday = 3/daysInCurrentMonth
                                 amount = amount+ (perday* daysToCharge)
-
-                                if (company.stripeId != undefined || company.stripeId != '') {
-                                    chargeSubscription(amount, company.stripeId, (status: any, charge: any, message: any) => {
-                                        return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
-                                    })
-                                }else{
-
+                                if (daysToCharge >= 10) {
+                                    if (company.stripeId != undefined || company.stripeId != '') {
+                                        chargeSubscription(amount, company.stripeId, (status: any, charge: any, message: any) => {
+                                            return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
+                                        })
+                                    }
                                     return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
                                 }
-                            })
+
+                            return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
+
+                            // needs to change
+
                         })
-                })
+                    })
+
+        } else {
+                contract.updateOne(
+                    { status: contractStatus },
+                    (err: any, raw: any) => {
+                        if (err) {
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
+
+                        // ToDo send email to company /contractor on update
+                        const companyCustomer = new CompanyCustomer({
+                            company: contractor._id,
+                            customer: company._id,
+                        })
+                        companyCustomer.save((err: any) => {
+
+                            if (err) {
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            }
+
+                            sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
+                            sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
+                            return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
+
+                        })
+                    })
+
         }
-    )
+    }).catch((err) => {
+        return res.json({ 'status': Status.Error, 'message': err.message });
+    })
 }
 
 // cancel or finish by compnay
@@ -1294,8 +1369,8 @@ export const upgradeToCompany = (req: Request, res: Response) => {
                             token: params.token,
                             company: contractor._id,
                             cardStripeId: stripCard.id,
-                            expiryMonth: stripCard.exp_month,
-                            expiryYear: stripCard.exp_year,
+                            expirationMonth: stripCard.exp_month,
+                            expirationYear: stripCard.exp_year,
                             cardType: stripCard.brand,
                             name: stripCard.name
                         })
@@ -1321,7 +1396,7 @@ export const upgradeToCompany = (req: Request, res: Response) => {
     )
 }
 
-const _upgradeHubSpotContact = (company: ICompany) => {
+export const _upgradeHubSpotContact = (company: ICompany) => {
 
     const hubspot = new Hubspot({
         apiKey: '163d5d65-83c0-4d5f-9dcf-55b052f9ef4d'
@@ -1442,6 +1517,7 @@ export const checkAndGetUser = (req: Request, res: Response) => {
                         company.paid = undefined
                         company.type = undefined
                         company.maxTechnicians = undefined
+                        company.maxAdmins = undefined
                         company.maxManagers = undefined
                         company.maxOfficeAdmins = undefined
                         return res.json({ 'status': Status.Success, 'user': user, 'company': company, 'token': user.jwt() })
@@ -1492,7 +1568,8 @@ export const createCompanySocial = (req: Request, res: Response) => {
                         chargeDate: chargeDate,
                         maxTechnicians: 2,
                         maxManagers: 1,
-                        maxOfficeAdmins: 1
+                        maxOfficeAdmins: 1,
+                        maxAdmins: 1
                     }
                 )
 

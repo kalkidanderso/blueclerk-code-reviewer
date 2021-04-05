@@ -151,12 +151,11 @@ export const getCustomerEquipmentJobs = (req: Request, res: Response) => {
     const params = req.body
     CustomerEquipment.findOne({ 'info.nfcTag': params.nfcTag })
         .exec((err: any, customerEquipment: ICustomerEquipment) => {
-            console.log(customerEquipment);
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            if (customerEquipment == undefined || customerEquipment == null) {
+            if (customerEquipment == undefined) {
                 return res.json({ 'status': Status.Error, 'message': 'No equipment found. Please try again'})
             }
 

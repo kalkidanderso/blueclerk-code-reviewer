@@ -30,6 +30,7 @@ export const validate = (validations: ValidationChain[]) => {
 
 }
 
+
 export const Validations = {
   //Auth
   signUp: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('password').exists(), check('companyName').exists(), check('industryId').exists()],
@@ -163,13 +164,15 @@ export const Validations = {
   placeOrder: [check('noOfTags').exists(), check('total').exists(), check('tax').exists(), check('cardId').exists(),  check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(),],
 
   // Company Cards
-  addCompanyCard: [ check('token').exists(), check('ending').exists()],
+  addCompanyCard: [ check('cardNumber').exists(),check('exp').exists(),check('cvc').exists(), check('name').exists(), check('address').exists(), check('city').exists(), check('state').exists(),check('zipcode').exists()],
 
   removeCompanyCard: [ check('cardId').exists()],
 
   subscribe: [ check('cardId').exists(), check('planId').exists()],
 
-  buySubscriptions: [ check('noOfOfficeAdmins').exists(),check('noOfTechnicians').exists(),check('noOfManagers').exists(),],
+  buySubscriptions: [ check('noOfOfficeAdmins').exists(),check('noOfTechnicians').exists(),check('noOfManagers').exists()],
+
+  removeSubscription: [ check('employeeId').exists(),],
 
   updateDefaultPermissions: [check('onPermissions').exists(), check('offPermissions').exists(), check('role').exists()],
 

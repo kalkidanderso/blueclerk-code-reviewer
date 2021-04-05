@@ -156,7 +156,7 @@ export const checkUserPermissions = (permissionId : number) => {
                                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                 }
 
-                                if (contract == undefined || contract == null) {
+                                if (contract == undefined) {
                                     return res.json({'status': Status.Error, 'message': 'No Contract found.'})
                                 }
 

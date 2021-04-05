@@ -1159,7 +1159,7 @@
         ]
       }
     },
-    "/getCurrentIvoiceNumber": {
+    "/getCurrentInvoiceNumber": {
       "post": {
         "tags": [
           "Invoice"
@@ -1369,12 +1369,12 @@
         ]
       }
     },
-    "/createOfficeAdmin": {
+    "/createAdminEmployee": {
       "post": {
         "tags": [
           "Users"
         ],
-        "summary": "To create an office admin",
+        "summary": "To create an admin employee",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -5164,11 +5164,18 @@
         ],
         "parameters": [
           {
-            "name": "customerId",
+            "name": "source",
             "in": "formData",
             "required": true,
             "type": "string",
-            "description": "Id of a customer selected from the list received by /getCustomers api"
+            "enum": ["blueclerk", "web"],
+            "description": "Id of a customer selected from the list received by /getCustomers api (Required for platform users)"
+          },{
+            "name": "customerId",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Id of a customer selected from the list received by /getCustomers api (Required for platform users)"
           },
           {
             "name": "note",
@@ -5806,6 +5813,13 @@
               "type":"integer"
             },
             "description": "The numbers of items to return per page e.g. 10"
+          },
+          {
+            "name": "todaysJobs",
+            "in": "formData",
+            "required": false,
+            "type": "boolean",
+            "description": "true for getting today's jobs"
           },
           {
             "name": "customerNames",
@@ -7640,18 +7654,67 @@
         ],
         "parameters": [
           {
-            "name": "token",
+            "name": "cardNumber",
             "in": "formData",
             "required": true,
             "type": "string",
-            "description": "token fetched by mobile from stripe"
+            "description": "Credit / Debit card number"
           },
           {
-            "name": "ending",
+            "name": "exp",
             "in": "formData",
             "required": true,
             "type": "string",
-            "description": "last 4 digits of company card"
+            "description": "Card expiration date, example: 25/22, format:  mm/yy"
+          },
+          {
+            "name": "cvc",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Card Verification Code, 3-4 digits"
+          },
+          {
+            "name": "name",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Name on card"
+          },
+          {
+            "name": "address",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Billing address line 1"
+          },
+          {
+            "name": "city",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Billing city"
+          },
+          {
+            "name": "state",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Billing state"
+          },
+          {
+            "name": "zipcode",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Billing zipcode"
+          },
+          {
+            "name": "nickName",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Billing method nickName"
           }
         ],
         "responses": {
@@ -7862,6 +7925,13 @@
             "required": true,
             "type": "string",
             "description": "No of technicians company wants to buy or add more subscriptions, if there is none to buy just send 0 otherwise (1,2,3,...)"
+          },
+          {
+            "name": "nbOfAdmins",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "No of admins company wants to buy or add more subscriptions, if there is none to buy just send 0 otherwise (1,2,3,...)"
           }
         ],
         "responses": {
@@ -7894,25 +7964,11 @@
         ],
         "parameters": [
           {
-            "name": "noOfOfficeAdmins",
+            "name": "employeeId",
             "in": "formData",
             "required": true,
             "type": "string",
-            "description": "No of office admins company wants to remove from subscription, if there is none to cancel just send 0 otherwise (1,2,3,...)"
-          },
-          {
-            "name": "noOfManagers",
-            "in": "formData",
-            "required": true,
-            "type": "string",
-            "description": "No of managers company wants to remove from subscription, if there is none to cancel just send 0 otherwise (1,2,3,...)"
-          },
-          {
-            "name": "noOfTechnicians",
-            "in": "formData",
-            "required": true,
-            "type": "string",
-            "description": "No of technicians company wants to remove from subscription, if there is none to cancel just send 0 otherwise (1,2,3,...)"
+            "description": "Id of the Employee That Will be Removed From The Company Subscription"
           }
         ],
         "responses": {
