@@ -1142,7 +1142,7 @@ export const getJobReport = (req: Request, res: Response) => {
         })
         .populate({
             path: 'company',
-            select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone'
+            select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax'
         })
         .populate({
             path: 'createdBy',
