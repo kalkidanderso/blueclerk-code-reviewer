@@ -2,7 +2,7 @@ import {Request, Response} from 'express'
 import { Status, Messages, JobStatus, ServiceTicketStatus } from '../common/constants'
 import {
     sendJobEmailToAssignee,
-    sendJobEmailToCustomer
+    sendJobEmailToCustomer, sendReportEmailToCustomer
 } from '../services/aws'
 
 import { Job, IJob } from '../models/Job'
@@ -12,6 +12,7 @@ import {IUser, User} from '../models/User'
 import { ServiceTicket ,IServiceTicket } from '../models/ServiceTicket'
 import { Scan } from '../models/Scan'
 import { PurchaseOrder } from '../models/PurchaseOrder'
+import {IJobReport, JobReport} from '../models/JobReport'
 import { Item } from '../models/Item'
 import {CronJob} from 'cron';
 import moment from 'moment-timezone';
@@ -672,11 +673,105 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
 }
 
 
+const createJobReport = async (jobId: any, companyId: any) => {
+    const job = await Job.findOne({_id: jobId, company: companyId, status: JobStatus.FINISHED}).select('_id').exec();
+    const scans = await Scan.find({ job: job._id}, 'comment timeOfScan').select('_id').exec();
+    const purchaseOrders = await PurchaseOrder.find({job: job._id}).select('_id').exec();
+    if (scans.length) {
+        const jobReport = new JobReport({
+            job: job,
+            scans: scans,
+            purchaseOrders: purchaseOrders,
+            company: companyId,
+            emailHistory: []
+        });
+        return jobReport.save();
+    }
+}
+
+const deleteJobReportByJobId = async (jobId: any) => {
+    await JobReport.deleteOne({job: jobId});
+}
+export const getAllJobReports = (req: Request, res: Response) => {
+    let companyId = req.companyId;
+
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+    JobReport.find({company: companyId}).populate({
+        path: 'job',
+        select: '_id jobId customer technician',
+    }).exec().then((reports: IJobReport[]) => {
+        if (reports.length) {
+            return res.json({'status': Status.Success, 'reports': reports});
+        }
+        return res.json({'status': Status.Success, 'reports': [], 'message': 'No reports was found!'});
+    }).catch((err) => {
+        return res.json({'status': Status.Error, 'message' : err.message});
+    });
+}
+
+
+export const getJobReportDetails = (req: Request, res: Response) => {
+    const jobReportId = req.query.jobReportId;
+    let companyId = req.companyId;
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+    JobReport.findOne({_id: jobReportId, company: companyId})
+        .populate({
+            path: 'job',
+            populate: [
+                { path: 'ticket', select: 'ticketId note scheduleDateTime' },
+                { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
+                { path: 'type', select: 'title' },
+                { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
+                { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
+                ],
+        }).populate({
+        path: 'scans',
+        populate: [
+            {
+                path: 'equipment',
+                select: 'info.model info.serialNumber info.nfcTag images info.location',
+                populate: [
+                    { path: 'brand', select: 'title' },
+                    { path: 'type', select: 'title' }
+                    ]
+            }
+            ]
+    }).populate('PurchaseOrder')
+        .exec()
+        .then((report: IJobReport) => {
+            if (report) {
+                return res.json({'status': Status.Success, 'report': report});
+            }
+            return res.json({'status': Status.Success, 'message': 'No report was found!'});
+        }).catch((err) => {
+        return res.json({'status': Status.Error, 'message' : err.message});
+    });
+}
+
+
+export const deleteJobReportById = async (req: Request, res: Response) => {
+    const jobReportId = req.query.jobReportId;
+    let companyId = req.companyId;
+
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+    JobReport.deleteOne({_id: new ObjectId(jobReportId), company: companyId }).then(() => {
+        return res.json({'status': Status.Success, 'message': 'Job Report Has Been Deleted Successfully!'});
+    }).catch((err) => {
+       return res.json({'status': Status.Error, 'message': err.message});
+    });
+}
 
 export const updateJob = (req: Request, res: Response) => {
 
     const params = req.body
-    var companyId = req.companyId;
+    let companyId = req.companyId;
     const user = <IUser>req.user;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
@@ -684,7 +779,7 @@ export const updateJob = (req: Request, res: Response) => {
 
     Job.findOne({ _id: params.jobId, company: companyId })
     .then((job: IJob) => {
-        if (job == undefined || job == null) {
+        if (job == undefined) {
             throw new Error("Invalid job id")
         }
 
@@ -763,20 +858,19 @@ export const updateJob = (req: Request, res: Response) => {
             date: new Date()
         })
         data.track = track;
-        return job.updateOne(data)
-    })
-    .then((response: any) => {
-        return res.json({'status': Status.Success, 'message': 'Job updated successfully.'})
-    })
-    .catch((err: any) => {
-        if(err.message != undefined) {
-            return res.json({'status': Status.Error, 'message': err.message})
+            try {
+                await job.updateOne(data);
+                if (params.status != JobStatus.FINISHED && job.status == JobStatus.FINISHED) {
+                    await deleteJobReportByJobId(job._id);
+                } else if (params.status != job.status && params.status == JobStatus.FINISHED){
+                    await createJobReport(job._id, companyId);
+                }
 
-        }else{
-
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
-        }
-    })
+                return res.json({'status': Status.Success, 'message': 'Job updated successfully.'})
+            } catch (err) {
+                return res.json({'status': Status.Error, 'message': err.message});
+            }
+    });
 }
 
 export const startJob = (req: Request, res: Response) => {
@@ -1021,7 +1115,7 @@ export const getJobDetails = (req: Request, res: Response) => {
 
 }
 
-
+/*
 export const getJobReport = (req: Request, res: Response) => {
     const params = req.body
     var companyId = req.companyId;
@@ -1056,7 +1150,7 @@ export const getJobReport = (req: Request, res: Response) => {
         })
         .then((job: any)=>{
 
-            if (job == undefined || job == null) {
+            if (job == undefined) {
                 throw new Error ('Invalid job id')
             }
 
@@ -1065,11 +1159,11 @@ export const getJobReport = (req: Request, res: Response) => {
             }
 
             const scansPrmoise = Scan.find({ job: job._id}, 'comment timeOfScan')
-            .populate({
-                path: 'equipment',
-                select: 'info.model info.serialNumber info.nfcTag images info.location',
-                populate: [{ path: 'brand', select: 'title' },{ path: 'type', select: 'title' }],
-            })
+                .populate({
+                    path: 'equipment',
+                    select: 'info.model info.serialNumber info.nfcTag images info.location',
+                    populate: [{ path: 'brand', select: 'title' },{ path: 'type', select: 'title' }],
+                })
 
             const POPromise = PurchaseOrder.find({
                 job: params.jobId
@@ -1095,6 +1189,64 @@ export const getJobReport = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
         })
+}
+
+ */
+export const sendJobReport = (req: Request, res: Response) => {
+    const params = req.body
+    let companyId = req.companyId;
+    const company = <ICompany>req.company;
+    if(req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+    JobReport.findOne({_id: params.jobReportId, company: companyId})
+        .populate({
+            path: 'job',
+            populate: [
+                { path: 'ticket', select: 'ticketId note scheduleDateTime' },
+                { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
+                { path: 'type', select: 'title' },
+                { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
+                { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
+            ],
+        }).populate({
+        path: 'scans',
+        populate: [
+            {
+                path: 'equipment',
+                select: 'info.model info.serialNumber info.nfcTag images info.location',
+                populate: [
+                    { path: 'brand', select: 'title' },
+                    { path: 'type', select: 'title' }
+                ]
+            }
+        ]
+    }).populate('PurchaseOrder')
+        .exec()
+        .then(async (report: IJobReport) => {
+            if (report) {
+                await sendReportEmailToCustomer({
+                    companyName: company.info.companyName,
+                    companyEmail: company.info.companyEmail,
+                    customerName: report.job.customer.profile.displayName,
+                    customerEmail: report.job.customer.info.email,
+                    reportNumber: report.job.jobId,
+                    jobType: report.job.jobType ? report.job.jobType.title : 'N/A',
+                    workDate: report.job.scheduleDate,
+                });
+                let history = report.emailHistory ? report.emailHistory : [];
+                history.push({
+                    sentTo: report.job.customer.info.email,
+                    sentAt: new Date()
+                });
+                report.emailHistory = history;
+                await report.updateOne({_id: report._id}, {emailHistory: history});
+                return res.json({ 'status': Status.Success, 'message': 'Job Report Has Been Sent Successfully!' })
+            }
+        }).catch((err) => {
+        return res.json({'status': Status.Error, 'message' : err.message});
+    });
 }
 
 export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {

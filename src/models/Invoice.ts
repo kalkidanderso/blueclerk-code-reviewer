@@ -8,7 +8,7 @@ export interface IInvoice extends Document {
     purchaseOrder: Schema.Types.ObjectId
     estimate: Schema.Types.ObjectId
     jobPurchaseOrders: [Schema.Types.ObjectId]
-    customer: Schema.Types.ObjectId
+    customer: Schema.Types.ObjectId | any
     company: Schema.Types.ObjectId
     note : String
     charges: number
@@ -111,7 +111,7 @@ const InvoiceSchema = new Schema({
     isFixed: {
         type: Boolean,
         default: false
-    },    
+    },
     hourlyRate: {
         type: Number,
         default: 0

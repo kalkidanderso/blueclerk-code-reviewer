@@ -25,7 +25,7 @@ export interface IPurchaseOrder extends Document {
     invoiceCreated: boolean
     estimateConverted: boolean
 }
-const PurcahseOrderSchema = new Schema({
+const PurchaseOrderSchema = new Schema({
     purchaseOrderId: {
         type: String
     },
@@ -120,4 +120,4 @@ const PurcahseOrderSchema = new Schema({
     }
 })
 
-export const PurchaseOrder = mongoose.model<IPurchaseOrder>('PurchaseOrder', PurcahseOrderSchema)
+export const PurchaseOrder = mongoose.model<IPurchaseOrder>('PurchaseOrder', PurchaseOrderSchema)

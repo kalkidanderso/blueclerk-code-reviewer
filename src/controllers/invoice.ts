@@ -11,6 +11,7 @@ import {Item} from '../models/Item';
 import {Customer, ICustomer} from '../models/Customer';
 import {Estimate, IEstimate} from '../models/Estimate';
 import {IScan, Scan} from '../models/Scan';
+import {sendInvoiceEmailToCustomer} from '../services/aws';
 
 export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
@@ -1302,6 +1303,34 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                     return res.json({ 'status': Status.Success, 'invoice': invoice, 'scans': scans })
                 })
         })
+}
+
+export const sendInvoice = (req: Request, res: Response) => {
+    const params = req.body
+    const company = <ICompany>req.company;
+    try {
+        Invoice.findOne({ _id: params.invoiceId, 'company': req.companyId})
+            .populate({
+                path: 'customer',
+                select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+            })
+            .then((invoice: IInvoice)=>{
+                if (!invoice) {
+                    return res.json({'status': Status.Error, 'message': 'Invalid invoice id'})
+                }
+                sendInvoiceEmailToCustomer({
+                    companyName: company.info.companyName,
+                    companyEmail: company.info.companyEmail,
+                    customerName: invoice.customer.profile.displayName,
+                    customerEmail: invoice.customer.info.email,
+                    invoiceNumber: invoice.invoiceId,
+                    invoiceAmount: invoice.total,
+                });
+            })
+
+    } catch (err) {
+        return res.json({'status': Status.Error, 'message': err.message});
+    }
 }
 
 export const getInvoices = (req: Request, res: Response) => {

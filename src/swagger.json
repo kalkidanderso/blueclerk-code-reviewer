@@ -6354,32 +6354,29 @@
       }
     },
     "/getJobReport": {
-      "post": {
+      "get": {
         "tags": [
           "Reports"
         ],
-        "summary": "Get report of a finshed job",
+        "summary": "Get the report details of a finished job",
         "description": "",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
         "produces": [
           "application/json"
         ],
         "parameters": [
           {
-            "name": "jobId",
-            "in": "formData",
+            "name": "jobReportId",
+            "in": "query",
             "required": true,
             "type": "string",
-            "description": "Id of job to get report (job must be finished and have tags scaned)"
+            "description": "Id of the job report"
           }
         ],
         "responses": {
           "200": {
             "description": "Success",
             "schema": {
-              "$ref": "#/definitions/JobReport"
+              "$ref": "#/definitions/jobReportSchema"
             }
           }
         },
@@ -6389,6 +6386,106 @@
           }
         ]
       }
+    },
+    "/getAllJobReports": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get the company's job reports",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/getAllJobReportsResponseSchema"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/deleteJobReport": {
+      "delete": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "delete a job report",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "jobReportId",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Id of the job report"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/sendJobReportEmail": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "send an email about the job report",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "jobReportId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of the job report"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+
     },
     "/createInvoice": {
       "post": {
@@ -8592,6 +8689,40 @@
         "phone": {
           "type": "string"
         }
+      }
+    },
+    "jobReportSchema": {
+      "type": "object",
+      "properties": {
+        "job": {
+          "type": "object",
+          "$ref": "#/definitions/Job"
+        },
+        "scans": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/Scan"
+          }
+        },
+        "PurchaseOrder": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/PurchaseOrder"
+          }
+        },
+        "company": {
+          "type": "object",
+          "$ref": "#/definitions/company"
+        }
+      }
+    },
+    "getAllJobReportsResponseSchema": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "$ref": "#/definitions/jobReportSchema"
       }
     },
     "company": {

@@ -582,14 +582,30 @@ export default function (sio: any) {
         validate(Validations.updateJobTime),
         jobController.updateJobTime
     )
-
-    router.post(
+    router.get(
         '/getJobReport',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Job_Report),
         validate(Validations.getJobReport),
-        jobController.getJobReport
+        jobController.getJobReportDetails
+    )
+
+    router.get(
+        '/getAllJobReports',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Job_Report),
+        jobController.getAllJobReports
+    )
+
+    router.delete(
+        '/deleteJobReport',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Job_Report),
+        validate(Validations.deleteJobReport),
+        jobController.deleteJobReportById
     )
 
     //Image upload
@@ -1165,6 +1181,23 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Create_Invoice),
         //validate(Validations.createInvoice),
         invoiceController.createInvoice
+    )
+    router.post(
+        '/sendInvoice',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoice_Detail),
+        validate(Validations.sendInvoice),
+        invoiceController.sendInvoice
+    )
+
+    router.post(
+        '/sendJobReportEmail',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoice_Detail),
+        validate(Validations.sendReport),
+        jobController.sendJobReport
     )
 
     router.post(
