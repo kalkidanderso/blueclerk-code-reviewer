@@ -143,7 +143,7 @@ export const checkUserPermissions = (permissionId : number) => {
                 } else {
 
                     if(req.otherCompanyId != undefined || req.otherCompanyId != null) {
-                        // it is contracting company hiting api's for other company
+                        // it is contracting company hitting api's for other company
                         if(permissionId == Permissions.Get_All_Contracts || permissionId == Permissions.Accept_Reject_Contract) {
                             next()
                             return

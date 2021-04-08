@@ -122,9 +122,6 @@ export const removeContact = async (req: Request, res: Response) => {
                 const contactCustomer = await Customer.findOne({contacts: req.body.contactId})
                 if(!contactCustomer) {
                     await Contact.findByIdAndRemove(req.body.contactId)
-                    console.log('Contact removed permanently.........')
-                } else {
-                    console.log('Contact removed from the customer only....')
                 }
                 return res.json({ status: Status.Success, message: 'Contact removed successfully'})
             } else {
