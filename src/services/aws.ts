@@ -169,32 +169,142 @@ export const sendContractStartEmail = function(options: any) {
 
   return new Promise((resolve, reject) => {
     ses.sendEmail(
-      {
-        Source: `${options.company}<${APP_EMAIL_NOREPLY}>`,
-        Destination: {
-          CcAddresses: [],
-          ToAddresses: [options.to],
-        },
-        Message: {
-          Subject: {
-            Data: "Added as vendor by "+options.company+" on Blueclerk",
+        {
+          Source: `${options.company}<${APP_EMAIL_NOREPLY}>`,
+          Destination: {
+            CcAddresses: [],
+            ToAddresses: [options.to],
           },
-          Body: {
-            Html: {
-              Data: "<p>Hi! "+ options.contractor+"</p>\
+          Message: {
+            Subject: {
+              Data: "Added as vendor by "+options.company+" on Blueclerk",
+            },
+            Body: {
+              Html: {
+                Data: "<p>Hi! "+ options.contractor+"</p>\
               <p>"+options.company+" has sent you an invitation to become a vendor for their organization. Please login to view details <a href=\"https://app.blueclerk.com/login/\ target=\"_blank\">app.blueclerk.com</a></p>",
+              },
             },
           },
+          ReplyToAddresses: [options.companyEmail],
         },
-        ReplyToAddresses: [options.companyEmail],
-      },
-      (err, info) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(info)
-        }
-      },
+        (err, info) => {
+          if (err) {
+            reject(err)
+          } else {
+            resolve(info)
+          }
+        },
+    )
+  })
+}
+
+
+export const sendInvoiceEmailToCustomer = function(options: any) {
+
+  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
+
+  AWS.config.update({
+    region: AWS_REGION,
+    accessKeyId: AWS_SES_ACCESSKEYID,
+    secretAccessKey: AWS_SES_SECRETACCESSKEY,
+  })
+
+  const ses = new AWS.SES({ apiVersion: '2012-10-17' })
+
+  return new Promise((resolve, reject) => {
+    ses.sendEmail(
+        {
+          Source: `${options.companyName}<${APP_EMAIL_NOREPLY}>`,
+          Destination: {
+            CcAddresses: [],
+            ToAddresses: [options.customerEmail],
+          },
+          Message: {
+            Subject: {
+              Data: `${options.companyName} has sent you an invoice`,
+            },
+            Body: {
+              Html: {
+                Data: `
+              <div style="text-align: center;">
+              <p>Dear  ${options.customerName}</p>
+              <p>Please see your invoice information below :</p> 
+              <br />
+              <hr>
+              <p><strong>Invoice Number:</strong> ${options.invoiceNumber}</p>
+              <p><strong>Invoice Amount:</strong> ${options.invoiceAmount}</p>
+              <br />
+              <img src='http://blueclerk.com/wp-content/uploads/2020/07/logo-120x42.png' alt="blueclerk" />
+              </div>
+              `
+              },
+            },
+          },
+          ReplyToAddresses: [options.companyEmail],
+        },
+        (err, info) => {
+          if (err) {
+            reject(err)
+          } else {
+            resolve(info)
+          }
+        },
+    )
+  })
+}
+export const sendReportEmailToCustomer = function(options: any) {
+
+  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
+
+  AWS.config.update({
+    region: AWS_REGION,
+    accessKeyId: AWS_SES_ACCESSKEYID,
+    secretAccessKey: AWS_SES_SECRETACCESSKEY,
+  })
+
+  const ses = new AWS.SES({ apiVersion: '2012-10-17' })
+
+  return new Promise((resolve, reject) => {
+    ses.sendEmail(
+        {
+          Source: `${options.companyName}<${APP_EMAIL_NOREPLY}>`,
+          Destination: {
+            CcAddresses: [],
+            ToAddresses: [options.customerEmail],
+          },
+          Message: {
+            Subject: {
+              Data: `${options.companyName} has sent you a job report`,
+            },
+            Body: {
+              Html: {
+                Data: `
+              <div style="text-align: center;">
+              <p>Dear  ${options.customerName}</p>
+              <p>Please see your report information below :</p> 
+              <br />
+              <hr>
+              <p><strong>Report Number:</strong> ${options.reportNumber}</p>
+              <p><strong>Company:</strong> ${options.companyName}</p>
+              <p><strong>Job Type:</strong> ${options.jobType}</p>
+              <p><strong>Date of work:</strong> ${options.workDate}</p>
+              <br />
+              <img src='http://blueclerk.com/wp-content/uploads/2020/07/logo-120x42.png' alt="blueclerk" />
+              </div>
+              `
+              },
+            },
+          },
+          ReplyToAddresses: [options.companyEmail],
+        },
+        (err, info) => {
+          if (err) {
+            reject(err)
+          } else {
+            resolve(info)
+          }
+        },
     )
   })
 }

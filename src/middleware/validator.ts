@@ -188,7 +188,9 @@ export const Validations = {
 
   getTicketDetail: [check('ticketId').exists()],
 
-  getJobReport: [check('jobId').exists()],
+  getJobReport: [check('jobReportId').exists()],
+
+  deleteJobReport: [check('jobReportId').exists()],
 
   createQBCustomer: [check('name').exists(), check('name').not().isEmpty()],
 
@@ -205,6 +207,10 @@ export const Validations = {
   deleteJobCharges: [check('jobChargesId').exists()],
 
   //createInvoice: [],
+
+  sendInvoice: [check('invoiceId').exists()],
+
+  sendReport: [check('jobReportId').exists()],
 
   createPOInvoice: [check('purchaseOrderId').exists()],
 
