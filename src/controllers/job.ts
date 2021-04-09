@@ -678,7 +678,6 @@ const createJobReport = async (jobId: any, companyId: any, contractor?: any) => 
     const job = await Job.findOne({_id: jobId, $or:[{ contractor: companyId }, { company: companyId } ], status: JobStatus.FINISHED}).select('_id').exec();
     const scans = await Scan.find({ job: job._id}, 'comment timeOfScan').select('_id').exec();
     const purchaseOrders = await PurchaseOrder.find({job: job._id}).select('_id').exec();
-    if (scans.length) {
         const jobReport = new JobReport({
             job: job,
             scans: scans,
@@ -689,8 +688,8 @@ const createJobReport = async (jobId: any, companyId: any, contractor?: any) => 
         if (contractor) {
             jobReport.contractor = contractor;
         }
-        return jobReport.save();
-    }
+        return jobReport.save().then((jobReport: IJobReport) => jobReport);
+
 }
 
 const deleteJobReportByJobId = async (jobId: any) => {
@@ -864,14 +863,14 @@ export const updateJob = (req: Request, res: Response) => {
         data.track = track;
             try {
                 await job.updateOne(data);
-                if (params.status != JobStatus.FINISHED && job.status == JobStatus.FINISHED) {
+                if ((params.status) && (params.status != JobStatus.FINISHED) && (job.status == JobStatus.FINISHED)) {
                     await deleteJobReportByJobId(job._id);
                 }
-                if (params.status != job.status && params.status == JobStatus.FINISHED){
+                if ((params.status) && (params.status != job.status) && (params.status == JobStatus.FINISHED)){
                     if (job.contractor) {
-                        await createJobReport(job._id, companyId);
-                    } else {
                         await createJobReport(job._id, companyId, job.contractor);
+                    } else {
+                        await createJobReport(job._id, companyId);
                     }
                 }
 
