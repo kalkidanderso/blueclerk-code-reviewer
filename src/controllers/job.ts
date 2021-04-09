@@ -674,14 +674,18 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
 }
 
 
-const createJobReport = async (jobId: any, companyId: any, contractor?: any) => {
+const createJobReport = async (jobId: any, companyId: any,customerName: string|null, technicianName: string|null, date: any, contractor?: any) => {
     const job = await Job.findOne({_id: jobId, $or:[{ contractor: companyId }, { company: companyId } ], status: JobStatus.FINISHED}).select('_id').exec();
     const scans = await Scan.find({ job: job._id}, 'comment timeOfScan').select('_id').exec();
     const purchaseOrders = await PurchaseOrder.find({job: job._id}).select('_id').exec();
+        await JobReport.deleteMany({job: job});
         const jobReport = new JobReport({
             job: job,
             scans: scans,
             purchaseOrders: purchaseOrders,
+            jobDate: date,
+            customerName: customerName,
+            technicianName: technicianName,
             company: companyId,
             emailHistory: []
         });
@@ -692,9 +696,6 @@ const createJobReport = async (jobId: any, companyId: any, contractor?: any) => 
 
 }
 
-const deleteJobReportByJobId = async (jobId: any) => {
-    await JobReport.deleteOne({job: jobId});
-}
 export const getAllJobReports = (req: Request, res: Response) => {
     let companyId = req.companyId;
 
@@ -781,6 +782,20 @@ export const updateJob = (req: Request, res: Response) => {
     }
 
     Job.findOne({ _id: params.jobId, $or:[{ contractor: companyId }, { company: companyId } ] })
+        .select('_id customer ticket technician scheduleDate')
+        .populate({
+        path: 'customer',
+        select: 'profile.displayName'
+        })
+        .populate({
+        path: 'technician',
+        select: 'profile.displayName'
+        })
+        .populate({
+        path: 'ticket',
+        select: 'customer',
+        populate: { path: 'customer', select: 'profile.displayName' }
+        })
     .then((job: IJob) => {
         if (job == undefined) {
             throw new Error("Invalid job id")
@@ -863,16 +878,17 @@ export const updateJob = (req: Request, res: Response) => {
         data.track = track;
             try {
                 await job.updateOne(data);
-                if ((params.status) && (params.status != JobStatus.FINISHED) && (job.status == JobStatus.FINISHED)) {
-                    await deleteJobReportByJobId(job._id);
-                }
-                if ((params.status) && (params.status != job.status) && (params.status == JobStatus.FINISHED)){
+
+                    let customerName = job.customer ?
+                        job.customer.profile.displayName :
+                        (job.ticket ? (job.ticket.customer ? job.ticket.customer.profile.displayName : null) : null);
+                    let technicianName = job.technician ? job.technician.profile.displayName : null;
+                    let date = job.scheduleDate;
                     if (job.contractor) {
-                        await createJobReport(job._id, companyId, job.contractor);
+                        await createJobReport(job._id, companyId,customerName, technicianName, date, job.contractor);
                     } else {
-                        await createJobReport(job._id, companyId);
+                        await createJobReport(job._id,companyId, customerName, technicianName, date, companyId);
                     }
-                }
 
                 return res.json({'status': Status.Success, 'message': 'Job updated successfully.'})
             } catch (err) {
