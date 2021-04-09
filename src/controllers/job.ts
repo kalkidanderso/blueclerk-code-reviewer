@@ -778,7 +778,7 @@ export const updateJob = (req: Request, res: Response) => {
         companyId = req.otherCompanyId
     }
 
-    Job.findOne({ _id: params.jobId, company: companyId })
+    Job.findOne({ _id: params.jobId, $or:[{ contractor: companyId }, { company: companyId } ] })
     .then((job: IJob) => {
         if (job == undefined) {
             throw new Error("Invalid job id")
