@@ -676,8 +676,9 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
 
 const createJobReport = async (jobId: any, companyId: any,customerName: string|null, technicianName: string|null, date: any, contractor?: any) => {
     const job = await Job.findOne({_id: jobId, $or:[{ contractor: companyId }, { company: companyId } ], status: JobStatus.FINISHED}).select('_id').exec();
-    const scans = await Scan.find({ job: job._id}, 'comment timeOfScan').select('_id').exec();
-    const purchaseOrders = await PurchaseOrder.find({job: job._id}).select('_id').exec();
+    if (job) {
+        const scans = await Scan.find({ job: job}, 'comment timeOfScan').select('_id').exec();
+        const purchaseOrders = await PurchaseOrder.find({job: job}).select('_id').exec();
         await JobReport.deleteMany({job: job});
         const jobReport = new JobReport({
             job: job,
@@ -693,7 +694,7 @@ const createJobReport = async (jobId: any, companyId: any,customerName: string|n
             jobReport.contractor = contractor;
         }
         return jobReport.save().then((jobReport: IJobReport) => jobReport);
-
+    }
 }
 
 export const getAllJobReports = (req: Request, res: Response) => {
@@ -894,7 +895,9 @@ export const updateJob = (req: Request, res: Response) => {
             } catch (err) {
                 return res.json({'status': Status.Error, 'message': err.message});
             }
-    });
+    }).catch((err) => {
+        return res.json({'status': Status.Error, 'message': err.message});
+    })
 }
 
 export const startJob = (req: Request, res: Response) => {
