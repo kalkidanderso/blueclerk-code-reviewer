@@ -675,7 +675,7 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
 
 
 const createJobReport = async (jobId: any, companyId: any, contractor?: any) => {
-    const job = await Job.findOne({_id: jobId, company: companyId, status: JobStatus.FINISHED}).select('_id').exec();
+    const job = await Job.findOne({_id: jobId, $or:[{ contractor: companyId }, { company: companyId } ], status: JobStatus.FINISHED}).select('_id').exec();
     const scans = await Scan.find({ job: job._id}, 'comment timeOfScan').select('_id').exec();
     const purchaseOrders = await PurchaseOrder.find({job: job._id}).select('_id').exec();
     if (scans.length) {
@@ -866,7 +866,8 @@ export const updateJob = (req: Request, res: Response) => {
                 await job.updateOne(data);
                 if (params.status != JobStatus.FINISHED && job.status == JobStatus.FINISHED) {
                     await deleteJobReportByJobId(job._id);
-                } else if (params.status != job.status && params.status == JobStatus.FINISHED){
+                }
+                if (params.status != job.status && params.status == JobStatus.FINISHED){
                     if (job.contractor) {
                         await createJobReport(job._id, companyId);
                     } else {
