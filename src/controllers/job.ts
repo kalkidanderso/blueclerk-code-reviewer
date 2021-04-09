@@ -884,14 +884,14 @@ export const startJob = (req: Request, res: Response) => {
     }
 
     Job.findOne(
-        { _id: params.jobId, company: companyId },
+        { _id: params.jobId, $or:[{ contractor: companyId }, { company: companyId } ] },
         (err: any, job: IJob)=>{
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            if (job == undefined || job == null) {
+            if (job == undefined) {
                 return res.json({'status': Status.Error, 'message': "Invalid job id"})
             }
 
@@ -938,7 +938,7 @@ export const editJob = (req: Request, res: Response) => {
     }
 
     Job.findOne(
-        { _id: params.jobId, company: companyId },
+        { _id: params.jobId, $or:[{ contractor: companyId }, { company: companyId } ] },
         (err: any, job: IJob)=>{
 
             if (err) {
@@ -1200,7 +1200,7 @@ export const sendJobReport = (req: Request, res: Response) => {
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-    JobReport.findOne({_id: params.jobReportId, company: companyId})
+    JobReport.findOne({_id: params.jobReportId, $or:[{ contractor: companyId }, { company: companyId } ]})
         .populate({
             path: 'job',
             populate: [
