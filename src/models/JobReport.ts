@@ -6,6 +6,7 @@ export interface IJobReport extends Document {
     scans: [Schema.Types.ObjectId] | any[];
     PurchaseOrder: [Schema.Types.ObjectId] | any[];
     company: Schema.Types.ObjectId | any;
+    contractor: Schema.Types.ObjectId | any;
     emailHistory: any[];
     createdAt: Date;
 }
@@ -26,6 +27,10 @@ const JobReportSchema = new Schema({
         required: false
     }],
     company: {
+        type: Schema.Types.ObjectId,
+        ref: 'Company'
+    },
+    contractor: {
         type: Schema.Types.ObjectId,
         ref: 'Company'
     },
