@@ -782,7 +782,7 @@ export const updateJob = (req: Request, res: Response) => {
     }
 
     Job.findOne({ _id: params.jobId, $or:[{ contractor: companyId }, { company: companyId } ] })
-        .select('_id customer ticket technician scheduleDate')
+        .select('_id customer ticket technician scheduleDate company')
         .populate({
         path: 'customer',
         select: 'profile.displayName'
@@ -885,9 +885,9 @@ export const updateJob = (req: Request, res: Response) => {
                     let technicianName = job.technician ? job.technician.profile.displayName : null;
                     let date = job.scheduleDate;
                     if (job.contractor) {
-                        await createJobReport(job._id, companyId,customerName, technicianName, date, job.contractor);
+                        await createJobReport(job._id, job.company,customerName, technicianName, date, job.contractor);
                     } else {
-                        await createJobReport(job._id,companyId, customerName, technicianName, date, companyId);
+                        await createJobReport(job._id,job.company, customerName, technicianName, date, companyId);
                     }
 
                 return res.json({'status': Status.Success, 'message': 'Job updated successfully.'})
