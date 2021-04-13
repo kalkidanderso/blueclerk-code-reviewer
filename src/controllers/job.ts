@@ -81,7 +81,6 @@ export const createJob = (req: Request, res: Response) => {
             if(err != null){
                 return res.json({'status': Status.Error, 'message': err})
             }
-
             return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
         })
 
@@ -783,7 +782,7 @@ export const updateJob = (req: Request, res: Response) => {
     }
 
     Job.findOne({ _id: params.jobId, $or:[{ contractor: companyId }, { company: companyId } ] })
-        .select('_id customer ticket technician scheduleDate company')
+        .select('_id customer ticket technician scheduleDate company comment')
         .populate({
         path: 'customer',
         select: 'profile.displayName'
@@ -857,7 +856,13 @@ export const updateJob = (req: Request, res: Response) => {
                 await ServiceTicket.findOneAndUpdate({_id: job.ticket}, {jobCreated: false});
             }
         }
-        data = {comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime}
+        let userComment = '';
+        if (params.comment) {
+            userComment = params.comment;
+        } else {
+            userComment = job.comment ? job.comment : 'N/A';
+        }
+        data = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime}
         if(params.jobLocationId) {
             data.jobLocation = params.jobLocationId
         }
@@ -890,7 +895,6 @@ export const updateJob = (req: Request, res: Response) => {
                     } else {
                         await createJobReport(job._id,job.company, customerName, technicianName, date, companyId);
                     }
-
                 return res.json({'status': Status.Success, 'message': 'Job updated successfully.'})
             } catch (err) {
                 return res.json({'status': Status.Error, 'message': err.message});
@@ -941,7 +945,6 @@ export const startJob = (req: Request, res: Response) => {
             job.updateOne(
                 {status: JobStatus.STARTED, track: track, startTime: Date.now()},
                 (err: any, raw: any)=> {
-
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }

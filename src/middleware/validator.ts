@@ -134,7 +134,7 @@ export const Validations = {
 
   generalJob: [check('jobId').exists()],
 
-  updateJob: [check('status').exists(), check('comment').exists(), check('jobId').exists()],
+  updateJob: [check('status').exists(), check('jobId').exists()],
 
   editJob: [check('jobId').exists(), check('scheduleDate').exists()],
 
