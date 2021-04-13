@@ -7,6 +7,9 @@ export interface IJobReport extends Document {
     PurchaseOrder: [Schema.Types.ObjectId] | any[];
     company: Schema.Types.ObjectId | any;
     contractor: Schema.Types.ObjectId | any;
+    customerName: string;
+    technicianName: string;
+    jobDate: Date | any;
     emailHistory: any[];
     createdAt: Date;
 }
@@ -21,6 +24,18 @@ const JobReportSchema = new Schema({
         ref: 'Scan',
         required: false
     }],
+    customerName: {
+        type: String,
+        required: false
+    },
+    technicianName: {
+        type: String,
+        required: false
+    },
+    jobDate: {
+        type: Date,
+        required: false
+    },
     purchaseOrders: [{
         type: Schema.Types.ObjectId,
         ref: 'PurchaseOrder',

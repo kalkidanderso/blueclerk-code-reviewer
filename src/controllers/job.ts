@@ -81,7 +81,6 @@ export const createJob = (req: Request, res: Response) => {
             if(err != null){
                 return res.json({'status': Status.Error, 'message': err})
             }
-
             return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
         })
 
@@ -674,28 +673,29 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
 }
 
 
-const createJobReport = async (jobId: any, companyId: any, contractor?: any) => {
+const createJobReport = async (jobId: any, companyId: any,customerName: string|null, technicianName: string|null, date: any, contractor?: any) => {
     const job = await Job.findOne({_id: jobId, $or:[{ contractor: companyId }, { company: companyId } ], status: JobStatus.FINISHED}).select('_id').exec();
-    const scans = await Scan.find({ job: job._id}, 'comment timeOfScan').select('_id').exec();
-    const purchaseOrders = await PurchaseOrder.find({job: job._id}).select('_id').exec();
-    if (scans.length) {
+    if (job) {
+        const scans = await Scan.find({ job: job}, 'comment timeOfScan').select('_id').exec();
+        const purchaseOrders = await PurchaseOrder.find({job: job}).select('_id').exec();
+        await JobReport.deleteMany({job: job});
         const jobReport = new JobReport({
             job: job,
             scans: scans,
             purchaseOrders: purchaseOrders,
+            jobDate: date,
+            customerName: customerName,
+            technicianName: technicianName,
             company: companyId,
             emailHistory: []
         });
         if (contractor) {
             jobReport.contractor = contractor;
         }
-        return jobReport.save();
+        return jobReport.save().then((jobReport: IJobReport) => jobReport);
     }
 }
 
-const deleteJobReportByJobId = async (jobId: any) => {
-    await JobReport.deleteOne({job: jobId});
-}
 export const getAllJobReports = (req: Request, res: Response) => {
     let companyId = req.companyId;
 
@@ -782,6 +782,20 @@ export const updateJob = (req: Request, res: Response) => {
     }
 
     Job.findOne({ _id: params.jobId, $or:[{ contractor: companyId }, { company: companyId } ] })
+        .select('_id customer ticket technician scheduleDate company comment')
+        .populate({
+        path: 'customer',
+        select: 'profile.displayName'
+        })
+        .populate({
+        path: 'technician',
+        select: 'profile.displayName'
+        })
+        .populate({
+        path: 'ticket',
+        select: 'customer',
+        populate: { path: 'customer', select: 'profile.displayName' }
+        })
     .then((job: IJob) => {
         if (job == undefined) {
             throw new Error("Invalid job id")
@@ -842,7 +856,13 @@ export const updateJob = (req: Request, res: Response) => {
                 await ServiceTicket.findOneAndUpdate({_id: job.ticket}, {jobCreated: false});
             }
         }
-        data = {comment: params.comment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime}
+        let userComment = '';
+        if (params.comment) {
+            userComment = params.comment;
+        } else {
+            userComment = job.comment ? job.comment : 'N/A';
+        }
+        data = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime}
         if(params.jobLocationId) {
             data.jobLocation = params.jobLocationId
         }
@@ -864,22 +884,24 @@ export const updateJob = (req: Request, res: Response) => {
         data.track = track;
             try {
                 await job.updateOne(data);
-                if (params.status != JobStatus.FINISHED && job.status == JobStatus.FINISHED) {
-                    await deleteJobReportByJobId(job._id);
-                }
-                if (params.status != job.status && params.status == JobStatus.FINISHED){
-                    if (job.contractor) {
-                        await createJobReport(job._id, companyId);
-                    } else {
-                        await createJobReport(job._id, companyId, job.contractor);
-                    }
-                }
 
+                    let customerName = job.customer ?
+                        job.customer.profile.displayName :
+                        (job.ticket ? (job.ticket.customer ? job.ticket.customer.profile.displayName : null) : null);
+                    let technicianName = job.technician ? job.technician.profile.displayName : null;
+                    let date = job.scheduleDate;
+                    if (job.contractor) {
+                        await createJobReport(job._id, job.company,customerName, technicianName, date, job.contractor);
+                    } else {
+                        await createJobReport(job._id,job.company, customerName, technicianName, date, companyId);
+                    }
                 return res.json({'status': Status.Success, 'message': 'Job updated successfully.'})
             } catch (err) {
                 return res.json({'status': Status.Error, 'message': err.message});
             }
-    });
+    }).catch((err) => {
+        return res.json({'status': Status.Error, 'message': err.message});
+    })
 }
 
 export const startJob = (req: Request, res: Response) => {
@@ -923,7 +945,6 @@ export const startJob = (req: Request, res: Response) => {
             job.updateOne(
                 {status: JobStatus.STARTED, track: track, startTime: Date.now()},
                 (err: any, raw: any)=> {
-
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
