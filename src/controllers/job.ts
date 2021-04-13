@@ -857,7 +857,7 @@ export const updateJob = (req: Request, res: Response) => {
             }
         }
         let userComment = '';
-        if (params.comment) {
+        if (params.comment !== 'undefined') {
             userComment = params.comment;
         } else {
             userComment = job.comment ? job.comment : 'N/A';
@@ -870,7 +870,7 @@ export const updateJob = (req: Request, res: Response) => {
             data.jobSite = params.jobSiteId
         }
         if (
-            job.command != params.comment ||
+            job.comment != params.comment ||
             job.jobLocation != params.jobLocationId ||
             job.jobSite != params.jobSiteId
         ) {
