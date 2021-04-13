@@ -857,7 +857,7 @@ export const updateJob = (req: Request, res: Response) => {
             }
         }
         let userComment = '';
-        if (params.comment != undefined) {
+        if (params.comment !== 'undefined') {
             userComment = params.comment;
         } else {
             userComment = job.comment ? job.comment : 'N/A';
