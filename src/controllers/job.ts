@@ -705,7 +705,7 @@ export const getAllJobReports = (req: Request, res: Response) => {
     JobReport.find({$or:[{ contractor: companyId }, { company: companyId } ]}).populate({
         path: 'job',
         select: '_id jobId customer technician',
-    }).then((reports: IJobReport[]) => {
+    }).exec().then((reports: IJobReport[]) => {
         if (reports.length) {
             return res.json({'status': Status.Success, 'reports': reports});
         }
@@ -746,6 +746,7 @@ export const getJobReportDetails = (req: Request, res: Response) => {
             }
             ]
     }).populate('PurchaseOrder')
+        .exec()
         .then((report: IJobReport) => {
             if (report) {
                 return res.json({'status': Status.Success, 'report': report});
@@ -1252,9 +1253,10 @@ export const sendJobReport = (req: Request, res: Response) => {
             }
         ]
     }).populate('PurchaseOrder')
+        .exec()
         .then(async (report: IJobReport) => {
             if (report) {
-                await sendReportEmailToCustomer({
+                 sendReportEmailToCustomer({
                     companyName: company.info.companyName,
                     companyEmail: company.info.companyEmail,
                     customerName: report.job.customer.profile.displayName,
@@ -1271,11 +1273,13 @@ export const sendJobReport = (req: Request, res: Response) => {
                 });
                 report.emailHistory = history;
                 report.lastEmailSent = sendingDate;
-                await report.save(() => {
+                await report.save().then((r) => {
                     return res.json({ 'status': Status.Success, 'message': 'Job Report Has Been Sent Successfully!' })
                 }).catch((err) => {
                     return res.json({ 'status': Status.Error, 'message': err.message });
                 });
+            } else {
+                return res.json({ 'status': Status.Error, 'message': "Report was not found" });
             }
         }).catch((err) => {
         return res.json({'status': Status.Error, 'message' : err.message});
