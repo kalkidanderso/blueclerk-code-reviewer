@@ -28,7 +28,7 @@ export const getOfficeAdminPermissions = (req: Request, res: Response) => {
     if(company.userPermissions == undefined || !company.userPermissions) {
         setDefaultPermissions(req, res, (req, res, company)=>{
             return res.json({'status': Status.Success, 'permissions': company.userPermissions[0]})
-        })  
+        })
     }
     return res.json({'status': Status.Success, 'permissions': company.userPermissions[0]})
 }
@@ -99,11 +99,11 @@ export const updateDefaultPermissions = (req: Request, res: Response) => {
                 userPermissionsToUpdate[2].on = userOn
                 userPermissionsToUpdate[2].off = userOff
             break;
-    
+
         default:
             break;
     }
-   
+
     if(company.userPermissions == undefined || !company.userPermissions) {
         udpateDefaultPermissions(req, res, userPermissionsToUpdate, (req, res, company)=>{
             return res.json({'status': Status.Success, 'message': 'permissions updated successfuly'})
@@ -128,7 +128,7 @@ export const updateUserPermissions = (req: Request, res: Response) => {
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
-        
+
         employee.updateOne({
             extraPermissions: newPermissions
         }, (err: any, raw: any)=>{
@@ -136,51 +136,51 @@ export const updateUserPermissions = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            return res.json({'status': Status.Success, 'message': 'permissions updated successfully.'})   
+            return res.json({'status': Status.Success, 'message': 'permissions updated successfully.'})
         })
     })
 }
 
 const udpateDefaultPermissions =(req: Request, res: Response, permissions: any,  next: (req: Request, res: Response, company: ICompany)=>void) => {
-    
+
     const company = <ICompany>req.company
-    
+
     company.updateOne(
         {
             userPermissions: permissions,
         },
         (err: any, raw: any)=> {
-                    
+
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-    
+
             next(req, res, company)
         }
     )
 }
 
 const setDefaultPermissions =(req: Request, res: Response, next: (req: Request, res: Response, company: ICompany)=>void) => {
-    
+
     const company = <ICompany>req.company
-    
+
     company.updateOne(
         {
             userPermissions: UserPermissions,
         },
         (err: any, raw: any)=> {
-                    
+
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-    
+
             next(req, res, company)
         }
     )
 }
 
 const getPermissionByEmployeeId = (req: Request, res:Response, company: ICompany, employeeId: string, next: (req: Request, res: Response, permissions: any)=>void) => {
-    
+
     Employee.findById(employeeId)
     .populate({ path:'company'})
     .exec((err: any, employee: IEmployee)=>{
@@ -202,11 +202,11 @@ const getPermissionByEmployeeId = (req: Request, res:Response, company: ICompany
                 defaultPermissionsOn = company.userPermissions[2].on
                 defaultPermissionsOff = company.userPermissions[2].off
                 break;
-           
+
             default:
                 break;
         }
-        
+
 
         defaultPermissionsOn = defaultPermissionsOn.filter( function( el: number ) {
             return employee.extraPermissions.off.indexOf( el ) < 0;
@@ -223,11 +223,11 @@ const getPermissionByEmployeeId = (req: Request, res:Response, company: ICompany
 
         defaultPermissionsOn = defaultPermissionsOn.concat(employee.extraPermissions.on)
         defaultPermissionsOff = defaultPermissionsOff.concat(employee.extraPermissions.off)
-         
+
         const employeePermissions = {
             on: defaultPermissionsOn,
             off: defaultPermissionsOff,
-        } 
+        }
         next(req, res, employeePermissions)
 
 
@@ -240,18 +240,18 @@ export const addContractorPermissions = (req: Request, res: Response) => {
 
     var permissions = params.permissions.split(',').map(Number)
     let checker = (arr: any, target: any) => target.every((v: any) => arr.includes(v));
-    
+
     if(!checker(ContractorPermissions.on, permissions)) {
         return res.json({'status': Status.Error, 'message': 'Invalid permissions for contractor'})
     }
-    
-    Contract.findOne( {contractor: params.contractorId, company: req.companyId}, 
+
+    Contract.findOne( {contractor: params.contractorId, company: req.companyId},
         (err: any, contract: IContract) => {
 
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
-        
+
         contract.updateOne({
             extraPermissions: permissions
         }, (err: any, raw: any)=>{
@@ -259,7 +259,7 @@ export const addContractorPermissions = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            return res.json({'status': Status.Success, 'message': 'Contractor permissions added successfully.'})   
+            return res.json({'status': Status.Success, 'message': 'Contractor permissions added successfully.'})
         })
     })
 }
@@ -268,13 +268,12 @@ export const addContractorPermissions = (req: Request, res: Response) => {
 export const updateAllCompaniesPermissions = (req: Request, res: Response) => {
     const params = req.body
     if (params.first == 'ZAhhNlQ561' && params.second == privateKey.key) {
-
         Company.find({}, (err: any, companies: ICompany[]) => {
             if(err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
             const count = companies.length
-    
+
             let loopcount = 0;
             companies.forEach(company => {
                 company.updateOne({userPermissions: UserPermissions}, (err: any, raw: any) => {
@@ -285,7 +284,7 @@ export const updateAllCompaniesPermissions = (req: Request, res: Response) => {
                     if(loopcount == count) {
                         return res.json({'status': Status.Error, 'message': 'Default permissions updated'})
                     }
-    
+
                 })
             });
         })
