@@ -705,7 +705,7 @@ export const getAllJobReports = (req: Request, res: Response) => {
     JobReport.find({$or:[{ contractor: companyId }, { company: companyId } ]}).populate({
         path: 'job',
         select: '_id jobId customer technician',
-    }).exec().then((reports: IJobReport[]) => {
+    }).then((reports: IJobReport[]) => {
         if (reports.length) {
             return res.json({'status': Status.Success, 'reports': reports});
         }
@@ -746,7 +746,6 @@ export const getJobReportDetails = (req: Request, res: Response) => {
             }
             ]
     }).populate('PurchaseOrder')
-        .exec()
         .then((report: IJobReport) => {
             if (report) {
                 return res.json({'status': Status.Success, 'report': report});
@@ -1253,7 +1252,6 @@ export const sendJobReport = (req: Request, res: Response) => {
             }
         ]
     }).populate('PurchaseOrder')
-        .exec()
         .then(async (report: IJobReport) => {
             if (report) {
                 await sendReportEmailToCustomer({
@@ -1266,13 +1264,18 @@ export const sendJobReport = (req: Request, res: Response) => {
                     workDate: report.job.scheduleDate,
                 });
                 let history = report.emailHistory ? report.emailHistory : [];
+                let sendingDate = new Date();
                 history.push({
                     sentTo: report.job.customer.info.email,
-                    sentAt: new Date()
+                    sentAt: sendingDate
                 });
                 report.emailHistory = history;
-                await report.save();
-                return res.json({ 'status': Status.Success, 'message': 'Job Report Has Been Sent Successfully!' })
+                report.lastEmailSent = sendingDate;
+                await report.save(() => {
+                    return res.json({ 'status': Status.Success, 'message': 'Job Report Has Been Sent Successfully!' })
+                }).catch((err) => {
+                    return res.json({ 'status': Status.Error, 'message': err.message });
+                });
             }
         }).catch((err) => {
         return res.json({'status': Status.Error, 'message' : err.message});
