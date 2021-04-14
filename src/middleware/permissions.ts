@@ -23,6 +23,20 @@ export const checkPermissions = (minAuth: Role) => {
 
     }
 }
+export const checkSpecificPermissions = (minAuth: Role[]) => {
+
+    return async (req: Request, res: Response, next: NextFunction) => {
+
+         const user = <IUser>req.user
+
+        if (minAuth.includes(user.permissions.role)) {
+            return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
+        }
+
+        next()
+
+    }
+}
 
 export const checkUserScanPermissions = (permissionId: number) => {
     return async (req: Request, res: Response, next: NextFunction) => {

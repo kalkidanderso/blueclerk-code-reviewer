@@ -1,7 +1,12 @@
 import express from 'express'
 import {validate, Validations} from '../middleware/validator'
 import passport from 'passport'
-import {checkPermissions, checkUserPermissions, checkUserScanPermissions} from '../middleware/permissions'
+import {
+    checkPermissions,
+    checkSpecificPermissions,
+    checkUserPermissions,
+    checkUserScanPermissions
+} from '../middleware/permissions'
 import { getCompanyId } from '../middleware/company'
 
 import { Role, Permissions } from '../common/constants'
@@ -784,6 +789,13 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Subscription_Buy),
         validate(Validations.buySubscriptions),
         subscriptionController.addCompanySubscriptions
+    )
+    router.get(
+        '/getAllSubscriptions',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkSpecificPermissions([Role.ADMIN_EMPLOYEE, Role.COMPANY_ADMIN]),
+        subscriptionController.getAllSubscriptions
     )
 
     router.post(

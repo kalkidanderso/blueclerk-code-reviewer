@@ -8046,6 +8046,31 @@
         ]
       }
     },
+    "/getAllSubscriptions": {
+      "get": {
+        "tags": [
+          "Subscription"
+        ],
+        "summary": "Get company's subscriptions",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/cancelSubscriptions": {
       "post": {
         "tags": [
