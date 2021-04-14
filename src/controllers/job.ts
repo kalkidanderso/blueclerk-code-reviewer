@@ -732,7 +732,8 @@ export const getJobReportDetails = (req: Request, res: Response) => {
                 { path: 'type', select: 'title' },
                 { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
                 { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
-                ],
+                'jobSite', 'jobLocation'
+            ],
         }).populate({
         path: 'scans',
         populate: [
@@ -1256,7 +1257,7 @@ export const sendJobReport = (req: Request, res: Response) => {
         .exec()
         .then(async (report: IJobReport) => {
             if (report) {
-                await sendReportEmailToCustomer({
+                 sendReportEmailToCustomer({
                     companyName: company.info.companyName,
                     companyEmail: company.info.companyEmail,
                     customerName: report.job.customer.profile.displayName,
@@ -1266,13 +1267,20 @@ export const sendJobReport = (req: Request, res: Response) => {
                     workDate: report.job.scheduleDate,
                 });
                 let history = report.emailHistory ? report.emailHistory : [];
+                let sendingDate = new Date();
                 history.push({
                     sentTo: report.job.customer.info.email,
-                    sentAt: new Date()
+                    sentAt: sendingDate
                 });
                 report.emailHistory = history;
-                await report.updateOne({_id: report._id}, {emailHistory: history});
-                return res.json({ 'status': Status.Success, 'message': 'Job Report Has Been Sent Successfully!' })
+                report.lastEmailSent = sendingDate;
+                await report.save().then((r) => {
+                    return res.json({ 'status': Status.Success, 'message': 'Job Report Has Been Sent Successfully!' })
+                }).catch((err) => {
+                    return res.json({ 'status': Status.Error, 'message': err.message });
+                });
+            } else {
+                return res.json({ 'status': Status.Error, 'message': "Report was not found" });
             }
         }).catch((err) => {
         return res.json({'status': Status.Error, 'message' : err.message});

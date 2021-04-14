@@ -161,24 +161,26 @@ export const checkUserPermissions = (permissionId : number) => {
                                 }
 
                                 if (contract.extraPermissions == undefined) {
-
+                                    console.log(0);
                                     return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                                 }
 
                                 if (!contract.extraPermissions.includes(permissionId)) {
+                                    console.log(1);
                                     return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                                 }
                                 next()
                                 return
                             })
                     }else{
-                        // it is not a contractinig company
+                        // it is not a contracting company
                         if(permissionId == Permissions.Get_Company_Contracts || permissionId == Permissions.Cancel_Finish_Contract || permissionId == Permissions.Get_Contractor_Detail) {
                             next()
                             return
                         }
 
                         if (!company.userPermissions[3].on.includes(permissionId)) {
+                            console.log(2);
                             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                         }
                         next()
@@ -195,7 +197,6 @@ export const checkUserPermissions = (permissionId : number) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
-
                     if(employee.extraPermissions != undefined ){
 
                         if(employee.extraPermissions.on.includes(permissionId)) {
@@ -204,6 +205,7 @@ export const checkUserPermissions = (permissionId : number) => {
                         }
 
                         if(employee.extraPermissions.off.includes(permissionId)) {
+                            console.log(3);
                             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                         }
                         Company.findById(employee.company,
@@ -216,6 +218,7 @@ export const checkUserPermissions = (permissionId : number) => {
                                     case 0:
 
                                         if (!company.userPermissions[0].on.includes(permissionId)) {
+                                            console.log(4);
                                             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                                         }
                                         next()
@@ -224,6 +227,7 @@ export const checkUserPermissions = (permissionId : number) => {
                                     case 1:
 
                                         if (!company.userPermissions[1].on.includes(permissionId)) {
+                                            console.log(5);
                                             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                                         }
                                         next()
@@ -232,6 +236,7 @@ export const checkUserPermissions = (permissionId : number) => {
                                     case 2:
 
                                         if (!company.userPermissions[2].on.includes(permissionId)) {
+                                            console.log(6);
                                             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                                         }
                                         next()
@@ -240,6 +245,7 @@ export const checkUserPermissions = (permissionId : number) => {
                                     case 3:
 
                                         if (!company.userPermissions[3].on.includes(permissionId)) {
+                                            console.log(7);
                                             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
                                         }
                                         next()

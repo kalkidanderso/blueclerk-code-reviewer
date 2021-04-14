@@ -12,6 +12,7 @@ export interface IJobReport extends Document {
     jobDate: Date | any;
     emailHistory: any[];
     createdAt: Date;
+    lastEmailSent: Date;
 }
 
 const JobReportSchema = new Schema({
@@ -56,6 +57,10 @@ const JobReportSchema = new Schema({
             default: Date.now
         }
     }],
+    lastEmailSent: {
+      type: Date,
+      required: false
+    },
     createdAt: {
         type: Date,
         default: Date.now
