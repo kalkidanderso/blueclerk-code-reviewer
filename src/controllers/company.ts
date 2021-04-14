@@ -130,7 +130,7 @@ export const getAllEmployees = (req: Request, res: Response) => {
     Company.findOne({ _id: req.companyId })
         .populate({
             path: 'employees',
-            select: '_id profile.displayName auth.email contact.phone',
+            select: '_id profile.displayName auth.email contact.phone permissions',
         })
         .populate({
             path: 'admin',
