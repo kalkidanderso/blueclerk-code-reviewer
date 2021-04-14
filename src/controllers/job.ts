@@ -1271,7 +1271,7 @@ export const sendJobReport = (req: Request, res: Response) => {
                     sentAt: new Date()
                 });
                 report.emailHistory = history;
-                await report.updateOne({_id: report._id}, {emailHistory: history});
+                await report.save();
                 return res.json({ 'status': Status.Success, 'message': 'Job Report Has Been Sent Successfully!' })
             }
         }).catch((err) => {
