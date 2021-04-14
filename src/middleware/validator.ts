@@ -68,6 +68,8 @@ export const Validations = {
 
   createOfficeAdmin: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
 
+  changeEmployeeRole: [check('employeeId').exists(), check('newRole').isEmail()],
+
   updateProfile: [check('firstName').exists(), check('lastName').exists()],
 
   changePassword: [check('currentPassword').exists(), check('newPassword').exists()],

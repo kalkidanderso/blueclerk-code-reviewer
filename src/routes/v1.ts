@@ -37,6 +37,7 @@ import * as ContactController from '../controllers/contact';
 
 import jobLocation from './jobLocation'
 import jobSite from './jobSite'
+import {checkRoleIsValid} from '../controllers/user';
 
 export default function (sio: any) {
 
@@ -152,7 +153,7 @@ export default function (sio: any) {
         '/updateContractorEmailPreferences',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        checkPermissions(Role.COMPANY_ADMIN),
+        checkPermissions(Role.ADMIN_EMPLOYEE),
         validate(Validations.updateContractorEmailPreferences),
         companyController.updateContractorEmailPreferences
     )
@@ -160,7 +161,7 @@ export default function (sio: any) {
         '/updateCustomerEmailPreferences',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        checkPermissions(Role.COMPANY_ADMIN),
+        checkPermissions(Role.ADMIN_EMPLOYEE),
         validate(Validations.updateCustomerEmailPreferences),
         companyController.updateCustomerEmailPreferences
 
@@ -236,6 +237,16 @@ export default function (sio: any) {
         validate(Validations.createOfficeAdmin),
         getCompanyId(),
         userController.createAdminEmployee
+    )
+
+    router.post(
+        '/updateEmployeeRole',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.User_Get_All_Employees),
+        validate(Validations.changeEmployeeRole),
+        checkRoleIsValid,
+        userController.updateEmployeeRole
     )
 
     router.post(

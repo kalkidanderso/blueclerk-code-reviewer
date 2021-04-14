@@ -1,18 +1,19 @@
-import { Request, Response } from 'express'
-import {Status, Messages, Role, ContractStatus, EmployeeStatus, CompanyType} from '../common/constants'
-import { sendAccountDowngradeEmail } from '../services/aws'
-import { Company, ICompany } from '../models/Company'
-import { ObjectId } from 'mongodb'
-import { Contract, IContract } from '../models/Contract'
-import { ICompanyAdmin } from '../models/CompanyAdmin'
-import { CompanyPrefix, ICompanyPrefix } from '../models/CompanyPrefix'
-import { SaleTax, ISaleTax } from '../models/SaleTax'
-import { JobCharges, IJobCharges } from '../models/JobCharges'
-import { Job, IJob } from '../models/Job'
+import {Request, Response} from 'express'
+import {CompanyType, ContractStatus, EmployeeStatus, Messages, Role, Status} from '../common/constants'
+import {sendAccountDowngradeEmail} from '../services/aws'
+import {Company, ICompany} from '../models/Company'
+import {ObjectId} from 'mongodb'
+import {Contract, IContract} from '../models/Contract'
+import {ICompanyAdmin} from '../models/CompanyAdmin'
+import {CompanyPrefix, ICompanyPrefix} from '../models/CompanyPrefix'
+import {ISaleTax, SaleTax} from '../models/SaleTax'
+import {IJobCharges, JobCharges} from '../models/JobCharges'
+import {IJob, Job} from '../models/Job'
 import {IUser, User} from '../models/User'
-import { IContractorActivity } from '../models/ContractorActivity'
-import { Customer} from '../models/Customer'
+import {IContractorActivity} from '../models/ContractorActivity'
+import {Customer} from '../models/Customer'
 import {CompanyCustomer} from '../models/CompanyCustomer';
+
 const Hubspot = require('hubspot')
 
 export const updateCompanyProfile = (req: Request, res: Response) => {
@@ -584,7 +585,7 @@ export const updateContractorEmailPreferences =  (req: Request, res: Response) =
                 sendTime.setHours(time[0] ? time[0] : 21,time[1] ? time[1] : 0,time[2] ? time[2]: 0);
                 c.emailPreferences.preferences = params.emailPreferences;
                 c.emailPreferences.time = sendTime;
-                if (user.permissions.role == Role.COMPANY_ADMIN && JSON.stringify(user._id) == JSON.stringify(c.admin)) {
+                if ((user.permissions.role == Role.COMPANY_ADMIN || user.permissions.role == Role.ADMIN_EMPLOYEE) && JSON.stringify(user._id) == JSON.stringify(c.admin)) {
                     if (params.timeZone) {
                         c.emailPreferences.timeZone = params.timeZone;
                     }
@@ -630,6 +631,7 @@ export const updateEmployeeEmailPreferences = (req: Request, res: Response) => {
                         if (user.permissions.role == Role.TECHNICIAN ||
                             user.permissions.role == Role.MANAGER ||
                             user.permissions.role == Role.COMPANY_ADMIN ||
+                            user.permissions.role == Role.ADMIN_EMPLOYEE ||
                             user.permissions.role == Role.GLOBAL_ADMIN
                         ) {
                             let sendTime = new Date();
@@ -637,7 +639,7 @@ export const updateEmployeeEmailPreferences = (req: Request, res: Response) => {
                             sendTime.setHours(time[0] ? time[0] : 21,time[1] ? time[1] : 0,time[2] ? time[2]: 0);
                             e.emailPreferences.preferences = params.emailPreferences;
                             e.emailPreferences.time = sendTime;
-                            if (user.permissions.role == Role.COMPANY_ADMIN && JSON.stringify(user._id) == JSON.stringify(c.admin)) {
+                            if ((user.permissions.role == Role.COMPANY_ADMIN || user.permissions.role == Role.ADMIN_EMPLOYEE) && JSON.stringify(user._id) == JSON.stringify(c.admin)) {
                                 if (params.timeZone) {
                                     e.emailPreferences.timeZone = params.timeZone;
                                 }

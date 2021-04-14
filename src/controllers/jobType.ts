@@ -13,14 +13,14 @@ export const createJobType = (req: Request, res: Response) => {
     var userId: any = null
     var industryId: any = null
 
-    if (user.permissions.role == Role.COMPANY_ADMIN) {
+    if (user.permissions.role == Role.COMPANY_ADMIN || user.permissions.role == Role.ADMIN_EMPLOYEE) {
         userId = user._id
-    } 
+    }
 
     if (user.permissions.role != Role.GLOBAL_ADMIN){
         userId = req.companyId
     }
-    
+
     if(user.permissions.role == Role.GLOBAL_ADMIN) {
         if(params.industryId == undefined || params.industryId == null) {
             return res.json({ status: Status.Error, message: "Industry Id is required"})
@@ -28,24 +28,24 @@ export const createJobType = (req: Request, res: Response) => {
             industryId = params.industryId
         }
     }
-    if (industryId != null && industryId != undefined) { 
+    if (industryId != null && industryId != undefined) {
         JobType.findOne({title: params.title, industry: industryId, createdBy: null}, (err: any, previousJobType: IJobType) =>{
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-            
+
             if(previousJobType != undefined || previousJobType != null) {
                 return res.json({'status': Status.Error, 'message': "Job Type already created for this industry"})
             }
-    
+
             const jobType = new JobType({
                 title: params.title,
                 industry: industryId,
                 createdBy:  userId
             })
-        
+
             jobType.save((err: any) => {
-        
+
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
@@ -53,8 +53,8 @@ export const createJobType = (req: Request, res: Response) => {
 
                     return res.json({'status': Status.Success, 'message': 'Job type created successfully.'})
                 })
-        
-        
+
+
             })
         })
     }else{
@@ -63,40 +63,40 @@ export const createJobType = (req: Request, res: Response) => {
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-            
+
             if(previousJobType != undefined || previousJobType != null) {
                 return res.json({'status': Status.Error, 'message': "Job Type already created"})
             }
-    
+
             const jobType = new JobType({
                 title: params.title,
                 industry: industryId,
                 createdBy:  userId
             })
-        
+
             jobType.save((err: any) => {
-        
+
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
-                
+
                 _createItem(req, res, jobType, req.companyId, (req: Request, res: Response) => {
                     return res.json({'status': Status.Success, 'message': 'Job type created successfully.'})
                 })
-        
+
             })
         })
     }
 }
 
 const _createItem = (req: Request, res: Response, jobType: IJobType, companyId: any, next: (req: Request, res: Response) => void) => {
-    
+
     const params = req.body
-    
+
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-    
+
     const item = new Item(
         {
             name: params.title,
@@ -111,7 +111,7 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, companyId: 
         }
         next(req, res)
         return
-    })    
+    })
 }
 
 export const getJobTypes = (req: Request, res: Response) => {
@@ -121,30 +121,30 @@ export const getJobTypes = (req: Request, res: Response) => {
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-    if(user.permissions.role == Role.GLOBAL_ADMIN) { 
+    if(user.permissions.role == Role.GLOBAL_ADMIN) {
         JobType.find({},
             (err: any, types: IJobType[])=>{
-    
+
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
-    
-                return res.json({'status': Status.Success, 'types': types})    
-    
+
+                return res.json({'status': Status.Success, 'types': types})
+
             }
         )
-        
+
     }else{
         JobType.find(
             { $or: [ {createdBy: null, industry: req.company.info.industry, isActive: true}, {createdBy: req.companyId, isActive: true} ]},
             (err: any, types: IJobType[])=>{
-    
+
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
-    
-                return res.json({'status': Status.Success, 'types': types})    
-    
+
+                return res.json({'status': Status.Success, 'types': types})
+
             }
         )
     }
@@ -158,11 +158,11 @@ export const editJobType = (req: Request, res: Response) => {
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
-        
+
         if(jobType == undefined || jobType == null) {
             return res.json({'status': Status.Error, 'message': "Invalid job Type id"})
         }
-        
+
         if(!jobType.isActive) {
             return res.json({'status': Status.Error, 'message': "Job type is inactive activate to edit."})
         }
@@ -171,25 +171,25 @@ export const editJobType = (req: Request, res: Response) => {
             return res.json({'status': Status.Error, 'message': "Job type with title "+ params.title + " already exists."})
         }
 
-        
+
         jobType.updateOne({title: params.title},(err: any, raw: any) => {
-    
+
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-            
+
             _updateItem(req, res, jobType, params.title, (req: Request, res: Response) => {
                 return res.json({'status': Status.Success, 'message': 'Job type update successfully.'})
             })
-    
+
         })
     })
 }
 
 const _updateItem = (req: Request, res: Response, jobType: IJobType, jobTitle: string, next: (req: Request, res: Response) => void) => {
-    
+
     var companyId = req.companyId;
-    
+
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
@@ -205,12 +205,12 @@ const _updateItem = (req: Request, res: Response, jobType: IJobType, jobTitle: s
             }else{
                 name = jobTitle + ' - hourly'
             }
-    
+
             item.updateOne({name: name}, (err: any, raw: any) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
-    
+
                 next(req, res)
                 return
             })
@@ -222,15 +222,15 @@ const _updateItem = (req: Request, res: Response, jobType: IJobType, jobTitle: s
                     jobType: jobType._id,
                 }
             )
-        
+
             item.save((err: any) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
                 next(req, res)
                 return
-            })    
-        }  
+            })
+        }
     })
 }
 
@@ -242,27 +242,27 @@ export const changeJobTypeStatus = (req: Request, res: Response) => {
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
-        
+
         if(jobType == undefined || jobType == null) {
             return res.json({'status': Status.Error, 'message': "Invalid job Type id"})
         }
-        
+
         jobType.updateOne({isActive: params.status},(err: any, raw: any) => {
-    
+
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-            
+
             _updateItemStatus(req, res, jobType, params.status, (req: Request, res: Response) => {
                 return res.json({'status': Status.Success, 'message': 'Job type status update successfully.'})
             })
-    
+
         })
     })
 }
 
 const _updateItemStatus = (req: Request, res: Response, jobType: IJobType, itemStatus: boolean, next: (req: Request, res: Response) => void) => {
-    
+
     Item.findOne({jobType: jobType._id}, (err: any, item: IItem) => {
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -275,18 +275,18 @@ const _updateItemStatus = (req: Request, res: Response, jobType: IJobType, itemS
             }else{
                 name = name + ' - hourly'
             }
-    
+
             item.updateOne({isActive: itemStatus}, (err: any, raw: any) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
-    
+
                 next(req, res)
                 return
             })
         } else {
             return res.json({'status': Status.Error, 'message': 'Item for this job type not found'})
-        }  
+        }
     })
 }
 
@@ -300,7 +300,7 @@ export const getAllItems = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            return res.json({'status': Status.Success, 'items': items})    
+            return res.json({'status': Status.Success, 'items': items})
 
         }
     )
@@ -326,7 +326,7 @@ export const updateItem = (req: Request, res: Response) => {
             }else{
                 name = item.name + ' - fixed'
             }
-            
+
             item.updateOne({name: name, charges: params.charges, tax: params.tax, isFixed: params.isFixed},
             (err: any, raw: any) => {
                 if (err) {
@@ -334,7 +334,7 @@ export const updateItem = (req: Request, res: Response) => {
                 }
 
                 return res.json({'status': Status.Success, 'message': 'Item updated successfully'})
-                    
+
             })
 
         }

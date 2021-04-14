@@ -102,7 +102,7 @@ export const removeCompanySubscriptions = async (req: Request, res: Response) =>
             company.maxOfficeAdmins--;
             break;
         }
-        case Role.GLOBAL_ADMIN: {
+        case Role.ADMIN_EMPLOYEE: {
             company.maxAdmins--;
         }
     }

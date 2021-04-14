@@ -12,17 +12,17 @@ export const createEquipmentBrand = (req: Request, res: Response) => {
     var userId: any = null
     var industryId: any = null
 
-    if (user.permissions.role == Role.COMPANY_ADMIN) {
+    if (user.permissions.role == Role.COMPANY_ADMIN || user.permissions.role == Role.ADMIN_EMPLOYEE) {
         userId = user._id
-    } 
+    }
 
     if (user.permissions.role != Role.GLOBAL_ADMIN){
         userId = req.companyId
     }
 
-      
+
     if(user.permissions.role == Role.GLOBAL_ADMIN) {
-        if(params.industryId == undefined || params.industryId == null) {
+        if(params.industryId == undefined) {
             return res.json({ status: Status.Error, message: "Industry Id is required"})
         }else{
             industryId = params.industryId
@@ -34,25 +34,25 @@ export const createEquipmentBrand = (req: Request, res: Response) => {
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-            
+
             if(previousEquipmentBrand != undefined || previousEquipmentBrand != null) {
                 return res.json({'status': Status.Error, 'message': "Equipment Brand already created for this industry"})
             }
-    
+
             const brand = new EquipmentBrand({
                 title: params.title,
                 industry: industryId,
                 createdBy:  userId
             })
-        
+
             brand.save((err: any) => {
-        
+
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
-        
+
                 return res.json({'status': Status.Success, 'message': 'Equipment brand created successfully.'})
-        
+
             })
         })
     }else{
@@ -61,30 +61,30 @@ export const createEquipmentBrand = (req: Request, res: Response) => {
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-            
+
             if(previousEquipmentBrand != undefined || previousEquipmentBrand != null) {
                 return res.json({'status': Status.Error, 'message': "Equipment Brand already created"})
             }
-    
+
             const brand = new EquipmentBrand({
                 title: params.title,
                 industry: industryId,
                 createdBy:  userId
             })
-        
+
             brand.save((err: any) => {
-        
+
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
-        
+
                 return res.json({'status': Status.Success, 'message': 'Equipment brand created successfully.'})
-        
+
             })
         })
     }
 
-    
+
 
 }
 
@@ -98,39 +98,39 @@ export const getEquipmentBrands = (req: Request, res: Response) => {
     if(user.permissions.role == Role.GLOBAL_ADMIN) {
         EquipmentBrand.find({},
             (err: any, brands: IEquipmentBrand[])=>{
-    
+
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
-    
-                return res.json({'status': Status.Success, 'brands': brands})    
-    
+
+                return res.json({'status': Status.Success, 'brands': brands})
+
             }
         )
 
     } else{
-        Company.findById(companyId, 
+        Company.findById(companyId,
         (err: any, company: ICompany)=>{
-    
+
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-                
+
             EquipmentBrand.find(
-                { $or : [ {createdBy: companyId} , 
+                { $or : [ {createdBy: companyId} ,
                     { $and: [{industry: company.info.industry}, {createdBy: null}, ]}
                 ]},
                 (err: any, brands: IEquipmentBrand[])=>{
-        
+
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
-        
-                    return res.json({'status': Status.Success, 'brands': brands})    
-        
+
+                    return res.json({'status': Status.Success, 'brands': brands})
+
                 }
             )
-    
+
         })
     }
 

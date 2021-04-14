@@ -8863,7 +8863,7 @@
           "properties": {
             "role": {
               "type": "integer",
-              "description": "0->OFFICE_ADMIN 1->TECHNICIAN 2->MANAGER 3->COMPANY 4->GLOBAL_ADMIN"
+              "description": "0->OFFICE_ADMIN 1->TECHNICIAN 2->MANAGER 3->COMPANY_ADMIN 4->Admin_Employee 5->GLOBAL_ADMIN 6->Customer"
             }
           }
         },

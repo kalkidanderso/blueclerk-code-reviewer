@@ -41,6 +41,7 @@ export const enum Role {
     TECHNICIAN,
     MANAGER,
     COMPANY_ADMIN,
+    ADMIN_EMPLOYEE,
     GLOBAL_ADMIN,
     CUSTOMER
 }
