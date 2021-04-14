@@ -381,7 +381,8 @@ export const UserPermissions = {
             Permissions.Code_Location_Tag,
             Permissions.Update_Location_Tag,
             Permissions.Get_Location_Tags,
-            Permissions.Get_Location_Tag_Jobs
+            Permissions.Get_Location_Tag_Jobs,
+            Permissions.Get_Company_Contracts
         ],
         off: [Permissions.None],
     },
@@ -497,7 +498,8 @@ export const UserPermissions = {
             Permissions.Code_Location_Tag,
             Permissions.Update_Location_Tag,
             Permissions.Get_Location_Tags,
-            Permissions.Get_Location_Tag_Jobs
+            Permissions.Get_Location_Tag_Jobs,
+            Permissions.Get_Company_Contracts
         ],
         off: [Permissions.None],
     },
@@ -606,6 +608,7 @@ export const UserPermissions = {
             Permissions.Cancel_Estimate,
             Permissions.Get_Company_Contractor_Activity,
             Permissions.Get_Items,
+            Permissions.Get_Company_Contracts,
             Permissions.Update_Item,
             Permissions.Get_Equipment_Purchase_Order,
             Permissions.Get_Customer_Invoices,
