@@ -726,7 +726,7 @@ export const getJobReportDetails = (req: Request, res: Response) => {
         .populate({
             path: 'job',
             populate: [
-                { path: 'ticket', select: 'ticketId note scheduleDateTime' },
+                { path: 'ticket', select: 'ticketId note scheduleDateTime image customerPO customerContactId' },
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
                 { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
                 { path: 'type', select: 'title' },

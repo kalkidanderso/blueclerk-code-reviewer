@@ -30,6 +30,7 @@ export const checkSpecificPermissions = (minAuth: Role[]) => {
          const user = <IUser>req.user
 
         if (!minAuth.includes(user.permissions.role)) {
+            console.log('not there' , minAuth, user.permissions.role);
             return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
         }
 
