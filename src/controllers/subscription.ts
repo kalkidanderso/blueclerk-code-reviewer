@@ -73,12 +73,14 @@ export const addCompanySubscriptions = (req: Request, res: Response) => {
 
 export const getAllSubscriptions = async (req: Request, res: Response) => {
     const company = <ICompany> req.company;
+    const maxVendors = await Contract.countDocuments({company: company._id});
     return res.json(
         {'status': Status.Success,
             'technicians': company.maxTechnicians,
             'office admins': company.maxOfficeAdmins,
             'admins': company.maxAdmins,
-            'managers': company.maxManagers
+            'managers': company.maxManagers,
+            'contractors': maxVendors
         });
 }
 export const removeCompanySubscriptions = async (req: Request, res: Response) => {
