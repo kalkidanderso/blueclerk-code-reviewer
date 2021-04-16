@@ -5,7 +5,7 @@
     "description": "APIs for both app and website",
     "version": "1.0.0"
   },
-  "host": "blueclerk-node-api.deploy.blueclerk.com",
+  "host": "api.blueclerk.com",
   "basePath": "/api/v1",
   "schemes": [
     "https"
