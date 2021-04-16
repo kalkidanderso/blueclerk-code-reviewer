@@ -5,6 +5,7 @@ import { ICompany, Company } from '../models/Company'
 import {Contract} from '../models/Contract';
 import {Employee} from '../models/Employee';
 import { ObjectId } from 'mongodb'
+import {sendAccountDowngradeEmail, sendAccountUpgradeEmail, sendDeclinedOrderEmail} from '../services/aws';
 
 export const addCompanySubscriptions = (req: Request, res: Response) => {
 
@@ -51,7 +52,6 @@ export const addCompanySubscriptions = (req: Request, res: Response) => {
 
     chargeSubscription( amount , company.stripeId, (status:any, charge: any, message: any)=>{
         if(status == 1){
-
             const noOfTechs: number = company.maxTechnicians + parseInt(params.noOfTechnicians)
             const noOfManagers: number = company.maxManagers + parseInt(params.noOfManagers)
             const noOfOfficeAdmins: number = company.maxOfficeAdmins + parseInt(params.noOfOfficeAdmins)
@@ -73,7 +73,7 @@ export const addCompanySubscriptions = (req: Request, res: Response) => {
 
 export const getAllSubscriptions = async (req: Request, res: Response) => {
     const company = <ICompany> req.company;
-    const maxVendors = await Contract.countDocuments({company: company._id});
+    const maxVendors = await Contract.countDocuments({company: company._id, status: ContractStatus.ACCEPTED});
     return res.json(
         {'status': Status.Success,
             'technicians': company.maxTechnicians,
@@ -137,10 +137,15 @@ export const chargeCompanySubscription = (req: Request, res: Response) => {
             }
             const companiesToCharge:number = companies.length
             let companiesCharged: number = 0;
+            let responses: any = [];
             for (let index = 0; index < companies.length; index++) {
                 const company = companies[index];
-
-                var amount: number = 0;
+                if (!company.stripeId) {
+                    // Send an email to add a billing method
+                    sendAccountDowngradeEmail({to: company.info.companyEmail});
+                    continue;
+                }
+                let amount: number = 0;
 
                 if(company.maxOfficeAdmins > 0){
                     amount = amount + (company.maxOfficeAdmins * 30)
@@ -158,24 +163,39 @@ export const chargeCompanySubscription = (req: Request, res: Response) => {
                 if (nbOfContractors > 0) {
                     amount = amount + (nbOfContractors * 3)
                 }
-
                 if(amount > 0) {
                     chargeSubscription( amount , company.stripeId, (status:any, charge: any, message: any)=>{
                         if(status == 1){
                             companiesCharged ++;
-                            if(companiesToCharge == companiesCharged) {
+                            company.type = CompanyType.SUBSCRIBED;
+                            company.paid = true;
+                           company.save().then(() => {
+                               sendAccountUpgradeEmail(
+                                   {
+                                       to: company.info.companyEmail,
+                                       amount: charge.amount_captured/100,
+                                       technicians: company.maxTechnicians,
+                                       managers: company.maxManagers,
+                                       officeAdmins: company.maxOfficeAdmins,
+                                       admins: company.maxAdmins,
+                                       contractors: nbOfContractors
+                                   });
+                           }).catch((err) => {
+                               responses.push({'status': Status.Error, 'message': err.message});
+                           })
                                 // we need to send an email to the company to let it know that the transaction was successfully done!
-                                return res.json({'status': Status.Success, 'message': 'Done.'})
-                            }
+                                responses.push({'status': Status.Success, 'company': company.info.companyName, 'message': 'Done.'});
 
                         }else{
                             // We need to send an email to the company to update their payment information
-                            return res.json({'status': Status.Error, 'message': 'Unable to Charge Company: ' + company._id});
+                            sendDeclinedOrderEmail({to: company.info.companyEmail});
+                            responses.push({'status': Status.Error,'company': company.info.companyName, 'message': 'Unable to Charge Company: ' + company._id});
                         }
                     })
                 }
 
             }
+            return res.json({response: responses});
 
-        })
+        });
 }

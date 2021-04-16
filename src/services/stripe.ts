@@ -195,7 +195,8 @@ export const addCustomerSource = (stripeId: String, token: String, callback: Fun
 
 export const chargeSubscription = function (amount: any, customerId: String, callback: Function) {
     const stripe = require("stripe")(stripeConfig.sk_secret);
-    let total: number = amount * 100;
+    let tax = (amount * 0.8)*0.0825;
+    let total: number = (amount + tax) * 100;
     total = Math.ceil(total);
     if(total < 100){
         total = 100;

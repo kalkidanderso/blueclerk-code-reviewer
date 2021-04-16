@@ -51,7 +51,7 @@ export const sendEmail = function(options: any) {
                   <strong>512-846-6035</strong><br />
                   
                    <br />
-                  <img src='http://blueclerk.com/wp-content/uploads/2020/07/logo-120x42.png' />
+                  <img src='https://blueclerk.com/wp-content/uploads/2020/07/logo.png' />
                   </div>`,
               },
             },
@@ -235,7 +235,7 @@ export const sendInvoiceEmailToCustomer = function(options: any) {
               <p><strong>Invoice Number:</strong> ${options.invoiceNumber}</p>
               <p><strong>Invoice Amount:</strong> ${options.invoiceAmount}</p>
               <br />
-              <img src='http://blueclerk.com/wp-content/uploads/2020/07/logo-120x42.png' alt="blueclerk" />
+              <img src='https://blueclerk.com/wp-content/uploads/2020/07/logo.png' alt="blueclerk" />
               </div>
               `
               },
@@ -290,7 +290,7 @@ export const sendReportEmailToCustomer = function(options: any) {
               <p><strong>Job Type:</strong> ${options.jobType}</p>
               <p><strong>Date of work:</strong> ${options.workDate}</p>
               <br />
-              <img src='http://blueclerk.com/wp-content/uploads/2020/07/logo-120x42.png' alt="blueclerk" />
+              <img src='https://blueclerk.com/wp-content/uploads/2020/07/logo.png' alt="blueclerk" />
               </div>
               `
               },
@@ -947,6 +947,7 @@ export const sendJobEmailToCompanyAdmin = function(options: any) {
   })
 }
 
+
 export const sendAccountDowngradeEmail = function(options: any) {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
@@ -961,34 +962,78 @@ export const sendAccountDowngradeEmail = function(options: any) {
 
   return new Promise((resolve, reject) => {
     ses.sendEmail(
-      {
-        Source: APP_EMAIL_NOREPLY,
-        Destination: {
-          CcAddresses: [],
-          ToAddresses: [options.to],
-        },
-        Message: {
-          Subject: {
-            Data: "BlueClerk Alert: Account status change",
+        {
+          Source: APP_EMAIL_NOREPLY,
+          Destination: {
+            CcAddresses: [],
+            ToAddresses: [options.to],
           },
-          Body: {
-            Html: {
-              Data: "<p>Your account has been downgraded to the free version. You may still use the software free of charge with limited functionality. All of your data will be saved.</p><p>You can upgrade to a full account at any time.</p><div><a href=\"https://app.blueclerk.com/login/\" target=\"_blank\"><img src=\"https://app.blueclerk.com/assets/img/logo.jpg\" style=\"width: 20%;\" alt='BlueClerk'></a></div>",
+          Message: {
+            Subject: {
+              Data: "BlueClerk Alert: Account status change",
+            },
+            Body: {
+              Html: {
+                Data: "<p>Your account has been downgraded to the free version. You may still use the software free of charge with limited functionality. All of your data will be saved.</p><p>You can upgrade to a full account at any time.</p> <p>To upgrade you may need to add a billing method</p><div><a href=\"https://app.blueclerk.com/login/\" target=\"_blank\"><img src=\"https://blueclerk.com/wp-content/uploads/2020/07/logo.png\" style=\"width: 20%;\" alt='BlueClerk'></a></div>",
+              },
             },
           },
+          ReplyToAddresses: [APP_EMAIL_NOREPLY],
         },
-        ReplyToAddresses: [APP_EMAIL_NOREPLY],
-      },
-      (err, info) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(info)
-        }
-      },
+        (err, info) => {
+          if (err) {
+            reject(err)
+          } else {
+            resolve(info)
+          }
+        },
     )
   })
 }
+
+export const sendDeclinedOrderEmail = function(options: any) {
+
+  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
+
+  AWS.config.update({
+    region: AWS_REGION,
+    accessKeyId: AWS_SES_ACCESSKEYID,
+    secretAccessKey: AWS_SES_SECRETACCESSKEY,
+  })
+
+  const ses = new AWS.SES({ apiVersion: '2012-10-17' })
+
+  return new Promise((resolve, reject) => {
+    ses.sendEmail(
+        {
+          Source: APP_EMAIL_NOREPLY,
+          Destination: {
+            CcAddresses: [],
+            ToAddresses: [options.to],
+          },
+          Message: {
+            Subject: {
+              Data: "BlueClerk Alert: BlueClerk billing method needs attention",
+            },
+            Body: {
+              Html: {
+                Data: "<p>There is a problem with your billing method.</p> <p> Please login and go to Admin>billing>add new card to update your billing method</p><div><a href=\"https://app.blueclerk.com/login/\" target=\"_blank\"><img src=\"https://blueclerk.com/wp-content/uploads/2020/07/logo.png\" style=\"width: 20%;\" alt='BlueClerk'></a></div>",
+              },
+            },
+          },
+          ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        },
+        (err, info) => {
+          if (err) {
+            reject(err)
+          } else {
+            resolve(info)
+          }
+        },
+    )
+  })
+}
+
 export const sendAccountUpgradeEmail = function(options: any) {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
@@ -1015,7 +1060,17 @@ export const sendAccountUpgradeEmail = function(options: any) {
           },
           Body: {
             Html: {
-              Data: "<p>Congratulation! Your account has been upgraded to the full version. You may use all the features of the software now. All of your data will be saved.</p><p>You can downgrade to a free account version at any time.</p><div><a href=\"https://app.blueclerk.com/login/\" target=\"_blank\"><img src=\"https://app.blueclerk.com/assets/img/logo.jpg\" style=\"width: 20%;\" alt='BlueClerk'></a></div>",
+              Data: `<p>Congratulations ! Your card has been successfully charged for the amount of $ ${options.amount}.</p>
+                    <p> ${options.technicians ? 'Technicians: ' + options.technicians : 'Technicians: 0'} </p>
+                    <p> ${options.managers ? 'Managers: ' + options.managers : 'Managers: 0'} </p>
+                    <p> ${options.admins ? 'Admins: ' + options.admins : 'Admins: 0'} </p>
+                    <p> ${options.officeAdmins ? 'Office Admins: ' + options.officeAdmins : 'Office Admins: 0'} </p>
+                    <p> ${options.contractors ? 'Contractors: ' + options.contractors : 'Contractors: 0'} </p>
+                    <div>
+                    <a href="https://app.blueclerk.com/login/" target="_blank">
+                    <img src="https://blueclerk.com/wp-content/uploads/2020/07/logo.png" style="width: 20%;" alt='BlueClerk' >
+                    </a>
+                    </div>`,
             },
           },
         },

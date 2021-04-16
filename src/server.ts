@@ -60,19 +60,14 @@ function haltOnTimeout (req: any, res: any, next: any) {
 }
 
 
-//CORS
-app.use(function(req: any, res: any, next: any) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  next();
-});
-
 app.set('port', process.env.PORT || 3000)
 app.use(compression())
 app.use(cookieParser())
 app.use(bodyParser.json({limit:'50mb'}));
 app.use(bodyParser.urlencoded({extended:true, limit:'50mb', parameterLimit: 10000000}));
-app.use(cors({origin: "*"}))
+app.use(cors());
+app.options('*', cors());
+
 
 //Auth middleware
 app.use(passport.initialize())
@@ -85,15 +80,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const httpServer = require('http').createServer(app);
 const sio = require("socket.io")(httpServer, {
-  /*handlePreflightRequest: (req:any, res: any) => {
-    const headers = {
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Allow-Origin": "*", //or the specific origin you want to give access to,
-        "Access-Control-Allow-Credentials": true
-    };
-    res.writeHead(200, headers);
-    res.end();
-  }*/
     cors:true,
     origins:["https://blueclerk-frontend-react.deploy.blueclerk.com", 'http://testing.blueclerk.com', 'https://app.blueclerk.com'],
     transport : ['websocket']
