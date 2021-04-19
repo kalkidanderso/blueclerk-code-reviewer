@@ -14,16 +14,18 @@ import * as swaggerDocument from './swagger.json'
 // const CronJob = require('cron').CronJob;
 import {CronJob} from 'cron'
 import request from 'request';
+import socketioJwt from 'socketio-jwt';
 
 //Environment config
 import moment from 'moment-timezone';
 import {EmailSchedule, IEmailSchedule} from './models/EmailSchedule';
 import {IUser, User} from './models/User';
+import { ICompanyAdmin } from './models/CompanyAdmin'
 import {IJob, Job} from './models/Job';
 import {sendJobEmailToAssignee, sendScheduledJobEmailToAssignee} from './services/aws';
 import {Company} from './models/Company';
 import {Customer} from './models/Customer';
-import {Status} from './common/constants';
+import { Status, Messages } from './common/constants';
 const timeout = require('connect-timeout');
 
 dotenv.config()
@@ -100,8 +102,30 @@ const sio = require("socket.io")(httpServer, {
 
 });
 
+// Authenticate Socket client by its Authorization token
+sio.use(socketioJwt.authorize({
+  secret: process.env.jwt_encryption,
+  handshake: true,
+  auth_header_required: true
+}));
+
 sio.on("connection", (socket:any) => {
   console.log("Connected!");
+
+  // Find if the user exists and retrieve his/her company ID
+  User.findOne(
+    {_id: socket.decoded_token.id},
+    (err: any, user: ICompanyAdmin) => {
+      if (err || !user) {
+        // emit the error
+        socket.emit(Messages.UnAuthorized, 'User not found');
+      } else {
+        // Let the client joins the room based on their company_id
+        socket.join(user.company && user.company.toString());
+      }
+    }
+  )
+
   socket.on('message', () => {
     console.log('Message received from FE!');
   });
