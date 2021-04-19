@@ -101,7 +101,8 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                                         return null;
                                     }
                                     await Promise.all([
-                                        sio.emit(SocketMessage.CREATESERVICETICKET, serviceTicket),
+                                        // Send notification message to specific room based on the Company ID
+                                        sio.to(companyId && companyId.toString()).emit(SocketMessage.CREATESERVICETICKET, serviceTicket),
                                     ])
                                 }
                             )
