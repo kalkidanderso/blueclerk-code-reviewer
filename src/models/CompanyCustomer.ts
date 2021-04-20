@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface ICompanyCustomer extends Document {
 
     company: Schema.Types.ObjectId
-    customer: Schema.Types.ObjectId
+    customer: Schema.Types.ObjectId | any
     createdAt: Date
 
 }
