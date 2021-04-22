@@ -1,5 +1,5 @@
 import {Request, Response} from 'express'
-import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, SocketMessage, NotificationEventTypes } from '../common/constants'
+import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, SocketMessage, NotificationTypes } from '../common/constants'
 
 import { ICompany } from '../models/Company'
 import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket'
@@ -104,7 +104,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
                                     let notificationEntry: INotificationServiceTicket = new NotificationServiceTicket({
                                         company: companyId,
-                                        eventType: NotificationEventTypes.CREATE_SERVICE_TICKET,
+                                        notificationType: NotificationTypes.CREATE_SERVICE_TICKET,
                                         metadata: serviceTicket._id
                                     })
 

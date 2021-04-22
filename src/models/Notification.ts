@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { NotificationEventTypes } from '../common/constants';
+import { NotificationTypes } from '../common/constants';
 
 export interface INotificationQuery {
 
@@ -39,9 +39,9 @@ const NotificationSchema = new Schema(
             ref: 'Company',
             required: true
         },
-        eventType: {
+        notificationType: {
             type: String,
-            enum: Object.values(NotificationEventTypes),
+            enum: Object.values(NotificationTypes),
             required: true
         },
         message: {

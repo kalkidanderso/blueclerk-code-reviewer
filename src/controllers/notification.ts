@@ -5,6 +5,10 @@ import { IUser } from '../models/User';
 import { Notification, INotification, INotificationQuery } from '../models/Notification';
 import { NotificationServiceTicket, INotificationServiceTicket } from '../models/NotificationServiceTicket';
 
+/**
+ * Construct and get query for notification,
+ * by default will retrieve non-dismissed notifications
+ */
 const _getNotificationQuery = (
     companyId: string,
     isDismissed: 'ALL' | boolean,
@@ -30,15 +34,26 @@ const _getNotificationQuery = (
 
 }
 
-export const getNotifications = (req: Request, res: Response, sio: any) => {
+/**
+ * Retrieve multiple notifications based on company
+ */
+export const getNotifications = (req: Request, res: Response) => {
 
     const companyId = req.companyId;
     const { isDismissed, isRead } = req.query;
     const _query: INotificationQuery = _getNotificationQuery(companyId, isDismissed, isRead);
 
-    Notification.find(_query)
+    Notification.find(_query).sort({ createdAt: 'desc' })
         .populate({
-            path: 'metadata',
+            path: 'readStatus.readBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'dismissedStatus.dismissedBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'metadata'
         })
         .exec((err: any, notifications: INotification[]) => {
             if (err) {
@@ -54,6 +69,9 @@ export const getNotifications = (req: Request, res: Response, sio: any) => {
 
 }
 
+/**
+ * Update the status of notificatoin, read and dismiss status
+ */
 export const updateNotification = (req: Request, res: Response) => {
 
     const companyId = req.companyId;
@@ -68,6 +86,10 @@ export const updateNotification = (req: Request, res: Response) => {
         .exec((err: any, notification: INotificationServiceTicket) => {
             if (err) {
                 return res.json({ status: Status.Error, message: Messages.GenericError });
+            }
+
+            if (!notification) {
+                return res.json({ status: Status.NotFound, message: Messages.NotificationNotFound });
             }
 
             // TODO: Update to use ?? operator when using ES2020
@@ -89,11 +111,27 @@ export const updateNotification = (req: Request, res: Response) => {
                     return res.json({ status: Status.Error, message: Messages.GenericError });
                 }
 
-                return res.json({
-                    status: Status.Success,
-                    message: 'Notification updated successfully.',
-                    notification: updatedNotification
-                })
+                updatedNotification
+                    .populate({
+                        path: 'readStatus.readBy',
+                        select: 'profile.displayName'
+                    })
+                    .populate({
+                        path: 'dismissedStatus.dismissedBy',
+                        select: 'profile.displayName'
+                    })
+                    .populate({
+                        path: 'metadata'
+                    })
+                    .execPopulate()
+                    .then((notification) => {
+                        return res.json({
+                            status: Status.Success,
+                            message: 'Notification updated successfully.',
+                            notification: notification
+                        })
+                    });
+
             })
         }
     );
