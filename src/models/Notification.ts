@@ -12,7 +12,7 @@ export interface INotificationQuery {
 export interface INotification extends Document {
 
     company: Schema.Types.ObjectId
-    eventType: string
+    notificationType: string
     message: {
         title: String
         body: String

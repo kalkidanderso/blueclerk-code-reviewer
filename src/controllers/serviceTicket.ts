@@ -102,12 +102,14 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                                         return null;
                                     }
 
+                                    // Construct notification entry to be saved
                                     let notificationEntry: INotificationServiceTicket = new NotificationServiceTicket({
                                         company: companyId,
                                         notificationType: NotificationTypes.CREATE_SERVICE_TICKET,
                                         metadata: serviceTicket._id
                                     })
 
+                                    // Save the notification with Service Ticket as the metadata
                                     notificationEntry.save(async (err: any, notification: INotificationServiceTicket) => {
                                         if (err) {
                                             return null;
