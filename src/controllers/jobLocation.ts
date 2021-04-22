@@ -9,9 +9,13 @@ import { Contact } from '../models/Contact'
 export const get = (req: Request, res: Response) => {
     const { id } = req.params
     const { query: queryParams = {} } = req
-    const { customerId, companyId } = queryParams
-
+    const loggedInCompanyId = req.companyId;
+    let { customerId, companyId } = queryParams
     let query = {}
+
+    if (!id && !customerId && !companyId && loggedInCompanyId) {
+        companyId = loggedInCompanyId;
+    }
     if (id) {
         query = { _id: id }
     } else if (customerId && companyId) {
@@ -22,16 +26,12 @@ export const get = (req: Request, res: Response) => {
         query = { companyId }
     }
 
-    JobLocation.find(query, (err: any, jobLocation: any) => {
-        if (err) {
-            res.status(Status.InternalError)
-            res.send(Messages.InternalServerError)
-            return
-        }
 
-        res.status(Status.OK)
-        res.send(jobLocation)
-    }).populate('jobSites', 'name location')
+    JobLocation.find(query).populate('jobSites', 'name location').exec().then((jobLocations: any) => {
+        return res.json(jobLocations);
+    }).catch((err) => {
+        return res.json({'status': Status.Error, 'message': err.message});
+    })
 }
 
 export const create = async (req: Request, res: Response) => {
@@ -75,7 +75,7 @@ export const create = async (req: Request, res: Response) => {
             phone: contactPhone,
             email: contactEmail
         });
-        await contact.save().then((c) => {
+        contact.save().then((c) => {
             jobLocationData.contacts.push(c._id);
         });
     }
@@ -83,14 +83,13 @@ export const create = async (req: Request, res: Response) => {
     if (locationLong && locationLat) {
         jobLocationData.location = {coordinates: [locationLong, locationLat]};
     }
-    await JobLocation.create(jobLocationData, (err: any, jobLocation: IJobLocation) => {
-        if (err) {
-            return res.json({'status': Status.Error, 'message': err.message});
-        }
-        Customer.findByIdAndUpdate(customerId, {
+    JobLocation.create(jobLocationData).then(async (jobLocation: IJobLocation) => {
+        await Customer.findByIdAndUpdate(customerId, {
             $push: {jobLocations: jobLocation._id}
-        }).exec()
+        }).exec();
         return res.json({'status': Status.Success, 'message': "Job Location created successfully!"});
+    }).catch((err) => {
+        return res.json({'status': Status.Error, 'message': err.message});
     })
 }
 
@@ -144,11 +143,9 @@ export const update = (req: Request, res: Response) => {
         companyId
     }, (err: any) => {
         if (err) {
-            res.status(Status.InternalError)
-            res.send(Messages.InternalServerError)
+            return res.json({'status': Status.Error, 'message': err.message});
         } else {
-            res.status(Status.OK)
-            res.send('job location has been updated successfully.')
+            return res.json({'status': Status.Success, 'message': 'job location has been updated successfully.'});
         }
     })
 }

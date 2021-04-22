@@ -14,16 +14,18 @@ import * as swaggerDocument from './swagger.json'
 // const CronJob = require('cron').CronJob;
 import {CronJob} from 'cron'
 import request from 'request';
+import socketioJwt from 'socketio-jwt';
 
 //Environment config
 import moment from 'moment-timezone';
 import {EmailSchedule, IEmailSchedule} from './models/EmailSchedule';
 import {IUser, User} from './models/User';
+import { ICompanyAdmin } from './models/CompanyAdmin'
 import {IJob, Job} from './models/Job';
 import {sendJobEmailToAssignee, sendScheduledJobEmailToAssignee} from './services/aws';
 import {Company} from './models/Company';
 import {Customer} from './models/Customer';
-import {Status} from './common/constants';
+import { Status, Messages } from './common/constants';
 const timeout = require('connect-timeout');
 
 dotenv.config()
@@ -60,19 +62,14 @@ function haltOnTimeout (req: any, res: any, next: any) {
 }
 
 
-//CORS
-app.use(function(req: any, res: any, next: any) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  next();
-});
-
 app.set('port', process.env.PORT || 3000)
 app.use(compression())
 app.use(cookieParser())
 app.use(bodyParser.json({limit:'50mb'}));
 app.use(bodyParser.urlencoded({extended:true, limit:'50mb', parameterLimit: 10000000}));
-app.use(cors({origin: "*"}))
+app.use(cors());
+app.options('*', cors());
+
 
 //Auth middleware
 app.use(passport.initialize())
@@ -85,23 +82,36 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const httpServer = require('http').createServer(app);
 const sio = require("socket.io")(httpServer, {
-  /*handlePreflightRequest: (req:any, res: any) => {
-    const headers = {
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Allow-Origin": "*", //or the specific origin you want to give access to,
-        "Access-Control-Allow-Credentials": true
-    };
-    res.writeHead(200, headers);
-    res.end();
-  }*/
     cors:true,
     origins:["https://blueclerk-frontend-react.deploy.blueclerk.com", 'http://testing.blueclerk.com', 'https://app.blueclerk.com'],
     transport : ['websocket']
 
 });
 
+// Authenticate Socket client by its Authorization token
+sio.use(socketioJwt.authorize({
+  secret: process.env.jwt_encryption,
+  handshake: true,
+  auth_header_required: true
+}));
+
 sio.on("connection", (socket:any) => {
   console.log("Connected!");
+
+  // Find if the user exists and retrieve his/her company ID
+  User.findOne(
+    {_id: socket.decoded_token.id},
+    (err: any, user: ICompanyAdmin) => {
+      if (err || !user) {
+        // emit the error
+        socket.emit(Messages.UnAuthorized, 'User not found');
+      } else {
+        // Let the client joins the room based on their company_id
+        socket.join(user.company && user.company.toString());
+      }
+    }
+  )
+
   socket.on('message', () => {
     console.log('Message received from FE!');
   });

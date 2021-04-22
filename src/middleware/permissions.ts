@@ -23,6 +23,21 @@ export const checkPermissions = (minAuth: Role) => {
 
     }
 }
+export const checkSpecificPermissions = (minAuth: Role[]) => {
+
+    return async (req: Request, res: Response, next: NextFunction) => {
+
+         const user = <IUser>req.user
+
+        if (!minAuth.includes(user.permissions.role)) {
+            console.log('not there' , minAuth, user.permissions.role);
+            return res.json({'status': Status.Error, 'message': Messages.UnAuthorized})
+        }
+
+        next()
+
+    }
+}
 
 export const checkUserScanPermissions = (permissionId: number) => {
     return async (req: Request, res: Response, next: NextFunction) => {
@@ -42,10 +57,10 @@ export const checkUserScanPermissions = (permissionId: number) => {
             return ;
         }
         // check if it's the company owner
-        if(user.permissions.role == Role.COMPANY_ADMIN && JSON.stringify(company._id) == JSON.stringify(checkTag.company)) {
+        if((user.permissions.role == Role.COMPANY_ADMIN || user.permissions.role == Role.ADMIN_EMPLOYEE) && JSON.stringify(company._id) == JSON.stringify(checkTag.company)) {
             check = true;
             // check if it's an employee
-        } else if (JSON.stringify(company._id) == JSON.stringify(checkTag.company) && user.permissions.role != Role.COMPANY_ADMIN) {
+        } else if (JSON.stringify(company._id) == JSON.stringify(checkTag.company) && (user.permissions.role != Role.COMPANY_ADMIN && user.permissions.role != Role.ADMIN_EMPLOYEE)) {
             if (
                 user.permissions.role == Role.MANAGER ||
                 user.permissions.role == Role.TECHNICIAN
@@ -89,7 +104,7 @@ export const checkUserPermissions = (permissionId : number) => {
 
         // check if get contracts
 
-        if(user.permissions.role == Role.COMPANY_ADMIN){
+        if(user.permissions.role == Role.COMPANY_ADMIN || user.permissions.role == Role.ADMIN_EMPLOYEE){
 
             const companyAdmin = <ICompanyAdmin>req.user
 

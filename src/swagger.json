@@ -1769,6 +1769,50 @@
         ]
       }
     },
+
+    "/updateEmployeeRole": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "This API used to update employees roles",
+        "description": "0->OFFICE_ADMIN 1->TECHNICIAN 2->MANAGER 3->COMPANY_ADMIN 4->Admin_Employee",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "employeeId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "newRole",
+            "in": "formData",
+            "required": true,
+            "type": "number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+
+    },
     "/updateEmployeeEmailPreferences": {
       "post": {
         "tags": [
@@ -8046,6 +8090,31 @@
         ]
       }
     },
+    "/getAllSubscriptions": {
+      "get": {
+        "tags": [
+          "Subscription"
+        ],
+        "summary": "Get company's subscriptions",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/cancelSubscriptions": {
       "post": {
         "tags": [
@@ -8863,7 +8932,7 @@
           "properties": {
             "role": {
               "type": "integer",
-              "description": "0->OFFICE_ADMIN 1->TECHNICIAN 2->MANAGER 3->COMPANY 4->GLOBAL_ADMIN"
+              "description": "0->OFFICE_ADMIN 1->TECHNICIAN 2->MANAGER 3->COMPANY_ADMIN 4->Admin_Employee 5->GLOBAL_ADMIN 6->Customer"
             }
           }
         },

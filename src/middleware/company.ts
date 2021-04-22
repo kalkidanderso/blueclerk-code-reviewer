@@ -12,15 +12,15 @@ export const getCompanyId = () => {
 
         const user = <IUser>req.user
         req.otherCompanyId = undefined
- 
+
         // check if contractor or organization is making the request
         if((req.body.companyId != undefined) || (req.body.companyId !=="")) {
             req.otherCompanyId = req.body.companyId
         }
-    
-        if(user.permissions.role == Role.COMPANY_ADMIN) {
+
+        if(user.permissions.role == Role.COMPANY_ADMIN || user.permissions.role == Role.ADMIN_EMPLOYEE) {
             const comapnyAdmin = <ICompanyAdmin>req.user
-            Company.findById(comapnyAdmin.company, 
+            Company.findById(comapnyAdmin.company,
                 (err: any, company: ICompany) => {
 
                     if (err) {
@@ -46,7 +46,7 @@ export const getCompanyId = () => {
 
         } else if (user.permissions.role != Role.GLOBAL_ADMIN) {
             const employee = <IEmployee>req.user
-            Company.findById(employee.company, 
+            Company.findById(employee.company,
                 (err: any, company: ICompany) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': "Unable to find your company. Contact BlueClerk admin for more." })
@@ -54,7 +54,7 @@ export const getCompanyId = () => {
 
                     req.company = company
                     req.companyId = company._id
-                    
+
                     next()
                     return
                 }

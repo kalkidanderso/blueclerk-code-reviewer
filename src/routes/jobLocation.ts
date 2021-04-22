@@ -22,6 +22,10 @@ router.put(
     update
 )
 
-router.get('/:id?', get)
+router.get('/:id?',
+    passport.authenticate('jwt', { session: false }),
+    getCompanyId(),
+    get
+)
 
 export default router

@@ -1,24 +1,23 @@
-import { Request, Response, response } from 'express'
-import {Status, Role, Messages, UserPermissions, ContractStatus, Permissions, CompanyType} from '../common/constants'
+import {Request, Response} from 'express'
+import {ContractStatus, Messages, Role, Status, UserPermissions} from '../common/constants'
 import {
-    sendEmail,
-    sendEmployeeEmail,
-    sendPasswordEmail,
-    sendInvitationToContractor,
     sendContractStartEmail,
+    sendContractStartEmailToCompany,
     sendContractStatusChangeEmailToCompany,
     sendContractStatusChangeEmailToContractor,
-    sendAccountDowngradeEmail,
-    sendContractStartEmailToCompany,
+    sendEmail,
+    sendEmployeeEmail,
+    sendInvitationToContractor,
+    sendPasswordEmail,
     uploadImageInS3
 } from '../services/aws'
 
-import { User, IUser } from '../models/User'
-import { Company, ICompany } from '../models/Company'
-import { Employee, IEmployee } from '../models/Employee'
-import { ObjectId } from 'mongodb'
+import {IUser, User} from '../models/User'
+import {Company, ICompany} from '../models/Company'
+import {Employee, IEmployee} from '../models/Employee'
+import {ObjectId} from 'mongodb'
 // import { Order } from '../models/Order'
-import { CompanyCard } from '../models/CompanyCard'
+import {CompanyCard} from '../models/CompanyCard'
 // import { CompanyEquipmentHistory } from '../models/CompanyEquipmentHistory'
 // import { CompanyEquipmentInventory } from '../models/CompanyEquipmentInventory'
 // import { CompanyEquipment } from '../models/CompanyEquipment'
@@ -30,17 +29,17 @@ import { CompanyCard } from '../models/CompanyCard'
 // import { EquipmentBrand } from '../models/EquipmentBrand'
 // import { EquipmentType } from '../models/EquipmentType'
 // import { privateKey } from '../common/config'
-import { Contract, IContract } from '../models/Contract'
-import { CompanyCustomer } from '../models/CompanyCustomer'
-import { CompanyAdmin, ICompanyAdmin } from '../models/CompanyAdmin'
+import {Contract, IContract} from '../models/Contract'
+import {CompanyCustomer} from '../models/CompanyCustomer'
+import {CompanyAdmin, ICompanyAdmin} from '../models/CompanyAdmin'
+import {addCustomerAndCharge, chargeSubscription} from '../services/stripe'
+import {IIndustry, Industry} from '../models/Industry'
 // import { CompanyPrefix, ICompanyPrefix } from '../models/CompanyPrefix'
 // import { Scan } from '../models/Scan'
 // import { ServiceTicket } from '../models/ServiceTicket'
 // import { Industry } from '../models/Industry'
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
-import { addCustomerAndCharge, addCustomerSource, chargeSubscription } from '../services/stripe'
-import { Industry, IIndustry } from '../models/Industry'
 const Hubspot = require('hubspot')
 
 export const login = (req: Request, res: Response, sio: any) => {
@@ -57,7 +56,7 @@ export const login = (req: Request, res: Response, sio: any) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
             }
 
-            if (user.permissions.role != Role.COMPANY_ADMIN && user.permissions.role != Role.GLOBAL_ADMIN) {
+            if ((user.permissions.role != Role.COMPANY_ADMIN && user.permissions.role != Role.ADMIN_EMPLOYEE && user.permissions.role != Role.GLOBAL_ADMIN)) {
                 const employee = <IEmployee>user
 
                 Company.findById(employee.company,
@@ -84,7 +83,7 @@ export const login = (req: Request, res: Response, sio: any) => {
                         })
                     })
 
-            } else if (user.permissions.role == Role.GLOBAL_ADMIN || user.permissions.role == Role.COMPANY_ADMIN) {
+            } else if (user.permissions.role == Role.GLOBAL_ADMIN || user.permissions.role == Role.COMPANY_ADMIN || user.permissions.role == Role.ADMIN_EMPLOYEE) {
 
                 user.comparePassword(params.password, (isMatching: Boolean) => {
 
@@ -286,6 +285,18 @@ export const getCompanyProfile = (req: Request, res: Response) => {
     });
 }
 
+export const updateEmployeeRole = (req: Request, res: Response) => {
+    const params = req.body;
+    const { companyId } = req.params;
+    Employee.findOneAndUpdate({_id: new ObjectId(params.employeeId), company: companyId}, {"permission.role" : params.newRole}).then((employee) => {
+        if (employee) {
+            return res.json({'status': Status.Success, 'message': 'Employee Role Has Been Updated Successfully!'});
+        }
+        return res.json({'status': Status.Error, 'message' : 'Employee was not found'});
+    }).catch((err) => {
+        return res.json({'status': Status.Error, 'message' : err.message});
+    })
+}
 
 const _createHubSpotContact = (company: ICompany, companyAdmin: ICompanyAdmin) => {
 
@@ -326,7 +337,7 @@ export const createOfficeAdmin = (req: Request, res: Response) => {
 
 // This is an employee admin (won't be able to delete company profile)
 export const createAdminEmployee = (req: Request, res: Response) => {
-    createEmployee(req, res, Role.GLOBAL_ADMIN)
+    createEmployee(req, res, Role.ADMIN_EMPLOYEE)
 }
 
 export const getManagersList = (req: Request, res: Response) => {
@@ -1484,7 +1495,7 @@ export const checkAndGetUser = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'No user found' })
             }
 
-            if (user.permissions.role != Role.COMPANY_ADMIN && user.permissions.role != Role.GLOBAL_ADMIN) {
+            if ((user.permissions.role != Role.COMPANY_ADMIN && user.permissions.role != Role.ADMIN_EMPLOYEE) && user.permissions.role != Role.GLOBAL_ADMIN) {
                 const employee = <IEmployee>user
 
                 Company.findById(employee.company,
@@ -1723,4 +1734,17 @@ export const createContractorSocial = (req: Request, res: Response) => {
             })
 
         })
+}
+export const checkRoleIsValid = (req: Request, res: Response, next: (req: Request, res: Response) => void) => {
+    const role = req.body.newRole;
+    let check = false;
+    for (let i = 0; i<=6; i++) {
+        if (role == i) {
+            check = true;
+        }
+    }
+    if (!check) {
+        return res.json({ 'status': Status.Error, 'message': 'Role was not found'});
+    }
+    return next(req, res)
 }
