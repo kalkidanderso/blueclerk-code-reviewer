@@ -260,7 +260,12 @@ export const Validations = {
 
   getOpenServiceTickets: [check('page').exists().isNumeric(), check('pagesize').exists().isNumeric(), check('customerNames').optional(), check('jobTypeTitle').optional(), check('dueDate').optional(), check('ticketId').optional()],
 // Job location
-  createJobLocation: [check('name').exists(), check('customerId').exists()]
+  createJobLocation: [check('name').exists(), check('customerId').exists()],
+
+  // Notification
+  getNotifications: [check('isRead').optional().isIn(['ALL', true, false, 1, 0]), check('isDismissed').optional().isIn(['ALL', true, false, 1, 0])],
+
+  updateNotification: [check('isRead').optional().isBoolean(), check('isDismissed').optional().isBoolean()]
 
 }
 

@@ -1,5 +1,5 @@
 import {Request, Response} from 'express'
-import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, SocketMessage } from '../common/constants'
+import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, SocketMessage, NotificationTypes } from '../common/constants'
 
 import { ICompany } from '../models/Company'
 import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket'
@@ -7,6 +7,7 @@ import {IUser} from '../models/User'
 import {parseFieldsAndUploadImageInS3, updateFieldsAndUploadImageInS3} from '../services/aws';
 import { ObjectId } from 'mongodb'
 import {Contact} from '../models/Contact';
+import { NotificationServiceTicket, INotificationServiceTicket } from '../models/NotificationServiceTicket';
 
 export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
@@ -100,10 +101,23 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                                     if(err) {
                                         return null;
                                     }
-                                    await Promise.all([
+
+                                    // Construct notification entry to be saved
+                                    let notificationEntry: INotificationServiceTicket = new NotificationServiceTicket({
+                                        company: companyId,
+                                        notificationType: NotificationTypes.CREATE_SERVICE_TICKET,
+                                        metadata: serviceTicket._id
+                                    })
+
+                                    // Save the notification with Service Ticket as the metadata
+                                    notificationEntry.save(async (err: any, notification: INotificationServiceTicket) => {
+                                        if (err) {
+                                            return null;
+                                        }
+
                                         // Send notification message to specific room based on the Company ID
-                                        sio.to(companyId && companyId.toString()).emit(SocketMessage.CREATESERVICETICKET, serviceTicket),
-                                    ])
+                                        await sio.to(companyId && companyId.toString()).emit(SocketMessage.CREATESERVICETICKET, serviceTicket);
+                                    })
                                 }
                             )
 
