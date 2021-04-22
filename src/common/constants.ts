@@ -112,6 +112,10 @@ export const enum CompanyType {
     FREE,
 }
 
+export enum NotificationEventTypes {
+    CREATE_SERVICE_TICKET = 'CreateServiceTicket'
+}
+
 export const enum Permissions {
     None,
     Permission_Get_All,

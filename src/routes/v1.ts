@@ -39,6 +39,7 @@ import * as estimateController from '../controllers/estimate'
 import * as paymentController from '../controllers/payment'
 import * as tagController from '../controllers/tag'
 import * as ContactController from '../controllers/contact';
+import * as notificationController from '../controllers/notification';
 
 import jobLocation from './jobLocation'
 import jobSite from './jobSite'
@@ -1508,6 +1509,23 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         checkUserPermissions(Permissions.Customer_Create),
         ContactController.removeContact
+    )
+
+    // Notification
+    router.get(
+        '/getNotifications',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.getNotifications),
+        notificationController.getNotifications
+    )
+
+    router.put(
+        '/updateNotification/:notificationId([0-9a-f]{24})?',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.updateNotification),
+        notificationController.updateNotification
     )
 
     return router
