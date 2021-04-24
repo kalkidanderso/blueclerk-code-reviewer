@@ -218,6 +218,8 @@ export const Validations = {
 
   updateInvoice: [check('invoiceId').exists()],
 
+  companyInvoice: [check('companyInvoiceId').exists()],
+
   getInvoiceDetail: [check('invoiceId').exists()],
 
   createPartInventory: [check('name').exists(), check('itemCode').exists(), check('cost').exists(), check('price').exists(), check('totalQuantity').exists()],

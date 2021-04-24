@@ -6821,6 +6821,93 @@
         ]
       }
     },
+    "/getCompanyInvoices": {
+      "get": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To get company invoice",
+        "description": "Those invoices related to the company subscriptions",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "companyInvoices": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/CompanyInvoice"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getCompanyInvoiceDetails": {
+      "get": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To get company invoice details",
+        "description": "",
+        "parameters": [
+          {
+            "name": "companyInvoiceId",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Id of the company Invoice"
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "companyInvoice": {
+                      "type": "object",
+                      "$ref": "#/definitions/CompanyInvoice"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/updateInvoice": {
       "post": {
         "tags": [
@@ -8990,6 +9077,69 @@
               "type": "object"
             }
           }
+        }
+      }
+    },
+    "CompanyInvoice": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "technicians": {
+          "type": "string",
+          "description": "number of technicians"
+        },
+        "managers": {
+          "type": "string",
+          "description": "number of managers"
+        },
+        "officeAdmins": {
+          "type": "string",
+          "description": "number of office admins"
+        },
+        "admins": {
+          "type": "string",
+          "description": "number of admins"
+        },
+        "contractors": {
+          "type": "string",
+          "description": "number of contractors"
+        },
+        "company": {
+          "type": "object",
+          "$ref": "#/definitions/company"
+        },
+        "charges": {
+          "type": "number",
+          "description": "Charges amount from job or if you have customized while creating invoice"
+        },
+        "tax": {
+          "type": "number",
+          "description": "Tax amount to be added in charges to calculate the total invoice"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total amount to be charged to customer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date time when the invoice was created"
+        },
+        "emailHistory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "sentTo": {
+                "type": "string"
+              },
+              "sentAt": {
+                "type": "string"
+              }
+            }
+            }
         }
       }
     },

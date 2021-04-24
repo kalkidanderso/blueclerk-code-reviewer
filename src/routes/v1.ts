@@ -1258,6 +1258,22 @@ export default function (sio: any) {
         invoiceController.getInvoices
     )
 
+    router.get(
+        '/getCompanyInvoices',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        invoiceController.getCompanyInvoices
+    )
+    router.get(
+        '/getCompanyInvoiceDetails',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.companyInvoice),
+        invoiceController.getCompanyInvoiceDetails
+    )
+
     router.post(
         '/updateCompaniesDefaultPermissions',
         permissionController.updateAllCompaniesPermissions
