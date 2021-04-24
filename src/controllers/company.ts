@@ -154,6 +154,7 @@ export const getAllEmployees = (req: Request, res: Response) => {
             company.other = undefined
             company.paid = undefined
             company.type = undefined
+            company.plan = undefined
             company.currentJobId = undefined
             company.chargeDate = undefined
             company.contact = undefined
@@ -195,6 +196,7 @@ export const getEmployeesForJob = (req: Request, res: Response) => {
             company.other = undefined
             company.paid = undefined
             company.type = undefined
+            company.plan = undefined
             company.currentJobId = undefined
             company.chargeDate = undefined
             company.contact = undefined
@@ -319,11 +321,8 @@ export const getSyncInfo = (req: Request, res: Response) => {
 
 export const downgradeCompanies = (req: Request, res: Response) => {
 
-    Company.find({ $and: [{chargeDate: { $lte: new Date() }}, {type: CompanyType.SUBSCRIBED}] }).populate('employees').then((companies)=>{
+    Company.find({ $and: [{chargeDate: { $lte: new Date() }}, {plan: CompanyType.SUBSCRIBED}] }).populate('employees').then((companies)=>{
         if(companies.length) {
-            const companiesToDowngrade:number = companies.length
-            let companiesDowngraded: number = 0;
-
             for (let index = 0; index < companies.length; index++) {
                 const company = companies[index];
                 Contract.find({company: company._id, status: {$in: [ContractStatus.ACCEPTED, ContractStatus.PENDING]}}).then((contracts) => {
@@ -341,19 +340,15 @@ export const downgradeCompanies = (req: Request, res: Response) => {
                     employee.status = EmployeeStatus.INACTIVE;
                     employee.save();
                 }
-                company.updateOne({type: CompanyType.FREE, paid: false, maxTechnicians: 0, maxManagers: 0, maxOfficeAdmins:0 ,maxAdmins: 0}, (err: any) =>{
+                company.updateOne({plan: CompanyType.FREE, paid: false, maxTechnicians: 0, maxManagers: 0, maxOfficeAdmins:0 ,maxAdmins: 0}, (err: any) =>{
                     if(err) {
                         return res.json({'status': Status.Success, 'message': err.message});
                     }
                     sendAccountDowngradeEmail({ to: company.info.companyEmail })
                     _downgradeHubSpotContact(company)
-                    companiesDowngraded++;
-                    if(companiesToDowngrade == companiesDowngraded) {
-                        return res.json({'status': Status.Success, 'message': 'Downgrading done.'})
-                    }
                 })
-
             }
+            return res.json({'status': Status.Success, 'message': 'Downgrading done.'})
         }else{
             return res.json({'status': Status.Error, 'message': 'Nothing to downgrade.'})
         }

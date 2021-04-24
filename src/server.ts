@@ -128,13 +128,13 @@ new CronJob('0 0 1 * *', function() {
 
     });
 
-}, null, true, 'America/Los_Angeles');
+}, null, true, 'America/Chicago');
 
-new CronJob('59 23 * * *', function() {
+new CronJob('59 23 4 * *', function() {
     request('http://localhost:'+app.get('port')+'/api/v1/downgradeCompanies', function (response: any) {
       console.log(response);
     });
-}, null, true, 'America/Los_Angeles');
+}, null, true, 'America/Chicago');
 
 
 /**
@@ -146,7 +146,6 @@ try {
         await EmailSchedule.find({pulled: false, _id: {$nin: emailQueue}}).populate('user').populate('jobs').exec()
             .then(async (schedules: IEmailSchedule[]) => {
             if (schedules.length) {
-                // TODO: create a cron job for all users
                 for (let emailSchedule of schedules) {
                     //Check if emailSchedule is already in emailQueue
                     if (emailQueue.filter((e) => JSON.stringify(e) == JSON.stringify(emailSchedule._id)).length == 0) {

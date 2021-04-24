@@ -209,10 +209,10 @@ export const chargeSubscription = function (amount: any, customerId: String, cal
 
     }).then(function( charge: any) {
         // asynchronously called
-        return callback(1, charge, '');
+        return callback(1, charge,tax, '');
 
     }).catch(function(err: any) {
-        var message= "";
+        let message= "";
         switch (err.type) {
             case 'StripeCardError':
                 // A declined card error
