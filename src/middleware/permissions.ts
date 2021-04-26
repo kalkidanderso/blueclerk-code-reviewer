@@ -46,21 +46,31 @@ export const checkUserScanPermissions = (permissionId: number) => {
         const company =<ICompany>req.company;
         const tag = req.body.nfcTag;
         const checkTag = await Tag.findOne({"info.nfcTag" : tag});
-        const equipmentTag = CustomerEquipment.findOne({ 'info.nfcTag': tag });
+        const equipmentTag = await CustomerEquipment.findOne({ 'info.nfcTag': tag }).populate({ path: 'customer', select: 'company' });
         if(!checkTag && !equipmentTag) {
             return res.json({ 'status': Status.Success, 'tagStatus': Status.TagNotAssociated, 'message': 'Tag Not In System' })
         }
+
         let check = false;
         if (user.permissions.role == Role.GLOBAL_ADMIN) {
             check = true;
             next();
             return ;
         }
+
+        // Take the Company ID from the tag either location or equipment
+        const companyOfTag =
+            checkTag && checkTag.company
+                ? checkTag.company
+                : equipmentTag && equipmentTag.customer.company
+                    ? equipmentTag.customer.company
+                    : undefined;
+
         // check if it's the company owner
-        if((user.permissions.role == Role.COMPANY_ADMIN || user.permissions.role == Role.ADMIN_EMPLOYEE) && JSON.stringify(company._id) == JSON.stringify(checkTag.company)) {
+        if((user.permissions.role == Role.COMPANY_ADMIN || user.permissions.role == Role.ADMIN_EMPLOYEE) && JSON.stringify(company._id) == JSON.stringify(companyOfTag)) {
             check = true;
             // check if it's an employee
-        } else if (JSON.stringify(company._id) == JSON.stringify(checkTag.company) && (user.permissions.role != Role.COMPANY_ADMIN && user.permissions.role != Role.ADMIN_EMPLOYEE)) {
+        } else if (JSON.stringify(company._id) == JSON.stringify(companyOfTag) && (user.permissions.role != Role.COMPANY_ADMIN && user.permissions.role != Role.ADMIN_EMPLOYEE)) {
             if (
                 user.permissions.role == Role.MANAGER ||
                 user.permissions.role == Role.TECHNICIAN
@@ -73,7 +83,7 @@ export const checkUserScanPermissions = (permissionId: number) => {
                 // verify if there's a contract with it
                 try {
                     let contract =
-                        await Contract.findOne({company: checkTag.company, contractor: company._id, status: 1});
+                        await Contract.findOne({company: companyOfTag, contractor: company._id, status: 1});
                     if (contract) {
                         check = true;
                     }
