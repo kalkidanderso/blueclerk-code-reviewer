@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { ICustomer } from './Customer';
 import {IJobLocation} from './JobLocation';
 import {IJobSite} from './JobSite';
 
@@ -18,7 +19,7 @@ export interface ICustomerEquipment extends Document {
 
     type: Schema.Types.ObjectId
     brand: Schema.Types.ObjectId
-    customer: Schema.Types.ObjectId
+    customer: ICustomer
     images:[string],
     jobLocation: Schema.Types.ObjectId | IJobLocation,
     jobSite: Schema.Types.ObjectId | IJobSite

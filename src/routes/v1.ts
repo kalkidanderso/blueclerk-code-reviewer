@@ -1475,6 +1475,15 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/getLocationTagInfo',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Location_Tags),
+        validate(Validations.getLocationTagInfo),
+        tagController.getLocationTagInfo
+    )
+
+    router.post(
         '/updateLocationTag',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
