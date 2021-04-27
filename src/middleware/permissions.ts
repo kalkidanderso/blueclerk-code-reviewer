@@ -79,7 +79,7 @@ export const checkUserScanPermissions = (permissionId: number) => {
             }
         } else {
             // This is a contractor
-            if (company.type == 1) {
+            // if (company.type == 1) {
                 // verify if there's a contract with it
                 try {
                     let contract =
@@ -91,7 +91,7 @@ export const checkUserScanPermissions = (permissionId: number) => {
                 }catch (err) {
                     return res.json({"status": Status.Error, "message": err.message});
                 }
-            }
+            // }
         }
         if(!check) {
             return res.json({"status": Status.Error, "message": Messages.UnAuthorized});
