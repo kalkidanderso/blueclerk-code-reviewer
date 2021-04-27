@@ -3228,6 +3228,54 @@
         ]
       }
     },
+    "/getLocationTagInfo": {
+      "post": {
+        "tags": [
+          "Location Tags"
+        ],
+        "summary": "To get detail of location by nfc tag",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "nfcTag",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "tags": {
+                      "$ref": "#/definitions/LocationTag"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/updateLocationTag": {
       "post": {
         "tags": [
