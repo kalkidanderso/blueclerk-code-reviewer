@@ -508,6 +508,26 @@ export const getServiceTicketDetail = (req: Request, res: Response) => {
             path: 'editedBy',
             select: 'profile.displayName'
         })
+        .populate({
+            path: 'jobLocation',
+            select: 'name'
+        })
+        .populate({
+            path: 'jobSite',
+            select: 'name'
+        })
+        .populate({
+            path: 'jobType',
+            select: 'title'
+        })
+        .populate({
+            path: 'track.user',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'customerContactId',
+            select: 'name'
+        })
         .exec((err: any, serviceTicket: IServiceTicket)=>{
 
             if (err) {
