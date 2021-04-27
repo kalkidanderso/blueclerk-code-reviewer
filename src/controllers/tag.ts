@@ -73,6 +73,28 @@ export const codeLocationTag = (req: Request, res: Response) => {
     });
 }
 
+// To get detail of location tag
+export const getLocationTagInfo = (req: Request, res: Response) => {
+
+    const params = req.body;
+
+    Tag.findOne({ 'info.nfcTag': params.nfcTag })
+        .populate({
+            path: 'customer',
+            select: 'profile.displayName address.street address.city address.state address.zipCode contactName'
+        })
+        .populate('jobLocation')
+        .populate('jobSite')
+        .exec((err: any, tag: ITag) => {
+
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+            }
+
+            return res.json({ 'status': Status.Success, 'tag': tag });
+        });
+}
+
 export const updateLocationTag = (req: Request, res: Response) => {
 
     const params = req.body

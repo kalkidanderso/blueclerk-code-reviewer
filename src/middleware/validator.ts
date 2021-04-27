@@ -256,6 +256,8 @@ export const Validations = {
 
   codeLocationTag: [check('nfcTag').exists(), check('customerId').exists()],
 
+  getLocationTagInfo: [check('nfcTag').exists()],
+
   updateLocationTag: [check('nfcTag').exists(), check('latitude').exists(), check('longitude').exists(), check('nfcTag').exists()],
 
   getLocationTagJobs: [check('nfcTag').exists()],
