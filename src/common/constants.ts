@@ -79,7 +79,8 @@ export const enum ServiceTicketSource {
     BLUECLERK = 'blueclerk'
 }
 
-export const enum SocketMessage {
+export const enum SocketEvents {
+    NOTIFICATION_CENTER = 'notification_center',
     CREATESERVICETICKET = 'createServiceTicketMsg',
 }
 
