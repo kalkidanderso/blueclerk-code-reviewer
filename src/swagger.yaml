@@ -44,7 +44,9 @@ tags:
   - name: Job Site
     description: For company Job Sites
   - name: Service Ticket
-    description: For creting and getting service tickets
+    description: For creating and getting service tickets
+  - name: Notification
+    description: For retrieve and update notification
   - name: Job
     description: For scheduled jobs
   - name: Part Inventory
@@ -1751,6 +1753,33 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /getLocationTagInfo:
+    post:
+      tags:
+        - Location Tags
+      summary: To get detail of location by nfc tag
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: nfcTag
+          in: formData
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  tags:
+                    $ref: '#/definitions/LocationTag'
+      security:
+        - Bearer: []
   /updateLocationTag:
     post:
       tags:
@@ -3257,6 +3286,78 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /getNotifications:
+    get:
+      tags:
+      - Notification
+      summary: To retrieve all notifications by the company of the logged in user
+      description: When the `isDismissed` query is not provided, it will returns notifications
+        that not dismissed by default. The notifications will be sort by the recent
+        ones
+      parameters:
+      - name: isRead
+        in: query
+        enum:
+        - ALL
+        - true
+        - false
+      - name: isDismissed
+        in: query
+        enum:
+        - ALL
+        - true
+        - false
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+            - "$ref": "#/definitions/GeneralAPIResponse"
+            - type: object
+              properties:
+                notifications:
+                  type: array
+                  items:
+                    allOf:
+                      - $ref: "#/definitions/Notification"
+                      - $ref: "#/definitions/NotificationServiceTicket"
+      security:
+      - Bearer: []
+  /updateNotification/{notificationId}:
+    put:
+      tags:
+      - Notification
+      summary: Update a notification to read or to dismiss it
+      description: (Had to make this using json as the body to avoid boolean value being converted to string, you can use only one of them or even none of them)
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: notificationId
+        in: path
+        type: string
+        required: true
+      - name: body
+        in: body
+        schema:
+          $ref: "#/definitions/NotificationUpdateBody"
+      responses:
+        '200':
+          description: Returns the updated notification
+          schema:
+            allOf:
+            - "$ref": "#/definitions/GeneralAPIResponse"
+            - type: object
+              properties:
+                notification:
+                  allOf:
+                    - $ref: "#/definitions/Notification"
+                    - $ref: "#/definitions/NotificationServiceTicket"
+      security:
+      - Bearer: []
   /createJob:
     post:
       tags:
@@ -6243,6 +6344,70 @@ definitions:
                 properties:
                   title: 
                     type: string
+  Notification:
+    type: object
+    properties:
+      _id:
+        type: string
+      company:
+        type: string
+        description: Id of company who owns the notification
+      notificationType:
+        type: string
+        description: Type of the notification
+        enum:
+        - CreateServiceTicket
+      message:
+        type: object
+        description: Additional message for future use
+        properties:
+          title:
+            type: string
+          body:
+            type: string
+      readStatus:
+        type: object
+        description: Read status information of the notification
+        properties:
+          isRead:
+            type: boolean
+          readBy:
+            $ref: '#/definitions/User'
+          readAt:
+            type: string
+            format: date-time
+            description: Date time when the notification was read
+      dismissedStatus:
+        type: object
+        properties:
+          isDismissed:
+            type: boolean
+          dismissedBy:
+            $ref: "#/definitions/User"
+          dismissedAt:
+            type: string
+            format: date-time
+            description: Date time when the notification was dismissed
+        description: Dismiss status information of the notification
+      createdAt:
+        type: string
+        format: date-time
+        description: Date time when the notification was created
+  NotificationServiceTicket:
+    type: object
+    properties:
+      metadata:
+        $ref: "#/definitions/ServiceTicket"
+  NotificationUpdateBody:
+    properties:
+      isRead:
+        description: (Optional) Read status of notification
+        type: boolean
+        example: true
+      isDismissed:
+        description: (Optional) Dismiss status of notification
+        type: boolean
+        example: false
   GeneralAPIResponse:
     type: object
     properties:

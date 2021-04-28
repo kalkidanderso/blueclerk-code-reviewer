@@ -4,6 +4,7 @@ export const Status = {
     MissingParameters: 400,
     Unauthenticated: 401,
     Forbidden: 403,
+    NotFound: 404,
     InternalError: 500,
     Error: 0,
     Success: 1,
@@ -33,7 +34,8 @@ export const Messages = {
     TagNotAssociated: 'Tag is not associated with customer',
     QBUnAuthorized: 'Quickbooks authorization failed',
     InternalServerError: 'There was an internal server error. Please try again later.',
-    WrongId: 'Id passed must be a single String of 12 bytes or a string of 24 hex characters'
+    WrongId: 'Id passed must be a single String of 12 bytes or a string of 24 hex characters',
+    NotificationNotFound: "Notification not found"
 }
 
 export const enum Role {
@@ -77,7 +79,8 @@ export const enum ServiceTicketSource {
     BLUECLERK = 'blueclerk'
 }
 
-export const enum SocketMessage {
+export const enum SocketEvents {
+    NOTIFICATION_CENTER = 'notification_center',
     CREATESERVICETICKET = 'createServiceTicketMsg',
 }
 
@@ -110,6 +113,11 @@ export const enum EmployeeStatus {
 export const enum CompanyType {
     SUBSCRIBED,
     FREE,
+}
+
+export enum NotificationTypes {
+    CREATE_SERVICE_TICKET = 'CreateServiceTicket',
+    SERVICE_TICKET_CREATED = 'ServiceTicketCreated'
 }
 
 export const enum Permissions {

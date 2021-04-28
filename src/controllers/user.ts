@@ -1,10 +1,11 @@
 import {Request, Response} from 'express'
-import {ContractStatus, Messages, Role, Status, UserPermissions} from '../common/constants'
+import {CompanyType, ContractStatus, Messages, Role, Status, UserPermissions} from '../common/constants'
 import {
+    sendAccountUpgradeEmail,
     sendContractStartEmail,
     sendContractStartEmailToCompany,
     sendContractStatusChangeEmailToCompany,
-    sendContractStatusChangeEmailToContractor,
+    sendContractStatusChangeEmailToContractor, sendDeclinedOrderEmail,
     sendEmail,
     sendEmployeeEmail,
     sendInvitationToContractor,
@@ -34,6 +35,8 @@ import {CompanyCustomer} from '../models/CompanyCustomer'
 import {CompanyAdmin, ICompanyAdmin} from '../models/CompanyAdmin'
 import {addCustomerAndCharge, chargeSubscription} from '../services/stripe'
 import {IIndustry, Industry} from '../models/Industry'
+import {CompanyInvoice, ICompanyInvoice} from '../models/CompanyInvoice';
+import moment from 'moment-timezone';
 // import { CompanyPrefix, ICompanyPrefix } from '../models/CompanyPrefix'
 // import { Scan } from '../models/Scan'
 // import { ServiceTicket } from '../models/ServiceTicket'
@@ -101,6 +104,7 @@ export const login = (req: Request, res: Response, sio: any) => {
                             company.customers = undefined
                             company.paid = undefined
                             company.type = undefined
+                            company.plan = undefined
                             company.maxTechnicians = undefined
                             company.maxAdmins = undefined
                             company.maxManagers = undefined
@@ -1172,7 +1176,7 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
         contractStatus = ContractStatus.REJECTED
 
     } else {
-        return res.json({ 'status': Status.Error, 'message': 'Invald contract status' })
+        return res.json({ 'status': Status.Error, 'message': 'Invalid contract status' })
     }
 
     Contract.findOne({ _id: params.contractId, contractor: contractor._id }).populate('company').then(async (contract) => {
@@ -1196,6 +1200,94 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
         let company = contract.company;
         let nbCurrentContract = await Contract.countDocuments({company: company._id, status: {$in: [ContractStatus.ACCEPTED, ContractStatus.PENDING]}});
         if (params.status == ContractStatus.ACCEPTED) {
+            let amount: number = 0;
+            const now = new Date();
+            const daysRemaining = now.getDate()
+            const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate()
+            const daysToCharge = daysInCurrentMonth-daysRemaining + 1
+
+            const perday = 3/daysInCurrentMonth
+            amount = amount+ (perday* daysToCharge)
+            if (daysToCharge >= 10) {
+                if (company.stripeId != undefined || company.stripeId != '') {
+                    try {
+                        chargeSubscription(amount, company.stripeId, async (status: any, charge: any, tax: any, message: any) => {
+                            if (status == 1) {
+                                contract.updateOne(
+                                    { status: contractStatus },
+                                    (err: any, raw: any) => {
+                                        if (err) {
+                                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                        }
+
+                                        // ToDo send email to company /contractor on update
+                                        const companyCustomer = new CompanyCustomer({
+                                            company: contractor._id,
+                                            customer: company._id,
+                                        })
+                                        companyCustomer.save((err: any) => {
+
+                                            if (err) {
+                                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                            }
+
+                                            sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
+                                            sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
+
+                                            return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
+
+                                            // needs to change
+
+                                        })
+                                    })
+                                // Create Company Invoice
+                                const companyInvoice: ICompanyInvoice = new CompanyInvoice({
+                                    technicians: 0,
+                                    managers: 0,
+                                    officeAdmins: 0,
+                                    admins: 0,
+                                    contractors: 1,
+                                    charges: amount,
+                                    tax: tax,
+                                    total: charge.amount_captured/100,
+                                    company: company._id
+                                });
+                                sendAccountUpgradeEmail({
+                                    to: company.info.companyEmail,
+                                    amount: charge.amount_captured/100,
+                                    technicians: 0,
+                                    managers: 0,
+                                    officeAdmins: 0,
+                                    admins: 0,
+                                    contractors: 1
+                                }).then(async () => {
+                                    companyInvoice.emailHistory.push({
+                                        sentTo: company.info.companyEmail
+                                    });
+                                    await companyInvoice.save();
+                                });
+                                let companyInvoices = company.companyInvoices ? company.companyInvoices : [];
+                                let chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
+
+                                companyInvoices.push(companyInvoice);
+                                company.plan = CompanyType.SUBSCRIBED;
+                                company.paid = true;
+                                company.companyInvoices = companyInvoices;
+                                company.chargeDate = chargeDate.toDate();
+                                await company.save();
+
+                                return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
+                            }
+                            sendDeclinedOrderEmail({to: company.info.companyEmail});
+                            return res.json({ 'status': Status.Error, 'message': 'Please contact the company to update their payment information' });
+                        })
+                    } catch (err) {
+                        return res.json({'status': Status.Error, 'message': err.message});
+                    }
+                }
+                sendDeclinedOrderEmail({to: company.info.companyEmail});
+                return res.json({ 'status': Status.Error, 'message': 'Please contact the company to update their payment information' });
+            } else {
                 contract.updateOne(
                     { status: contractStatus },
                     (err: any, raw: any) => {
@@ -1216,22 +1308,6 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
 
                             sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
                             sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
-                                let amount: number = 0;
-                                const now = new Date();
-                                const daysRemaining = now.getDate()
-                                const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate()
-                                const daysToCharge = daysInCurrentMonth-daysRemaining + 1
-
-                                const perday = 3/daysInCurrentMonth
-                                amount = amount+ (perday* daysToCharge)
-                                if (daysToCharge >= 10) {
-                                    if (company.stripeId != undefined || company.stripeId != '') {
-                                        chargeSubscription(amount, company.stripeId, (status: any, charge: any, message: any) => {
-                                            return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
-                                        })
-                                    }
-                                    return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
-                                }
 
                             return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
 
@@ -1239,7 +1315,43 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
 
                         })
                     })
+                // Create Company Invoice
+                const companyInvoice: ICompanyInvoice = new CompanyInvoice({
+                    technicians: 0,
+                    managers: 0,
+                    officeAdmins: 0,
+                    admins: 0,
+                    contractors: 1,
+                    charges: 0,
+                    tax: 0,
+                    total: 0,
+                    company: company._id
+                });
+                sendAccountUpgradeEmail({
+                    to: company.info.companyEmail,
+                    amount: 0,
+                    technicians: 0,
+                    managers: 0,
+                    officeAdmins: 0,
+                    admins: 0,
+                    contractors: 1
+                }).then(async () => {
+                    companyInvoice.emailHistory.push({
+                        sentTo: company.info.companyEmail
+                    });
+                    await companyInvoice.save();
+                });
+                let companyInvoices = company.companyInvoices ? company.companyInvoices : [];
+                let chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
 
+                companyInvoices.push(companyInvoice);
+                company.plan = CompanyType.SUBSCRIBED;
+                company.paid = true;
+                company.companyInvoices = companyInvoices;
+                company.chargeDate = chargeDate.toDate();
+                await company.save();
+                return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
+            }
         } else {
                 contract.updateOne(
                     { status: contractStatus },
@@ -1248,7 +1360,6 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
 
-                        // ToDo send email to company /contractor on update
                         const companyCustomer = new CompanyCustomer({
                             company: contractor._id,
                             customer: company._id,
@@ -1366,6 +1477,7 @@ export const upgradeToCompany = (req: Request, res: Response) => {
                     chargeDate.setDate(chargeDate.getDate() + 30);
 
                     contractor.paid = true
+                    contractor.plan = CompanyType.SUBSCRIBED
                     contractor.type = 0
                     contractor.chargeDate = chargeDate
                     contractor.updateOne(contractor, (err: any, raw: any) => {
@@ -1463,8 +1575,8 @@ export const companySubscribe = (req: Request, res: Response) => {
 
     chargeSubscription(amount, company.stripeId, (status: any, charge: any, message: any) => {
         if (status == 1) {
-
-            company.updateOne({ paid: true })
+            let chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
+            company.updateOne({ paid: true, plan: CompanyType.SUBSCRIBED, chargeDate: chargeDate })
                 .exec((err: any, raw: any) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -1527,6 +1639,7 @@ export const checkAndGetUser = (req: Request, res: Response) => {
                         company.customers = undefined
                         company.paid = undefined
                         company.type = undefined
+                        company.plan = undefined
                         company.maxTechnicians = undefined
                         company.maxAdmins = undefined
                         company.maxManagers = undefined

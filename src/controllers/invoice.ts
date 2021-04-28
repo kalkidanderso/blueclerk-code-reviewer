@@ -12,6 +12,8 @@ import {Customer, ICustomer} from '../models/Customer';
 import {Estimate, IEstimate} from '../models/Estimate';
 import {IScan, Scan} from '../models/Scan';
 import {sendInvoiceEmailToCustomer} from '../services/aws';
+import {CompanyInvoice} from '../models/CompanyInvoice';
+import {ObjectId} from 'mongodb'
 
 export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
@@ -1372,4 +1374,26 @@ export const getInvoices = (req: Request, res: Response) => {
 
             return res.json({ 'status': Status.Success, 'invoices': invoices })
         })
+}
+export const getCompanyInvoices = (req: Request, res: Response) => {
+
+    CompanyInvoice.find({'company': req.companyId})
+        .populate('company')
+        .exec((err: any, invoices: IInvoice[])=>{
+            if (err) {
+                return res.json({'status': Status.Error, 'message': err.message})
+            }
+            return res.json({ 'status': Status.Success, 'companyInvoices': invoices })
+        });
+}
+export const getCompanyInvoiceDetails = (req: Request, res: Response) => {
+    const companyInvoiceId = req.query.companyInvoiceId;
+    CompanyInvoice.find({'company': req.companyId, _id: new ObjectId(companyInvoiceId)})
+        .populate('company')
+        .exec((err: any, invoices: IInvoice[])=>{
+            if (err) {
+                return res.json({'status': Status.Error, 'message': err.message})
+            }
+            return res.json({ 'status': Status.Success, 'companyInvoice': invoices })
+        });
 }

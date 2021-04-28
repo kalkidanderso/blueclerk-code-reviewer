@@ -39,6 +39,7 @@ import * as estimateController from '../controllers/estimate'
 import * as paymentController from '../controllers/payment'
 import * as tagController from '../controllers/tag'
 import * as ContactController from '../controllers/contact';
+import * as notificationController from '../controllers/notification';
 
 import jobLocation from './jobLocation'
 import jobSite from './jobSite'
@@ -1257,6 +1258,22 @@ export default function (sio: any) {
         invoiceController.getInvoices
     )
 
+    router.get(
+        '/getCompanyInvoices',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        invoiceController.getCompanyInvoices
+    )
+    router.get(
+        '/getCompanyInvoiceDetails',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.companyInvoice),
+        invoiceController.getCompanyInvoiceDetails
+    )
+
     router.post(
         '/updateCompaniesDefaultPermissions',
         permissionController.updateAllCompaniesPermissions
@@ -1458,6 +1475,15 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/getLocationTagInfo',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Location_Tags),
+        validate(Validations.getLocationTagInfo),
+        tagController.getLocationTagInfo
+    )
+
+    router.post(
         '/updateLocationTag',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
@@ -1508,6 +1534,23 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         checkUserPermissions(Permissions.Customer_Create),
         ContactController.removeContact
+    )
+
+    // Notification
+    router.get(
+        '/getNotifications',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.getNotifications),
+        notificationController.getNotifications
+    )
+
+    router.put(
+        '/updateNotification/:notificationId([0-9a-f]{24})?',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.updateNotification),
+        notificationController.updateNotification
     )
 
     return router

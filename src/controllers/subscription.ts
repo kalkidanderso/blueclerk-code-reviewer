@@ -6,6 +6,10 @@ import {Contract} from '../models/Contract';
 import {Employee} from '../models/Employee';
 import { ObjectId } from 'mongodb'
 import {sendAccountDowngradeEmail, sendAccountUpgradeEmail, sendDeclinedOrderEmail} from '../services/aws';
+import {CronJob} from 'cron';
+import request from 'request';
+import moment from 'moment-timezone';
+import {CompanyInvoice, ICompanyInvoice} from '../models/CompanyInvoice';
 
 export const addCompanySubscriptions = (req: Request, res: Response) => {
 
@@ -24,7 +28,7 @@ export const addCompanySubscriptions = (req: Request, res: Response) => {
     const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate()
     const daysToCharge = daysInCurrentMonth-daysRemaining + 1
 
-    var amount: number = 0;
+    let amount: number = 0;
 
     if(params.noOfOfficeAdmins > 0){
         const perday = 30/daysInCurrentMonth
@@ -49,26 +53,65 @@ export const addCompanySubscriptions = (req: Request, res: Response) => {
 
         return res.json({ 'status': Status.Error, 'message': "Invalid number of subscriptions."});
     }
+    try {
+        chargeSubscription( amount , company.stripeId, (status:any, charge:any, tax:any, message: any)=>{
+            if(status == 1){
+                const noOfTechs: number = company.maxTechnicians + parseInt(params.noOfTechnicians)
+                const noOfManagers: number = company.maxManagers + parseInt(params.noOfManagers)
+                const noOfOfficeAdmins: number = company.maxOfficeAdmins + parseInt(params.noOfOfficeAdmins)
+                const nbOfAdmins: number = company.maxAdmins + parseInt(params.nbOfAdmins)
+                // Create Company Invoice
+                const companyInvoice: ICompanyInvoice = new CompanyInvoice({
+                    technicians: parseInt(params.noOfTechnicians),
+                    managers: parseInt(params.noOfManagers),
+                    officeAdmins: parseInt(params.noOfOfficeAdmins),
+                    admins: parseInt(params.nbOfAdmins),
+                    contractors: 0,
+                    charges: amount,
+                    tax: tax,
+                    total: charge.amount_captured/100,
+                    company: company._id
+                });
+                sendAccountUpgradeEmail({
+                    to: company.info.companyEmail,
+                    amount: charge.amount_captured/100,
+                    technicians: parseInt(params.noOfTechnicians),
+                    managers: parseInt(params.noOfManagers),
+                    officeAdmins: parseInt(params.noOfOfficeAdmins),
+                    admins: parseInt(params.nbOfAdmins),
+                    contractors: 0
+                }).then(async () => {
+                    companyInvoice.emailHistory.push({
+                        sentTo: company.info.companyEmail
+                    });
+                    await companyInvoice.save();
+                });
+                let chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
+                company.updateOne(
+                    {
+                        maxTechnicians: noOfTechs,
+                        maxManagers: noOfManagers,
+                        maxOfficeAdmins: noOfOfficeAdmins,
+                        maxAdmins: nbOfAdmins,
+                        paid: true,
+                        plan: CompanyType.SUBSCRIBED,
+                        chargeDate: chargeDate,
+                        $push: { companyInvoices: companyInvoice._id } ,
+                    })
+                    .exec((err: any, raw: any)=>{
+                        if (err) {
+                            return res.json({'status': Status.Error, 'message': err.message})
+                        }
+                        return res.json({'status': Status.Error, 'message': 'Company subscriptions added successfully!.'})
+                    })
 
-    chargeSubscription( amount , company.stripeId, (status:any, charge: any, message: any)=>{
-        if(status == 1){
-            const noOfTechs: number = company.maxTechnicians + parseInt(params.noOfTechnicians)
-            const noOfManagers: number = company.maxManagers + parseInt(params.noOfManagers)
-            const noOfOfficeAdmins: number = company.maxOfficeAdmins + parseInt(params.noOfOfficeAdmins)
-            const nbOfAdmins: number = company.maxAdmins + parseInt(params.nbOfAdmins)
-            company.updateOne({maxTechnicians: noOfTechs, maxManagers: noOfManagers, maxOfficeAdmins: noOfOfficeAdmins, maxAdmins: nbOfAdmins, paid: true, type: CompanyType.SUBSCRIBED })
-            .exec((err: any, raw: any)=>{
-                if (err) {
-                    return res.json({'status': Status.Error, 'message': err.message})
-                }
-
-                return res.json({'status': Status.Error, 'message': 'Company subscriptions added successfully!.'})
-            })
-
-        } else {
-            return res.json({status: Status.Error, message: message})
-        }
-    })
+            } else {
+                return res.json({status: Status.Error, message: message})
+            }
+        })
+    }catch (err) {
+        return res.json({'status': Status.Error, 'message': err.message});
+    }
 }
 
 export const getAllSubscriptions = async (req: Request, res: Response) => {
@@ -130,13 +173,11 @@ export const removeCompanySubscriptions = async (req: Request, res: Response) =>
 export const chargeCompanySubscription = (req: Request, res: Response) => {
 
     Company.find(
-        {$or: [{maxManagers: { $gt: 0 }}, {maxOfficeAdmins: { $gt: 0 }}, {maxTechnicians: { $gt: 0 }}, {maxAdmins: { $gt: 0 }}]  },
+        {$or: [{maxManagers: { $gt: 0 }}, {maxOfficeAdmins: { $gt: 0 }}, {maxTechnicians: { $gt: 0 }}, {maxAdmins: { $gt: 0 }}], _id: new ObjectId('6027192facb8e2c885da3b66')  },
         async (err: any, companies: ICompany[])=>{
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-            const companiesToCharge:number = companies.length
-            let companiesCharged: number = 0;
             let responses: any = [];
             for (let index = 0; index < companies.length; index++) {
                 const company = companies[index];
@@ -164,38 +205,65 @@ export const chargeCompanySubscription = (req: Request, res: Response) => {
                     amount = amount + (nbOfContractors * 3)
                 }
                 if(amount > 0) {
-                    chargeSubscription( amount , company.stripeId, (status:any, charge: any, message: any)=>{
-                        if(status == 1){
-                            companiesCharged ++;
-                            company.type = CompanyType.SUBSCRIBED;
-                            company.paid = true;
-                           company.save().then(() => {
-                               sendAccountUpgradeEmail(
-                                   {
-                                       to: company.info.companyEmail,
-                                       amount: charge.amount_captured/100,
-                                       technicians: company.maxTechnicians,
-                                       managers: company.maxManagers,
-                                       officeAdmins: company.maxOfficeAdmins,
-                                       admins: company.maxAdmins,
-                                       contractors: nbOfContractors
-                                   });
-                           }).catch((err) => {
-                               responses.push({'status': Status.Error, 'message': err.message});
-                           })
+                    try {
+                        chargeSubscription( amount , company.stripeId, async (status:any, charge: any, tax: any, message: any)=>{
+                            if(status == 1){
+                                // Create Company Invoice
+                                const companyInvoice: ICompanyInvoice = new CompanyInvoice({
+                                    technicians: company.maxTechnicians,
+                                    managers: company.maxManagers,
+                                    officeAdmins: company.maxOfficeAdmins,
+                                    admins: company.maxAdmins,
+                                    contractors: nbOfContractors,
+                                    charges: amount,
+                                    tax: tax,
+                                    total: charge.amount_captured/100,
+                                    company: company._id
+                                });
+                                sendAccountUpgradeEmail({
+                                    to: company.info.companyEmail,
+                                    amount: charge.amount_captured/100,
+                                    technicians: company.maxTechnicians,
+                                    managers: company.maxManagers,
+                                    officeAdmins: company.maxOfficeAdmins,
+                                    admins: company.maxAdmins,
+                                    contractors: nbOfContractors
+                                }).then(async () => {
+                                    companyInvoice.emailHistory.push({
+                                        sentTo: company.info.companyEmail
+                                    });
+                                    await companyInvoice.save();
+                                });
+                                let companyInvoices = company.companyInvoices ? company.companyInvoices : [];
+                                companyInvoices.push(companyInvoice);
+                                company.plan = CompanyType.SUBSCRIBED;
+                                company.paid = true;
+                                company.companyInvoices = companyInvoices;
+                                let chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
+                                company.chargeDate = chargeDate.toDate();
+                                await company.save();
                                 // we need to send an email to the company to let it know that the transaction was successfully done!
                                 responses.push({'status': Status.Success, 'company': company.info.companyName, 'message': 'Done.'});
 
-                        }else{
-                            // We need to send an email to the company to update their payment information
-                            sendDeclinedOrderEmail({to: company.info.companyEmail});
-                            responses.push({'status': Status.Error,'company': company.info.companyName, 'message': 'Unable to Charge Company: ' + company._id});
-                        }
-                    })
+                            }else{
+                                let currentDate = new Date();
+                                let downgradeDate = moment().tz('Africa/Tunis').add(currentDate.getDate() + 4, 'days').hours(23).minutes(58);
+                                new CronJob(downgradeDate, function() {
+                                    request('http://localhost:'+process.env.PORT || 3000+'/api/v1/downgradeCompanies', function (response: any) {
+                                        console.log(response);
+                                    });
+                                }, null, true);
+                                // We need to send an email to the company to update their payment information
+                                sendDeclinedOrderEmail({to: company.info.companyEmail});
+                                responses.push({'status': Status.Error,'company': company.info.companyName, 'message': 'Unable to Charge Company: ' + company._id});
+                            }
+                        })
+                    } catch (err) {
+                        responses.push({'status': Status.Error, 'message': err.message});
+                    }
                 }
 
             }
             return res.json({response: responses});
-
         });
 }

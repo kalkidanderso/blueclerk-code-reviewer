@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import {ICompanyInvoice} from './CompanyInvoice';
 
 export interface ICompany extends Document{
 
@@ -27,6 +28,7 @@ export interface ICompany extends Document{
     stripeId: string
     paid: boolean
     type: number
+    plan: number
     chargeDate: Date
     maxTechnicians: number
     maxManagers: number
@@ -70,6 +72,7 @@ export interface ICompany extends Document{
     invoicePrefix: string,
     currentPOId: number
     currentEstimateId: number
+    companyInvoices: ICompanyInvoice[];
 }
 
 const CompanySchema = new Schema({
@@ -106,6 +109,12 @@ const CompanySchema = new Schema({
     type: {
         type: Number,
         default: 0
+    },
+    // type 0 for subscribed
+    // type 1 for free
+    plan: {
+      type: Number,
+      default: 0
     },
     chargeDate: Date, // signup + 30 days
     maxTechnicians: {
@@ -192,7 +201,8 @@ const CompanySchema = new Schema({
     currentEstimateId: {
         type: Number,
         default: 0
-    }
+    },
+    companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
 })
 
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)

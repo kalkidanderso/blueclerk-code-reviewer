@@ -218,6 +218,8 @@ export const Validations = {
 
   updateInvoice: [check('invoiceId').exists()],
 
+  companyInvoice: [check('companyInvoiceId').exists()],
+
   getInvoiceDetail: [check('invoiceId').exists()],
 
   createPartInventory: [check('name').exists(), check('itemCode').exists(), check('cost').exists(), check('price').exists(), check('totalQuantity').exists()],
@@ -254,13 +256,20 @@ export const Validations = {
 
   codeLocationTag: [check('nfcTag').exists(), check('customerId').exists()],
 
+  getLocationTagInfo: [check('nfcTag').exists()],
+
   updateLocationTag: [check('nfcTag').exists(), check('latitude').exists(), check('longitude').exists(), check('nfcTag').exists()],
 
   getLocationTagJobs: [check('nfcTag').exists()],
 
   getOpenServiceTickets: [check('page').exists().isNumeric(), check('pagesize').exists().isNumeric(), check('customerNames').optional(), check('jobTypeTitle').optional(), check('dueDate').optional(), check('ticketId').optional()],
 // Job location
-  createJobLocation: [check('name').exists(), check('customerId').exists()]
+  createJobLocation: [check('name').exists(), check('customerId').exists()],
+
+  // Notification
+  getNotifications: [check('isRead').optional().isIn(['ALL', true, false, 1, 0]), check('isDismissed').optional().isIn(['ALL', true, false, 1, 0])],
+
+  updateNotification: [check('isRead').optional().isBoolean(), check('isDismissed').optional().isBoolean()]
 
 }
 

@@ -1,5 +1,5 @@
 import {Request, Response} from 'express'
-import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, SocketMessage } from '../common/constants'
+import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, SocketEvents, NotificationTypes } from '../common/constants'
 
 import { ICompany } from '../models/Company'
 import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket'
@@ -7,6 +7,7 @@ import {IUser} from '../models/User'
 import {parseFieldsAndUploadImageInS3, updateFieldsAndUploadImageInS3} from '../services/aws';
 import { ObjectId } from 'mongodb'
 import {Contact} from '../models/Contact';
+import { NotificationServiceTicket, INotificationServiceTicket } from '../models/NotificationServiceTicket';
 
 export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
@@ -100,10 +101,29 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                                     if(err) {
                                         return null;
                                     }
-                                    await Promise.all([
-                                        // Send notification message to specific room based on the Company ID
-                                        sio.to(companyId && companyId.toString()).emit(SocketMessage.CREATESERVICETICKET, serviceTicket),
-                                    ])
+
+                                    // Construct notification entry to be saved
+                                    let notificationEntry: INotificationServiceTicket = new NotificationServiceTicket({
+                                        company: companyId,
+                                        notificationType: NotificationTypes.SERVICE_TICKET_CREATED,
+                                        metadata: serviceTicket._id
+                                    })
+
+                                    // Save the notification with Service Ticket as the metadata
+                                    notificationEntry.save(async (err: any, notification: INotificationServiceTicket) => {
+                                        if (err) {
+                                            return null;
+                                        }
+
+                                        notification.populate('metadata').execPopulate()
+                                            .then(async (populatedNotification) => {
+                                                // Send notification message to specific room based on the Company ID
+                                                await sio.to(companyId && companyId.toString()).emit(SocketEvents.NOTIFICATION_CENTER, populatedNotification);
+                                            });
+
+                                        // TODO: to remove when front implement NOTIFICATION_CENTER
+                                        await sio.to(companyId && companyId.toString()).emit(SocketEvents.CREATESERVICETICKET, serviceTicket);
+                                    })
                                 }
                             )
 
@@ -493,6 +513,26 @@ export const getServiceTicketDetail = (req: Request, res: Response) => {
         .populate({
             path: 'editedBy',
             select: 'profile.displayName'
+        })
+        .populate({
+            path: 'jobLocation',
+            select: 'name'
+        })
+        .populate({
+            path: 'jobSite',
+            select: 'name'
+        })
+        .populate({
+            path: 'jobType',
+            select: 'title'
+        })
+        .populate({
+            path: 'track.user',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'customerContactId',
+            select: 'name'
         })
         .exec((err: any, serviceTicket: IServiceTicket)=>{
 
