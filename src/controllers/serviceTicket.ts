@@ -1,5 +1,5 @@
 import {Request, Response} from 'express'
-import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, SocketMessage, NotificationTypes } from '../common/constants'
+import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, SocketEvents, NotificationTypes } from '../common/constants'
 
 import { ICompany } from '../models/Company'
 import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket'
@@ -116,7 +116,10 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                                         }
 
                                         // Send notification message to specific room based on the Company ID
-                                        await sio.to(companyId && companyId.toString()).emit(SocketMessage.CREATESERVICETICKET, serviceTicket);
+                                        await sio.to(companyId && companyId.toString()).emit(SocketEvents.NOTIFICATION_CENTER, serviceTicket);
+
+                                        // TODO: to remove when front implement NOTIFICATION_CENTER
+                                        await sio.to(companyId && companyId.toString()).emit(SocketEvents.CREATESERVICETICKET, serviceTicket);
                                     })
                                 }
                             )
