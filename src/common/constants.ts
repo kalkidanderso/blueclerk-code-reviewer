@@ -116,7 +116,8 @@ export const enum CompanyType {
 }
 
 export enum NotificationTypes {
-    CREATE_SERVICE_TICKET = 'CreateServiceTicket'
+    CREATE_SERVICE_TICKET = 'CreateServiceTicket',
+    SERVICE_TICKET_CREATED = 'ServiceTicketCreated'
 }
 
 export const enum Permissions {
