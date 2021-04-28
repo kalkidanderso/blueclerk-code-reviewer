@@ -1,5 +1,5 @@
 import {Request, Response} from 'express'
-import {CompanyType, ContractStatus, Messages, Role, Status, UserPermissions} from '../common/constants'
+import {CompanyType, ContractStatus, Messages, NotificationTypes, Role, Status, UserPermissions} from '../common/constants'
 import {
     sendAccountUpgradeEmail,
     sendContractStartEmail,
@@ -36,6 +36,7 @@ import {CompanyAdmin, ICompanyAdmin} from '../models/CompanyAdmin'
 import {addCustomerAndCharge, chargeSubscription} from '../services/stripe'
 import {IIndustry, Industry} from '../models/Industry'
 import {CompanyInvoice, ICompanyInvoice} from '../models/CompanyInvoice';
+import { NotificationContract, INotificationContract } from '../models/NotificationContract';
 import moment from 'moment-timezone';
 // import { CompanyPrefix, ICompanyPrefix } from '../models/CompanyPrefix'
 // import { Scan } from '../models/Scan'
@@ -1066,6 +1067,8 @@ export const startContract = async (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'Invalid vendor.' })
             }
 
+            console.log('== contractor:', contractor);
+
             // check if contract already started
 
             Contract.findOne({ 'company': req.companyId, 'contractor': contractor._id },
@@ -1091,11 +1094,30 @@ export const startContract = async (req: Request, res: Response) => {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
 
+                        console.log('== contract:', contract);
+
                         // ToDo send email to contractor for contract started
                         sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName, companyEmail: req.company.info.companyEmail })
                         sendContractStartEmailToCompany({ to: req.company.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
-                        return res.json({ 'status': Status.Success, 'message': 'Vendor Added.' })
 
+                        // Construct notification entry to be saved
+                        let notificationEntry: INotificationContract = new NotificationContract({
+                            company: contractor._id,
+                            notificationType: NotificationTypes.CONTRACT_INVITATION,
+                            metadata: contract._id
+                        })
+
+                        // Save the notification with Contrac as the metadata
+                        notificationEntry.save((err: any) => {
+
+                            if (err) {
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+                            }
+
+
+                            return res.json({ 'status': Status.Success, 'message': 'Vendor Added.' });
+
+                        })
                     })
                 })
 
