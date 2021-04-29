@@ -120,7 +120,8 @@ export enum NotificationTypes {
     SERVICE_TICKET_CREATED = 'ServiceTicketCreated',
     CONTRACT_INVITATION = 'ContractInvitation',
     CONTRACT_ACCEPTED = 'ContractAccepted',
-    CONTRACT_REJECTED = 'ContractRejected'
+    CONTRACT_REJECTED = 'ContractRejected',
+    CONTRACT_FINISHED = 'ContractFinished'
 }
 
 export const enum Permissions {

@@ -1,9 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { ICompany } from './Company'
 
 export interface IContract extends Document {
 
     company: Schema.Types.ObjectId | any
-    contractor: Schema.Types.ObjectId
+    contractor: Schema.Types.ObjectId | ICompany
     status: number
     extraPermissions: [number]
 }

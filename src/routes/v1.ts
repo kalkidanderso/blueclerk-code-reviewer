@@ -838,7 +838,9 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Invite_Contractor),
         validate(Validations.inviteContractor),
-        userController.startContract
+        (req, res) => {
+            userController.startContract(req, res, sio)
+        }
     )
 
     router.post(
