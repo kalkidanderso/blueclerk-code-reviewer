@@ -879,7 +879,9 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Cancel_Finish_Contract),
         validate(Validations.updateContract),
-        userController.cancelOrFinishContract
+        (req, res) => {
+            userController.cancelOrFinishContract(req, res, sio)
+        }
     )
 
     router.post(
