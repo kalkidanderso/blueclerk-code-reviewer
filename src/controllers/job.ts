@@ -303,34 +303,39 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                 // sendJobEmailToCompanyAdmin({to: company.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate, vendorName: creator.profile.displayName})
             }
 
-            //Get admin preferences to send an email to customer or not
-            let customerEmailPreferences = cust ? cust.emailPreferences.preferences : null;
-            switch (customerEmailPreferences) {
-                case 0: {
-                    sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate});
-                    break;
-                }
-                case 1: {
-                    let emailSchedule = await EmailSchedule.findOne({user: cust._id, pulled: false});
-                    if (emailSchedule) {
-                        emailSchedule.jobs.push(job._id)
-                    } else {
-                        emailSchedule = new EmailSchedule({
-                            user: cust._id,
-                            type: 2,
-                            jobs: [job._id]
-                        });
-                    }
-                    await emailSchedule.save();
-                    break;
-                }
-                default: {
-                    sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
-                    // User has deactivated the email notification for job schedule
-                    break;
-                }
+            /**
+             * Kristono's remark (April 30th, 2021):
+             * Commented as we don't want to send email to customer,
+             * TODO: To revert or to remove entirely
+             */
+            // //Get admin preferences to send an email to customer or not
+            // let customerEmailPreferences = cust ? cust.emailPreferences.preferences : null;
+            // switch (customerEmailPreferences) {
+            //     case 0: {
+            //         sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate});
+            //         break;
+            //     }
+            //     case 1: {
+            //         let emailSchedule = await EmailSchedule.findOne({user: cust._id, pulled: false});
+            //         if (emailSchedule) {
+            //             emailSchedule.jobs.push(job._id)
+            //         } else {
+            //             emailSchedule = new EmailSchedule({
+            //                 user: cust._id,
+            //                 type: 2,
+            //                 jobs: [job._id]
+            //             });
+            //         }
+            //         await emailSchedule.save();
+            //         break;
+            //     }
+            //     default: {
+            //         sendJobEmailToCustomer({to: cust.info.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+            //         // User has deactivated the email notification for job schedule
+            //         break;
+            //     }
 
-            }
+            // }
             next(req, res, jobCreated)
             return
         }).catch((err) => {
