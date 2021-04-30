@@ -6356,7 +6356,12 @@ definitions:
         type: string
         description: Type of the notification
         enum:
-        - CreateServiceTicket
+          - ServiceTicketCreated
+          - ContractInvitation
+          - ContractAccepted
+          - ContractCanceled
+          - ContractRejected
+          - ContractFinished
       message:
         type: object
         description: Additional message for future use
@@ -6398,6 +6403,11 @@ definitions:
     properties:
       metadata:
         $ref: "#/definitions/ServiceTicket"
+  NotificationContract:
+    type: object
+    properties:
+      metadata:
+        $ref: "#/definitions/Contract"
   NotificationUpdateBody:
     properties:
       isRead:

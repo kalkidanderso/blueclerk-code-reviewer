@@ -106,23 +106,21 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                                     let notificationEntry: INotificationServiceTicket = new NotificationServiceTicket({
                                         company: companyId,
                                         notificationType: NotificationTypes.SERVICE_TICKET_CREATED,
+                                        message: {
+                                            title: 'Service Ticket created',
+                                            body: `${serviceTicket.ticketId} created via web`
+                                        },
                                         metadata: serviceTicket._id
                                     })
 
                                     // Save the notification with Service Ticket as the metadata
                                     notificationEntry.save(async (err: any, notification: INotificationServiceTicket) => {
                                         if (err) {
-                                            return null;
+                                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                                         }
 
-                                        notification.populate('metadata').execPopulate()
-                                            .then(async (populatedNotification) => {
-                                                // Send notification message to specific room based on the Company ID
-                                                await sio.to(companyId && companyId.toString()).emit(SocketEvents.NOTIFICATION_CENTER, populatedNotification);
-                                            });
-
-                                        // TODO: to remove when front implement NOTIFICATION_CENTER
-                                        await sio.to(companyId && companyId.toString()).emit(SocketEvents.CREATESERVICETICKET, serviceTicket);
+                                        await notification.populate('metadata').execPopulate();
+                                        await sio.to(companyId && companyId.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
                                     })
                                 }
                             )
