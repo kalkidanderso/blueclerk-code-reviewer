@@ -137,8 +137,14 @@ export const sendInvitationToContractor = function(options: any) {
           },
           Body: {
             Html: {
-              Data: "<p>Welcome to BlueClerk!  You have been invited to join blueclerk</p>\
-              <p>Click the link to get started:<a href=\"https://app.blueclerk.com/login/\ target=\"_blank\">app.blueclerk.com</a></p>",
+              Data: `<p>Welcome to BlueClerk!  You have been invited to join blueclerk</p>
+              <p>Click the link to get started:<a href="https://app.blueclerk.com/signup/?email=${ encodeURIComponent(options.to)} target="_blank">app.blueclerk.com</a></p>
+              <br />
+              <hr>
+              <br />
+              <a href='https://play.google.com/store/apps/details?id=com.blueclerk.app&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' style="width: 225px;"/></a>
+              <a href="https://apps.apple.com/us/app/blueclerk/id1450328521?itsct=apps_box_badge&amp;itscg=30200" style="display: inline-block; overflow: hidden; border-radius: 13px; height: 74px;"><img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1549065600&h=78504a30f69c2c20ab55a99d45db3830" alt="Download on the App Store" style="border-radius: 13px; width: 180px;"></a>
+              `,
             },
           },
         },
