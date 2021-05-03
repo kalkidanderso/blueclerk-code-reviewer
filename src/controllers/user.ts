@@ -1101,7 +1101,7 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                             notificationType: NotificationTypes.CONTRACT_INVITATION,
                             message: {
                                 title: 'New vendor contract received',
-                                body: `${company.info.companyName} sent you a vendor contract`
+                                body: `Company ${company.info.companyName} has invited you to be a vendor`
                             },
                             metadata: contract._id
                         });
@@ -1310,7 +1310,7 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                                     notificationType: NotificationTypes.CONTRACT_ACCEPTED,
                                     message: {
                                         title: 'Contract accepted',
-                                        body: `${contractor.info.companyName} accepted Contract ${contract._id}`
+                                        body: `Company ${contractor.info.companyName} has accepted your vendor contract`
                                     },
                                     metadata: contract._id
                                 });
@@ -1407,7 +1407,7 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                     notificationType: NotificationTypes.CONTRACT_ACCEPTED,
                     message: {
                         title: 'Contract accepted',
-                        body: `${contractor.info.companyName} accepted Contract ${contract._id}`
+                        body: `Company ${contractor.info.companyName} has accepted your vendor contract`
                     },
                     metadata: contract._id
                 });
@@ -1452,7 +1452,7 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                                 notificationType: NotificationTypes.CONTRACT_REJECTED,
                                 message: {
                                     title: 'Contract rejected',
-                                    body: `${contractor.info.companyName} rejected Contract ${contract._id}`
+                                    body: `Company ${contractor.info.companyName} has rejected your vendor contract`
                                 },
                                 metadata: contract._id
                             })
@@ -1492,13 +1492,13 @@ export const cancelOrFinishContract = (req: Request, res: Response, sio: any) =>
         contractStatus = ContractStatus.CANCELED
         notificationType = NotificationTypes.CONTRACT_CANCELED;
         messageTitle = 'Contract canceled';
-        messageBody = `${company.info.companyName} canceled Contract ${params.contractId}`;
+        messageBody = `Company ${company.info.companyName} has canceled your vendor contract`;
 
     } else if (params.status == 'finish') {
         contractStatus = ContractStatus.FINISHED
         notificationType = NotificationTypes.CONTRACT_FINISHED;
         messageTitle = 'Contract finished';
-        messageBody = `${company.info.companyName} finished Contract ${params.contractId}`;
+        messageBody = `Company ${company.info.companyName} has finished your vendor contract`;
 
     } else {
         return res.json({ 'status': Status.Error, 'message': 'Invalid contract status' })
