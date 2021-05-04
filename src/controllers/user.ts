@@ -1067,8 +1067,15 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                 return res.json({ 'status': Status.Error, 'message': 'Invalid vendor.' })
             }
 
-            // check if contract already started
-            Contract.findOne({ 'company': req.companyId, 'contractor': contractor._id },
+            /**
+             * Check if contract with PENDING or ACCEPTED already existed,
+             * otherwise, company can resend new contract to the same vendor
+             */
+            Contract.findOne({
+                'company': req.companyId,
+                'contractor': contractor._id,
+                'status': {$in: [ ContractStatus.PENDING, ContractStatus.ACCEPTED ]}
+            },
                 (err: any, oldcontract: IContract) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
