@@ -1244,106 +1244,103 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
             const perday = 3/daysInCurrentMonth
             amount = amount+ (perday* daysToCharge)
             if (daysToCharge >= 10) {
-                if (company.stripeId != undefined || company.stripeId != '') {
-                    try {
-                        chargeSubscription(amount, company.stripeId, async (status: any, charge: any, tax: any, message: any) => {
-                            if (status == 1) {
-                                contract.updateOne(
-                                    { status: contractStatus },
-                                    (err: any, raw: any) => {
-                                        if (err) {
-                                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                                        }
+                if (!company.stripeId) {
+                    // Company doesn't have billing info
+                    return res.json({ 'status': Status.Error, 'message': 'Please contact the company to update their payment information' });
+                }
 
-                                        // ToDo send email to company /contractor on update
-                                        const companyCustomer = new CompanyCustomer({
-                                            company: contractor._id,
-                                            customer: company._id,
-                                        })
-                                        companyCustomer.save((err: any) => {
+                try {
+                    chargeSubscription(amount, company.stripeId, async (status: any, charge: any, tax: any, message: any) => {
+                        if (status !== 1) {
+                            // Error when charge the subscription
+                            return res.json({ 'status': Status.Error, 'message': 'Please contact the company to update their payment information' });
+                        }
 
-                                            if (err) {
-                                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                                            }
+                        contract.updateOne(
+                            { status: contractStatus },
+                            (err: any, raw: any) => {
+                                if (err) {
+                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                }
 
-                                            sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
-                                            sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
-
-                                            return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
-
-                                            // needs to change
-
-                                        })
-                                    })
-                                // Create Company Invoice
-                                const companyInvoice: ICompanyInvoice = new CompanyInvoice({
-                                    technicians: 0,
-                                    managers: 0,
-                                    officeAdmins: 0,
-                                    admins: 0,
-                                    contractors: 1,
-                                    charges: amount,
-                                    tax: tax,
-                                    total: charge.amount_captured/100,
-                                    company: company._id
-                                });
-                                sendAccountUpgradeEmail({
-                                    to: company.info.companyEmail,
-                                    amount: charge.amount_captured/100,
-                                    technicians: 0,
-                                    managers: 0,
-                                    officeAdmins: 0,
-                                    admins: 0,
-                                    contractors: 1
-                                }).then(async () => {
-                                    companyInvoice.emailHistory.push({
-                                        sentTo: company.info.companyEmail
-                                    });
-                                    await companyInvoice.save();
-                                });
-                                let companyInvoices = company.companyInvoices ? company.companyInvoices : [];
-                                let chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
-
-                                companyInvoices.push(companyInvoice);
-                                company.plan = CompanyType.SUBSCRIBED;
-                                company.paid = true;
-                                company.companyInvoices = companyInvoices;
-                                company.chargeDate = chargeDate.toDate();
-                                await company.save();
-
-                                // Save notification
-                                let notificationEntry: INotificationContract = new NotificationContract({
-                                    company: company._id,
-                                    notificationType: NotificationTypes.CONTRACT_ACCEPTED,
-                                    message: {
-                                        title: 'Contract accepted',
-                                        body: `Company ${contractor.info.companyName} has accepted your vendor contract`
-                                    },
-                                    metadata: contract._id
-                                });
-
-                                notificationEntry.save(async (err: any, notification: INotificationContract) => {
+                                // ToDo send email to company /contractor on update
+                                const companyCustomer = new CompanyCustomer({
+                                    company: contractor._id,
+                                    customer: company._id,
+                                })
+                                companyCustomer.save((err: any) => {
 
                                     if (err) {
-                                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+                                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                                     }
 
-                                    // Send notification message to specific room based on the Company ID
-                                    await notification.populate('metadata').execPopulate();
-                                    await sio.to(company._id.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
-
-                                    return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
+                                    sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
+                                    sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
                                 })
+                            })
+                        // Create Company Invoice
+                        const companyInvoice: ICompanyInvoice = new CompanyInvoice({
+                            technicians: 0,
+                            managers: 0,
+                            officeAdmins: 0,
+                            admins: 0,
+                            contractors: 1,
+                            charges: amount,
+                            tax: tax,
+                            total: charge.amount_captured/100,
+                            company: company._id
+                        });
+                        sendAccountUpgradeEmail({
+                            to: company.info.companyEmail,
+                            amount: charge.amount_captured/100,
+                            technicians: 0,
+                            managers: 0,
+                            officeAdmins: 0,
+                            admins: 0,
+                            contractors: 1
+                        }).then(async () => {
+                            companyInvoice.emailHistory.push({
+                                sentTo: company.info.companyEmail
+                            });
+                            await companyInvoice.save();
+                        });
+                        let companyInvoices = company.companyInvoices ? company.companyInvoices : [];
+                        let chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
+
+                        companyInvoices.push(companyInvoice);
+                        company.plan = CompanyType.SUBSCRIBED;
+                        company.paid = true;
+                        company.companyInvoices = companyInvoices;
+                        company.chargeDate = chargeDate.toDate();
+                        await company.save();
+
+                        // Save notification
+                        let notificationEntry: INotificationContract = new NotificationContract({
+                            company: company._id,
+                            notificationType: NotificationTypes.CONTRACT_ACCEPTED,
+                            message: {
+                                title: 'Contract accepted',
+                                body: `Company ${contractor.info.companyName} has accepted your vendor contract`
+                            },
+                            metadata: contract._id
+                        });
+
+                        notificationEntry.save(async (err: any, notification: INotificationContract) => {
+
+                            if (err) {
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                             }
-                            sendDeclinedOrderEmail({to: company.info.companyEmail});
-                            return res.json({ 'status': Status.Error, 'message': 'Please contact the company to update their payment information' });
+
+                            // Send notification message to specific room based on the Company ID
+                            await notification.populate('metadata').execPopulate();
+                            await sio.to(company._id.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
+
+                            return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
                         })
-                    } catch (err) {
-                        return res.json({'status': Status.Error, 'message': err.message});
-                    }
+                    })
+                } catch (err) {
+                    return res.json({'status': Status.Error, 'message': err.message});
                 }
-                sendDeclinedOrderEmail({to: company.info.companyEmail});
-                return res.json({ 'status': Status.Error, 'message': 'Please contact the company to update their payment information' });
             } else {
                 contract.updateOne(
                     { status: contractStatus },
