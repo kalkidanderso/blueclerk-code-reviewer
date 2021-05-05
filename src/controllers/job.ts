@@ -866,6 +866,9 @@ export const updateJob = (req: Request, res: Response) => {
                 action = '|Canceling the job|';
                 await ServiceTicket.findOneAndUpdate({_id: job.ticket}, {jobCreated: false});
             }
+            if (params.status == JobStatus.RESCHEDULED) {
+                action = '|Rescheduling the job|';
+            }
         }
         let userComment = '';
         if (params.comment !== 'undefined') {
@@ -942,6 +945,9 @@ export const startJob = (req: Request, res: Response) => {
 
             if(job.status == JobStatus.CANCELED) {
                 return res.json({'status': Status.Error, 'message': "You can't start this job, it is already canceled"})
+            }
+            if (job.status == JobStatus.RESCHEDULED) {
+                return res.json({ 'status': Status.Error, 'message': "You can't start this job, it is already rescheduled" });
             }
             let track = job.track ? job.track : [];
             let action = '';
@@ -1036,6 +1042,11 @@ export const editJob = (req: Request, res: Response) => {
                     action +='|Updated JobSiteId|';
                 }
                 job.jobSite = params.jobSiteId
+            }
+            if (job.status == JobStatus.RESCHEDULED) {
+                job.status = JobStatus.PENDING;
+                action += '|Job rescheduled|';
+                job.comment = '';
             }
             track.push({
                 user: user._id,

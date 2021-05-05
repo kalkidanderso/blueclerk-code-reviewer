@@ -65,7 +65,8 @@ export const enum JobStatus {
     PENDING,
     STARTED,
     FINISHED,
-    CANCELED
+    CANCELED,
+    RESCHEDULED
 }
 
 export const enum ServiceTicketStatus {
