@@ -2949,7 +2949,6 @@
           {
             "name": "images",
             "in": "formData",
-            "required": true,
             "type": "string",
             "description": "comma seprated image Urls"
           },
@@ -3199,6 +3198,12 @@
             "in": "formData",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "images",
+            "in": "formData",
+            "type": "string",
+            "description": "comma seprated image Urls"
           },
           {
             "name": "note",

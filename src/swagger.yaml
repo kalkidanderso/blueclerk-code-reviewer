@@ -1577,7 +1577,6 @@ paths:
           type: string
         - name: images
           in: formData
-          required: true
           type: string
           description: comma seprated image Urls
         - name: equipmentTypeId
@@ -1734,6 +1733,10 @@ paths:
           in: formData
           required: true
           type: string
+        - name: images
+          in: formData
+          type: string
+          description: comma seprated image Urls
         - name: customer
           in: formData
           required: true
