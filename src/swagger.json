@@ -3201,6 +3201,13 @@
             "type": "string"
           },
           {
+            "name": "images",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "comma seprated image Urls"
+          },
+          {
             "name": "note",
             "in": "formData",
             "required": false,

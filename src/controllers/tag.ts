@@ -47,8 +47,10 @@ export const codeLocationTag = (req: Request, res: Response) => {
 
         const newTag: Partial<ITag> = {
                 info: {
-                    nfcTag: params.nfcTag
+                    nfcTag: params.nfcTag,
+                    imageUrl: params.imageUrl
                 },
+                images: [],
                 jobLocation: jobLocation,
                 note: params.note,
                 customer: customer,
@@ -56,6 +58,13 @@ export const codeLocationTag = (req: Request, res: Response) => {
                 company: req.companyId,
                 createdBy: user._id,
                 createdAt: Date.now()
+        }
+
+        if (params.images && params.images.length) {
+            const urls = params.images.split(',').map(String);
+            urls.map((url: any)=>{
+                newTag.images.push(url)
+            })
         }
 
         if (params.jobSiteId) {
