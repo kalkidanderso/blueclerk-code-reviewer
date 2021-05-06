@@ -951,9 +951,6 @@ export const startJob = (req: Request, res: Response) => {
             if(job.status == JobStatus.CANCELED) {
                 return res.json({'status': Status.Error, 'message': "You can't start this job, it is already canceled"})
             }
-            if (job.status == JobStatus.RESCHEDULED) {
-                return res.json({ 'status': Status.Error, 'message': "You can't start this job, it is already rescheduled" });
-            }
             let track = job.track ? job.track : [];
             let action = '';
             if (job.status != JobStatus.STARTED) {
