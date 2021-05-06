@@ -139,7 +139,7 @@ export const sendInvitationToContractor = function(options: any) {
             Html: {
               Data: `<div style="text-align: center;">
                 <p>Welcome to BlueClerk! You have been invited to join BlueClerk</p>
-                <p>Click the link to get started: <a href="https://app.blueclerk.com/signup/?email=${ encodeURIComponent(options.to)} target="_blank">app.blueclerk.com</a></p>
+                <p>Click the link to get started: <a href="https://app.blueclerk.com/signup/?email=${ options.to }" target="_blank">app.blueclerk.com</a></p>
                 <br />
                 <br />
                 <h3>Download BlueClerk Mobile App:</h3>
