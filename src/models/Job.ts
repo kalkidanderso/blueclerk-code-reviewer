@@ -33,7 +33,12 @@ export interface IJob extends Document {
     equipment_scanned: boolean
     no_of_equipment_scanned: number
     completeOnTime: boolean
-    track: any[]
+    track: {
+        user: Schema.Types.ObjectId
+        action: string
+        note?: string
+        date: Date
+    }[]
 }
 
 const JobSchema = new Schema({
@@ -106,6 +111,7 @@ const JobSchema = new Schema({
             ref: 'User'
         },
         action: String,
+        note: String,
         date: Date
     }],
     comment: {
