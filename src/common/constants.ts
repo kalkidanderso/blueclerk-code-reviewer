@@ -122,7 +122,8 @@ export enum NotificationTypes {
     CONTRACT_ACCEPTED = 'ContractAccepted',
     CONTRACT_CANCELED = 'ContractCanceled',
     CONTRACT_REJECTED = 'ContractRejected',
-    CONTRACT_FINISHED = 'ContractFinished'
+    CONTRACT_FINISHED = 'ContractFinished',
+    JOB_RESCHEDULED = 'JobRescheduled'
 }
 
 export const enum Permissions {
