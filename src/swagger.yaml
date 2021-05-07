@@ -1577,7 +1577,6 @@ paths:
           type: string
         - name: images
           in: formData
-          required: true
           type: string
           description: comma seprated image Urls
         - name: equipmentTypeId
@@ -1734,6 +1733,10 @@ paths:
           in: formData
           required: true
           type: string
+        - name: images
+          in: formData
+          type: string
+          description: comma seprated image Urls
         - name: customer
           in: formData
           required: true
@@ -3635,10 +3638,14 @@ paths:
           in: formData
           required: true
           type: number
-          description: Id of job status as number from one of these (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3).
+          description: Id of job status as number from one of these (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4).
+        - name: note
+          in: formData
+          type: string
+          description: >
+            **Required** when status is RESCHEDULED => 4
         - name: comment
           in: formData
-          required: true
           type: string
         - name: jobLocationId
           in: formData
@@ -6356,7 +6363,12 @@ definitions:
         type: string
         description: Type of the notification
         enum:
-        - CreateServiceTicket
+          - ServiceTicketCreated
+          - ContractInvitation
+          - ContractAccepted
+          - ContractCanceled
+          - ContractRejected
+          - ContractFinished
       message:
         type: object
         description: Additional message for future use
@@ -6398,6 +6410,11 @@ definitions:
     properties:
       metadata:
         $ref: "#/definitions/ServiceTicket"
+  NotificationContract:
+    type: object
+    properties:
+      metadata:
+        $ref: "#/definitions/Contract"
   NotificationUpdateBody:
     properties:
       isRead:

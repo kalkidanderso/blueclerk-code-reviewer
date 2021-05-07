@@ -9,7 +9,9 @@ export interface ITag extends Document {
     customer: Schema.Types.ObjectId
     info: {
         nfcTag: String
+        imageUrl: string
     },
+    images:[string?],
     jobLocation: Schema.Types.ObjectId | string
     jobSite?: Schema.Types.ObjectId | string
     company: Schema.Types.ObjectId | string
@@ -23,8 +25,10 @@ const TagSchema = new Schema({
         nfcTag: {
             type: String,
             required: true
-        }
+        },
+        imageUrl: String,
     },
+    images: [String],
     jobLocation: {
         type: Schema.Types.ObjectId,
         ref: 'JobLocation',

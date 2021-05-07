@@ -65,7 +65,8 @@ export const enum JobStatus {
     PENDING,
     STARTED,
     FINISHED,
-    CANCELED
+    CANCELED,
+    RESCHEDULED
 }
 
 export const enum ServiceTicketStatus {
@@ -116,8 +117,12 @@ export const enum CompanyType {
 }
 
 export enum NotificationTypes {
-    CREATE_SERVICE_TICKET = 'CreateServiceTicket',
-    SERVICE_TICKET_CREATED = 'ServiceTicketCreated'
+    SERVICE_TICKET_CREATED = 'ServiceTicketCreated',
+    CONTRACT_INVITATION = 'ContractInvitation',
+    CONTRACT_ACCEPTED = 'ContractAccepted',
+    CONTRACT_CANCELED = 'ContractCanceled',
+    CONTRACT_REJECTED = 'ContractRejected',
+    CONTRACT_FINISHED = 'ContractFinished'
 }
 
 export const enum Permissions {

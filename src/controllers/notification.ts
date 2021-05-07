@@ -79,11 +79,11 @@ export const updateNotification = (req: Request, res: Response) => {
     const { notificationId } = req.params;
     const params = req.body;
 
-    NotificationServiceTicket.findOne({
+    Notification.findOne({
         _id: notificationId,
         company: companyId
     })
-        .exec((err: any, notification: INotificationServiceTicket) => {
+        .exec((err: any, notification: INotification) => {
             if (err) {
                 return res.json({ status: Status.Error, message: Messages.GenericError });
             }
@@ -106,12 +106,12 @@ export const updateNotification = (req: Request, res: Response) => {
                 dismissedStatus.dismissedAt = params.isDismissed ? new Date() : null;
             }
 
-            notification.save((err: any, updatedNotification: INotificationServiceTicket) => {
+            notification.save(async (err: any, updatedNotification: INotification) => {
                 if (err) {
                     return res.json({ status: Status.Error, message: Messages.GenericError });
                 }
 
-                updatedNotification
+                await updatedNotification
                     .populate({
                         path: 'readStatus.readBy',
                         select: 'profile.displayName'
@@ -123,14 +123,12 @@ export const updateNotification = (req: Request, res: Response) => {
                     .populate({
                         path: 'metadata'
                     })
-                    .execPopulate()
-                    .then((notification) => {
-                        return res.json({
-                            status: Status.Success,
-                            message: 'Notification updated successfully.',
-                            notification: notification
-                        })
-                    });
+                    .execPopulate();
+                return res.json({
+                    status: Status.Success,
+                    message: 'Notification updated successfully.',
+                    notification: updatedNotification
+                })
 
             })
         }

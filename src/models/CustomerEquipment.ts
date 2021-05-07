@@ -59,7 +59,7 @@ const CustomerEquipmentSchema = new Schema({
     jobLocation: {
         type: Schema.Types.ObjectId,
         ref: 'JobLocation',
-        required: true
+        // required: true
     },
     jobSite: {
         type: Schema.Types.ObjectId,

@@ -137,8 +137,20 @@ export const sendInvitationToContractor = function(options: any) {
           },
           Body: {
             Html: {
-              Data: "<p>Welcome to BlueClerk!  You have been invited to join blueclerk</p>\
-              <p>Click the link to get started:<a href=\"https://app.blueclerk.com/login/\ target=\"_blank\">app.blueclerk.com</a></p>",
+              Data: `<div style="text-align: center;">
+                <p>Welcome to BlueClerk! You have been invited to join BlueClerk</p>
+                <p>Click the link to get started: <a href="https://app.blueclerk.com/signup/?email=${ options.to }" target="_blank">app.blueclerk.com</a></p>
+                <br />
+                <br />
+                <h3>Download BlueClerk Mobile App:</h3>
+                <a href='https://play.google.com/store/apps/details?id=com.blueclerk.app&hl=en'><img alt='Get BlueClerk Mobile App on Google Play' src='https://blueclerk.com/wp-content/uploads/2020/07/playstore.png' style="width: 150px; margin-right:2px"/></a>
+                &nbsp;
+                <a href="https://apps.apple.com/us/app/id1450328521"><img src="https://blueclerk.com/wp-content/uploads/2020/07/appstore.png" alt="Download BlueClerk Mobile App on the App Store" style="width: 150px; margin-left:2px"></a>
+                <br />
+                <hr>
+                <br />
+                <img src='https://blueclerk.com/wp-content/uploads/2020/07/logo.png' />
+                </div>`,
             },
           },
         },

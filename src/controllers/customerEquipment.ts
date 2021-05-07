@@ -35,16 +35,18 @@ export const createCustomerEquipment = (req: Request, res: Response) => {
             customer: params.customerId,
         };
 
-        if (!params.jobLocationId && !params.jobSiteId) {
-            return res.json({ 'status': Status.Error, 'message': 'Either jobLocation or jobSite is required' });
-        }
-        if (!params.jobLocationId) {
+        // if (!params.jobLocationId && !params.jobSiteId) {
+        //     return res.json({ 'status': Status.Error, 'message': 'Either jobLocation or jobSite is required' });
+        // }
+        // if (!params.jobLocationId) {
+        if (params.jobSiteId) {
             let fullJobSite = await JobSite.findOne({_id : new ObjectId(params.jobSiteId)});
             if (fullJobSite) {
                 newCustomerEquipment['jobLocation'] = fullJobSite.locationId;
                 newCustomerEquipment['jobSite'] = fullJobSite._id;
             }
-        } else {
+        }
+        if (params.jobLocationId) {
             newCustomerEquipment['jobLocation'] = params.jobLocationId;
         }
 

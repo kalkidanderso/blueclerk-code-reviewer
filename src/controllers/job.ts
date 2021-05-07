@@ -792,8 +792,12 @@ export const updateJob = (req: Request, res: Response) => {
         companyId = req.otherCompanyId
     }
 
+    if (params.status == JobStatus.RESCHEDULED && !params.note) {
+        return res.json({ 'status': Status.Error, 'message': 'Note is required when you reschedule the job' });
+    }
+
     Job.findOne({ _id: params.jobId, $or:[{ contractor: companyId }, { company: companyId } ] })
-        .select('_id customer ticket technician scheduleDate company comment')
+        .select('_id customer ticket technician scheduleDate company comment track')
         .populate({
         path: 'customer',
         select: 'profile.displayName'
@@ -866,6 +870,9 @@ export const updateJob = (req: Request, res: Response) => {
                 action = '|Canceling the job|';
                 await ServiceTicket.findOneAndUpdate({_id: job.ticket}, {jobCreated: false});
             }
+            if (params.status == JobStatus.RESCHEDULED) {
+                action = '|Rescheduling the job|';
+            }
         }
         let userComment = '';
         if (params.comment !== 'undefined') {
@@ -890,6 +897,7 @@ export const updateJob = (req: Request, res: Response) => {
         track.push({
             user: user._id,
             action,
+            note: params.note,
             date: new Date()
         })
         data.track = track;
@@ -1036,6 +1044,10 @@ export const editJob = (req: Request, res: Response) => {
                     action +='|Updated JobSiteId|';
                 }
                 job.jobSite = params.jobSiteId
+            }
+            if (job.status == JobStatus.RESCHEDULED) {
+                job.status = JobStatus.PENDING;
+                action += '|Job rescheduled|';
             }
             track.push({
                 user: user._id,

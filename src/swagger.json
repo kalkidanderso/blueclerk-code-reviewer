@@ -2949,7 +2949,6 @@
           {
             "name": "images",
             "in": "formData",
-            "required": true,
             "type": "string",
             "description": "comma seprated image Urls"
           },
@@ -3199,6 +3198,12 @@
             "in": "formData",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "images",
+            "in": "formData",
+            "type": "string",
+            "description": "comma seprated image Urls"
           },
           {
             "name": "note",
@@ -6329,12 +6334,17 @@
             "in": "formData",
             "required": true,
             "type": "number",
-            "description": "Id of job status as number from one of these (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3)."
+            "description": "Id of job status as number from one of these (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4)."
+          },
+          {
+            "name": "note",
+            "in": "formData",
+            "type": "string",
+            "description": "**Required** when status is RESCHEDULED => 4"
           },
           {
             "name": "comment",
             "in": "formData",
-            "required": true,
             "type": "string"
           },
           {
@@ -10557,7 +10567,12 @@
           "type": "string",
           "description": "Type of the notification",
           "enum": [
-            "CreateServiceTicket"
+            "ServiceTicketCreated",
+            "ContractInvitation",
+            "ContractAccepted",
+            "ContractCanceled",
+            "ContractRejected",
+            "ContractFinished"
           ]
         },
         "message": {
@@ -10618,6 +10633,14 @@
       "properties": {
         "metadata": {
           "$ref": "#/definitions/ServiceTicket"
+        }
+      }
+    },
+    "NotificationContract": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/Contract"
         }
       }
     },
