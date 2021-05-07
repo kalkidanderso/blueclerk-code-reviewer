@@ -1,5 +1,5 @@
 import {Request, Response} from 'express'
-import { Status, Messages, JobStatus, ServiceTicketStatus } from '../common/constants'
+import { Status, Messages, JobStatus, ServiceTicketStatus, NotificationTypes, SocketEvents } from '../common/constants'
 import {
     sendJobEmailToAssignee,
     sendJobEmailToCustomer, sendReportEmailToCustomer
@@ -18,6 +18,7 @@ import {CronJob} from 'cron';
 import moment from 'moment-timezone';
 import {CompanyCustomer} from '../models/CompanyCustomer';
 import { ObjectId } from 'mongodb'
+import { INotificationJob, NotificationJob } from '../models/NotificationMetadata'
 
 export const createJob = (req: Request, res: Response) => {
     const params = req.body
@@ -783,7 +784,7 @@ export const deleteJobReportById = async (req: Request, res: Response) => {
     });
 }
 
-export const updateJob = (req: Request, res: Response) => {
+export const updateJob = (req: Request, res: Response, sio: any) => {
 
     const params = req.body
     let companyId = req.companyId;
@@ -797,7 +798,7 @@ export const updateJob = (req: Request, res: Response) => {
     }
 
     Job.findOne({ _id: params.jobId, $or:[{ contractor: companyId }, { company: companyId } ] })
-        .select('_id customer ticket technician scheduleDate company comment track')
+        // .select('_id customer ticket technician scheduleDate company comment track')
         .populate({
         path: 'customer',
         select: 'profile.displayName'
@@ -904,16 +905,41 @@ export const updateJob = (req: Request, res: Response) => {
             try {
                 await job.updateOne(data);
 
-                    let customerName = job.customer ?
-                        job.customer.profile.displayName :
-                        (job.ticket ? (job.ticket.customer ? job.ticket.customer.profile.displayName : null) : null);
-                    let technicianName = job.technician ? job.technician.profile.displayName : null;
-                    let date = job.scheduleDate;
-                    if (job.contractor) {
-                        await createJobReport(job._id, job.company,customerName, technicianName, date, job.contractor);
-                    } else {
-                        await createJobReport(job._id,job.company, customerName, technicianName, date, companyId);
-                    }
+                let customerName = job.customer ?
+                    job.customer.profile.displayName :
+                    (job.ticket ? (job.ticket.customer ? job.ticket.customer.profile.displayName : null) : null);
+                let technicianName = job.technician ? job.technician.profile.displayName : null;
+                let date = job.scheduleDate;
+                if (job.contractor) {
+                    await createJobReport(job._id, job.company,customerName, technicianName, date, job.contractor);
+                } else {
+                    await createJobReport(job._id,job.company, customerName, technicianName, date, companyId);
+                }
+
+                // Send notification when a job is RESCHEDULED
+                if (params.status == JobStatus.RESCHEDULED) {
+                    // Construct notification entry to be saved
+                    let notificationEntry: INotificationJob = new NotificationJob({
+                        company: job.company,
+                        notificationType: NotificationTypes.JOB_RESCHEDULED,
+                        message: {
+                            title: 'Job rescheduled',
+                            body: `${job.jobId} recheduled`
+                        },
+                        metadata: job._id
+                    })
+
+                    // Save the notification with Service Ticket as the metadata
+                    notificationEntry.save(async (err: any, notification: INotificationJob) => {
+                        if (err) {
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
+
+                        await notification.populate('metadata').execPopulate();
+                        await sio.to(job.company && job.company.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
+                    })
+                };
+
                 return res.json({'status': Status.Success, 'message': 'Job updated successfully.'})
             } catch (err) {
                 return res.json({'status': Status.Error, 'message': err.message});
