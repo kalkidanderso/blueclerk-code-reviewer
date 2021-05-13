@@ -521,6 +521,15 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/createSubJob',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Create),
+        validate(Validations.createSubJob),
+        jobController.createSubJob
+    )
+
+    router.post(
         '/getJobs',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),

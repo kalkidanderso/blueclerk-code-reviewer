@@ -132,6 +132,8 @@ export const Validations = {
   //Job
   createJob: [check('scheduleDate').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric()],
 
+  createSubJob: [check('parentJobId').exists(), check('employeeType').exists(), check('employeeType').isNumeric()],
+
   searchJob: [check('pageSize').isNumeric(), check('page').isNumeric()],
 
   generalJob: [check('jobId').exists()],
