@@ -78,7 +78,7 @@ export const createJob = (req: Request, res: Response) => {
         const jobId = response[0]
         const serviceTicket = response[1]
 
-        await _createJob(req, res, jobId, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob) => {
+        await _createJob(req, res, undefined, jobId, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob) => {
             if(err != null){
                 return res.json({'status': Status.Error, 'message': err})
             }
@@ -96,7 +96,45 @@ export const createJob = (req: Request, res: Response) => {
 
 }
 
-const _createJob = async (req: Request, res: Response, jobId: string, serviceTicket: IServiceTicket, next: (req: Request, res: Response, err: any, job: IJob) => void) => {
+/**
+ * For Vendor to be able to create sub job for its Sub Vendor
+ */
+export const createSubJob = async (req: Request, res: Response) => {
+    const params = req.body;
+    const companyId = req.companyId;
+
+    if (params.employeeType == 1) {
+        if (!params.contractorId) {
+            return res.json({ 'status': Status.Error, 'message': 'Contractor Id must be specified when employeeType is contractor' });
+        }
+    } else if (params.employeeType == 0) {
+        if (!params.technicianId) {
+            return res.json({ 'status': Status.Error, 'message': 'technicianId Id must be specified when employeeType is employee' });
+        }
+    }
+
+    // Search and check if Parent Job existed
+    const parentJob: IJob = await Job.findOne({ _id: params.parentJobId, contractor: companyId, status: JobStatus.PENDING });
+    if (!parentJob) {
+        return res.json({ 'status': Status.Error, 'message': 'Parent Job is not found!' });
+    }
+
+    // Count the existing sub job for the same parent job
+    const jobCount: number = await Job.count({ parentJob: params.parentJobId });
+    // Rename the job and the unique count on the end
+    const jobId = `${parentJob.jobId} - ${jobCount + 1}`;
+
+    const serviceTicket = await ServiceTicket.findById(parentJob.ticket);
+    await _createJob(req, res, parentJob, jobId, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob) => {
+        if (err) {
+            return res.json({ 'status': Status.Error, 'message': err });
+        }
+
+        return res.json({ 'status': Status.Success, 'message': 'Job created successfully.' });
+    })
+}
+
+const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: string, serviceTicket: IServiceTicket, next: (req: Request, res: Response, err: any, job: IJob) => void) => {
 
     const params = req.body
 
@@ -140,17 +178,18 @@ const _createJob = async (req: Request, res: Response, jobId: string, serviceTic
         });
     }
     const job = new Job({
-        scheduleDate: params.scheduleDate,
+        parentJob: parentJob && parentJob._id,
+        scheduleDate: params.scheduleDate || parentJob && parentJob.scheduleDate,
         jobId: jobId,
-        ticket: params.ticketId,
+        ticket: params.ticketId || parentJob && parentJob.ticket,
         technician: technicianId,
         contractor: params.contractorId,
-        customer: params.customerId,
-        jobLocation: params.jobLocationId,
-        jobSite: params.jobSiteId,
-        type: params.jobTypeId,
+        customer: params.customerId || parentJob && parentJob.customer,
+        jobLocation: params.jobLocationId || parentJob && parentJob.jobLocation,
+        jobSite: params.jobSiteId || parentJob && parentJob.jobSite,
+        type: params.jobTypeId || parentJob && parentJob.type,
         company: companyId,
-        description: params.description,
+        description: params.description || parentJob && parentJob.description,
         createdAt: Date.now(),
         createdBy: user._id,
         track: track,
@@ -195,7 +234,6 @@ const _createJob = async (req: Request, res: Response, jobId: string, serviceTic
 const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (req: Request, res: Response, job: IJob) => void) => {
     const params = req.body
     const company = <ICompany>req.company
-
 
     Job.findById(jobCreated._id)
         .populate({
@@ -817,13 +855,39 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             throw new Error("Invalid job id")
         }
 
-        const itemPromise = Item.findOne({jobType: job.type})
+        const itemPromise = Item.findOne({ jobType: job.type })
+        let linkedJobPromise;
+        if (job.parentJob) {
+            // linkedJob = parent job
+            linkedJobPromise = Job.findById(job.parentJob)
+        } else {
+            // linkedJob = sub job
+            linkedJobPromise = Job.findOne({ parentJob: job._id });
+        }
 
-        return Promise.all([job, itemPromise])
+        return Promise.all([job, itemPromise, linkedJobPromise])
     })
     .then(async (result: any) => {
         const job = result[0]
         const item = result[1]
+        const linkedJob = result[2]
+        if (linkedJob) {
+            await linkedJob
+                .populate({
+                    path: 'customer',
+                    select: 'profile.displayName'
+                })
+                .populate({
+                    path: 'technician',
+                    select: 'profile.displayName'
+                })
+                .populate({
+                    path: 'ticket',
+                    select: 'customer',
+                    populate: { path: 'customer', select: 'profile.displayName' }
+                })
+                .execPopulate();
+        }
 
         let timeSpent: number = 0
         let newcharges:  number = 0
@@ -851,6 +915,8 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
 
         let data: any = {}
         let track = job.track ? job.track : [];
+        let dataLinked: any = {};
+        let trackLinked = linkedJob && linkedJob.track || [];
         let action = '';
         if (params.status && params.status != job.status) {
             if(params.status == JobStatus.PENDING) {
@@ -882,6 +948,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             userComment = job.comment ? job.comment : 'N/A';
         }
         data = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime}
+        dataLinked = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime}
         if(params.jobLocationId) {
             data.jobLocation = params.jobLocationId
         }
@@ -901,19 +968,37 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             note: params.note,
             date: new Date()
         })
+        trackLinked.push({
+            user: user._id,
+            action,
+            note: params.note,
+            date: new Date()
+        })
         data.track = track;
+        dataLinked.track = trackLinked;
             try {
                 await job.updateOne(data);
+                if (linkedJob) {
+                    await linkedJob.updateOne(dataLinked);
+                }
 
                 let customerName = job.customer ?
                     job.customer.profile.displayName :
                     (job.ticket ? (job.ticket.customer ? job.ticket.customer.profile.displayName : null) : null);
                 let technicianName = job.technician ? job.technician.profile.displayName : null;
+                let technicianNameLinkedJob = linkedJob && linkedJob.technician ? linkedJob.technician.profile.displayName : null;
                 let date = job.scheduleDate;
                 if (job.contractor) {
                     await createJobReport(job._id, job.company,customerName, technicianName, date, job.contractor);
                 } else {
                     await createJobReport(job._id,job.company, customerName, technicianName, date, companyId);
+                }
+                if (linkedJob) {
+                    if (linkedJob.contractor) {
+                        await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, linkedJob.contractor);
+                    } else {
+                        await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, companyId);
+                    }
                 }
 
                 // Send notification when a job is RESCHEDULED
@@ -960,7 +1045,7 @@ export const startJob = (req: Request, res: Response) => {
 
     Job.findOne(
         { _id: params.jobId, $or:[{ contractor: companyId }, { company: companyId } ] },
-        (err: any, job: IJob)=>{
+        async (err: any, job: IJob)=>{
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -977,12 +1062,28 @@ export const startJob = (req: Request, res: Response) => {
             if(job.status == JobStatus.CANCELED) {
                 return res.json({'status': Status.Error, 'message': "You can't start this job, it is already canceled"})
             }
+
+            let linkedJob: IJob;
+            if (job.parentJob) {
+                // linkedJob = parent job
+                linkedJob = await Job.findById(job.parentJob);
+            } else {
+                // linkedJob = sub job
+                linkedJob = await Job.findOne({ parentJob: job._id });
+            }
+
             let track = job.track ? job.track : [];
+            let trackLinkedJob = linkedJob && linkedJob.track || [];
             let action = '';
             if (job.status != JobStatus.STARTED) {
                 action = '|Started The Job|';
             }
             track.push({
+                user: user._id,
+                action,
+                date: new Date()
+            });
+            trackLinkedJob.push({
                 user: user._id,
                 action,
                 date: new Date()
@@ -994,7 +1095,19 @@ export const startJob = (req: Request, res: Response) => {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
 
-                    return res.json({'status': Status.Success, 'message': 'Job started successfully.'})
+                    if (!linkedJob) {
+                        return res.json({'status': Status.Success, 'message': 'Job started successfully.'})
+                    }
+
+                    linkedJob.updateOne(
+                        { status: JobStatus.STARTED, track: track, startTime: Date.now() },
+                        (err: any, raw: any) => {
+                            if (err) {
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            }
+
+                            return res.json({ 'status': Status.Success, 'message': 'Job started successfully.' })
+                        });
                 }
             )
         }
@@ -1013,7 +1126,7 @@ export const editJob = (req: Request, res: Response) => {
 
     Job.findOne(
         { _id: params.jobId, $or:[{ contractor: companyId }, { company: companyId } ] },
-        (err: any, job: IJob)=>{
+        async (err: any, job: IJob)=>{
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -1023,7 +1136,17 @@ export const editJob = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': "Invalid job id"})
             }
 
+            let linkedJob: IJob;
+            if (job.parentJob) {
+                // linkedJob = parent job
+                linkedJob = await Job.findById(job.parentJob);
+            } else {
+                // linkedJob = sub job
+                linkedJob = await Job.findOne({ parentJob: job._id });
+            }
+
             let track = job.track ? job.track : [];
+            let trackLinkedJob = linkedJob && linkedJob.track || [];
             let action = '';
             if (params.technicianId) {
                 job.technician = params.technicianId
@@ -1033,6 +1156,7 @@ export const editJob = (req: Request, res: Response) => {
                 }
             }
             job.scheduleDate = params.scheduleDate;
+            if (linkedJob) { linkedJob.scheduleDate = params.scheduleDate; }
             let newStartTime: any = null
             let newEndTime: any = null
             let date;
@@ -1043,6 +1167,7 @@ export const editJob = (req: Request, res: Response) => {
                     action +='|Updated ScheduledStartTime|';
                 }
                 job.scheduledStartTime = newStartTime
+                if (linkedJob) { linkedJob.scheduledStartTime = newStartTime; }
 
             }
             if(params.scheduledEndTime){
@@ -1052,27 +1177,32 @@ export const editJob = (req: Request, res: Response) => {
                     action +='|Updated ScheduledEndTime|';
                 }
                 job.scheduledEndTime = newEndTime
+                if (linkedJob) { linkedJob.scheduledEndTime = newEndTime; }
             }
             if(params.equipmentId != undefined && params.equipmentId !== '""') {
                 if (params.equipmentId != job.equipmentId) {
                     action +='|Updated EquipmentId|';
                 }
                 job.equipmentId = params.equipmentId
+                if (linkedJob) { linkedJob.equipmentId = params.equipmentId; }
             }
             if(params.jobLocationId) {
                 if (params.jobLocationId != job.jobLocation) {
                     action +='|Updated JobLocationId|';
                 }
                 job.jobLocation = params.jobLocationId
+                if (linkedJob) { linkedJob.jobLocation = params.jobLocationId; }
             }
             if(params.jobSiteId) {
                 if (params.jobSiteId != job.jobSite) {
                     action +='|Updated JobSiteId|';
                 }
                 job.jobSite = params.jobSiteId
+                if (linkedJob) { linkedJob.jobSite = params.jobSiteId; }
             }
             if (job.status == JobStatus.RESCHEDULED) {
                 job.status = JobStatus.PENDING;
+                if (linkedJob) { linkedJob.status = JobStatus.PENDING; }
                 action += '|Job rescheduled|';
             }
             track.push({
@@ -1080,7 +1210,13 @@ export const editJob = (req: Request, res: Response) => {
                 action,
                 date: new Date()
             });
+            trackLinkedJob.push({
+                user: user._id,
+                action,
+                date: new Date()
+            });
             job.track = track;
+            if (linkedJob) { linkedJob.track = trackLinkedJob; }
             if (job.ticket) {
                 ServiceTicket.findOne({_id: new ObjectId(job.ticket)}).then((t) => {
                     if (t) {
@@ -1106,7 +1242,17 @@ export const editJob = (req: Request, res: Response) => {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
 
-                    return res.json({'status': Status.Success, 'message': 'Job edited successfully.'})
+                    if (!linkedJob) {
+                        return res.json({'status': Status.Success, 'message': 'Job edited successfully.'})
+                    }
+
+                    linkedJob.updateOne(linkedJob, (err: any, raw: any) => {
+                        if (err) {
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                        }
+
+                        return res.json({'status': Status.Success, 'message': 'Job edited successfully.'})
+                    });
                 }
             )
 
