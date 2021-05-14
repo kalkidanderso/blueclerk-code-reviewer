@@ -199,14 +199,7 @@ const _updateItem = (req: Request, res: Response, jobType: IJobType, jobTitle: s
         }
 
         if(item != undefined && item != null) {
-            let name = jobTitle
-            if(item.isFixed) {
-                name = jobTitle + ' - fixed'
-            }else{
-                name = jobTitle + ' - hourly'
-            }
-
-            item.updateOne({name: name}, (err: any, raw: any) => {
+            item.updateOne({name: jobTitle}, (err: any, raw: any) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
@@ -269,13 +262,6 @@ const _updateItemStatus = (req: Request, res: Response, jobType: IJobType, itemS
         }
 
         if(item != undefined && item != null) {
-            let name = jobType.title
-            if(item.isFixed) {
-                name = name + ' - fixed'
-            }else{
-                name = name + ' - hourly'
-            }
-
             item.updateOne({isActive: itemStatus}, (err: any, raw: any) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -320,14 +306,7 @@ export const updateItem = (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': 'Invalid item id'})
             }
 
-            let name
-            if(params.isFixed) {
-                name = item.name + ' - hourly'
-            }else{
-                name = item.name + ' - fixed'
-            }
-
-            item.updateOne({name: name, charges: params.charges, tax: params.tax, isFixed: params.isFixed},
+            item.updateOne({charges: params.charges, tax: params.tax, isFixed: params.isFixed},
             (err: any, raw: any) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
