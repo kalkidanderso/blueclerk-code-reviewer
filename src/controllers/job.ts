@@ -663,11 +663,11 @@ export const getJobs = (req: Request, res: Response) => {
         })
         .populate({
             path: 'jobLocation',
-            select: 'name location'
+            select: 'name location address'
         })
         .populate({
             path: 'jobSite',
-            select: 'name location'
+            select: 'name location address'
         })
         .exec((err: any, jobs: IJob[])=>{
 
@@ -1115,13 +1115,26 @@ export const startJob = (req: Request, res: Response) => {
 }
 
 
-export const editJob = (req: Request, res: Response) => {
+export const editJob = async (req: Request, res: Response) => {
 
     const params = req.body
     var companyId = req.companyId;
     const user = <IUser>req.user;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
+    }
+
+    // If company update assignee of the job
+    if (params.employeeType != undefined && (params.contractorId || params.technicianId)) {
+        if (params.employeeType == 1) {
+            if (!params.contractorId) {
+                return res.json({ 'status': Status.Error, 'message': 'Contractor Id must be specified when employeeType is contractor' });
+            }
+        } else if (params.employeeType == 0) {
+            if (!params.technicianId) {
+                return res.json({ 'status': Status.Error, 'message': 'technicianId Id must be specified when employeeType is employee' });
+            }
+        }
     }
 
     Job.findOne(
@@ -1137,9 +1150,11 @@ export const editJob = (req: Request, res: Response) => {
             }
 
             let linkedJob: IJob;
+            let isParentJob = true;
             if (job.parentJob) {
                 // linkedJob = parent job
                 linkedJob = await Job.findById(job.parentJob);
+                isParentJob = false;
             } else {
                 // linkedJob = sub job
                 linkedJob = await Job.findOne({ parentJob: job._id });
@@ -1147,13 +1162,32 @@ export const editJob = (req: Request, res: Response) => {
 
             let track = job.track ? job.track : [];
             let trackLinkedJob = linkedJob && linkedJob.track || [];
+            const oldContractor = job.contractor;
             let action = '';
-            if (params.technicianId) {
-                job.technician = params.technicianId
-            } else {
-                if (params.contractorId) {
-                    job.contractor = params.contractorId;
+
+            // If company update assignee of the job
+            if (params.employeeType != undefined) {
+                if (job.status != JobStatus.PENDING) {
+                    return res.json({ 'status': Status.Error, 'message': 'Cannot update assignee for a non PENDING job' });
                 }
+
+                const contractor = await Company.findOne({ _id: params.contractorId });
+                const technicianId: any = await User.findOne({ _id: params.technicianId, company: companyId });
+
+                if (!contractor && !technicianId) {
+                    return res.json({ 'status': Status.Error, 'message': 'Contractor/Technician not found!' });
+                }
+
+                // Manage job's contractor and technician
+                job.employeeType = params.employeeType;
+                if (params.technicianId) {
+                    job.contractor = null;
+                    job.technician = params.technicianId;
+                } else if (params.contractorId) {
+                    job.contractor = params.contractorId;
+                    job.technician = contractor.admin;
+                }
+                action += '|Updated Assignee|';
             }
             job.scheduleDate = params.scheduleDate;
             if (linkedJob) { linkedJob.scheduleDate = params.scheduleDate; }
@@ -1210,11 +1244,38 @@ export const editJob = (req: Request, res: Response) => {
                 action,
                 date: new Date()
             });
-            trackLinkedJob.push({
-                user: user._id,
-                action,
-                date: new Date()
-            });
+            // Manage linked job status & track
+            if (isParentJob && params.employeeType != undefined && (oldContractor != params.contractorId)) {
+                //  Mark sub job to be CLOSED as the contractor is updated
+                if (linkedJob) {
+                    linkedJob.status = JobStatus.CANCELED;
+                    trackLinkedJob.push({
+                        user: user._id,
+                        action: '|Canceling the job|',
+                        date: new Date()
+                    });
+                }
+            } else if (!isParentJob && params.employeeType != undefined && (oldContractor != params.contractorId)) {
+                /**
+                 * This is sub job update that update its assignee,
+                 * hence will not update the parent job to CLOSED,
+                 * and not update the parent job's track
+                 */
+                action = action.replace('|Updated Assignee|', '');
+                if (action != '') {
+                    trackLinkedJob.push({
+                        user: user._id,
+                        action,
+                        date: new Date()
+                    });
+                }
+            } else {
+                trackLinkedJob.push({
+                    user: user._id,
+                    action,
+                    date: new Date()
+                });
+            }
             job.track = track;
             if (linkedJob) { linkedJob.track = trackLinkedJob; }
             if (job.ticket) {
@@ -1296,11 +1357,11 @@ export const getJobDetails = (req: Request, res: Response) => {
         })
         .populate({
             path: 'jobLocation',
-            select: 'name location'
+            select: 'name location address'
         })
         .populate({
             path: 'jobSite',
-            select: 'name location'
+            select: 'name location address'
         })
         .then(async (job: any)=>{
 
