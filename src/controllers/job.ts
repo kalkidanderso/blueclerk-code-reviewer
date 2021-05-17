@@ -663,11 +663,11 @@ export const getJobs = (req: Request, res: Response) => {
         })
         .populate({
             path: 'jobLocation',
-            select: 'name location'
+            select: 'name location address'
         })
         .populate({
             path: 'jobSite',
-            select: 'name location'
+            select: 'name location address'
         })
         .exec((err: any, jobs: IJob[])=>{
 
@@ -1296,11 +1296,11 @@ export const getJobDetails = (req: Request, res: Response) => {
         })
         .populate({
             path: 'jobLocation',
-            select: 'name location'
+            select: 'name location address'
         })
         .populate({
             path: 'jobSite',
-            select: 'name location'
+            select: 'name location address'
         })
         .then(async (job: any)=>{
 
