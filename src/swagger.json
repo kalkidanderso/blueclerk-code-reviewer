@@ -6489,6 +6489,12 @@
             "description": "Id of job to edit"
           },
           {
+            "name": "employeeType",
+            "in": "formData",
+            "type": "number",
+            "description": "0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor"
+          },
+          {
             "name": "technicianId",
             "in": "formData",
             "required": false,
