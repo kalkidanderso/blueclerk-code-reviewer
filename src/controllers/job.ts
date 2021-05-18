@@ -1153,11 +1153,11 @@ export const editJob = async (req: Request, res: Response) => {
             let isParentJob = true;
             if (job.parentJob) {
                 // linkedJob = parent job
-                linkedJob = await Job.findById(job.parentJob);
+                linkedJob = await Job.findOne({ _id: job.parentJob, status: {$nin:[JobStatus.CANCELED]}});
                 isParentJob = false;
             } else {
                 // linkedJob = sub job
-                linkedJob = await Job.findOne({ parentJob: job._id });
+                linkedJob = await Job.findOne({ parentJob: job._id, status: {$nin:[JobStatus.CANCELED]}});
             }
 
             let track = job.track ? job.track : [];
@@ -1190,7 +1190,11 @@ export const editJob = async (req: Request, res: Response) => {
                 action += '|Updated Assignee|';
             }
             job.scheduleDate = params.scheduleDate;
-            if (linkedJob) { linkedJob.scheduleDate = params.scheduleDate; }
+            job.description = params.description;
+            if (linkedJob) {
+                linkedJob.scheduleDate = params.scheduleDate;
+                linkedJob.description = params.description;
+            }
             let newStartTime: any = null
             let newEndTime: any = null
             let date;
@@ -1233,6 +1237,13 @@ export const editJob = async (req: Request, res: Response) => {
                 }
                 job.jobSite = params.jobSiteId
                 if (linkedJob) { linkedJob.jobSite = params.jobSiteId; }
+            }
+            if (params.jobTypeId) {
+                if (params.jobTypeId != job.type) {
+                    action += '|Updated JobTypeId|';
+                }
+                job.type = params.jobTypeId;
+                if (linkedJob) { linkedJob.type = params.jobTypeId; }
             }
             if (job.status == JobStatus.RESCHEDULED) {
                 job.status = JobStatus.PENDING;
@@ -1338,6 +1349,10 @@ export const getJobDetails = (req: Request, res: Response) => {
         .populate({
             path: 'technician',
             select: 'profile.displayName'
+        })
+        .populate({
+            path: 'contractor',
+            select: 'info.companyName info.companyEmail type'
         })
         .populate({
             path: 'customer',

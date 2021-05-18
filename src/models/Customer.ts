@@ -16,7 +16,6 @@ export interface ICustomer extends IUser {
     balance: number,
     vendorId?: string,
     contacts: [Schema.Types.ObjectId],
-    phone: string,
     contactEmail: string
 
 }

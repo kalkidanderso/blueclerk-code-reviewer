@@ -26,12 +26,14 @@ export const createCustomer = (req: Request, res: Response) => {
         },
         address: {
             street: params.street,
+            unit: params.unit,
             city: params.city,
             state: params.state,
             zipCode: params.zipCode,
         },
         contact: {
             phone: params.phone,
+            fax: params.fax,
         },
         company: companyId,
         permissions: {
@@ -164,9 +166,12 @@ export const updateCustomer = (req: Request, res: Response) => {
             'profile.lastName': params.name,
             'profile.displayName': params.name,
             'address.street': params.street,
+            'address.unit': params.unit,
             'address.city': params.city,
             'address.state': params.state,
             'address.zipCode': params.zipCode,
+            'contact.phone': params.phone,
+            'contact.fax': params.fax,
             contactName: params.contactName,
             vendorId: params.vendorId,
             contacts: params.contacts
