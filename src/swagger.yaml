@@ -3754,6 +3754,10 @@ paths:
           type: string
           description: >-
             Id of job to edit
+        - name: description
+          in: formData
+          type: string
+          description: Description of the job
         - name: employeeType
           in: formData
           type: number
@@ -3791,6 +3795,10 @@ paths:
           in: formData
           type: string
           description: 'Id of job site'
+        - name: jobTypeId
+          in: formData
+          type: string
+          description: Id of a job type selected from the list received by /getJobTypes api
         # - name: isFixed
         #   in: formData
         #   required: true
