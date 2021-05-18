@@ -6,6 +6,7 @@ export interface IJob extends Document {
     scheduledStartTime: Date
     scheduledEndTime: Date
     jobId: string
+    parentJob: Schema.Types.ObjectId | IJob
     ticket: Schema.Types.ObjectId | any
     technician: Schema.Types.ObjectId
     contractor: Schema.Types.ObjectId
@@ -55,6 +56,10 @@ const JobSchema = new Schema({
         required: false
     },
     jobId: String,
+    parentJob: {
+        type: Schema.Types.ObjectId,
+        ref: 'Job'
+    },
     ticket: {
         type: Schema.Types.ObjectId,
         ref: 'ServiceTicket',

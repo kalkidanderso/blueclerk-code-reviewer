@@ -2577,6 +2577,11 @@
             "type": "string"
           },
           {
+            "name": "unit",
+            "in": "formData",
+            "type": "string"
+          },
+          {
             "name": "city",
             "in": "formData",
             "type": "string"
@@ -2608,6 +2613,11 @@
           },
           {
             "name": "phone",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "fax",
             "in": "formData",
             "type": "string"
           },
@@ -2670,6 +2680,11 @@
             "type": "string"
           },
           {
+            "name": "unit",
+            "in": "formData",
+            "type": "string"
+          },
+          {
             "name": "city",
             "in": "formData",
             "type": "string"
@@ -2701,6 +2716,11 @@
           },
           {
             "name": "phone",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "fax",
             "in": "formData",
             "type": "string"
           },
@@ -5955,6 +5975,92 @@
         ]
       }
     },
+    "/createSubJob": {
+      "post": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "To create a sub job",
+        "description": "For Vendor to be able to create a job to their sub vendor, based on job that they assigned to",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "parentJobId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of Parent Job"
+          },
+          {
+            "name": "scheduledStartTime",
+            "in": "formData",
+            "type": "string",
+            "description": "scheduled start time of job. e.g. 13:05:00 (will use parent job's scheduledStartTime when not provided)"
+          },
+          {
+            "name": "scheduledEndTime",
+            "in": "formData",
+            "type": "string",
+            "description": "scheduled end time of job. e.g. 15:05:00 (will use parent job's scheduledEndTime when not provided)"
+          },
+          {
+            "name": "equipmentId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of a equipment for single scan (will use parent job's equipmentId when not provided)"
+          },
+          {
+            "name": "technicianId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of a technician selected from the list received by /getEmployeesForJob api"
+          },
+          {
+            "name": "contractorId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of a contractor selected from the list received by /getCompanyContracts api"
+          },
+          {
+            "name": "description",
+            "in": "formData",
+            "type": "string",
+            "description": "Description of the job (will use parent job's description when not provided)"
+          },
+          {
+            "name": "employeeType",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor"
+          },
+          {
+            "name": "companyId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of company if contractor is hitting for other company"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getJobs": {
       "post": {
         "tags": [
@@ -6403,6 +6509,18 @@
             "description": "Id of job to edit"
           },
           {
+            "name": "description",
+            "in": "formData",
+            "type": "string",
+            "description": "Description of the job"
+          },
+          {
+            "name": "employeeType",
+            "in": "formData",
+            "type": "number",
+            "description": "0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor"
+          },
+          {
             "name": "technicianId",
             "in": "formData",
             "required": false,
@@ -6448,6 +6566,12 @@
             "in": "formData",
             "type": "string",
             "description": "Id of job site"
+          },
+          {
+            "name": "jobTypeId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of a job type selected from the list received by /getJobTypes api"
           },
           {
             "name": "companyId",
