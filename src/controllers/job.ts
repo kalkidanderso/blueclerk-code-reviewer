@@ -1340,6 +1340,10 @@ export const getJobDetails = (req: Request, res: Response) => {
             select: 'profile.displayName'
         })
         .populate({
+            path: 'contractor',
+            select: 'info.companyName info.companyEmail type'
+        })
+        .populate({
             path: 'customer',
             populate: 'contacts'
         })

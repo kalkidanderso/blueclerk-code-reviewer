@@ -2577,6 +2577,11 @@
             "type": "string"
           },
           {
+            "name": "unit",
+            "in": "formData",
+            "type": "string"
+          },
+          {
             "name": "city",
             "in": "formData",
             "type": "string"
@@ -2608,6 +2613,11 @@
           },
           {
             "name": "phone",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "fax",
             "in": "formData",
             "type": "string"
           },
@@ -2670,6 +2680,11 @@
             "type": "string"
           },
           {
+            "name": "unit",
+            "in": "formData",
+            "type": "string"
+          },
+          {
             "name": "city",
             "in": "formData",
             "type": "string"
@@ -2701,6 +2716,11 @@
           },
           {
             "name": "phone",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "fax",
             "in": "formData",
             "type": "string"
           },

@@ -1390,6 +1390,9 @@ paths:
         - name: street
           in: formData
           type: string
+        - name: unit
+          in: formData
+          type: string
         - name: city
           in: formData
           type: string
@@ -1409,6 +1412,9 @@ paths:
           in: formData
           type: string
         - name: phone
+          in: formData
+          type: string
+        - name: fax
           in: formData
           type: string
       responses:
@@ -1444,6 +1450,9 @@ paths:
         - name: street
           in: formData
           type: string
+        - name: unit
+          in: formData
+          type: string
         - name: city
           in: formData
           type: string
@@ -1463,6 +1472,12 @@ paths:
           in: formData
           type: string
         - name: phone
+          in: formData
+          type: string
+        - name: fax
+          in: formData
+          type: string
+        - name: vendorId
           in: formData
           type: string
       responses:
