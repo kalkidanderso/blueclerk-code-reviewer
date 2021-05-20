@@ -44,6 +44,10 @@
       "description": "For equipments of a customer"
     },
     {
+      "name": "Contact",
+      "description": "For contact of customer or job location"
+    },
+    {
       "name": "Location Tags",
       "description": "For location tags"
     },
@@ -81,6 +85,10 @@
     {
       "name": "Job Charges",
       "description": "For job charges"
+    },
+    {
+      "name": "Job Site",
+      "description": "For adding, updating and fetching Job Site detail"
     },
     {
       "name": "Service Ticket",
@@ -154,8 +162,8 @@
       "description": "For Quickbooks customers integration"
     },
     {
-      "name": "Job Site",
-      "description": "For adding, updating and fetching Job Site detail"
+      "name": "Integration",
+      "description": "For creating service ticket via web"
     }
   ],
   "paths": {
@@ -5290,8 +5298,9 @@
             "required": true,
             "type": "string",
             "enum": ["blueclerk", "web"],
-            "description": "Id of a customer selected from the list received by /getCustomers api (Required for platform users)"
-          },{
+            "description": "Source from BlueClerk app or WP plugin"
+          },
+          {
             "name": "customerId",
             "in": "formData",
             "required": false,
@@ -9091,52 +9100,190 @@
           }
         ]
       }
-  },
-  "/getCompanyProfile/{companyId}": {
-    "get": {
-      "tags":["Users"],
-      "summary": "Retrieve a company profile",
-      "description": "Returns a company profile for the specified company id",
-      "produces":["application/json"],
-      "parameters": [
-        {
-          "name": "companyId",
-          "in": "path",
-          "description": "The id of the company to retrieve from the database",
-          "required": true,
-          "type": "string"
-        }
-      ],
-      "responses": {
-        "200": {
-          "description": "Success",
-          "schema": {
-            "$ref": "#/definitions/company"
+    },
+    "/getCompanyProfile/{companyId}": {
+      "get": {
+        "tags":["Users"],
+        "summary": "Retrieve a company profile",
+        "description": "Returns a company profile for the specified company id",
+        "produces":["application/json"],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "description": "The id of the company to retrieve from the database",
+            "required": true,
+            "type": "string"
           }
-        },
-        "404": {
-          "description": "Not found",
-          "schema": {
-            "type":"object",
-            "properties": {
-              "status": {
-                "type":"string"
-              },
-              "message": {
-                "type": "string"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/company"
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "schema": {
+              "type":"object",
+              "properties": {
+                "status": {
+                  "type":"string"
+                },
+                "message": {
+                  "type": "string"
+                }
               }
             }
           }
-        }
-      },
-      "security": [
-        {
-          "Bearer": []
-        }
-      ]
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createIntegrationServiceTicket": {
+      "post": {
+        "tags": [
+          "Integration"
+        ],
+        "summary": "Create service ticket via web",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "source",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "enum": ["web"],
+            "description": "The source of Service Ticket (this one from web)"
+          },
+          {
+            "name": "name",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Name of the customer"
+          },
+          {
+            "name": "email",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Email of the customer"
+          },
+          {
+            "name": "street",
+            "in": "formData",
+            "type": "string",
+            "description": "Street address of the customer"
+          },
+          {
+            "name": "unit",
+            "in": "formData",
+            "type": "string",
+            "description": "Unit of the customer"
+          },
+          {
+            "name": "city",
+            "in": "formData",
+            "type": "string",
+            "description": "City of the customer"
+          },
+          {
+            "name": "state",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "State of the customer"
+          },
+          {
+            "name": "zipCode",
+            "in": "formData",
+            "type": "string",
+            "description": "Zip Code of the customer"
+          },
+          {
+            "name": "phone",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Phone of the customer"
+          },
+          {
+            "name": "fax",
+            "in": "formData",
+            "type": "string",
+            "description": "Fax of the customer"
+          },
+          {
+            "name": "warranty",
+            "in": "formData",
+            "type": "boolean",
+            "description": "Service ticket warranty"
+          },
+          {
+            "name": "itemId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of item selected from the list received by /getItems api"
+          },
+          {
+            "name": "workToBeDone",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "What work to be done"
+          },
+          {
+            "name": "preferredDateTime",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Preferred date/time of work"
+          },
+          {
+            "name": "note",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "image",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "companyId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of company if contractor is hitting for other company"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/AuthAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
     }
-  }
-},
+  },
   "securityDefinitions": {
     "Bearer": {
       "type": "apiKey",
