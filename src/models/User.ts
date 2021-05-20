@@ -26,7 +26,10 @@ export interface IUser extends Document {
         state: string
         zipCode: string
     }
-    location: 'Point'
+    location: {
+        type?: 'Point',
+        coordinates: number[]
+    },
     contact: {
         phone: string
         fax: string

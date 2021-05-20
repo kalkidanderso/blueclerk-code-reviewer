@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Messages, Status } from '../common/constants';
+import { Messages, NotificationTypes, SocketEvents, Status } from '../common/constants';
 
 import { IUser } from '../models/User';
 import { Notification, INotification, INotificationQuery } from '../models/Notification';
@@ -31,6 +31,30 @@ const _getNotificationQuery = (
     }
 
     return query;
+
+}
+
+/**
+ * Save notification to database,
+ * and send through SocketIO to the company
+ */
+export const _handleNotification = async ({ sio, companyId, notificationType, messageTitle, messageBody, metadataId }: { sio: any, companyId: string, notificationType: NotificationTypes, messageTitle: string, messageBody: string, metadataId: string }) => {
+
+    // Construct notification entry to be saved
+    const notification: INotificationServiceTicket = new NotificationServiceTicket({
+        company: companyId,
+        notificationType,
+        message: {
+            title: messageTitle,
+            body: messageBody
+        },
+        metadata: metadataId
+    });
+
+    // Save the notification with Service Ticket as the metadata
+    await notification.save();
+    await notification.populate('metadata').execPopulate();
+    await sio.to(companyId && companyId.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
 
 }
 

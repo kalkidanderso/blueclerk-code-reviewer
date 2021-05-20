@@ -102,6 +102,83 @@ export const createCustomer = (req: Request, res: Response) => {
 
 }
 
+/**
+ * Reusable create Customer function to be used anywhere
+ */
+export const _createCustomer = async (req: Request, res: Response, next: (err: any, customer: ICustomer) => void) => {
+
+    const params = req.body;
+    const companyId = req.otherCompanyId || req.companyId;
+    let customer: IUser;
+
+    // Check existing customer from the Company's customers
+    const companyCustomers: ICompanyCustomer[] = await CompanyCustomer.find({ company: companyId });
+    const customerIds = companyCustomers.map(obj => obj.customer) || [];
+    const users: IUser[] = await User.find({ _id: { $in: customerIds } });
+    const existingCustomer = users.find((user: ICustomer) => user.info.email === params.email);
+    if (existingCustomer) {
+        // Existing customer found, return it already
+        customer = await User.findById(existingCustomer._id);
+        return next(null, <ICustomer>customer);
+    }
+
+    try {
+        // No existing customer found, create new customer
+        customer = new Customer({
+            info: {
+                email: params.email
+            },
+            profile: {
+                firstName: params.name,
+                lastName: params.name,
+                displayName: params.name,
+                imageUrl: ''
+            },
+            address: {
+                street: params.street,
+                unit: params.unit,
+                city: params.city,
+                state: params.state,
+                zipCode: params.zipCode
+            },
+            location: [],
+            contact: {
+                phone: params.phone,
+                fax: params.fax
+            },
+            company: companyId,
+            permissions: {
+                role: Role.CUSTOMER,
+                extra: []
+            },
+            contactName: params.contactName,
+            vendorId: params.vendorId,
+            contacts: params.contacts
+        });
+        if (params.latitude && params.longitude) {
+            customer.location = {
+                coordinates: [ params.longitude, params.latitude ]
+            }
+        }
+
+        await customer.save();
+
+        // Save the company customer as well
+        const companyCustomer = new CompanyCustomer({
+            company: companyId,
+            customer: customer._id,
+            createdAt: Date.now()
+        })
+        await companyCustomer.save();
+
+    } catch (error) {
+        return next(error, null);
+    }
+
+    return next(null, <ICustomer>customer);
+
+}
+
 export const getCustomers = (req: Request, res: Response) => {
 
     const params = req.body

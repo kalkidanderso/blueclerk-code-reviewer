@@ -271,7 +271,10 @@ export const Validations = {
   // Notification
   getNotifications: [check('isRead').optional().isIn(['ALL', true, false, 1, 0]), check('isDismissed').optional().isIn(['ALL', true, false, 1, 0])],
 
-  updateNotification: [check('isRead').optional().isBoolean(), check('isDismissed').optional().isBoolean()]
+  updateNotification: [check('isRead').optional().isBoolean(), check('isDismissed').optional().isBoolean()],
+
+  // Integration
+  createIntegrationServiceTicket: [check('source').exists(), check('name').exists(), check('email').exists(), check('email').isEmail(), check('state').exists(), check('phone').exists(), check('itemId').exists(), check('workToBeDone').exists(), check('preferredDateTime').exists()]
 
 }
 
