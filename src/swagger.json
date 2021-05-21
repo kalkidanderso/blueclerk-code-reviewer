@@ -9238,21 +9238,18 @@
           {
             "name": "itemId",
             "in": "formData",
-            "required": true,
             "type": "string",
             "description": "Id of item selected from the list received by /getItems api"
           },
           {
             "name": "workToBeDone",
             "in": "formData",
-            "required": true,
             "type": "string",
             "description": "What work to be done"
           },
           {
             "name": "preferredDateTime",
             "in": "formData",
-            "required": true,
             "type": "string",
             "description": "Preferred date/time of work"
           },
