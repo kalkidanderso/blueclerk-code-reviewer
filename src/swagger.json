@@ -6891,6 +6891,12 @@
             "description": "Pass purchase order id to create purchase order invoice (optional)"
           },
           {
+            "name": "dueDate",
+            "in": "formData",
+            "type": "string",
+            "description": "Due date of the invoice"
+          },
+          {
             "name": "estimateId",
             "in": "formData",
             "required": false,
@@ -6938,13 +6944,6 @@
             "required": false,
             "type": "number",
             "description": "No of hours spend on that job pass default from finished job if you dont want to change"
-          },
-          {
-            "name": "hourlyRate",
-            "in": "formData",
-            "required": false,
-            "type": "number",
-            "description": "Hourly rate to be charges to customer pass default from finished job if you dont want to change"
           },
           {
             "name": "includePO",
