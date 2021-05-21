@@ -5,7 +5,7 @@ import {ICompanyAdmin} from '../models/CompanyAdmin';
 import {Company, ICompany} from '../models/Company';
 import {IInvoicePrefix, InvoicePrefix} from '../models/InvoicePrefix';
 import {IUser} from '../models/User';
-import {Job} from '../models/Job';
+import {IJob, Job} from '../models/Job';
 import {IPurchaseOrder, PurchaseOrder} from '../models/PurchaseOrder';
 import {Item} from '../models/Item';
 import {Customer, ICustomer} from '../models/Customer';
@@ -265,20 +265,20 @@ export const createInvoice = (req: Request, res: Response) => {
 
     const company = <ICompany>req.company
 
-    if(params.hasOwnProperty('jobId') && (params.jobId != null && params.jobId != '""' )){
+    if (params.jobId) {
 
         Invoice.findOne({ 'job': params.jobId, 'company': req.companyId })
             .then((previousInvoice: any) => {
 
-                if (previousInvoice != undefined || previousInvoice != null) {
+                if (previousInvoice) {
                     throw new Error('Invoice already created for this job')
                 }
 
-                const jobPrmoies = Job.findById(params.jobId)
+                const jobPromise = Job.findById(params.jobId)
                 const POPromise = PurchaseOrder.find({
                     job: params.jobId
                 })
-                return Promise.all([jobPrmoies, POPromise])
+                return Promise.all([jobPromise, POPromise])
 
             })
             .then((result: any) => {
@@ -293,7 +293,7 @@ export const createInvoice = (req: Request, res: Response) => {
                 const purchaseOrders = result[1]
                 const item = result[2]
 
-                if (job == undefined || job == null) {
+                if (!job) {
                     throw new Error('Invalid job id')
                     // return res.json({ 'status': Status.Error, 'message': 'Invalid job id' })
                 }
@@ -337,7 +337,7 @@ export const createInvoice = (req: Request, res: Response) => {
                                 let newBalance = customer.balance + invoice.total
                                 customer.updateOne({balance: newBalance})
                                     .then(() => {
-                                        resolve()
+                                        resolve(invoice)
                                     })
                                     .catch(()=>{
                                         reject()
@@ -348,6 +348,25 @@ export const createInvoice = (req: Request, res: Response) => {
                             reject()
                         })
                 })
+            })
+            .then((invoice: any) => {
+
+                // Mark the job as it has been invoiced
+                return new Promise(async (resolve, reject) => {
+                    Job.findById(invoice.job)
+                        .then((job: IJob) => {
+                            if (!job) {
+                                reject()
+                            }
+
+                            job.invoiceCreated = true;
+                            resolve(job.save());
+                        })
+                        .catch(() => {
+                            reject();
+                        })
+                })
+
             })
             .then(() =>{
                 return res.json({ 'status': Status.Success, 'message': "Job invoice created successfully." })
@@ -690,11 +709,10 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
         currentInvoiceId = company.currentInvoiceId
     }
 
-    let invoiceId = 'Invoice ' + (currentInvoiceId + 1)
-
-    if (company.invoicePrefix != undefined && company.invoicePrefix != null && company.invoicePrefix == '""') {
-        invoiceId = 'Invoice ' + company.invoicePrefix + '-' + (currentInvoiceId + 1)
-    }
+    const invNumber = parseInt(params.invoiceNumber) || company.currentInvoiceId + 1 
+    let invoiceId = company.invoicePrefix
+        ? `Invoice ${company.invoicePrefix}-${invNumber}`
+        : `Invoice ${invNumber}`;
 
     let taxAmount: number = 0;
     let charges: number = 0;
@@ -702,34 +720,34 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
     let invoiceType: number = 0;
     let customer : string
     let jobId : string
-    let hourlyRate: number = 0
+    // let hourlyRate: number = 0
     let timeSpent: number = 0
     let purchaseOrderId: string = null
     let estimateId: string = null
-    let isFixed: boolean = false
+    // let isFixed: boolean = false
     let taxPercentage: number = 0
 
 
-    if(job != null){
+    if (job) {
         charges = job.charges;
         invoiceType = 0
         customer = job.customer
         jobId = job._id
 
-        if (!jobTypeitem.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
-            return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
-        } else if (!jobTypeitem.isFixed) {
-            hourlyRate = params.hourlyRate
-        }
+        // if (!jobTypeitem.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
+        //     return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
+        // } else if (!jobTypeitem.isFixed) {
+        //     hourlyRate = params.hourlyRate
+        // }
 
-        if (!jobTypeitem.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
+        if (!jobTypeitem.isFixed && !params.timeSpent) {
             return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
         } else if (!jobTypeitem.isFixed) {
             timeSpent = params.timeSpent
         }
 
-        if(jobTypeitem.isFixed)
-            isFixed = true
+        // if(jobTypeitem.isFixed)
+        //     isFixed = true
     }
 
     if(purchaseOrder != null){
@@ -816,6 +834,11 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
     if (params.items != undefined) {
         try {
             items = JSON.parse(params.items);
+
+            // To handle any over-stringified strings
+            if (!Array.isArray(items)) {
+                items = JSON.parse(items);
+            }
         } catch (error) {
             return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
         }
@@ -827,7 +850,7 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
 
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
-            if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
+            if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed'))) {
                 return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' })
             }
             let obj: any = {}
@@ -843,6 +866,7 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
 
             obj.quantity = item.quantity
             obj.price = item.price
+            obj.isFixed = item.isFixed
             obj.tax = item.tax
             obj.subTotal = subTotal
 
@@ -857,8 +881,7 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
             total = total + subTotal
         }
 
-    } else if(jobTypeitem != null) {
-
+    } else if (jobTypeitem) {
 
         let obj: any = {}
         let price = parseInt(jobTypeitem.charges)
@@ -873,6 +896,7 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
 
         obj.quantity = job.timeSpent
         obj.price = price
+        obj.isFixed = jobTypeitem.isFixed
         obj.tax = itemTax
         obj.subTotal = subTotal
         obj.item = jobTypeitem._id
@@ -889,6 +913,7 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
         job: jobId,
         purchaseOrder: purchaseOrderId,
         jobPurchaseOrders: purchaseOrderIds,
+        dueDate: params.dueDate ? new Date(params.dueDate) : null,
         customer: customer,
         company: req.companyId,
         note: params.note,
@@ -899,8 +924,6 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
         taxPercentage: taxPercentage,
         createdBy: user._id,
         createdAt: Date.now(),
-        isFixed: isFixed,
-        hourlyRate: hourlyRate,
         timeSpent: timeSpent,
         items: invoiceItems,
         estimate: estimateId
@@ -1053,11 +1076,11 @@ export const updateInvoice = (req: Request, res: Response) => {
                         invoice.charges = charges
                         // invoice.total = total
 
-                        if(!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""' )) {
-                            return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
-                        }else if(!job.isFixed){
-                            invoice.hourlyRate = params.hourlyRate
-                        }
+                        // if(!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""' )) {
+                        //     return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
+                        // }else if(!job.isFixed){
+                        //     invoice.hourlyRate = params.hourlyRate
+                        // }
 
                         if(!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""' )) {
                             return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
@@ -1277,7 +1300,7 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
         })
         .populate({
             path: 'items.item',
-            select: 'name itemCode note cost price',
+            select: 'name isFixed charges tax',
             populate: [{path: 'jobType'}]
         })
         .exec((err: any, invoice: IInvoice)=>{
