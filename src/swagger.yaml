@@ -3946,6 +3946,10 @@ paths:
           required: false
           type: string
           description: Pass job id to create job invoice (optional)
+        - name: invoiceNumber
+          in: formData
+          type: string
+          description: Custom invoice number for this invoice only
         - name: purchaseOrderId
           in: formData
           required: false
