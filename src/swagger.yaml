@@ -5225,19 +5225,16 @@ paths:
           in: formData
           type: string
           description: Service ticket warranty
-        - name: jobTypeId
+        - name: itemId
           in: formData
-          required: true
           type: string
           description: Id of job type selected from the list received by /getJobTypes api
         - name: workToBeDone
           in: formData
-          required: true
           type: string
           description: What work to be done
         - name: preferredDateTime
           in: formData
-          required: true
           type: string
           description: Preferred date/time of work
         - name: image

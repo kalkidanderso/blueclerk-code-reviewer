@@ -168,16 +168,25 @@ export const _createServiceTicket = async (req: Request, res: Response, next: (e
                 ticketId = `Ticket ${company.prefix} - ${company.currentJobId + 1}`;
             }
             const dueDate = params.dueDate ? new Date(params.dueDate) : null;
-            let note: string = `${params.note} ` || '';
+            let note: string = params.note ? `${params.note} ` : '';
             if (typeof params.warranty === typeof Boolean) {
-                note += params.warranty ? '|| Warranty: yes' : '|| Warranty: no';
+                note += note ? ' || ' : '';
+                note += params.warranty ? 'Warranty: yes' : 'Warranty: no';
             } else if (params.warranty == 'true') {
-                note += '|| Warranty: yes';
-            } else {
-                note += '|| Warranty: no';
+                note += note ? ' || ' : '';
+                note += 'Warranty: yes';
+            } else if (params.warranty == 'false') {
+                note += note ? ' || ' : '';
+                note += 'Warranty: no';
             }
-            note += params.workToBeDone ? ` || Work to be done: ${params.workToBeDone}` : '';
-            note += params.preferredDateTime ? ` || Preferred Date Time: ${params.preferredDateTime}` : '';
+            if (params.workToBeDone) {
+                note += note ? ' || ' : '';
+                note += `Work to be done: ${params.workToBeDone}`;
+            }
+            if (params.preferredDateTime) {
+                note += note ? ' || ' : '';
+                note += `Preferred Date Time: ${params.preferredDateTime}`;
+            }
 
             // Construct the service ticket entry
             serviceTicket = new ServiceTicket({
