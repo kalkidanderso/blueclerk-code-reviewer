@@ -101,11 +101,14 @@ export const getEmployeeDetail = async (req: Request, res: Response) => {
             }
 
             let employeeDetails: any = await User.findOne({_id: new ObjectId(employeeId)})
-                .select('profile.firstName profile.lastName auth.email contact.phone emailPreferences').exec();
+                .select('profile.firstName profile.lastName profile.displayName address auth.email contact.phone emailPreferences permissions').exec();
             employeeData.firstName = employeeDetails.profile.firstName;
             employeeData.lastName = employeeDetails.profile.lastName;
+            employeeData.displayName = employeeDetails.profile.displayName;
             employeeData.email = employeeDetails.auth.email;
+            employeeData.address = employeeDetails.address;
             employeeData.phone = employeeDetails.contact.phone;
+            employeeData.permissions = employeeDetails.permissions;
             let hours = employeeDetails.emailPreferences.time ? employeeDetails.emailPreferences.time.getHours() : '21';
             let minutes = employeeDetails.emailPreferences.time ? employeeDetails.emailPreferences.time.getMinutes() : '00';
             employeeData.emailPreferences = {
