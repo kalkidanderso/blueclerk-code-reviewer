@@ -559,6 +559,7 @@ export const parseFieldsAndUploadImageInS3 = async function (req: Request, res: 
         return next({message: "Customer is required to create a service ticket"}, null);
       }
       const imageUrl = req.file ? req.file.location : null;
+      req.body.imageUrl = req.body.imageUrl || imageUrl;
       const body = req.body;
       return next(null, {imageUrl, body});
     })

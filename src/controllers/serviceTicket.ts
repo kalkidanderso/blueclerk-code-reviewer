@@ -141,84 +141,77 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
  */
 export const _createServiceTicket = async (req: Request, res: Response, next: (err: any, serviceTicket: IServiceTicket) => void) => {
 
-    // Upload image if provided
-    parseFieldsAndUploadImageInS3(req, res, async (err: any, data) => {
-        if (err) {
-            return next(err.message, null);
+    const params = req.body;
+    let serviceTicket: IServiceTicket;
+
+    // Check if customerContactId & customerId is a valid Object ID if provided
+    if ((params.customerContactId && !ObjectId.isValid(params.customerContactId)) || (params.customerId && !ObjectId.isValid(params.customerId))) {
+        return next(Messages.WrongId, null);
+    }
+
+    try {
+
+        const user = <IUser>req.user;
+        const company = <ICompany>req.company;
+        const companyId = req.otherCompanyId || req.companyId;
+        const customerContact = await Contact.findById(new ObjectId(params.customerContactId));
+        const customerPo = params.customerPO || null;
+        const customerId = new ObjectId(params.customerId);
+        let ticketId = `Ticket ${company.currentJobId + 1}`;
+        if (company.prefix) {
+            ticketId = `Ticket ${company.prefix} - ${company.currentJobId + 1}`;
+        }
+        const dueDate = params.dueDate ? new Date(params.dueDate) : null;
+        let note: string = params.note ? `${params.note} ` : '';
+        if (typeof params.warranty === typeof Boolean) {
+            note += note ? ' || ' : '';
+            note += params.warranty ? 'Warranty: yes' : 'Warranty: no';
+        } else if (params.warranty == 'true') {
+            note += note ? ' || ' : '';
+            note += 'Warranty: yes';
+        } else if (params.warranty == 'false') {
+            note += note ? ' || ' : '';
+            note += 'Warranty: no';
+        }
+        if (params.workToBeDone) {
+            note += note ? ' || ' : '';
+            note += `Work to be done: ${params.workToBeDone}`;
+        }
+        if (params.preferredDateTime) {
+            note += note ? ' || ' : '';
+            note += `Preferred Date Time: ${params.preferredDateTime}`;
         }
 
-        const params = data.body;
-        let serviceTicket: IServiceTicket;
+        // Construct the service ticket entry
+        serviceTicket = new ServiceTicket({
+            createdAt: Date.now(),
+            dueDate: dueDate,
+            createdBy: user._id,
+            company: companyId,
+            note,
+            technician: params.technicianId,
+            ticketId: ticketId,
+            jobLocation: params.jobLocationId,
+            jobSite: params.jobSiteId,
+            jobType: params.jobTypeId,
+            item: params.itemId,
+            customerPO: customerPo,
+            customer: customerId,
+            customerContactId: customerContact && customerContact._id,
+            image: params.imageUrl,
+            source: params.source || 'blueclerk'
+        });
 
-        // Check if customerContactId & customerId is a valid Object ID if provided
-        if ((params.customerContactId && !ObjectId.isValid(params.customerContactId)) || (params.customerId && !ObjectId.isValid(params.customerId))) {
-            return next(Messages.WrongId, null);
-        }
+        // Save service ticket and company
+        company.currentJobId += 1;
+        await serviceTicket.save();
+        await company.save();
 
-        try {
+    } catch (error) {
+        return next(error, null);
+    };
 
-            const user = <IUser>req.user;
-            const company = <ICompany>req.company;
-            const companyId = req.otherCompanyId || req.companyId;
-            const customerContact = await Contact.findById(new ObjectId(params.customerContactId));
-            const customerPo = params.customerPO || null;
-            const customerId = new ObjectId(params.customerId);
-            let ticketId = `Ticket ${company.currentJobId + 1}`;
-            if (company.prefix) {
-                ticketId = `Ticket ${company.prefix} - ${company.currentJobId + 1}`;
-            }
-            const dueDate = params.dueDate ? new Date(params.dueDate) : null;
-            let note: string = params.note ? `${params.note} ` : '';
-            if (typeof params.warranty === typeof Boolean) {
-                note += note ? ' || ' : '';
-                note += params.warranty ? 'Warranty: yes' : 'Warranty: no';
-            } else if (params.warranty == 'true') {
-                note += note ? ' || ' : '';
-                note += 'Warranty: yes';
-            } else if (params.warranty == 'false') {
-                note += note ? ' || ' : '';
-                note += 'Warranty: no';
-            }
-            if (params.workToBeDone) {
-                note += note ? ' || ' : '';
-                note += `Work to be done: ${params.workToBeDone}`;
-            }
-            if (params.preferredDateTime) {
-                note += note ? ' || ' : '';
-                note += `Preferred Date Time: ${params.preferredDateTime}`;
-            }
-
-            // Construct the service ticket entry
-            serviceTicket = new ServiceTicket({
-                createdAt: Date.now(),
-                dueDate: dueDate,
-                createdBy: user._id,
-                company: companyId,
-                note,
-                technician: params.technicianId,
-                ticketId: ticketId,
-                jobLocation: params.jobLocationId,
-                jobSite: params.jobSiteId,
-                jobType: params.jobTypeId,
-                item: params.itemId,
-                customerPO: customerPo,
-                customer: customerId,
-                customerContactId: customerContact && customerContact._id,
-                image: data.imageUrl,
-                source: params.source || 'blueclerk'
-            });
-
-            // Save service ticket and company
-            company.currentJobId += 1;
-            await serviceTicket.save();
-            await company.save();
-
-        } catch (error) {
-            return next(error, null);
-        };
-
-        return next(null, serviceTicket);
-    });
+    return next(null, serviceTicket);
 
 }
 

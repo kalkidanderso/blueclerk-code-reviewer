@@ -5170,7 +5170,7 @@ paths:
       summary: Create service ticket via web
       description: ''
       consumes:
-        - application/x-www-form-urlencoded
+        - multipart/form-data
       produces:
         - application/json
       parameters:
@@ -5239,7 +5239,7 @@ paths:
           description: Preferred date/time of work
         - name: image
           in: formData
-          type: string
+          type: file
         - name: note
           in: formData
           type: string
