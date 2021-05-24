@@ -1575,7 +1575,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Create_Service_Ticket),
-        validate(Validations.createIntegrationServiceTicket),
         (req, res) => {
             integrationController.createServiceTicket(req, res, sio)
         }

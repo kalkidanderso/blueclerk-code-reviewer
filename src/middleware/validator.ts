@@ -273,8 +273,5 @@ export const Validations = {
 
   updateNotification: [check('isRead').optional().isBoolean(), check('isDismissed').optional().isBoolean()],
 
-  // Integration
-  createIntegrationServiceTicket: [check('source').exists(), check('name').exists(), check('email').exists(), check('email').isEmail(), check('state').exists(), check('phone').exists()]
-
 }
 
