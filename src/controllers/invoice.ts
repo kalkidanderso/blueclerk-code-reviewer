@@ -13,6 +13,7 @@ import {Estimate, IEstimate} from '../models/Estimate';
 import {IScan, Scan} from '../models/Scan';
 import {sendInvoiceEmailToCustomer} from '../services/aws';
 import {CompanyInvoice} from '../models/CompanyInvoice';
+import { IJobReport, JobReport } from '../models/JobReport';
 import {ObjectId} from 'mongodb'
 
 export const getInvoicesByCustomerId = (req: Request, res: Response) => {
@@ -352,18 +353,16 @@ export const createInvoice = (req: Request, res: Response) => {
             .then((invoice: any) => {
 
                 // Mark the job as it has been invoiced
-                return new Promise(async (resolve, reject) => {
-                    Job.findById(invoice.job)
-                        .then((job: IJob) => {
-                            if (!job) {
-                                reject()
+                return new Promise((resolve, reject) => {
+                    JobReport.findOne({ job: invoice.job })
+                        .then(async (jobReport: IJobReport) => {
+                            if (jobReport) {
+                                jobReport.invoiceCreated = true;
+                                jobReport.invoice = invoice._id;
+                                await jobReport.save();
                             }
 
-                            job.invoiceCreated = true;
-                            resolve(job.save());
-                        })
-                        .catch(() => {
-                            reject();
+                            resolve(invoice);
                         })
                 })
 
@@ -1333,6 +1332,11 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
 export const sendInvoice = (req: Request, res: Response) => {
     const params = req.body
     const company = <ICompany>req.company;
+
+    if (params.invoiceId && !ObjectId.isValid(params.invoiceId)) {
+        return res.json({ status: Status.Error, message: Messages.WrongId });
+    }
+
     try {
         Invoice.findOne({ _id: params.invoiceId, 'company': req.companyId})
             .populate({
@@ -1341,8 +1345,9 @@ export const sendInvoice = (req: Request, res: Response) => {
             })
             .then((invoice: IInvoice)=>{
                 if (!invoice) {
-                    return res.json({'status': Status.Error, 'message': 'Invalid invoice id'})
+                    return res.json({'status': Status.Error, 'message': 'Invoice not found'})
                 }
+
                 sendInvoiceEmailToCustomer({
                     companyName: company.info.companyName,
                     companyEmail: company.info.companyEmail,
@@ -1351,6 +1356,8 @@ export const sendInvoice = (req: Request, res: Response) => {
                     invoiceNumber: invoice.invoiceId,
                     invoiceAmount: invoice.total,
                 });
+
+                return res.json({ status: Status.Success, message: 'Invoice has been sent successfully!' });
             })
 
     } catch (err) {

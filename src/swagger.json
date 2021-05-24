@@ -7255,6 +7255,43 @@
         ]
       }
     },
+    "/sendInvoice": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "Send an email about the invoice",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of invoice"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getInvoicesByCustomerId": {
       "post": {
         "tags": [
@@ -9335,6 +9372,10 @@
         "company": {
           "type": "object",
           "$ref": "#/definitions/company"
+        },
+        "invoice": {
+          "type": "object",
+          "$ref": "#/definitions/Invoice"
         }
       }
     },
@@ -11487,6 +11528,55 @@
                   }
                 }
               }
+            }
+          }
+        },
+        "invoiceCreated": {
+          "type": "boolean"
+        },
+        "invoice": {
+          "type": "object",
+          "properties": {
+            "_id": {
+              "type": "string"
+            },
+            "invoiceId": {
+              "type": "string",
+              "description": "Custom invoice id to be shown on invoice"
+            },
+            "invoiceType": {
+              "type": "number",
+              "description": "0 for the invoice for job and 1 for the invoice of purchase order"
+            },
+            "purchaseOrder": {
+              "type": "string",
+              "description": "Id of the purchase order if the invoic is for purchase order only"
+            },
+            "estimate": {
+              "type": "string",
+              "description": "Id of the estimate if the invoic is for estimate only"
+            },
+            "jobPurchaseOrders": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "charges": {
+              "type": "number",
+              "description": "Charges amount from job or if you have customized while creating invoice"
+            },
+            "taxPercentage": {
+              "type": "number",
+              "description": "Tax percentage applied to invoice default will be 0"
+            },
+            "tax": {
+              "type": "number",
+              "description": "Tax amount to be added in charges to caculate the total invoice"
+            },
+            "total": {
+              "type": "number",
+              "description": "Total amount to be charged to customer"
             }
           }
         }

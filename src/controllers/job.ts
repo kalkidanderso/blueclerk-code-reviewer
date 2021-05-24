@@ -751,10 +751,16 @@ export const getAllJobReports = (req: Request, res: Response) => {
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-    JobReport.find({$or:[{ contractor: companyId }, { company: companyId } ]}).populate({
-        path: 'job',
-        select: '_id jobId customer technician',
-    }).exec().then((reports: IJobReport[]) => {
+    JobReport.find({ $or: [{ contractor: companyId }, { company: companyId }] })
+        .populate({
+            path: 'job',
+            select: '_id jobId customer technician',
+        })
+        .populate({
+            path: 'invoice',
+            select: 'invoiceId invoiceType paid dueDate createdAt',
+        })
+        .exec().then((reports: IJobReport[]) => {
         if (reports.length) {
             return res.json({'status': Status.Success, 'reports': reports});
         }
@@ -782,20 +788,24 @@ export const getJobReportDetails = (req: Request, res: Response) => {
                 { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
                 { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
                 'jobSite', 'jobLocation'
-            ],
-        }).populate({
-        path: 'scans',
-        populate: [
-            {
+            ]
+        })
+        .populate({
+            path: 'scans',
+            populate: [{
                 path: 'equipment',
                 select: 'info.model info.serialNumber info.nfcTag images info.location',
                 populate: [
                     { path: 'brand', select: 'title' },
                     { path: 'type', select: 'title' }
-                    ]
-            }
-            ]
-    }).populate('PurchaseOrder')
+                ]
+            }]
+        })
+        .populate('PurchaseOrder')
+        .populate({
+            path: 'invoice',
+            select: 'invoiceType jobPurchaseOrders charges shippingCost tax taxPercentage paid invoiceId purchaseOrder dueDate total items estimate createdAt'
+        })
         .exec()
         .then((report: IJobReport) => {
             if (report) {
