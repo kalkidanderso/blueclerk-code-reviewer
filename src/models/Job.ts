@@ -40,7 +40,6 @@ export interface IJob extends Document {
         note?: string
         date: Date
     }[]
-    invoiceCreated: boolean
 }
 
 const JobSchema = new Schema({
@@ -178,9 +177,6 @@ const JobSchema = new Schema({
     completeOnTime:{
         type: Boolean,
         required: false
-    },
-    invoiceCreated: {
-        type: Boolean
     }
 
 })

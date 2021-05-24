@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { IInvoice } from './Invoice';
 import {PurchaseOrder} from './PurchaseOrder';
 
 export interface IJobReport extends Document {
@@ -13,6 +14,8 @@ export interface IJobReport extends Document {
     emailHistory: any[];
     createdAt: Date;
     lastEmailSent: Date;
+    invoiceCreated?: boolean;
+    invoice?: Schema.Types.ObjectId | IInvoice;
 }
 
 const JobReportSchema = new Schema({
@@ -64,6 +67,13 @@ const JobReportSchema = new Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    invoiceCreated: {
+        type: Boolean
+    },
+    invoice: {
+        type: Schema.Types.ObjectId,
+        ref: 'Invoice'
     }
 });
 
