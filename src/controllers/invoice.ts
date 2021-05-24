@@ -352,7 +352,7 @@ export const createInvoice = (req: Request, res: Response) => {
             })
             .then((invoice: any) => {
 
-                // Mark the job as it has been invoiced
+                // Mark the job report as it has been invoiced
                 return new Promise((resolve, reject) => {
                     JobReport.findOne({ job: invoice.job })
                         .then(async (jobReport: IJobReport) => {
@@ -1333,6 +1333,7 @@ export const sendInvoice = (req: Request, res: Response) => {
     const params = req.body
     const company = <ICompany>req.company;
 
+    // Check if invoiceId was a valid ObjectId
     if (params.invoiceId && !ObjectId.isValid(params.invoiceId)) {
         return res.json({ status: Status.Error, message: Messages.WrongId });
     }
