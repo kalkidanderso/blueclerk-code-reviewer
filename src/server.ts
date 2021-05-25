@@ -68,7 +68,7 @@ app.use(cookieParser())
 app.use(bodyParser.json({limit:'50mb'}));
 app.use(bodyParser.urlencoded({extended:true, limit:'50mb', parameterLimit: 10000000}));
 // To allow requests from all origins using the wildcard
-app.use(cors({ "origin": "*" }));
+app.use(cors({ origin: '*', credentials: true }));
 // To enable pre-flight across-the-board
 app.options('*', cors());
 
