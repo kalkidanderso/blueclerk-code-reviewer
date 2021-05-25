@@ -44,7 +44,6 @@ import * as integrationController from '../controllers/integration';
 
 import jobLocation from './jobLocation'
 import jobSite from './jobSite'
-import {checkRoleIsValid} from '../controllers/user';
 
 export default function (sio: any) {
 
@@ -252,7 +251,6 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.User_Get_All_Employees),
         validate(Validations.changeEmployeeRole),
-        checkRoleIsValid,
         userController.updateEmployeeRole
     )
 

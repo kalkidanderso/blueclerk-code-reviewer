@@ -6897,6 +6897,12 @@
             "description": "Pass purchase order id to create purchase order invoice (optional)"
           },
           {
+            "name": "issuedDate",
+            "in": "formData",
+            "type": "string",
+            "description": "Issued date of the invoice"
+          },
+          {
             "name": "dueDate",
             "in": "formData",
             "type": "string",
@@ -7131,6 +7137,18 @@
             "required": false,
             "type": "string",
             "description": "Json string of the items e.g [{\"name\": \"repair\", \"description\": \"repair description\", \"price\": 100, \"tax\": 0, \"quantity\": 2},{\"name\": \"service\", \"description\": \"repair description\", \"price\": 50, \"tax\": 0, \"quantity\": 1}]  OR [{\"item\": \"5f23240a3a68041ee95d6800\", \"price\": 1000, \"tax\": 0, \"quantity\": 2}]"
+          },
+          {
+            "name": "issuedDate",
+            "in": "formData",
+            "type": "string",
+            "description": "Issued date of the invoice"
+          },
+          {
+            "name": "dueDate",
+            "in": "formData",
+            "type": "string",
+            "description": "Due date of the invoice"
           },
           {
             "name": "tax",
@@ -9903,6 +9921,14 @@
           "type": "string",
           "description": "Id of the purchase order if the invoic is for purchase order only"
         },
+        "issuedDate": {
+          "type": "string",
+          "description": "Issued date of the invoice"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Due date of the invoice"
+        },
         "estimate": {
           "type": "string",
           "description": "Id of the estimate if the invoic is for estimate only"
@@ -11551,6 +11577,14 @@
             "purchaseOrder": {
               "type": "string",
               "description": "Id of the purchase order if the invoic is for purchase order only"
+            },
+            "issuedDate": {
+              "type": "string",
+              "description": "Issued date of the invoice"
+            },
+            "dueDate": {
+              "type": "string",
+              "description": "Due date of the invoice"
             },
             "estimate": {
               "type": "string",
