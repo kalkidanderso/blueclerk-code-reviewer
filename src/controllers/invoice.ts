@@ -912,6 +912,7 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
         job: jobId,
         purchaseOrder: purchaseOrderId,
         jobPurchaseOrders: purchaseOrderIds,
+        issuedDate: params.issuedDate ? new Date(params.issuedDate) : null,
         dueDate: params.dueDate ? new Date(params.dueDate) : null,
         customer: customer,
         company: req.companyId,
@@ -1042,6 +1043,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                         if ((params.charges == undefined || params.charges == null || params.charges == '""' ) && (params.tax == undefined || params.tax == null || params.tax == '""' )) {
                             return res.json({'status': Status.Error, 'message': 'Tax Percentage or charges are required'})
                         }
+                        const issuedDate = params.issuedDate ? new Date(params.issuedDate) : invoice.issuedDate;
+                        const dueDate = params.dueDate ? new Date(params.dueDate) : invoice.issuedDate;
                         let tax: number = invoice.tax;
                         let taxPercentage: number = invoice.taxPercentage;
                         let charges: number = invoice.charges;
@@ -1150,7 +1153,7 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                         // invoice.total = total
 
-                        invoice.updateOne({total: total, items: invoiceItems, shippingCost: params.shippingCost, jobPurchaseOrders: purchaseOrderIds, tax: tax, taxPercentage: taxPercentage, charges: charges, note: params.note},
+                        invoice.updateOne({total: total, items: invoiceItems, shippingCost: params.shippingCost, jobPurchaseOrders: purchaseOrderIds, tax: tax, taxPercentage: taxPercentage, charges: charges, issuedDate, dueDate, note: params.note},
 
                             (err: any) => {
                                 if (err) {
@@ -1165,6 +1168,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                 if ((params.charges == undefined || params.charges == null || params.charges == '""' ) && (params.tax == undefined || params.tax == null || params.tax == '""' )) {
                     return res.json({'status': Status.Error, 'message': 'Tax Percentage or charges are required'})
                 }
+                const issuedDate = params.issuedDate ? new Date(params.issuedDate) : invoice.issuedDate;
+                const dueDate = params.dueDate ? new Date(params.dueDate) : invoice.issuedDate;
                 let tax: number = invoice.tax;
                 let taxPercentage: number = invoice.taxPercentage;
                 let charges: number = invoice.charges;
@@ -1250,7 +1255,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                     // invoice.shippingCost = params.shippingCost
                 }
 
-                invoice.updateOne({total: total, items: invoiceItems, shippingCost: params.shippingCost, tax: tax, taxPercentage: taxPercentage, charges: charges, note: params.note},
+                invoice.updateOne({total: total, items: invoiceItems, shippingCost: params.shippingCost, tax: tax, taxPercentage: taxPercentage, charges: charges, issuedDate, dueDate, note: params.note},
                     (err: any) => {
                         if (err) {
                             return res.json({'status': Status.Error, 'message': Messages.GenericError})

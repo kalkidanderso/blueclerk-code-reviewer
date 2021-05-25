@@ -291,9 +291,19 @@ export const getCompanyProfile = (req: Request, res: Response) => {
 }
 
 export const updateEmployeeRole = (req: Request, res: Response) => {
+
+    const company = <ICompany>req.company
     const params = req.body;
-    const { companyId } = req.params;
-    Employee.findOneAndUpdate({_id: new ObjectId(params.employeeId), company: companyId}, {"permission.role" : params.newRole}).then((employee) => {
+    const newRole = Number.isInteger(params.newRole) ? params.newRole : Number(params.newRole);
+
+    if (params.employeeId && !ObjectId.isValid(params.employeeId)) {
+        return res.json({ status: Status.Error, message: Messages.WrongId });
+    }
+    if (params.newRole && ![0,1,2,3,4].includes(newRole)) {
+        return res.json({ status: Status.Error, message: 'newRole is invalid'})
+    }
+
+    User.findOneAndUpdate({_id: params.employeeId, company: company._id}, {"permissions.role" : newRole}).then((employee: IEmployee) => {
         if (employee) {
             return res.json({'status': Status.Success, 'message': 'Employee Role Has Been Updated Successfully!'});
         }
@@ -301,6 +311,7 @@ export const updateEmployeeRole = (req: Request, res: Response) => {
     }).catch((err) => {
         return res.json({'status': Status.Error, 'message' : err.message});
     })
+
 }
 
 const _createHubSpotContact = (company: ICompany, companyAdmin: ICompanyAdmin) => {
@@ -1977,17 +1988,4 @@ export const createContractorSocial = (req: Request, res: Response) => {
             })
 
         })
-}
-export const checkRoleIsValid = (req: Request, res: Response, next: (req: Request, res: Response) => void) => {
-    const role = req.body.newRole;
-    let check = false;
-    for (let i = 0; i<=6; i++) {
-        if (role == i) {
-            check = true;
-        }
-    }
-    if (!check) {
-        return res.json({ 'status': Status.Error, 'message': 'Role was not found'});
-    }
-    return next(req, res)
 }

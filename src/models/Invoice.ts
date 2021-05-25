@@ -8,7 +8,8 @@ export interface IInvoice extends Document {
     purchaseOrder: Schema.Types.ObjectId
     estimate: Schema.Types.ObjectId
     jobPurchaseOrders: [Schema.Types.ObjectId]
-    dueDate: Date,
+    issuedDate?: Date,
+    dueDate?: Date,
     customer: Schema.Types.ObjectId | any
     company: Schema.Types.ObjectId
     note: string
@@ -65,6 +66,9 @@ const InvoiceSchema = new Schema({
         ref: 'PurchaseOrder',
         required: false
     }],
+    issuedDate: {
+        type: Date
+    },
     dueDate: {
         type: Date
     },
