@@ -10012,6 +10012,16 @@
           "type": "number",
           "description": "Total amount to be charged to customer"
         },
+        "issuedDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Issued date of the invoice"
+        },
+        "dueDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Due date of the invoice"
+        },
         "createdat": {
           "type": "string",
           "format": "date-time",
@@ -10072,6 +10082,9 @@
                   "type": "string"
                 }
               }
+            },
+            "vendorId": {
+              "type": "string"
             }
           }
         },

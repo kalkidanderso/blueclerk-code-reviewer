@@ -1,4 +1,7 @@
 import {Request, Response} from 'express';
+import {ObjectId} from 'mongodb'
+import moment from 'moment';
+
 import {IInvoice, Invoice} from '../models/Invoice';
 import {Messages, Status} from '../common/constants';
 import {ICompanyAdmin} from '../models/CompanyAdmin';
@@ -14,7 +17,6 @@ import {IScan, Scan} from '../models/Scan';
 import {sendInvoiceEmailToCustomer} from '../services/aws';
 import {CompanyInvoice} from '../models/CompanyInvoice';
 import { IJobReport, JobReport } from '../models/JobReport';
-import {ObjectId} from 'mongodb'
 
 export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
@@ -912,8 +914,8 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
         job: jobId,
         purchaseOrder: purchaseOrderId,
         jobPurchaseOrders: purchaseOrderIds,
-        issuedDate: params.issuedDate ? new Date(params.issuedDate) : null,
-        dueDate: params.dueDate ? new Date(params.dueDate) : null,
+        issuedDate: params.issuedDate ? new Date(params.issuedDate) : Date.now(),
+        dueDate: params.dueDate ? new Date(params.dueDate) : moment().add(30, 'd').valueOf(),
         customer: customer,
         company: req.companyId,
         note: params.note,
@@ -1276,36 +1278,42 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
             path: 'job',
             populate: [
                 { path: 'type', select: 'title' },
-                { path: 'ticket', select: 'ticketId note scheduleDateTime'},
-                { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role'},
-                { path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId'}},
-                {path: 'jobLocation'},
-                {path: 'jobSite'}
+                { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
+                { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
+                { path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId' }},
+                { path: 'jobLocation', select: 'name location address' },
+                { path: 'jobSite', select: 'name location address' }
             ],
         })
         .populate({
+            path: 'purchaseOrder',
+            select: 'purchaseOrderId items equipment status estimate note total',
+            populate: [
+                { path: 'equipment', select: 'info maintenance type brand', populate: [ { path: 'type', select: 'title' }, { path: 'brand', select: 'title' }]},
+                { path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price' }
+            ]
+        })
+        .populate({
+            path: 'items.item',
+            select: 'name isFixed charges tax',
+            populate: [{path: 'jobType'}]
+        })
+        .populate({
+            path: 'company',
+            select: 'info.companyName info.logoUrl info.companyEmail permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax'
+        })
+        .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+            select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail'
         })
         .populate({
             path: 'estimate',
             select: 'total items note status customer company createdAt createdBy'
         })
         .populate({
-            path: 'company',
-            select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone'
-        })
-        .populate({
             path: 'createdBy',
-            select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone'
-        })
-        .populate({
-            path: 'purchaseOrder'
-        })
-        .populate({
-            path: 'items.item',
-            select: 'name isFixed charges tax',
-            populate: [{path: 'jobType'}]
+            select: 'info.companyName auth.email profile.displayName permissions.role address contact.phone'
         })
         .exec((err: any, invoice: IInvoice)=>{
 
@@ -1378,29 +1386,42 @@ export const getInvoices = (req: Request, res: Response) => {
             path: 'job',
             populate: [
                 { path: 'type', select: 'title' },
-                { path: 'customer', select: 'info.email auth.email profile.displayName contactName' },
+                { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
-                { path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId'}},
-                {path: 'jobLocation'},
-                {path: 'jobSite'}
+                { path: 'contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
+                { path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId' }},
+                { path: 'jobLocation', select: 'name location address' },
+                { path: 'jobSite', select: 'name location address' }
             ],
         })
         .populate({
+            path: 'purchaseOrder',
+            select: 'purchaseOrderId items equipment status estimate note total',
+            populate: [
+                { path: 'equipment', select: 'info maintenance type brand', populate: [ { path: 'type', select: 'title' }, { path: 'brand', select: 'title' }]},
+                { path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price' }
+            ]
+        })
+        .populate({
             path: 'items.item',
-            select: 'name itemCode note cost price',
+            select: 'name isFixed charges tax',
             populate: [{path: 'jobType'}]
         })
         .populate({
             path: 'company',
-            select: 'info.companyName info.logoUrl info.email permissions.role address.street address.city address.state address.zipCode contact.phone'
+            select: 'info.companyName info.logoUrl info.companyEmail permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax'
         })
         .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+            select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail'
         })
         .populate({
             path: 'estimate',
-            select: 'total items note status customer company createdBy'
+            select: 'total items note status customer company createdAt createdBy'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'info.companyName auth.email profile.displayName permissions.role address contact.phone'
         })
         .exec((err: any, invoices: IInvoice[])=>{
 
