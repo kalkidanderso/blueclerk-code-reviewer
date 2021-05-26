@@ -44,6 +44,10 @@
       "description": "For equipments of a customer"
     },
     {
+      "name": "Contact",
+      "description": "For contact of customer or job location"
+    },
+    {
       "name": "Location Tags",
       "description": "For location tags"
     },
@@ -81,6 +85,10 @@
     {
       "name": "Job Charges",
       "description": "For job charges"
+    },
+    {
+      "name": "Job Site",
+      "description": "For adding, updating and fetching Job Site detail"
     },
     {
       "name": "Service Ticket",
@@ -154,8 +162,8 @@
       "description": "For Quickbooks customers integration"
     },
     {
-      "name": "Job Site",
-      "description": "For adding, updating and fetching Job Site detail"
+      "name": "Integration",
+      "description": "For creating service ticket via web"
     }
   ],
   "paths": {
@@ -5290,8 +5298,9 @@
             "required": true,
             "type": "string",
             "enum": ["blueclerk", "web"],
-            "description": "Id of a customer selected from the list received by /getCustomers api (Required for platform users)"
-          },{
+            "description": "Source from BlueClerk app or WP plugin"
+          },
+          {
             "name": "customerId",
             "in": "formData",
             "required": false,
@@ -6875,11 +6884,29 @@
             "description": "Pass job id to create job invoice (optional)"
           },
           {
+            "name": "invoiceNumber",
+            "in": "formData",
+            "type": "string",
+            "description": "Custom invoice number for this invoice only"
+          },
+          {
             "name": "purchaseOrderId",
             "in": "formData",
             "required": false,
             "type": "string",
             "description": "Pass purchase order id to create purchase order invoice (optional)"
+          },
+          {
+            "name": "issuedDate",
+            "in": "formData",
+            "type": "string",
+            "description": "Issued date of the invoice"
+          },
+          {
+            "name": "dueDate",
+            "in": "formData",
+            "type": "string",
+            "description": "Due date of the invoice"
           },
           {
             "name": "estimateId",
@@ -6929,13 +6956,6 @@
             "required": false,
             "type": "number",
             "description": "No of hours spend on that job pass default from finished job if you dont want to change"
-          },
-          {
-            "name": "hourlyRate",
-            "in": "formData",
-            "required": false,
-            "type": "number",
-            "description": "Hourly rate to be charges to customer pass default from finished job if you dont want to change"
           },
           {
             "name": "includePO",
@@ -7119,6 +7139,18 @@
             "description": "Json string of the items e.g [{\"name\": \"repair\", \"description\": \"repair description\", \"price\": 100, \"tax\": 0, \"quantity\": 2},{\"name\": \"service\", \"description\": \"repair description\", \"price\": 50, \"tax\": 0, \"quantity\": 1}]  OR [{\"item\": \"5f23240a3a68041ee95d6800\", \"price\": 1000, \"tax\": 0, \"quantity\": 2}]"
           },
           {
+            "name": "issuedDate",
+            "in": "formData",
+            "type": "string",
+            "description": "Issued date of the invoice"
+          },
+          {
+            "name": "dueDate",
+            "in": "formData",
+            "type": "string",
+            "description": "Due date of the invoice"
+          },
+          {
             "name": "tax",
             "in": "formData",
             "type": "number",
@@ -7231,6 +7263,43 @@
                   }
                 }
               ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/sendInvoice": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "Send an email about the invoice",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of invoice"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
             }
           }
         },
@@ -9091,52 +9160,187 @@
           }
         ]
       }
-  },
-  "/getCompanyProfile/{companyId}": {
-    "get": {
-      "tags":["Users"],
-      "summary": "Retrieve a company profile",
-      "description": "Returns a company profile for the specified company id",
-      "produces":["application/json"],
-      "parameters": [
-        {
-          "name": "companyId",
-          "in": "path",
-          "description": "The id of the company to retrieve from the database",
-          "required": true,
-          "type": "string"
-        }
-      ],
-      "responses": {
-        "200": {
-          "description": "Success",
-          "schema": {
-            "$ref": "#/definitions/company"
+    },
+    "/getCompanyProfile/{companyId}": {
+      "get": {
+        "tags":["Users"],
+        "summary": "Retrieve a company profile",
+        "description": "Returns a company profile for the specified company id",
+        "produces":["application/json"],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "description": "The id of the company to retrieve from the database",
+            "required": true,
+            "type": "string"
           }
-        },
-        "404": {
-          "description": "Not found",
-          "schema": {
-            "type":"object",
-            "properties": {
-              "status": {
-                "type":"string"
-              },
-              "message": {
-                "type": "string"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/company"
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "schema": {
+              "type":"object",
+              "properties": {
+                "status": {
+                  "type":"string"
+                },
+                "message": {
+                  "type": "string"
+                }
               }
             }
           }
-        }
-      },
-      "security": [
-        {
-          "Bearer": []
-        }
-      ]
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createIntegrationServiceTicket": {
+      "post": {
+        "tags": [
+          "Integration"
+        ],
+        "summary": "Create service ticket via web",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "source",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "enum": ["web"],
+            "description": "The source of Service Ticket (this one from web)"
+          },
+          {
+            "name": "name",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Name of the customer"
+          },
+          {
+            "name": "email",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Email of the customer"
+          },
+          {
+            "name": "street",
+            "in": "formData",
+            "type": "string",
+            "description": "Street address of the customer"
+          },
+          {
+            "name": "unit",
+            "in": "formData",
+            "type": "string",
+            "description": "Unit of the customer"
+          },
+          {
+            "name": "city",
+            "in": "formData",
+            "type": "string",
+            "description": "City of the customer"
+          },
+          {
+            "name": "state",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "State of the customer"
+          },
+          {
+            "name": "zipCode",
+            "in": "formData",
+            "type": "string",
+            "description": "Zip Code of the customer"
+          },
+          {
+            "name": "phone",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Phone of the customer"
+          },
+          {
+            "name": "fax",
+            "in": "formData",
+            "type": "string",
+            "description": "Fax of the customer"
+          },
+          {
+            "name": "warranty",
+            "in": "formData",
+            "type": "boolean",
+            "description": "Service ticket warranty"
+          },
+          {
+            "name": "itemId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of item selected from the list received by /getItems api"
+          },
+          {
+            "name": "workToBeDone",
+            "in": "formData",
+            "type": "string",
+            "description": "What work to be done"
+          },
+          {
+            "name": "preferredDateTime",
+            "in": "formData",
+            "type": "string",
+            "description": "Preferred date/time of work"
+          },
+          {
+            "name": "note",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "image",
+            "in": "formData",
+            "type": "file"
+          },
+          {
+            "name": "companyId",
+            "in": "formData",
+            "type": "string",
+            "description": "Id of company if contractor is hitting for other company"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/AuthAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
     }
-  }
-},
+  },
   "securityDefinitions": {
     "Bearer": {
       "type": "apiKey",
@@ -9186,6 +9390,10 @@
         "company": {
           "type": "object",
           "$ref": "#/definitions/company"
+        },
+        "invoice": {
+          "type": "object",
+          "$ref": "#/definitions/Invoice"
         }
       }
     },
@@ -9713,6 +9921,14 @@
           "type": "string",
           "description": "Id of the purchase order if the invoic is for purchase order only"
         },
+        "issuedDate": {
+          "type": "string",
+          "description": "Issued date of the invoice"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Due date of the invoice"
+        },
         "estimate": {
           "type": "string",
           "description": "Id of the estimate if the invoic is for estimate only"
@@ -9796,6 +10012,16 @@
           "type": "number",
           "description": "Total amount to be charged to customer"
         },
+        "issuedDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Issued date of the invoice"
+        },
+        "dueDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Due date of the invoice"
+        },
         "createdat": {
           "type": "string",
           "format": "date-time",
@@ -9856,6 +10082,9 @@
                   "type": "string"
                 }
               }
+            },
+            "vendorId": {
+              "type": "string"
             }
           }
         },
@@ -11338,6 +11567,63 @@
                   }
                 }
               }
+            }
+          }
+        },
+        "invoiceCreated": {
+          "type": "boolean"
+        },
+        "invoice": {
+          "type": "object",
+          "properties": {
+            "_id": {
+              "type": "string"
+            },
+            "invoiceId": {
+              "type": "string",
+              "description": "Custom invoice id to be shown on invoice"
+            },
+            "invoiceType": {
+              "type": "number",
+              "description": "0 for the invoice for job and 1 for the invoice of purchase order"
+            },
+            "purchaseOrder": {
+              "type": "string",
+              "description": "Id of the purchase order if the invoic is for purchase order only"
+            },
+            "issuedDate": {
+              "type": "string",
+              "description": "Issued date of the invoice"
+            },
+            "dueDate": {
+              "type": "string",
+              "description": "Due date of the invoice"
+            },
+            "estimate": {
+              "type": "string",
+              "description": "Id of the estimate if the invoic is for estimate only"
+            },
+            "jobPurchaseOrders": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "charges": {
+              "type": "number",
+              "description": "Charges amount from job or if you have customized while creating invoice"
+            },
+            "taxPercentage": {
+              "type": "number",
+              "description": "Tax percentage applied to invoice default will be 0"
+            },
+            "tax": {
+              "type": "number",
+              "description": "Tax amount to be added in charges to caculate the total invoice"
+            },
+            "total": {
+              "type": "number",
+              "description": "Total amount to be charged to customer"
             }
           }
         }

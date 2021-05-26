@@ -24,6 +24,8 @@ tags:
     description: For customers of a company
   - name: Customer Equipment
     description: For equipments of a customer
+  - name: Contact
+    description: For contact of customer or job location
   - name: Location Tags
     description: For location tags
   - name: Customer Equipment Detail
@@ -3944,11 +3946,23 @@ paths:
           required: false
           type: string
           description: Pass job id to create job invoice (optional)
+        - name: invoiceNumber
+          in: formData
+          type: string
+          description: Custom invoice number for this invoice only
         - name: purchaseOrderId
           in: formData
           required: false
           type: string
           description: Pass purchase order id to create purchase order invoice (optional)
+        - name: invoicedDate
+          in: formData
+          type: string
+          description: Invoiced date of the invoice
+        - name: dueDate
+          in: formData
+          type: string
+          description: Due date of the invoice
         - name: estimateId
           in: formData
           required: false
@@ -3985,12 +3999,6 @@ paths:
           type: number
           description: >-
             No of hours spend on that job pass default from finished job if you dont want to change
-        - name: hourlyRate
-          in: formData
-          required: false
-          type: number
-          description: >-
-            Hourly rate to be charges to customer pass default from finished job if you dont want to change
         - name: includePO
           in: formData
           type: boolean
@@ -4048,6 +4056,14 @@ paths:
           required: false
           type: string
           description: 'Json string of the items e.g [{"name": "repair", "description": "repair description", "price": 100, "tax": 0, "quantity": 2},{"name": "service", "description": "repair description", "price": 50, "tax": 0, "quantity": 1}]  OR [{"item": "5f23240a3a68041ee95d6800", "price": 1000, "tax": 0, "quantity": 2}]' 
+        - name: issuedDate
+          in: formData
+          type: string
+          description: Issued date of the invoice
+        - name: dueDate
+          in: formData
+          type: string
+          description: Due date of the invoice
         - name: tax
           in: formData
           type: number
@@ -4109,6 +4125,40 @@ paths:
           type: string
           description: Id of invoice
       responses:
+        '200':
+          description: Success
+          schema:
+            allOf:
+              - $ref: '#/definitions/GeneralAPIResponse'
+              - type: object
+                properties:
+                  invoice:
+                    type: array
+                    items:
+                      $ref: '#/definitions/InvoiceDetail'
+                  scans:
+                    type: array
+                    items:
+                      $ref: '#/definitions/ScanDetail'
+      security:
+        - Bearer: []
+  /sendInvoice:
+    post:
+      tags:
+        - Invoice
+      summary: Send an email about the invoice
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: invoiceId
+          in: formData
+          required: true
+          type: string
+          description: Id of invoice
+      response:
         '200':
           description: Success
           schema:
@@ -5159,6 +5209,97 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /createIntegrationServiceTicket:
+    post:
+      tags:
+        - Integration
+      summary: Create service ticket via web
+      description: ''
+      consumes:
+        - multipart/form-data
+      produces:
+        - application/json
+      parameters:
+        - name: source
+          in: formData
+          required: true
+          type: string
+          enum:
+            - web
+          description: The source of Service Ticket (this one from web)
+        - name: name
+          in: formData
+          required: true
+          type: string
+          description: Name of the customer
+        - name: email
+          in: formData
+          required: true
+          type: string
+          description: Email of the customer
+        - name: street
+          in: formData
+          type: string
+          description: Street address of the customer
+        - name: unit
+          in: formData
+          type: string
+          description: Unit of the customer
+        - name: city
+          in: formData
+          type: string
+          description: City of the customer
+        - name: state
+          in: formData
+          required: true
+          type: string
+          description: State of the customer
+        - name: zipCode
+          in: formData
+          type: string
+          description: Zip Code of the customer
+        - name: phone
+          in: formData
+          required: true
+          type: string
+          description: Phone of the customer
+        - name: fax
+          in: formData
+          type: string
+          description: Fax of the customer
+        - name: warranty
+          in: formData
+          type: string
+          description: Service ticket warranty
+        - name: itemId
+          in: formData
+          type: string
+          description: Id of job type selected from the list received by /getJobTypes api
+        - name: workToBeDone
+          in: formData
+          type: string
+          description: What work to be done
+        - name: preferredDateTime
+          in: formData
+          type: string
+          description: Preferred date/time of work
+        - name: image
+          in: formData
+          type: file
+        - name: note
+          in: formData
+          type: string
+        - name: companyId
+          in: formData
+          type: string
+          description: Id of company if contractor is hitting for other company
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
 securityDefinitions:
   Bearer:
     type: apiKey
@@ -5429,6 +5570,12 @@ definitions:
       purchaseOrder:
         type: string
         description: Id of the purchase order if the invoic is for purchase order only
+      issuedDate:
+        type: string
+        description: Issued date of the invoice
+      dueDate:
+        type: string
+        description: Due date of the invoice
       estimate:
         type: string
         description: Id of the estimate if the invoic is for estimate only
@@ -5490,6 +5637,14 @@ definitions:
       total:
         type: number
         description: Total amount to be charged to customer
+      issuedDate:
+        type: string
+        format: date-time
+        description: Issued date of the invoice
+      dueDate:
+        type: string
+        format: date-time
+        description: Due date of the invoice
       createdat:
         type: string
         format: date-time
@@ -5532,6 +5687,8 @@ definitions:
                 type: string
               zipCode:
                 type: string
+          vendorId:
+            type: string
       company:
         type: object
         properties:
@@ -6439,6 +6596,47 @@ definitions:
                 properties:
                   title: 
                     type: string
+      invoiceCreated:
+        type: boolean
+      invoice:
+        type: object
+        properties:
+          _id:
+            type: string
+          invoiceId:
+            type: string
+            description: Custom invoice id to be shown on invoice
+          invoiceType:
+            type: number
+            description: 0 for the invoice for job and 1 for the invoice of purchase order
+          purchaseOrder:
+            type: string
+            description: Id of the purchase order if the invoic is for purchase order only
+          issuedDate:
+            type: string
+            description: Issued date of the invoice
+          dueDate:
+            type: string
+            description: Due date of the invoice
+          estimate:
+            type: string
+            description: Id of the estimate if the invoic is for estimate only
+          jobPurchaseOrders:
+            type: array
+            items:
+              type: string
+          charges:
+            type: number
+            description: Charges amount from job or if you have customized while creating invoice
+          taxPercentage:
+            type: number
+            description: Tax percentage applied to invoice default will be 0
+          tax:
+            type: number
+            description: Tax amount to be added in charges to calculate the total invoice
+          total:
+            type: number
+            description: Total amount to be charged to customer
   Notification:
     type: object
     properties:

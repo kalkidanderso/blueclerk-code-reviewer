@@ -8,9 +8,11 @@ export interface IInvoice extends Document {
     purchaseOrder: Schema.Types.ObjectId
     estimate: Schema.Types.ObjectId
     jobPurchaseOrders: [Schema.Types.ObjectId]
+    issuedDate?: Date,
+    dueDate?: Date,
     customer: Schema.Types.ObjectId | any
     company: Schema.Types.ObjectId
-    note : String
+    note: string
     charges: number
     shippingCost: number
     tax: number
@@ -19,12 +21,14 @@ export interface IInvoice extends Document {
     createdBy: Schema.Types.ObjectId
     createdAt: Date,
     timeSpent: number
-    isFixed: boolean
-    hourlyRate: number
+    // isFixed: boolean
+    // hourlyRate: number
     items: [{
         item: Schema.Types.ObjectId
-        name: String
-        description: String
+        name: string
+        description: string
+        isFixed: boolean
+        hourlyRate: number
         price: number
         quantity: number
         tax: number
@@ -62,6 +66,12 @@ const InvoiceSchema = new Schema({
         ref: 'PurchaseOrder',
         required: false
     }],
+    issuedDate: {
+        type: Date
+    },
+    dueDate: {
+        type: Date
+    },
     note: {
         type: String,
         required: false
@@ -108,14 +118,14 @@ const InvoiceSchema = new Schema({
         type: Number,
         default: 0
     },
-    isFixed: {
-        type: Boolean,
-        default: false
-    },
-    hourlyRate: {
-        type: Number,
-        default: 0
-    },
+    // isFixed: {
+    //     type: Boolean,
+    //     default: false
+    // },
+    // hourlyRate: {
+    //     type: Number,
+    //     default: 0
+    // },
     items: [{
         item: {
             type: Schema.Types.ObjectId,
@@ -137,6 +147,10 @@ const InvoiceSchema = new Schema({
         quantity: {
             type: Number,
             required: false
+        },
+        isFixed: {
+            type: Boolean,
+            default: true
         },
         tax: {
             type: Number,

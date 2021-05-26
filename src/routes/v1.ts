@@ -40,10 +40,10 @@ import * as paymentController from '../controllers/payment'
 import * as tagController from '../controllers/tag'
 import * as ContactController from '../controllers/contact';
 import * as notificationController from '../controllers/notification';
+import * as integrationController from '../controllers/integration';
 
 import jobLocation from './jobLocation'
 import jobSite from './jobSite'
-import {checkRoleIsValid} from '../controllers/user';
 
 export default function (sio: any) {
 
@@ -251,7 +251,6 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.User_Get_All_Employees),
         validate(Validations.changeEmployeeRole),
-        checkRoleIsValid,
         userController.updateEmployeeRole
     )
 
@@ -1566,6 +1565,17 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateNotification),
         notificationController.updateNotification
+    )
+
+    // Integrations
+    router.post(
+        '/createIntegrationServiceTicket',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Create_Service_Ticket),
+        (req, res) => {
+            integrationController.createServiceTicket(req, res, sio)
+        }
     )
 
     return router

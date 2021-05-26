@@ -1,11 +1,14 @@
 import {Request, Response} from 'express';
+import {ObjectId} from 'mongodb'
+import moment from 'moment';
+
 import {IInvoice, Invoice} from '../models/Invoice';
 import {Messages, Status} from '../common/constants';
 import {ICompanyAdmin} from '../models/CompanyAdmin';
 import {Company, ICompany} from '../models/Company';
 import {IInvoicePrefix, InvoicePrefix} from '../models/InvoicePrefix';
 import {IUser} from '../models/User';
-import {Job} from '../models/Job';
+import {IJob, Job} from '../models/Job';
 import {IPurchaseOrder, PurchaseOrder} from '../models/PurchaseOrder';
 import {Item} from '../models/Item';
 import {Customer, ICustomer} from '../models/Customer';
@@ -13,7 +16,7 @@ import {Estimate, IEstimate} from '../models/Estimate';
 import {IScan, Scan} from '../models/Scan';
 import {sendInvoiceEmailToCustomer} from '../services/aws';
 import {CompanyInvoice} from '../models/CompanyInvoice';
-import {ObjectId} from 'mongodb'
+import { IJobReport, JobReport } from '../models/JobReport';
 
 export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
@@ -265,20 +268,20 @@ export const createInvoice = (req: Request, res: Response) => {
 
     const company = <ICompany>req.company
 
-    if(params.hasOwnProperty('jobId') && (params.jobId != null && params.jobId != '""' )){
+    if (params.jobId) {
 
         Invoice.findOne({ 'job': params.jobId, 'company': req.companyId })
             .then((previousInvoice: any) => {
 
-                if (previousInvoice != undefined || previousInvoice != null) {
+                if (previousInvoice) {
                     throw new Error('Invoice already created for this job')
                 }
 
-                const jobPrmoies = Job.findById(params.jobId)
+                const jobPromise = Job.findById(params.jobId)
                 const POPromise = PurchaseOrder.find({
                     job: params.jobId
                 })
-                return Promise.all([jobPrmoies, POPromise])
+                return Promise.all([jobPromise, POPromise])
 
             })
             .then((result: any) => {
@@ -293,7 +296,7 @@ export const createInvoice = (req: Request, res: Response) => {
                 const purchaseOrders = result[1]
                 const item = result[2]
 
-                if (job == undefined || job == null) {
+                if (!job) {
                     throw new Error('Invalid job id')
                     // return res.json({ 'status': Status.Error, 'message': 'Invalid job id' })
                 }
@@ -337,7 +340,7 @@ export const createInvoice = (req: Request, res: Response) => {
                                 let newBalance = customer.balance + invoice.total
                                 customer.updateOne({balance: newBalance})
                                     .then(() => {
-                                        resolve()
+                                        resolve(invoice)
                                     })
                                     .catch(()=>{
                                         reject()
@@ -348,6 +351,23 @@ export const createInvoice = (req: Request, res: Response) => {
                             reject()
                         })
                 })
+            })
+            .then((invoice: any) => {
+
+                // Mark the job report as it has been invoiced
+                return new Promise((resolve, reject) => {
+                    JobReport.findOne({ job: invoice.job })
+                        .then(async (jobReport: IJobReport) => {
+                            if (jobReport) {
+                                jobReport.invoiceCreated = true;
+                                jobReport.invoice = invoice._id;
+                                await jobReport.save();
+                            }
+
+                            resolve(invoice);
+                        })
+                })
+
             })
             .then(() =>{
                 return res.json({ 'status': Status.Success, 'message': "Job invoice created successfully." })
@@ -690,11 +710,10 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
         currentInvoiceId = company.currentInvoiceId
     }
 
-    let invoiceId = 'Invoice ' + (currentInvoiceId + 1)
-
-    if (company.invoicePrefix != undefined && company.invoicePrefix != null && company.invoicePrefix == '""') {
-        invoiceId = 'Invoice ' + company.invoicePrefix + '-' + (currentInvoiceId + 1)
-    }
+    const invNumber = parseInt(params.invoiceNumber) || company.currentInvoiceId + 1 
+    let invoiceId = company.invoicePrefix
+        ? `Invoice ${company.invoicePrefix}-${invNumber}`
+        : `Invoice ${invNumber}`;
 
     let taxAmount: number = 0;
     let charges: number = 0;
@@ -702,34 +721,34 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
     let invoiceType: number = 0;
     let customer : string
     let jobId : string
-    let hourlyRate: number = 0
+    // let hourlyRate: number = 0
     let timeSpent: number = 0
     let purchaseOrderId: string = null
     let estimateId: string = null
-    let isFixed: boolean = false
+    // let isFixed: boolean = false
     let taxPercentage: number = 0
 
 
-    if(job != null){
+    if (job) {
         charges = job.charges;
         invoiceType = 0
         customer = job.customer
         jobId = job._id
 
-        if (!jobTypeitem.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
-            return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
-        } else if (!jobTypeitem.isFixed) {
-            hourlyRate = params.hourlyRate
-        }
+        // if (!jobTypeitem.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
+        //     return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
+        // } else if (!jobTypeitem.isFixed) {
+        //     hourlyRate = params.hourlyRate
+        // }
 
-        if (!jobTypeitem.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
+        if (!jobTypeitem.isFixed && !params.timeSpent) {
             return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
         } else if (!jobTypeitem.isFixed) {
             timeSpent = params.timeSpent
         }
 
-        if(jobTypeitem.isFixed)
-            isFixed = true
+        // if(jobTypeitem.isFixed)
+        //     isFixed = true
     }
 
     if(purchaseOrder != null){
@@ -816,6 +835,11 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
     if (params.items != undefined) {
         try {
             items = JSON.parse(params.items);
+
+            // To handle any over-stringified strings
+            if (!Array.isArray(items)) {
+                items = JSON.parse(items);
+            }
         } catch (error) {
             return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
         }
@@ -827,7 +851,7 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
 
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
-            if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
+            if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed'))) {
                 return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' })
             }
             let obj: any = {}
@@ -843,6 +867,7 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
 
             obj.quantity = item.quantity
             obj.price = item.price
+            obj.isFixed = item.isFixed
             obj.tax = item.tax
             obj.subTotal = subTotal
 
@@ -857,8 +882,7 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
             total = total + subTotal
         }
 
-    } else if(jobTypeitem != null) {
-
+    } else if (jobTypeitem) {
 
         let obj: any = {}
         let price = parseInt(jobTypeitem.charges)
@@ -873,6 +897,7 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
 
         obj.quantity = job.timeSpent
         obj.price = price
+        obj.isFixed = jobTypeitem.isFixed
         obj.tax = itemTax
         obj.subTotal = subTotal
         obj.item = jobTypeitem._id
@@ -889,6 +914,8 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
         job: jobId,
         purchaseOrder: purchaseOrderId,
         jobPurchaseOrders: purchaseOrderIds,
+        issuedDate: params.issuedDate ? new Date(params.issuedDate) : Date.now(),
+        dueDate: params.dueDate ? new Date(params.dueDate) : moment().add(30, 'd').valueOf(),
         customer: customer,
         company: req.companyId,
         note: params.note,
@@ -899,8 +926,6 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
         taxPercentage: taxPercentage,
         createdBy: user._id,
         createdAt: Date.now(),
-        isFixed: isFixed,
-        hourlyRate: hourlyRate,
         timeSpent: timeSpent,
         items: invoiceItems,
         estimate: estimateId
@@ -1020,6 +1045,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                         if ((params.charges == undefined || params.charges == null || params.charges == '""' ) && (params.tax == undefined || params.tax == null || params.tax == '""' )) {
                             return res.json({'status': Status.Error, 'message': 'Tax Percentage or charges are required'})
                         }
+                        const issuedDate = params.issuedDate ? new Date(params.issuedDate) : invoice.issuedDate;
+                        const dueDate = params.dueDate ? new Date(params.dueDate) : invoice.issuedDate;
                         let tax: number = invoice.tax;
                         let taxPercentage: number = invoice.taxPercentage;
                         let charges: number = invoice.charges;
@@ -1053,11 +1080,11 @@ export const updateInvoice = (req: Request, res: Response) => {
                         invoice.charges = charges
                         // invoice.total = total
 
-                        if(!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""' )) {
-                            return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
-                        }else if(!job.isFixed){
-                            invoice.hourlyRate = params.hourlyRate
-                        }
+                        // if(!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""' )) {
+                        //     return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
+                        // }else if(!job.isFixed){
+                        //     invoice.hourlyRate = params.hourlyRate
+                        // }
 
                         if(!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""' )) {
                             return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
@@ -1128,7 +1155,7 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                         // invoice.total = total
 
-                        invoice.updateOne({total: total, items: invoiceItems, shippingCost: params.shippingCost, jobPurchaseOrders: purchaseOrderIds, tax: tax, taxPercentage: taxPercentage, charges: charges, note: params.note},
+                        invoice.updateOne({total: total, items: invoiceItems, shippingCost: params.shippingCost, jobPurchaseOrders: purchaseOrderIds, tax: tax, taxPercentage: taxPercentage, charges: charges, issuedDate, dueDate, note: params.note},
 
                             (err: any) => {
                                 if (err) {
@@ -1143,6 +1170,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                 if ((params.charges == undefined || params.charges == null || params.charges == '""' ) && (params.tax == undefined || params.tax == null || params.tax == '""' )) {
                     return res.json({'status': Status.Error, 'message': 'Tax Percentage or charges are required'})
                 }
+                const issuedDate = params.issuedDate ? new Date(params.issuedDate) : invoice.issuedDate;
+                const dueDate = params.dueDate ? new Date(params.dueDate) : invoice.issuedDate;
                 let tax: number = invoice.tax;
                 let taxPercentage: number = invoice.taxPercentage;
                 let charges: number = invoice.charges;
@@ -1228,7 +1257,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                     // invoice.shippingCost = params.shippingCost
                 }
 
-                invoice.updateOne({total: total, items: invoiceItems, shippingCost: params.shippingCost, tax: tax, taxPercentage: taxPercentage, charges: charges, note: params.note},
+                invoice.updateOne({total: total, items: invoiceItems, shippingCost: params.shippingCost, tax: tax, taxPercentage: taxPercentage, charges: charges, issuedDate, dueDate, note: params.note},
                     (err: any) => {
                         if (err) {
                             return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -1249,36 +1278,42 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
             path: 'job',
             populate: [
                 { path: 'type', select: 'title' },
-                { path: 'ticket', select: 'ticketId note scheduleDateTime'},
-                { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role'},
-                { path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId'}},
-                {path: 'jobLocation'},
-                {path: 'jobSite'}
+                { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
+                { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
+                { path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId' }},
+                { path: 'jobLocation', select: 'name location address' },
+                { path: 'jobSite', select: 'name location address' }
             ],
         })
         .populate({
+            path: 'purchaseOrder',
+            select: 'purchaseOrderId items equipment status estimate note total',
+            populate: [
+                { path: 'equipment', select: 'info maintenance type brand', populate: [ { path: 'type', select: 'title' }, { path: 'brand', select: 'title' }]},
+                { path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price' }
+            ]
+        })
+        .populate({
+            path: 'items.item',
+            select: 'name isFixed charges tax',
+            populate: [{path: 'jobType'}]
+        })
+        .populate({
+            path: 'company',
+            select: 'info.companyName info.logoUrl info.companyEmail permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax'
+        })
+        .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+            select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail'
         })
         .populate({
             path: 'estimate',
             select: 'total items note status customer company createdAt createdBy'
         })
         .populate({
-            path: 'company',
-            select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone'
-        })
-        .populate({
             path: 'createdBy',
-            select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone'
-        })
-        .populate({
-            path: 'purchaseOrder'
-        })
-        .populate({
-            path: 'items.item',
-            select: 'name itemCode note cost price',
-            populate: [{path: 'jobType'}]
+            select: 'info.companyName auth.email profile.displayName permissions.role address contact.phone'
         })
         .exec((err: any, invoice: IInvoice)=>{
 
@@ -1310,6 +1345,12 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
 export const sendInvoice = (req: Request, res: Response) => {
     const params = req.body
     const company = <ICompany>req.company;
+
+    // Check if invoiceId was a valid ObjectId
+    if (params.invoiceId && !ObjectId.isValid(params.invoiceId)) {
+        return res.json({ status: Status.Error, message: Messages.WrongId });
+    }
+
     try {
         Invoice.findOne({ _id: params.invoiceId, 'company': req.companyId})
             .populate({
@@ -1318,8 +1359,9 @@ export const sendInvoice = (req: Request, res: Response) => {
             })
             .then((invoice: IInvoice)=>{
                 if (!invoice) {
-                    return res.json({'status': Status.Error, 'message': 'Invalid invoice id'})
+                    return res.json({'status': Status.Error, 'message': 'Invoice not found'})
                 }
+
                 sendInvoiceEmailToCustomer({
                     companyName: company.info.companyName,
                     companyEmail: company.info.companyEmail,
@@ -1328,6 +1370,8 @@ export const sendInvoice = (req: Request, res: Response) => {
                     invoiceNumber: invoice.invoiceId,
                     invoiceAmount: invoice.total,
                 });
+
+                return res.json({ status: Status.Success, message: 'Invoice has been sent successfully!' });
             })
 
     } catch (err) {
@@ -1342,29 +1386,42 @@ export const getInvoices = (req: Request, res: Response) => {
             path: 'job',
             populate: [
                 { path: 'type', select: 'title' },
-                { path: 'customer', select: 'info.email auth.email profile.displayName contactName' },
+                { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
-                { path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId'}},
-                {path: 'jobLocation'},
-                {path: 'jobSite'}
+                { path: 'contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
+                { path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId' }},
+                { path: 'jobLocation', select: 'name location address' },
+                { path: 'jobSite', select: 'name location address' }
             ],
         })
         .populate({
+            path: 'purchaseOrder',
+            select: 'purchaseOrderId items equipment status estimate note total',
+            populate: [
+                { path: 'equipment', select: 'info maintenance type brand', populate: [ { path: 'type', select: 'title' }, { path: 'brand', select: 'title' }]},
+                { path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price' }
+            ]
+        })
+        .populate({
             path: 'items.item',
-            select: 'name itemCode note cost price',
+            select: 'name isFixed charges tax',
             populate: [{path: 'jobType'}]
         })
         .populate({
             path: 'company',
-            select: 'info.companyName info.logoUrl info.email permissions.role address.street address.city address.state address.zipCode contact.phone'
+            select: 'info.companyName info.logoUrl info.companyEmail permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax'
         })
         .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+            select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail'
         })
         .populate({
             path: 'estimate',
-            select: 'total items note status customer company createdBy'
+            select: 'total items note status customer company createdAt createdBy'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'info.companyName auth.email profile.displayName permissions.role address contact.phone'
         })
         .exec((err: any, invoices: IInvoice[])=>{
 

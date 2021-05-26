@@ -68,7 +68,7 @@ export const Validations = {
 
   createOfficeAdmin: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists()],
 
-  changeEmployeeRole: [check('employeeId').exists(), check('newRole').isEmail()],
+  changeEmployeeRole: [check('employeeId').exists(), check('newRole').exists()],
 
   updateProfile: [check('firstName').exists(), check('lastName').exists()],
 
@@ -271,7 +271,7 @@ export const Validations = {
   // Notification
   getNotifications: [check('isRead').optional().isIn(['ALL', true, false, 1, 0]), check('isDismissed').optional().isIn(['ALL', true, false, 1, 0])],
 
-  updateNotification: [check('isRead').optional().isBoolean(), check('isDismissed').optional().isBoolean()]
+  updateNotification: [check('isRead').optional().isBoolean(), check('isDismissed').optional().isBoolean()],
 
 }
 
