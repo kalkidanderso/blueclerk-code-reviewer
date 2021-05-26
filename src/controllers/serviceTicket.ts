@@ -415,6 +415,9 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
+                    if (!serviceTicket) {
+                        return res.json({ status: Status.Error, message: `Service ticket not found or you are unauthorized to update this service ticket` });
+                    }
                     let status = params.status ? params.status : serviceTicket.status;
                     let action = '';
 
