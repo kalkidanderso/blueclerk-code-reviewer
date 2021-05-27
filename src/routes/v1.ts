@@ -1572,6 +1572,7 @@ export default function (sio: any) {
         '/createIntegrationServiceTicket',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
+        validate(Validations.createIntegrationServiceTicket),
         checkUserPermissions(Permissions.Create_Service_Ticket),
         (req, res) => {
             integrationController.createServiceTicket(req, res, sio)

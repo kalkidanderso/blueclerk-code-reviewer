@@ -9212,7 +9212,7 @@
         ],
         "summary": "Create service ticket via web",
         "consumes": [
-          "multipart/form-data"
+          "application/x-www-form-urlencoded"
         ],
         "produces": [
           "application/json"
@@ -9243,6 +9243,7 @@
           {
             "name": "street",
             "in": "formData",
+            "required": true,
             "type": "string",
             "description": "Street address of the customer"
           },
@@ -9255,6 +9256,7 @@
           {
             "name": "city",
             "in": "formData",
+            "required": true,
             "type": "string",
             "description": "City of the customer"
           },
@@ -9268,6 +9270,7 @@
           {
             "name": "zipCode",
             "in": "formData",
+            "required": true,
             "type": "string",
             "description": "Zip Code of the customer"
           },
@@ -9316,7 +9319,7 @@
           {
             "name": "image",
             "in": "formData",
-            "type": "file"
+            "type": "string"
           },
           {
             "name": "companyId",
