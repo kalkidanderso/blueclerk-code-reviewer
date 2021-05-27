@@ -8,8 +8,8 @@ export interface IInvoice extends Document {
     purchaseOrder: Schema.Types.ObjectId
     estimate: Schema.Types.ObjectId
     jobPurchaseOrders: [Schema.Types.ObjectId]
-    issuedDate?: Date,
-    dueDate?: Date,
+    issuedDate?: Date
+    dueDate?: Date
     customer: Schema.Types.ObjectId | any
     company: Schema.Types.ObjectId
     note: string
@@ -19,7 +19,7 @@ export interface IInvoice extends Document {
     total: number
     taxPercentage: number
     createdBy: Schema.Types.ObjectId
-    createdAt: Date,
+    createdAt: Date
     timeSpent: number
     // isFixed: boolean
     // hourlyRate: number
@@ -33,8 +33,13 @@ export interface IInvoice extends Document {
         quantity: number
         tax: number
         subTotal: number
-    }],
+    }]
     paid: boolean
+    emailHistory?: [{
+        sendTo: string
+        sendAt: Date
+    }],
+    lastEmailSent?: Date
 }
 
 const InvoiceSchema = new Schema({
@@ -164,6 +169,16 @@ const InvoiceSchema = new Schema({
     paid:{
         type: Boolean,
         default: false
+    },
+    emailHistory: [{
+        _id: false,
+        sendTo: String,
+        sendAt: {
+            type: Date,
+        }
+    }],
+    lastEmailSent: {
+        type: Date
     }
 })
 

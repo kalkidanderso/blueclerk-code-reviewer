@@ -928,7 +928,9 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
         createdAt: Date.now(),
         timeSpent: timeSpent,
         items: invoiceItems,
-        estimate: estimateId
+        estimate: estimateId,
+        emailHistory: [],
+        lastEmailSent: null
     })
 
     next(req, res, invoice, currentInvoiceId)
@@ -1357,7 +1359,7 @@ export const sendInvoice = (req: Request, res: Response) => {
                 path: 'customer',
                 select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
             })
-            .then((invoice: IInvoice)=>{
+            .then(async (invoice: IInvoice)=>{
                 if (!invoice) {
                     return res.json({'status': Status.Error, 'message': 'Invoice not found'})
                 }
@@ -1370,6 +1372,15 @@ export const sendInvoice = (req: Request, res: Response) => {
                     invoiceNumber: invoice.invoiceId,
                     invoiceAmount: invoice.total,
                 });
+
+                // Update email history and last email sent info
+                const sendingDate = new Date();
+                invoice.emailHistory.push({
+                    sendTo: invoice.customer.info.email,
+                    sendAt: sendingDate
+                });
+                invoice.lastEmailSent = sendingDate;
+                await invoice.save();
 
                 return res.json({ status: Status.Success, message: 'Invoice has been sent successfully!' });
             })
