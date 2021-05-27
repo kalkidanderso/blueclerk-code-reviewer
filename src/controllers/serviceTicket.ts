@@ -39,9 +39,9 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             if(req.otherCompanyId != undefined) {
                 companyId = req.otherCompanyId
             }
-            let ticketId = 'Ticket '+ (company.currentJobId+1)
-            if(company.prefix != undefined && company.prefix == '""') {
-                ticketId = 'Ticket '+company.prefix+'-'+(company.currentJobId+1)
+            let ticketId = `Ticket ${company.currentJobId + 1}`;
+            if (company.prefix) {
+                ticketId = `Ticket ${company.prefix}-${company.currentJobId + 1}`;
             }
 
             let dueDate = params.dueDate ? new Date(params.dueDate) : null
@@ -166,7 +166,7 @@ export const _createServiceTicket = async (req: Request, res: Response, next: (e
         const customerId = new ObjectId(params.customerId);
         let ticketId = `Ticket ${company.currentJobId + 1}`;
         if (company.prefix) {
-            ticketId = `Ticket ${company.prefix} - ${company.currentJobId + 1}`;
+            ticketId = `Ticket ${company.prefix}-${company.currentJobId + 1}`;
         }
         const dueDate = params.dueDate ? new Date(params.dueDate) : null;
         let note: string = params.note ? `${params.note} ` : '';

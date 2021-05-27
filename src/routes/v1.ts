@@ -1459,7 +1459,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updatePayment),
         checkUserPermissions(Permissions.Update_Payment),
-        paymentController.udpatePayment
+        paymentController.updatePayment
     )
 
     router.post(
