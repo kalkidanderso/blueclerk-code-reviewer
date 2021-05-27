@@ -7,6 +7,7 @@ import {IUser} from '../models/User'
 import {parseFieldsAndUploadImageInS3, updateFieldsAndUploadImageInS3} from '../services/aws';
 import { ObjectId } from 'mongodb'
 import {Contact} from '../models/Contact';
+import { Item } from '../models/Item'
 import { NotificationServiceTicket, INotificationServiceTicket } from '../models/NotificationServiceTicket';
 
 export const createServiceTicket = (req: Request, res: Response, sio: any) => {
@@ -144,9 +145,15 @@ export const _createServiceTicket = async (req: Request, res: Response, next: (e
     const params = req.body;
     let serviceTicket: IServiceTicket;
 
-    // Check if customerContactId & customerId is a valid Object ID if provided
-    if ((params.customerContactId && !ObjectId.isValid(params.customerContactId)) || (params.customerId && !ObjectId.isValid(params.customerId))) {
-        return next(Messages.WrongId, null);
+    // Check if customerContactId, customerId & itemId is a valid Object ID if provided
+    if (params.customerContactId && !ObjectId.isValid(params.customerContactId)) {
+        return next(`parameter customerContactId: ${Messages.WrongId}`, null);
+    }
+    if (params.customerId && !ObjectId.isValid(params.customerId)) {
+        return next(`parameter customerId: ${Messages.WrongId}`, null);
+    }
+    if (params.itemId && !ObjectId.isValid(params.itemId)) {
+        return next(`parameter itemId: ${Messages.WrongId}`, null);
     }
 
     try {
@@ -182,6 +189,9 @@ export const _createServiceTicket = async (req: Request, res: Response, next: (e
             note += `Preferred Date Time: ${params.preferredDateTime}`;
         }
 
+        // Get Job Type from the Item selected
+        const item = params.itemId ? await Item.findById(params.itemId) : null;
+
         // Construct the service ticket entry
         serviceTicket = new ServiceTicket({
             createdAt: Date.now(),
@@ -193,12 +203,12 @@ export const _createServiceTicket = async (req: Request, res: Response, next: (e
             ticketId: ticketId,
             jobLocation: params.jobLocationId,
             jobSite: params.jobSiteId,
-            jobType: params.jobTypeId,
+            jobType: params.jobTypeId || item && item.jobType,
             item: params.itemId,
             customerPO: customerPo,
             customer: customerId,
             customerContactId: customerContact && customerContact._id,
-            image: params.imageUrl,
+            image: params.image,
             source: params.source || 'blueclerk'
         });
 
