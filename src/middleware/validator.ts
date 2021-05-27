@@ -273,5 +273,17 @@ export const Validations = {
 
   updateNotification: [check('isRead').optional().isBoolean(), check('isDismissed').optional().isBoolean()],
 
+  createIntegrationServiceTicket: [
+    check('source').exists().withMessage('is required'),
+    check('name').exists().withMessage('is required'),
+    check('email').exists().withMessage('is required'),
+    check('email').isEmail().withMessage('invalid format (not email format)'),
+    check('street').exists().withMessage('is required'),
+    check('city').exists().withMessage('is required'),
+    check('state').exists().withMessage('is required'),
+    check('zipCode').exists().withMessage('is required'),
+    check('phone').exists().withMessage('is required')
+  ],
+
 }
 
