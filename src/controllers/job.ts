@@ -758,7 +758,7 @@ export const getAllJobReports = (req: Request, res: Response) => {
         })
         .populate({
             path: 'invoice',
-            select: 'invoiceId invoiceType paid issuedDate dueDate createdAt',
+            select: 'invoiceId invoiceType paid issuedDate dueDate createdAt taxAmount subTotal total',
         })
         .exec().then((reports: IJobReport[]) => {
         if (reports.length) {
@@ -804,7 +804,7 @@ export const getJobReportDetails = (req: Request, res: Response) => {
         .populate('PurchaseOrder')
         .populate({
             path: 'invoice',
-            select: 'invoiceType jobPurchaseOrders charges shippingCost tax taxPercentage paid invoiceId purchaseOrder issuedDate dueDate total items estimate createdAt'
+            select: 'invoiceType jobPurchaseOrders charges shippingCost tax taxPercentage taxAmount paid invoiceId purchaseOrder issuedDate dueDate subTotal total items estimate createdAt'
         })
         .exec()
         .then((report: IJobReport) => {
