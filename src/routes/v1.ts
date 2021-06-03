@@ -1071,6 +1071,27 @@ export default function (sio: any) {
         companyController.updateCompanyProfile
     )
 
+    router.get(
+        '/getItemTierList',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        companyController.getItemTierList
+    )
+
+    router.post(
+        '/addItemTier',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        companyController.addItemTier
+    )
+
+    router.put(
+        '/updateItemTier',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        companyController.updateItemTier
+    )
+
     router.post(
         '/setCustomWorkOrderNumber',
         passport.authenticate('jwt', { session: false }),

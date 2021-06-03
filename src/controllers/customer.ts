@@ -1,11 +1,13 @@
-import {Request, Response} from 'express'
-import { Status, Messages, Role} from '../common/constants'
+import { Request, Response } from 'express'
+import { ObjectId } from 'mongodb'
+import { Status, Messages, Role } from '../common/constants'
 
 import { Customer, ICustomer } from '../models/Customer'
-import {  Company, ICompany } from '../models/Company'
-import {  CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
+import { Company, ICompany } from '../models/Company'
+import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { User, IUser } from '../models/User'
 import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
+import { IPriceTier } from '../models/PriceTier'
 
 export const createCustomer = (req: Request, res: Response) => {
 
@@ -214,8 +216,9 @@ export const getCustomers = (req: Request, res: Response) => {
         })
 
         User.find({_id : {$in: customerIds}},
-            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId',
-            (err: any, users: IUser[]) =>{
+            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId itemTier')
+            .populate({ path: 'itemTier', select: '-companyId -__v' })
+            .exec((err: any, users: IUser[]) =>{
 
             if (err) {
 
@@ -232,9 +235,23 @@ export const updateCustomer = (req: Request, res: Response) => {
 
     const params = req.body
     Customer.findById(params.customerId)
-    .exec((err: any, customer: ICustomer)=>{
+    .exec(async (err: any, customer: ICustomer)=>{
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }
+
+        // Check if itemTier is a valid tier of the company
+        const company = await Company.findById(customer.company).populate({path: 'itemTier.list.tier'});
+        if (params.itemTierId && ObjectId.isValid(params.itemTierId)) {
+            const companyTier = company.itemTier.list.find(t => {
+                const tier = <IPriceTier>t.tier;
+                // Check for the active company item  tier
+                return (tier._id.toString() === params.itemTierId && tier.isActive)
+            });
+
+            if (!companyTier) {
+                return res.json({ status: Status.Error, message: 'itemTierId is either not found on the Company or not active' })
+            }
         }
 
         var data: any =  {
@@ -249,6 +266,7 @@ export const updateCustomer = (req: Request, res: Response) => {
             'address.zipCode': params.zipCode,
             'contact.phone': params.phone,
             'contact.fax': params.fax,
+            itemTier: new ObjectId(params.itemTierId),
             contactName: params.contactName,
             vendorId: params.vendorId,
             contacts: params.contacts
@@ -258,11 +276,11 @@ export const updateCustomer = (req: Request, res: Response) => {
             data['location.coordinates'] = [params.longitude, params.latitude]
         }
         customer.updateOne(data, { omitUndefined: true }, (err: any, raw: any)=> {
-                if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                }
-                return res.json({'status': Status.Success, 'message': 'Customer updated successfully.'})
-            })
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': err.message });
+            }
+            return res.json({'status': Status.Success, 'message': 'Customer updated successfully.'})
+        })
     })
 }
 
@@ -278,7 +296,7 @@ export const customerDetail = (req: Request, res: Response) => {
     CompanyCustomer.findOne({ 'customer': params.customerId, company: companyId})
     .populate({
         path: 'customer',
-        populate: [{ path: 'jobLocations', populate: {path: 'jobSites'}}, { path: 'equipments'}]
+        populate: [{ path: 'jobLocations', populate: {path: 'jobSites'}}, { path: 'equipments'}, { path: 'itemTier', select: '-companyId -__v' }]
     })
     .exec().then((companyCustomer: ICompanyCustomer)=>{
         const customer: any = companyCustomer.customer;

@@ -3,6 +3,7 @@ import { Status, Role, Messages } from '../common/constants'
 
 import { JobType, IJobType } from '../models/JobType'
 import { IUser } from '../models/User'
+import { ICompany } from '../models/Company'
 import { Item, IItem } from '../models/Item'
 
 export const createJobType = (req: Request, res: Response) => {
@@ -80,7 +81,7 @@ export const createJobType = (req: Request, res: Response) => {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
 
-                _createItem(req, res, jobType, req.companyId, (req: Request, res: Response) => {
+                _createItem(req, res, jobType, req.company, (req: Request, res: Response) => {
                     return res.json({'status': Status.Success, 'message': 'Job type created successfully.'})
                 })
 
@@ -89,17 +90,25 @@ export const createJobType = (req: Request, res: Response) => {
     }
 }
 
-const _createItem = (req: Request, res: Response, jobType: IJobType, companyId: any, next: (req: Request, res: Response) => void) => {
+const _createItem = (req: Request, res: Response, jobType: IJobType, company: ICompany, next: (req: Request, res: Response) => void) => {
 
     const params = req.body
+    let companyId = company._id;
+    const itemTiers = [];
 
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
 
+    // Iterate company itemTier to add to the new Item
+    for (const t of company.itemTier.list) {
+        itemTiers.push({ tier: t.tier });
+    }
+
     const item = new Item(
         {
             name: params.title,
+            tiers: itemTiers,
             company: companyId,
             jobType: jobType._id,
         }
@@ -279,8 +288,9 @@ const _updateItemStatus = (req: Request, res: Response, jobType: IJobType, itemS
 export const getAllItems = (req: Request, res: Response) => {
 
     Item.find(
-        { $or: [ {company: null, isActive: true}, {company: req.companyId, isActive: true} ]},
-        (err: any, items: IItem[])=>{
+        { $or: [{ company: null, isActive: true }, { company: req.companyId, isActive: true }] })
+        .populate({ path: 'tiers.tier', select: '-companyId -__v' })
+        .exec((err: any, items: IItem[]) => {
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})

@@ -28,6 +28,10 @@
       "description": "For all kind of users"
     },
     {
+      "name": "Company",
+      "description": "For all kind of company stuff"
+    },
+    {
       "name": "Equipment Type",
       "description": "For equipment types"
     },
@@ -2085,10 +2089,46 @@
         ]
       }
     },
-    "/updateCompanyProfile": {
+    "/agreeTermAndCondition": {
       "post": {
         "tags": [
           "Users"
+        ],
+        "summary": "Employee agree to terms and condition",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "agreedStatus",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateCompanyProfile": {
+      "post": {
+        "tags": [
+          "Company"
         ],
         "summary": "To update profile of a company",
         "description": "",
@@ -2164,12 +2204,70 @@
         ]
       }
     },
-    "/agreeTermAndCondition": {
+    "/getItemTierList": {
+      "get": {
+        "tags": [
+          "Company"
+        ],
+        "summary": "To update item tier count of company",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/addItemTier": {
       "post": {
         "tags": [
-          "Users"
+          "Company"
         ],
-        "summary": "Employee agree to terms and condition",
+        "summary": "To update item tier count of company",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateItemTier": {
+      "put": {
+        "tags": [
+          "Company"
+        ],
+        "summary": "To update item tier count of company",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -2179,10 +2277,21 @@
         ],
         "parameters": [
           {
-            "name": "agreedStatus",
+            "name": "itemTierId",
             "in": "formData",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "isActive",
+            "in": "formData",
+            "type": "integer",
+            "enum": [0, 1]
           }
         ],
         "responses": {
@@ -2678,6 +2787,12 @@
           },
           {
             "name": "email",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "itemTierId",
             "in": "formData",
             "required": true,
             "type": "string"

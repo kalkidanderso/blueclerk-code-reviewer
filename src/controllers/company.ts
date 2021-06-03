@@ -13,6 +13,8 @@ import {IUser, User} from '../models/User'
 import {IContractorActivity} from '../models/ContractorActivity'
 import {Customer} from '../models/Customer'
 import {CompanyCustomer} from '../models/CompanyCustomer';
+import { IItem, Item } from '../models/Item'
+import { IPriceTier, PriceTier } from '../models/PriceTier'
 
 const Hubspot = require('hubspot')
 
@@ -532,6 +534,103 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
             }
         }
     )
+}
+
+export const getItemTierList = async (req: Request, res: Response) => {
+
+    const company = <ICompany>req.company;
+
+    await company.populate({
+        path: 'itemTier.list.tier',
+        select: '-companyId'
+    }).execPopulate()
+
+    return res.json({ status: Status.Success, itemTierList: company.itemTier.list });
+}
+
+export const addItemTier = async (req: Request, res: Response) => {
+
+    const company = <ICompany>req.company;
+
+    // Create new Price Tier collection
+    const itemTier: IPriceTier = new PriceTier({
+        companyId: company._id,
+        name: (company.itemTier.count || 0) + 1,
+        isActive: true
+    })
+    await itemTier.save(err => {
+        if (err)
+            return res.json({ status: Status.Error, message: err.message });
+    });
+
+    // Update Company itemTier Count and add the new one to the list
+    company.itemTier.count += 1;
+    company.itemTier.list.push({
+        tier: itemTier._id,
+    });
+    await company.save(err => {
+        if (err)
+            return res.json({ status: Status.Error, message: err.message });
+    });
+
+    // Search all items belong to the Company
+    const items: IItem[] = await Item.find({ company: company._id });
+
+    // Iterate all items and add the new tier
+    for (const item of items) {
+        if (company.itemTier.count === item.tiers.length) {
+            continue;
+        }
+
+        item.tiers.push({
+            tier: itemTier._id,
+        })
+        await item.save(err => {
+            if (err)
+                return res.json({ status: Status.Error, message: err.message });
+        })
+    }
+
+    return res.json({ status: Status.Success, message: 'New Item Tier added successfully' });
+
+}
+
+export const updateItemTier = async (req: Request, res: Response) => {
+
+    const user = <IUser>req.user;
+    const company = <ICompany>req.company;
+    const params = req.body;
+
+    // Check if params.itemTierId is a valid Mongo ObjectID
+    if (!ObjectId.isValid(params.itemTierId)) {
+        return res.json({ status: Status.Error, message: Messages.WrongId });
+    }
+
+    // Search the tier to the Price Tier collection
+    const tier = await PriceTier.findOne({ _id: params.itemTierId, companyId: company._id });
+    if (!tier) {
+        return res.json({ status: Status.Error, message: 'Item Tier not found' });
+    }
+
+    tier.name = params.name || tier.name;
+    tier.isActive = params.isActive ? !!(Number(params.isActive)) : tier.isActive;
+
+    // Handle inactiveBy & inactiveAt based on active status
+    if (params.isActive === '0') {
+        tier.inactiveBy = user._id;
+        tier.inactiveAt = new Date();
+    } else if (params.isActive === '1') {
+        tier.inactiveBy = null;
+        tier.inactiveAt = null;
+    }
+
+    await tier.save(err => {
+        if (err)
+            return res.json({ status: Status.Error, message: err.message });
+    });
+
+    return res.json({ status: Status.Success, message: 'Item Tier updated successfully', itemTier: tier });
+
 }
 
 const checkPrefixExists = (req: Request, res: Response, next: (req: Request, res: Response, prefix: ICompanyPrefix) => void) => {
