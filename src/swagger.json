@@ -2724,6 +2724,11 @@
             "type": "string"
           },
           {
+            "name": "itemTierId",
+            "in": "formData",
+            "type": "string"
+          },
+          {
             "name": "contactName",
             "in": "formData",
             "type": "string"
@@ -2794,7 +2799,6 @@
           {
             "name": "itemTierId",
             "in": "formData",
-            "required": true,
             "type": "string"
           },
           {

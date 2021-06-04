@@ -9,13 +9,29 @@ import { User, IUser } from '../models/User'
 import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 import { IPriceTier } from '../models/PriceTier'
 
-export const createCustomer = (req: Request, res: Response) => {
+export const createCustomer = async (req: Request, res: Response) => {
 
     const params = req.body
+    const company = <ICompany>req.company;
     var companyId = req.companyId;
+    let tier: IPriceTier;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
+
+    await company.populate({ path: 'itemTier.list.tier' }).execPopulate();
+    if (params.itemTierId && ObjectId.isValid(params.itemTierId)) {
+        const companyTier = company.itemTier.list.find(t => {
+            tier = <IPriceTier>t.tier;
+            // Check for the active company item tier
+            return (tier._id.toString() === params.itemTierId && tier.isActive)
+        })
+
+        if (!companyTier) {
+            return res.json({ status: Status.Error, message: 'itemTierId is either not found on the Company or itemTier is not active'})
+        }
+    }
+
     var data: any =  {
         info: {
             email: params.email,
@@ -42,6 +58,7 @@ export const createCustomer = (req: Request, res: Response) => {
             role: Role.CUSTOMER,
             extra: [],
         },
+        itemTier: tier && tier._id,
         contactName: params.contactName,
         vendorId: params.vendorId,
         contacts: params.contacts
@@ -234,6 +251,7 @@ export const getCustomers = (req: Request, res: Response) => {
 export const updateCustomer = (req: Request, res: Response) => {
 
     const params = req.body
+    let tier: IPriceTier;
     Customer.findById(params.customerId)
     .exec(async (err: any, customer: ICustomer)=>{
         if (err) {
@@ -244,13 +262,13 @@ export const updateCustomer = (req: Request, res: Response) => {
         const company = await Company.findById(customer.company).populate({path: 'itemTier.list.tier'});
         if (params.itemTierId && ObjectId.isValid(params.itemTierId)) {
             const companyTier = company.itemTier.list.find(t => {
-                const tier = <IPriceTier>t.tier;
-                // Check for the active company item  tier
+                tier = <IPriceTier>t.tier;
+                // Check for the active company item tier
                 return (tier._id.toString() === params.itemTierId && tier.isActive)
             });
 
             if (!companyTier) {
-                return res.json({ status: Status.Error, message: 'itemTierId is either not found on the Company or not active' })
+                return res.json({ status: Status.Error, message: 'itemTierId is either not found on the Company or itemTier is not active' })
             }
         }
 
@@ -266,7 +284,7 @@ export const updateCustomer = (req: Request, res: Response) => {
             'address.zipCode': params.zipCode,
             'contact.phone': params.phone,
             'contact.fax': params.fax,
-            itemTier: new ObjectId(params.itemTierId),
+            itemTier: tier && tier._id,
             contactName: params.contactName,
             vendorId: params.vendorId,
             contacts: params.contacts

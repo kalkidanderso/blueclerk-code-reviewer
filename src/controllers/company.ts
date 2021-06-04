@@ -542,7 +542,7 @@ export const getItemTierList = async (req: Request, res: Response) => {
 
     await company.populate({
         path: 'itemTier.list.tier',
-        select: '-companyId'
+        select: '-companyId -__v'
     }).execPopulate()
 
     return res.json({ status: Status.Success, itemTierList: company.itemTier.list });

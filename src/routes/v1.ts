@@ -1089,6 +1089,7 @@ export default function (sio: any) {
         '/updateItemTier',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
+        validate(Validations.updateItemTier),
         companyController.updateItemTier
     )
 
