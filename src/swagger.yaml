@@ -3978,11 +3978,6 @@ paths:
           required: false
           type: string
           description: Pass note if create manual invoice (required in manual invoice) 
-        - name: tax
-          in: formData
-          type: number
-          required: false
-          description: Percentage of tax to be applied on total cost of job
         - name: shippingCost
           in: formData
           type: number
@@ -4064,11 +4059,6 @@ paths:
           in: formData
           type: string
           description: Due date of the invoice
-        - name: tax
-          in: formData
-          type: number
-          required: false
-          description: Percentage of tax to be applied on total cost of job
         - name: charges
           in: formData
           type: number

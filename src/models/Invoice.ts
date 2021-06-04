@@ -15,9 +15,11 @@ export interface IInvoice extends Document {
     note: string
     charges: number
     shippingCost: number
-    tax: number
+    tax: number // TODO: to be deprecated
+    taxAmount: number
+    subTotal: number
     total: number
-    taxPercentage: number
+    taxPercentage: number // TODO: to be deprecated
     createdBy: Schema.Types.ObjectId
     createdAt: Date
     timeSpent: number
@@ -32,12 +34,13 @@ export interface IInvoice extends Document {
         price: number
         quantity: number
         tax: number
+        taxAmount: number
         subTotal: number
     }]
     paid: boolean
     emailHistory?: [{
-        sendTo: string
-        sendAt: Date
+        sentTo: string
+        sentAt: Date
     }],
     lastEmailSent?: Date
 }
@@ -95,20 +98,31 @@ const InvoiceSchema = new Schema({
         type: Number,
         default: 0
     },
+    taxAmount: {
+        type: Number,
+        default: 0
+    },
+    subTotal: {
+        type: Number,
+        default: 0
+    },
     total: {
-        type: Number
+        type: Number,
+        default: 0
     },
     shippingCost: {
         type: Number,
         default: 0
     },
     tax: {
+        // TODO: to be deprecated
         type: Number,
-        default: 0
+        // default: 0
     },
     taxPercentage: {
+        // TODO: to be deprecated
         type: Number,
-        default: 0
+        // default: 0
     },
     createdBy: {
         type: Schema.Types.ObjectId,
@@ -132,6 +146,7 @@ const InvoiceSchema = new Schema({
     //     default: 0
     // },
     items: [{
+        _id: false,
         item: {
             type: Schema.Types.ObjectId,
             ref: 'Item',
@@ -161,9 +176,14 @@ const InvoiceSchema = new Schema({
             type: Number,
             required: false
         },
+        taxAmount: {
+            type: Number,
+            default: 0
+        },
         subTotal: {
             type: Number,
-            required: false
+            required: false,
+            default: 0
         },
     }],
     paid:{
@@ -172,8 +192,8 @@ const InvoiceSchema = new Schema({
     },
     emailHistory: [{
         _id: false,
-        sendTo: String,
-        sendAt: {
+        sentTo: String,
+        sentAt: {
             type: Date,
         }
     }],
