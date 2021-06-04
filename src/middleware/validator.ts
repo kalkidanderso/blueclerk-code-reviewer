@@ -78,6 +78,8 @@ export const Validations = {
 
   updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('phone').exists()],
 
+  updateItemTier: [check('itemTierId').exists().withMessage('is required')],
+
   deleteEmployee: [check('employeeId').exists()],
 
   getEmployeeDetails: [check('employeeId').exists()],

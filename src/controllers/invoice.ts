@@ -10,13 +10,14 @@ import {IInvoicePrefix, InvoicePrefix} from '../models/InvoicePrefix';
 import {IUser} from '../models/User';
 import {IJob, Job} from '../models/Job';
 import {IPurchaseOrder, PurchaseOrder} from '../models/PurchaseOrder';
-import {Item} from '../models/Item';
+import { IItem, Item } from '../models/Item';
 import {Customer, ICustomer} from '../models/Customer';
 import {Estimate, IEstimate} from '../models/Estimate';
 import {IScan, Scan} from '../models/Scan';
 import {sendInvoiceEmailToCustomer} from '../services/aws';
 import {CompanyInvoice} from '../models/CompanyInvoice';
 import { IJobReport, JobReport } from '../models/JobReport';
+import { IPriceTier } from '../models/PriceTier';
 
 export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
@@ -693,7 +694,7 @@ export const createInvoice = (req: Request, res: Response) => {
     }
 }
 
-const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem: any, purchaseOrders: any, purchaseOrder: any, estimate: any, next: (req: Request, res: Response, invoice: IInvoice, invoiceId: number) => void) =>{
+const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTypeitem: IItem, purchaseOrders: any, purchaseOrder: any, estimate: any, next: (req: Request, res: Response, invoice: IInvoice, invoiceId: number) => void) =>{
 
     const params = req.body
     const company = req.company
@@ -885,15 +886,31 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
 
     } else if (jobTypeitem) {
 
+        /**
+         * Find the assigned itemTier of the customer,
+         * take the first tier of Item when customer doesn't have it
+         */
+        const customerObj = await Customer.findById(customer);
+        let itemTier;
+        if (customerObj.itemTier) {
+            itemTier = jobTypeitem.tiers.find(t => t.tier.toString() === customerObj.itemTier.toString());
+        } else {
+            await jobTypeitem.populate({ path: 'tiers.tier' }).execPopulate();
+            itemTier = jobTypeitem.tiers.find(t => {
+                const tier = <IPriceTier>t.tier;
+                return tier.isActive;
+            });
+        }
+
         let obj: any = {}
-        let price = parseFloat(jobTypeitem.charges)
+        let price = itemTier && itemTier.charge || jobTypeitem.charges
         let quantity = parseFloat(job.timeSpent)
         let itemTax =  0
         let itemTaxAmount: number = 0
         let subTotal = price * quantity
 
         if(jobTypeitem.tax > 0) {
-            itemTax =  parseFloat(jobTypeitem.tax)
+            itemTax =  jobTypeitem.tax
             itemTaxAmount = subTotal * itemTax / 100;
             taxAmount += itemTaxAmount;
         }
