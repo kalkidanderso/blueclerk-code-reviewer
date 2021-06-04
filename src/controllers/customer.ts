@@ -19,6 +19,10 @@ export const createCustomer = async (req: Request, res: Response) => {
         companyId = req.otherCompanyId
     }
 
+    /**
+     * Check if Item Tier ID is active & belong to the company,
+     * then assigned it to the new Customer
+     */
     await company.populate({ path: 'itemTier.list.tier' }).execPopulate();
     if (params.itemTierId && ObjectId.isValid(params.itemTierId)) {
         const companyTier = company.itemTier.list.find(t => {
@@ -258,7 +262,10 @@ export const updateCustomer = (req: Request, res: Response) => {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
 
-        // Check if itemTier is a valid tier of the company
+        /**
+         * Check if Item Tier ID is active & belong to the company,
+         * then assigned it to the updated Customer
+         */
         const company = await Company.findById(customer.company).populate({path: 'itemTier.list.tier'});
         if (params.itemTierId && ObjectId.isValid(params.itemTierId)) {
             const companyTier = company.itemTier.list.find(t => {

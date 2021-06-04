@@ -886,6 +886,10 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
 
     } else if (jobTypeitem) {
 
+        /**
+         * Find the assigned itemTier of the customer,
+         * take the first tier of Item when customer doesn't have it
+         */
         const customerObj = await Customer.findById(customer);
         let itemTier;
         if (customerObj.itemTier) {

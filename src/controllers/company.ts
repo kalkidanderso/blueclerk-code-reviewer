@@ -536,6 +536,9 @@ export const setCustomWorkNumber = (req: Request, res: Response) => {
     )
 }
 
+/**
+ * Retrieve all Company's Item Tier List
+ */
 export const getItemTierList = async (req: Request, res: Response) => {
 
     const company = <ICompany>req.company;
@@ -548,6 +551,11 @@ export const getItemTierList = async (req: Request, res: Response) => {
     return res.json({ status: Status.Success, itemTierList: company.itemTier.list });
 }
 
+/**
+ * Create a new Price Tier in collection,
+ * then add it to the Company Item Tier list,
+ * then add it to all Company Item's tiers
+ */
 export const addItemTier = async (req: Request, res: Response) => {
 
     const company = <ICompany>req.company;
@@ -595,6 +603,10 @@ export const addItemTier = async (req: Request, res: Response) => {
 
 }
 
+/**
+ * Update Company Item Tier's name & isActive,
+ * which will update the real record on Price Tier
+ */
 export const updateItemTier = async (req: Request, res: Response) => {
 
     const user = <IUser>req.user;
