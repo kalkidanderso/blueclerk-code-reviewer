@@ -509,6 +509,14 @@ export default function (sio: any) {
         jobTypeController.updateItem
     )
 
+    router.post(
+        '/updateItems',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Item),
+        jobTypeController.updateItems
+    )
+
     //Job
     router.post(
         '/createJob',

@@ -11,7 +11,7 @@ import {IJobCharges, JobCharges} from '../models/JobCharges'
 import {IJob, Job} from '../models/Job'
 import {IUser, User} from '../models/User'
 import {IContractorActivity} from '../models/ContractorActivity'
-import {Customer} from '../models/Customer'
+import { ICustomer, Customer } from '../models/Customer'
 import {CompanyCustomer} from '../models/CompanyCustomer';
 import { IItem, Item } from '../models/Item'
 import { IPriceTier, PriceTier } from '../models/PriceTier'
@@ -545,7 +545,8 @@ export const getItemTierList = async (req: Request, res: Response) => {
 
     await company.populate({
         path: 'itemTier.list.tier',
-        select: '-companyId -__v'
+        select: '-companyId -__v',
+        populate: [ { path: 'inactiveBy', select: 'auth.email profile.displayName contact.phone'} ]
     }).execPopulate()
 
     return res.json({ status: Status.Success, itemTierList: company.itemTier.list });
@@ -612,6 +613,7 @@ export const updateItemTier = async (req: Request, res: Response) => {
     const user = <IUser>req.user;
     const company = <ICompany>req.company;
     const params = req.body;
+    let conflictCustomers: ICustomer[];
 
     // Check if params.itemTierId is a valid Mongo ObjectID
     if (!ObjectId.isValid(params.itemTierId)) {
@@ -631,6 +633,8 @@ export const updateItemTier = async (req: Request, res: Response) => {
     if (params.isActive === '0') {
         tier.inactiveBy = user._id;
         tier.inactiveAt = new Date();
+
+        conflictCustomers = await Customer.find({ itemTier: tier._id });
     } else if (params.isActive === '1') {
         tier.inactiveBy = null;
         tier.inactiveAt = null;
@@ -641,7 +645,12 @@ export const updateItemTier = async (req: Request, res: Response) => {
             return res.json({ status: Status.Error, message: err.message });
     });
 
-    return res.json({ status: Status.Success, message: 'Item Tier updated successfully', itemTier: tier });
+    await tier.populate({
+        path: 'inactiveBy',
+        select: 'auth.email profile.displayName contact.phone'
+    }).execPopulate();
+
+    return res.json({ status: Status.Success, message: 'Item Tier updated successfully', itemTier: tier, conflictCustomers });
 
 }
 

@@ -75,9 +75,7 @@ export interface ICompany extends Document{
     currentEstimateId: number
     itemTier: {
         count: number
-        list: [{
-            tier: Schema.Types.ObjectId | IPriceTier
-        }]
+        list: { tier: Schema.Types.ObjectId | IPriceTier }[]
     }
     companyInvoices: ICompanyInvoice[];
 }

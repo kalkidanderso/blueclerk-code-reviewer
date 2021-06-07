@@ -2289,6 +2289,7 @@
           },
           {
             "name": "isActive",
+            "description": "Status of company item tier. **0** => false/inactive, **1** => true/active",
             "in": "formData",
             "type": "integer",
             "enum": [0, 1]
@@ -4281,6 +4282,43 @@
             "required": true,
             "type": "number",
             "description": "tax percentage to be applied on this item in invoice"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateItems": {
+      "post": {
+        "tags": [
+          "Items"
+        ],
+        "summary": "To update all item charges",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "items",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Json string of the items e.g [{\"itemId\":\"60884105898eb7068283bfc4\",\"tiers\":[{\"tierId\":\"60b7dd9643d3717e9a325c9f\",\"charge\":10},{\"tierId\":\"60b7e0598529b3041b284628\",\"charge\":20}]},{\"itemId\":\"60884115898eb7068283bfc6\",\"tiers\":[{\"tierId\":\"60b7e0598529b3041b284628\",\"charge\":15},{\"tierId\":\"60b7e0a68529b3041b284629\",\"charge\":25}]},{\"itemId\":\"60b90c8438045631806b8e6d\",\"tiers\":[{\"tierId\":\"60b7dd9643d3717e9a325c9f\",\"charge\":40}]}]"
           }
         ],
         "responses": {
