@@ -1176,7 +1176,7 @@ export const editJob = async (req: Request, res: Response) => {
             let action = '';
 
             // If company update assignee of the job
-            if (params.employeeType != undefined) {
+            if (params.employeeType && !!(params.employeeType) !== job.employeeType) {
                 if (job.status != JobStatus.PENDING) {
                     return res.json({ 'status': Status.Error, 'message': 'Cannot update assignee for a non PENDING job' });
                 }
