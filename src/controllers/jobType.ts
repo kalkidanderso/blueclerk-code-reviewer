@@ -1,4 +1,5 @@
 import {Request, Response} from 'express'
+import { ObjectId } from 'mongodb'
 import { Status, Role, Messages } from '../common/constants'
 
 import { JobType, IJobType } from '../models/JobType'
@@ -328,4 +329,77 @@ export const updateItem = (req: Request, res: Response) => {
 
         }
     )
+}
+
+// To update all items' charges
+export const updateItems = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    // To save any error itemIds and/or tierIds
+    const errorWrongIds = [];
+    // To save param items from JSON format
+    let items = [];
+
+    if (params.items) {
+        try {
+            items = JSON.parse(params.items);
+
+            // To handle any over-stringified strings
+            if (!Array.isArray(items)) {
+                items = JSON.parse(items);
+            }
+        } catch (err) {
+            return res.json({ status: Status.Error, message: 'Items json is invalid' });
+        }
+    }
+
+    // No item to be updated, return directly
+    if (items.length <= 0) {
+        return res.json({ status: Status.Success, message: 'No items to be updated' });
+    }
+
+    // Iterate all item from param items
+    for (const i of items) {
+        // No tier object found from param items, go to next item
+        if (i.tiers.length <= 0) {
+            continue;
+        }
+
+        /**
+         * Check if itemId is a valid Mongo ObjectId,
+         * collect the troubled itemId, go to next item
+         */
+        if (!ObjectId.isValid(i.itemId)) {
+            errorWrongIds.push({ itemId: i.itemId, message: Messages.WrongId });
+            continue;
+        }
+
+        const itemObj = await Item.findById(i.itemId);
+        // Iterate all tiers of item on DB
+        for (const paramTier of i.tiers) {
+            // Find the tier to be updated
+            const itemObjTier = itemObj.tiers.find(itemTier => itemTier.tier.toString() === paramTier.tierId);
+
+            // No tier found, collect the troubled tierId, go to next tier
+            if (!itemObjTier) {
+                errorWrongIds.push({ itemId: i.itemId, tierId: paramTier.tierId, message: 'Tier not found' });
+                continue;
+            }
+
+            itemObjTier.charge = paramTier.charge;
+        }
+
+        await itemObj.save((err) => {
+            if (err)
+                return res.json({ status: Status.Success, message: err.message, item: itemObj });
+        });
+    }
+
+    // Return any error details if any
+    if (errorWrongIds.length > 0) {
+        return res.json({ status: Status.Success, message: 'Items updated successfully, except these ones', items: errorWrongIds });
+    }
+
+    return res.json({ status: Status.Success, message: 'Items updated successfully' });
+
 }
