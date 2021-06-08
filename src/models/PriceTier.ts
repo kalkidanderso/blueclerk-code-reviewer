@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { IUser } from './User';
 import { ICompany } from './Company';
 
 export interface IPriceTier extends Document {
@@ -6,7 +7,7 @@ export interface IPriceTier extends Document {
     companyId: Schema.Types.ObjectId | ICompany
     name: string
     isActive: boolean
-    inactiveBy?: Schema.Types.ObjectId
+    inactiveBy?: Schema.Types.ObjectId | IUser
     inactiveAt?: Date
 
 }
