@@ -2209,8 +2209,8 @@
         "tags": [
           "Company"
         ],
-        "summary": "To update item tier count of company",
-        "description": "",
+        "summary": "To retrieve item tier list of company",
+        "description": "To retrieve all item tier of the logged in user company",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -2238,8 +2238,8 @@
         "tags": [
           "Company"
         ],
-        "summary": "To update item tier count of company",
-        "description": "",
+        "summary": "To add new tier to the company",
+        "description": "To add new item tier to the company then will add the new tier to all items belong to the company",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -2267,8 +2267,8 @@
         "tags": [
           "Company"
         ],
-        "summary": "To update item tier count of company",
-        "description": "",
+        "summary": "To update item tier of company",
+        "description": "Update item tier name and isActive. When a tier is being inactivated, BE will return the conflict customers if any, customer that still use the updated tier",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -4304,8 +4304,8 @@
         "tags": [
           "Items"
         ],
-        "summary": "To update all item charges",
-        "description": "",
+        "summary": "To update multiple item tier's charge at once",
+        "description": "Will update charges for multiple item tier's charge at once. When there are some troubled itemId and/or tierId, BE will return it to the response, showing that those IDs are not being updated and have some problem on it",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -4316,7 +4316,6 @@
           {
             "name": "items",
             "in": "formData",
-            "required": false,
             "type": "string",
             "description": "Json string of the items e.g [{\"itemId\":\"60884105898eb7068283bfc4\",\"tiers\":[{\"tierId\":\"60b7dd9643d3717e9a325c9f\",\"charge\":10},{\"tierId\":\"60b7e0598529b3041b284628\",\"charge\":20}]},{\"itemId\":\"60884115898eb7068283bfc6\",\"tiers\":[{\"tierId\":\"60b7e0598529b3041b284628\",\"charge\":15},{\"tierId\":\"60b7e0a68529b3041b284629\",\"charge\":25}]},{\"itemId\":\"60b90c8438045631806b8e6d\",\"tiers\":[{\"tierId\":\"60b7dd9643d3717e9a325c9f\",\"charge\":40}]}]"
           }
