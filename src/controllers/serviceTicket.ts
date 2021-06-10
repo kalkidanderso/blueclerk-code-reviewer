@@ -9,6 +9,8 @@ import { ObjectId } from 'mongodb'
 import {Contact} from '../models/Contact';
 import { Item } from '../models/Item'
 import { NotificationServiceTicket, INotificationServiceTicket } from '../models/NotificationServiceTicket';
+import { IJobType, JobType } from '../models/JobType'
+import { _handleJobTypesJson } from '../controllers/jobType';
 
 export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
@@ -36,6 +38,14 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 }
             }
 
+            let jobTypes, troubleJobTypes;
+            try {
+                // Call JobType's functin to handle Job Types JSON params
+                ({ jobTypes, troubleJobTypes } = await _handleJobTypesJson(params.jobTypes, undefined));
+            } catch (error) {
+                return res.json({ status: Status.Error, message: error.message });
+            }
+
             if(req.otherCompanyId != undefined) {
                 companyId = req.otherCompanyId
             }
@@ -55,7 +65,8 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 ticketId: ticketId,
                 jobLocation: params.jobLocationId,
                 jobSite: params.jobSiteId,
-                jobType: params.jobTypeId,
+                jobType: params.jobTypeId, // TODO: To be deprecated
+                jobTypes,
                 customerPO : customerPo,
             });
             if (customerId) {
@@ -420,7 +431,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
 
             ServiceTicket.findOne(
                 { _id: params.ticketId , company: companyId},
-                (err: any, serviceTicket: IServiceTicket)=>{
+                async (err: any, serviceTicket: IServiceTicket)=>{
 
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -472,6 +483,22 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     if (params.jobTypeId) {
                         jobTypeId = params.jobTypeId
                     }
+
+                    let currentJobTypes = serviceTicket.jobTypes;
+                    let jobTypes, troubleJobTypes;
+                    try {
+                        // Call JobType's functin to handle Job Types JSON params
+                        ({ jobTypes, troubleJobTypes } = await _handleJobTypesJson(params.jobTypes, currentJobTypes));
+                    } catch (error) {
+                        return res.json({ status: Status.Error, message: error.message });
+                    }
+                    // console.log('== currentJobTypes:', currentJobTypes);
+                    // console.log('== jobTypes:', jobTypes);
+                    // console.log('== JSON.stringify(currentJobTypes) !== JSON.stringify(jobTypes):', JSON.stringify(currentJobTypes) !== JSON.stringify(jobTypes));
+                    // if (JSON.stringify(currentJobTypes) !== JSON.stringify(jobTypes)) {
+                    //     action += '|Updated JobTypes|';
+                    // }
+
                     if (
                         serviceTicket.dueDate != params.dueDate ||
                         serviceTicket.image != data.imageUrl ||
@@ -494,7 +521,8 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             dueDate: dueDate,
                             jobLocation: jobLocationId,
                             jobSite: jobSiteId,
-                            jobType: jobTypeId,
+                            jobType: jobTypeId, // TODO: To be deprecated
+                            jobTypes,
                             image: image,
                             customerPO: customerPO,
                             customerContactId: customerContactId,
@@ -614,6 +642,10 @@ export const getServiceTicketDetail = (req: Request, res: Response) => {
         })
         .populate({
             path: 'jobType',
+            select: 'title'
+        })
+        .populate({
+            path: 'jobTypes.jobType',
             select: 'title'
         })
         .populate({

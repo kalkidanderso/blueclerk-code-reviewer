@@ -1,4 +1,6 @@
 import {Request, Response} from 'express'
+import { ObjectId } from 'mongodb';
+import { CronJob } from 'cron';
 import { Status, Messages, JobStatus, ServiceTicketStatus, NotificationTypes, SocketEvents } from '../common/constants'
 import {
     sendJobEmailToAssignee,
@@ -14,11 +16,11 @@ import { Scan } from '../models/Scan'
 import { PurchaseOrder } from '../models/PurchaseOrder'
 import {IJobReport, JobReport} from '../models/JobReport'
 import { Item } from '../models/Item'
-import {CronJob} from 'cron';
 import moment from 'moment-timezone';
 import {CompanyCustomer} from '../models/CompanyCustomer';
-import { ObjectId } from 'mongodb'
 import { INotificationJob, NotificationJob } from '../models/NotificationMetadata'
+import { JobType } from '../models/JobType';
+import { _handleJobTypesJson } from '../controllers/jobType';
 
 export const createJob = (req: Request, res: Response) => {
     const params = req.body
@@ -177,6 +179,16 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
            return res.json({'status': Status.Error, 'message': err.message});
         });
     }
+
+    let jobTypes = serviceTicket.jobTypes;
+    let troubleJobTypes;
+    try {
+        // Call JobType's functin to handle Job Types JSON params
+        ({ jobTypes, troubleJobTypes } = await _handleJobTypesJson(params.jobTypes, undefined));
+    } catch (error) {
+        return res.json({ status: Status.Error, message: error.message });
+    }
+
     const job = new Job({
         parentJob: parentJob && parentJob._id,
         scheduleDate: params.scheduleDate || parentJob && parentJob.scheduleDate,
@@ -187,7 +199,8 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         customer: params.customerId || parentJob && parentJob.customer,
         jobLocation: params.jobLocationId || parentJob && parentJob.jobLocation,
         jobSite: params.jobSiteId || parentJob && parentJob.jobSite,
-        type: params.jobTypeId || parentJob && parentJob.type,
+        type: params.jobTypeId || parentJob && parentJob.type, // TODO: To be deprecated
+        jobTypes: jobTypes || parentJob && parentJob.jobTypes,
         company: companyId,
         description: params.description || parentJob && parentJob.description,
         createdAt: Date.now(),
@@ -651,6 +664,10 @@ export const getJobs = (req: Request, res: Response) => {
         })
         .populate({
             path: 'type',
+            select: 'title'
+        })
+        .populate({
+            path: 'jobTypes.jobType',
             select: 'title'
         })
         .populate({
@@ -1255,6 +1272,26 @@ export const editJob = async (req: Request, res: Response) => {
                 job.type = params.jobTypeId;
                 if (linkedJob) { linkedJob.type = params.jobTypeId; }
             }
+
+            //=== HANDLE params jobTypes
+            let currentJobTypes = job.jobTypes;
+            let jobTypes, troubleJobTypes;
+            try {
+                // Call JobType's functin to handle Job Types JSON params
+                ({ jobTypes, troubleJobTypes } = await _handleJobTypesJson(params.jobTypes, jobTypes));
+            } catch (error) {
+                return res.json({ status: Status.Error, message: error.message });
+            }
+            // console.log('== currentJobTypes:', currentJobTypes);
+            // console.log('== jobTypes:', jobTypes);
+            // console.log('== JSON.stringify(currentJobTypes) !== JSON.stringify(jobTypes):', JSON.stringify(currentJobTypes) !== JSON.stringify(jobTypes));
+            // if (JSON.stringify(currentJobTypes) !== JSON.stringify(jobTypes)) {
+            //     action += '|Updated JobTypes|';
+            // }
+            job.jobTypes = jobTypes;
+            if (linkedJob) { linkedJob.jobTypes = jobTypes };
+            //=== END HANDLE params jobTypes
+
             if (job.status == JobStatus.RESCHEDULED) {
                 job.status = JobStatus.PENDING;
                 if (linkedJob) { linkedJob.status = JobStatus.PENDING; }
@@ -1354,7 +1391,7 @@ export const getJobDetails = (req: Request, res: Response) => {
     Job.findOne({_id: params.jobId, $or:[{ contractor: companyId }, { company: companyId } ]})
         .populate({
             path: 'ticket',
-            populate: 'customerContactId'
+            populate: [{ path: 'customerContactId' }, { path: 'jobTypes.jobType', select: 'title' }]
         })
         .populate({
             path: 'technician',
@@ -1370,6 +1407,10 @@ export const getJobDetails = (req: Request, res: Response) => {
         })
         .populate({
             path: 'type',
+            select: 'title'
+        })
+        .populate({
+            path: 'jobTypes.jobType',
             select: 'title'
         })
         .populate({

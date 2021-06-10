@@ -403,3 +403,54 @@ export const updateItems = async (req: Request, res: Response) => {
     return res.json({ status: Status.Success, message: 'Items updated successfully' });
 
 }
+
+/**
+ * To handle params jobTypes that comes on JSON format
+ * and check if the job types are valid
+ */
+export const _handleJobTypesJson = (paramJobTypes: string, jobTypes: {jobType: any}[]): Promise<{ jobTypes: any[], troubleJobTypes: string[] }> => {
+
+    return new Promise(async (resolve, reject) => {
+
+        let parsedJobTypes = [];
+        const newJobTypes = [];
+        const troubleJobTypes = [];
+
+        if (paramJobTypes) {
+            try {
+                parsedJobTypes = JSON.parse(paramJobTypes);
+
+                // To handle any over-stringified strings
+                if (!Array.isArray(parsedJobTypes)) {
+                    parsedJobTypes = JSON.parse(parsedJobTypes);
+                }
+            } catch (err) {
+                reject({message: 'jobTypes json is invalid'})
+            }
+
+            // Check if params job types has items
+            if (parsedJobTypes.length > 0) {
+                // Iterate all the params job types
+                for (const parsedJobType of parsedJobTypes) {
+                    // Check if param job type is a valid Job Type
+                    const jobType = await JobType.findById(parsedJobType.jobTypeId);
+
+                    if (jobType) {
+                        newJobTypes.push({ jobType: jobType._id });
+                    } else {
+                        // Collect all not valid job types
+                        troubleJobTypes.push(jobType._id);
+                    }
+                }
+            }
+        }
+
+        // Replace current job types if the new has any
+        if (newJobTypes.length > 0) {
+            jobTypes = newJobTypes;
+        }
+
+        resolve({ jobTypes, troubleJobTypes });
+
+    })
+}
