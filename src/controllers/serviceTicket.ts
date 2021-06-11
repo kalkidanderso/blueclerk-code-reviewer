@@ -9,7 +9,8 @@ import { ObjectId } from 'mongodb'
 import {Contact} from '../models/Contact';
 import { Item } from '../models/Item'
 import { NotificationServiceTicket, INotificationServiceTicket } from '../models/NotificationServiceTicket';
-import { IJobType, JobType } from '../models/JobType'
+import { IJobTypes } from '../models/JobType'
+import { Job } from '../models/Job';
 import { _handleJobTypesJson } from '../controllers/jobType';
 
 export const createServiceTicket = (req: Request, res: Response, sio: any) => {
@@ -38,13 +39,15 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 }
             }
 
-            let jobTypes, troubleJobTypes;
+            //=== HANDLE params jobTypes
+            let jobTypes: IJobTypes[], invalidJobTypes: string[];
             try {
-                // Call JobType's functin to handle Job Types JSON params
-                ({ jobTypes, troubleJobTypes } = await _handleJobTypesJson(params.jobTypes, undefined));
+                // Call JobType's function to handle Job Types JSON params
+                ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.jobTypes, undefined));
             } catch (error) {
                 return res.json({ status: Status.Error, message: error.message });
             }
+            //=== END HANDLE params jobTypes
 
             if(req.otherCompanyId != undefined) {
                 companyId = req.otherCompanyId
@@ -138,7 +141,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                             )
 
                         }
-                        return res.json({'status': Status.Success, 'message': 'Service ticket created successfully.'})
+                        return res.json({'status': Status.Success, 'message': 'Service ticket created successfully.', invalidJobTypes})
                     })
             })
 
@@ -484,20 +487,22 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                         jobTypeId = params.jobTypeId
                     }
 
+                    //=== HANDLE params jobTypes
                     let currentJobTypes = serviceTicket.jobTypes;
-                    let jobTypes, troubleJobTypes;
+                    let jobTypes: IJobTypes[], invalidJobTypes: string[];
+                    let isJobTypesUpdated = false;
                     try {
-                        // Call JobType's functin to handle Job Types JSON params
-                        ({ jobTypes, troubleJobTypes } = await _handleJobTypesJson(params.jobTypes, currentJobTypes));
+                        // Call JobType's function to handle Job Types JSON params
+                        ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.jobTypes, currentJobTypes));
                     } catch (error) {
                         return res.json({ status: Status.Error, message: error.message });
                     }
-                    // console.log('== currentJobTypes:', currentJobTypes);
-                    // console.log('== jobTypes:', jobTypes);
-                    // console.log('== JSON.stringify(currentJobTypes) !== JSON.stringify(jobTypes):', JSON.stringify(currentJobTypes) !== JSON.stringify(jobTypes));
-                    // if (JSON.stringify(currentJobTypes) !== JSON.stringify(jobTypes)) {
-                    //     action += '|Updated JobTypes|';
-                    // }
+                    // Check if jobTypes changed or not
+                    if (JSON.stringify(currentJobTypes) !== JSON.stringify(jobTypes)) {
+                        action += '|Updated JobTypes|';
+                        isJobTypesUpdated = true;
+                    }
+                    //=== END HANDLE params jobTypes
 
                     if (
                         serviceTicket.dueDate != params.dueDate ||
@@ -510,11 +515,13 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     ) {
                         action += '|Ticket info updated|'
                     }
-                    track.push({
-                        user: user._id,
-                        action,
-                        date: new Date()
-                    });
+                    if (action !== '') {
+                        track.push({
+                            user: user._id,
+                            action,
+                            date: new Date()
+                        });
+                    }
                     serviceTicket.updateOne(
                         {
                             note: params.note,
@@ -530,13 +537,32 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             status: status,
                             track: track
                         },
-                        (err: any)=> {
+                        async (err: any)=> {
 
                             if (err) {
                                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
                             }
 
-                            return res.json({'status': Status.Success, 'message': 'Ticket updated successfully.'})
+                            // Update jobs related to this service ticket is jobTypes updated
+                            if (isJobTypesUpdated) {
+                                const jobs = await Job.find({ ticket: serviceTicket._id });
+                                for (const job of jobs) {
+                                    // Update job's track
+                                    const jobTrack = job.track;
+                                    jobTrack.push({
+                                        user: user._id,
+                                        action: '|Updated JobTypes|',
+                                        date: new Date()
+                                    })
+                                    // Save the job
+                                    await job.updateOne({
+                                        jobTypes,
+                                        track: jobTrack
+                                    });
+                                }
+                            }
+
+                            return res.json({'status': Status.Success, 'message': 'Ticket updated successfully.', invalidJobTypes})
                         }
                     )
                 }

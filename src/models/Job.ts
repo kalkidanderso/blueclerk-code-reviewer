@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose'
-import { IJobType } from './JobType'
+import { IJobTypes } from './JobType'
 
 export interface IJob extends Document {
 
@@ -15,9 +15,7 @@ export interface IJob extends Document {
     jobLocation: Schema.Types.ObjectId | any
     jobSite: Schema.Types.ObjectId | any
     type: Schema.Types.ObjectId | any // TODO: To be deprecated
-    jobTypes: {
-        jobType: Schema.Types.ObjectId | IJobType
-    }[]
+    jobTypes: IJobTypes[]
     company: Schema.Types.ObjectId | any
     equipmentId: string
     description: string
@@ -104,6 +102,7 @@ const JobSchema = new Schema({
         required: true
     },
     jobTypes: [{
+        _id: false,
         jobType: {
             type: Schema.Types.ObjectId,
             ref: 'JobType'

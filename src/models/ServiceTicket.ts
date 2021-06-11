@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose'
-import { IJobType } from './JobType';
+import { IJobTypes } from './JobType';
 
 export interface IServiceTicket extends Document {
 
@@ -20,9 +20,7 @@ export interface IServiceTicket extends Document {
     jobLocation: Schema.Types.ObjectId
     jobSite: Schema.Types.ObjectId
     jobType: Schema.Types.ObjectId // TODO: To be deprecated
-    jobTypes: {
-        jobType: Schema.Types.ObjectId | IJobType
-    }[]
+    jobTypes: IJobTypes[]
     item: Schema.Types.ObjectId
     jobCreated: boolean
     track: any[];
@@ -99,6 +97,7 @@ const ServiceTicketSchema = new Schema({
         ref: 'JobType',
     },
     jobTypes: [{
+        _id: false,
         jobType: {
             type: Schema.Types.ObjectId,
             ref: 'JobType'

@@ -2,7 +2,7 @@ import {Request, Response} from 'express'
 import { ObjectId } from 'mongodb'
 import { Status, Role, Messages } from '../common/constants'
 
-import { JobType, IJobType } from '../models/JobType'
+import { JobType, IJobType, IJobTypes } from '../models/JobType'
 import { IUser } from '../models/User'
 import { ICompany } from '../models/Company'
 import { Item, IItem } from '../models/Item'
@@ -408,13 +408,13 @@ export const updateItems = async (req: Request, res: Response) => {
  * To handle params jobTypes that comes on JSON format
  * and check if the job types are valid
  */
-export const _handleJobTypesJson = (paramJobTypes: string, jobTypes: {jobType: any}[]): Promise<{ jobTypes: any[], troubleJobTypes: string[] }> => {
+export const _handleJobTypesJson = (paramJobTypes: string, jobTypes: IJobTypes[]): Promise<{ jobTypes: IJobTypes[], invalidJobTypes: string[] }> => {
 
     return new Promise(async (resolve, reject) => {
 
         let parsedJobTypes = [];
-        const newJobTypes = [];
-        const troubleJobTypes = [];
+        const newJobTypes: IJobTypes[] = [];
+        const invalidJobTypes: string[] = [];
 
         if (paramJobTypes) {
             try {
@@ -433,14 +433,17 @@ export const _handleJobTypesJson = (paramJobTypes: string, jobTypes: {jobType: a
                 // Iterate all the params job types
                 for (const parsedJobType of parsedJobTypes) {
                     // Check if param job type is a valid Job Type
-                    const jobType = await JobType.findById(parsedJobType.jobTypeId);
+                    if (ObjectId.isValid(parsedJobType.jobTypeId)) {
+                        const jobType = await JobType.findById(parsedJobType.jobTypeId);
 
-                    if (jobType) {
-                        newJobTypes.push({ jobType: jobType._id });
-                    } else {
-                        // Collect all not valid job types
-                        troubleJobTypes.push(jobType._id);
+                        if (jobType) {
+                            newJobTypes.push({ jobType: jobType._id });
+                            continue;
+                        }
                     }
+
+                    // Collect all invalid job types
+                    invalidJobTypes.push(parsedJobType.jobTypeId);
                 }
             }
         }
@@ -450,7 +453,7 @@ export const _handleJobTypesJson = (paramJobTypes: string, jobTypes: {jobType: a
             jobTypes = newJobTypes;
         }
 
-        resolve({ jobTypes, troubleJobTypes });
+        resolve({ jobTypes, invalidJobTypes });
 
     })
 }
