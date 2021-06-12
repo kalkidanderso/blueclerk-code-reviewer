@@ -99,13 +99,14 @@ const JobSchema = new Schema({
         // TODO: To be deprecated
         type: Schema.Types.ObjectId,
         ref: 'JobType',
-        required: true
+        // required: true
     },
     jobTypes: [{
         _id: false,
         jobType: {
             type: Schema.Types.ObjectId,
-            ref: 'JobType'
+            ref: 'JobType',
+            required: true
         }
     }],
     company: {
