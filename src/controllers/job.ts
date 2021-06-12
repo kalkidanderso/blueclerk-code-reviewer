@@ -92,7 +92,6 @@ export const createJob = (req: Request, res: Response) => {
         if (error.message != undefined) {
             return res.json({ 'status': Status.Error, 'message': error.message })
         } else {
-            console.log('== error A:', error);
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
     })
@@ -188,7 +187,6 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         // Call JobType's function to handle Job Types JSON params
         ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.jobTypes, jobTypes));
     } catch (error) {
-        console.log('== error:', error);
         return res.json({ status: Status.Error, message: error.message });
     }
     //=== END HANDLE params jobTypes
@@ -232,13 +230,11 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
 
     await job.save((err: any) => {
         if (err) {
-            console.log('== err:', err);
             return next(req, res, Messages.GenericError, null, null)
         }
 
         serviceTicket.updateOne({jobCreated: true}, (serviceTicketError: any, raw: any) => {
             if (serviceTicketError) {
-                console.log('== serviceTicketError:', serviceTicketError);
                 return next(req, res, Messages.GenericError, null, null)
             }
             scheduleEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => {
