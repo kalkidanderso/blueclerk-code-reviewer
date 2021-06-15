@@ -162,6 +162,19 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         action,
         date: new Date()
     });
+
+    //=== HANDLE params jobTypes
+    // Will use serviceTicket's jobTypes if no jobTypes on params
+    let jobTypes = serviceTicket.jobTypes;
+    let invalidJobTypes: string[];
+    try {
+        // Call JobType's function to handle Job Types JSON params
+        ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.jobTypes, jobTypes));
+    } catch (error) {
+        return res.json({ status: Status.Error, message: error.message });
+    }
+    //=== END HANDLE params jobTypes
+
     if (params.ticketId) {
         ServiceTicket.findOne({_id: new ObjectId(params.ticketId)}).then((t) => {
             if (t) {
@@ -179,17 +192,6 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
            return res.json({'status': Status.Error, 'message': err.message});
         });
     }
-
-    //=== HANDLE params jobTypes
-    let jobTypes = serviceTicket.jobTypes;
-    let invalidJobTypes: string[];
-    try {
-        // Call JobType's function to handle Job Types JSON params
-        ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.jobTypes, jobTypes));
-    } catch (error) {
-        return res.json({ status: Status.Error, message: error.message });
-    }
-    //=== END HANDLE params jobTypes
 
     const job = new Job({
         parentJob: parentJob && parentJob._id,

@@ -170,6 +170,16 @@ export const _createServiceTicket = async (req: Request, res: Response, next: (e
         return next(`parameter itemId: ${Messages.WrongId}`, null);
     }
 
+    //=== HANDLE params jobTypes
+    let jobTypes: IJobTypes[], invalidJobTypes: string[];
+    try {
+        // Call JobType's function to handle Job Types JSON params
+        ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.jobTypes, undefined));
+    } catch (error) {
+        return res.json({ status: Status.Error, message: error.message });
+    }
+    //=== END HANDLE params jobTypes
+
     try {
 
         const user = <IUser>req.user;
@@ -217,7 +227,7 @@ export const _createServiceTicket = async (req: Request, res: Response, next: (e
             ticketId: ticketId,
             jobLocation: params.jobLocationId,
             jobSite: params.jobSiteId,
-            jobType: params.jobTypeId || item && item.jobType,
+            jobType: params.jobTypeId || item && item.jobType, // TODO: To be deprecated
             item: params.itemId,
             customerPO: customerPo,
             customer: customerId,

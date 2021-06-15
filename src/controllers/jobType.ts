@@ -413,6 +413,7 @@ export const _handleJobTypesJson = (paramJobTypes: string, jobTypes: IJobTypes[]
     return new Promise(async (resolve, reject) => {
 
         let parsedJobTypes = [];
+        let isFixed: boolean;
         const newJobTypes: IJobTypes[] = [];
         const invalidJobTypes: string[] = [];
 
@@ -425,7 +426,7 @@ export const _handleJobTypesJson = (paramJobTypes: string, jobTypes: IJobTypes[]
                     parsedJobTypes = JSON.parse(parsedJobTypes);
                 }
             } catch (err) {
-                reject({message: 'jobTypes json is invalid'})
+                reject({ message: 'jobTypes json is invalid' });
             }
 
             // Check if params job types has items
@@ -434,8 +435,15 @@ export const _handleJobTypesJson = (paramJobTypes: string, jobTypes: IJobTypes[]
                 for (const parsedJobType of parsedJobTypes) {
                     // Check if param job type is a valid Job Type
                     if (ObjectId.isValid(parsedJobType.jobTypeId)) {
-                        const jobType = await JobType.findById(parsedJobType.jobTypeId);
+                        // Check if all items of jobTypes have the same isFixed
+                        const item = await Item.findOne({ jobType: parsedJobType.jobTypeId });
+                        if (isFixed !== undefined && isFixed !== item.isFixed) {
+                            reject({ message: `Can't add an hourly and fixed price item to the same service ticket/job` });
+                        }
+                        isFixed = item.isFixed;
 
+                        // Check if jobType exist
+                        const jobType = await JobType.findById(parsedJobType.jobTypeId);
                         if (jobType) {
                             newJobTypes.push({ jobType: jobType._id });
                             continue;
