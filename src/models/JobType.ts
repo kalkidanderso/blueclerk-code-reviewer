@@ -8,6 +8,12 @@ export interface IJobType extends Document {
     isActive: boolean
 }
 
+export interface IJobTypes {
+
+    jobType: Schema.Types.ObjectId | IJobType
+
+}
+
 const JobTypeSchema = new Schema({
 
     title: String,

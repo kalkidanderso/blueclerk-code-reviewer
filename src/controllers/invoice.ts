@@ -286,23 +286,26 @@ export const createInvoice = (req: Request, res: Response) => {
 
             })
             .then((result: any) => {
-                const job = result[0]
+                const job = <IJob>result[0]
 
-                const item = Item.findOne({jobType: job.type})
-                return Promise.all([result[0], result[1], item])
+                // Convert jobTypes to ObjectId in array
+                const jobTypeIds = job.jobTypes.map(jts => jts.jobType);
+                // Search all jobTypes' items
+                const items = Item.find({ jobType: { $in: jobTypeIds }});
+                return Promise.all([result[0], result[1], items])
             })
             .then((result: any) => {
 
                 const job = result[0]
                 const purchaseOrders = result[1]
-                const item = result[2]
+                const items = result[2];
 
                 if (!job) {
                     throw new Error('Invalid job id')
                     // return res.json({ 'status': Status.Error, 'message': 'Invalid job id' })
                 }
                 return new Promise((resolve, reject) => {
-                    _populateInvoiceData(req, res, job, item, purchaseOrders, null, null, (req, res, invoiceData, currentInvoiceId )=>{
+                    _populateInvoiceData(req, res, job, items, purchaseOrders, null, null, (req, res, invoiceData, currentInvoiceId )=>{
 
                         invoiceData.save()
                             .then((newInvoice: IInvoice) =>{
@@ -694,7 +697,7 @@ export const createInvoice = (req: Request, res: Response) => {
     }
 }
 
-const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTypeitem: IItem, purchaseOrders: any, purchaseOrder: any, estimate: any, next: (req: Request, res: Response, invoice: IInvoice, invoiceId: number) => void) =>{
+const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTypeitems: IItem[], purchaseOrders: any, purchaseOrder: any, estimate: any, next: (req: Request, res: Response, invoice: IInvoice, invoiceId: number) => void) =>{
 
     const params = req.body
     const company = req.company
@@ -744,14 +747,12 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
         //     hourlyRate = params.hourlyRate
         // }
 
-        if (!jobTypeitem.isFixed && !params.timeSpent) {
+        // Take the first job type's isFixed as all job types should be the same type
+        if (jobTypeitems[0] && !jobTypeitems[0].isFixed && !params.timeSpent) {
             return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
-        } else if (!jobTypeitem.isFixed) {
+        } else if (!jobTypeitems[0].isFixed) {
             timeSpent = params.timeSpent
         }
-
-        // if(jobTypeitem.isFixed)
-        //     isFixed = true
     }
 
     if(purchaseOrder != null){
@@ -884,49 +885,54 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
             total += subTotal;
         }
 
-    } else if (jobTypeitem) {
+    } else if (jobTypeitems.length > 0) {
 
-        /**
-         * Find the assigned itemTier of the customer,
-         * take the first tier of Item when customer doesn't have it
-         */
-        const customerObj = await Customer.findById(customer);
-        let itemTier;
-        if (customerObj.itemTier) {
-            itemTier = jobTypeitem.tiers.find(t => t.tier.toString() === customerObj.itemTier.toString());
-        } else {
-            await jobTypeitem.populate({ path: 'tiers.tier' }).execPopulate();
-            itemTier = jobTypeitem.tiers.find(t => {
-                const tier = <IPriceTier>t.tier;
-                return tier.isActive;
-            });
+        // Iterate all jobTypes' items and add all to invoice's items
+        for (const jobTypeitem of jobTypeitems) {
+
+            /**
+             * Find the assigned itemTier of the customer,
+             * take the first tier of Item when customer doesn't have it
+             */
+            const customerObj = await Customer.findById(customer);
+            let itemTier;
+            if (customerObj.itemTier) {
+                itemTier = jobTypeitem.tiers.find(t => t.tier.toString() === customerObj.itemTier.toString());
+            } else {
+                await jobTypeitem.populate({ path: 'tiers.tier' }).execPopulate();
+                itemTier = jobTypeitem.tiers.find(t => {
+                    const tier = <IPriceTier>t.tier;
+                    return tier.isActive;
+                });
+            }
+
+            let obj: any = {}
+            let price = itemTier && itemTier.charge || jobTypeitem.charges
+            let quantity = jobTypeitem.isFixed ? 1 : parseFloat(job.timeSpent);
+            let itemTax =  0
+            let itemTaxAmount: number = 0
+            let subTotal = price * quantity
+
+            if(jobTypeitem.tax > 0) {
+                itemTax =  jobTypeitem.tax
+                itemTaxAmount = subTotal * itemTax / 100;
+                taxAmount += itemTaxAmount;
+            }
+
+            obj.quantity = quantity
+            obj.price = Math.round(price * 100) / 100
+            obj.isFixed = jobTypeitem.isFixed
+            obj.tax = itemTax
+            obj.taxAmount = Math.round(itemTaxAmount * 100) / 100
+            obj.subTotal = Math.round(subTotal * 100) / 100
+            obj.item = jobTypeitem._id
+
+            invoiceItems.push(obj)
+
+            subTotalBeforeTax += subTotal;
+            total += subTotal;
         }
 
-        let obj: any = {}
-        let price = itemTier && itemTier.charge || jobTypeitem.charges
-        let quantity = parseFloat(job.timeSpent)
-        let itemTax =  0
-        let itemTaxAmount: number = 0
-        let subTotal = price * quantity
-
-        if(jobTypeitem.tax > 0) {
-            itemTax =  jobTypeitem.tax
-            itemTaxAmount = subTotal * itemTax / 100;
-            taxAmount += itemTaxAmount;
-        }
-
-        obj.quantity = job.timeSpent
-        obj.price = Math.round(price * 100) / 100
-        obj.isFixed = jobTypeitem.isFixed
-        obj.tax = itemTax
-        obj.taxAmount = Math.round(itemTaxAmount * 100) / 100
-        obj.subTotal = Math.round(subTotal * 100) / 100
-        obj.item = jobTypeitem._id
-
-        invoiceItems.push(obj)
-
-        subTotalBeforeTax += subTotal;
-        total += subTotal;
     }
 
     // Add the grand total with the tax amount

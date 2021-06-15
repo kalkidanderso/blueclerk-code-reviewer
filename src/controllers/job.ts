@@ -1,4 +1,6 @@
 import {Request, Response} from 'express'
+import { ObjectId } from 'mongodb';
+import { CronJob } from 'cron';
 import { Status, Messages, JobStatus, ServiceTicketStatus, NotificationTypes, SocketEvents } from '../common/constants'
 import {
     sendJobEmailToAssignee,
@@ -14,11 +16,11 @@ import { Scan } from '../models/Scan'
 import { PurchaseOrder } from '../models/PurchaseOrder'
 import {IJobReport, JobReport} from '../models/JobReport'
 import { Item } from '../models/Item'
-import {CronJob} from 'cron';
 import moment from 'moment-timezone';
 import {CompanyCustomer} from '../models/CompanyCustomer';
-import { ObjectId } from 'mongodb'
 import { INotificationJob, NotificationJob } from '../models/NotificationMetadata'
+import { IJobType, IJobTypes } from '../models/JobType';
+import { _handleJobTypesJson } from '../controllers/jobType';
 
 export const createJob = (req: Request, res: Response) => {
     const params = req.body
@@ -78,11 +80,11 @@ export const createJob = (req: Request, res: Response) => {
         const jobId = response[0]
         const serviceTicket = response[1]
 
-        await _createJob(req, res, undefined, jobId, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob) => {
+        await _createJob(req, res, undefined, jobId, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob, invalidJobTypes: string[]) => {
             if(err != null){
                 return res.json({'status': Status.Error, 'message': err})
             }
-            return res.json({'status': Status.Success, 'message': 'Job created successfully.'})
+            return res.json({'status': Status.Success, 'message': 'Job created successfully.', invalidJobTypes})
         })
 
     })
@@ -120,21 +122,21 @@ export const createSubJob = async (req: Request, res: Response) => {
     }
 
     // Count the existing sub job for the same parent job
-    const jobCount: number = await Job.count({ parentJob: params.parentJobId });
+    const jobCount: number = await Job.countDocuments({ parentJob: params.parentJobId });
     // Rename the job and the unique count on the end
     const jobId = `${parentJob.jobId} - ${jobCount + 1}`;
 
     const serviceTicket = await ServiceTicket.findById(parentJob.ticket);
-    await _createJob(req, res, parentJob, jobId, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob) => {
+    await _createJob(req, res, parentJob, jobId, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob, invalidJobTypes: string[]) => {
         if (err) {
             return res.json({ 'status': Status.Error, 'message': err });
         }
 
-        return res.json({ 'status': Status.Success, 'message': 'Job created successfully.' });
+        return res.json({ 'status': Status.Success, 'message': 'Job created successfully.', invalidJobTypes });
     })
 }
 
-const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: string, serviceTicket: IServiceTicket, next: (req: Request, res: Response, err: any, job: IJob) => void) => {
+const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: string, serviceTicket: IServiceTicket, next: (req: Request, res: Response, err: any, job: IJob, invalidJobTypes: string[]) => void) => {
 
     const params = req.body
 
@@ -147,7 +149,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
     let contractor = await Company.findOne({_id: params.contractorId});
     let technicianId: any = await User.findOne({_id: params.technicianId});
     if (!contractor && ! technicianId) {
-        return next(req, res, "Contractor/Technician not found!", null)
+        return next(req, res, "Contractor/Technician not found!", null, null)
     }
     // Setting vendor admin as the default technician of the job
     if (contractor && !technicianId) {
@@ -160,6 +162,19 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         action,
         date: new Date()
     });
+
+    //=== HANDLE params jobTypes
+    // Will use serviceTicket's jobTypes if no jobTypes on params
+    let jobTypes = serviceTicket.jobTypes;
+    let invalidJobTypes: string[];
+    try {
+        // Call JobType's function to handle Job Types JSON params
+        ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.jobTypes, jobTypes));
+    } catch (error) {
+        return res.json({ status: Status.Error, message: error.message });
+    }
+    //=== END HANDLE params jobTypes
+
     if (params.ticketId) {
         ServiceTicket.findOne({_id: new ObjectId(params.ticketId)}).then((t) => {
             if (t) {
@@ -177,6 +192,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
            return res.json({'status': Status.Error, 'message': err.message});
         });
     }
+
     const job = new Job({
         parentJob: parentJob && parentJob._id,
         scheduleDate: params.scheduleDate || parentJob && parentJob.scheduleDate,
@@ -187,7 +203,8 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         customer: params.customerId || parentJob && parentJob.customer,
         jobLocation: params.jobLocationId || parentJob && parentJob.jobLocation,
         jobSite: params.jobSiteId || parentJob && parentJob.jobSite,
-        type: params.jobTypeId || parentJob && parentJob.type,
+        type: params.jobTypeId || parentJob && parentJob.type, // TODO: To be deprecated
+        jobTypes: jobTypes || parentJob && parentJob.jobTypes,
         company: companyId,
         description: params.description || parentJob && parentJob.description,
         createdAt: Date.now(),
@@ -215,15 +232,15 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
 
     await job.save((err: any) => {
         if (err) {
-            return next(req, res, Messages.GenericError, null)
+            return next(req, res, Messages.GenericError, null, null)
         }
 
         serviceTicket.updateOne({jobCreated: true}, (serviceTicketError: any, raw: any) => {
             if (serviceTicketError) {
-                return next(req, res, Messages.GenericError, null)
+                return next(req, res, Messages.GenericError, null, null)
             }
             scheduleEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => {
-                    return next(req, res, null, newJob)
+                    return next(req, res, null, newJob, invalidJobTypes)
                 });
 
         })
@@ -256,6 +273,10 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             path:'type',
             select:'title'
         })
+        .populate({
+            path: 'jobTypes.jobType',
+            select: 'title'
+        })
         .populate('jobSite')
         .populate({
             path: 'jobLocation',
@@ -267,7 +288,12 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             var contractor : any;
             var assigneeName: any;
             var cust : any= job.customer
-            var type : any= job.type
+            var type: any = job.type && job.type.title
+            let jobTypes: string[] = job.jobTypes.map(jts => {
+                const jt = <IJobType>jts.jobType;
+                return jt.title
+            });
+            const jobTitles = jobTypes.length > 0 ? jobTypes.join(', ') : type;
             var creator : any = job.createdBy
             if (params.technicianId) {
                 tech = job.technician
@@ -282,7 +308,7 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             if(params.employeeType == 0) {
                 switch (techEmailPreferences) {
                     case 0: {
-                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description,location: job.jobLocation, site: job.jobSite,ticket: job.ticket, dateTime: job.scheduleDate});
+                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, notes: job.description,location: job.jobLocation, site: job.jobSite,ticket: job.ticket, dateTime: job.scheduleDate});
                         break;
                     }
                     case 1: {
@@ -306,7 +332,7 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                         break;
                     }
                     default: {
-                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, location: job.jobLocation, site: job.jobSite,ticket: job.ticket, notes: job.description, dateTime: job.scheduleDate});
+                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, location: job.jobLocation, site: job.jobSite,ticket: job.ticket, notes: job.description, dateTime: job.scheduleDate});
                         break;
                     }
                 }
@@ -315,7 +341,7 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             if(params.employeeType == 1) {
                 switch (contractorEmailPreferences) {
                     case 0: {
-                        sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description,location: job.jobLocation, site: job.jobSite,ticket: job.ticket, dateTime: job.scheduleDate})
+                        sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, notes: job.description,location: job.jobLocation, site: job.jobSite,ticket: job.ticket, dateTime: job.scheduleDate})
                         break;
                     }
                     case 1: {
@@ -332,7 +358,7 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                         await emailSchedule.save();
                         break;                    }
                     default: {
-                        sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, location: job.jobLocation, site: job.jobSite,ticket: job.ticket, dateTime: job.scheduleDate})
+                        sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, notes: job.description, location: job.jobLocation, site: job.jobSite,ticket: job.ticket, dateTime: job.scheduleDate})
                         break;
                     }
 
@@ -417,6 +443,10 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
         path:'type',
         select:'title'
     })
+    .populate({
+        path: 'jobTypes.jobType',
+        select: 'title'
+    })
     .populate('jobSite')
     .populate({
         path: 'jobLocation',
@@ -433,7 +463,12 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
         var contractor : any;
         var assigneeName: any;
         var cust : any = job.customer
-        var type : any = job.type
+        var type: any = job.type && job.type.title
+        let jobTypes: string[] = job.jobTypes.map(jts => {
+            const jt = <IJobType>jts.jobType;
+            return jt.title
+        });
+        const jobTitles = jobTypes.length > 0 ? jobTypes.join(', ') : type;
         var creator : any = job.createdBy
         if (params.technicianId) {
             tech = job.technician
@@ -448,7 +483,7 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
         if(params.employeeType == 0) {
                 switch (techEmailPreferences) {
                     case 0: {
-                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description,location: job.jobLocation, site: job.jobSite,ticket: job.ticket, dateTime: job.scheduleDate});
+                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, notes: job.description,location: job.jobLocation, site: job.jobSite,ticket: job.ticket, dateTime: job.scheduleDate});
                         break;
                     }
                     case 1: {
@@ -462,12 +497,12 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
 
                         }
                         new CronJob(sendDate, function() {
-                            sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, location: job.jobLocation, site: job.jobSite,ticket: job.ticket, notes: job.description, dateTime: job.scheduleDate});
+                            sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, location: job.jobLocation, site: job.jobSite,ticket: job.ticket, notes: job.description, dateTime: job.scheduleDate});
                         }, null, true);
                         break;
                     }
                     default: {
-                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, location: job.jobLocation, site: job.jobSite,ticket: job.ticket, notes: job.description, dateTime: job.scheduleDate});
+                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, location: job.jobLocation, site: job.jobSite,ticket: job.ticket, notes: job.description, dateTime: job.scheduleDate});
                         break;
                     }
                 }
@@ -476,7 +511,7 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
         if(params.employeeType == 1) {
                 switch (contractorEmailPreferences) {
                     case 0: {
-                        sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+                        sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, notes: job.description, dateTime: job.scheduleDate})
                         break;
                     }
                     case 1: {
@@ -489,12 +524,12 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                             sendDate = moment().tz('America/Chicago').hours(21).minutes(0);
                         }
                         new CronJob(sendDate, function() {
-                            sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+                            sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, notes: job.description, dateTime: job.scheduleDate})
                         }, null, true);
                         break;
                     }
                     default: {
-                        sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobType: type.title, notes: job.description, dateTime: job.scheduleDate})
+                        sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, notes: job.description, dateTime: job.scheduleDate})
                         break;
                     }
 
@@ -651,6 +686,10 @@ export const getJobs = (req: Request, res: Response) => {
         })
         .populate({
             path: 'type',
+            select: 'title'
+        })
+        .populate({
+            path: 'jobTypes.jobType',
             select: 'title'
         })
         .populate({
@@ -1255,16 +1294,38 @@ export const editJob = async (req: Request, res: Response) => {
                 job.type = params.jobTypeId;
                 if (linkedJob) { linkedJob.type = params.jobTypeId; }
             }
+
+            //=== HANDLE params jobTypes
+            let currentJobTypes = job.jobTypes;
+            let jobTypes: IJobTypes[], invalidJobTypes: string[];
+            let isJobTypesUpdated = false;
+            try {
+                // Call JobType's function to handle Job Types JSON params
+                ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.jobTypes, currentJobTypes));
+            } catch (error) {
+                return res.json({ status: Status.Error, message: error.message });
+            }
+            // Check if jobTypes changed or not
+            if (JSON.stringify(currentJobTypes) !== JSON.stringify(jobTypes)) {
+                action += '|Updated JobTypes|';
+                isJobTypesUpdated = true;
+            }
+            job.jobTypes = jobTypes;
+            if (linkedJob) { linkedJob.jobTypes = jobTypes };
+            //=== END HANDLE params jobTypes
+
             if (job.status == JobStatus.RESCHEDULED) {
                 job.status = JobStatus.PENDING;
                 if (linkedJob) { linkedJob.status = JobStatus.PENDING; }
                 action += '|Job rescheduled|';
             }
-            track.push({
-                user: user._id,
-                action,
-                date: new Date()
-            });
+            if (action !== '') {
+                track.push({
+                    user: user._id,
+                    action,
+                    date: new Date()
+                });
+            }
             // Manage linked job status & track
             if (isParentJob && params.employeeType != undefined && (oldContractor != params.contractorId)) {
                 //  Mark sub job to be CLOSED as the contractor is updated
@@ -1291,11 +1352,13 @@ export const editJob = async (req: Request, res: Response) => {
                     });
                 }
             } else {
-                trackLinkedJob.push({
-                    user: user._id,
-                    action,
-                    date: new Date()
-                });
+                if (action !== '') {
+                    trackLinkedJob.push({
+                        user: user._id,
+                        action,
+                        date: new Date()
+                    });
+                }
             }
             job.track = track;
             if (linkedJob) { linkedJob.track = trackLinkedJob; }
@@ -1328,12 +1391,31 @@ export const editJob = async (req: Request, res: Response) => {
                         return res.json({'status': Status.Success, 'message': 'Job edited successfully.'})
                     }
 
-                    linkedJob.updateOne(linkedJob, (err: any, raw: any) => {
+                    linkedJob.updateOne(linkedJob, async (err: any, raw: any) => {
                         if (err) {
                             return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         }
 
-                        return res.json({'status': Status.Success, 'message': 'Job edited successfully.'})
+                        // Update service ticket related to this job is jobTypes updated
+                        if (isJobTypesUpdated) {
+                            const serviceTicket = await ServiceTicket.findById(job.ticket);
+                            if (serviceTicket) {
+                                // Update service ticket's track
+                                const ticketTrack = serviceTicket.track;
+                                ticketTrack.push({
+                                    user: user._id,
+                                    action: '|Updated JobTypes|',
+                                    date: new Date()
+                                })
+                                // Save the service ticket
+                                await serviceTicket.updateOne({
+                                    jobTypes,
+                                    track: ticketTrack
+                                })
+                            }
+                        }
+
+                        return res.json({'status': Status.Success, 'message': 'Job edited successfully.', invalidJobTypes})
                     });
                 }
             )
@@ -1354,7 +1436,7 @@ export const getJobDetails = (req: Request, res: Response) => {
     Job.findOne({_id: params.jobId, $or:[{ contractor: companyId }, { company: companyId } ]})
         .populate({
             path: 'ticket',
-            populate: 'customerContactId'
+            populate: [{ path: 'customerContactId' }, { path: 'jobTypes.jobType', select: 'title' }]
         })
         .populate({
             path: 'technician',
@@ -1370,6 +1452,10 @@ export const getJobDetails = (req: Request, res: Response) => {
         })
         .populate({
             path: 'type',
+            select: 'title'
+        })
+        .populate({
+            path: 'jobTypes.jobType',
             select: 'title'
         })
         .populate({

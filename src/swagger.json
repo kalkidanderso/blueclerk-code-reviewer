@@ -5524,6 +5524,12 @@
             "in": "formData",
             "type": "string",
             "description": "Id of job type selected from the list received by /getJobTypes api"
+          },
+          {
+            "name": "jobTypes",
+            "in": "formData",
+            "type": "string",
+            "description": "Json string of the jobTypes e.g [{\"jobTypeId\": \"608ae3aeffe3cf17946a08b1\"},{\"jobTypeId\": \"60b90cf138045631806b8e6e\"}]"
           }
         ],
         "responses": {
@@ -5831,6 +5837,12 @@
             "in": "formData",
             "type": "string",
             "description": "Id of job type selected from the list received by /getJobTypes api"
+          },
+          {
+            "name": "jobTypes",
+            "in": "formData",
+            "type": "string",
+            "description": "Json string of the jobTypes e.g [{\"jobTypeId\": \"608ae3aeffe3cf17946a08b1\"},{\"jobTypeId\": \"60b90cf138045631806b8e6e\"}]"
           }
         ],
         "responses": {
@@ -6105,9 +6117,15 @@
           {
             "name": "jobTypeId",
             "in": "formData",
-            "required": true,
             "type": "string",
             "description": "Id of a job type selected from the list received by /getJobTypes api"
+          },
+          {
+            "name": "jobTypes",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Json string of the jobTypes e.g [{\"jobTypeId\": \"608ae3aeffe3cf17946a08b1\"},{\"jobTypeId\": \"60b90cf138045631806b8e6e\"}]"
           },
           {
             "name": "description",
@@ -6741,6 +6759,12 @@
             "in": "formData",
             "type": "string",
             "description": "Id of a job type selected from the list received by /getJobTypes api"
+          },
+          {
+            "name": "jobTypes",
+            "in": "formData",
+            "type": "string",
+            "description": "Json string of the jobTypes e.g [{\"jobTypeId\": \"608ae3aeffe3cf17946a08b1\"},{\"jobTypeId\": \"60b90cf138045631806b8e6e\"}]"
           },
           {
             "name": "companyId",

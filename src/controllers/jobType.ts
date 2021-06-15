@@ -2,7 +2,7 @@ import {Request, Response} from 'express'
 import { ObjectId } from 'mongodb'
 import { Status, Role, Messages } from '../common/constants'
 
-import { JobType, IJobType } from '../models/JobType'
+import { JobType, IJobType, IJobTypes } from '../models/JobType'
 import { IUser } from '../models/User'
 import { ICompany } from '../models/Company'
 import { Item, IItem } from '../models/Item'
@@ -402,4 +402,66 @@ export const updateItems = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, message: 'Items updated successfully' });
 
+}
+
+/**
+ * To handle params jobTypes that comes on JSON format
+ * and check if the job types are valid
+ */
+export const _handleJobTypesJson = (paramJobTypes: string, jobTypes: IJobTypes[]): Promise<{ jobTypes: IJobTypes[], invalidJobTypes: string[] }> => {
+
+    return new Promise(async (resolve, reject) => {
+
+        let parsedJobTypes = [];
+        let isFixed: boolean;
+        const newJobTypes: IJobTypes[] = [];
+        const invalidJobTypes: string[] = [];
+
+        if (paramJobTypes) {
+            try {
+                parsedJobTypes = JSON.parse(paramJobTypes);
+
+                // To handle any over-stringified strings
+                if (!Array.isArray(parsedJobTypes)) {
+                    parsedJobTypes = JSON.parse(parsedJobTypes);
+                }
+            } catch (err) {
+                reject({ message: 'jobTypes json is invalid' });
+            }
+
+            // Check if params job types has items
+            if (parsedJobTypes.length > 0) {
+                // Iterate all the params job types
+                for (const parsedJobType of parsedJobTypes) {
+                    // Check if param job type is a valid Job Type
+                    if (ObjectId.isValid(parsedJobType.jobTypeId)) {
+                        // Check if all items of jobTypes have the same isFixed
+                        const item = await Item.findOne({ jobType: parsedJobType.jobTypeId });
+                        if (isFixed !== undefined && isFixed !== item.isFixed) {
+                            reject({ message: `Can't add an hourly and fixed price item to the same service ticket/job` });
+                        }
+                        isFixed = item.isFixed;
+
+                        // Check if jobType exist
+                        const jobType = await JobType.findById(parsedJobType.jobTypeId);
+                        if (jobType) {
+                            newJobTypes.push({ jobType: jobType._id });
+                            continue;
+                        }
+                    }
+
+                    // Collect all invalid job types
+                    invalidJobTypes.push(parsedJobType.jobTypeId);
+                }
+            }
+        }
+
+        // Replace current job types if the new has any
+        if (newJobTypes.length > 0) {
+            jobTypes = newJobTypes;
+        }
+
+        resolve({ jobTypes, invalidJobTypes });
+
+    })
 }

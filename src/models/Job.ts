@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { IJobTypes } from './JobType'
 
 export interface IJob extends Document {
 
@@ -13,7 +14,8 @@ export interface IJob extends Document {
     customer: Schema.Types.ObjectId | any
     jobLocation: Schema.Types.ObjectId | any
     jobSite: Schema.Types.ObjectId | any
-    type: Schema.Types.ObjectId | any
+    type: Schema.Types.ObjectId | any // TODO: To be deprecated
+    jobTypes: IJobTypes[]
     company: Schema.Types.ObjectId | any
     equipmentId: string
     description: string
@@ -94,10 +96,19 @@ const JobSchema = new Schema({
         ref: 'JobSite',
     },
     type: {
+        // TODO: To be deprecated
         type: Schema.Types.ObjectId,
         ref: 'JobType',
-        required: true
+        // required: true
     },
+    jobTypes: [{
+        _id: false,
+        jobType: {
+            type: Schema.Types.ObjectId,
+            ref: 'JobType',
+            required: true
+        }
+    }],
     company: {
         type: Schema.Types.ObjectId,
         ref: 'Company',
