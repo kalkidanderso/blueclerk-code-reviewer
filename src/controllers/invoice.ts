@@ -285,11 +285,13 @@ export const createInvoice = (req: Request, res: Response) => {
                 return Promise.all([jobPromise, POPromise])
 
             })
-            .then(async (result: any) => {
+            .then((result: any) => {
                 const job = <IJob>result[0]
 
+                // Convert jobTypes to ObjectId in array
                 const jobTypeIds = job.jobTypes.map(jts => jts.jobType);
-                const items = await Item.find({ jobType: { $in: jobTypeIds }});
+                // Search all jobTypes' items
+                const items = Item.find({ jobType: { $in: jobTypeIds }});
                 return Promise.all([result[0], result[1], items])
             })
             .then((result: any) => {
@@ -745,6 +747,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
         //     hourlyRate = params.hourlyRate
         // }
 
+        // Take the first job type's isFixed as all job types should be the same type
         if (jobTypeitems[0] && !jobTypeitems[0].isFixed && !params.timeSpent) {
             return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
         } else if (!jobTypeitems[0].isFixed) {
@@ -884,6 +887,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
 
     } else if (jobTypeitems.length > 0) {
 
+        // Iterate all jobTypes' items and add all to invoice's items
         for (const jobTypeitem of jobTypeitems) {
 
             /**
