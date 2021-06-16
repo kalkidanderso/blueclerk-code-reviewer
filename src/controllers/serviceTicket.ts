@@ -43,7 +43,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             let jobTypes: IJobTypes[], invalidJobTypes: string[];
             try {
                 // Call JobType's function to handle Job Types JSON params
-                ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.jobTypes, undefined));
+                ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.customerId, params.jobTypes, undefined));
             } catch (error) {
                 return res.json({ status: Status.Error, message: error.message });
             }
@@ -174,7 +174,7 @@ export const _createServiceTicket = async (req: Request, res: Response, next: (e
     let jobTypes: IJobTypes[], invalidJobTypes: string[];
     try {
         // Call JobType's function to handle Job Types JSON params
-        ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.jobTypes, undefined));
+        ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.customerId, params.jobTypes, undefined));
     } catch (error) {
         return res.json({ status: Status.Error, message: error.message });
     }
@@ -503,7 +503,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     let isJobTypesUpdated = false;
                     try {
                         // Call JobType's function to handle Job Types JSON params
-                        ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.jobTypes, currentJobTypes));
+                        ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(customer.toString(), params.jobTypes, currentJobTypes));
                     } catch (error) {
                         return res.json({ status: Status.Error, message: error.message });
                     }

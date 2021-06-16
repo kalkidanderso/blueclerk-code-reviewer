@@ -146,6 +146,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
+    const customer = params.customerId || parentJob && parentJob.customer;
     let contractor = await Company.findOne({_id: params.contractorId});
     let technicianId: any = await User.findOne({_id: params.technicianId});
     if (!contractor && ! technicianId) {
@@ -169,7 +170,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
     let invalidJobTypes: string[];
     try {
         // Call JobType's function to handle Job Types JSON params
-        ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.jobTypes, jobTypes));
+        ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(customer, params.jobTypes, jobTypes));
     } catch (error) {
         return res.json({ status: Status.Error, message: error.message });
     }
@@ -200,7 +201,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         ticket: params.ticketId || parentJob && parentJob.ticket,
         technician: technicianId,
         contractor: params.contractorId,
-        customer: params.customerId || parentJob && parentJob.customer,
+        customer,
         jobLocation: params.jobLocationId || parentJob && parentJob.jobLocation,
         jobSite: params.jobSiteId || parentJob && parentJob.jobSite,
         type: params.jobTypeId || parentJob && parentJob.type, // TODO: To be deprecated
@@ -1301,7 +1302,7 @@ export const editJob = async (req: Request, res: Response) => {
             let isJobTypesUpdated = false;
             try {
                 // Call JobType's function to handle Job Types JSON params
-                ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.jobTypes, currentJobTypes));
+                ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(job.customer, params.jobTypes, currentJobTypes));
             } catch (error) {
                 return res.json({ status: Status.Error, message: error.message });
             }
