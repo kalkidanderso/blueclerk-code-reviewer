@@ -16,6 +16,11 @@ export interface ICustomer extends IUser {
     quickbookId: string
     balance: number,
     itemTier: Schema.Types.ObjectId | IPriceTier
+    isCustomPrice?: boolean
+    customPrices?: {
+        quantity: number,
+        price: number
+    }[]
     vendorId?: string,
     contacts: [Schema.Types.ObjectId],
     contactEmail: string
@@ -55,6 +60,22 @@ const CustomerSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'PriceTier'
     },
+    isCustomPrice: {
+        type: Boolean,
+        default: false
+    },
+    customPrices: [{
+        _id: false,
+        quantity: {
+            type: Number,
+            required: true
+        },
+        price: {
+            type: Number,
+            default: 0,
+            required: true
+        }
+    }],
     vendorId: {
         type: String,
     },
