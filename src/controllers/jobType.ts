@@ -4,6 +4,7 @@ import { Status, Role, Messages } from '../common/constants'
 
 import { JobType, IJobType, IJobTypes } from '../models/JobType'
 import { IUser } from '../models/User'
+import { Customer } from '../models/Customer';
 import { ICompany } from '../models/Company'
 import { Item, IItem } from '../models/Item'
 
@@ -408,7 +409,7 @@ export const updateItems = async (req: Request, res: Response) => {
  * To handle params jobTypes that comes on JSON format
  * and check if the job types are valid
  */
-export const _handleJobTypesJson = (paramJobTypes: string, jobTypes: IJobTypes[]): Promise<{ jobTypes: IJobTypes[], invalidJobTypes: string[] }> => {
+export const _handleJobTypesJson = (customerId: string, paramJobTypes: string, jobTypes: IJobTypes[]): Promise<{ jobTypes: IJobTypes[], invalidJobTypes: string[] }> => {
 
     return new Promise(async (resolve, reject) => {
 
@@ -433,6 +434,15 @@ export const _handleJobTypesJson = (paramJobTypes: string, jobTypes: IJobTypes[]
                 }
             } catch (err) {
                 reject({ message: 'jobTypes json is invalid' });
+            }
+
+            /**
+             * Check if the customer uses customPrices or not,
+             * then check if the total job types cannot exceed the max quantity
+             */
+            const customer = await Customer.findById(customerId);
+            if (customer.isCustomPrice && parsedJobTypes.length > customer.customPrices.length) {
+                reject({ message: `Customer's custom price maximum quantity is ${customer.customPrices.length}. Total job types cannot exceed that maximum quantity.` });
             }
 
             // Check if params job types has items
