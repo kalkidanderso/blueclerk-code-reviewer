@@ -412,18 +412,24 @@ export const _handleJobTypesJson = (paramJobTypes: string, jobTypes: IJobTypes[]
 
     return new Promise(async (resolve, reject) => {
 
-        let parsedJobTypes = [];
+        let parsedJobTypes: {jobTypeId:string}[];
         let isFixed: boolean;
         const newJobTypes: IJobTypes[] = [];
         const invalidJobTypes: string[] = [];
 
         if (paramJobTypes) {
             try {
-                parsedJobTypes = JSON.parse(paramJobTypes);
+                if (Array.isArray(paramJobTypes)) {
+                    // paramJobTypes already in array
+                    parsedJobTypes = Array.from(paramJobTypes);
+                } else {
+                    // Parse the stringified paramJobTypes
+                    parsedJobTypes = JSON.parse(paramJobTypes);
 
-                // To handle any over-stringified strings
-                if (!Array.isArray(parsedJobTypes)) {
-                    parsedJobTypes = JSON.parse(parsedJobTypes);
+                    // To handle any over-stringified strings
+                    if (!Array.isArray(parsedJobTypes)) {
+                        parsedJobTypes = JSON.parse(parsedJobTypes);
+                    }
                 }
             } catch (err) {
                 reject({ message: 'jobTypes json is invalid' });
