@@ -108,6 +108,8 @@ export const Validations = {
 
   updateCustomer: [check('customerId').exists()],
 
+  updateCustomPrices: [check('customerId').exists().withMessage('is required'), check('customerId').isMongoId().withMessage(Messages.WrongId)],
+
   getCustomers: [check('includeActive').exists(), check('includeNonActive').exists()],
 
   getCustomerDetail: [check('customerId').exists()],

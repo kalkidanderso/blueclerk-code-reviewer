@@ -14,7 +14,7 @@ export const createCustomer = async (req: Request, res: Response) => {
     const params = req.body
     const company = <ICompany>req.company;
     var companyId = req.companyId;
-    let tier: IPriceTier;
+    let companyTier: { tier: any };
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
@@ -24,9 +24,9 @@ export const createCustomer = async (req: Request, res: Response) => {
      * then assigned it to the new Customer
      */
     await company.populate({ path: 'itemTier.list.tier' }).execPopulate();
-    if (params.itemTierId && ObjectId.isValid(params.itemTierId)) {
-        const companyTier = company.itemTier.list.find(t => {
-            tier = <IPriceTier>t.tier;
+    if (params.itemTierId) {
+        companyTier = company.itemTier.list.find(t => {
+            const tier = <IPriceTier>t.tier;
             // Check for the active company item tier
             return (tier._id.toString() === params.itemTierId && tier.isActive)
         })
@@ -62,7 +62,7 @@ export const createCustomer = async (req: Request, res: Response) => {
             role: Role.CUSTOMER,
             extra: [],
         },
-        itemTier: tier && tier._id,
+        itemTier: companyTier && companyTier.tier,
         contactName: params.contactName,
         vendorId: params.vendorId,
         contacts: params.contacts
@@ -255,7 +255,7 @@ export const getCustomers = (req: Request, res: Response) => {
 export const updateCustomer = (req: Request, res: Response) => {
 
     const params = req.body
-    let tier: IPriceTier;
+    let companyTier: { tier: any };
     Customer.findById(params.customerId)
     .exec(async (err: any, customer: ICustomer)=>{
         if (err) {
@@ -267,9 +267,9 @@ export const updateCustomer = (req: Request, res: Response) => {
          * then assigned it to the updated Customer
          */
         const company = await Company.findById(customer.company).populate({path: 'itemTier.list.tier'});
-        if (params.itemTierId && ObjectId.isValid(params.itemTierId)) {
-            const companyTier = company.itemTier.list.find(t => {
-                tier = <IPriceTier>t.tier;
+        if (params.itemTierId) {
+            companyTier = company.itemTier.list.find(t => {
+                const tier = <IPriceTier>t.tier;
                 // Check for the active company item tier
                 return (tier._id.toString() === params.itemTierId && tier.isActive)
             });
@@ -278,6 +278,11 @@ export const updateCustomer = (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'itemTierId is either not found on the Company or itemTier is not active' })
             }
         }
+
+        // Handle the stringify boolean value
+        const isCustomPrice = params.isCustomPrice === 'false' || params.isCustomPrice === false ? false : !!params.isCustomPrice;
+        // Check if customer has customPrices or not when isCustomPrice set to true
+        const warningMessage = isCustomPrice && customer.customPrices.length <= 0 ? 'Customer will use custom price, but no custom price is configured currently.' : undefined;
 
         var data: any =  {
             'info.email': params.email,
@@ -291,7 +296,8 @@ export const updateCustomer = (req: Request, res: Response) => {
             'address.zipCode': params.zipCode,
             'contact.phone': params.phone,
             'contact.fax': params.fax,
-            itemTier: tier && tier._id,
+            itemTier: companyTier && companyTier.tier,
+            isCustomPrice,
             contactName: params.contactName,
             vendorId: params.vendorId,
             contacts: params.contacts
@@ -304,9 +310,64 @@ export const updateCustomer = (req: Request, res: Response) => {
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': err.message });
             }
-            return res.json({'status': Status.Success, 'message': 'Customer updated successfully.'})
+            return res.json({ 'status': Status.Success, 'message': 'Customer updated successfully.', warningMessage });
         })
     })
+}
+
+export const updateCustomPrices = async (req: Request, res: Response) => {
+
+    const companyId = req.companyId;
+    const params = req.body;
+
+    // Check if customerId is a valid ObjectId
+    if (!ObjectId.isValid(params.customerId))
+        return res.json({ status: Status.Error, message: `customerId: ${Messages.WrongId}` });
+
+    // Find and check if the customer exist
+    const customer = await Customer.findOne({ _id: params.customerId, company: companyId });
+    if (!customer)
+        return res.json({ status: Status.Error, message: 'Customer not found' });
+
+    if (params.customPrices) {
+        let parsedCustomPrices = [];
+        let isValid = true;
+
+        try {
+            parsedCustomPrices = JSON.parse(params.customPrices);
+
+            // To handle any over-stringified strings
+            if (!Array.isArray(parsedCustomPrices)) {
+                parsedCustomPrices = JSON.parse(parsedCustomPrices);
+            }
+        } catch (err) {
+            return res.json({ status: Status.Error, message: 'customPrices json is invalid' });
+        }
+
+        // Sort the parsed custom prices by the quantity
+        parsedCustomPrices.sort((a: any, b: any) => (a.quantity > b.quantity) ? 1 : ((b.quantity > a.quantity) ? -1 : 0));
+        // Check if quantity is in sequence
+        for (let i = 0; i < parsedCustomPrices.length; i++) {
+            if (parsedCustomPrices[i].quantity !== i+1) {
+                isValid = false
+                break;
+            }
+        }
+
+        // There is a missing quantity, return error
+        if (!isValid) {
+            return res.json({ status: Status.Error, message: 'customPrices quantity is not in sequence/order.' });
+        }
+
+        // Save the new customPrices to the customer
+        customer.customPrices = parsedCustomPrices;
+        await customer.save();
+
+        return res.json({ status: Status.Success, message: 'Customer custom prices are successfully saved.' });
+    }
+
+    return res.json({ status: Status.Success, message: 'Nothing to do.' });
+
 }
 
 export const customerDetail = (req: Request, res: Response) => {

@@ -393,6 +393,15 @@ export default function (sio: any) {
         customerController.updateCustomer
     )
 
+    router.post(
+        '/updateCustomPrices',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Customer_Update),
+        validate(Validations.updateCustomPrices),
+        customerController.updateCustomPrices
+    )
+
     //Customer equipments
     router.post(
         '/createCustomerEquipment',
