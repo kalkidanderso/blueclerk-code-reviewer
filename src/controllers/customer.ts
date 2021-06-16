@@ -14,7 +14,7 @@ export const createCustomer = async (req: Request, res: Response) => {
     const params = req.body
     const company = <ICompany>req.company;
     var companyId = req.companyId;
-    let tier: IPriceTier;
+    let companyTier: { tier: any };
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
@@ -24,9 +24,9 @@ export const createCustomer = async (req: Request, res: Response) => {
      * then assigned it to the new Customer
      */
     await company.populate({ path: 'itemTier.list.tier' }).execPopulate();
-    if (params.itemTierId && ObjectId.isValid(params.itemTierId)) {
-        const companyTier = company.itemTier.list.find(t => {
-            tier = <IPriceTier>t.tier;
+    if (params.itemTierId) {
+        companyTier = company.itemTier.list.find(t => {
+            const tier = <IPriceTier>t.tier;
             // Check for the active company item tier
             return (tier._id.toString() === params.itemTierId && tier.isActive)
         })
@@ -62,7 +62,7 @@ export const createCustomer = async (req: Request, res: Response) => {
             role: Role.CUSTOMER,
             extra: [],
         },
-        itemTier: tier && tier._id,
+        itemTier: companyTier && companyTier.tier,
         contactName: params.contactName,
         vendorId: params.vendorId,
         contacts: params.contacts
@@ -255,7 +255,7 @@ export const getCustomers = (req: Request, res: Response) => {
 export const updateCustomer = (req: Request, res: Response) => {
 
     const params = req.body
-    let tier: IPriceTier;
+    let companyTier: { tier: any };
     Customer.findById(params.customerId)
     .exec(async (err: any, customer: ICustomer)=>{
         if (err) {
@@ -267,9 +267,9 @@ export const updateCustomer = (req: Request, res: Response) => {
          * then assigned it to the updated Customer
          */
         const company = await Company.findById(customer.company).populate({path: 'itemTier.list.tier'});
-        if (params.itemTierId && ObjectId.isValid(params.itemTierId)) {
-            const companyTier = company.itemTier.list.find(t => {
-                tier = <IPriceTier>t.tier;
+        if (params.itemTierId) {
+            companyTier = company.itemTier.list.find(t => {
+                const tier = <IPriceTier>t.tier;
                 // Check for the active company item tier
                 return (tier._id.toString() === params.itemTierId && tier.isActive)
             });
@@ -296,7 +296,7 @@ export const updateCustomer = (req: Request, res: Response) => {
             'address.zipCode': params.zipCode,
             'contact.phone': params.phone,
             'contact.fax': params.fax,
-            itemTier: tier && tier._id,
+            itemTier: companyTier && companyTier.tier,
             isCustomPrice,
             contactName: params.contactName,
             vendorId: params.vendorId,
