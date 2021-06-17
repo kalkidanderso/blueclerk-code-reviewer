@@ -845,6 +845,8 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
     }
 
     let invoiceItems: any[] = []
+    // Find Customer object to see the itemTier and customPrice info
+    const customerObj = await Customer.findById(customer);
 
     if (items.length > 0) {
 
@@ -890,15 +892,12 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
         // Iterate all jobTypes' items and add all to invoice's items
         for (const jobTypeitem of jobTypeitems) {
 
-            /**
-             * Find the assigned itemTier of the customer,
-             * take the first tier of Item when customer doesn't have it
-             */
-            const customerObj = await Customer.findById(customer);
             let itemTier;
             if (customerObj.itemTier) {
+                // Find the assigned itemTier of the customer
                 itemTier = jobTypeitem.tiers.find(t => t.tier.toString() === customerObj.itemTier.toString());
             } else {
+                // Take the first active tier of Item when customer doesn't have itemTier
                 await jobTypeitem.populate({ path: 'tiers.tier' }).execPopulate();
                 itemTier = jobTypeitem.tiers.find(t => {
                     const tier = <IPriceTier>t.tier;
@@ -907,7 +906,8 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
             }
 
             let obj: any = {}
-            let price = itemTier && itemTier.charge || jobTypeitem.charges
+            // Set price to 0 if customer uses customPrice
+            let price = customerObj.isCustomPrice ? 0 : itemTier && itemTier.charge || jobTypeitem.charges;
             let quantity = jobTypeitem.isFixed ? 1 : parseFloat(job.timeSpent);
             let itemTax =  0
             let itemTaxAmount: number = 0
@@ -937,6 +937,15 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
 
     // Add the grand total with the tax amount
     total += taxAmount;
+
+    /**
+     * Check if invoice coming from Job and customer uses customPrice,
+     * Use the customer customPrice's price as the grand total of invoice
+     */
+    if (jobTypeitems && jobTypeitems.length > 0 && customerObj.isCustomPrice) {
+        const customPrice = customerObj.customPrices.find(cp => cp.quantity === jobTypeitems.length);
+        total = customPrice.price;
+    }
 
     var invoice = new Invoice({
         invoiceId: invoiceId,
