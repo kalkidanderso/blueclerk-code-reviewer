@@ -596,8 +596,19 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Job_Start),
-        validate(Validations.generalJob),
-        jobController.startJob
+        validate(Validations.startJobTask),
+        jobController.startJobTask
+        // validate(Validations.generalJob),
+        // jobController.startJob
+    )
+
+    router.post(
+        '/updateJobTask',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Update),
+        validate(Validations.updateJobTask),
+        jobController.updateJobTask
     )
 
     router.post(
