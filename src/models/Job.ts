@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose'
-import { IJobTypes } from './JobType'
+import { IUser } from './User'
+import { IJobType, IJobTypes } from './JobType'
 
 export interface IJob extends Document {
 
@@ -9,13 +10,27 @@ export interface IJob extends Document {
     jobId: string
     parentJob: Schema.Types.ObjectId | IJob
     ticket: Schema.Types.ObjectId | any
-    technician: Schema.Types.ObjectId
+    technician: Schema.Types.ObjectId | any
     contractor: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId | any
     jobLocation: Schema.Types.ObjectId | any
     jobSite: Schema.Types.ObjectId | any
     type: Schema.Types.ObjectId | any // TODO: To be deprecated
-    jobTypes: IJobTypes[]
+    tasks: {
+        jobType: Schema.Types.ObjectId | IJobType
+        status?: number
+        charges?: number
+        startTime?: Date
+        tempStartTime?: Date
+        endTime?: Date
+        timeSpent?: number
+        pausedCount?: number
+        timeUpdatedBy?: Schema.Types.ObjectId | IUser
+        timeUpdatedAt?: Date
+        completeOnTime?: boolean
+        equipmentScanned?: boolean
+        noOfEquipmentScanned?: number
+    }[]
     company: Schema.Types.ObjectId | any
     equipmentId: string
     description: string
@@ -28,14 +43,14 @@ export interface IJob extends Document {
     // hourlyRate: number
     charges: number
     salesTax: Schema.Types.ObjectId
-    startTime: Date
-    endTime: Date
-    timeSpent: number
-    timeUpdatedBy: Schema.Types.ObjectId
-    timeUpdatedAt: Date
-    equipment_scanned: boolean
-    no_of_equipment_scanned: number
-    completeOnTime: boolean
+    startTime: Date // TODO: To be deprecated
+    endTime: Date // TODO: To be deprecated
+    timeSpent: number // TODO: To be deprecated
+    timeUpdatedBy: Schema.Types.ObjectId // TODO: To be deprecated
+    timeUpdatedAt: Date // TODO: To be deprecated
+    equipment_scanned: boolean // TODO: To be deprecated
+    no_of_equipment_scanned: number // TODO: To be deprecated
+    completeOnTime: boolean // TODO: To be deprecated
     track: {
         user: Schema.Types.ObjectId
         action: string
@@ -101,12 +116,45 @@ const JobSchema = new Schema({
         ref: 'JobType',
         // required: true
     },
-    jobTypes: [{
+    tasks: [{
         _id: false,
         jobType: {
             type: Schema.Types.ObjectId,
             ref: 'JobType',
             required: true
+        },
+        status: {
+            type: Number,
+            default: 0
+        },
+        charges: {
+            type: Number,
+            default: 0
+        },
+        startTime: Date,
+        tempStartTime: Date,
+        endTime: Date,
+        timeSpent: {
+            type: Number,
+            default: 0
+        },
+        pausedCount: {
+            type: Number,
+            default: 0
+        },
+        timeUpdatedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        timeUpdatedAt: Date,
+        completeOnTime: Boolean,
+        equipmentScanned: {
+            type: Boolean,
+            default: false
+        },
+        noOfEquipmentScanned: {
+            type: Number,
+            default: 0
         }
     }],
     company: {
@@ -164,28 +212,34 @@ const JobSchema = new Schema({
         ref: 'SaleTax',
         required: false
     },
-    startTime: Date,
-    endTime: Date,
+    startTime: Date, // TODO: To be deprecated
+    endTime: Date, // TODO: To be deprecated
     timeSpent: {
+        // TODO: To be deprecated
         type: Number,
-        default: 0
+        // default: 0
     },
     timeUpdatedBy: {
+        // TODO: To be deprecated
         type: Schema.Types.ObjectId,
         ref: 'User'
     },
     timeUpdatedAt: {
+        // TODO: To be deprecated
         type: Date
     },
     equipment_scanned: {
+        // TODO: To be deprecated
         type: Boolean,
-        default: false
+        // default: false
     },
     no_of_equipment_scanned: {
+        // TODO: To be deprecated
         type: Number,
-        default: 0
+        // default: 0
     },
     completeOnTime:{
+        // TODO: To be deprecated
         type: Boolean,
         required: false
     }

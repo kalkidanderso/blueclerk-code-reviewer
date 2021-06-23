@@ -785,7 +785,7 @@ export const sendScheduledJobEmailToAssignee = function(jobs: IJob[], to: string
           select:'title'
         })
         .populate({
-          path: 'jobTypes.jobType',
+          path: 'tasks.jobType',
           select: 'title'
         })
         .populate('jobSite')
@@ -802,8 +802,9 @@ export const sendScheduledJobEmailToAssignee = function(jobs: IJob[], to: string
       let ticket: IServiceTicket = job.ticket;
       let contact: IContact = ticket.customerContactId;
       var type: any = job.type && job.type.title
-      let jobTypes: string[] = job.jobTypes.map(jts => {
-          const jt = <IJobType>jts.jobType;
+      // let jobTypes: string[] = job.jobTypes.map(jts => {
+      let jobTypes: string[] = job.tasks.map(task => {
+          const jt = <IJobType>task.jobType;
           return jt.title
       });
       const jobTitles = jobTypes.length > 0 ? jobTypes.join(', ') : type;

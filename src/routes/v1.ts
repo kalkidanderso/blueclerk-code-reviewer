@@ -591,6 +591,7 @@ export default function (sio: any) {
         }
     )
 
+    // TODO: To be deprecated?
     router.post(
         '/startJob',
         passport.authenticate('jwt', { session: false }),
@@ -598,6 +599,24 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Job_Start),
         validate(Validations.generalJob),
         jobController.startJob
+    )
+
+    router.post(
+        '/startJobTask',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Start),
+        validate(Validations.startJobTask),
+        jobController.startJobTask
+    )
+
+    router.post(
+        '/updateJobTask',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Update),
+        validate(Validations.updateJobTask),
+        jobController.updateJobTask
     )
 
     router.post(

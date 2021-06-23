@@ -20,7 +20,7 @@ export interface IServiceTicket extends Document {
     jobLocation: Schema.Types.ObjectId
     jobSite: Schema.Types.ObjectId
     jobType: Schema.Types.ObjectId // TODO: To be deprecated
-    jobTypes: IJobTypes[]
+    tasks: IJobTypes[]
     item: Schema.Types.ObjectId
     jobCreated: boolean
     track: any[];
@@ -96,7 +96,7 @@ const ServiceTicketSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'JobType',
     },
-    jobTypes: [{
+    tasks: [{
         _id: false,
         jobType: {
             type: Schema.Types.ObjectId,

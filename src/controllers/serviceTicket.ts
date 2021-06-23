@@ -69,7 +69,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 jobLocation: params.jobLocationId,
                 jobSite: params.jobSiteId,
                 jobType: params.jobTypeId, // TODO: To be deprecated
-                jobTypes,
+                tasks: jobTypes,
                 customerPO : customerPo,
             });
             if (customerId) {
@@ -498,7 +498,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     }
 
                     //=== HANDLE params jobTypes
-                    let currentJobTypes = serviceTicket.jobTypes;
+                    let currentJobTypes = serviceTicket.tasks;
                     let jobTypes: IJobTypes[], invalidJobTypes: string[];
                     let isJobTypesUpdated = false;
                     try {
@@ -539,7 +539,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             jobLocation: jobLocationId,
                             jobSite: jobSiteId,
                             jobType: jobTypeId, // TODO: To be deprecated
-                            jobTypes,
+                            tasks: jobTypes,
                             image: image,
                             customerPO: customerPO,
                             customerContactId: customerContactId,
@@ -681,7 +681,7 @@ export const getServiceTicketDetail = (req: Request, res: Response) => {
             select: 'title'
         })
         .populate({
-            path: 'jobTypes.jobType',
+            path: 'tasks.jobType',
             select: 'title'
         })
         .populate({

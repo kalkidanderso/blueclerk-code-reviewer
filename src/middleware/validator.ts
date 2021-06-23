@@ -1,6 +1,6 @@
 import {Request, Response, NextFunction} from 'express'
 import {check, validationResult, ValidationChain, body} from 'express-validator'
-import {Status, Messages} from '../common/constants'
+import {Status, Messages, JobStatus} from '../common/constants'
 
 
 let uniq = (a: any) => {
@@ -141,6 +141,22 @@ export const Validations = {
   searchJob: [check('pageSize').isNumeric(), check('page').isNumeric()],
 
   generalJob: [check('jobId').exists()],
+
+  startJobTask: [
+    check('jobId').exists().withMessage(Messages.Required),
+    check('jobId').isMongoId().withMessage(Messages.WrongId),
+    check('jobTypeId').exists().withMessage(Messages.Required),
+    check('jobTypeId').isMongoId().withMessage(Messages.WrongId)
+  ],
+
+  updateJobTask: [
+    check('jobId').exists().withMessage(Messages.Required),
+    check('jobId').isMongoId().withMessage(Messages.WrongId),
+    check('jobTypeId').exists().withMessage(Messages.Required),
+    check('jobTypeId').isMongoId().withMessage(Messages.WrongId),
+    check('status').exists().withMessage(Messages.Required),
+    check('status').isIn([JobStatus.PAUSED, JobStatus.FINISHED]).withMessage('Only paused and finished are allowed')
+  ],
 
   updateJob: [check('status').exists(), check('jobId').exists()],
 

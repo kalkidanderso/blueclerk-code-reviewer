@@ -289,7 +289,7 @@ export const createInvoice = (req: Request, res: Response) => {
                 const job = <IJob>result[0]
 
                 // Convert jobTypes to ObjectId in array
-                const jobTypeIds = job.jobTypes.map(jts => jts.jobType);
+                const jobTypeIds = job.tasks.map(task => task.jobType);
                 // Search all jobTypes' items
                 const items = Item.find({ jobType: { $in: jobTypeIds }});
                 return Promise.all([result[0], result[1], items])

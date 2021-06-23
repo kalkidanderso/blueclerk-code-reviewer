@@ -3830,6 +3830,75 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /startJobTask:
+      post:
+        tags:
+          - Job
+        summary: To start job task
+        description: ''
+        consumes:
+          - application/x-www-form-urlencoded
+        produces:
+          - application/json
+        parameters:
+          - name: jobId
+            in: formData
+            required: true
+            type: string
+            description: Id of job to start
+          - name: jobTypeId
+            in: formData
+            required: true
+            type: string
+            description: Id of task/job type to start
+          - name: companyId
+            in: formData
+            type: string
+            description: Id of company if contractor is hitting for other company
+        responses:
+          '200':
+            description: Success
+            schema:
+              $ref: '#/definitions/GeneralAPIResponse'
+        security:
+          - Bearer: []
+  /updateJobTask:
+      post:
+        tags:
+          - Job
+        summary: To update job task status
+        description: ''
+        consumes:
+          - application/x-www-form-urlencoded
+        produces:
+          - application/json
+        parameters:
+          - name: jobId
+            in: formData
+            required: true
+            type: string
+            description: Id of job to start
+          - name: jobTypeId
+            in: formData
+            required: true
+            type: string
+            description: Id of task/job type to start
+          - name: status
+            in: formData
+            required: true
+            type: number
+            description: Id of job task status as number from one of these (FINISHED => 2, PAUSED => 5).
+          - name: companyId
+            in: formData
+            type: string
+            description: Id of company if contractor is hitting for other company
+        responses:
+          '200':
+            description: Success
+            schema:
+              $ref: '#/definitions/GeneralAPIResponse'
+        security:
+          - Bearer: []
   /updateJob:
     post:
       tags:
