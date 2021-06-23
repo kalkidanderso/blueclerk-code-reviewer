@@ -785,7 +785,7 @@ export const sendScheduledJobEmailToAssignee = function(jobs: IJob[], to: string
           select:'title'
         })
         .populate({
-          path: 'jobTypes.jobType',
+          path: 'tasks.jobType',
           select: 'title'
         })
         .populate('jobSite')

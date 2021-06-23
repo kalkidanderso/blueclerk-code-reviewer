@@ -10,7 +10,7 @@ export interface IJob extends Document {
     jobId: string
     parentJob: Schema.Types.ObjectId | IJob
     ticket: Schema.Types.ObjectId | any
-    technician: Schema.Types.ObjectId
+    technician: Schema.Types.ObjectId | any
     contractor: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId | any
     jobLocation: Schema.Types.ObjectId | any
