@@ -7,6 +7,7 @@ import { IUser } from '../models/User'
 import { Customer } from '../models/Customer';
 import { ICompany } from '../models/Company'
 import { Item, IItem } from '../models/Item'
+import { ITask } from '../models/Job';
 
 export const createJobType = (req: Request, res: Response) => {
 
@@ -409,7 +410,7 @@ export const updateItems = async (req: Request, res: Response) => {
  * To handle params jobTypes that comes on JSON format
  * and check if the job types are valid
  */
-export const _handleJobTypesJson = (customerId: string, paramJobTypes: string, jobTypes: IJobTypes[]): Promise<{ jobTypes: IJobTypes[], invalidJobTypes: string[] }> => {
+export const _handleJobTypesJson = (customerId: string, paramJobTypes: string, jobTypes: IJobTypes[]): Promise<{ jobTypes: IJobTypes[] | any, invalidJobTypes: string[] }> => {
 
     return new Promise(async (resolve, reject) => {
 

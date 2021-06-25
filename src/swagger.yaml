@@ -3888,6 +3888,10 @@ paths:
             required: true
             type: number
             description: Id of job task status as number from one of these (FINISHED => 2, PAUSED => 5).
+          - name: endTime
+            in: formData
+            type: string
+            description: To update task's endTime. Only able to update endTime for a FINISHED task. Manual end time for the task. e.g. 2021-12-20T21:30:00
           - name: companyId
             in: formData
             type: string
@@ -3920,7 +3924,7 @@ paths:
           in: formData
           required: true
           type: number
-          description: Id of job status as number from one of these (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4).
+          description: Id of job status as number from one of these (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4, PAUSED => 5).
         - name: note
           in: formData
           type: string
