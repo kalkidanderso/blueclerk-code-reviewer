@@ -16,21 +16,7 @@ export interface IJob extends Document {
     jobLocation: Schema.Types.ObjectId | any
     jobSite: Schema.Types.ObjectId | any
     type: Schema.Types.ObjectId | any // TODO: To be deprecated
-    tasks: {
-        jobType: Schema.Types.ObjectId | IJobType
-        status?: number
-        charges?: number
-        startTime?: Date
-        tempStartTime?: Date
-        endTime?: Date
-        timeSpent?: number
-        pausedCount?: number
-        timeUpdatedBy?: Schema.Types.ObjectId | IUser
-        timeUpdatedAt?: Date
-        completeOnTime?: boolean
-        equipmentScanned?: boolean
-        noOfEquipmentScanned?: number
-    }[]
+    tasks: ITask[]
     company: Schema.Types.ObjectId | any
     equipmentId: string
     description: string
@@ -43,9 +29,9 @@ export interface IJob extends Document {
     // hourlyRate: number
     charges: number
     salesTax: Schema.Types.ObjectId
-    startTime: Date // TODO: To be deprecated
-    endTime: Date // TODO: To be deprecated
-    timeSpent: number // TODO: To be deprecated
+    startTime: Date
+    endTime: Date
+    timeSpent: number
     timeUpdatedBy: Schema.Types.ObjectId // TODO: To be deprecated
     timeUpdatedAt: Date // TODO: To be deprecated
     equipment_scanned: boolean // TODO: To be deprecated
@@ -57,6 +43,22 @@ export interface IJob extends Document {
         note?: string
         date: Date
     }[]
+}
+
+export interface ITask extends Document {
+    jobType: Schema.Types.ObjectId | IJobType
+    status?: number
+    charges?: number
+    startTime?: Date
+    tempStartTime?: Date
+    endTime?: Date
+    timeSpent?: number
+    pausedCount?: number
+    timeUpdatedBy?: Schema.Types.ObjectId | IUser
+    timeUpdatedAt?: Date
+    completeOnTime?: boolean
+    equipmentScanned?: boolean
+    noOfEquipmentScanned?: number
 }
 
 const JobSchema = new Schema({
