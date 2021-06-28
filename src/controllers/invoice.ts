@@ -373,8 +373,8 @@ export const createInvoice = (req: Request, res: Response) => {
                 })
 
             })
-            .then(() =>{
-                return res.json({ 'status': Status.Success, 'message': "Job invoice created successfully." })
+            .then((invoice: IInvoice) =>{
+                return res.json({ 'status': Status.Success, 'message': "Job invoice created successfully.", invoice })
             })
             .catch((error: any) => {
                 if (error.message != undefined) {
@@ -429,7 +429,7 @@ export const createInvoice = (req: Request, res: Response) => {
             .then((response: any) => {
 
                 const invoice = response[0]
-                return new Promise<void>((resolve, reject) => {
+                return new Promise((resolve, reject) => {
 
                     Customer.findById(invoice.customer)
                         .then((customer: ICustomer) => {
@@ -439,7 +439,7 @@ export const createInvoice = (req: Request, res: Response) => {
                                 let newBalance = customer.balance + invoice.total
                                 customer.updateOne({balance: newBalance})
                                     .then(() => {
-                                        resolve()
+                                        resolve(invoice)
                                     })
                                     .catch(()=>{
                                         reject()
@@ -451,8 +451,8 @@ export const createInvoice = (req: Request, res: Response) => {
                         })
                 })
             })
-            .then(() =>{
-                return res.json({ 'status': Status.Success, 'message': "Purchase order invoice created successfully." })
+            .then((invoice: IInvoice) =>{
+                return res.json({ 'status': Status.Success, 'message': "Purchase order invoice created successfully.", invoice })
             })
             .catch((error: any) => {
                 if (error.message != undefined) {
@@ -568,7 +568,7 @@ export const createInvoice = (req: Request, res: Response) => {
             .then((response: any) => {
 
                 const invoice = response[0]
-                return new Promise<void>((resolve, reject) => {
+                return new Promise((resolve, reject) => {
 
                     Customer.findById(invoice.customer)
                         .then((customer: ICustomer) => {
@@ -578,7 +578,7 @@ export const createInvoice = (req: Request, res: Response) => {
                                 let newBalance = customer.balance + invoice.total
                                 customer.updateOne({balance: newBalance})
                                     .then(() => {
-                                        resolve()
+                                        resolve(invoice)
                                     })
                                     .catch(()=>{
                                         reject()
@@ -590,8 +590,8 @@ export const createInvoice = (req: Request, res: Response) => {
                         })
                 })
             })
-            .then(() =>{
-                return res.json({ 'status': Status.Success, 'message': "Estimate invoice created successfully." })
+            .then((invoice: IInvoice) =>{
+                return res.json({ 'status': Status.Success, 'message': "Estimate invoice created successfully.", invoice })
             })
             .catch((error: any) => {
                 if (error.message != undefined) {
@@ -688,7 +688,7 @@ export const createInvoice = (req: Request, res: Response) => {
                                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                                         }
 
-                                        return res.json({ 'status': Status.Success, 'message': "Invoice created successfully." })
+                                        return res.json({ 'status': Status.Success, 'message': "Invoice created successfully.", invoice: newInvoice })
                                     })
                             })
                     })
