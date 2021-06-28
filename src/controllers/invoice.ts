@@ -748,9 +748,9 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
         // }
 
         // Take the first job type's isFixed as all job types should be the same type
-        if (jobTypeitems[0] && !jobTypeitems[0].isFixed && !params.timeSpent) {
+        if (jobTypeitems[0] && !jobTypeitems[0]?.isFixed && !params.timeSpent) {
             return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
-        } else if (!jobTypeitems[0].isFixed) {
+        } else if (!jobTypeitems[0]?.isFixed) {
             timeSpent = params.timeSpent
         }
     }
