@@ -64,7 +64,7 @@
     "socketio-jwt": "^4.6.2",
     "stripe": "^7.9.1",
     "swagger-ui-express": "^4.0.7",
-    "typescript": "^3.6.2",
+    "typescript": "^3.7.7",
     "uuid": "^3.3.3",
     "xlsx": "^0.15.4"
   },

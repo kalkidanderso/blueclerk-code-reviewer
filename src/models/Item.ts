@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { IPriceTier } from './PriceTier';
 
 export interface IItem extends Document {
 
@@ -6,6 +7,12 @@ export interface IItem extends Document {
     isFixed: boolean
     charges: number
     tax: number
+    tiers: {
+        tier: Schema.Types.ObjectId | IPriceTier
+        charge?: number
+        updatedBy?: Schema.Types.ObjectId
+        updatedAt?: Date
+    }[]
     jobType: Schema.Types.ObjectId
     company: Schema.Types.ObjectId
     isActive: boolean
@@ -27,6 +34,19 @@ const ItemSchema = new Schema({
         type: Number,
         default: 0
     },
+    tiers: [{
+        _id: false,
+        tier: {
+            type: Schema.Types.ObjectId,
+            ref: 'PriceTier'
+        },
+        charge: Number,
+        updatedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        updatedAt: Date
+    }],
     jobType: {
         type: Schema.Types.ObjectId,
         ref: 'JobType',

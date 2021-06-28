@@ -5,7 +5,8 @@ import {Request, Response} from 'express'
 import uuid from 'uuid'
 import {Messages, Status} from '../common/constants';
 import {job} from 'cron';
-import {IJob, Job} from '../models/Job';
+import { IJob, Job } from '../models/Job';
+import { IJobType } from '../models/JobType';
 import {IUser} from '../models/User';
 import {IJobLocation} from '../models/JobLocation';
 import {IServiceTicket} from '../models/ServiceTicket';
@@ -716,7 +717,7 @@ export const sendJobEmailToAssignee = function(options: any) {
               Data: `<p>Dear ${options.assigneeName}!</p>
                      <p>This email is to inform you that a job has been assigned and scheduled to you by (${options.companyName}).  Job details below:</p>
                      <p>Customer : ${options.customerName}</p>
-                     <p>Job Type : ${options.jobType}</p>
+                     <p>Job Types : ${options.jobTitles || '-'}</p>
                      ${coordinates.length > 0 ? '<p>Longitude: '+ coordinates[0] + ' Latitude: '+ coordinates[1] + '</p>' : ''}
                      ${locationName ? '<p>Location Name: '+ locationName + '</p>' : ''}
                      ${address.city ? '<p>City: '+ address.city + '</p>' : ''}
@@ -749,7 +750,7 @@ export const sendJobEmailToAssignee = function(options: any) {
     )
   })
 }
-export const sendScheduledJobEmailToAssignee = function(jobs: any[], to: string, assigneeName: string, emailSchedule: any ) {
+export const sendScheduledJobEmailToAssignee = function(jobs: IJob[], to: string, assigneeName: string, emailSchedule: any ) {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
 
@@ -783,6 +784,10 @@ export const sendScheduledJobEmailToAssignee = function(jobs: any[], to: string,
           path:'type',
           select:'title'
         })
+        .populate({
+          path: 'tasks.jobType',
+          select: 'title'
+        })
         .populate('jobSite')
         .populate('company')
         .populate({
@@ -796,6 +801,13 @@ export const sendScheduledJobEmailToAssignee = function(jobs: any[], to: string,
       let jobSite = job.jobSite;
       let ticket: IServiceTicket = job.ticket;
       let contact: IContact = ticket.customerContactId;
+      var type: any = job.type && job.type.title
+      // let jobTypes: string[] = job.jobTypes.map(jts => {
+      let jobTypes: string[] = job.tasks.map(task => {
+          const jt = <IJobType>task.jobType;
+          return jt.title
+      });
+      const jobTitles = jobTypes.length > 0 ? jobTypes.join(', ') : type;
       let coordinates = [];
       let contactDetails: any = {};
       let locationName;
@@ -820,7 +832,7 @@ export const sendScheduledJobEmailToAssignee = function(jobs: any[], to: string,
       }
            data += `<p>Company: <b>${job.company.info.companyName}</b></p>
                     <p>Customer : ${customer.profile.displayName}</p>
-                    <p>Job Type : ${job.type.title}</p>
+                    <p>Job Types : ${jobTitles || '-'}</p>
                      ${coordinates.length > 0 ? '<p>Longitude: '+ coordinates[0] + ' Latitude: '+ coordinates[1] + '</p>' : ''}
                      ${locationName ? '<p>Location Name: '+ locationName + '</p>' : ''}
                      ${address.city ? '<p>City: '+ address.city + '</p>' : ''}

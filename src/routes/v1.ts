@@ -393,6 +393,15 @@ export default function (sio: any) {
         customerController.updateCustomer
     )
 
+    router.post(
+        '/updateCustomPrices',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Customer_Update),
+        validate(Validations.updateCustomPrices),
+        customerController.updateCustomPrices
+    )
+
     //Customer equipments
     router.post(
         '/createCustomerEquipment',
@@ -509,6 +518,14 @@ export default function (sio: any) {
         jobTypeController.updateItem
     )
 
+    router.post(
+        '/updateItems',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Item),
+        jobTypeController.updateItems
+    )
+
     //Job
     router.post(
         '/createJob',
@@ -574,6 +591,7 @@ export default function (sio: any) {
         }
     )
 
+    // TODO: To be deprecated?
     router.post(
         '/startJob',
         passport.authenticate('jwt', { session: false }),
@@ -581,6 +599,24 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Job_Start),
         validate(Validations.generalJob),
         jobController.startJob
+    )
+
+    router.post(
+        '/startJobTask',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Start),
+        validate(Validations.startJobTask),
+        jobController.startJobTask
+    )
+
+    router.post(
+        '/updateJobTask',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Update),
+        validate(Validations.updateJobTask),
+        jobController.updateJobTask
     )
 
     router.post(
@@ -1071,6 +1107,28 @@ export default function (sio: any) {
         companyController.updateCompanyProfile
     )
 
+    router.get(
+        '/getItemTierList',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        companyController.getItemTierList
+    )
+
+    router.post(
+        '/addItemTier',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        companyController.addItemTier
+    )
+
+    router.put(
+        '/updateItemTier',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.updateItemTier),
+        companyController.updateItemTier
+    )
+
     router.post(
         '/setCustomWorkOrderNumber',
         passport.authenticate('jwt', { session: false }),
@@ -1459,7 +1517,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updatePayment),
         checkUserPermissions(Permissions.Update_Payment),
-        paymentController.udpatePayment
+        paymentController.updatePayment
     )
 
     router.post(

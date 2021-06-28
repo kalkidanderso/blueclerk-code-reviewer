@@ -10,13 +10,14 @@ import {IInvoicePrefix, InvoicePrefix} from '../models/InvoicePrefix';
 import {IUser} from '../models/User';
 import {IJob, Job} from '../models/Job';
 import {IPurchaseOrder, PurchaseOrder} from '../models/PurchaseOrder';
-import {Item} from '../models/Item';
+import { IItem, Item } from '../models/Item';
 import {Customer, ICustomer} from '../models/Customer';
 import {Estimate, IEstimate} from '../models/Estimate';
 import {IScan, Scan} from '../models/Scan';
 import {sendInvoiceEmailToCustomer} from '../services/aws';
 import {CompanyInvoice} from '../models/CompanyInvoice';
 import { IJobReport, JobReport } from '../models/JobReport';
+import { IPriceTier } from '../models/PriceTier';
 
 export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
@@ -285,23 +286,26 @@ export const createInvoice = (req: Request, res: Response) => {
 
             })
             .then((result: any) => {
-                const job = result[0]
+                const job = <IJob>result[0]
 
-                const item = Item.findOne({jobType: job.type})
-                return Promise.all([result[0], result[1], item])
+                // Convert jobTypes to ObjectId in array
+                const jobTypeIds = job.tasks.map(task => task.jobType);
+                // Search all jobTypes' items
+                const items = Item.find({ jobType: { $in: jobTypeIds }});
+                return Promise.all([result[0], result[1], items])
             })
             .then((result: any) => {
 
                 const job = result[0]
                 const purchaseOrders = result[1]
-                const item = result[2]
+                const items = result[2];
 
                 if (!job) {
                     throw new Error('Invalid job id')
                     // return res.json({ 'status': Status.Error, 'message': 'Invalid job id' })
                 }
                 return new Promise((resolve, reject) => {
-                    _populateInvoiceData(req, res, job, item, purchaseOrders, null, null, (req, res, invoiceData, currentInvoiceId )=>{
+                    _populateInvoiceData(req, res, job, items, purchaseOrders, null, null, (req, res, invoiceData, currentInvoiceId )=>{
 
                         invoiceData.save()
                             .then((newInvoice: IInvoice) =>{
@@ -369,8 +373,8 @@ export const createInvoice = (req: Request, res: Response) => {
                 })
 
             })
-            .then(() =>{
-                return res.json({ 'status': Status.Success, 'message': "Job invoice created successfully." })
+            .then((invoice: IInvoice) =>{
+                return res.json({ 'status': Status.Success, 'message': "Job invoice created successfully.", invoice })
             })
             .catch((error: any) => {
                 if (error.message != undefined) {
@@ -435,7 +439,7 @@ export const createInvoice = (req: Request, res: Response) => {
                                 let newBalance = customer.balance + invoice.total
                                 customer.updateOne({balance: newBalance})
                                     .then(() => {
-                                        resolve()
+                                        resolve(invoice)
                                     })
                                     .catch(()=>{
                                         reject()
@@ -447,8 +451,8 @@ export const createInvoice = (req: Request, res: Response) => {
                         })
                 })
             })
-            .then(() =>{
-                return res.json({ 'status': Status.Success, 'message': "Purchase order invoice created successfully." })
+            .then((invoice: IInvoice) =>{
+                return res.json({ 'status': Status.Success, 'message': "Purchase order invoice created successfully.", invoice })
             })
             .catch((error: any) => {
                 if (error.message != undefined) {
@@ -574,7 +578,7 @@ export const createInvoice = (req: Request, res: Response) => {
                                 let newBalance = customer.balance + invoice.total
                                 customer.updateOne({balance: newBalance})
                                     .then(() => {
-                                        resolve()
+                                        resolve(invoice)
                                     })
                                     .catch(()=>{
                                         reject()
@@ -586,8 +590,8 @@ export const createInvoice = (req: Request, res: Response) => {
                         })
                 })
             })
-            .then(() =>{
-                return res.json({ 'status': Status.Success, 'message': "Estimate invoice created successfully." })
+            .then((invoice: IInvoice) =>{
+                return res.json({ 'status': Status.Success, 'message': "Estimate invoice created successfully.", invoice })
             })
             .catch((error: any) => {
                 if (error.message != undefined) {
@@ -684,7 +688,7 @@ export const createInvoice = (req: Request, res: Response) => {
                                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                                         }
 
-                                        return res.json({ 'status': Status.Success, 'message': "Invoice created successfully." })
+                                        return res.json({ 'status': Status.Success, 'message': "Invoice created successfully.", invoice: newInvoice })
                                     })
                             })
                     })
@@ -693,7 +697,7 @@ export const createInvoice = (req: Request, res: Response) => {
     }
 }
 
-const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem: any, purchaseOrders: any, purchaseOrder: any, estimate: any, next: (req: Request, res: Response, invoice: IInvoice, invoiceId: number) => void) =>{
+const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTypeitems: IItem[], purchaseOrders: any, purchaseOrder: any, estimate: any, next: (req: Request, res: Response, invoice: IInvoice, invoiceId: number) => void) =>{
 
     const params = req.body
     const company = req.company
@@ -717,6 +721,8 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
 
     let taxAmount: number = 0;
     let charges: number = 0;
+    let shippingCost: number = 0;
+    let subTotalBeforeTax: number = 0
     let total: number = 0;
     let invoiceType: number = 0;
     let customer : string
@@ -726,7 +732,7 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
     let purchaseOrderId: string = null
     let estimateId: string = null
     // let isFixed: boolean = false
-    let taxPercentage: number = 0
+    // let taxPercentage: number = 0
 
 
     if (job) {
@@ -741,14 +747,12 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
         //     hourlyRate = params.hourlyRate
         // }
 
-        if (!jobTypeitem.isFixed && !params.timeSpent) {
+        // Take the first job type's isFixed as all job types should be the same type
+        if (jobTypeitems[0] && !jobTypeitems[0].isFixed && !params.timeSpent) {
             return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
-        } else if (!jobTypeitem.isFixed) {
+        } else if (!jobTypeitems[0].isFixed) {
             timeSpent = params.timeSpent
         }
-
-        // if(jobTypeitem.isFixed)
-        //     isFixed = true
     }
 
     if(purchaseOrder != null){
@@ -805,19 +809,14 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
         customer = params.customerId
     }
 
-    if (params.charges != undefined && params.charges !== null && params.charges !== '""'){
-        charges = parseInt(params.charges)
+    if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
+        charges = parseFloat(params.charges);
+        total += charges;
     }
-
-    if (params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) {
-        taxPercentage = params.tax
-        taxAmount = charges * (taxPercentage / 100)
+    if (params.shippingCost != undefined && params.shippingCost != null) {
+        shippingCost = parseFloat(params.shippingCost);
+        total += shippingCost;
     }
-
-    total = charges + taxAmount
-
-    if(params.shippingCost != undefined && params.shippingCost != null)
-        total = total + parseInt(params.shippingCost)
 
     let purchaseOrderIds: any = []
     if (params.includePO) {
@@ -846,6 +845,8 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
     }
 
     let invoiceItems: any[] = []
+    // Find Customer object to see the itemTier and customPrice info
+    const customerObj = await Customer.findById(customer);
 
     if (items.length > 0) {
 
@@ -855,21 +856,24 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
                 return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' })
             }
             let obj: any = {}
-            let price = parseInt(item.price)
-            let quantity = parseInt(item.quantity)
-            let itemTax =  0
+            let price = parseFloat(item.price)
+            let quantity = parseFloat(item.quantity)
+            let itemTax = 0
+            let itemTaxAmount: number = 0
             let subTotal = price * quantity
 
             if(item.tax > 0) {
-                itemTax =  parseInt(item.tax)
-                subTotal = subTotal + (subTotal * itemTax /100)
+                itemTax = parseFloat(item.tax)
+                itemTaxAmount = subTotal * itemTax / 100;
+                taxAmount += itemTaxAmount;
             }
 
             obj.quantity = item.quantity
-            obj.price = item.price
+            obj.price = Math.round(item.price * 100) / 100
             obj.isFixed = item.isFixed
-            obj.tax = item.tax
-            obj.subTotal = subTotal
+            obj.tax = itemTax
+            obj.taxAmount = Math.round(itemTaxAmount * 100) / 100
+            obj.subTotal = Math.round(subTotal * 100) / 100
 
             if (item.item == undefined || item.item == null) {
                 obj.name = item.name
@@ -879,34 +883,69 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
             }
             invoiceItems.push(obj)
 
-            total = total + subTotal
+            subTotalBeforeTax += subTotal;
+            total += subTotal;
         }
 
-    } else if (jobTypeitem) {
+    } else if (jobTypeitems.length > 0) {
 
-        let obj: any = {}
-        let price = parseInt(jobTypeitem.charges)
-        let quantity = parseInt(job.timeSpent)
-        let itemTax =  0
-        let subTotal = price * quantity
+        // Iterate all jobTypes' items and add all to invoice's items
+        for (const jobTypeitem of jobTypeitems) {
 
-        if(jobTypeitem.tax > 0) {
-            itemTax =  parseInt(jobTypeitem.tax)
-            subTotal = subTotal + (subTotal * itemTax /100)
+            let itemTier;
+            if (customerObj.itemTier) {
+                // Find the assigned itemTier of the customer
+                itemTier = jobTypeitem.tiers.find(t => t.tier.toString() === customerObj.itemTier.toString());
+            } else {
+                // Take the first active tier of Item when customer doesn't have itemTier
+                await jobTypeitem.populate({ path: 'tiers.tier' }).execPopulate();
+                itemTier = jobTypeitem.tiers.find(t => {
+                    const tier = <IPriceTier>t.tier;
+                    return tier.isActive;
+                });
+            }
+
+            let obj: any = {}
+            // Set price to 0 if customer uses customPrice
+            let price = customerObj.isCustomPrice ? 0 : itemTier && itemTier.charge || jobTypeitem.charges;
+            let quantity = jobTypeitem.isFixed ? 1 : parseFloat(job.timeSpent);
+            let itemTax =  0
+            let itemTaxAmount: number = 0
+            let subTotal = price * quantity
+
+            if(jobTypeitem.tax > 0) {
+                itemTax =  jobTypeitem.tax
+                itemTaxAmount = subTotal * itemTax / 100;
+                taxAmount += itemTaxAmount;
+            }
+
+            obj.quantity = quantity
+            obj.price = Math.round(price * 100) / 100
+            obj.isFixed = jobTypeitem.isFixed
+            obj.tax = itemTax
+            obj.taxAmount = Math.round(itemTaxAmount * 100) / 100
+            obj.subTotal = Math.round(subTotal * 100) / 100
+            obj.item = jobTypeitem._id
+
+            invoiceItems.push(obj)
+
+            subTotalBeforeTax += subTotal;
+            total += subTotal;
         }
 
-        obj.quantity = job.timeSpent
-        obj.price = price
-        obj.isFixed = jobTypeitem.isFixed
-        obj.tax = itemTax
-        obj.subTotal = subTotal
-        obj.item = jobTypeitem._id
-
-        invoiceItems.push(obj)
-
-        total = total + subTotal
     }
 
+    // Add the grand total with the tax amount
+    total += taxAmount;
+
+    /**
+     * Check if invoice coming from Job and customer uses customPrice,
+     * Use the customer customPrice's price as the grand total of invoice
+     */
+    if (jobTypeitems && jobTypeitems.length > 0 && customerObj.isCustomPrice) {
+        const customPrice = customerObj.customPrices.find(cp => cp.quantity === jobTypeitems.length);
+        total = customPrice.price;
+    }
 
     var invoice = new Invoice({
         invoiceId: invoiceId,
@@ -919,16 +958,18 @@ const _populateInvoiceData = (req: Request, res: Response, job: any, jobTypeitem
         customer: customer,
         company: req.companyId,
         note: params.note,
-        charges: charges,
-        shippingCost : params.shippingCost,
-        tax: taxAmount,
-        total: total,
-        taxPercentage: taxPercentage,
+        charges: Math.round(charges * 100) / 100,
+        shippingCost : Math.round(shippingCost * 100) / 100,
+        taxAmount: Math.round(taxAmount * 100) / 100,
+        subTotal: Math.round(subTotalBeforeTax * 100) / 100,
+        total: Math.round(total * 100) / 100,
         createdBy: user._id,
         createdAt: Date.now(),
         timeSpent: timeSpent,
         items: invoiceItems,
-        estimate: estimateId
+        estimate: estimateId,
+        emailHistory: [],
+        lastEmailSent: null
     })
 
     next(req, res, invoice, currentInvoiceId)
@@ -1047,37 +1088,40 @@ export const updateInvoice = (req: Request, res: Response) => {
                         }
                         const issuedDate = params.issuedDate ? new Date(params.issuedDate) : invoice.issuedDate;
                         const dueDate = params.dueDate ? new Date(params.dueDate) : invoice.issuedDate;
-                        let tax: number = invoice.tax;
-                        let taxPercentage: number = invoice.taxPercentage;
+                        // let tax: number = invoice.tax;
+                        // let taxPercentage: number = invoice.taxPercentage;
                         let charges: number = invoice.charges;
-                        let total: number = invoice.total;
+                        let shippingCost: number = invoice.shippingCost;
+                        let taxAmount: number = 0;
+                        let subTotalBeforeTax: number = 0;
+                        let total: number = 0;
 
-                        if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
-                            (params.charges == undefined || params.charges == null || params.charges == '""' )) {
+                        // if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
+                        //     (params.charges == undefined || params.charges == null || params.charges == '""' )) {
 
-                            taxPercentage = params.tax
-                            tax = (charges * params.tax) /100
-                            total = charges + tax
+                        //     taxPercentage = params.tax
+                        //     tax = (charges * params.tax) /100
+                        //     total = charges + tax
 
-                        } else if ((params.charges != undefined && params.charges !== null && params.charges !== '""' ) &&
-                            (params.tax == undefined || params.tax == null || params.tax == '""' )) {
+                        // } else if ((params.charges != undefined && params.charges !== null && params.charges !== '""' ) &&
+                        //     (params.tax == undefined || params.tax == null || params.tax == '""' )) {
 
-                            tax = (params.charges * taxPercentage) / 100
-                            charges = parseInt(params.charges)
-                            total = charges + tax
+                        //     tax = (params.charges * taxPercentage) / 100
+                        //     charges = parseFloat(params.charges)
+                        //     total = charges + tax
 
-                        }else{
+                        // }else{
 
-                            // update tax and charges
-                            charges = parseInt(params.charges)
-                            taxPercentage = params.tax
-                            tax = (charges * params.tax) /100
-                            total = charges + tax
-                        }
+                        //     // update tax and charges
+                        //     charges = parseFloat(params.charges)
+                        //     taxPercentage = params.tax
+                        //     tax = (charges * params.tax) /100
+                        //     total = charges + tax
+                        // }
 
-                        invoice.tax = tax
-                        invoice.taxPercentage = taxPercentage
-                        invoice.charges = charges
+                        // invoice.tax = tax
+                        // invoice.taxPercentage = taxPercentage
+                        // invoice.charges = charges
                         // invoice.total = total
 
                         // if(!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""' )) {
@@ -1101,9 +1145,13 @@ export const updateInvoice = (req: Request, res: Response) => {
                             }
                         }
 
+                        if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
+                            charges = parseFloat(params.charges);
+                            total += charges;
+                        }
                         if(params.shippingCost != undefined && params.shippingCost != null){
-                            invoice.total = invoice.total + parseInt(params.shippingCost)
-                            // invoice.shippingCost = params.shippingCost
+                            shippingCost = parseFloat(params.shippingCost);
+                            total += shippingCost;
                         }
 
                         // total = invoice.total
@@ -1111,6 +1159,11 @@ export const updateInvoice = (req: Request, res: Response) => {
                         if (params.items != undefined) {
                             try {
                                 items = JSON.parse(params.items);
+
+                                // To handle any over-stringified strings
+                                if (!Array.isArray(items)) {
+                                    items = JSON.parse(items);
+                                }
                             } catch (error) {
                                 return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
                             }
@@ -1122,24 +1175,28 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                             for (let i = 0; i < items.length; i++) {
                                 const item = items[i];
-                                if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
+                                if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed'))) {
                                     return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' })
                                 }
                                 let obj: any = {}
-                                let price = parseInt(item.price)
-                                let quantity = parseInt(item.quantity)
+                                let price = parseFloat(item.price)
+                                let quantity = parseFloat(item.quantity)
                                 let itemTax =  0
+                                let itemTaxAmount: number = 0
                                 let subTotal = price * quantity
 
                                 if(item.tax > 0) {
-                                    itemTax =  parseInt(item.tax)
-                                    subTotal = subTotal + (subTotal * itemTax /100)
+                                    itemTax =  parseFloat(item.tax)
+                                    itemTaxAmount = subTotal * itemTax / 100;
+                                    taxAmount += itemTaxAmount;
                                 }
 
                                 obj.quantity = item.quantity
-                                obj.price = item.price
-                                obj.tax = item.tax
-                                obj.subTotal = subTotal
+                                obj.price = Math.round(item.price * 100) / 100
+                                obj.isFixed = item.isFixed
+                                obj.tax = itemTax
+                                obj.taxAmount = Math.round(itemTaxAmount * 100) / 100
+                                obj.subTotal = Math.round(subTotal * 100) / 100
 
                                 if (item.item == undefined || item.item == null) {
                                     obj.name = item.name
@@ -1149,13 +1206,23 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 }
                                 invoiceItems.push(obj)
 
-                                total = total + subTotal
+                                subTotalBeforeTax += subTotal;
+                                total += subTotal;
                             }
                         }
 
-                        // invoice.total = total
+                        // Add the grand total with the tax amount
+                        total += taxAmount;
 
-                        invoice.updateOne({total: total, items: invoiceItems, shippingCost: params.shippingCost, jobPurchaseOrders: purchaseOrderIds, tax: tax, taxPercentage: taxPercentage, charges: charges, issuedDate, dueDate, note: params.note},
+                        invoice.updateOne({
+                            jobPurchaseOrders: purchaseOrderIds,
+                            items: invoiceItems,
+                            shippingCost: Math.round(shippingCost * 100) / 100,
+                            taxAmount: Math.round(taxAmount * 100) / 100,
+                            subTotal: Math.round(subTotalBeforeTax * 100) / 100,
+                            total: Math.round(total * 100) / 100,
+                            charges, issuedDate, dueDate, note: params.note
+                        },
 
                             (err: any) => {
                                 if (err) {
@@ -1172,32 +1239,35 @@ export const updateInvoice = (req: Request, res: Response) => {
                 }
                 const issuedDate = params.issuedDate ? new Date(params.issuedDate) : invoice.issuedDate;
                 const dueDate = params.dueDate ? new Date(params.dueDate) : invoice.issuedDate;
-                let tax: number = invoice.tax;
-                let taxPercentage: number = invoice.taxPercentage;
+                // let tax: number = invoice.tax;
+                // let taxPercentage: number = invoice.taxPercentage;
                 let charges: number = invoice.charges;
-                let total: number = invoice.total;
+                let shippingCost: number = invoice.shippingCost;
+                let taxAmount: number = 0;
+                let subTotalBeforeTax: number = 0;
+                let total: number = 0;
 
-                if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
-                    (params.charges == undefined || params.charges == null || params.charges == '""' )) {
+                // if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
+                //     (params.charges == undefined || params.charges == null || params.charges == '""' )) {
 
-                    taxPercentage = params.tax
-                    tax = (charges * params.tax) /100
-                    total = charges + tax
+                //     taxPercentage = params.tax
+                //     tax = (charges * params.tax) /100
+                //     total = charges + tax
 
-                } else if ((params.charges != undefined && params.charges !== null && params.charges !== '""' ) &&
-                    (params.tax == undefined || params.tax == null || params.tax == '""' )) {
+                // } else if ((params.charges != undefined && params.charges !== null && params.charges !== '""' ) &&
+                //     (params.tax == undefined || params.tax == null || params.tax == '""' )) {
 
-                    tax = (params.charges * taxPercentage) / 100
-                    charges = parseInt(params.charges)
-                    total = charges + tax
+                //     tax = (params.charges * taxPercentage) / 100
+                //     charges = parseFloat(params.charges)
+                //     total = charges + tax
 
-                }else{
+                // }else{
 
-                    charges = parseInt(params.charges)
-                    taxPercentage = params.tax
-                    tax = (charges * params.tax) /100
-                    total = charges + tax
-                }
+                //     charges = parseFloat(params.charges)
+                //     taxPercentage = params.tax
+                //     tax = (charges * params.tax) /100
+                //     total = charges + tax
+                // }
 
                 // invoice.tax = tax
                 // invoice.taxPercentage = taxPercentage
@@ -1210,6 +1280,11 @@ export const updateInvoice = (req: Request, res: Response) => {
                 if (params.items != undefined) {
                     try {
                         items = JSON.parse(params.items);
+
+                        // To handle any over-stringified strings
+                        if (!Array.isArray(items)) {
+                            items = JSON.parse(items);
+                        }
                     } catch (error) {
                         return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
                     }
@@ -1221,24 +1296,28 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                     for (let i = 0; i < items.length; i++) {
                         const item = items[i];
-                        if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
+                        if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed'))) {
                             return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' })
                         }
                         let obj: any = {}
-                        let price = parseInt(item.price)
-                        let quantity = parseInt(item.quantity)
+                        let price = parseFloat(item.price)
+                        let quantity = parseFloat(item.quantity)
                         let itemTax =  0
+                        let itemTaxAmount: number = 0
                         let subTotal = price * quantity
 
                         if(item.tax > 0) {
-                            itemTax =  parseInt(item.tax)
-                            subTotal = subTotal + (subTotal * itemTax /100)
+                            itemTax =  parseFloat(item.tax)
+                            itemTaxAmount = subTotal * itemTax / 100;
+                            taxAmount += itemTaxAmount;
                         }
 
                         obj.quantity = item.quantity
-                        obj.price = item.price
-                        obj.tax = item.tax
-                        obj.subTotal = subTotal
+                        obj.price = Math.round(item.price * 100) / 100
+                        obj.isFixed = item.isFixed
+                        obj.tax = itemTax
+                        obj.taxAmount = Math.round(itemTaxAmount * 100) / 100
+                        obj.subTotal = Math.round(subTotal * 100) / 100
 
                         if (item.item == undefined || item.item == null) {
                             obj.name = item.name
@@ -1248,16 +1327,32 @@ export const updateInvoice = (req: Request, res: Response) => {
                         }
                         invoiceItems.push(obj)
 
-                        total = total + subTotal
+                        subTotalBeforeTax += subTotal;
+                        total += subTotal;
                     }
                 }
 
+                if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
+                    charges = parseFloat(params.charges);
+                    total += charges;
+                }
                 if(params.shippingCost != undefined && params.shippingCost != null){
-                    invoice.total = invoice.total + parseInt(params.shippingCost)
-                    // invoice.shippingCost = params.shippingCost
+                    shippingCost = parseFloat(params.shippingCost);
+                    total += shippingCost;
                 }
 
-                invoice.updateOne({total: total, items: invoiceItems, shippingCost: params.shippingCost, tax: tax, taxPercentage: taxPercentage, charges: charges, issuedDate, dueDate, note: params.note},
+                // Add the grand total with the tax amount
+                total +=  taxAmount;
+
+                invoice.updateOne({
+                    items: invoiceItems,
+                    charges: Math.round(charges * 100) / 100,
+                    shippingCost: Math.round(shippingCost * 100) / 100,
+                    taxAmount: Math.round(taxAmount * 100) / 100,
+                    subTotal: Math.round(subTotalBeforeTax * 100) / 100,
+                    total: Math.round(total * 100) / 100,
+                    issuedDate, dueDate, note: params.note
+                },
                     (err: any) => {
                         if (err) {
                             return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -1357,7 +1452,7 @@ export const sendInvoice = (req: Request, res: Response) => {
                 path: 'customer',
                 select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
             })
-            .then((invoice: IInvoice)=>{
+            .then(async (invoice: IInvoice)=>{
                 if (!invoice) {
                     return res.json({'status': Status.Error, 'message': 'Invoice not found'})
                 }
@@ -1370,6 +1465,15 @@ export const sendInvoice = (req: Request, res: Response) => {
                     invoiceNumber: invoice.invoiceId,
                     invoiceAmount: invoice.total,
                 });
+
+                // Update email history and last email sent info
+                const sendingDate = new Date();
+                invoice.emailHistory.push({
+                    sentTo: invoice.customer.info.email,
+                    sentAt: sendingDate
+                });
+                invoice.lastEmailSent = sendingDate;
+                await invoice.save();
 
                 return res.json({ status: Status.Success, message: 'Invoice has been sent successfully!' });
             })

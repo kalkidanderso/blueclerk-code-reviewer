@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import { User, IUser} from './User'
 import { IContact } from '../common/contact'
+import { IPriceTier } from './PriceTier'
 
 export interface ICustomer extends IUser {
 
@@ -14,6 +15,12 @@ export interface ICustomer extends IUser {
     jobLocations: [Schema.Types.ObjectId]
     quickbookId: string
     balance: number,
+    itemTier: Schema.Types.ObjectId | IPriceTier
+    isCustomPrice?: boolean
+    customPrices?: {
+        quantity: number,
+        price: number
+    }[]
     vendorId?: string,
     contacts: [Schema.Types.ObjectId],
     contactEmail: string
@@ -49,6 +56,26 @@ const CustomerSchema = new Schema({
         type: Number,
         default: 0
     },
+    itemTier: {
+        type: Schema.Types.ObjectId,
+        ref: 'PriceTier'
+    },
+    isCustomPrice: {
+        type: Boolean,
+        default: false
+    },
+    customPrices: [{
+        _id: false,
+        quantity: {
+            type: Number,
+            required: true
+        },
+        price: {
+            type: Number,
+            default: 0,
+            required: true
+        }
+    }],
     vendorId: {
         type: String,
     },

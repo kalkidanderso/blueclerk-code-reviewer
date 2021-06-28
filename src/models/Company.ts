@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import {ICompanyInvoice} from './CompanyInvoice';
+import { IPriceTier } from './PriceTier';
 
 export interface ICompany extends Document{
 
@@ -72,6 +73,10 @@ export interface ICompany extends Document{
     invoicePrefix: string,
     currentPOId: number
     currentEstimateId: number
+    itemTier: {
+        count: number
+        list: { tier: Schema.Types.ObjectId | IPriceTier }[]
+    }
     companyInvoices: ICompanyInvoice[];
 }
 
@@ -201,6 +206,19 @@ const CompanySchema = new Schema({
     currentEstimateId: {
         type: Number,
         default: 0
+    },
+    itemTier: {
+        count: {
+            type: Number,
+            default: 0
+        },
+        list: [{
+            _id: false,
+            tier: {
+                type: Schema.Types.ObjectId,
+                ref: 'PriceTier'
+            },
+        }]
     },
     companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
 })

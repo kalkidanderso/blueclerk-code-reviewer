@@ -1,6 +1,6 @@
 import {Request, Response, NextFunction} from 'express'
 import {check, validationResult, ValidationChain, body} from 'express-validator'
-import {Status, Messages} from '../common/constants'
+import {Status, Messages, JobStatus} from '../common/constants'
 
 
 let uniq = (a: any) => {
@@ -78,6 +78,8 @@ export const Validations = {
 
   updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('phone').exists()],
 
+  updateItemTier: [check('itemTierId').exists().withMessage('is required')],
+
   deleteEmployee: [check('employeeId').exists()],
 
   getEmployeeDetails: [check('employeeId').exists()],
@@ -106,6 +108,8 @@ export const Validations = {
 
   updateCustomer: [check('customerId').exists()],
 
+  updateCustomPrices: [check('customerId').exists().withMessage('is required'), check('customerId').isMongoId().withMessage(Messages.WrongId)],
+
   getCustomers: [check('includeActive').exists(), check('includeNonActive').exists()],
 
   getCustomerDetail: [check('customerId').exists()],
@@ -130,13 +134,29 @@ export const Validations = {
   changeJobTypeStatus: [check('jobTypeId').exists(), check('status').exists()],
 
   //Job
-  createJob: [check('scheduleDate').exists(), check('customerId').exists(), check('jobTypeId').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric()],
+  createJob: [check('scheduleDate').exists(), check('customerId').exists(), check('jobTypes').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric()],
 
   createSubJob: [check('parentJobId').exists(), check('employeeType').exists(), check('employeeType').isNumeric()],
 
   searchJob: [check('pageSize').isNumeric(), check('page').isNumeric()],
 
   generalJob: [check('jobId').exists()],
+
+  startJobTask: [
+    check('jobId').exists().withMessage(Messages.Required),
+    check('jobId').isMongoId().withMessage(Messages.WrongId),
+    check('jobTypeId').exists().withMessage(Messages.Required),
+    check('jobTypeId').isMongoId().withMessage(Messages.WrongId)
+  ],
+
+  updateJobTask: [
+    check('jobId').exists().withMessage(Messages.Required),
+    check('jobId').isMongoId().withMessage(Messages.WrongId),
+    check('jobTypeId').exists().withMessage(Messages.Required),
+    check('jobTypeId').isMongoId().withMessage(Messages.WrongId),
+    check('status').exists().withMessage(Messages.Required),
+    check('status').isIn([JobStatus.PAUSED, JobStatus.FINISHED]).withMessage('Only paused and finished are allowed')
+  ],
 
   updateJob: [check('status').exists(), check('jobId').exists()],
 

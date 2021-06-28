@@ -34,8 +34,13 @@ export const Messages = {
     TagNotAssociated: 'Tag is not associated with customer',
     QBUnAuthorized: 'Quickbooks authorization failed',
     InternalServerError: 'There was an internal server error. Please try again later.',
+    Required: 'is required',
     WrongId: 'Id passed must be a single String of 12 bytes or a string of 24 hex characters',
-    NotificationNotFound: "Notification not found"
+    NotificationNotFound: "Notification not found",
+    JobCannotBeStarted: `You can't start this job, it is already`,
+    TaskCannotBeStarted: `You can't start this task/job type, it is already`,
+    TaskCannotBeUpdated: `You can't update this task/job type, it is already`,
+    TaskNotFound: 'Task/job type not found in this Job.'
 }
 
 export const enum Role {
@@ -66,7 +71,9 @@ export const enum JobStatus {
     STARTED,
     FINISHED,
     CANCELED,
-    RESCHEDULED
+    RESCHEDULED,
+    PAUSED,
+    INCOMPLETE
 }
 
 export const enum ServiceTicketStatus {

@@ -16,6 +16,8 @@ tags:
     description: For the industry company works in
   - name: Users
     description: For all kind of users
+  - name: Company
+    description: For all kind of company stuff
   - name: Equipment Type
     description: For equipment types
   - name: Equipment Brand
@@ -41,6 +43,8 @@ tags:
     description: For job types
   - name: Items
     description: For invoice items
+  - name: Item Pricing Tiers
+    desdription: For company item pricing tiers
   - name: Job Charges
     description: For job charges
   - name: Job Site
@@ -1186,6 +1190,28 @@ paths:
                       $ref: '#/definitions/User'
       security:
         - Bearer: []
+  /agreeTermAndCondition:
+    post:
+      tags:
+        - Users
+      summary: Employee agree to terms and condition
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: agreedStatus
+          in: formData
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /updateCompanyProfile:
     post:
       tags:
@@ -1227,28 +1253,6 @@ paths:
           type: string
         - name: fax
           in: formData
-          type: string
-      responses:
-        '200':
-          description: Success
-          schema:
-            $ref: '#/definitions/GeneralAPIResponse'
-      security:
-        - Bearer: []
-  /agreeTermAndCondition:
-    post:
-      tags:
-        - Users
-      summary: Employee agree to terms and condition
-      description: ''
-      consumes:
-        - application/x-www-form-urlencoded
-      produces:
-        - application/json
-      parameters:
-        - name: agreedStatus
-          in: formData
-          required: true
           type: string
       responses:
         '200':
@@ -1449,6 +1453,13 @@ paths:
           in: formData
           required: true
           type: string
+        - name: itemTierId
+          in: formData
+          type: string
+        - name: isCustomPrice
+          in: formData
+          type: boolean
+          description: Toggle for customer to use Item's Tier or Custom Price. This will be default to false for new customer. Set to false to let customer use the Item's Tier, set to true to let customer use the custom price.
         - name: street
           in: formData
           type: string
@@ -1482,6 +1493,33 @@ paths:
         - name: vendorId
           in: formData
           type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateCustomPrices:
+    post:
+      tags:
+        - Customer
+      summary: This API used to update customer's custom prices
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: customerId
+          in: formData
+          required: true
+          type: string
+        - name: customPrices
+          in: formData
+          type: string
+          description: >-
+            "Json string of the customPrices e.g [{\"quantity\":1,\"price\":45},{\"quantity\":2,\"price\":85},{\"quantity\":3,\"price\":125},{\"quantity\":4,\"price\":165},{\"quantity\":5,\"price\":206},{\"quantity\":6,\"price\":245}]. The the quantities have to be sufficient, no missing sequence."
       responses:
         '200':
           description: Success
@@ -2298,6 +2336,98 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /updateItems:
+    post:
+      tags:
+        - Items
+      summary: To update multiple item tier's charge at once
+      description: Will update charges for multiple item tier's charge at once. When there are some troubled itemId and/or tierId, BE will return it to the response, showing that those IDs are not being updated and have some problem on it
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: items
+          in: formData
+          type: string
+          description: >
+            'Json string of the items e.g [{"itemId":"60884105898eb7068283bfc4","tiers":[{"tierId":"60b7dd9643d3717e9a325c9f","charge":10},{"tierId":"60b7e0598529b3041b284628","charge":20}]},{"itemId":"60884115898eb7068283bfc6","tiers":[{"tierId":"60b7e0598529b3041b284628","charge":15},{"tierId":"60b7e0a68529b3041b284629","charge":25}]},{"itemId":"60b90c8438045631806b8e6d","tiers":[{"tierId":"60b7dd9643d3717e9a325c9f","charge":40}]}]'
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: "#/definitions/GeneralAPIResponse"
+      security:
+        - Bearer: []
+  /getItemTierList:
+    get:
+      tags:
+        - Item Pricing Tiers
+      summary: Retrieve item tier list of company
+      description: To retrieve all item tier of the logged in user company
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /addItemTier:
+    post:
+      tags:
+        - Item Pricing Tiers
+      summary: Add new tier to the company
+      description: To add new item tier to the company then will add the new tier to all items belong to the company
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateItemTier:
+    put:
+      tags:
+        - Item Pricing Tiers
+      summary: To update item tier of company
+      description: Update item tier name and isActive. When a tier is being inactivated, BE will return the conflict customers if any, customer that still use the updated tier
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: itemTierId
+          in: formData
+          required: true
+          type: string
+        - name: name
+          in: formData
+          type: string
+        - name: isActive
+          description: >
+            Status of company item tier. **0** => false/inactive, **1** => true/active
+          in: formData
+          type: integer
+          enum:
+            - 0
+            - 1
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /createJobCharges:
     post:
       tags:
@@ -3093,11 +3223,14 @@ paths:
           description: 'Id of job site'
         - name: jobTypeId
           in: formData
-          required: true
           type: string
           description: >-
             Id of a job type selected from the list received by /getJobTypes
             api
+        - name: jobTypes
+          in: formData
+          type: string
+          description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]'
       responses:
         '200':
           description: Success
@@ -3266,11 +3399,14 @@ paths:
           description: 'Id of job site'
         - name: jobTypeId
           in: formData
-          required: true
           type: string
           description: >-
             Id of a job type selected from the list received by /getJobTypes
             api
+        - name: jobTypes
+          in: formData
+          type: string
+          description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]'
       responses:
         '200':
           description: Success
@@ -3445,9 +3581,13 @@ paths:
           description: 'Id of job site'
         - name: jobTypeId
           in: formData
-          required: true
           type: string
           description: Id of a job type selected from the list received by /getJobTypes api
+        - name: jobTypes
+          in: formData
+          required: true
+          type: string
+          description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]'
         - name: description
           in: formData
           type: string
@@ -3690,6 +3830,79 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /startJobTask:
+      post:
+        tags:
+          - Job
+        summary: To start job task
+        description: ''
+        consumes:
+          - application/x-www-form-urlencoded
+        produces:
+          - application/json
+        parameters:
+          - name: jobId
+            in: formData
+            required: true
+            type: string
+            description: Id of job to start
+          - name: jobTypeId
+            in: formData
+            required: true
+            type: string
+            description: Id of task/job type to start
+          - name: companyId
+            in: formData
+            type: string
+            description: Id of company if contractor is hitting for other company
+        responses:
+          '200':
+            description: Success
+            schema:
+              $ref: '#/definitions/GeneralAPIResponse'
+        security:
+          - Bearer: []
+  /updateJobTask:
+      post:
+        tags:
+          - Job
+        summary: To update job task status
+        description: ''
+        consumes:
+          - application/x-www-form-urlencoded
+        produces:
+          - application/json
+        parameters:
+          - name: jobId
+            in: formData
+            required: true
+            type: string
+            description: Id of job to start
+          - name: jobTypeId
+            in: formData
+            required: true
+            type: string
+            description: Id of task/job type to start
+          - name: status
+            in: formData
+            required: true
+            type: number
+            description: Id of job task status as number from one of these (FINISHED => 2, PAUSED => 5).
+          - name: endTime
+            in: formData
+            type: string
+            description: To update task's endTime. Only able to update endTime for a FINISHED task. Manual end time for the task. e.g. 2021-12-20T21:30:00
+          - name: companyId
+            in: formData
+            type: string
+            description: Id of company if contractor is hitting for other company
+        responses:
+          '200':
+            description: Success
+            schema:
+              $ref: '#/definitions/GeneralAPIResponse'
+        security:
+          - Bearer: []
   /updateJob:
     post:
       tags:
@@ -3711,7 +3924,7 @@ paths:
           in: formData
           required: true
           type: number
-          description: Id of job status as number from one of these (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4).
+          description: Id of job status as number from one of these (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4, PAUSED => 5).
         - name: note
           in: formData
           type: string
@@ -3801,6 +4014,10 @@ paths:
           in: formData
           type: string
           description: Id of a job type selected from the list received by /getJobTypes api
+        - name: jobTypes
+          in: formData
+          type: string
+          description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]'
         # - name: isFixed
         #   in: formData
         #   required: true
@@ -3978,11 +4195,6 @@ paths:
           required: false
           type: string
           description: Pass note if create manual invoice (required in manual invoice) 
-        - name: tax
-          in: formData
-          type: number
-          required: false
-          description: Percentage of tax to be applied on total cost of job
         - name: shippingCost
           in: formData
           type: number
@@ -4064,11 +4276,6 @@ paths:
           in: formData
           type: string
           description: Due date of the invoice
-        - name: tax
-          in: formData
-          type: number
-          required: false
-          description: Percentage of tax to be applied on total cost of job
         - name: charges
           in: formData
           type: number

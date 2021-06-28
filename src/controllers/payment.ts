@@ -6,90 +6,75 @@ import { Payment, IPayment } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
 import { ObjectId } from 'mongodb'
 
-export const createPayment = (req: Request, res: Response) => {
+export const createPayment = async (req: Request, res: Response) => {
 
-    const params = req.body
-    const user = <IUser>req.user
+    const params = req.body;
+    const user = <IUser>req.user;
     
-    let invoicesPaid: any =[]
-    let invoiceIds: any =[]
-    if (params.invoices != undefined) {
-        invoicesPaid = params.invoices.split(',')
-    } 
+    let invoicesPaid: any = [];
+    let invoiceIds: any = [];
+    const invoiceWrongIds: any = [];
 
-    if(invoicesPaid.length > 0) {
-        invoiceIds = invoicesPaid.map((invoiceID: string) => (
-            new ObjectId(invoiceID.trim())
-        ))
+    if (params.invoices) {
+        invoicesPaid = params.invoices.split(',');
+    } 
+    if (invoicesPaid.length > 0) {
+        invoiceIds = invoicesPaid.map((invoiceID: string) => {
+            invoiceID = invoiceID.trim();
+
+            // Check if invoiceID is a valid ObjectID
+            if (ObjectId.isValid(invoiceID)) {
+                return new ObjectId(invoiceID);
+            } else {
+                invoiceWrongIds.push(invoiceID);
+            }
+        })
+
+        // Check if there any not valid invoiceIds
+        if (invoiceWrongIds.length > 0) {
+            return res.json({ status: Status.Error, message: `These invoiceIds are not a valid ObjectID: ${invoiceWrongIds}` });
+        }
+    }
+
+    // Find and check if customer exist
+    const customer = await Customer.findById(params.customer);
+    if (!customer) {
+        return res.json({ status: Status.Error, message: 'Customer not found' });
     }
 
     const payment = new Payment({
         customer: params.customer,
         amountPaid: params.amount,
-        referenceNumber : params.referenceNumber,
+        referenceNumber: params.referenceNumber,
         paymentType: params.paymentType,
-        paidAt: params.paidAt,
+        paidAt: params.paidAt ? new Date(params.paidAt) : Date.now(),
         company: req.companyId,
         createdBy: user._id,
         invoices: invoiceIds,
         createdAt: Date.now(),
     });
 
-    payment.save()
-    .then((payment: IPayment) => {
-        if(payment == undefined || payment == null){
-            throw new Error()
-        }else{
-            return new Promise((resolve, reject) =>{
-                Customer.findById(params.customer)
-                .then((customer: ICustomer) =>{
-                    let remainingBalance = customer.balance - payment.amountPaid
-                    customer.updateOne({balance: remainingBalance})
-                    .then((res: any) => {
-                        resolve()
-                    })
-                    .catch((err: any) => {
-                        reject()
-                    })
-                })
-                .catch((err: any) => {
-                    reject()
-                })
-            })
-        }
+    try {
+        // Save the new payment
+        await payment.save();
 
-    })
-    .then((res: any) => {
+        // Deduct the customer balance
+        customer.balance -= payment.amountPaid;
+        await customer.save();
 
-        return Invoice.updateMany({_id: { $in: invoiceIds }}, {paid: true})
-        // return new Promise((resolve, reject) => {
-        //     Invoice.find({ _id: { $in: invoiceIds } })
-        //     .then((invoices: IInvoice[]) => {
-        //         const promises = invoices.map((invoice: IInvoice) => udpateInvoice(invoice));
-        //         return Promise.all(promises)  
-        //     })
-        //     .then(responses => {
-        //         resolve()
-        //     })
-        //     .catch((err: any) => {
-        //         reject()
-        //     })
-        // })
-    })
-    .then((response: any) =>{
-        return res.json({ 'status': Status.Success, 'message': "Payment created successfully." })
-    })
-    .catch((error: any) => {
-        if (error.message != undefined) {
-            return res.json({ 'status': Status.Error, 'message': error.message })
-        } else {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        }
-    })
+        // Update all invoices status to paid=true
+        await Invoice.updateMany({ _id: { $in: invoiceIds } }, { paid: true });
+
+        return res.json({ status: Status.Success, message: 'Payment created successfully.' });
+
+    } catch (error) {
+        return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
+    };
+
 }
 
-const udpateInvoice = (invoice: IInvoice) => {
-    return new Promise((resolve, reject) => {
+const updateInvoice = (invoice: IInvoice) => {
+    return new Promise<void>((resolve, reject) => {
       invoice.update({paid: true},(err: any, res: any) => {
         if (err) {
           reject();
@@ -99,7 +84,7 @@ const udpateInvoice = (invoice: IInvoice) => {
     });
   }
 
-export const udpatePayment = (req: Request, res: Response) => {
+export const updatePayment = (req: Request, res: Response) => {
 
     const params = req.body
     const user = <IUser>req.user
@@ -128,7 +113,7 @@ export const udpatePayment = (req: Request, res: Response) => {
     })
     .then((response: any) => {
         
-        return new Promise((resolve, reject) =>{
+        return new Promise<void>((resolve, reject) =>{
         
             Customer.findById(params.customer)
             .then((customer: ICustomer) =>{
@@ -169,15 +154,19 @@ export const getPayments = (req: Request, res: Response) => {
     Payment.find({company: req.companyId})
     .populate({
         path: 'company',
-        select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone'
+        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
     })
     .populate({
         path: 'customer',
-        select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+        select: 'info.email auth.email profile.displayName address contact contactName vendorId'
     })
     .populate({
         path: 'invoices',
-        select: 'invoiceId invoiceType charges shippingCost tax paid total'
+        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+    })
+    .populate({
+        path: 'createdBy',
+        select: 'profile.displayName auth.email'
     })
     .then((payments: IPayment[] | null) =>{
     
@@ -195,17 +184,22 @@ export const getPayments = (req: Request, res: Response) => {
 export const getPaymentsByCustomerId = (req: Request, res: Response) => {
 
     const params = req.body
-    Payment.find({customer: params.customer})
+    Payment.find({company: req.companyId, customer: params.customer})
     .populate({
         path: 'company',
-        select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone'
+        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
     })
     .populate({
         path: 'customer',
-        select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+        select: 'info.email auth.email profile.displayName address contact contactName vendorId'
     })
     .populate({
-        path: 'invoices'
+        path: 'invoices',
+        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+    })
+    .populate({
+        path: 'createdBy',
+        select: 'profile.displayName auth.email'
     })
     .then((payments: IPayment[] | null) =>{
     
