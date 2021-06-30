@@ -58,7 +58,7 @@ const _handleTaskCharges = async ({ job, task, item, customer, params, isDeduct 
     // Find the item tier based on customer assigned item tier
     const tier = item.tiers.find(t => t.tier.toString() === customer.itemTier.toString());
     // Find the tier charge and use tier number 1 and item's charges as the fallback
-    const tierCharge = tier?.charge || item.tiers[0] && item.tiers[0]?.charge || item.charges;
+    const tierCharge = tier?.charge || item.tiers[0]?.charge || item?.charges;
     let charges = task.charges || 0;
 
     if (!isDeduct) {

@@ -290,6 +290,8 @@ export const createInvoice = (req: Request, res: Response) => {
 
                 // Convert jobTypes to ObjectId in array
                 const jobTypeIds = job.tasks.map(task => task.jobType);
+                // Fallback for old job who still using one job type
+                if (!jobTypeIds.length) jobTypeIds.push(job.type);
                 // Search all jobTypes' items
                 const items = Item.find({ jobType: { $in: jobTypeIds }});
                 return Promise.all([result[0], result[1], items])
@@ -916,7 +918,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             // Set price to 0 if customer uses customPrice
             let price = customerObj.isCustomPrice ? 0 : itemTier?.charge || jobTypeitem.charges;
             // If item is hourly, take the task's timeSpent (minutes) for the quantity
-            let quantity = jobTypeitem.isFixed ? 1 : (task.timeSpent / 60);
+            let quantity = jobTypeitem.isFixed ? 1 : (task?.timeSpent / 60) || 1;
             let itemTax =  0
             let itemTaxAmount: number = 0
             let subTotal = price * quantity
@@ -937,7 +939,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
 
             invoiceItems.push(obj)
 
-            timeSpent += task.timeSpent;
+            timeSpent += task?.timeSpent || 0;
             subTotalBeforeTax += subTotal;
             total += subTotal;
         }
