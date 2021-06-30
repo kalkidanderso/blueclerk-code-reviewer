@@ -996,8 +996,8 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
         companyId = req.otherCompanyId
     }
 
-    // if ((params.status == JobStatus.RESCHEDULED || params.status == JobStatus.PAUSED || params.status) && !params.note) {
-    if ([JobStatus.RESCHEDULED, JobStatus.PAUSED, JobStatus.INCOMPLETE].includes(Number(params.status)) && !params.note) {
+    // if ([JobStatus.RESCHEDULED, JobStatus.PAUSED, JobStatus.INCOMPLETE].includes(Number(params.status)) && !params.note) {
+    if ([JobStatus.RESCHEDULED].includes(Number(params.status)) && !params.note) {
         return res.json({ 'status': Status.Error, 'message': 'Note is required when you reschedule, pause, or make the job incomplete' });
     }
 
