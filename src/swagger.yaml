@@ -3929,7 +3929,7 @@ paths:
           in: formData
           type: string
           description: >
-            **Required** when status is RESCHEDULED => 4, PAUSED => 5, or INCOMPLETE => 6
+            **Required** when status is RESCHEDULED => 4
         - name: comment
           in: formData
           type: string
