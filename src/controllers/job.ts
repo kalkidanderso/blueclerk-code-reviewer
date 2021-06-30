@@ -56,7 +56,7 @@ const _updateTask = async ({ job, task, user, params, status }: {job: IJob, task
 const _handleTaskCharges = async ({ job, task, item, customer, params, isDeduct }: { job: IJob, task: ITask, item: IItem, customer: ICustomer, params: any, isDeduct?: boolean }) => {
 
     // Find the item tier based on customer assigned item tier
-    const tier = item.tiers.find(t => t.tier.toString() === customer.itemTier.toString());
+    const tier = item.tiers?.find(t => t.tier?.toString() === customer.itemTier?.toString());
     // Find the tier charge and use tier number 1 and item's charges as the fallback
     const tierCharge = tier?.charge || item.tiers[0]?.charge || item?.charges;
     let charges = task.charges || 0;
@@ -1005,7 +1005,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
         // .select('_id customer ticket technician scheduleDate company comment track')
         .populate({
         path: 'customer',
-        select: 'profile.displayName'
+        select: 'profile.displayName itemTier'
         })
         .populate({
         path: 'technician',
@@ -1041,7 +1041,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             await linkedJob
                 .populate({
                     path: 'customer',
-                    select: 'profile.displayName'
+                    select: 'profile.displayName itemTier'
                 })
                 .populate({
                     path: 'technician',
