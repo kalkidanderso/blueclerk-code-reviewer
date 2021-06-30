@@ -32,11 +32,11 @@ export interface IJob extends Document {
     startTime: Date
     endTime: Date
     timeSpent: number
-    timeUpdatedBy: Schema.Types.ObjectId // TODO: To be deprecated
-    timeUpdatedAt: Date // TODO: To be deprecated
+    timeUpdatedBy: Schema.Types.ObjectId
+    timeUpdatedAt: Date
     equipment_scanned: boolean // TODO: To be deprecated
     no_of_equipment_scanned: number // TODO: To be deprecated
-    completeOnTime: boolean // TODO: To be deprecated
+    completeOnTime: boolean
     track: {
         user: Schema.Types.ObjectId
         action: string
@@ -56,7 +56,7 @@ export interface ITask extends Document {
     pausedCount?: number
     timeUpdatedBy?: Schema.Types.ObjectId | IUser
     timeUpdatedAt?: Date
-    completeOnTime?: boolean
+    // completeOnTime?: boolean
     equipmentScanned?: boolean
     noOfEquipmentScanned?: number
 }
@@ -149,7 +149,7 @@ const JobSchema = new Schema({
             ref: 'User'
         },
         timeUpdatedAt: Date,
-        completeOnTime: Boolean,
+        // completeOnTime: Boolean,
         equipmentScanned: {
             type: Boolean,
             default: false
@@ -214,20 +214,17 @@ const JobSchema = new Schema({
         ref: 'SaleTax',
         required: false
     },
-    startTime: Date, // TODO: To be deprecated
-    endTime: Date, // TODO: To be deprecated
+    startTime: Date,
+    endTime: Date,
     timeSpent: {
-        // TODO: To be deprecated
         type: Number,
-        // default: 0
+        default: 0
     },
     timeUpdatedBy: {
-        // TODO: To be deprecated
         type: Schema.Types.ObjectId,
         ref: 'User'
     },
     timeUpdatedAt: {
-        // TODO: To be deprecated
         type: Date
     },
     equipment_scanned: {
@@ -241,7 +238,6 @@ const JobSchema = new Schema({
         // default: 0
     },
     completeOnTime:{
-        // TODO: To be deprecated
         type: Boolean,
         required: false
     }

@@ -3924,12 +3924,12 @@ paths:
           in: formData
           required: true
           type: number
-          description: Id of job status as number from one of these (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4, PAUSED => 5).
+          description: Id of job status as number from one of these (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4, PAUSED => 5, INCOMPLETE => 6).
         - name: note
           in: formData
           type: string
           description: >
-            **Required** when status is RESCHEDULED => 4
+            **Required** when status is RESCHEDULED => 4, PAUSED => 5, or INCOMPLETE => 6
         - name: comment
           in: formData
           type: string
