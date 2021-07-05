@@ -6794,7 +6794,7 @@
             "name": "note",
             "in": "formData",
             "type": "string",
-            "description": "**Required** when status is RESCHEDULED => 4"
+            "description": "**Required** when status is RESCHEDULED => 4 or INCOMPLETE => 6"
           },
           {
             "name": "comment",
