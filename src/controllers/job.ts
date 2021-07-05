@@ -996,9 +996,8 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
         companyId = req.otherCompanyId
     }
 
-    // if ([JobStatus.RESCHEDULED, JobStatus.PAUSED, JobStatus.INCOMPLETE].includes(Number(params.status)) && !params.note) {
-    if ([JobStatus.RESCHEDULED].includes(Number(params.status)) && !params.note) {
-        return res.json({ 'status': Status.Error, 'message': 'Note is required when you reschedule, pause, or make the job incomplete' });
+    if ([JobStatus.RESCHEDULED, JobStatus.INCOMPLETE].includes(Number(params.status)) && !params.note) {
+        return res.json({ status: Status.Error, message: 'Note is required when you reschedule or make the job incomplete' });
     }
 
     Job.findOne({ _id: params.jobId, $or:[{ contractor: companyId }, { company: companyId } ] })
@@ -1019,6 +1018,10 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
     .then((job: IJob) => {
         if (job == undefined) {
             throw new Error("Invalid job id")
+        }
+
+        if (Number(params.status) === JobStatus.FINISHED && job.tasks?.find(task => [JobStatus.PENDING, JobStatus.STARTED].includes(task.status))) {
+            throw new Error(`You can't finish this job, it still has a PENDING or STARTED tasks`);
         }
 
         const itemPromise = Item.findOne({ jobType: job.type })
