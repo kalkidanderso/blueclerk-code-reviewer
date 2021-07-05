@@ -41,6 +41,7 @@ import * as tagController from '../controllers/tag'
 import * as ContactController from '../controllers/contact';
 import * as notificationController from '../controllers/notification';
 import * as integrationController from '../controllers/integration';
+import * as scriptController from '../controllers/script';
 
 import jobLocation from './jobLocation'
 import jobSite from './jobSite'
@@ -1635,6 +1636,14 @@ export default function (sio: any) {
         (req, res) => {
             integrationController.createServiceTicket(req, res, sio)
         }
+    )
+
+    // Scripts
+    router.post(
+        '/script/syncItemTier',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        scriptController.syncItemTier
     )
 
     return router
