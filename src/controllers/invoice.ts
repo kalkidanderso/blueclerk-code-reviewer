@@ -816,15 +816,6 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         customer = params.customerId
     }
 
-    if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
-        charges = parseFloat(params.charges);
-        total += charges;
-    }
-    if (params.shippingCost != undefined && params.shippingCost != null) {
-        shippingCost = parseFloat(params.shippingCost);
-        total += shippingCost;
-    }
-
     let purchaseOrderIds: any = []
     if (params.includePO) {
 
@@ -954,8 +945,17 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
      * Use the customer customPrice's price as the grand total of invoice
      */
     if (jobTypeitems?.length > 0 && customerObj.isCustomPrice) {
-        const customPrice = customerObj.customPrices?.find(cp => cp.quantity === jobTypeitems.length);
+        const customPrice = customerObj.customPrices?.find(cp => cp.quantity === jobTypeitems?.length);
         total = customPrice?.price || 0;
+    }
+
+    if (params.charges) {
+        charges = parseFloat(params.charges);
+        total += charges;
+    }
+    if (params.shippingCost) {
+        shippingCost = parseFloat(params.shippingCost);
+        total += shippingCost;
     }
 
     var invoice = new Invoice({
@@ -1064,7 +1064,7 @@ export const updateInvoice = (req: Request, res: Response) => {
     const params = req.body
 
     Invoice.findOne({'_id': params.invoiceId, 'company': req.companyId},
-        (err: any, invoice: IInvoice) => {
+        async (err: any, invoice: IInvoice) => {
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
@@ -1072,6 +1072,9 @@ export const updateInvoice = (req: Request, res: Response) => {
             if(invoice == undefined || invoice == null) {
                 return res.json({'status': Status.Success, 'message': "Invalid invoice id."})
             }
+
+            // Find Customer object to see the itemTier and customPrice info
+            const customerObj = await Customer.findById(invoice.customer);
 
             if(invoice.invoiceType == 0) {
 
@@ -1156,15 +1159,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                             }
                         }
 
-                        if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
-                            charges = parseFloat(params.charges);
-                            total += charges;
-                        }
-                        if(params.shippingCost != undefined && params.shippingCost != null){
-                            shippingCost = parseFloat(params.shippingCost);
-                            total += shippingCost;
-                        }
-
                         // total = invoice.total
                         var items: any = []
                         if (params.items != undefined) {
@@ -1224,6 +1218,24 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                         // Add the grand total with the tax amount
                         total += taxAmount;
+
+                        /**
+                         * Check if invoice coming from Job and customer uses customPrice,
+                         * Use the customer customPrice's price as the grand total of invoice
+                         */
+                        if (job.tasks?.length > 0 && customerObj.isCustomPrice) {
+                            const customPrice = customerObj.customPrices?.find(cp => cp.quantity === job.tasks?.length);
+                            total = customPrice?.price || 0;
+                        }
+
+                        if (params.charges) {
+                            charges = parseFloat(params.charges);
+                            total += charges;
+                        }
+                        if(params.shippingCost){
+                            shippingCost = parseFloat(params.shippingCost);
+                            total += shippingCost;
+                        }
 
                         invoice.updateOne({
                             jobPurchaseOrders: purchaseOrderIds,
@@ -1343,17 +1355,26 @@ export const updateInvoice = (req: Request, res: Response) => {
                     }
                 }
 
-                if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
+                // Add the grand total with the tax amount
+                total +=  taxAmount;
+
+                /**
+                 * Check if invoice coming from Job and customer uses customPrice,
+                 * Use the customer customPrice's price as the grand total of invoice
+                 */
+                if (invoice.items?.length > 0 && customerObj.isCustomPrice) {
+                    const customPrice = customerObj.customPrices?.find(cp => cp.quantity === invoice.items?.length);
+                    total = customPrice?.price || 0;
+                }
+
+                if (params.charges) {
                     charges = parseFloat(params.charges);
                     total += charges;
                 }
-                if(params.shippingCost != undefined && params.shippingCost != null){
+                if(params.shippingCost){
                     shippingCost = parseFloat(params.shippingCost);
                     total += shippingCost;
                 }
-
-                // Add the grand total with the tax amount
-                total +=  taxAmount;
 
                 invoice.updateOne({
                     items: invoiceItems,
