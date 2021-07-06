@@ -553,13 +553,9 @@ export const getItemTierList = async (req: Request, res: Response) => {
 }
 
 /**
- * Create a new Price Tier in collection,
- * then add it to the Company Item Tier list,
- * then add it to all Company Item's tiers
+ * Generic function for addItemTier to be used anywhere
  */
-export const addItemTier = async (req: Request, res: Response) => {
-
-    const company = <ICompany>req.company;
+export const _addItemTier = async (company: ICompany, next: (err: any, itemTier: IPriceTier) => void) => {
 
     // Create new Price Tier collection
     const itemTier: IPriceTier = new PriceTier({
@@ -569,7 +565,7 @@ export const addItemTier = async (req: Request, res: Response) => {
     })
     await itemTier.save(err => {
         if (err)
-            return res.json({ status: Status.Error, message: err.message });
+            return next(err.message, null);
     });
 
     // Update Company itemTier Count and add the new one to the list
@@ -579,7 +575,7 @@ export const addItemTier = async (req: Request, res: Response) => {
     });
     await company.save(err => {
         if (err)
-            return res.json({ status: Status.Error, message: err.message });
+            return next(err.message, null);
     });
 
     // Search all items belong to the Company
@@ -596,11 +592,31 @@ export const addItemTier = async (req: Request, res: Response) => {
         })
         await item.save(err => {
             if (err)
-                return res.json({ status: Status.Error, message: err.message });
+                return next(err.message, null);
         })
     }
 
-    return res.json({ status: Status.Success, message: 'New Item Tier added successfully' });
+    return next(null, itemTier);
+
+}
+
+/**
+ * Create a new Price Tier in collection,
+ * then add it to the Company Item Tier list,
+ * then add it to all Company Item's tiers
+ */
+export const addItemTier = (req: Request, res: Response) => {
+
+    const company = <ICompany>req.company;
+
+    _addItemTier(company, (err, createdItemTier) => {
+
+        if (err)
+            return res.json({ status: Status.Error, message: err.message });
+
+        return res.json({ status: Status.Success, message: 'New Item Tier added successfully', itemTier: createdItemTier });
+
+    });
 
 }
 

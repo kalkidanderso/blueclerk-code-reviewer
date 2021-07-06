@@ -5507,6 +5507,25 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /script/syncItemTier:
+    post:
+      tags:
+        - Script
+      summary: To update all companies and customers to have Item Price Tier
+      description: >
+        **WARNING: Only do this when you know what you are doing.** This will update all companies and customers those don't have Item Price Tier. Will create 1 new Item Tier for the company to be the default tier and update all customers of that company to use the default tier.
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
 securityDefinitions:
   Bearer:
     type: apiKey
