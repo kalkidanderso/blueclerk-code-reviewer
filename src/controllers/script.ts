@@ -4,16 +4,20 @@ import { Status } from '../common/constants';
 
 import { Company } from '../models/Company';
 import { Customer } from '../models/Customer';
-import { IPriceTier } from '../models/PriceTier';
+import { IPriceTier, PriceTier } from '../models/PriceTier';
 
 import { _addItemTier } from '../controllers/company';
 
 /**
- * To update all companies and customers to have Item Price Tier,
+ * To sync and update all companies and customers to have Item Price Tier,
  * will create 1 new Item Tier to be the default,
  * and assign it to the customers
  */
 export const syncItemTier = async (req: Request, res: Response) => {
+
+    const updatedCompanies: string[] = [];
+    const updatedCustomers: string[] = [];
+    const createdItemTiers: string[] = [];
 
     // Find all companies from the database
     const companies = await Company.find({}).populate({ path: 'itemTier.list.tier' });
@@ -23,42 +27,46 @@ export const syncItemTier = async (req: Request, res: Response) => {
 
     // Iterate all companies
     for (const company of companies) {
-        console.log('== company._id:', company._id);
-        console.log('== company.itemTier:', JSON.stringify(company.itemTier?.list));
-        
+
         // Take company first active tier if any
         let itemTier = company.itemTier?.list?.find(t => {
             const tier = <IPriceTier>t.tier;
             return tier.isActive;
         })?.tier;
 
-        // Check if company has tier or not
-        if (company.itemTier?.list?.length <= 0) {
+        if (!itemTier) {
             // Company doesn't have item tier, create new one
             await _addItemTier(company, (err, createdItemTier) => {
-                console.log('== createdItemTier:', createdItemTier);
-                itemTier = createdItemTier;
-
                 if (err)
                     return res.json({ status: Status.Error, message: err.message });
+
+                itemTier = createdItemTier;
+                updatedCompanies.push(company._id);
+                createdItemTiers.push(createdItemTier?._id);
             })
         }
 
-        console.log('== itemTier:', itemTier);
-
+        // Find all customers owned by the company
         const customers = await Customer.find({ company });
 
+        // Iterate all customers
         for (const customer of customers) {
-            if (!customer.itemTier) {
-                console.log('== customer._id:', customer._id);
-                console.log('== customer.itemTier:', customer.itemTier);
+            const custItemTier = await PriceTier.findById(customer?.itemTier);
+
+            // Check if customer has itemTier and the status of itemTier
+            if (!custItemTier || !custItemTier?.isActive) {
                 customer.itemTier = itemTier;
                 await customer.save();
+                updatedCustomers.push(customer._id);
             }
         }
 
     }
 
-    return res.json({ status: Status.OK, message: 'Companies and customers successfully updated.' });
+    return res.json({
+        status: Status.OK,
+        message: 'Companies and customers successfully updated.',
+        updatedCompanies, updatedCustomers, createdItemTiers
+    });
 
 }
