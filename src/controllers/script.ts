@@ -4,7 +4,7 @@ import { Status } from '../common/constants';
 
 import { Company } from '../models/Company';
 import { Customer } from '../models/Customer';
-import { IPriceTier, PriceTier } from '../models/PriceTier';
+import { IPriceTier } from '../models/PriceTier';
 
 import { _addItemTier } from '../controllers/company';
 
@@ -29,7 +29,7 @@ export const syncItemTier = async (req: Request, res: Response) => {
     for (const company of companies) {
 
         // Take company first active tier if any
-        let itemTier = company.itemTier?.list?.find(t => {
+        let itemTier = <IPriceTier>company.itemTier?.list?.find(t => {
             const tier = <IPriceTier>t.tier;
             return tier.isActive;
         })?.tier;
@@ -50,17 +50,23 @@ export const syncItemTier = async (req: Request, res: Response) => {
         const customers = await Customer.find({ company });
 
         // Iterate all customers
+        const custToUpdate: string[] = [];
         for (const customer of customers) {
-            const custItemTier = await PriceTier.findById(customer?.itemTier);
+            const custItemTier = <IPriceTier>company.itemTier?.list?.find(t => {
+                const tier = <IPriceTier>t.tier;
+                return tier?._id?.toString() === customer?.itemTier?.toString();
+            })?.tier;
 
             // Check if customer has itemTier and the status of itemTier
             if (!custItemTier || !custItemTier?.isActive) {
-                customer.itemTier = itemTier;
-                await customer.save();
-                updatedCustomers.push(customer._id);
+                custToUpdate.push(customer._id);
             }
         }
 
+        // Update all invalid customers in the company at once
+        await Customer.updateMany({ _id: { $in: custToUpdate } }, { itemTier: itemTier?._id });
+        // Collect all those updated customers
+        updatedCustomers.push(...custToUpdate);
     }
 
     return res.json({
