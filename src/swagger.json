@@ -172,6 +172,10 @@
     {
       "name": "Integration",
       "description": "For creating service ticket via web"
+    },
+    {
+      "name": "Script",
+      "description": "To run script, not to be run frequently. Only use these API if you know what you are doing."
     }
   ],
   "paths": {
@@ -6788,13 +6792,13 @@
             "in": "formData",
             "required": true,
             "type": "number",
-            "description": "Id of job status as number from one of these (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4, PAUSED => 5)."
+            "description": "Id of job status as number from one of these (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4, PAUSED => 5, INCOMPLETE => 6)."
           },
           {
             "name": "note",
             "in": "formData",
             "type": "string",
-            "description": "**Required** when status is RESCHEDULED => 4"
+            "description": "**Required** when status is RESCHEDULED => 4 or INCOMPLETE => 6"
           },
           {
             "name": "comment",
@@ -9687,6 +9691,35 @@
             "description": "Id of company if contractor is hitting for other company"
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/AuthAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/script/syncItemTier": {
+      "post": {
+        "tags": [
+          "Script"
+        ],
+        "summary": "To update all companies and customers to have Item Price Tier",
+        "description": "**WARNING: Only do this when you know what you are doing.** This will update all companies and customers those don't have Item Price Tier. Will create 1 new Item Tier for the company to be the default tier and update all customers of that company to use the default tier.",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Success",

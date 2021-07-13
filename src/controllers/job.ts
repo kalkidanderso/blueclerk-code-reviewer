@@ -27,7 +27,7 @@ import { _handleJobTypesJson } from '../controllers/jobType';
 /**
  * To update Task's property when pause, finish, or update the endTime
  */
-const _updateTask = async ({ job, task, user, params }: {job: IJob, task: ITask, user: IUser, params: any}) => {
+const _updateTask = async ({ job, task, user, params, status }: {job: IJob, task: ITask, user: IUser, params: any, status: number}) => {
 
     /**
      * Find item information related to the task/job type,
@@ -36,10 +36,10 @@ const _updateTask = async ({ job, task, user, params }: {job: IJob, task: ITask,
     const item = await Item.findOne({ jobType: task.jobType });
     const customer = <ICustomer>job.customer;
 
-    await _handleTaskCharges({ task, item, customer, params });
+    await _handleTaskCharges({ job, task, item, customer, params });
 
     // Update the task properties
-    task.status = params.status;
+    task.status = status || params.status;
     task.tempStartTime = null;
     task.pausedCount = Number(params.status) === JobStatus.PAUSED ? task.pausedCount + 1 : task.pausedCount;
     task.timeUpdatedBy = user;
@@ -53,12 +53,12 @@ const _updateTask = async ({ job, task, user, params }: {job: IJob, task: ITask,
  * To handle task charges and timeSpent,
  * either pause, finish, or update the endTime of FINISHED task
  */
-const _handleTaskCharges = async ({ task, item, customer, params, isDeduct }: { task: ITask, item: IItem, customer: ICustomer, params: any, isDeduct?: boolean }) => {
+const _handleTaskCharges = async ({ job, task, item, customer, params, isDeduct }: { job: IJob, task: ITask, item: IItem, customer: ICustomer, params: any, isDeduct?: boolean }) => {
 
     // Find the item tier based on customer assigned item tier
-    const tier = item.tiers.find(t => t.tier === customer.itemTier);
+    const tier = item.tiers?.find(t => t.tier?.toString() === customer.itemTier?.toString());
     // Find the tier charge and use tier number 1 and item's charges as the fallback
-    const tierCharge = tier && tier.charge || item.tiers[0] && item.tiers[0].charge || item.charges;
+    const tierCharge = tier?.charge || item.tiers[0]?.charge || item?.charges;
     let charges = task.charges || 0;
 
     if (!isDeduct) {
@@ -76,7 +76,8 @@ const _handleTaskCharges = async ({ task, item, customer, params, isDeduct }: { 
 
         task.timeSpent += timeSpent;
         task.endTime = Number(params.status) === JobStatus.FINISHED ? new Date() : undefined;
-        task.charges = charges;
+        task.charges = Math.round(charges * 100) / 100;
+        job.timeSpent += timeSpent;
     } else {
         // Remove excessed timeSpent
         /**
@@ -93,7 +94,9 @@ const _handleTaskCharges = async ({ task, item, customer, params, isDeduct }: { 
 
         task.timeSpent -= timeSpentToDeduct;
         task.endTime = new Date(params.endTime);
-        task.charges = charges;
+        task.charges = Math.round(charges * 100) / 100;
+        job.timeSpent -= timeSpentToDeduct;
+        job.endTime = new Date(Math.max(...job.tasks.map(task => task.endTime.getTime())));
     }
 
     return;
@@ -993,15 +996,15 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
         companyId = req.otherCompanyId
     }
 
-    if ((params.status == JobStatus.RESCHEDULED || params.status == JobStatus.PAUSED) && !params.note) {
-        return res.json({ 'status': Status.Error, 'message': 'Note is required when you reschedule or pause the job' });
+    if ([JobStatus.RESCHEDULED, JobStatus.INCOMPLETE].includes(Number(params.status)) && !params.note) {
+        return res.json({ status: Status.Error, message: 'Note is required when you reschedule or make the job incomplete' });
     }
 
     Job.findOne({ _id: params.jobId, $or:[{ contractor: companyId }, { company: companyId } ] })
         // .select('_id customer ticket technician scheduleDate company comment track')
         .populate({
         path: 'customer',
-        select: 'profile.displayName'
+        select: 'profile.displayName itemTier'
         })
         .populate({
         path: 'technician',
@@ -1015,6 +1018,10 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
     .then((job: IJob) => {
         if (job == undefined) {
             throw new Error("Invalid job id")
+        }
+
+        if (Number(params.status) === JobStatus.FINISHED && job.tasks?.find(task => [JobStatus.PENDING, JobStatus.STARTED].includes(task.status))) {
+            throw new Error(`You can't finish this job, it still has a PENDING or STARTED tasks`);
         }
 
         const itemPromise = Item.findOne({ jobType: job.type })
@@ -1037,7 +1044,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             await linkedJob
                 .populate({
                     path: 'customer',
-                    select: 'profile.displayName'
+                    select: 'profile.displayName itemTier'
                 })
                 .populate({
                     path: 'technician',
@@ -1107,6 +1114,9 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             if (params.status == JobStatus.PAUSED) {
                 action = '|Pausing the job|';
             }
+            if (params.status == JobStatus.INCOMPLETE) {
+                action = '|Update the job to Incomplete|'
+            }
         }
         let userComment = '';
         if (params.comment !== 'undefined') {
@@ -1149,11 +1159,12 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             case JobStatus.PAUSED:
             case JobStatus.CANCELED:
             case JobStatus.RESCHEDULED:
+            case JobStatus.INCOMPLETE:
                 // Search any started tasks on this job
                 const startedTasks: ITask[] = tasks.filter((task: ITask) => task.status === JobStatus.STARTED);
                 // Iterate all started tasks and update the status to PAUSED
                 for (const task of startedTasks) {
-                    await _updateTask({ job, task, user, params });
+                    await _updateTask({ job, task, user, params, status: JobStatus.PAUSED });
                 }
                 data.tasks = tasks;
 
@@ -1162,7 +1173,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     const linkedStartedTasks: ITask[] = tasksLinked.filter((task: ITask) => task.status === JobStatus.STARTED);
                     // Iterate all started tasks and update the status to PAUSED
                     for (const task of linkedStartedTasks) {
-                        await _updateTask({ job: linkedJob, task, user, params });
+                        await _updateTask({ job: linkedJob, task, user, params, status: JobStatus.PAUSED });
                     }
                     dataLinked.tasks = tasksLinked;
                 }
@@ -1471,7 +1482,8 @@ export const updateJobTask = async (req: Request, res: Response) => {
         const customer = <ICustomer>job.customer;
 
         // Remove excessed timeSpent and charges
-        await _handleTaskCharges({ task, item, customer, params, isDeduct: true });
+        await _handleTaskCharges({ job, task, item, customer, params, isDeduct: true });
+
         await job.save();
 
         // Return directly to avoid unnecessary changes
@@ -1479,7 +1491,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
     }
 
     // To update Task's property when paused, finished, or update the endTime
-    await _updateTask({ job, task, user, params });
+    await _updateTask({ job, task, user, params, status: undefined });
 
     let statusAction: string;
     switch (Number(params.status)) {
@@ -1498,7 +1510,8 @@ export const updateJobTask = async (req: Request, res: Response) => {
     if (allTaskStatus.every(status => status === 2)) {
         // All tasks status are FINISHED, Job is FINISHED
         job.endTime = new Date();
-        job.timeSpent = moment().diff(moment(job.startTime));
+        job.timeSpent = moment().diff(moment(job.startTime), 'minutes');
+        job.completeOnTime = !job.scheduledEndTime ? true : job.scheduledEndTime >= job.endTime;
         jobStatus = JobStatus.FINISHED;
         action += `|Finishing the job|`;
     } else if (allTaskStatus.includes(5) && !allTaskStatus.includes(0)) {
@@ -1512,6 +1525,8 @@ export const updateJobTask = async (req: Request, res: Response) => {
         action,
         date: new Date()
     };
+    job.timeUpdatedBy = user._id;
+    job.timeUpdatedAt = new Date();
     job.status = jobStatus;
     job.track.push(history);
 
@@ -1536,7 +1551,9 @@ export const updateJobTask = async (req: Request, res: Response) => {
     // Update linked job's track & task properties
     if (linkedTask) {
         // To update Task's property when paused, finished, or update the endTime
-        await _updateTask({ job: linkedJob, task: linkedTask, user, params });
+        await _updateTask({ job: linkedJob, task: linkedTask, user, params, status: undefined });
+        linkedJob.timeUpdatedBy = user._id;
+        linkedJob.timeUpdatedAt = new Date();
         linkedJob.status = jobStatus;
         linkedJob.track.push(history);
 

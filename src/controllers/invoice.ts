@@ -291,6 +291,8 @@ export const createInvoice = (req: Request, res: Response) => {
 
                 // Convert jobTypes to ObjectId in array
                 const jobTypeIds = job.tasks.map(task => task.jobType);
+                // Fallback for old job who still using one job type
+                if (!jobTypeIds.length) jobTypeIds.push(job.type);
                 // Search all jobTypes' items
                 const items = Item.find({ jobType: { $in: jobTypeIds }});
                 return Promise.all([result[0], result[1], items])
@@ -383,7 +385,7 @@ export const createInvoice = (req: Request, res: Response) => {
 
                     return res.json({
                         status: Status.Success,
-                        message: 'Invoice created successfully.',
+                        message: 'Job invoice created successfully.',
                         invoice,
                         quickbookInvoice: qbInvoice
                     })
@@ -747,7 +749,7 @@ export const createInvoice = (req: Request, res: Response) => {
     }
 }
 
-const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTypeitems: IItem[], purchaseOrders: any, purchaseOrder: any, estimate: any, next: (req: Request, res: Response, invoice: IInvoice, invoiceId: number) => void) =>{
+const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobTypeitems: IItem[], purchaseOrders: any, purchaseOrder: any, estimate: any, next: (req: Request, res: Response, invoice: IInvoice, invoiceId: number) => void) =>{
 
     const params = req.body
     const company = req.company
@@ -791,6 +793,11 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
         customer = job.customer
         jobId = job._id
 
+        /**
+         * Kris' remark (Jun 30th, 2021):
+         * TODO: These commented lines are TO BE DEPRECATED,
+         * because now job has multiple tasks with their own charge and timeSpent
+         */
         // if (!jobTypeitem.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
         //     return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
         // } else if (!jobTypeitem.isFixed) {
@@ -798,11 +805,11 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
         // }
 
         // Take the first job type's isFixed as all job types should be the same type
-        if (jobTypeitems[0] && !jobTypeitems[0].isFixed && !params.timeSpent) {
-            return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
-        } else if (!jobTypeitems[0].isFixed) {
-            timeSpent = params.timeSpent
-        }
+        // if (!jobTypeitems[0]?.isFixed && !params.timeSpent) {
+        //     return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
+        // } else if (!jobTypeitems[0]?.isFixed) {
+        //     timeSpent = params.timeSpent
+        // }
     }
 
     if(purchaseOrder != null){
@@ -859,15 +866,6 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
         customer = params.customerId
     }
 
-    if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
-        charges = parseFloat(params.charges);
-        total += charges;
-    }
-    if (params.shippingCost != undefined && params.shippingCost != null) {
-        shippingCost = parseFloat(params.shippingCost);
-        total += shippingCost;
-    }
-
     let purchaseOrderIds: any = []
     if (params.includePO) {
 
@@ -878,7 +876,6 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
             })
         }
     }
-
 
     var items: any = []
     if (params.items != undefined) {
@@ -942,7 +939,10 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
         // Iterate all jobTypes' items and add all to invoice's items
         for (const jobTypeitem of jobTypeitems) {
 
+            // Find the job task related to find its timeSpent
+            const task = job.tasks.find(task => task.jobType.toString() === jobTypeitem.jobType.toString());
             let itemTier;
+
             if (customerObj.itemTier) {
                 // Find the assigned itemTier of the customer
                 itemTier = jobTypeitem.tiers.find(t => t.tier.toString() === customerObj.itemTier.toString());
@@ -957,8 +957,9 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
 
             let obj: any = {}
             // Set price to 0 if customer uses customPrice
-            let price = customerObj.isCustomPrice ? 0 : itemTier && itemTier.charge || jobTypeitem.charges;
-            let quantity = jobTypeitem.isFixed ? 1 : parseFloat(job.timeSpent);
+            let price = customerObj.isCustomPrice ? 0 : itemTier?.charge || jobTypeitem.charges;
+            // If item is hourly, take the task's timeSpent (minutes) for the quantity
+            let quantity = jobTypeitem.isFixed ? 1 : (task?.timeSpent / 60) || 1;
             let itemTax =  0
             let itemTaxAmount: number = 0
             let subTotal = price * quantity
@@ -969,7 +970,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
                 taxAmount += itemTaxAmount;
             }
 
-            obj.quantity = quantity
+            obj.quantity = Math.round(quantity * 100) / 100
             obj.price = Math.round(price * 100) / 100
             obj.isFixed = jobTypeitem.isFixed
             obj.tax = itemTax
@@ -979,6 +980,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
 
             invoiceItems.push(obj)
 
+            timeSpent += task?.timeSpent || 0;
             subTotalBeforeTax += subTotal;
             total += subTotal;
         }
@@ -992,9 +994,18 @@ const _populateInvoiceData = async (req: Request, res: Response, job: any, jobTy
      * Check if invoice coming from Job and customer uses customPrice,
      * Use the customer customPrice's price as the grand total of invoice
      */
-    if (jobTypeitems && jobTypeitems.length > 0 && customerObj.isCustomPrice) {
-        const customPrice = customerObj.customPrices.find(cp => cp.quantity === jobTypeitems.length);
-        total = customPrice.price;
+    if (jobTypeitems?.length > 0 && customerObj.isCustomPrice) {
+        const customPrice = customerObj.customPrices?.find(cp => cp.quantity === jobTypeitems?.length);
+        total = customPrice?.price || 0;
+    }
+
+    if (params.charges) {
+        charges = parseFloat(params.charges);
+        total += charges;
+    }
+    if (params.shippingCost) {
+        shippingCost = parseFloat(params.shippingCost);
+        total += shippingCost;
     }
 
     var invoice = new Invoice({
@@ -1103,7 +1114,7 @@ export const updateInvoice = (req: Request, res: Response) => {
     const params = req.body
 
     Invoice.findOne({'_id': params.invoiceId, 'company': req.companyId},
-        (err: any, invoice: IInvoice) => {
+        async (err: any, invoice: IInvoice) => {
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
@@ -1111,6 +1122,9 @@ export const updateInvoice = (req: Request, res: Response) => {
             if(invoice == undefined || invoice == null) {
                 return res.json({'status': Status.Success, 'message': "Invalid invoice id."})
             }
+
+            // Find Customer object to see the itemTier and customPrice info
+            const customerObj = await Customer.findById(invoice.customer);
 
             if(invoice.invoiceType == 0) {
 
@@ -1195,15 +1209,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                             }
                         }
 
-                        if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
-                            charges = parseFloat(params.charges);
-                            total += charges;
-                        }
-                        if(params.shippingCost != undefined && params.shippingCost != null){
-                            shippingCost = parseFloat(params.shippingCost);
-                            total += shippingCost;
-                        }
-
                         // total = invoice.total
                         var items: any = []
                         if (params.items != undefined) {
@@ -1263,6 +1268,24 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                         // Add the grand total with the tax amount
                         total += taxAmount;
+
+                        /**
+                         * Check if invoice coming from Job and customer uses customPrice,
+                         * Use the customer customPrice's price as the grand total of invoice
+                         */
+                        if (job.tasks?.length > 0 && customerObj.isCustomPrice) {
+                            const customPrice = customerObj.customPrices?.find(cp => cp.quantity === job.tasks?.length);
+                            total = customPrice?.price || 0;
+                        }
+
+                        if (params.charges) {
+                            charges = parseFloat(params.charges);
+                            total += charges;
+                        }
+                        if(params.shippingCost){
+                            shippingCost = parseFloat(params.shippingCost);
+                            total += shippingCost;
+                        }
 
                         invoice.updateOne({
                             jobPurchaseOrders: purchaseOrderIds,
@@ -1382,17 +1405,26 @@ export const updateInvoice = (req: Request, res: Response) => {
                     }
                 }
 
-                if (params.charges != undefined && params.charges !== null && params.charges !== '""') {
+                // Add the grand total with the tax amount
+                total +=  taxAmount;
+
+                /**
+                 * Check if invoice coming from Job and customer uses customPrice,
+                 * Use the customer customPrice's price as the grand total of invoice
+                 */
+                if (invoice.items?.length > 0 && customerObj.isCustomPrice) {
+                    const customPrice = customerObj.customPrices?.find(cp => cp.quantity === invoice.items?.length);
+                    total = customPrice?.price || 0;
+                }
+
+                if (params.charges) {
                     charges = parseFloat(params.charges);
                     total += charges;
                 }
-                if(params.shippingCost != undefined && params.shippingCost != null){
+                if(params.shippingCost){
                     shippingCost = parseFloat(params.shippingCost);
                     total += shippingCost;
                 }
-
-                // Add the grand total with the tax amount
-                total +=  taxAmount;
 
                 invoice.updateOne({
                     items: invoiceItems,
