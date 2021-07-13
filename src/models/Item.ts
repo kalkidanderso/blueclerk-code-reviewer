@@ -26,9 +26,9 @@ export const enum QBItemTypes {
     NONINVENTORY = 'NonInventory'
 }
 
-export interface IQBItem extends Document {
+export interface IQBItem {
 
-    Id: string
+    Id?: string
     Name: string
     Type?: QBItemTypes
     Active?: boolean
@@ -40,6 +40,7 @@ export interface IQBItem extends Document {
     Taxable?: boolean
     QtyOnHand?: number
     UnitPrice?: number
+    SalesTaxIncluded?: boolean
     IncomeAccountRef?: {
         value: string
         name: string

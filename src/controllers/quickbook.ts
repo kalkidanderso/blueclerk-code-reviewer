@@ -4,7 +4,7 @@ import { qbConfig } from '../common/config'
 
 import { IUser } from '../models/User';
 import { Company, ICompany } from '../models/Company'
-import { Customer, ICustomer } from '../models/Customer'
+import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
 import { CompanyCustomer } from '../models/CompanyCustomer'
 import { JobType } from '../models/JobType'
 import { IItem, IQBItem, Item, QBItemTypes } from '../models/Item';
@@ -294,17 +294,88 @@ export const syncQBCustomers = (req: Request, res: Response) => {
     
 }
 
+/**
+ * Generic function to create QuickBooks Customer,
+ * this used by Customer Controller when creating new customer,
+ * and this contoller when syncing customer
+ */
+export const _createQBCustomer = async (req: Request, res: Response, company: ICompany, customer: ICustomer, next: (error: number, errorMessage: string, qbCustomer: IQBCustomer) => void) => {
 
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
 
-export const createQBCustomer = (req: Request, res: Response) => {
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbAccessToken);
+
+        // Construct QB Customer Entry
+        const qbCustomerEntry: IQBCustomer = {
+            PrimaryEmailAddr: {
+                Address: customer?.info?.email
+            },
+            DisplayName: customer?.profile?.displayName,
+            GivenName: customer?.profile?.firstName,
+            FamilyName: customer?.profile?.lastName,
+            CompanyName: company?.info?.companyName,
+            PrimaryPhone: {
+                FreeFormNumber: customer?.contact.phone
+            },
+            BillAddr: {
+                Line1: customer?.address?.street,
+                Line2: customer?.address?.unit,
+                City: customer?.address?.city,
+                CountrySubDivisionCode: customer?.address?.state,
+                PostalCode: customer?.address.zipCode,
+                Long: customer?.location?.coordinates[0]?.toString(),
+                Lat: customer?.location?.coordinates[1]?.toString(),
+            }
+        }
+
+        // Create QB Customer
+        qbo.createCustomer(qbCustomerEntry, async (err: any, qbCustomer: IQBCustomer) => {
+            if (err) {
+                return next(
+                    Status.Error,
+                    err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError,
+                    null
+                );
+            }
+
+            return next(null, null, qbCustomer);
+        })
+    })
+
+}
+
+export const createQBCustomer = async (req: Request, res: Response) => {
+
     const params = req.body
-   
-    
     var companyId = req.companyId;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-        
+
+    const customer = await Customer.findById(params.customerId);
+
+    if (!customer) {
+        return res.json({ status: Status.Error, message: 'Customer not found' });
+    }
+
     Company.findById(companyId, (err: any, company: ICompany) => {
         if(err) {
             return res.json({'status': Status.Error, 'message': 'No company found.' })
@@ -330,21 +401,30 @@ export const createQBCustomer = (req: Request, res: Response) => {
             company.qbRefreshToken
         );
 
-        let customer = {
-            "PrimaryEmailAddr": {
-              "Address": params.email
-            }, 
-            "DisplayName": params.name, 
-            "PrimaryPhone": {
-              "FreeFormNumber": params.phone
-            }, 
-            "BillAddr": {
-              "City": params.city, 
-              "PostalCode": params.zipCode
-            }, 
-        }
+        // Construct QB Customer Entry
+        const qbCustomerEntry: IQBCustomer = {
+            PrimaryEmailAddr: {
+                Address: params.email || customer.info?.email
+            },
+            DisplayName: params.name || customer.profile?.displayName,
+            GivenName: customer.profile?.firstName,
+            FamilyName: customer.profile?.lastName,
+            CompanyName: company.info?.companyName,
+            PrimaryPhone: {
+                FreeFormNumber: params.phone || customer.contact.phone
+            },
+            BillAddr: {
+                Line1: params.street || customer.address?.street,
+                Line2: customer.address?.unit,
+                City: params.city || customer.address?.city,
+                CountrySubDivisionCode: params.state || customer.address?.state,
+                PostalCode: params.zipCode || customer.address.zipCode,
+                Long: customer.location?.coordinates[0]?.toString(),
+                Lat: customer.location?.coordinates[1]?.toString(),
+            }
+        };
 
-        qbo.createCustomer(customer, function(err: any, data: any) {
+        qbo.createCustomer(qbCustomerEntry, async (err: any, qbCustomer: IQBCustomer) => {
             
             if (err != null && Object.keys(err).length != 0) {
                 
@@ -386,7 +466,7 @@ export const createQBCustomer = (req: Request, res: Response) => {
                                 '2.0', //oAuth version
                                 newCompany.qbRefreshToken
                             );
-                            qbo.createCustomer(customer, function(newError: any, data: any) { 
+                            qbo.createCustomer(customer, async (newError: any, qbCustomer: IQBCustomer) => { 
                                 if (newError != null && Object.keys(newError).length != 0) {
 
                                     if(newError.hasOwnProperty("fault")){
@@ -401,8 +481,11 @@ export const createQBCustomer = (req: Request, res: Response) => {
                                         return res.json({'status': Status.Error, 'message': newError.Fault.Error[0].Message})
                                     }
                                  
-                                }else{
-                                    return res.json({'status': Status.Success, 'message': 'Customer created successfully.'})
+                                } else {
+                                    customer.quickbookId = qbCustomer.Id;
+                                    await customer.save();
+
+                                    return res.json({ status: Status.Success, message: 'QB Customer created successfully.', updatedCustomer: customer, quickbookCustomer: qbCustomer });
                                 }
                             })
                             
@@ -421,14 +504,15 @@ export const createQBCustomer = (req: Request, res: Response) => {
                     return res.json({'status': Status.Error, 'message': err.Fault.Error[0].Message})
                 }
                 
-            }else{
-                return res.json({'status': Status.Success, 'message': 'Customer created successfully.'})
-            }
-            
-        })
+            } else {
+                customer.quickbookId = qbCustomer.Id;
+                await customer.save();
 
+                return res.json({ status: Status.Success, message: 'QB Customer created successfully.', updatedCustomer: customer, quickbookCustomer: qbCustomer });
+            }
+        })
     })
-    
+
 }
 
 const get = function(obj: any, key: any) {
@@ -701,7 +785,7 @@ export const _createQBItem = async (req: Request, res: Response, company: ICompa
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbAccessToken);
 
         // Construct QB Item Entry
-        const qbItemEntry = {
+        const qbItemEntry: IQBItem = {
             Name: item.name,
             Type: QBItemTypes.NONINVENTORY,
             Sku: item._id?.toString(),

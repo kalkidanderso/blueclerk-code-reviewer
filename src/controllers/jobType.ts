@@ -123,10 +123,12 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
         }
 
         // Create new Item in QuickBooks
-        _createQBItem(req, res, company, item, (err: any, errMsg: any, qbItem: IQBItem) => {
+        _createQBItem(req, res, company, item, async (err: any, errMsg: any, qbItem: IQBItem) => {
             if (err)
                 return res.json({ status: err, message: errMsg });
 
+            item.quickbookId = qbItem.Id;
+            await item.save();
             return next(item, qbItem);
         })
     })
