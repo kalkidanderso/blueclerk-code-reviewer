@@ -16,7 +16,7 @@ export interface IUser extends Document {
     profile: {
         firstName: string
         lastName: string
-        displayName: { type : String }
+        displayName: string
         imageUrl: string
     }
     address: {

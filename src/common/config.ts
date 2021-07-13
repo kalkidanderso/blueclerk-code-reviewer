@@ -7,6 +7,7 @@ export const qbConfig = {
     qb_client_secret: 'W9RXt15hXNzcryKKkHmMxKBCGlRVBMyRJK5V1nO9',
     qb_environment: 'sandbox',
     qb_redirect_uri: 'http://api.blueclerk.com/api/v1/callback'
+    // qb_redirect_uri: 'http://localhost:3006/api/v1/callback'
 
 }
 export const privateKey = {

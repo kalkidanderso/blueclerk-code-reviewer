@@ -2,12 +2,13 @@ import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb'
 import { Status, Messages, Role } from '../common/constants'
 
-import { Customer, ICustomer } from '../models/Customer'
+import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
 import { Company, ICompany } from '../models/Company'
 import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { User, IUser } from '../models/User'
 import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 import { IPriceTier } from '../models/PriceTier'
+import { _createQBCustomer } from './quickbook'
 
 export const createCustomer = async (req: Request, res: Response) => {
 
@@ -112,7 +113,15 @@ export const createCustomer = async (req: Request, res: Response) => {
                                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
                             }
 
-                            return res.json({'status': Status.Success, 'message': 'Customer created successfully.'})
+                            _createQBCustomer(req, res, company, customer, async (err: any, errMsg: any, qbCustomer: IQBCustomer) => {
+                                if (err)
+                                    return res.json({ status: err, message: errMsg });
+
+                                // Create new Customer in QuickBooks
+                                customer.quickbookId = qbCustomer.Id;
+                                await customer.save();
+                                return res.json({ status: Status.Success, message: 'Customer created successfully.', customer, quickbookCustomer: qbCustomer });
+                            })
                         })
                     })
                 } else {

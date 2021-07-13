@@ -27,6 +27,33 @@ export interface ICustomer extends IUser {
 
 }
 
+export interface IQBCustomer {
+
+    Id?: string
+    PrimaryEmailAddr: {
+        Address: string
+    }
+    DisplayName: string
+    GivenName?: string
+    FamilyName?: string
+    CompanyName?: string
+    BusinessNumber?: string
+    PrimaryPhone?: {
+        FreeFormNumber: string
+    }
+    BillAddr?: {
+        Line1?: string
+        Line2?: string
+        City?: string
+        CountrySubDivisionCode?: string
+        Country?: string
+        PostalCode?: string
+        Long?: string
+        Lat?: string
+    }
+
+}
+
 const CustomerSchema = new Schema({
 
     isActive: {type: Boolean, default: true},

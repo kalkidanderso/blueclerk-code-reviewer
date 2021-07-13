@@ -1058,6 +1058,13 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/syncQBItems',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookController.syncQBItems
+    )
+
+    router.post(
         '/getQBUri',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),

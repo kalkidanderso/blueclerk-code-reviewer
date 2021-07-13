@@ -18,6 +18,7 @@ import {sendInvoiceEmailToCustomer} from '../services/aws';
 import {CompanyInvoice} from '../models/CompanyInvoice';
 import { IJobReport, JobReport } from '../models/JobReport';
 import { IPriceTier } from '../models/PriceTier';
+import { _createQBInvoive } from './quickbook';
 
 export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
@@ -375,8 +376,20 @@ export const createInvoice = (req: Request, res: Response) => {
                 })
 
             })
-            .then((invoice: IInvoice) =>{
-                return res.json({ 'status': Status.Success, 'message': "Job invoice created successfully.", invoice })
+            .then((invoice: IInvoice) => {
+                // Create new Invoice in QuickBooks
+                _createQBInvoive(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                    if (err) {
+                        return res.json({ status: err, message: errMsg })
+                    }
+
+                    return res.json({
+                        status: Status.Success,
+                        message: 'Job invoice created successfully.',
+                        invoice,
+                        quickbookInvoice: qbInvoice
+                    })
+                })
             })
             .catch((error: any) => {
                 if (error.message != undefined) {
@@ -453,8 +466,20 @@ export const createInvoice = (req: Request, res: Response) => {
                         })
                 })
             })
-            .then((invoice: IInvoice) =>{
-                return res.json({ 'status': Status.Success, 'message': "Purchase order invoice created successfully.", invoice })
+            .then((invoice: IInvoice) => {
+                // Create new Invoice in QuickBooks
+                _createQBInvoive(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                    if (err) {
+                        return res.json({ status: err, message: errMsg })
+                    }
+
+                    return res.json({
+                        status: Status.Success,
+                        message: 'Purchase order invoice created successfully.',
+                        invoice,
+                        quickbookInvoice: qbInvoice
+                    })
+                })
             })
             .catch((error: any) => {
                 if (error.message != undefined) {
@@ -592,8 +617,20 @@ export const createInvoice = (req: Request, res: Response) => {
                         })
                 })
             })
-            .then((invoice: IInvoice) =>{
-                return res.json({ 'status': Status.Success, 'message': "Estimate invoice created successfully.", invoice })
+            .then((invoice: IInvoice) => {
+                // Create new Invoice in QuickBooks
+                _createQBInvoive(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                    if (err) {
+                        return res.json({ status: err, message: errMsg })
+                    }
+
+                    return res.json({
+                        status: Status.Success,
+                        message: 'Estimate invoice created successfully.',
+                        invoice,
+                        quickbookInvoice: qbInvoice
+                    })
+                })
             })
             .catch((error: any) => {
                 if (error.message != undefined) {
@@ -690,7 +727,20 @@ export const createInvoice = (req: Request, res: Response) => {
                                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                                         }
 
-                                        return res.json({ 'status': Status.Success, 'message': "Invoice created successfully.", invoice: newInvoice })
+                                        // Create new Invoice in QuickBooks
+                                        _createQBInvoive(req, res, company, newInvoice, (err, errMsg, qbInvoice) => {
+                                            if (err) {
+                                                return res.json({ status: err, message: errMsg })
+                                            }
+
+                                            return res.json({
+                                                status: Status.Success,
+                                                message: 'Invoice created successfully.',
+                                                invoice: newInvoice,
+                                                quickbookInvoice: qbInvoice
+                                            })
+                                        })
+
                                     })
                             })
                     })

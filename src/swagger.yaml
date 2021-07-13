@@ -5381,34 +5381,62 @@ paths:
       tags:
         - Quickbooks Integration
       summary: Creating customer in quickbooks
-      description: ''
+      description: 'Create customer and associate it with BlueClerk customer'
       consumes:
         - application/x-www-form-urlencoded
       produces:
         - application/json
       parameters:
-        - name: email
-          in: formData
-          type: string
-        - name: name
+        - name: customerId
           in: formData
           required: true
           type: string
+          description: Id of a customer selected from the list received by /getCustomers api
+        - name: email
+          in: formData
+          type: string
+          description: To replace customer email from database, to be saved to QuickBooks
+        - name: name
+          in: formData
+          type: string
+          description: To replace customer name from database, to be saved to QuickBooks
         - name: street
           in: formData
           type: string
+          description: To replace customer street from database, to be saved to QuickBooks
         - name: city
           in: formData
           type: string
+          description: To replace customer city from database, to be saved to QuickBooks
         - name: state
           in: formData
           type: string
+          description: To replace customer state from database, to be saved to QuickBooks
         - name: zipCode
           in: formData
           type: string
+          description: To replace customer zip code from database, to be saved to QuickBooks
         - name: phone
           in: formData
           type: string
+          description: To replace customer phone from database, to be saved to QuickBooks
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /syncQBItems:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Manually syncing Quickbook items
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
       responses:
         '200':
           description: Success
