@@ -5,17 +5,55 @@ export interface IItem extends Document {
 
     name: string
     isFixed: boolean
-    charges: number
+    charges?: number
     tax: number
-    tiers: {
+    tiers?: {
         tier: Schema.Types.ObjectId | IPriceTier
         charge?: number
         updatedBy?: Schema.Types.ObjectId
         updatedAt?: Date
     }[]
-    jobType: Schema.Types.ObjectId
-    company: Schema.Types.ObjectId
+    jobType?: Schema.Types.ObjectId
+    company?: Schema.Types.ObjectId
     isActive: boolean
+    quickbookId?: string
+
+}
+
+export const enum QBItemTypes {
+    INVENTORY = 'Inventory',
+    SERVICE = 'Service',
+    NONINVENTORY = 'NonInventory'
+}
+
+export interface IQBItem extends Document {
+
+    Id: string
+    Name: string
+    Type?: QBItemTypes
+    Active?: boolean
+    Description?: string
+    ItemCategoryType?: string
+    Sku?: string
+    InvStartDate?: Date
+    FullyQualifiedName?: string
+    Taxable?: boolean
+    QtyOnHand?: number
+    UnitPrice?: number
+    IncomeAccountRef?: {
+        value: string
+        name: string
+    }
+    PurchaseCost?: number
+    TrackQtyOnHand?: boolean
+    domain?: string
+    sparse?: boolean
+    SyncToken?: string
+    MetaData?: {
+        CreateTime: Date
+        LastUpdatedTime: Date
+    }
+
 }
 
 const ItemSchema = new Schema({
@@ -58,7 +96,8 @@ const ItemSchema = new Schema({
     isActive:{
         type: Boolean,
         default: true
-    }
+    },
+    quickbookId: String
 
 })
 

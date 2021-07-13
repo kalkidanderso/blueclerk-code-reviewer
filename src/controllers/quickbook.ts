@@ -1,12 +1,39 @@
 import {Request, Response} from 'express'
 import { Status, Messages, Role} from '../common/constants'
 import { qbConfig } from '../common/config'
+
+import { IUser } from '../models/User';
 import { Company, ICompany } from '../models/Company'
 import { Customer, ICustomer } from '../models/Customer'
 import { CompanyCustomer } from '../models/CompanyCustomer'
+import { JobType } from '../models/JobType'
+import { IItem, IQBItem, Item, QBItemTypes } from '../models/Item';
+import { IInvoice, IQBInvoice, IQBInvoiceLine } from '../models/Invoice'
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");
+
+const _oauthClient = new OAuthClient({
+    clientId: qbConfig.qb_client_id,
+    clientSecret: qbConfig.qb_client_secret,
+    environment: qbConfig.qb_environment,
+    redirectUri: qbConfig.qb_redirect_uri
+});
+
+const _getQbo = (oauthToken: string, realmId: string, refreshToken: string) => {
+    return new QuickBooks(
+        qbConfig.qb_client_id,
+        qbConfig.qb_client_secret,
+        oauthToken,
+        false, // no token secret for oAuth 2.0
+        realmId,
+        true, // use the sandbox?
+        false, // enable debugging?
+        14, // set minorversion, or null for the latest version
+        '2.0', //oAuth version
+        refreshToken
+    )
+};
 
 export const getQBCustomers = (req: Request, res: Response) => {
     
@@ -325,7 +352,7 @@ export const createQBCustomer = (req: Request, res: Response) => {
                 
                     if(err.fault.error[0].message.length != 0 && err.fault.error[0].message.split('; ')[2].replace('statusCode=','') == 401) {
                         
-                        _refreshToken(req, res, company, (req: Request, res: Response, newCompany: ICompany, error: number, newErrorMessage: string) => { 
+                        _refreshToken(req, res, company, (error: number, newErrorMessage: string, newCompany: ICompany) => { 
 
                             if(error == 0) {
 
@@ -500,7 +527,7 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
     });
 }
 
-const _refreshToken = (req: Request, res: Response, company: ICompany, next: (req: Request, res: Response, company: ICompany, error: number, errorMessage: string) => void) => {
+const _refreshToken = (req: Request, res: Response, company: ICompany, next: (error: number, errorMessage: string, company: ICompany) => void) => {
 
     var oauthClient = new OAuthClient({
         clientId: qbConfig.qb_client_id,
@@ -525,25 +552,20 @@ const _refreshToken = (req: Request, res: Response, company: ICompany, next: (re
             qbRefeshTokenExpiry: expiry
         }, (err: any, raw: any)=>{
             if(err){
-                next(req, res, null, 0, Messages.GenericError)
-                return
+                return next(0, Messages.GenericError, null);
             }
 
             Company.findById(company._id, (err: any, newCompany: ICompany) => {
                 if(err){
-                    next(req, res, null, 0, Messages.GenericError)
-                    return
+                    return next(0, Messages.GenericError, null);
                 }
 
-                next(req, res, newCompany, 1, '')
-                return
+                return next(1, '', newCompany);
             })
         })
     })
     .catch(function (err: any) {
-        next(req, res, null, err.authResponse.response.status, 'Unable to refersh the token')
-        return
-        
+        return next(err.authResponse.response.status, 'Unable to refersh the token', null);
     });
 }
 
@@ -572,7 +594,7 @@ const _getCustomers = (req: Request, res: Response, company: ICompany, next: (re
                 
                     if(qbError.fault.error[0].message.length != 0 && qbError.fault.error[0].message.split('; ')[2].replace('statusCode=','') == 401) {
                 
-                        _refreshToken(req, res, company, (req: Request, res: Response, newCompany: ICompany, error: number, newErrorMessage: string) => { 
+                        _refreshToken(req, res, company, (error: number, newErrorMessage: string, newCompany: ICompany) => { 
                 
                             if(error == 0) {
                                 next(req,res, error, newErrorMessage, [])
@@ -643,7 +665,7 @@ const _getCustomers = (req: Request, res: Response, company: ICompany, next: (re
                     return 
 
                 }
-                
+
             }else{
                 next(req,res, 1, '', customers)
                 return
@@ -652,3 +674,271 @@ const _getCustomers = (req: Request, res: Response, company: ICompany, next: (re
     )
 }
 
+/**
+ * Generic function to create QuickBooks Item,
+ * this used by Job Type Controller when creating new Job Type & Item,
+ * and this controller when syncing items
+ */
+export const _createQBItem = async (req: Request, res: Response, company: ICompany, item: IItem, next: (error: number, errorMessage: string, qbItem: IQBItem) => void) => {
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbAccessToken);
+
+        // Construct QB Item Entry
+        const qbItemEntry = {
+            Name: item.name,
+            Type: QBItemTypes.NONINVENTORY,
+            Sku: item._id?.toString(),
+            Active: item.isActive,
+            SalesTaxIncluded: false,
+            IncomeAccountRef: { name: 'Sales of Product Income', value: '79' },
+            MetaData: { CreateTime: new Date(), LastUpdatedTime: new Date() }
+        };
+
+        // Create QB Item
+        qbo.createItem(qbItemEntry, async (err: any, qbItem: IQBItem) => {
+            if (err) {
+                return next(
+                    Status.Error,
+                    err.Fault?.Error[0]?.Message
+                    || err.fault?.error[0]?.detail
+                    || err.fault?.error[0]?.message
+                    || Messages.GenericError,
+                    null
+                );
+            }
+
+            return next(null, null, qbItem);
+        })
+    });
+
+}
+
+/**
+ * To syncing items on DB and items on QB
+ */
+export const syncQBItems = async (req: Request, res: Response) => {
+
+    const user = <IUser>req.user;
+    const createdItems: { _id: string, name: string }[] = [];
+    const updatedItems: { _id: string, name: string }[] = [];
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, req.company, async (err, errMsg, company) => {
+        if (err === 0)
+            return res.json({ status: Status.Error, message: errMsg });
+
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return res.json({ status: Status.QBUnauthorized, message: Messages.QBUnAuthorized });
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbAccessToken);
+
+        // Retrieve all items of this company from Database
+        const items = await Item.find({ company: company._id });
+
+        // Retrieve all items of this company from QuickBooks
+        qbo.findItems({}, async (err: any, data: any) => {
+            if (err) {
+                return res.json({
+                    status: Status.Error,
+                    message: err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError
+                })
+            }
+
+            const qbItems: IQBItem[] = data?.QueryResponse?.Item;
+
+            // Iterate all items from DB
+            for (const item of items) {
+                // Check if there any item on DB that not on QB yet
+                const exist = qbItems?.find((qbItem: IQBItem) => qbItem.Sku.toString() === item._id?.toString());
+
+                // Item not exist on QB, create it
+                if (!exist) {
+                    _createQBItem(req, res, company, item, (err, errMsg, qbItem) => {
+                        if (qbItem) {
+                            // QB Item created, update DB Item's quickbookId
+                            item.quickbookId = qbItem.Id;
+                            item.save();
+                        }
+                    })
+                }
+            }
+
+            // Iterate all QuickBooks items
+            for (const qbItem of qbItems) {
+                // Check if there any item on QB that not on DB yet
+                let item = items.find(item => item._id.toString() === qbItem.Sku.toString());
+
+                if (item) {
+                    // Item found, check and update quickbookId
+                    if (!item.quickbookId) {
+                        item.quickbookId = qbItem.Id;
+                        item.save();
+
+                        updatedItems.push({ _id: item._id, name: item.name });
+                    }
+                } else {
+                    // Item not found, find any similar Job Type
+                    let jobType = await JobType.findOne({
+                        title: { $regex: new RegExp(`^${qbItem.Name}$`, 'i') },
+                        createdBy: user._id
+                    });
+
+                    // Job Type not found, create it
+                    if (!jobType) {
+                        jobType = await new JobType({
+                            title: qbItem.Name,
+                            createdBy: user._id,
+                        }).save();
+                    }
+
+                    // Find the item associated to the Job Type
+                    item = await Item.findOne({ jobType: jobType?._id });
+
+                    // Item not found, create it
+                    if (!item) {
+                        item = await new Item({
+                            name: qbItem.Name,
+                            tiers: [...company.itemTier?.list],
+                            company: company._id,
+                            jobType: jobType._id,
+                            quickbookId: qbItem.Id,
+                        }).save();
+
+                        createdItems.push({ _id: item._id, name: item.name });
+                    }
+
+                    // If item doesn't have quickbookId, update it
+                    if (!item.quickbookId) {
+                        item.quickbookId = qbItem.Id;
+                        item.save();
+
+                        updatedItems.push({ _id: item._id, name: item.name });
+                    }
+
+                    // Update item on QuickBooks to have our item ID
+                    qbo.updateItem({
+                        Id: qbItem.Id,
+                        SyncToken: qbItem.SyncToken,
+                        Sku: item._id
+                    }, (err: any, updatedQBItem: IQBItem) => {
+                        /**
+                         * Kris' remark (July 13th, 2021):
+                         * We let this async to avoid timeout error,
+                         * especially on first time sync action.
+                         * TODO: To handle the error or data later?
+                         */
+                    })
+                }
+            }
+
+            return res.json({ status: Status.Success, message: 'Item synced successfully.', createdItems, updatedItems });
+        })
+    })
+
+}
+
+/**
+ * Generic function to create QuickBooks Invoice,
+ * this used by Invoice Controller when creating new invoice,
+ * and this contoller when syncing invoices
+ */
+ export const _createQBInvoive = async (req: Request, res: Response, company: ICompany, invoice: IInvoice, next: (error: number, errorMessage: string, qbInvoice: IQBInvoice) => void) => {
+
+    // Populate the invoice to have customer and item object
+    await invoice
+        .populate({ path: 'customer' })
+        .populate({ path: 'items.item' })
+        .execPopulate();
+
+    // Customer of the invoice
+    const customer = <ICustomer>invoice.customer;
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbAccessToken);
+
+        const qbInvoiceLines: IQBInvoiceLine[] = [];
+        // Iterate all items in the invoice and construct is to QB Inv Lines
+        for (const invItem of invoice.items) {
+            const item = <IItem>invItem.item;
+
+            qbInvoiceLines.push({
+                DetailType: 'SalesItemLineDetail',
+                Amount: invItem.subTotal,
+                SalesItemLineDetail: {
+                    ItemRef: {
+                        value: item.quickbookId
+                    }
+                }
+            })
+        }
+
+        // QB Invoice Object
+        const qbInvoiceEntry: IQBInvoice = {
+            Line: qbInvoiceLines,
+            CustomerRef: {
+                value: customer.quickbookId
+            },
+        };
+
+        // Create QB Invoice
+        qbo.createInvoice(qbInvoiceEntry, async (err: any, qbInvoice: IQBInvoice) => {
+            if (err) {
+                return next(
+                    Status.Error,
+                    err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError,
+                    null
+                );
+            }
+
+            return next(null, null, qbInvoice);
+        });
+    })
+
+}

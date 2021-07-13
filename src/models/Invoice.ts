@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { IItem } from '../models/Item';
 
 export interface IInvoice extends Document {
     invoice: any[]
@@ -26,7 +27,7 @@ export interface IInvoice extends Document {
     // isFixed: boolean
     // hourlyRate: number
     items: [{
-        item: Schema.Types.ObjectId
+        item: Schema.Types.ObjectId | IItem
         name: string
         description: string
         isFixed: boolean
@@ -43,6 +44,24 @@ export interface IInvoice extends Document {
         sentAt: Date
     }],
     lastEmailSent?: Date
+}
+
+export interface IQBInvoice {
+    Line: IQBInvoiceLine[]
+    CustomerRef: {
+        value: string
+    }
+}
+
+export interface IQBInvoiceLine {
+    DetailType: 'SalesItemLineDetail'
+    Amount: number
+    SalesItemLineDetail: {
+        ItemRef: {
+            name?: string
+            value: string
+        }
+    }
 }
 
 const InvoiceSchema = new Schema({

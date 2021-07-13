@@ -1153,7 +1153,6 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 const startedTasks: ITask[] = tasks.filter((task: ITask) => task.status === JobStatus.STARTED);
                 // Iterate all started tasks and update the status to PAUSED
                 for (const task of startedTasks) {
-                    console.log('== task:', task);
                     await _updateTask({ job, task, user, params });
                 }
                 data.tasks = tasks;

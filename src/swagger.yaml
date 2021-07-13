@@ -5416,6 +5416,23 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /syncQBItems:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Manually syncing Quickbook items
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /createIntegrationServiceTicket:
     post:
       tags:

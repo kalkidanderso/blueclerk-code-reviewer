@@ -6,8 +6,8 @@ import { JobType, IJobType, IJobTypes } from '../models/JobType'
 import { IUser } from '../models/User'
 import { Customer } from '../models/Customer';
 import { ICompany } from '../models/Company'
-import { Item, IItem } from '../models/Item'
-import { ITask } from '../models/Job';
+import { Item, IItem, IQBItem } from '../models/Item'
+import { _createQBItem } from '../controllers/quickbook';
 
 export const createJobType = (req: Request, res: Response) => {
 
@@ -53,9 +53,9 @@ export const createJobType = (req: Request, res: Response) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
-                _createItem(req, res, jobType, null, (req: Request, res: Response) => {
+                _createItem(req, res, jobType, null, (item, qbItem) => {
 
-                    return res.json({'status': Status.Success, 'message': 'Job type created successfully.'})
+                    return res.json({ 'status': Status.Success, 'message': 'Job type created successfully.', jobType, item, quickbookItem: qbItem });
                 })
 
 
@@ -84,8 +84,8 @@ export const createJobType = (req: Request, res: Response) => {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
 
-                _createItem(req, res, jobType, req.company, (req: Request, res: Response) => {
-                    return res.json({'status': Status.Success, 'message': 'Job type created successfully.'})
+                _createItem(req, res, jobType, req.company, (item, qbItem) => {
+                    return res.json({ 'status': Status.Success, 'message': 'Job type created successfully.', jobType, item, quickbookItem: qbItem });
                 })
 
             })
@@ -93,7 +93,7 @@ export const createJobType = (req: Request, res: Response) => {
     }
 }
 
-const _createItem = (req: Request, res: Response, jobType: IJobType, company: ICompany, next: (req: Request, res: Response) => void) => {
+const _createItem = (req: Request, res: Response, jobType: IJobType, company: ICompany, next: (item: IItem, qbItem: IQBItem) => void) => {
 
     const params = req.body
     let companyId = company._id;
@@ -121,8 +121,14 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
-        next(req, res)
-        return
+
+        // Create new Item in QuickBooks
+        _createQBItem(req, res, company, item, (err: any, errMsg: any, qbItem: IQBItem) => {
+            if (err)
+                return res.json({ status: err, message: errMsg });
+
+            return next(item, qbItem);
+        })
     })
 }
 
