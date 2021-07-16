@@ -218,6 +218,8 @@ export const Validations = {
 
   createQBCustomer: [check('customerId').exists().withMessage('is required'), check('customerId').isMongoId().withMessage(Messages.WrongId)],
 
+  getQBUri: [check('redirectUri').exists()],
+
   createSaleTax: [check('state').exists(), check('tax').exists()],
 
   updateSaleTax: [check('salesTaxId').exists(), check('state').exists(), check('tax').exists()],
