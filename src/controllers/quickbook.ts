@@ -560,11 +560,13 @@ export const getQBUri = (req: Request, res: Response) => {
 
 export const getCallBackToken = (req: Request, res: Response, sio: any) => {
 
+    const query = req.query;
+
     var oauthClient = new OAuthClient({
         clientId: qbConfig.qb_client_id,
         clientSecret: qbConfig.qb_client_secret,
         environment: qbConfig.qb_environment,
-        redirectUri: qbConfig.qb_redirect_uri,
+        redirectUri: query.redirectUri || qbConfig.qb_redirect_uri,
     });
     
     oauthClient
@@ -607,7 +609,7 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
         })
     })
     .catch(function (err: any) {
-        return res.json({'status': Status.Error, 'message': err.message ? err.message : Messages.GenericError});
+        return res.json({'status': Status.Error, 'message': err.error_description || err.originalMessage || err.message || Messages.GenericError});
     });
 }
 
