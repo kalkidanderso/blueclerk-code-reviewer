@@ -9448,6 +9448,13 @@
         ],
         "parameters":[
           {
+            "name": "redirectUri",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Frontend redirect uri"
+          },
+          {
             "name": "code",
             "in": "query",
             "required": true,
