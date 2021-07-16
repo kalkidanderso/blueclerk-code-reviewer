@@ -5444,6 +5444,57 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /getQBUri:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Get OAuth consent uri
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: redirectUri
+          in: formData
+          required: true
+          type: string
+          description: Frontend redirect uri
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /QBCallback:
+    get:
+      tags:
+        - Quickbooks Integration
+      summary: BE callback to get authorization code from FE
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: code
+          in: query
+          required: true
+          type: string
+        - name: state
+          in: query
+          required: true
+          type: string
+        - name: realmId
+          in: query
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /createIntegrationServiceTicket:
     post:
       tags:
