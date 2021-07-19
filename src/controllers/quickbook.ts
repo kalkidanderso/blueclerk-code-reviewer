@@ -6,7 +6,7 @@ import { IUser } from '../models/User';
 import { Company, ICompany } from '../models/Company'
 import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
 import { CompanyCustomer } from '../models/CompanyCustomer'
-import { JobType } from '../models/JobType'
+import { IJobType, JobType } from '../models/JobType'
 import { IItem, IQBItem, Item, QBItemTypes } from '../models/Item';
 import { IInvoice, IQBInvoice, IQBInvoiceLine } from '../models/Invoice'
 
@@ -789,8 +789,7 @@ export const _createQBItem = async (req: Request, res: Response, company: ICompa
         // Construct QB Item Entry
         const qbItemEntry: IQBItem = {
             Name: item.name,
-            Type: QBItemTypes.NONINVENTORY,
-            Sku: item._id?.toString(),
+            Type: QBItemTypes.SERVICE,
             Active: item.isActive,
             SalesTaxIncluded: false,
             IncomeAccountRef: { name: 'Sales of Product Income', value: '79' },
@@ -822,6 +821,8 @@ export const _createQBItem = async (req: Request, res: Response, company: ICompa
 export const syncQBItems = async (req: Request, res: Response) => {
 
     const user = <IUser>req.user;
+    const jobTypesToCreate: IJobType[] = [];
+    const itemsToCreate: IItem[] = [];
     const createdItems: { _id: string, name: string }[] = [];
     const updatedItems: { _id: string, name: string }[] = [];
 
@@ -863,15 +864,16 @@ export const syncQBItems = async (req: Request, res: Response) => {
             // Iterate all items from DB
             for (const item of items) {
                 // Check if there any item on DB that not on QB yet
-                const exist = qbItems?.find((qbItem: IQBItem) => qbItem.Sku.toString() === item._id?.toString());
+                const exist = qbItems?.find((qbItem: IQBItem) => qbItem.Name?.toLowerCase() === item.name.toLowerCase());
 
                 // Item not exist on QB, create it
                 if (!exist) {
                     _createQBItem(req, res, company, item, (err, errMsg, qbItem) => {
                         if (qbItem) {
-                            // QB Item created, update DB Item's quickbookId
+                            // QB Item created, update DB Item & JobType's quickbookId
                             item.quickbookId = qbItem.Id;
                             item.save();
+                            JobType.findByIdAndUpdate(item.jobType, { quickbookId: qbItem.Id }).exec();
                         }
                     })
                 }
@@ -880,7 +882,7 @@ export const syncQBItems = async (req: Request, res: Response) => {
             // Iterate all QuickBooks items
             for (const qbItem of qbItems) {
                 // Check if there any item on QB that not on DB yet
-                let item = items.find(item => item._id.toString() === qbItem.Sku.toString());
+                let item = items.find(item => item.quickbookId === qbItem.Id);
 
                 if (item) {
                     // Item found, check and update quickbookId
@@ -899,49 +901,39 @@ export const syncQBItems = async (req: Request, res: Response) => {
 
                     // Job Type not found, create it
                     if (!jobType) {
-                        jobType = await new JobType({
+                        // Collect all Job Types in array first
+                        jobTypesToCreate.push(new JobType({
                             title: qbItem.Name,
                             createdBy: user._id,
-                        }).save();
+                            quickbookId: qbItem.Id
+                        }));
                     }
+                }
+            }
 
-                    // Find the item associated to the Job Type
-                    item = await Item.findOne({ jobType: jobType?._id });
+            // Iterate array Job Types to be created
+            if (jobTypesToCreate.length > 0) {
+                // Create all Job Types in array at once
+                const jobTypesCreated = await JobType.create(jobTypesToCreate);
 
-                    // Item not found, create it
-                    if (!item) {
-                        item = await new Item({
-                            name: qbItem.Name,
-                            tiers: [...company.itemTier?.list],
-                            company: company._id,
-                            jobType: jobType._id,
-                            quickbookId: qbItem.Id,
-                        }).save();
+                // Iterate all created Job Types
+                for (const jobType of jobTypesCreated) {
+                    // Collect all Items in array first
+                    itemsToCreate.push(new Item({
+                        name: jobType.title,
+                        tiers: [...company.itemTier?.list],
+                        company: company._id,
+                        jobType: jobType._id,
+                        quickbookId: jobType.quickbookId,
+                    }))
+                }
 
-                        createdItems.push({ _id: item._id, name: item.name });
-                    }
+                // Create all Items in array at once
+                const itemsCreated = await Item.create(itemsToCreate);
 
-                    // If item doesn't have quickbookId, update it
-                    if (!item.quickbookId) {
-                        item.quickbookId = qbItem.Id;
-                        item.save();
-
-                        updatedItems.push({ _id: item._id, name: item.name });
-                    }
-
-                    // Update item on QuickBooks to have our item ID
-                    qbo.updateItem({
-                        Id: qbItem.Id,
-                        SyncToken: qbItem.SyncToken,
-                        Sku: item._id
-                    }, (err: any, updatedQBItem: IQBItem) => {
-                        /**
-                         * Kris' remark (July 13th, 2021):
-                         * We let this async to avoid timeout error,
-                         * especially on first time sync action.
-                         * TODO: To handle the error or data later?
-                         */
-                    })
+                // Iterate all created Items as the response information
+                for (const item of itemsCreated) {
+                    createdItems.push({ _id: item._id, name: item.name });
                 }
             }
 
