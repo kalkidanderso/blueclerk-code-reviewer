@@ -18,7 +18,7 @@ import {sendInvoiceEmailToCustomer} from '../services/aws';
 import {CompanyInvoice} from '../models/CompanyInvoice';
 import { IJobReport, JobReport } from '../models/JobReport';
 import { IPriceTier } from '../models/PriceTier';
-import { _createQBInvoive } from './quickbook';
+import { _createQBInvoice } from './quickbook';
 
 export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
@@ -378,7 +378,7 @@ export const createInvoice = (req: Request, res: Response) => {
             })
             .then((invoice: IInvoice) => {
                 // Create new Invoice in QuickBooks
-                _createQBInvoive(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                     if (err) {
                         return res.json({ status: err, message: errMsg })
                     }
@@ -468,7 +468,7 @@ export const createInvoice = (req: Request, res: Response) => {
             })
             .then((invoice: IInvoice) => {
                 // Create new Invoice in QuickBooks
-                _createQBInvoive(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                     if (err) {
                         return res.json({ status: err, message: errMsg })
                     }
@@ -619,7 +619,7 @@ export const createInvoice = (req: Request, res: Response) => {
             })
             .then((invoice: IInvoice) => {
                 // Create new Invoice in QuickBooks
-                _createQBInvoive(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                     if (err) {
                         return res.json({ status: err, message: errMsg })
                     }
@@ -728,7 +728,7 @@ export const createInvoice = (req: Request, res: Response) => {
                                         }
 
                                         // Create new Invoice in QuickBooks
-                                        _createQBInvoive(req, res, company, newInvoice, (err, errMsg, qbInvoice) => {
+                                        _createQBInvoice(req, res, company, newInvoice, (err, errMsg, qbInvoice) => {
                                             if (err) {
                                                 return res.json({ status: err, message: errMsg })
                                             }
@@ -1539,11 +1539,13 @@ export const sendInvoice = (req: Request, res: Response) => {
                     return res.json({'status': Status.Error, 'message': 'Invoice not found'})
                 }
 
+                const customer = <ICustomer>invoice.customer;
+
                 sendInvoiceEmailToCustomer({
                     companyName: company.info.companyName,
                     companyEmail: company.info.companyEmail,
-                    customerName: invoice.customer.profile.displayName,
-                    customerEmail: invoice.customer.info.email,
+                    customerName: customer.profile.displayName,
+                    customerEmail: customer.info.email,
                     invoiceNumber: invoice.invoiceId,
                     invoiceAmount: invoice.total,
                 });
@@ -1551,7 +1553,7 @@ export const sendInvoice = (req: Request, res: Response) => {
                 // Update email history and last email sent info
                 const sendingDate = new Date();
                 invoice.emailHistory.push({
-                    sentTo: invoice.customer.info.email,
+                    sentTo: customer.info.email,
                     sentAt: sendingDate
                 });
                 invoice.lastEmailSent = sendingDate;

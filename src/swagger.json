@@ -9235,41 +9235,13 @@
         ]
       }
     },
-    "/getQBCustomers": {
-      "post": {
-        "tags": [
-          "Quickbooks Integration"
-        ],
-        "summary": "Get quickbooks customers for the first time",
-        "description": "",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "$ref": "#/definitions/GeneralAPIResponse"
-            }
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
     "/syncQBCustomers": {
       "post": {
         "tags": [
           "Quickbooks Integration"
         ],
-        "summary": "Manually syncing quickbooks customers",
-        "description": "",
+        "summary": "Manually syncing ALL customers",
+        "description": "Manually syncing ALL customers from BlueClerk to QuickBooks and vice versa",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -9296,8 +9268,8 @@
         "tags": [
           "Quickbooks Integration"
         ],
-        "summary": "Creating customer in quickbooks",
-        "description": "Create customer in QuickBooks and associate it with BlueClerk customer",
+        "summary": "Manual syncing SINGLE customer",
+        "description": "Manually syncing SINGLE customer from BlueClerk to QuickBooks and associate it with BlueClerk customer",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -9375,13 +9347,78 @@
         "tags": [
           "Quickbooks Integration"
         ],
-        "summary": "Manually syncing QuickBook items",
-        "description": "",
+        "summary": "Manually syncing ALL items",
+        "description": "Manually syncing ALL items from BlueClerk to QuickBooks and vice versa",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
         "produces": [
           "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/syncQBInvoices": {
+      "post": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "[IN PROGRESS] Manually syncing ALL invoices",
+        "description": "Manually syncing ALL invoices **from BlueClerk to QuickBooks only**",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createQBInvoice": {
+      "post": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "Manually syncing SINGLE invoice",
+        "description": "Manually syncing SINGLE invoice from BlueClerk to QuickBooks and associate it with BlueClerk invoice",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of an invoice to be associated"
+          }
         ],
         "responses": {
           "200": {
