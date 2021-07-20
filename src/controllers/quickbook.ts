@@ -714,9 +714,21 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
             // Iterate all QuickBooks customers
             for (const qbCustomer of qbCustomers) {
                 // Check if there any customer on QB that not on DB yet
-                let customer = customers.find(customer => customer.quickbookId === qbCustomer.Id);
+                let customer = customers.find(customer => {
+                    if (customer.info?.email?.toLowerCase() === qbCustomer.PrimaryEmailAddr?.Address?.toLocaleLowerCase() || customer.quickbookId === qbCustomer.Id) {
+                        return customer;
+                    }
+                });
 
-                if (!customer) {
+                if (customer) {
+                    // Customer found, check and update quickbookId
+                    if (customer.quickbookId !== qbCustomer.Id) {
+                        customer.quickbookId = qbCustomer.Id;
+                        customer.save();
+
+                        updatedCustomers.push({ _id: customer._id, name: customer.profile?.displayName });
+                    }
+                } else {
                     // Customer not found, create it
                     const custEntry = new Customer({
                         info: { email: qbCustomer.PrimaryEmailAddr?.Address },
@@ -1059,11 +1071,11 @@ export const syncQBItems = async (req: Request, res: Response) => {
             // Iterate all QuickBooks items
             for (const qbItem of qbItems) {
                 // Check if there any item on QB that not on DB yet
-                let item = items.find(item => item.quickbookId === qbItem.Id);
+                let item = items.find(item => item.name?.toLowerCase() === qbItem.Name?.toLowerCase());
 
                 if (item) {
                     // Item found, check and update quickbookId
-                    if (!item.quickbookId) {
+                    if (item.quickbookId !== qbItem.Id) {
                         item.quickbookId = qbItem.Id;
                         item.save();
 
@@ -1255,6 +1267,7 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
     const user = <IUser>req.user;
     const createdInvoices: { _id: string, invoiceId: string }[] = [];
     const updatedInvoices: { _id: string, invoiceId: string }[] = [];
+    const invToCreate: IInvoice[] = [];
 
     // Always refresh the token first because token valid only for 60 minutes
     _refreshToken(req, res, req.company, async (err, errMsg, company) => {
@@ -1290,6 +1303,7 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
         console.log('== qbCustomers:, qbCustomers');
         console.log('== qbItems:, qbItems');
 
+        // TODO: ONLY SYNC INVOICE FROM BC NOW
         // Retrieve all invoices of this company from QuickBooks
         qbo.findInvoices({}, async (err: any, data: any) => {
             if (err) {
@@ -1316,8 +1330,6 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
                     })
                 }
             }
-
-            const invToCreate = [];
 
             // Iterate all QuickBooks invoices
             for (const qbInvoice of qbInvoices) {
