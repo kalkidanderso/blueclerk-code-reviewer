@@ -64,8 +64,16 @@ export interface ICompany extends Document{
     qbAccessToken: string,
     qbRefreshToken: string,
     realmId: string,
-    customersSynced: boolean,
-    customersSyncedAt: Date,
+    customersSynced: boolean, // TODO: To be deprecated
+    customersSyncedAt: Date,  // TODO: To be deprecated
+    qbSync?: {
+        customersSynced?: boolean
+        customersSyncedAt?: Date
+        itemsSynced?: boolean
+        itemsSyncedAt?: Date
+        invoicesSynced?: boolean
+        invoicesSyncedAt?: Date
+    }
     socketId: string,
     qbAuthorized: boolean,
     qbRefeshTokenExpiry: Date,
@@ -168,10 +176,28 @@ const CompanySchema = new Schema({
     qbRefreshToken: String,
     realmId: String,
     customersSynced: {
+        // TODO: To be deprecated
         type: Boolean,
-        default: false
+        // default: false
     },
-    customersSyncedAt: Date,
+    customersSyncedAt: Date,  // TODO: To be deprecated
+    qbSync: {
+        customersSynced: {
+            type: Boolean,
+            default: false
+        },
+        customersSyncedAt: Date,
+        itemsSynced: {
+            type: Boolean,
+            default: false
+        },
+        itemsSyncedAt: Date,
+        invoicesSynced: {
+            type: Boolean,
+            default: false
+        },
+        invoicesSyncedAt: Date,
+    },
     socketId: String,
     qbAuthorized: {
         type: Boolean,

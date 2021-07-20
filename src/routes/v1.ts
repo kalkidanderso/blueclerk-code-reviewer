@@ -1044,7 +1044,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_QB_Customers),
-        // validate(Validations.getQBCustomers),
         quickBookController.syncQBCustomers
     )
 
@@ -1062,6 +1061,20 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         quickBookController.syncQBItems
+    )
+
+    router.post(
+        '/createQBInvoice',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookController.createQBInvoice
+    )
+
+    router.post(
+        '/syncQBInvoices',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookController.syncQBInvoices
     )
 
     router.post(
