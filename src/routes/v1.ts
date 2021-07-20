@@ -1082,11 +1082,12 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_QB_Uri),
+        validate(Validations.getQBUri),
         quickBookController.getQBUri
     )
 
     router.get(
-        '/callback',
+        '/QBCallback',
         (req, res) => {
             quickBookController.getCallBackToken(req, res, sio)
         }

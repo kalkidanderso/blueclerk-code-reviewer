@@ -6,6 +6,7 @@ export interface IJobType extends Document {
     industry: string
     createdBy: Schema.Types.ObjectId
     isActive: boolean
+    quickbookId?: string
 }
 
 export interface IJobTypes {
@@ -29,7 +30,8 @@ const JobTypeSchema = new Schema({
     isActive:{
         type: Boolean,
         default: true
-    }
+    },
+    quickbookId: String
 
 })
 
