@@ -3,7 +3,7 @@ import { Status, Messages, Role} from '../common/constants'
 import { qbConfig } from '../common/config'
 
 import { IUser } from '../models/User';
-import { Company, ICompany } from '../models/Company'
+import { ICompany, IQBCompany, Company } from '../models/Company'
 import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
 import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { IJobType, JobType } from '../models/JobType'
@@ -137,7 +137,7 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
     oauthClient
     .createToken(req.url)
     .then(function (authResponse: any) {
-      
+
         // var oauth2_token_json: any = JSON.stringify(authResponse.getJson(), null, 2);
       
         const companyId = req.query.state
@@ -152,24 +152,36 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
             if(company == undefined || company ==null){
                 return res.json({'status': Status.Error, 'message': "Invalid company id"})
             }
-            var expiry = new Date();
-            expiry.setDate(expiry.getDate() + 99);
-            company.updateOne({
-                qbAccessToken: access_token,
-                qbRefreshToken: refresh_token,
-                realmId: realmId,
-                qbAuthorized: true,
-                qbRefeshTokenExpiry: expiry
-            }, (err: any, raw: any)=>{
-                if(err){
-                    sio.emit(company.socketId, {'status': Status.Error, 'message': Messages.GenericError});
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                }
 
-                // sio.emit("authToken", oauth2_token_json);
+            // Initiate node-quickbooks object with the refreshed company token
+            const qbo = _getQbo(access_token, realmId, refresh_token);
 
-                sio.emit(company.socketId, {'status': Status.Success, 'message': 'Quickbooks Connected Successfully'});
-                return res.json({ 'status': Status.Success, 'message': 'Quickbooks Connected Successfully' });
+            // Find the QuickBooks company info to be saved to Company Object
+            qbo.findCompanyInfos({}, (err: any, data: any) => {
+
+                const qbCompany: IQBCompany = data?.QueryResponse?.CompanyInfo[0];
+
+                var expiry = new Date();
+                expiry.setDate(expiry.getDate() + 99);
+                company.updateOne({
+                    qbAccessToken: access_token,
+                    qbRefreshToken: refresh_token,
+                    realmId: realmId,
+                    qbCompanyName: qbCompany?.CompanyName,
+                    qbCompanyEmail: qbCompany?.Email?.Address,
+                    qbAuthorized: true,
+                    qbRefeshTokenExpiry: expiry
+                }, (err: any, raw: any)=>{
+                    if(err){
+                        sio.emit(company.socketId, {'status': Status.Error, 'message': Messages.GenericError});
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    }
+
+                    // sio.emit("authToken", oauth2_token_json);
+
+                    sio.emit(company.socketId, {'status': Status.Success, 'message': 'Quickbooks Connected Successfully'});
+                    return res.json({ 'status': Status.Success, 'message': 'Quickbooks Connected Successfully' });
+                })
             })
         })
     })
@@ -453,7 +465,7 @@ export const _createQBCustomer = async (req: Request, res: Response, company: IC
         }
 
         // Initiate node-quickbooks object with the refreshed company token
-        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbAccessToken);
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
         // Construct QB Customer Entry
         const qbCustomerEntry: IQBCustomer = {
@@ -680,7 +692,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
         }
 
         // Initiate node-quickbooks object with the refreshed company token
-        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbAccessToken);
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
         const customers = await Customer.find({ company: company._id });
 
@@ -975,7 +987,7 @@ export const _createQBItem = async (req: Request, res: Response, company: ICompa
         }
 
         // Initiate node-quickbooks object with the refreshed company token
-        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbAccessToken);
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
         // Construct QB Item Entry
         const qbItemEntry: IQBItem = {
@@ -1033,7 +1045,7 @@ export const syncQBItems = async (req: Request, res: Response) => {
         }
 
         // Initiate node-quickbooks object with the refreshed company token
-        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbAccessToken);
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
         // Retrieve all items of this company from Database
         const items = await Item.find({ company: company._id });
@@ -1175,7 +1187,7 @@ export const syncQBItems = async (req: Request, res: Response) => {
         }
 
         // Initiate node-quickbooks object with the refreshed company token
-        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbAccessToken);
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
         const qbInvoiceLines: IQBInvoiceLine[] = [];
         // Iterate all items in the invoice and construct is to QB Inv Lines
@@ -1335,7 +1347,7 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
 //         }
 
 //         // Initiate node-quickbooks object with the refreshed company token
-//         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbAccessToken);
+//         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
 //         // Retrieve all invoices of this company from Database
 //         const invoices = await Invoice.find({ company: company._id });

@@ -64,6 +64,8 @@ export interface ICompany extends Document{
     qbAccessToken: string,
     qbRefreshToken: string,
     realmId: string,
+    qbCompanyName?: string,
+    qbCompanyEmail?: string,
     customersSynced: boolean, // TODO: To be deprecated
     customersSyncedAt: Date,  // TODO: To be deprecated
     qbSync?: {
@@ -86,6 +88,24 @@ export interface ICompany extends Document{
         list: { tier: Schema.Types.ObjectId | IPriceTier }[]
     }
     companyInvoices: ICompanyInvoice[];
+}
+
+export interface IQBCompany {
+    CompanyName?: string
+    LegalName?: string
+    CompanyAddr?: {
+        Id?: string
+        Line1?: string
+        Line2?: string
+        City?: string
+        CountrySubDivisionCode?: string
+        PostalCode?: string
+        Lat?: string
+        Long?: string
+    }
+    Email?: {
+        Address?: string
+    }
 }
 
 const CompanySchema = new Schema({
@@ -175,6 +195,8 @@ const CompanySchema = new Schema({
     qbAccessToken: String,
     qbRefreshToken: String,
     realmId: String,
+    qbCompanyName: String,
+    qbCompanyEmail: String,
     customersSynced: {
         // TODO: To be deprecated
         type: Boolean,
