@@ -114,12 +114,16 @@ export const createCustomer = async (req: Request, res: Response) => {
                             }
 
                             _createQBCustomer(req, res, company, customer, async (err: any, errMsg: any, qbCustomer: IQBCustomer) => {
-                                if (err)
+                                if (err) {
                                     return res.json({ status: err, message: errMsg });
+                                }
 
-                                // Create new Customer in QuickBooks
-                                customer.quickbookId = qbCustomer.Id;
-                                await customer.save();
+                                if (qbCustomer) {
+                                    // Create new Customer in QuickBooks
+                                    customer.quickbookId = qbCustomer.Id;
+                                    await customer.save();
+                                }
+
                                 return res.json({ status: Status.Success, message: 'Customer created successfully.', customer, quickbookCustomer: qbCustomer });
                             })
                         })
@@ -246,7 +250,7 @@ export const getCustomers = (req: Request, res: Response) => {
         })
 
         User.find({_id : {$in: customerIds}},
-            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId itemTier')
+            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId itemTier quickbookId')
             .populate({ path: 'itemTier', select: '-companyId -__v' })
             .exec((err: any, users: IUser[]) =>{
 

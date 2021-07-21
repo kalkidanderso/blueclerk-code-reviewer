@@ -1251,160 +1251,198 @@ export const createQBInvoice = async (req: Request, res: Response) => {
 
     _createQBInvoice(req, res, company, invoice, async (err, errMsg, qbInvoice) => {
         if (err || !qbInvoice) {
-            return res.json({ status: err, message: errMsg || Messages.GenericError });
+            return res.json({
+                status: err || Status.Error,
+                message: errMsg || Messages.GenericError
+            });
         }
 
         invoice.quickbookId = qbInvoice.Id;
         await invoice.save();
 
-        return res.json({ status: Status.Success, message: 'QuickBooks Invoice successfully created', quickbookInvoice: qbInvoice });
+        return res.json({ status: Status.Success, message: 'QuickBooks Invoice successfully created', invoice, quickbookInvoice: qbInvoice });
     })
 
 }
 
 export const syncQBInvoices = async (req: Request, res: Response) => {
 
-    const user = <IUser>req.user;
-    const createdInvoices: { _id: string, invoiceId: string }[] = [];
-    const updatedInvoices: { _id: string, invoiceId: string }[] = [];
-    const invToCreate: IInvoice[] = [];
+    const company = <ICompany>req.company;
 
-    // Always refresh the token first because token valid only for 60 minutes
-    _refreshToken(req, res, req.company, async (err, errMsg, company) => {
-        if (err === 0)
-            return res.json({ status: Status.Error, message: errMsg });
+    /**
+     * Retrieve all invoices of this company from Database,
+     * that not a manual invoice and doesn't have quickbookId 
+     */ 
+    const invoices = await Invoice.find({
+        company: company._id,
+        invoiceType: { $ne: 3 },
+        quickbookId: { $exists: false }
+    });
 
-        if (err === 400) {
-            await Company.findByIdAndUpdate(req.company._id, {
-                qbAuthorized: false,
-                qbAccessToken: undefined,
-                qbRefreshToken: undefined
-            });
+    // Return immediately when no invoices to be synced
+    if (invoices.length <= 0) {
+        return res.json({ status: Status.Success, message: 'No invoices to be synced.' });
+    }
 
-            return res.json({ status: Status.QBUnauthorized, message: Messages.QBUnAuthorized });
-        }
+    console.log('== invoices:', invoices);
 
-        // Initiate node-quickbooks object with the refreshed company token
-        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbAccessToken);
-
-        // Retrieve all invoices of this company from Database
-        const invoices = await Invoice.find({ company: company._id });
-        const customers = await Customer.find({ company: company._id });
-        const items = await Item.find({ company: company._id });
-        // const invoices = await Invoice.find({ company: company._id, quickbookId: { $exists: false } });
-
-        // const qbCustomers = _getQBCustomers(qbo);
-        // const qbItems = _getQBItems(qbo);
-
-        const [qbCustomers, qbItems] = await Promise.all([
-            _getQBCustomers(qbo),
-            _getQBItems(qbo)
-        ])
-        console.log('== qbCustomers:, qbCustomers');
-        console.log('== qbItems:, qbItems');
-
-        // TODO: ONLY SYNC INVOICE FROM BC NOW
-        // Retrieve all invoices of this company from QuickBooks
-        qbo.findInvoices({}, async (err: any, data: any) => {
-            if (err) {
-                return res.json({
-                    status: Status.Error,
-                    message: err.Fault?.Error[0]?.Message
-                        || err.fault?.error[0]?.detail
-                        || err.fault?.error[0]?.message
-                        || Messages.GenericError
-                })
+    // Iterate all invoices from DB
+    for (const invoice of invoices) {
+        // Invoice not exist on QB, create it
+        _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+            if (qbInvoice) {
+                console.log('== qbInvoice:', qbInvoice);
+                invoice.quickbookId = qbInvoice.Id;
+                invoice.save();
             }
-
-            const qbInvoices: IQBInvoice[] = data?.QueryResponse?.Invoice;
-
-            // Iterate all invoices from DB
-            for (const invoice of invoices) {
-                // Invoice not exist on QB, create it
-                if (invoice.invoiceType !== 3 && !invoice.quickbookId) {
-                    _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
-                        if (qbInvoice) {
-                            invoice.quickbookId = qbInvoice.Id;
-                            invoice.save();
-                        }
-                    })
-                }
-            }
-
-            // Iterate all QuickBooks invoices
-            for (const qbInvoice of qbInvoices) {
-                // Chevk if there any invoice on QB that not on DB yet
-                let invoice = invoices.find(invoice => invoice.quickbookId === qbInvoice.Id);
-                
-                if (!invoice) {
-                    // Invoice not found, create it
-                    // await invoice.populate({ path: 'customer' }).populate({ path: 'items.item' }).execPopulate();
-                    // const customer = <ICustomer>invoice.customer;
-                    // const qbCustomer = qbCustomers.find(cust => cust.Id === customer.quickbookId);
-                    const customer = customers.find(customer => customer.quickbookId === qbInvoice.CustomerRef?.value);
-
-                    const invItems = [];
-                    let subTotal = 0, charges = 0, shippingCost = 0;
-
-                    for (const qbLine of qbInvoice.Line) {
-                        if (qbLine.DetailType === LineDetailTypes.SubTotalLineDetail) {
-                            subTotal = qbLine.Amount;
-                            continue;
-                        }
-
-                        const qbItemId = qbLine.SalesItemLineDetail?.ItemRef?.value;
-                        const item = items.find(i => i.quickbookId === qbItemId);
-
-                        invItems.push({
-                            item: item._id,
-                            name: item.name,
-                            isFixed: item.isFixed,
-                            hourlyRate: qbLine.SalesItemLineDetail?.UnitPrice,
-                            price: qbLine.SalesItemLineDetail?.UnitPrice,
-                            quantity: qbLine.SalesItemLineDetail?.Qty,
-                            tax: qbLine.SalesItemLineDetail?.DiscountRate,
-                            taxAmount: qbLine.SalesItemLineDetail?.DiscountAmt,
-                            subTotal: qbLine.SalesItemLineDetail?.TaxInclusiveAmt || qbLine.Amount
-                        })
-                    }
-
-                    invToCreate.push(new Invoice({
-                        invoiceId: qbInvoice.DocNumber,
-                        invoiceType: 0,
-                        issuedDate: qbInvoice.TxnDate,
-                        dueDate: qbInvoice.DueDate,
-                        customer: customer._id,
-                        company: company._id,
-                        note: qbInvoice.Notes,
-                        charges: 0,
-                        shippingCost: 0,
-                        taxAmount: qbInvoice.TaxTaxDetail?.TotalTax,
-                        subTotal,
-                        total: qbInvoice.TotalAmt,
-                        createdBy: user._id,
-                        createdAt: qbInvoice.Metadata?.CreateTime,
-                        items: invItems,
-                        emailHistory: [],
-                        lastEmailSent: null,
-                        quickbookId: qbInvoice.Id,
-                    }))
-                }
-            }
-
-            if (invToCreate.length > 0) {
-                const invoicesCreated = await Invoice.create(invToCreate);
-
-                for (const invoice of invoicesCreated) {
-                    createdInvoices.push({ _id: invoice._id, invoiceId: invoice.invoiceId });
-                };
-
-                company.qbSync.invoicesSynced = true;
-                company.qbSync.invoicesSyncedAt = new Date();
-                company.save();
-            }
-
-            return res.json({ status: Status.Success, message: 'Invoice synced successfully.', createdInvoices, updatedInvoices });
         })
-    })
+    }
+
+    company.qbSync.invoicesSynced = true;
+    company.qbSync.invoicesSyncedAt = new Date();
+    company.save();
+
+    return res.json({ status: Status.Success, message: 'Invoice synced successfully.' });
 
 }
+
+/**
+ * Kris' remark (July 21st, 2021):
+ * These commented below used to sync invoices from QB to BC
+ */
+// export const syncQBInvoices = async (req: Request, res: Response) => {
+
+//     const user = <IUser>req.user;
+//     const createdInvoices: { _id: string, invoiceId: string }[] = [];
+//     const updatedInvoices: { _id: string, invoiceId: string }[] = [];
+//     const invToCreate: IInvoice[] = [];
+
+//     // Always refresh the token first because token valid only for 60 minutes
+//     _refreshToken(req, res, req.company, async (err, errMsg, company) => {
+//         if (err === 0)
+//             return res.json({ status: Status.Error, message: errMsg });
+
+//         if (err === 400) {
+//             await Company.findByIdAndUpdate(req.company._id, {
+//                 qbAuthorized: false,
+//                 qbAccessToken: undefined,
+//                 qbRefreshToken: undefined
+//             });
+
+//             return res.json({ status: Status.QBUnauthorized, message: Messages.QBUnAuthorized });
+//         }
+
+//         // Initiate node-quickbooks object with the refreshed company token
+//         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbAccessToken);
+
+//         // Retrieve all invoices of this company from Database
+//         const invoices = await Invoice.find({ company: company._id });
+//         const customers = await Customer.find({ company: company._id });
+//         const items = await Item.find({ company: company._id });
+
+//         const [qbCustomers, qbItems] = await Promise.all([
+//             _getQBCustomers(qbo),
+//             _getQBItems(qbo)
+//         ])
+
+//         // Retrieve all invoices of this company from QuickBooks
+//         qbo.findInvoices({}, async (err: any, data: any) => {
+//             if (err) {
+//                 return res.json({
+//                     status: Status.Error,
+//                     message: err.Fault?.Error[0]?.Message
+//                         || err.fault?.error[0]?.detail
+//                         || err.fault?.error[0]?.message
+//                         || Messages.GenericError
+//                 })
+//             }
+
+//             const qbInvoices: IQBInvoice[] = data?.QueryResponse?.Invoice;
+
+//             // Iterate all invoices from DB
+//             for (const invoice of invoices) {
+//                 // Invoice not exist on QB, create it
+//                 if (invoice.invoiceType !== 3 && !invoice.quickbookId) {
+//                     _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+//                         if (qbInvoice) {
+//                             invoice.quickbookId = qbInvoice.Id;
+//                             invoice.save();
+//                         }
+//                     })
+//                 }
+//             }
+
+//             // Iterate all QuickBooks invoices
+//             for (const qbInvoice of qbInvoices) {
+//                 // Chevk if there any invoice on QB that not on DB yet
+//                 let invoice = invoices.find(invoice => invoice.quickbookId === qbInvoice.Id);
+                
+//                 if (!invoice) {
+//                     // Invoice not found, create it
+//                     const customer = customers.find(customer => customer.quickbookId === qbInvoice.CustomerRef?.value);
+
+//                     const invItems = [];
+//                     let subTotal = 0, charges = 0, shippingCost = 0;
+
+//                     for (const qbLine of qbInvoice.Line) {
+//                         if (qbLine.DetailType === LineDetailTypes.SubTotalLineDetail) {
+//                             subTotal = qbLine.Amount;
+//                             continue;
+//                         }
+
+//                         const qbItemId = qbLine.SalesItemLineDetail?.ItemRef?.value;
+//                         const item = items.find(i => i.quickbookId === qbItemId);
+
+//                         invItems.push({
+//                             item: item._id,
+//                             name: item.name,
+//                             isFixed: item.isFixed,
+//                             hourlyRate: qbLine.SalesItemLineDetail?.UnitPrice,
+//                             price: qbLine.SalesItemLineDetail?.UnitPrice,
+//                             quantity: qbLine.SalesItemLineDetail?.Qty,
+//                             tax: qbLine.SalesItemLineDetail?.DiscountRate,
+//                             taxAmount: qbLine.SalesItemLineDetail?.DiscountAmt,
+//                             subTotal: qbLine.SalesItemLineDetail?.TaxInclusiveAmt || qbLine.Amount
+//                         })
+//                     }
+
+//                     invToCreate.push(new Invoice({
+//                         invoiceId: qbInvoice.DocNumber,
+//                         invoiceType: 0,
+//                         issuedDate: qbInvoice.TxnDate,
+//                         dueDate: qbInvoice.DueDate,
+//                         customer: customer._id,
+//                         company: company._id,
+//                         note: qbInvoice.Notes,
+//                         charges: 0,
+//                         shippingCost: 0,
+//                         taxAmount: qbInvoice.TaxTaxDetail?.TotalTax,
+//                         subTotal,
+//                         total: qbInvoice.TotalAmt,
+//                         createdBy: user._id,
+//                         createdAt: qbInvoice.Metadata?.CreateTime,
+//                         items: invItems,
+//                         emailHistory: [],
+//                         lastEmailSent: null,
+//                         quickbookId: qbInvoice.Id,
+//                     }))
+//                 }
+//             }
+
+//             if (invToCreate.length > 0) {
+//                 const invoicesCreated = await Invoice.create(invToCreate);
+
+//                 for (const invoice of invoicesCreated) {
+//                     createdInvoices.push({ _id: invoice._id, invoiceId: invoice.invoiceId });
+//                 };
+
+//                 company.qbSync.invoicesSynced = true;
+//                 company.qbSync.invoicesSyncedAt = new Date();
+//                 company.save();
+//             }
+
+//             return res.json({ status: Status.Success, message: 'Invoice synced successfully.', createdInvoices, updatedInvoices });
+//         })
+//     })
+
+// }

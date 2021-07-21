@@ -9375,7 +9375,7 @@
         "tags": [
           "Quickbooks Integration"
         ],
-        "summary": "[IN PROGRESS] Manually syncing ALL invoices",
+        "summary": "Manually syncing ALL invoices",
         "description": "Manually syncing ALL invoices **from BlueClerk to QuickBooks only**",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -10261,6 +10261,10 @@
         "vendorId": {
           "type": "string",
           "description": "VendorId"
+        },
+        "quickbookId": {
+          "type": "string",
+          "description": "ID of associated customer in QuickBooks"
         }
       }
     },
@@ -10406,6 +10410,10 @@
         "company": {
           "type": "string",
           "description": "Id of the company who created it."
+        },
+        "quickbookId": {
+          "type": "string",
+          "description": "ID of associated product in QuickBooks"
         }
       }
     },
@@ -10510,6 +10518,10 @@
           "type": "number",
           "description": "Hourly job rate the is going to be the charged in invoice"
         },
+        "quickbookId": {
+          "type": "string",
+          "description": "ID of associated invoice in QuickBooks"
+        },
         "createdBy": {
           "type": "string",
           "description": "Id of employee of company who has created this invoice"
@@ -10561,6 +10573,10 @@
           "type": "string",
           "format": "date-time",
           "description": "Date time when the invoice was created"
+        },
+        "quickbookId": {
+          "type": "string",
+          "description": "ID of associated invoice in QuickBooks"
         },
         "customer": {
           "type": "object",

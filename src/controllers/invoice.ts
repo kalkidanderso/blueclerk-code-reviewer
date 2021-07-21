@@ -383,6 +383,11 @@ export const createInvoice = (req: Request, res: Response) => {
                         return res.json({ status: err, message: errMsg })
                     }
 
+                    if (qbInvoice) {
+                        invoice.quickbookId = qbInvoice.Id;
+                        invoice.save();
+                    }
+
                     return res.json({
                         status: Status.Success,
                         message: 'Job invoice created successfully.',
@@ -471,6 +476,11 @@ export const createInvoice = (req: Request, res: Response) => {
                 _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                     if (err) {
                         return res.json({ status: err, message: errMsg })
+                    }
+
+                    if (qbInvoice) {
+                        invoice.quickbookId = qbInvoice.Id;
+                        invoice.save();
                     }
 
                     return res.json({
@@ -624,6 +634,11 @@ export const createInvoice = (req: Request, res: Response) => {
                         return res.json({ status: err, message: errMsg })
                     }
 
+                    if (qbInvoice) {
+                        invoice.quickbookId = qbInvoice.Id;
+                        invoice.save();
+                    }
+
                     return res.json({
                         status: Status.Success,
                         message: 'Estimate invoice created successfully.',
@@ -731,6 +746,11 @@ export const createInvoice = (req: Request, res: Response) => {
                                         _createQBInvoice(req, res, company, newInvoice, (err, errMsg, qbInvoice) => {
                                             if (err) {
                                                 return res.json({ status: err, message: errMsg })
+                                            }
+
+                                            if (qbInvoice) {
+                                                newInvoice.quickbookId = qbInvoice.Id;
+                                                newInvoice.save();
                                             }
 
                                             return res.json({
