@@ -95,7 +95,7 @@ export const getQBUri = (req: Request, res: Response) => {
         clientId: qbConfig.qb_client_id,
         clientSecret: qbConfig.qb_client_secret,
         environment: qbConfig.qb_environment,
-        redirectUri: qbConfig.qb_redirect_uri,
+        redirectUri: params.redirectUri || qbConfig.qb_redirect_uri,
     });
 
     var authUri = oauthClient.authorizeUri({
@@ -125,11 +125,13 @@ export const getQBUri = (req: Request, res: Response) => {
 
 export const getCallBackToken = (req: Request, res: Response, sio: any) => {
 
+    const query = req.query;
+
     var oauthClient = new OAuthClient({
         clientId: qbConfig.qb_client_id,
         clientSecret: qbConfig.qb_client_secret,
         environment: qbConfig.qb_environment,
-        redirectUri: qbConfig.qb_redirect_uri,
+        redirectUri: query.redirectUri || qbConfig.qb_redirect_uri,
     });
     
     oauthClient
@@ -167,12 +169,12 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
                 // sio.emit("authToken", oauth2_token_json);
 
                 sio.emit(company.socketId, {'status': Status.Success, 'message': 'Quickbooks Connected Successfully'});
-                return res.json({'status': 200})
+                return res.json({ 'status': Status.Success, 'message': 'Quickbooks Connected Successfully' });
             })
         })
     })
     .catch(function (err: any) {
-        return res.json({'status': Status.Error, 'message': err.message ? err.message : Messages.GenericError});
+        return res.json({'status': Status.Error, 'message': err.error_description || err.originalMessage || err.message || Messages.GenericError});
     });
 }
 
