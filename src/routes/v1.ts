@@ -1030,14 +1030,15 @@ export default function (sio: any) {
 
 
     // Quickbooks
-    router.post(
-        '/getQBCustomers',
-        passport.authenticate('jwt', { session: false }),
-        getCompanyId(),
-        checkUserPermissions(Permissions.Get_QB_Customers),
-        // validate(Validations.getQBCustomers),
-        quickBookController.getQBCustomers
-    )
+    // TODO: To be deprecated
+    // router.post(
+    //     '/getQBCustomers',
+    //     passport.authenticate('jwt', { session: false }),
+    //     getCompanyId(),
+    //     checkUserPermissions(Permissions.Get_QB_Customers),
+    //     // validate(Validations.getQBCustomers),
+    //     quickBookController.getQBCustomers
+    // )
 
     router.post(
         '/syncQBCustomers',

@@ -5342,29 +5342,12 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
           - Bearer: []
-  /getQBCustomers:
-    post:
-      tags:
-        - Quickbooks Integration
-      summary: Get quickbooks customers for the first time
-      description: ''
-      consumes:
-        - application/x-www-form-urlencoded
-      produces:
-        - application/json
-      responses:
-        '200':
-          description: Success
-          schema:
-            $ref: '#/definitions/GeneralAPIResponse'
-      security:
-        - Bearer: []
   /syncQBCustomers:
     post:
       tags:
         - Quickbooks Integration
-      summary: Manually syncing quickbooks customers
-      description: ''
+      summary: Manually syncing ALL customers
+      description: 'Manually syncing ALL customers from BlueClerk to QuickBooks and vice versa'
       consumes:
         - application/x-www-form-urlencoded
       produces:
@@ -5380,8 +5363,8 @@ paths:
     post:
       tags:
         - Quickbooks Integration
-      summary: Creating customer in quickbooks
-      description: 'Create customer in QuickBooks and associate it with BlueClerk customer'
+      summary: Manual syncing SINGLE customer
+      description: 'Manually syncing SINGLE customer from BlueClerk to QuickBooks and associate it with BlueClerk customer'
       consumes:
         - application/x-www-form-urlencoded
       produces:
@@ -5431,12 +5414,52 @@ paths:
     post:
       tags:
         - Quickbooks Integration
-      summary: Manually syncing Quickbook items
-      description: ''
+      summary: Manually syncing ALL items
+      description: 'Manually syncing ALL items from BlueClerk to QuickBooks and vice versa'
       consumes:
         - application/x-www-form-urlencoded
       produces:
         - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /syncQBInvoices:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Manually syncing ALL invoices
+      description: 'Manually syncing ALL invoices **from BlueClerk to QuickBooks only**'
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /createQBInvoice:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Manually syncing SINGLE invoice
+      description: 'Manually syncing SINGLE invoice from BlueClerk to QuickBooks and associate it with BlueClerk invoice'
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: invoiceId
+          in: formData
+          required: true
+          type: string
+          description: Id of an invoice to be associated
       responses:
         '200':
           description: Success
@@ -5749,6 +5772,12 @@ definitions:
       balance:
         type: number
         description: how much customer owe to the company
+      vendorId:
+        type: string
+        description: VendorId
+      quickbookId:
+        type: string
+        description: ID of associated customer in QuickBooks
   CustomerEquipment:
     type: object
     properties:
@@ -5846,6 +5875,9 @@ definitions:
         type: string
         description: >-
           Id of the company who created it.
+      quickbookId:
+        type: string
+        description: ID of associated product in QuickBooks
   JobCharges:
     type: object
     properties:
@@ -5920,6 +5952,9 @@ definitions:
       hourlyRate: 
         type: number
         description: Hourly job rate the is going to be the charged in invoice
+      quickbookId:
+        type: string
+        description: ID of associated invoice in QuickBooks
       createdBy:
         type: string
         description: Id of employee of company who has created this invoice
@@ -5959,6 +5994,9 @@ definitions:
         type: string
         format: date-time
         description: Date time when the invoice was created
+      quickbookId:
+        type: string
+        description: ID of associated invoice in QuickBooks
       customer:
         type: object
         properties:
