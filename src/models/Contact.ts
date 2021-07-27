@@ -12,8 +12,8 @@ const ContactSchema = new Schema({
     },
     email: {
         type: String,
-        unique: true,
-        index: true
+        // unique: true,
+        // index: true,
     }
 })
 
