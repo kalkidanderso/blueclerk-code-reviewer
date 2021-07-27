@@ -2,9 +2,12 @@ import {Request, Response} from 'express'
 import { Status, Messages, Role} from '../common/constants'
 import { qbConfig } from '../common/config'
 
+import { IContact } from '../common/contact';
+import { Contact } from '../models/Contact';
 import { IUser } from '../models/User';
 import { ICompany, IQBCompany, Company } from '../models/Company'
 import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
+import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { IJobType, JobType } from '../models/JobType'
 import { IItem, IQBItem, QBItemTypes, Item } from '../models/Item';
@@ -476,15 +479,16 @@ export const _createQBCustomer = async (req: Request, res: Response, company: IC
             GivenName: customer?.profile?.firstName,
             FamilyName: customer?.profile?.lastName,
             CompanyName: company?.info?.companyName,
+            Job: false,
             PrimaryPhone: {
-                FreeFormNumber: customer?.contact.phone
+                FreeFormNumber: customer?.contact?.phone
             },
             BillAddr: {
                 Line1: customer?.address?.street,
                 Line2: customer?.address?.unit,
                 City: customer?.address?.city,
                 CountrySubDivisionCode: customer?.address?.state,
-                PostalCode: customer?.address.zipCode,
+                PostalCode: customer?.address?.zipCode,
                 Long: customer?.location?.coordinates[0]?.toString(),
                 Lat: customer?.location?.coordinates[1]?.toString(),
             }
@@ -501,6 +505,122 @@ export const _createQBCustomer = async (req: Request, res: Response, company: IC
                         || Messages.GenericError,
                     null
                 );
+            }
+
+            return next(null, null, qbCustomer);
+        })
+    })
+
+}
+
+/**
+ * Generic function to process Customer's Job Locations,
+ * will check if it is existed on QuickBooks or not
+ */
+const _processJobLocations = async (req: Request, res: Response, company: ICompany, qbCustomers: IQBCustomer[], customer: ICustomer) => {
+    /**
+     * Iterate all job locations of the customer,
+     * check, then create on QB it not existed
+     */
+    for (const custJobLoc of customer.jobLocations) {
+        const jobLocation = <IJobLocation>custJobLoc;
+
+        // Check if job location has quickbook Id, then check if it exists or not
+        if (!jobLocation.quickbookId) {
+
+            // Find if job exist on QB
+            const qbCustomerJob = qbCustomers.find(qbCustomer => !qbCustomer.Job && qbCustomer.DisplayName === jobLocation.name);
+
+            if (!qbCustomerJob) {
+                _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, async (err, errMsg, qbCustomerJob) => {
+                    if (qbCustomerJob) {
+                        jobLocation.quickbookId = qbCustomerJob.Id;
+                        await jobLocation.save();
+                    }
+                })
+            } else {
+                // QB Cust Job exist, associated to that Job
+                jobLocation.quickbookId = qbCustomerJob.Id;
+                await jobLocation.save();
+            }
+
+        }
+    }
+}
+
+/**
+ * Generic function to create QuickBooks Customer Job,
+ * this used by Job Location Controller when creating new job location,
+ * and this contoller when syncing customer job
+ */
+export const _createQBCustomerJob = async (req: Request, res: Response, company: ICompany, jobLocation: IJobLocation, parentQBCustomerId: string, next: (error: number, errorMessage: string, qbCustomerJob: any) => void) => {
+
+    // Populate the job location to have customer object
+    await jobLocation
+        .populate({ path: 'customerId' })
+        .populate({ path: 'contacts '})
+        .execPopulate();
+
+    // Customer of the job location
+    const customer = <ICustomer>jobLocation.customerId;
+    const contact = <IContact>jobLocation.contacts[0];
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            // TODO: remove company name and email as well
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        // Construct QB Customer Entry
+        const qbCustomerEntry: IQBCustomer = {
+            PrimaryEmailAddr: {
+                Address: customer?.info?.email
+            },
+            DisplayName: jobLocation.name,
+            GivenName: contact?.name?.split(/[ ,]+/)[0] || customer?.profile?.firstName,
+            FamilyName: contact?.name?.split(/[ ,]+/)[1] || customer?.profile?.lastName,
+            CompanyName: company?.info?.companyName,
+            Job: true,
+            ParentRef: { value: parentQBCustomerId },
+            PrimaryPhone: {
+                FreeFormNumber: customer?.contact?.phone
+            },
+            BillAddr: {
+                Line1: jobLocation?.address?.street,
+                // Line2: jobLocation?.address?.unit,
+                City: jobLocation?.address?.city,
+                CountrySubDivisionCode: jobLocation?.address?.state,
+                PostalCode: jobLocation?.address?.zipcode,
+                Long: jobLocation?.location?.coordinates[0]?.toString(),
+                Lat: jobLocation?.location?.coordinates[1]?.toString(),
+            }
+        }
+
+        // Create QB Customer
+        qbo.createCustomer(qbCustomerEntry, async (err: any, qbCustomer: IQBCustomer) => {
+            if (err) {
+                return next(
+                    Status.Error,
+                    err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError,
+                    null
+                )
             }
 
             return next(null, null, qbCustomer);
@@ -564,14 +684,14 @@ export const createQBCustomer = async (req: Request, res: Response) => {
             FamilyName: customer.profile?.lastName,
             CompanyName: company.info?.companyName,
             PrimaryPhone: {
-                FreeFormNumber: params.phone || customer.contact.phone
+                FreeFormNumber: params.phone || customer.contact?.phone
             },
             BillAddr: {
                 Line1: params.street || customer.address?.street,
                 Line2: customer.address?.unit,
                 City: params.city || customer.address?.city,
                 CountrySubDivisionCode: params.state || customer.address?.state,
-                PostalCode: params.zipCode || customer.address.zipCode,
+                PostalCode: params.zipCode || customer.address?.zipCode,
                 Long: customer.location?.coordinates[0]?.toString(),
                 Lat: customer.location?.coordinates[1]?.toString(),
             }
@@ -638,6 +758,27 @@ export const createQBCustomer = async (req: Request, res: Response) => {
                                     customer.quickbookId = qbCustomer.Id;
                                     await customer.save();
 
+                                    // Populate job locations of customer
+                                    await customer.populate({ path: 'jobLocations' }).execPopulate();
+
+                                    /**
+                                     * Iterate all job locations of the customer,
+                                     * check, then create on QB it not existed
+                                     */
+                                    for (const custJobLoc of customer.jobLocations) {
+                                        const jobLocation = <IJobLocation>custJobLoc;
+
+                                        // Check if job location doesn't have associated quickbookId
+                                        if (!jobLocation.quickbookId) {
+                                            _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, (err, errMsg, qbCustomerJob) => {
+                                                if (qbCustomerJob) {
+                                                    jobLocation.quickbookId = qbCustomerJob.Id;
+                                                    jobLocation.save();
+                                                }
+                                            })
+                                        }
+                                    }
+
                                     return res.json({ status: Status.Success, message: 'QB Customer created successfully.', updatedCustomer: customer, quickbookCustomer: qbCustomer });
                                 }
                             })
@@ -661,6 +802,27 @@ export const createQBCustomer = async (req: Request, res: Response) => {
                 customer.quickbookId = qbCustomer.Id;
                 await customer.save();
 
+                // Populate job locations of customer
+                await customer.populate({ path: 'jobLocations' }).execPopulate();
+
+                /**
+                 * Iterate all job locations of the customer,
+                 * check, then create on QB it not existed
+                 */
+                for (const custJobLoc of customer.jobLocations) {
+                    const jobLocation = <IJobLocation>custJobLoc;
+
+                    // Check if job location doesn't have associated quickbookId
+                    if (!jobLocation.quickbookId) {
+                        _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, (err, errMsg, qbCustomerJob) => {
+                            if (qbCustomerJob) {
+                                jobLocation.quickbookId = qbCustomerJob.Id;
+                                jobLocation.save();
+                            }
+                        })
+                    }
+                }
+
                 return res.json({ status: Status.Success, message: 'QB Customer created successfully.', updatedCustomer: customer, quickbookCustomer: qbCustomer });
             }
         })
@@ -675,6 +837,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
     const updatedCustomers: { _id: string, name: string }[] = [];
     let custsToCreate: ICustomer[] = [];
     let compCustsToCreate: ICompanyCustomer[] = [];
+    let jobLocationToCreate: IJobLocation[] = [];
 
     // Always refresh the token first because token valid only for 60 minutes
     _refreshToken(req, res, req.company, async (err, errMsg, company) => {
@@ -694,7 +857,8 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
         // Initiate node-quickbooks object with the refreshed company token
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
-        const customers = await Customer.find({ company: company._id });
+        // Find customers from DB and populate its jobLocations
+        const customers = await Customer.find({ company: company._id }).populate({ path: 'jobLocations' });
 
         qbo.findCustomers({}, async (err: any, data: any) => {
             if (err) {
@@ -711,25 +875,36 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
 
             // Iterate all customers from DB
             for (const customer of customers) {
-                const exist = qbCustomers?.find((qbCustomer: IQBCustomer) => qbCustomer.PrimaryEmailAddr?.Address === customer.info?.email);
+                const qbCustomer = qbCustomers?.find((qbCustomer: IQBCustomer) => qbCustomer.PrimaryEmailAddr?.Address?.toLowerCase() === customer.info?.email?.toLowerCase());
 
                 // Customer not exist on QB, create it
-                if (!exist) {
-                    _createQBCustomer(req, res, company, customer, (err, errMsg, qbCustomer) => {
+                if (!qbCustomer) {
+                    _createQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
                         if (qbCustomer) {
                             // QB Customer created, update DB Customer's quickbookId
                             customer.quickbookId = qbCustomer.Id;
-                            customer.save()
+                            await customer.save();
+
+                            _processJobLocations(req, res, company, qbCustomers, customer);
                         }
                     })
+                } else {
+                    customer.quickbookId = qbCustomer.Id;
+                    await customer.save();
+
+                    _processJobLocations(req, res, company, qbCustomers, customer);
                 }
             }
 
-            // Iterate all QuickBooks customers
-            for (const qbCustomer of qbCustomers) {
+            // Split and filter QuickBooks' only customers for this phase
+            const qbCustomersOnly = qbCustomers.filter(qbCustomer => !qbCustomer.Job);
+
+            // Iterate all QuickBooks customers only
+            for (const qbCustomer of qbCustomersOnly) {
+
                 // Check if there any customer on QB that not on DB yet
-                let customer = customers.find(customer => {
-                    if (customer.info?.email?.toLowerCase() === qbCustomer.PrimaryEmailAddr?.Address?.toLocaleLowerCase() || customer.quickbookId === qbCustomer.Id) {
+                const customer = customers.find(customer => {
+                    if (customer.info?.email?.toLowerCase() === qbCustomer.PrimaryEmailAddr?.Address?.toLowerCase() || customer.quickbookId === qbCustomer.Id) {
                         return customer;
                     }
                 });
@@ -738,7 +913,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                     // Customer found, check and update quickbookId
                     if (customer.quickbookId !== qbCustomer.Id) {
                         customer.quickbookId = qbCustomer.Id;
-                        customer.save();
+                        await customer.save();
 
                         updatedCustomers.push({ _id: customer._id, name: customer.profile?.displayName });
                     }
@@ -760,6 +935,13 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                             zipCode: qbCustomer.BillAddr?.PostalCode
                         },
                         contact: { phone: qbCustomer.PrimaryPhone?.FreeFormNumber, },
+                        contacts: [
+                            await new Contact({
+                                name: [qbCustomer.GivenName, qbCustomer.FamilyName].join(' ').trim() || qbCustomer.DisplayName,
+                                phone: qbCustomer.PrimaryPhone?.FreeFormNumber,
+                                email: qbCustomer.PrimaryEmailAddr?.Address
+                            }).save()
+                        ],
                         company: company._id,
                         permissions: { role: Role.CUSTOMER, extra: [] },
                         quickbookId: qbCustomer.Id,
@@ -770,15 +952,14 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                             coordinates: [Number(qbCustomer.BillAddr?.Long), Number(qbCustomer.BillAddr?.Lat)]
                         }
                     }
-                
+
                     custsToCreate.push(custEntry);
                 }
             }
 
             if (custsToCreate.length > 0) {
-                const customersCreated = await Customer.create(custsToCreate);
-
-                for (const customer of customersCreated) {
+                // Iterate customer to be create to create Company Customer entries
+                for (const customer of custsToCreate) {
                     createdCustomers.push({ _id: customer._id, name: customer.profile?.displayName });
                     compCustsToCreate.push(
                         new CompanyCustomer({
@@ -789,8 +970,73 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                     )
                 }
 
-                await CompanyCustomer.create(compCustsToCreate);
+                // Create all customers to DB at once
+                Customer.create(custsToCreate);
+                // Create all company customers to DB at once
+                CompanyCustomer.create(compCustsToCreate);
             }
+
+            // Split and filter QuickBooks' only jobs for this phase
+            const qbCustomerJobs = qbCustomers.filter(qbCustomer => qbCustomer.Job);
+
+            // Iterate all QuickBooks jobs only
+            for (const qbCustJob of qbCustomerJobs) {
+                // Find BC customer based on customer quickbookId as the parent customer of QB job
+                let parentCustomer = customers.find(customer => customer.quickbookId === qbCustJob.ParentRef?.value);
+
+                /**
+                 * No customer found, find on customer entries to be create,
+                 * as probably it is a new customer as well from QB
+                 */
+                if (!parentCustomer) {
+                    parentCustomer = custsToCreate.find(customer => customer.quickbookId === qbCustJob.ParentRef?.value);
+                }
+
+                // Find if job location already exist on the customer's job locations
+                const jobLocation = <IJobLocation>parentCustomer.jobLocations.find((jl: IJobLocation) => jl.name === qbCustJob.DisplayName);
+
+                // Job location not found, create a new one
+                if (!jobLocation) {
+                    const jobLocationEntry = new JobLocation({
+                        name: qbCustJob.DisplayName,
+                        address: {
+                            street: qbCustJob.BillAddr?.Line1,
+                            city: qbCustJob.BillAddr?.City,
+                            state: qbCustJob.BillAddr?.CountrySubDivisionCode,
+                            zipcode: qbCustJob.BillAddr?.PostalCode
+                        },
+                        contacts: [
+                            await new Contact({
+                                name: [qbCustJob.GivenName, qbCustJob.FamilyName].join(' ').trim() || qbCustJob.DisplayName,
+                                phone: qbCustJob.PrimaryPhone?.FreeFormNumber,
+                                email: qbCustJob.PrimaryEmailAddr?.Address
+                            }).save()
+                        ],
+                        customerId: parentCustomer._id,
+                        companyId: company._id,
+                        quickbookId: qbCustJob.Id
+                    });
+
+                    if (qbCustJob.BillAddr?.Lat && qbCustJob.BillAddr?.Long) {
+                        jobLocationEntry.location = {
+                            coordinates: [
+                                qbCustJob.BillAddr?.Long,
+                                qbCustJob.BillAddr?.Lat
+                            ]
+                        }
+                    }
+
+                    jobLocationToCreate.push(jobLocationEntry);
+                    parentCustomer.jobLocations.push(jobLocationEntry);
+                    await parentCustomer.save();
+                } else {
+                    jobLocation.quickbookId = qbCustJob.Id;
+                    await jobLocation.save();
+                }
+            }
+
+            // Create all job locations to DB at once
+            JobLocation.create(jobLocationToCreate);
 
             company.qbSync.customersSynced = true;
             company.qbSync.customersSyncedAt = new Date();
@@ -1298,14 +1544,11 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
         return res.json({ status: Status.Success, message: 'No invoices to be synced.' });
     }
 
-    console.log('== invoices:', invoices);
-
     // Iterate all invoices from DB
     for (const invoice of invoices) {
         // Invoice not exist on QB, create it
         _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
             if (qbInvoice) {
-                console.log('== qbInvoice:', qbInvoice);
                 invoice.quickbookId = qbInvoice.Id;
                 invoice.save();
             }

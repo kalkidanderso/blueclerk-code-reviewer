@@ -5,6 +5,7 @@ import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { ICompany } from '../models/Company'
 import { Customer } from '../models/Customer'
 import { Contact } from '../models/Contact'
+import { _createQBCustomerJob } from './quickbook';
 
 export const get = (req: Request, res: Response) => {
     const { id } = req.params
@@ -37,6 +38,7 @@ export const get = (req: Request, res: Response) => {
 export const create = async (req: Request, res: Response) => {
     const params = req.body
     let companyId = req.companyId
+    const company = req.company
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
@@ -84,10 +86,25 @@ export const create = async (req: Request, res: Response) => {
         jobLocationData.location = {coordinates: [locationLong, locationLat]};
     }
     JobLocation.create(jobLocationData).then(async (jobLocation: IJobLocation) => {
-        await Customer.findByIdAndUpdate(customerId, {
-            $push: {jobLocations: jobLocation._id}
-        }).exec();
-        return res.json({'status': Status.Success, 'message': "Job Location created successfully!"});
+        const customer = await Customer.findById(customerId);
+        customer.jobLocations.push(jobLocation._id);
+        await customer.save();
+
+        // Create QB Customer Job
+        _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, (err, errMsg, qbCustomerJob) => {
+            if (err) {
+                return res.json({ status: err, message: errMsg });
+            }
+
+            if (qbCustomerJob) {
+                // Create new Customer in QuickBooks
+                jobLocation.quickbookId = qbCustomerJob.Id;
+                jobLocation.save();
+            }
+
+            return res.json({ status: Status.Success, message: 'Job Location created successfully.', jobLocation, quickbookCustomerJob: qbCustomerJob });
+        });
+
     }).catch((err) => {
         return res.json({'status': Status.Error, 'message': err.message});
     })

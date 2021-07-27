@@ -2451,7 +2451,12 @@
               "$ref": "#/definitions/ContactSchemaResponse"
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
       }
     },
     "/getContacts": {
@@ -2479,7 +2484,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
       }
     },
     "/updateContact": {
@@ -2518,7 +2528,12 @@
               "$ref": "#/definations/ContactSchemaResponse"
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
       }
     },
     "removeContact": {
@@ -2562,7 +2577,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
       }
     },
     "/createCustomer": {
