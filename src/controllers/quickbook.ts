@@ -80,7 +80,7 @@ const _refreshToken = (req: Request, res: Response, company: ICompany, next: (er
         })
     })
     .catch(function (err: any) {
-        return next(err.authResponse.response.status, 'Unable to refersh the token', null);
+        return next(err.authResponse?.response?.status || Status.Error, 'Unable to refersh the token', null);
     });
 }
 
@@ -478,7 +478,7 @@ export const _createQBCustomer = async (req: Request, res: Response, company: IC
             DisplayName: customer?.profile?.displayName,
             GivenName: customer?.profile?.firstName,
             FamilyName: customer?.profile?.lastName,
-            CompanyName: company?.info?.companyName,
+            CompanyName: customer?.profile?.displayName,
             Job: false,
             PrimaryPhone: {
                 FreeFormNumber: customer?.contact?.phone
@@ -572,7 +572,6 @@ export const _createQBCustomerJob = async (req: Request, res: Response, company:
         }
 
         if (err === 400) {
-            // TODO: remove company name and email as well
             await Company.findByIdAndUpdate(req.company._id, {
                 qbAuthorized: false,
                 qbAccessToken: undefined,
@@ -593,7 +592,7 @@ export const _createQBCustomerJob = async (req: Request, res: Response, company:
             DisplayName: jobLocation.name,
             GivenName: contact?.name?.split(/[ ,]+/)[0] || customer?.profile?.firstName,
             FamilyName: contact?.name?.split(/[ ,]+/)[1] || customer?.profile?.lastName,
-            CompanyName: company?.info?.companyName,
+            CompanyName: customer?.profile?.displayName,
             Job: true,
             ParentRef: { value: parentQBCustomerId },
             PrimaryPhone: {
@@ -882,15 +881,13 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                     _createQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
                         if (qbCustomer) {
                             // QB Customer created, update DB Customer's quickbookId
-                            customer.quickbookId = qbCustomer.Id;
-                            await customer.save();
+                            Customer.findByIdAndUpdate(customer._id, { quickbookId: qbCustomer.Id }).exec();
 
                             _processJobLocations(req, res, company, qbCustomers, customer);
                         }
                     })
                 } else {
-                    customer.quickbookId = qbCustomer.Id;
-                    await customer.save();
+                    Customer.findByIdAndUpdate(customer._id, { quickbookId: qbCustomer.Id }).exec();
 
                     _processJobLocations(req, res, company, qbCustomers, customer);
                 }
@@ -912,8 +909,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                 if (customer) {
                     // Customer found, check and update quickbookId
                     if (customer.quickbookId !== qbCustomer.Id) {
-                        customer.quickbookId = qbCustomer.Id;
-                        await customer.save();
+                        Customer.findByIdAndUpdate(customer._id, { quickbookId: qbCustomer.Id }).exec();
 
                         updatedCustomers.push({ _id: customer._id, name: customer.profile?.displayName });
                     }
@@ -993,7 +989,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                 }
 
                 // Find if job location already exist on the customer's job locations
-                const jobLocation = <IJobLocation>parentCustomer.jobLocations.find((jl: IJobLocation) => jl.name === qbCustJob.DisplayName);
+                const jobLocation = <IJobLocation>parentCustomer.jobLocations?.find((jl: IJobLocation) => jl.quickbookId === qbCustJob.Id);
 
                 // Job location not found, create a new one
                 if (!jobLocation) {
@@ -1027,11 +1023,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                     }
 
                     jobLocationToCreate.push(jobLocationEntry);
-                    parentCustomer.jobLocations.push(jobLocationEntry);
-                    await parentCustomer.save();
-                } else {
-                    jobLocation.quickbookId = qbCustJob.Id;
-                    await jobLocation.save();
+                    Customer.findByIdAndUpdate(parentCustomer._id, { $push: { jobLocations: jobLocationEntry._id } }).exec();
                 }
             }
 
