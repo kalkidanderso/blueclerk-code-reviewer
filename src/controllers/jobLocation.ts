@@ -77,9 +77,8 @@ export const create = async (req: Request, res: Response) => {
             phone: contactPhone,
             email: contactEmail
         });
-        contact.save().then((c) => {
-            jobLocationData.contacts.push(c._id);
-        });
+        await contact.save();
+        jobLocationData.contacts.push(contact._id);
     }
 
     if (locationLong && locationLat) {
@@ -90,20 +89,24 @@ export const create = async (req: Request, res: Response) => {
         customer.jobLocations.push(jobLocation._id);
         await customer.save();
 
-        // Create QB Customer Job
-        _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, (err, errMsg, qbCustomerJob) => {
-            if (err) {
-                return res.json({ status: err, message: errMsg });
-            }
+        if (company.qbAuthorized) {
+            // Create QB Customer Job
+            _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, (err, errMsg, qbCustomerJob) => {
+                if (err) {
+                    return res.json({ status: err, message: errMsg });
+                }
 
-            if (qbCustomerJob) {
-                // Create new Customer in QuickBooks
-                jobLocation.quickbookId = qbCustomerJob.Id;
-                jobLocation.save();
-            }
+                if (qbCustomerJob) {
+                    // Create new Customer in QuickBooks
+                    jobLocation.quickbookId = qbCustomerJob.Id;
+                    jobLocation.save();
+                }
 
-            return res.json({ status: Status.Success, message: 'Job Location created successfully.', jobLocation, quickbookCustomerJob: qbCustomerJob });
-        });
+                return res.json({ status: Status.Success, message: 'Job Location created successfully.', jobLocation, quickbookCustomerJob: qbCustomerJob });
+            });
+        } else {
+            return res.json({ status: Status.Success, message: 'Job Location created successfully.', jobLocation });
+        }
 
     }).catch((err) => {
         return res.json({'status': Status.Error, 'message': err.message});

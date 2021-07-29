@@ -11,6 +11,8 @@ import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { IJobType, JobType } from '../models/JobType'
 import { IItem, IQBItem, QBItemTypes, Item } from '../models/Item';
+import { IServiceTicket } from '../models/ServiceTicket';
+import { IJob } from '../models/Job';
 import { IInvoice, IQBInvoice, IQBInvoiceLine, LineDetailTypes, Invoice } from '../models/Invoice'
 
 var QuickBooks = require('node-quickbooks')
@@ -491,6 +493,15 @@ export const _createQBCustomer = async (req: Request, res: Response, company: IC
                 PostalCode: customer?.address?.zipCode,
                 Long: customer?.location?.coordinates[0]?.toString(),
                 Lat: customer?.location?.coordinates[1]?.toString(),
+            },
+            ShipAddr: {
+                Line1: customer?.address?.street,
+                Line2: customer?.address?.unit,
+                City: customer?.address?.city,
+                CountrySubDivisionCode: customer?.address?.state,
+                PostalCode: customer?.address?.zipCode,
+                Long: customer?.location?.coordinates[0]?.toString(),
+                Lat: customer?.location?.coordinates[1]?.toString(),
             }
         }
 
@@ -599,8 +610,16 @@ export const _createQBCustomerJob = async (req: Request, res: Response, company:
                 FreeFormNumber: customer?.contact?.phone
             },
             BillAddr: {
+                Line1: customer?.address?.street,
+                Line2: customer?.address?.unit,
+                City: customer?.address?.city,
+                CountrySubDivisionCode: customer?.address?.state,
+                PostalCode: customer?.address?.zipCode,
+                Long: customer?.location?.coordinates[0]?.toString(),
+                Lat: customer?.location?.coordinates[1]?.toString(),
+            },
+            ShipAddr: {
                 Line1: jobLocation?.address?.street,
-                // Line2: jobLocation?.address?.unit,
                 City: jobLocation?.address?.city,
                 CountrySubDivisionCode: jobLocation?.address?.state,
                 PostalCode: jobLocation?.address?.zipcode,
@@ -1016,8 +1035,8 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                     if (qbCustJob.BillAddr?.Lat && qbCustJob.BillAddr?.Long) {
                         jobLocationEntry.location = {
                             coordinates: [
-                                qbCustJob.BillAddr?.Long,
-                                qbCustJob.BillAddr?.Lat
+                                Number(qbCustJob.BillAddr?.Long),
+                                Number(qbCustJob.BillAddr?.Lat)
                             ]
                         }
                     }
@@ -1039,143 +1058,6 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
     })
 
 }
-
-// TODO: To be removed
-// export const syncQBCustomers = (req: Request, res: Response) => {
-//     var companyId = req.companyId;
-//     if(req.otherCompanyId != undefined) {
-//         companyId = req.otherCompanyId
-//     }
-
-//     Company.findById(companyId, (err: any, company: ICompany) => {
-//         if(err) {
-//             return res.json({'status': Status.Error, 'message': 'No company found.' })
-//         }
-
-//         if(!company.qbAuthorized) {
-//             return res.json({'status': Status.QBUnauthorized, 'message': Messages.QBUnAuthorized })
-//         }
-
-//         if(company.qbAccessToken == undefined || company.qbAccessToken == null || company.qbRefreshToken == undefined || company.qbRefreshToken == null || company.realmId == undefined || company.realmId == null) {
-//             return res.json({'status': Status.QBUnauthorized, 'message': Messages.QBUnAuthorized })
-//         }
-
-//         Customer.find({'company': company._id, 'quickbookId': { $ne: null }}, 'quickbookId', (err: any, companyCustomers: ICustomer[]) => {
-//             if(err) {
-//                 return res.json({'status': Status.Error, 'message': Messages.GenericError })
-//             }
-
-//             var companyCustomerIds: any = []
-
-//             if(companyCustomers.length > 0) {
-//                 companyCustomers.map((cust: any) =>{
-//                     companyCustomerIds.push(cust.quickbookId)
-//                 })
-//             }
-
-//             _getCustomers(req, res, company, (req: Request, res: Response, error: number, errorMessage: string, customers: any) =>{
-                
-//                 if(error == 0) {
-//                     return res.json({'status': Status.Error, 'message': errorMessage})
-//                 }
-
-//                 if(error == 400){
-//                     company.updateOne({
-//                         qbAuthorized: false,
-//                         qbAccessToken: undefined,
-//                         qbRefreshToken: undefined,
-//                     },
-//                     (err: any, raw: any) => {
-//                         if(err) {
-//                             return res.json({'status': Status.Error, 'message': Messages.GenericError })
-//                         }
-
-//                         return res.json({'status': Status.QBUnauthorized, 'message': "Quickbooks Authorization failed."})
-//                     })
-//                 }
-
-//                 if(customers.hasOwnProperty("QueryResponse")) {
-//                     var importedCustomers = customers.QueryResponse.Customer
-
-//                     var newCustomers: any = []
-//                     for (let index = 0; index < importedCustomers.length; index++) {
-//                         const element = importedCustomers[index];
-
-//                         if(companyCustomerIds.length == 0 || !companyCustomerIds.includes(element.Id)) {
-
-//                             newCustomers.push(new Customer({
-//                                 info: {
-//                                     email: get(element, 'PrimaryEmailAddr.Address'),
-//                                 },
-//                                 profile:{
-//                                     firstName: get(element, 'DisplayName'),
-//                                     lastName: get(element, 'DisplayName'),
-//                                     displayName: get(element, 'DisplayName'),
-//                                     imageUrl: '',
-//                                 },
-//                                 address: {
-//                                     street: get(element, 'BillAddr.Line1'),
-//                                     city: get(element, 'BillAddr.City'),
-//                                     state: get(element, 'BillAddr.CountrySubDivisionCode'),
-//                                     zipCode: get(element, 'BillAddr.PostalCode'),
-//                                 },
-//                                 contact: {
-//                                     phone: get(element ,'PrimaryPhone.FreeFormNumber'),
-//                                 },
-//                                 company: req.companyId,
-//                                 permissions: {
-//                                     role: Role.CUSTOMER,
-//                                     extra: [],
-//                                 },
-//                                 quickbookId: element.Id
-//                             }))
-//                         }
-//                     }
-
-//                     if(newCustomers.length == 0) {
-//                         return res.json({'status': Status.Success, 'message': "Nothing to sync"})
-//                     }
-
-//                     Customer.collection.insertMany(newCustomers, function (err: any, insertedCustomers: any) {
-//                         if (err){ 
-//                             return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                        
-//                         } else {
-//                             var newCompanyCustomers: any = []
-//                             insertedCustomers.ops.map((cust: any) => {
-//                                 newCompanyCustomers.push(new CompanyCustomer({
-//                                     company: companyId,
-//                                     customer: cust._id,
-//                                     createdAt: Date.now()
-//                                 }))
-//                             })
-
-//                             CompanyCustomer.collection.insert(newCompanyCustomers, function (err: any, docs: any) {
-//                                 if (err){ 
-//                                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
-//                                 }
-                                
-//                                 company.updateOne({
-//                                     'customersSynced': true,
-//                                     'customersSyncedAt': Date.now(),
-//                                 },
-//                                 (err: any, raw: any) => {
-//                                     if(err) {
-//                                         return res.json({'status': Status.Error, 'message': Messages.GenericError })
-//                                     }
-//                                     return res.json({'status': Status.Success, 'message': "Customers synced successfully"})
-//                                 })
-//                             })
-
-//                         }
-//                     })
-//                 }
-//             })
-        
-//         })
-//     })
-
-// }
 
 // ================================
 // =======[ QUICKBOOK ITEM ]=======
@@ -1402,11 +1284,22 @@ export const syncQBItems = async (req: Request, res: Response) => {
     // Populate the invoice to have customer and item object
     await invoice
         .populate({ path: 'customer' })
+        .populate({
+            path: 'job',
+            populate: [{
+                path: 'ticket',
+                populate: [{ path: 'customerContactId' }]
+            }, { path: 'jobLocation' }]
+        })
         .populate({ path: 'items.item' })
         .execPopulate();
 
     // Customer of the invoice
-    const customer = <ICustomer>invoice.customer;
+     const customer = <ICustomer>invoice.customer;
+     const job = <IJob>invoice.job;
+     const serviceTicket = <IServiceTicket>job?.ticket;
+     const jobLocation = <IJobLocation>job?.jobLocation;
+     const customerContact = <IContact>serviceTicket?.customerContactId;
 
     // Always refresh the token first because token valid only for 60 minutes
     _refreshToken(req, res, company, async (err, errMsg, company) => {
@@ -1460,12 +1353,59 @@ export const syncQBItems = async (req: Request, res: Response) => {
             DueDate: invoice.dueDate?.toString() || invoice.createdAt?.toString(),
             Line: qbInvoiceLines,
             CustomerRef: {
-                value: customer.quickbookId
+                value: jobLocation?.quickbookId || customer.quickbookId
             },
-            BillEmail: {
-                Address: customer.info?.email
-            }
+            BillEmail: { Address: customer.info?.email },
+            BillAddr: {
+                Line1: customer?.address?.street,
+                Line2: customer?.address?.unit,
+                City: customer?.address?.city,
+                CountrySubDivisionCode: customer?.address?.state,
+                PostalCode: customer?.address?.zipCode,
+                Long: customer?.location?.coordinates[0]?.toString(),
+                Lat: customer?.location?.coordinates[1]?.toString(),
+            },
+            ShipAddr: {
+                Line1: customer?.address?.street,
+                Line2: customer?.address?.unit,
+                City: customer?.address?.city,
+                CountrySubDivisionCode: customer?.address?.state,
+                PostalCode: customer?.address?.zipCode,
+                Long: customer?.location?.coordinates[0]?.toString(),
+                Lat: customer?.location?.coordinates[1]?.toString(),
+            },
+            CustomField: [
+                {
+                    DefinitionId: '1',
+                    Name: 'Customer PO',
+                    Type: 'StringType',
+                    StringValue: serviceTicket?.customerPO
+                },
+                {
+                    DefinitionId: '2',
+                    Name: 'Vendor Number',
+                    Type: 'StringType',
+                    StringValue: customer.vendorId
+                }
+            ]
         };
+
+        if (jobLocation) {
+            qbInvoiceEntry.ShipAddr.Line1 = jobLocation.address?.street || null;
+            qbInvoiceEntry.ShipAddr.Line2 = null;
+            qbInvoiceEntry.ShipAddr.City = jobLocation.address?.city || null;
+            qbInvoiceEntry.ShipAddr.CountrySubDivisionCode = jobLocation.address?.state || null;
+            qbInvoiceEntry.ShipAddr.PostalCode = jobLocation.address?.zipcode || null;
+            qbInvoiceEntry.ShipAddr.Long = jobLocation.location?.coordinates[0]?.toString() || null;
+            qbInvoiceEntry.ShipAddr.Lat = jobLocation.location?.coordinates[1]?.toString() || null;
+        }
+
+        // Fill in Customer Contact associated if any
+        if (customerContact) {
+            qbInvoiceEntry.CustomerMemo = {
+                value: `ORDERED BY:\n${customerContact?.name}`
+            }
+        }
 
         // Create QB Invoice
         qbo.createInvoice(qbInvoiceEntry, async (err: any, qbInvoice: IQBInvoice) => {
