@@ -48,9 +48,9 @@ const Hubspot = require('hubspot')
 
 export const login = (req: Request, res: Response, sio: any) => {
     const params = req.body
-    User.findOne(
-        { 'auth.email': params.email },
-        (err: any, user: IUser) => {
+    User.findOne({ 'auth.email': params.email })
+        .populate({ path: 'company', select: 'info.companyName info.logoUrl info.companyEmail' })
+        .exec((err: any, user: IUser) => {
 
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
