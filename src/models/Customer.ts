@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose'
 import { User, IUser} from './User'
 import { IContact } from '../common/contact'
 import { IPriceTier } from './PriceTier'
+import { IJobLocation } from '../models/JobLocation'
 
 export interface ICustomer extends IUser {
 
@@ -12,7 +13,7 @@ export interface ICustomer extends IUser {
     contactName: string
     company: Schema.Types.ObjectId
     equipments: [Schema.Types.ObjectId]
-    jobLocations: [Schema.Types.ObjectId]
+    jobLocations: [Schema.Types.ObjectId | IJobLocation]
     quickbookId: string
     balance: number,
     itemTier: Schema.Types.ObjectId | IPriceTier
@@ -25,6 +26,42 @@ export interface ICustomer extends IUser {
     contacts: [Schema.Types.ObjectId],
     contactEmail: string
 
+}
+
+export interface IQBCustomer {
+
+    Id?: string
+    PrimaryEmailAddr: {
+        Address: string
+    }
+    DisplayName: string
+    GivenName?: string
+    FamilyName?: string
+    CompanyName?: string
+    BusinessNumber?: string
+    PrimaryPhone?: {
+        FreeFormNumber: string
+    }
+    Active?: boolean
+    Job?: boolean
+    ParentRef?: {
+        value: string
+    }
+    Level?: number
+    BillAddr?: IQBAddress
+    ShipAddr?: IQBAddress
+
+}
+
+export interface IQBAddress {
+    Line1?: string
+    Line2?: string
+    City?: string
+    CountrySubDivisionCode?: string
+    Country?: string
+    PostalCode?: string
+    Long?: string
+    Lat?: string
 }
 
 const CustomerSchema = new Schema({

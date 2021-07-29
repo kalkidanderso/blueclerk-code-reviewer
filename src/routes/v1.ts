@@ -1030,21 +1030,21 @@ export default function (sio: any) {
 
 
     // Quickbooks
-    router.post(
-        '/getQBCustomers',
-        passport.authenticate('jwt', { session: false }),
-        getCompanyId(),
-        checkUserPermissions(Permissions.Get_QB_Customers),
-        // validate(Validations.getQBCustomers),
-        quickBookController.getQBCustomers
-    )
+    // TODO: To be deprecated
+    // router.post(
+    //     '/getQBCustomers',
+    //     passport.authenticate('jwt', { session: false }),
+    //     getCompanyId(),
+    //     checkUserPermissions(Permissions.Get_QB_Customers),
+    //     // validate(Validations.getQBCustomers),
+    //     quickBookController.getQBCustomers
+    // )
 
     router.post(
         '/syncQBCustomers',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_QB_Customers),
-        // validate(Validations.getQBCustomers),
         quickBookController.syncQBCustomers
     )
 
@@ -1058,15 +1058,37 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/syncQBItems',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookController.syncQBItems
+    )
+
+    router.post(
+        '/createQBInvoice',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookController.createQBInvoice
+    )
+
+    router.post(
+        '/syncQBInvoices',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookController.syncQBInvoices
+    )
+
+    router.post(
         '/getQBUri',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_QB_Uri),
+        validate(Validations.getQBUri),
         quickBookController.getQBUri
     )
 
     router.get(
-        '/callback',
+        '/QBCallback',
         (req, res) => {
             quickBookController.getCallBackToken(req, res, sio)
         }

@@ -249,12 +249,17 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
     // Will use serviceTicket's jobTypes if no jobTypes on params
     let jobTypes = serviceTicket.tasks;
     let invalidJobTypes: string[];
-    try {
-        // Call JobType's function to handle Job Types JSON params
-        ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(customer, params.jobTypes, jobTypes));
-    } catch (error) {
-        return res.json({ status: Status.Error, message: error.message });
-    }
+    /**
+     * Kris' remark (July 30th, 2021):
+     * FE has error typo when sending the jobTypeId on payload,
+     * will revert this back when FE fix the issue
+     */
+    // try {
+    //     // Call JobType's function to handle Job Types JSON params
+    //     ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(customer, params.jobTypes, jobTypes));
+    // } catch (error) {
+    //     return res.json({ status: Status.Error, message: error.message });
+    // }
     //=== END HANDLE params jobTypes
 
     if (params.ticketId) {

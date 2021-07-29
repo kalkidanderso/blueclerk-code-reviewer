@@ -1,16 +1,19 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { ICustomer, IQBAddress } from '../models/Customer';
+import { IItem } from '../models/Item';
+import { IJob } from '../models/Job';
 
 export interface IInvoice extends Document {
     invoice: any[]
     invoiceId: string
     invoiceType: number
-    job: Schema.Types.ObjectId
+    job: Schema.Types.ObjectId | IJob
     purchaseOrder: Schema.Types.ObjectId
     estimate: Schema.Types.ObjectId
     jobPurchaseOrders: [Schema.Types.ObjectId]
     issuedDate?: Date
     dueDate?: Date
-    customer: Schema.Types.ObjectId | any
+    customer: Schema.Types.ObjectId | ICustomer
     company: Schema.Types.ObjectId
     note: string
     charges: number
@@ -26,7 +29,7 @@ export interface IInvoice extends Document {
     // isFixed: boolean
     // hourlyRate: number
     items: [{
-        item: Schema.Types.ObjectId
+        item: Schema.Types.ObjectId | IItem
         name: string
         description: string
         isFixed: boolean
@@ -43,6 +46,66 @@ export interface IInvoice extends Document {
         sentAt: Date
     }],
     lastEmailSent?: Date
+    quickbookId?: string
+}
+
+export enum LineDetailTypes {
+    SalesItemLineDetail = 'SalesItemLineDetail',
+    GroupLineDetail = 'GroupLineDetail',
+    DescriptionOnly = 'DescriptionOnly',
+    DiscountLineDetail = 'DiscountLineDetail',
+    SubTotalLineDetail = 'SubTotalLineDetail'
+}
+
+export interface IQBInvoice {
+    Id?: string
+    DocNumber?: string
+    TxnDate?: string
+    DueDate?: string
+    Line: IQBInvoiceLine[]
+    TotalAmt?: number
+    Notes?: string
+    TaxTaxDetail?: {
+        TotalTax?: number
+    }
+    CustomerRef: {
+        name?: string
+        value: string
+    }
+    BillEmail?: {
+        Address?: string
+    }
+    BillAddr?: IQBAddress
+    ShipAddr?: IQBAddress
+    CustomerMemo?: {
+        value: string
+    }
+    Metadata?: {
+        CreateTime?: Date
+        LastUpdatedTime?: Date
+    }
+    CustomField?: {
+        DefinitionId: string
+        Name?: string
+        Type?: string
+        StringValue?: string
+    }[]
+}
+
+export interface IQBInvoiceLine {
+    DetailType: LineDetailTypes
+    Amount?: number
+    SalesItemLineDetail: {
+        ItemRef?: {
+            name?: string
+            value: string
+        }
+        Qty?: number
+        UnitPrice?: number
+        DiscountRate?: number
+        DiscountAmt?: number
+        TaxInclusiveAmt? :number
+    }
 }
 
 const InvoiceSchema = new Schema({
@@ -199,7 +262,8 @@ const InvoiceSchema = new Schema({
     }],
     lastEmailSent: {
         type: Date
-    }
+    },
+    quickbookId: String
 })
 
 export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema)

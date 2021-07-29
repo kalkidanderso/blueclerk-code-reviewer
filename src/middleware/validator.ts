@@ -216,7 +216,9 @@ export const Validations = {
 
   deleteJobReport: [check('jobReportId').exists()],
 
-  createQBCustomer: [check('name').exists(), check('name').not().isEmpty()],
+  createQBCustomer: [check('customerId').exists().withMessage('is required'), check('customerId').isMongoId().withMessage(Messages.WrongId)],
+
+  getQBUri: [check('redirectUri').exists()],
 
   createSaleTax: [check('state').exists(), check('tax').exists()],
 

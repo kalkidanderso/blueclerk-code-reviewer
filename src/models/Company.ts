@@ -64,8 +64,18 @@ export interface ICompany extends Document{
     qbAccessToken: string,
     qbRefreshToken: string,
     realmId: string,
-    customersSynced: boolean,
-    customersSyncedAt: Date,
+    qbCompanyName?: string,
+    qbCompanyEmail?: string,
+    customersSynced: boolean, // TODO: To be deprecated
+    customersSyncedAt: Date,  // TODO: To be deprecated
+    qbSync?: {
+        customersSynced?: boolean
+        customersSyncedAt?: Date
+        itemsSynced?: boolean
+        itemsSyncedAt?: Date
+        invoicesSynced?: boolean
+        invoicesSyncedAt?: Date
+    }
     socketId: string,
     qbAuthorized: boolean,
     qbRefeshTokenExpiry: Date,
@@ -78,6 +88,24 @@ export interface ICompany extends Document{
         list: { tier: Schema.Types.ObjectId | IPriceTier }[]
     }
     companyInvoices: ICompanyInvoice[];
+}
+
+export interface IQBCompany {
+    CompanyName?: string
+    LegalName?: string
+    CompanyAddr?: {
+        Id?: string
+        Line1?: string
+        Line2?: string
+        City?: string
+        CountrySubDivisionCode?: string
+        PostalCode?: string
+        Lat?: string
+        Long?: string
+    }
+    Email?: {
+        Address?: string
+    }
 }
 
 const CompanySchema = new Schema({
@@ -167,11 +195,31 @@ const CompanySchema = new Schema({
     qbAccessToken: String,
     qbRefreshToken: String,
     realmId: String,
+    qbCompanyName: String,
+    qbCompanyEmail: String,
     customersSynced: {
+        // TODO: To be deprecated
         type: Boolean,
-        default: false
+        // default: false
     },
-    customersSyncedAt: Date,
+    customersSyncedAt: Date,  // TODO: To be deprecated
+    qbSync: {
+        customersSynced: {
+            type: Boolean,
+            default: false
+        },
+        customersSyncedAt: Date,
+        itemsSynced: {
+            type: Boolean,
+            default: false
+        },
+        itemsSyncedAt: Date,
+        invoicesSynced: {
+            type: Boolean,
+            default: false
+        },
+        invoicesSyncedAt: Date,
+    },
     socketId: String,
     qbAuthorized: {
         type: Boolean,

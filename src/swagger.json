@@ -2451,7 +2451,12 @@
               "$ref": "#/definitions/ContactSchemaResponse"
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
       }
     },
     "/getContacts": {
@@ -2479,7 +2484,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
       }
     },
     "/updateContact": {
@@ -2518,7 +2528,12 @@
               "$ref": "#/definations/ContactSchemaResponse"
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
       }
     },
     "removeContact": {
@@ -2562,7 +2577,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
       }
     },
     "/createCustomer": {
@@ -9235,41 +9255,13 @@
         ]
       }
     },
-    "/getQBCustomers": {
-      "post": {
-        "tags": [
-          "Quickbooks Integration"
-        ],
-        "summary": "Get quickbooks customers for the first time",
-        "description": "",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "$ref": "#/definitions/GeneralAPIResponse"
-            }
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
     "/syncQBCustomers": {
       "post": {
         "tags": [
           "Quickbooks Integration"
         ],
-        "summary": "Manually syncing quickbooks customers",
-        "description": "",
+        "summary": "Manually syncing ALL customers",
+        "description": "Manually syncing ALL customers from BlueClerk to QuickBooks and vice versa",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -9296,8 +9288,8 @@
         "tags": [
           "Quickbooks Integration"
         ],
-        "summary": "Creating customer in quickbooks",
-        "description": "",
+        "summary": "Manual syncing SINGLE customer",
+        "description": "Manually syncing SINGLE customer from BlueClerk to QuickBooks and associate it with BlueClerk customer",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -9306,39 +9298,235 @@
         ],
         "parameters": [
           {
+            "name": "customerId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of a customer to be associated"
+          },
+          {
             "name": "email",
             "in": "formData",
-            "type": "string"
+            "type": "string",
+            "description": "To replace customer email from database, to be saved to QuickBooks"
           },
           {
             "name": "name",
             "in": "formData",
-            "required": true,
-            "type": "string"
+            "type": "string",
+            "description": "To replace customer name from database, to be saved to QuickBooks"
           },
           {
             "name": "street",
             "in": "formData",
-            "type": "string"
+            "type": "string",
+            "description": "To replace customer street from database, to be saved to QuickBooks"
           },
           {
             "name": "city",
             "in": "formData",
-            "type": "string"
+            "type": "string",
+            "description": "To replace customer city from database, to be saved to QuickBooks"
           },
           {
             "name": "state",
             "in": "formData",
-            "type": "string"
+            "type": "string",
+            "description": "To replace customer state from database, to be saved to QuickBooks"
           },
           {
             "name": "zipCode",
             "in": "formData",
-            "type": "string"
+            "type": "string",
+            "description": "To replace customer zip code from database, to be saved to QuickBooks"
           },
           {
             "name": "phone",
             "in": "formData",
+            "type": "string",
+            "description": "To replace customer phone from database, to be saved to QuickBooks"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/syncQBItems": {
+      "post": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "Manually syncing ALL items",
+        "description": "Manually syncing ALL items from BlueClerk to QuickBooks and vice versa",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/syncQBInvoices": {
+      "post": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "Manually syncing ALL invoices",
+        "description": "Manually syncing ALL invoices **from BlueClerk to QuickBooks only**",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createQBInvoice": {
+      "post": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "Manually syncing SINGLE invoice",
+        "description": "Manually syncing SINGLE invoice from BlueClerk to QuickBooks and associate it with BlueClerk invoice",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of an invoice to be associated"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getQBUri": {
+      "post": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "Get OAuth consent uri",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "redirectUri",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Frontend redirect uri"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/QBCallback": {
+      "get": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "BE callback to get authorization code from FE",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters":[
+          {
+            "name": "redirectUri",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Frontend redirect uri"
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "realmId",
+            "in": "query",
+            "required": true,
             "type": "string"
           }
         ],
@@ -10093,6 +10281,10 @@
         "vendorId": {
           "type": "string",
           "description": "VendorId"
+        },
+        "quickbookId": {
+          "type": "string",
+          "description": "ID of associated customer in QuickBooks"
         }
       }
     },
@@ -10238,6 +10430,10 @@
         "company": {
           "type": "string",
           "description": "Id of the company who created it."
+        },
+        "quickbookId": {
+          "type": "string",
+          "description": "ID of associated product in QuickBooks"
         }
       }
     },
@@ -10342,6 +10538,10 @@
           "type": "number",
           "description": "Hourly job rate the is going to be the charged in invoice"
         },
+        "quickbookId": {
+          "type": "string",
+          "description": "ID of associated invoice in QuickBooks"
+        },
         "createdBy": {
           "type": "string",
           "description": "Id of employee of company who has created this invoice"
@@ -10393,6 +10593,10 @@
           "type": "string",
           "format": "date-time",
           "description": "Date time when the invoice was created"
+        },
+        "quickbookId": {
+          "type": "string",
+          "description": "ID of associated invoice in QuickBooks"
         },
         "customer": {
           "type": "object",

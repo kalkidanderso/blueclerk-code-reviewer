@@ -1,12 +1,15 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import { IContact } from '../common/contact'
-
-
+import { ICustomer } from '../models/Customer'
+import { ICompany } from '../models/Company'
 
 export interface IJobLocation extends Document {
     name: string
-    contacts: [Schema.Types.ObjectId] | any,
-    location: 'Point'| any
+    contacts: [Schema.Types.ObjectId | IContact] | any,
+    location: {
+      type?: 'Point',
+      coordinates: number[]
+    }
     address?: {
       city: string,
       state: string,
@@ -14,9 +17,9 @@ export interface IJobLocation extends Document {
       zipcode: string
     },
     jobSites?: [Schema.Types.ObjectId]
-    customerId: Schema.Types.ObjectId
-    companyId: Schema.Types.ObjectId
-
+    customerId: Schema.Types.ObjectId | ICustomer
+    companyId: Schema.Types.ObjectId | ICompany
+    quickbookId?: string
 }
 
 const JobLocationSchema = new Schema({
@@ -58,7 +61,8 @@ const JobLocationSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Company',
         required: true
-    }
+    },
+    quickbookId: String
 
 })
 
