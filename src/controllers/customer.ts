@@ -113,19 +113,25 @@ export const createCustomer = async (req: Request, res: Response) => {
                                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
                             }
 
-                            _createQBCustomer(req, res, company, customer, async (err: any, errMsg: any, qbCustomer: IQBCustomer) => {
-                                if (err) {
-                                    return res.json({ status: err, message: errMsg });
-                                }
+                            if (company.qbAuthorized) {
+                                // Create QB Customer
+                                _createQBCustomer(req, res, company, customer, async (err: any, errMsg: any, qbCustomer: IQBCustomer) => {
+                                    if (err) {
+                                        return res.json({ status: err, message: errMsg });
+                                    }
 
-                                if (qbCustomer) {
-                                    // Create new Customer in QuickBooks
-                                    customer.quickbookId = qbCustomer.Id;
-                                    await customer.save();
-                                }
+                                    if (qbCustomer) {
+                                        // Create new Customer in QuickBooks
+                                        customer.quickbookId = qbCustomer.Id;
+                                        await customer.save();
+                                    }
 
-                                return res.json({ status: Status.Success, message: 'Customer created successfully.', customer, quickbookCustomer: qbCustomer });
-                            })
+                                    return res.json({ status: Status.Success, message: 'Customer created successfully.', customer, quickbookCustomer: qbCustomer });
+                                })
+                            } else {
+                                return res.json({ status: Status.Success, message: 'Customer created successfully.', customer });
+                            }
+
                         })
                     })
                 } else {

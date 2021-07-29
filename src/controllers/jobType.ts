@@ -122,19 +122,23 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
 
-        // Create new Item in QuickBooks
-        _createQBItem(req, res, company, item, async (err: any, errMsg: any, qbItem: IQBItem) => {
-            if (err) {
-                return res.json({ status: err, message: errMsg });
-            }
+        if (company.qbAuthorized) {
+            // Create new Item in QuickBooks
+            _createQBItem(req, res, company, item, async (err: any, errMsg: any, qbItem: IQBItem) => {
+                if (err) {
+                    return res.json({ status: err, message: errMsg });
+                }
 
-            if (qbItem) {
-                item.quickbookId = qbItem.Id;
-                await item.save();
-            }
+                if (qbItem) {
+                    item.quickbookId = qbItem.Id;
+                    await item.save();
+                }
 
-            return next(item, qbItem);
-        })
+                return next(item, qbItem);
+            })
+        } else {
+            return next(item, null);
+        }
     })
 }
 
@@ -466,21 +470,27 @@ export const _handleJobTypesJson = (customerId: string, paramJobTypes: string, j
                     if (ObjectId.isValid(parsedJobType.jobTypeId)) {
                         // Check if all items of jobTypes have the same isFixed
                         const item = await Item.findOne({ jobType: parsedJobType.jobTypeId });
-                        if (isFixed !== undefined && isFixed !== item.isFixed) {
-                            reject({ message: `Can't add an hourly and fixed price item to the same service ticket/job` });
-                        }
-                        isFixed = item.isFixed;
+                        if (item) {
+                            if (isFixed !== undefined && isFixed !== item.isFixed) {
+                                reject({ message: `Can't add an hourly and fixed price item to the same service ticket/job` });
+                            }
+                            isFixed = item.isFixed;
 
-                        // Check if jobType exist
-                        const jobType = await JobType.findById(parsedJobType.jobTypeId);
-                        if (jobType) {
-                            newJobTypes.push({ jobType: jobType._id });
-                            continue;
+                            // Check if jobType exist
+                            const jobType = await JobType.findById(parsedJobType.jobTypeId);
+                            if (jobType) {
+                                newJobTypes.push({ jobType: jobType._id });
+                                continue;
+                            }
                         }
                     }
 
                     // Collect all invalid job types
                     invalidJobTypes.push(parsedJobType.jobTypeId);
+                }
+
+                if (invalidJobTypes.length === parsedJobTypes.length) {
+                    reject({ message: `All Jobs are invalid: [${invalidJobTypes}]` });
                 }
             }
         }

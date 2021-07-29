@@ -48,17 +48,20 @@ export interface IQBCustomer {
         value: string
     }
     Level?: number
-    BillAddr?: {
-        Line1?: string
-        Line2?: string
-        City?: string
-        CountrySubDivisionCode?: string
-        Country?: string
-        PostalCode?: string
-        Long?: string
-        Lat?: string
-    }
+    BillAddr?: IQBAddress
+    ShipAddr?: IQBAddress
 
+}
+
+export interface IQBAddress {
+    Line1?: string
+    Line2?: string
+    City?: string
+    CountrySubDivisionCode?: string
+    Country?: string
+    PostalCode?: string
+    Long?: string
+    Lat?: string
 }
 
 const CustomerSchema = new Schema({
