@@ -133,6 +133,12 @@ export enum NotificationTypes {
     JOB_RESCHEDULED = 'JobRescheduled'
 }
 
+export enum PaymentTermNames {
+    DUE_ON_RECEIPT = 'Due on Receipt',
+    NET_15 = 'Net 15',
+    NET_30 = 'Net 30'
+}
+
 export const enum Permissions {
     None,
     Permission_Get_All,

@@ -135,6 +135,10 @@
       "description": "For invoices of jobs"
     },
     {
+      "name": "Payment Term",
+      "description": "For payment terms of invoices"
+    },
+    {
       "name": "Payment",
       "description": "For payments of invoices"
     },
@@ -7648,6 +7652,167 @@
             "required": true,
             "type": "string",
             "description": "Id of invoice"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getPaymentTerms": {
+      "get": {
+        "tags": [
+          "Payment Term"
+        ],
+        "summary": "To get all payment terms of company",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createPaymentTerm": {
+      "post": {
+        "tags": [
+          "Payment Term"
+        ],
+        "summary": "To create a new payment term",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "formData",
+            "type": "string",
+            "required": true,
+            "description": "Name of the payment term"
+          },
+          {
+            "name": "dueDays",
+            "in": "formData",
+            "type": "string",
+            "required": true,
+            "description": "Due days of the payment term"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updatePaymentTerm": {
+      "put": {
+        "tags": [
+          "Payment Term"
+        ],
+        "summary": "To update a payment term",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "paymentTermId",
+            "in": "formData",
+            "type": "string",
+            "required": true,
+            "description": "Id of the payment term"
+          },
+          {
+            "name": "name",
+            "in": "formData",
+            "type": "string",
+            "description": "Name of the payment term"
+          },
+          {
+            "name": "dueDays",
+            "in": "formData",
+            "type": "string",
+            "description": "Due days of the payment term"
+          },
+          {
+            "name": "isActive",
+            "in": "formData",
+            "type": "boolean",
+            "enum": [true, false],
+            "description": "Active status of the payment term"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/deletePaymentTerm": {
+      "delete": {
+        "tags": [
+          "Payment Term"
+        ],
+        "summary": "To delete a payment term",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "paymentTermId",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Id of the payment term to be deleted"
           }
         ],
         "responses": {

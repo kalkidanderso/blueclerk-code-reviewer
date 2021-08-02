@@ -37,6 +37,7 @@ import * as partController from '../controllers/part'
 import * as purchaseOrderController from '../controllers/purchaseOrder'
 import * as estimateController from '../controllers/estimate'
 import * as paymentController from '../controllers/payment'
+import * as paymentTermController from '../controllers/paymentTerm'
 import * as tagController from '../controllers/tag'
 import * as ContactController from '../controllers/contact';
 import * as notificationController from '../controllers/notification';
@@ -1525,6 +1526,45 @@ export default function (sio: any) {
         invoiceController.getInvoicesByCustomerId
     )
 
+    // PAYMENT TERM
+
+    router.get(
+        '/getPaymentTerms',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        // TODO: Add checkUserPermissions
+        paymentTermController.getPaymentTerms
+    )
+
+    router.post(
+        '/createPaymentTerm',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        // TODO: Add checkUserPermissions
+        // TODO: Add validate
+        paymentTermController.createPaymentTerm
+    )
+
+    router.put(
+        '/updatePaymentTerm',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        // TODO: Add checkUserPermissions
+        // TODO: Add validate
+        paymentTermController.updatePaymentTerm
+    )
+
+    router.delete(
+        '/deletePaymentTerm',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        // TODO: Add checkUserPermissions
+        // TODO: Add validate
+        paymentTermController.deletePaymentTerm
+    )
+
+    // PAYMENT
+
     router.post(
         '/recordPayment',
         passport.authenticate('jwt', { session: false }),
@@ -1559,6 +1599,8 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Payments),
         paymentController.getPayments
     )
+
+    // CODE LOCATION TAG
 
     router.post(
         '/codeLocationTag',
