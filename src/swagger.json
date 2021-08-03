@@ -7720,7 +7720,7 @@
           {
             "name": "dueDays",
             "in": "formData",
-            "type": "string",
+            "type": "number",
             "required": true,
             "description": "Due days of the payment term"
           }
@@ -7770,7 +7770,7 @@
           {
             "name": "dueDays",
             "in": "formData",
-            "type": "string",
+            "type": "number",
             "description": "Due days of the payment term"
           },
           {

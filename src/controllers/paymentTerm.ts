@@ -95,7 +95,7 @@ export const updatePaymentTerm = async (req: Request, res: Response) => {
 
 export const deletePaymentTerm = async (req: Request, res: Response) => {
 
-    const params = req.body;
+    const params = req.query;
     const company = <ICompany>req.company;
 
     const paymentTerm = await PaymentTerm.findOne({

@@ -272,6 +272,16 @@ export const Validations = {
 
   getInvoiceByCustomer: [check('customer').exists()],
 
+  // Payment Term
+
+  createPaymentTerm: [check('name').exists().withMessage(Messages.Required), check('dueDays').exists().withMessage(Messages.Required), check('dueDays').isInt().withMessage('invalid format')],
+
+  updatePaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId), check('dueDays').optional().isInt().withMessage('invalid format')],
+
+  deletePaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
+
+  // Payment
+
   recordPayment: [check('amount').exists(), check('referenceNumber').exists(), check('paidAt').exists(), check('customer').exists(), check('invoices').exists()],
 
   updatePayment: [check('paymentId').exists(), check('amount').exists(), check('referenceNumber').exists(), check('paidAt').exists(), check('invoices').exists()],
@@ -296,15 +306,15 @@ export const Validations = {
   updateNotification: [check('isRead').optional().isBoolean(), check('isDismissed').optional().isBoolean()],
 
   createIntegrationServiceTicket: [
-    check('source').exists().withMessage('is required'),
-    check('name').exists().withMessage('is required'),
-    check('email').exists().withMessage('is required'),
-    check('email').isEmail().withMessage('invalid format (not email format)'),
-    check('street').exists().withMessage('is required'),
-    check('city').exists().withMessage('is required'),
-    check('state').exists().withMessage('is required'),
-    check('zipCode').exists().withMessage('is required'),
-    check('phone').exists().withMessage('is required')
+    check('source').exists().withMessage(Messages.Required),
+    check('name').exists().withMessage(Messages.Required),
+    check('email').exists().withMessage(Messages.Required),
+    check('email').isEmail().withMessage(Messages.InvalidEmail),
+    check('street').exists().withMessage(Messages.Required),
+    check('city').exists().withMessage(Messages.Required),
+    check('state').exists().withMessage(Messages.Required),
+    check('zipCode').exists().withMessage(Messages.Required),
+    check('phone').exists().withMessage(Messages.Required)
   ],
 
 }

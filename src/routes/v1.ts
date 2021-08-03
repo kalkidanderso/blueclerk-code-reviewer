@@ -1532,7 +1532,8 @@ export default function (sio: any) {
         '/getPaymentTerms',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        // TODO: Add checkUserPermissions
+        // TODO: Add and use new proper permission
+        checkUserPermissions(Permissions.Get_Sales_Taxes),
         paymentTermController.getPaymentTerms
     )
 
@@ -1540,8 +1541,9 @@ export default function (sio: any) {
         '/createPaymentTerm',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        // TODO: Add checkUserPermissions
-        // TODO: Add validate
+        // TODO: Add and use new proper permission
+        checkUserPermissions(Permissions.Create_Sales_Tax),
+        validate(Validations.createPaymentTerm),
         paymentTermController.createPaymentTerm
     )
 
@@ -1549,8 +1551,9 @@ export default function (sio: any) {
         '/updatePaymentTerm',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        // TODO: Add checkUserPermissions
-        // TODO: Add validate
+        // TODO: Add and use new proper permission
+        checkUserPermissions(Permissions.Update_Sales_Tax),
+        validate(Validations.updatePaymentTerm),
         paymentTermController.updatePaymentTerm
     )
 
@@ -1558,8 +1561,9 @@ export default function (sio: any) {
         '/deletePaymentTerm',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        // TODO: Add checkUserPermissions
-        // TODO: Add validate
+        // TODO: Add and use new proper permission
+        checkUserPermissions(Permissions.Delete_Sales_Tax),
+        validate(Validations.deletePaymentTerm),
         paymentTermController.deletePaymentTerm
     )
 

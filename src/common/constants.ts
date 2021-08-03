@@ -23,6 +23,7 @@ export const enum TagType {
 export const Messages = {
     MissingParams: 'Parameters are missing',
     InvalidEmailPassword: 'Invalid email/password.',
+    InvalidEmail: 'invalid format (not email format)',
     GenericError: 'Can\'t process now. Please try again later.',
     DuplicateEmail: 'Email address already registered. Please try with some other email address',
     CompanyDuplicateEmail: 'Company Email address already registered. Please try with some other email address',
