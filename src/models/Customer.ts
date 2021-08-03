@@ -3,6 +3,7 @@ import { User, IUser} from './User'
 import { IContact } from '../common/contact'
 import { IPriceTier } from './PriceTier'
 import { IJobLocation } from '../models/JobLocation'
+import { IPaymentTerm } from '../models/PaymentTerm'
 
 export interface ICustomer extends IUser {
 
@@ -22,6 +23,7 @@ export interface ICustomer extends IUser {
         quantity: number,
         price: number
     }[]
+    paymentTerm?: Schema.Types.ObjectId | IPaymentTerm
     vendorId?: string,
     contacts: [Schema.Types.ObjectId],
     contactEmail: string
@@ -113,6 +115,10 @@ const CustomerSchema = new Schema({
             required: true
         }
     }],
+    paymentTerm: {
+        type: Schema.Types.ObjectId,
+        ref: 'PaymentTerm'
+    },
     vendorId: {
         type: String,
     },

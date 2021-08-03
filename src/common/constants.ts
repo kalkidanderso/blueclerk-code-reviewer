@@ -23,6 +23,7 @@ export const enum TagType {
 export const Messages = {
     MissingParams: 'Parameters are missing',
     InvalidEmailPassword: 'Invalid email/password.',
+    InvalidEmail: 'invalid format (not email format)',
     GenericError: 'Can\'t process now. Please try again later.',
     DuplicateEmail: 'Email address already registered. Please try with some other email address',
     CompanyDuplicateEmail: 'Company Email address already registered. Please try with some other email address',
@@ -131,6 +132,12 @@ export enum NotificationTypes {
     CONTRACT_REJECTED = 'ContractRejected',
     CONTRACT_FINISHED = 'ContractFinished',
     JOB_RESCHEDULED = 'JobRescheduled'
+}
+
+export enum PaymentTermNames {
+    DUE_ON_RECEIPT = 'Due on Receipt',
+    NET_15 = 'Net 15',
+    NET_30 = 'Net 30'
 }
 
 export const enum Permissions {

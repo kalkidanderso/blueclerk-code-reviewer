@@ -256,7 +256,7 @@ export const getCustomers = (req: Request, res: Response) => {
         })
 
         User.find({_id : {$in: customerIds}},
-            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId itemTier quickbookId')
+            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId itemTier paymentTerm quickbookId')
             .populate({ path: 'itemTier', select: '-companyId -__v' })
             .exec((err: any, users: IUser[]) =>{
 
@@ -401,7 +401,7 @@ export const customerDetail = (req: Request, res: Response) => {
     CompanyCustomer.findOne({ 'customer': params.customerId, company: companyId})
     .populate({
         path: 'customer',
-        populate: [{ path: 'jobLocations', populate: {path: 'jobSites'}}, { path: 'equipments'}, { path: 'itemTier', select: '-companyId -__v' }]
+        populate: [{ path: 'jobLocations', populate: {path: 'jobSites'}}, { path: 'equipments'}, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
     })
     .exec().then((companyCustomer: ICompanyCustomer)=>{
         const customer: any = companyCustomer.customer;
