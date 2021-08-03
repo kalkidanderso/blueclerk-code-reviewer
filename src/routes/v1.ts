@@ -1536,6 +1536,14 @@ export default function (sio: any) {
         paymentTermController.setCompanyDefaultPaymentTerm
     )
 
+    router.post(
+        '/setCustomerPaymentTerm',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.setCustomerPaymentTerm),
+        paymentTermController.setCustomerPaymentTerm
+    )
+
     router.get(
         '/getPaymentTerms',
         passport.authenticate('jwt', { session: false }),

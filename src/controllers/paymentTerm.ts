@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Status } from '../common/constants';
 import { IUser } from '../models/User';
 import { ICompany } from '../models/Company';
+import { Customer } from '../models/Customer';
 import { IPaymentTerm, DefaultPaymentTerms, PaymentTerm } from '../models/PaymentTerm';
 
 export const _createDefaultPaymentTerms = async (company: ICompany): Promise<void> => {
@@ -45,14 +46,44 @@ export const setCompanyDefaultPaymentTerm = async (req: Request, res: Response) 
     });
 
     if (!paymentTerm) {
-        return res.json({ status: Status.Error, message: 'Payment Term not found or inactive' });
+        return res.json({ status: Status.Error, message: 'Payment Term not found or inactive.' });
     }
 
     company.paymentTerm = paymentTerm._id;
     await company.save();
-    await company.populate({ path: 'paymentTerm' }).execPopulate();
 
     return res.json({ status: Status.Success, message: 'Company default Payment Term successfully set.', companyPaymentTerm: paymentTerm });
+
+}
+
+export const setCustomerPaymentTerm = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const company = <ICompany>req.company;
+
+    const customer = await Customer.findOne({
+        _id: params.customerId,
+        company: company._id
+    });
+
+    if (!customer) {
+        return res.json({ status: Status.Error, message: 'Customer not found.' });
+    }
+
+    const paymentTerm = await PaymentTerm.findOne({
+        _id: params.paymentTermId,
+        company: company._id,
+        isActive: true
+    });
+
+    if (!paymentTerm) {
+        return res.json({ status: Status.Error, message: 'Payment Term not found or inactive.' });
+    }
+
+    customer.paymentTerm = paymentTerm._id;
+    await customer.save();
+
+    return res.json({ status: Status.Success, message: 'Customer Payment Term successfully set.', customerPaymentTerm: paymentTerm });
 
 }
 

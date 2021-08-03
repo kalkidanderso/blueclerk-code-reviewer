@@ -276,6 +276,8 @@ export const Validations = {
 
   setCompanyDefaultPaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
 
+  setCustomerPaymentTerm: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId), check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
+
   createPaymentTerm: [check('name').exists().withMessage(Messages.Required), check('dueDays').exists().withMessage(Messages.Required), check('dueDays').isInt().withMessage('invalid format')],
 
   updatePaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId), check('dueDays').optional().isInt().withMessage('invalid format')],

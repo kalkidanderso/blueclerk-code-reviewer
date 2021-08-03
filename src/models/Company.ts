@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import {ICompanyInvoice} from './CompanyInvoice';
 import { IPriceTier } from './PriceTier';
-import { IPaymentTerm } from './PaymentTerm';
+import { IPaymentTerm } from '../models/PaymentTerm';
 
 export interface ICompany extends Document{
 
