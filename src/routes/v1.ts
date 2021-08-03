@@ -1528,6 +1528,14 @@ export default function (sio: any) {
 
     // PAYMENT TERM
 
+    router.post(
+        '/setCompanyDefaultPaymentTerm',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.setCompanyDefaultPaymentTerm),
+        paymentTermController.setCompanyDefaultPaymentTerm
+    )
+
     router.get(
         '/getPaymentTerms',
         passport.authenticate('jwt', { session: false }),

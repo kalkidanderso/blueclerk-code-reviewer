@@ -33,6 +33,29 @@ export const _createDefaultPaymentTerms = async (company: ICompany): Promise<voi
 
 }
 
+export const setCompanyDefaultPaymentTerm = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const company = <ICompany>req.company;
+
+    const paymentTerm = await PaymentTerm.findOne({
+        _id: params.paymentTermId,
+        company: company._id,
+        isActive: true
+    });
+
+    if (!paymentTerm) {
+        return res.json({ status: Status.Error, message: 'Payment Term not found or inactive' });
+    }
+
+    company.paymentTerm = paymentTerm._id;
+    await company.save();
+    await company.populate({ path: 'paymentTerm' }).execPopulate();
+
+    return res.json({ status: Status.Success, message: 'Company default Payment Term successfully set.', companyPaymentTerm: paymentTerm });
+
+}
+
 export const getPaymentTerms = async (req: Request, res: Response) => {
 
     const company = <ICompany>req.company;

@@ -7669,6 +7669,43 @@
         ]
       }
     },
+    "/setCompanyDefaultPaymentTerm": {
+      "post": {
+        "tags": [
+          "Payment Term"
+        ],
+        "summary": "To set default payment term for company",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "paymentTermId",
+            "in": "formData",
+            "type": "string",
+            "required": true,
+            "description": "Id of the payment term"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getPaymentTerms": {
       "get": {
         "tags": [
