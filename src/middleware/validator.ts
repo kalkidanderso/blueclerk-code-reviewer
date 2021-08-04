@@ -240,7 +240,7 @@ export const Validations = {
 
   createPOInvoice: [check('purchaseOrderId').exists()],
 
-  updateInvoice: [check('invoiceId').exists()],
+  updateInvoice: [check('invoiceId').exists().withMessage(Messages.Required), check('invoiceId').isMongoId().withMessage(Messages.WrongId), check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId)],
 
   companyInvoice: [check('companyInvoiceId').exists()],
 
