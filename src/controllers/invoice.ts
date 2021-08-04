@@ -789,7 +789,7 @@ export const createInvoice = (req: Request, res: Response) => {
 const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobTypeitems: IItem[], purchaseOrders: any, purchaseOrder: any, estimate: any, next: (req: Request, res: Response, invoice: IInvoice, invoiceId: number) => void) =>{
 
     const params = req.body
-    const company = req.company
+    const company = <ICompany>req.company
     const user = <IUser>req.user
 
     let currentInvoiceId = 0;
@@ -929,13 +929,21 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     }
 
     let invoiceItems: any[] = []
-    // Find Customer object to see the itemTier and customPrice info
-    const customerObj = await Customer.findById(customer);
+    // Find Customer object to see the itemTier, customPrice, & payment term info
+    const customerObj = await Customer.findById(customer).populate({ path: 'paymentTerm' });
+    // Populate payment term from the company
+    await company.populate({ path: 'paymentTerm' }).execPopulate();
+
+    // Retrive payment term for this invoice
     let paymentTerm: IPaymentTerm;
     if (params.paymentTermId) {
         paymentTerm = await PaymentTerm.findOne({ _id: params.paymentTermId, isActive: true });
     }
-    const paymentTermId = paymentTerm?._id || customerObj?.paymentTerm || company?.paymentTerm || undefined;
+    /**
+     * Priority order: 1) User params 2) Customer default term 3) Company default term,
+     * otherwise leave paymentTerm to be blank
+     */
+    paymentTerm = paymentTerm || <IPaymentTerm>customerObj?.paymentTerm || <IPaymentTerm>company?.paymentTerm;
 
     if (items.length > 0) {
 
@@ -1057,8 +1065,8 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         purchaseOrder: purchaseOrderId,
         jobPurchaseOrders: purchaseOrderIds,
         issuedDate: params.issuedDate ? new Date(params.issuedDate) : Date.now(),
-        dueDate: params.dueDate ? new Date(params.dueDate) : moment().add(30, 'd').valueOf(),
-        paymentTerm: paymentTermId,
+        dueDate: params.dueDate ? new Date(params.dueDate) : moment().add(paymentTerm?.dueDays ?? 30, 'd').valueOf(),
+        paymentTerm,
         customer: customer,
         company: req.companyId,
         note: params.note,
@@ -1155,6 +1163,7 @@ export const createPOInvoice = (req: Request, res: Response) => {
 export const updateInvoice = (req: Request, res: Response) => {
 
     const params = req.body
+    const company = <ICompany>req.company;
 
     Invoice.findOne({'_id': params.invoiceId, 'company': req.companyId},
         async (err: any, invoice: IInvoice) => {
@@ -1166,8 +1175,21 @@ export const updateInvoice = (req: Request, res: Response) => {
                 return res.json({'status': Status.Success, 'message': "Invalid invoice id."})
             }
 
-            // Find Customer object to see the itemTier and customPrice info
-            const customerObj = await Customer.findById(invoice.customer);
+            // Find Customer object to see the itemTier, customPrice, * payment term info
+            const customerObj = await Customer.findById(invoice.customer).populate({ path: 'paymentTerm' });
+            // Populate payment term from the company
+            await company.populate({ path: 'paymentTerm' }).execPopulate();
+
+            // Retrive payment term for this invoice
+            let paymentTerm: IPaymentTerm;
+            if (params.paymentTermId) {
+                paymentTerm = await PaymentTerm.findOne({ _id: params.paymentTermId, isActive: true });
+            }
+            /**
+             * Priority order: 1) User params 2) Customer default term 3) Company default term,
+             * otherwise leave paymentTerm to be blank
+             */
+            paymentTerm = paymentTerm || <IPaymentTerm>customerObj?.paymentTerm || <IPaymentTerm>company?.paymentTerm;
 
             if(invoice.invoiceType == 0) {
 
@@ -1194,7 +1216,11 @@ export const updateInvoice = (req: Request, res: Response) => {
                             return res.json({'status': Status.Error, 'message': 'Tax Percentage or charges are required'})
                         }
                         const issuedDate = params.issuedDate ? new Date(params.issuedDate) : invoice.issuedDate;
-                        const dueDate = params.dueDate ? new Date(params.dueDate) : invoice.issuedDate;
+                        const dueDate = params.paymentTermId && paymentTerm
+                            ? moment(issuedDate).add(paymentTerm?.dueDays, 'd').valueOf()
+                            : params.dueDate
+                                ? new Date(params.dueDate)
+                                : issuedDate
                         // let tax: number = invoice.tax;
                         // let taxPercentage: number = invoice.taxPercentage;
                         let charges: number = invoice.charges;
@@ -1337,7 +1363,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                             taxAmount: Math.round(taxAmount * 100) / 100,
                             subTotal: Math.round(subTotalBeforeTax * 100) / 100,
                             total: Math.round(total * 100) / 100,
-                            charges, issuedDate, dueDate, note: params.note
+                            charges, issuedDate, dueDate, note: params.note,
+                            paymentTerm: params.paymentTermId ? paymentTerm : undefined
                         },
 
                             (err: any) => {
@@ -1354,7 +1381,11 @@ export const updateInvoice = (req: Request, res: Response) => {
                     return res.json({'status': Status.Error, 'message': 'Tax Percentage or charges are required'})
                 }
                 const issuedDate = params.issuedDate ? new Date(params.issuedDate) : invoice.issuedDate;
-                const dueDate = params.dueDate ? new Date(params.dueDate) : invoice.issuedDate;
+                const dueDate = params.paymentTermId && paymentTerm
+                    ? moment(issuedDate).add(paymentTerm?.dueDays, 'd').valueOf()
+                    : params.dueDate
+                        ? new Date(params.dueDate)
+                        : issuedDate
                 // let tax: number = invoice.tax;
                 // let taxPercentage: number = invoice.taxPercentage;
                 let charges: number = invoice.charges;
@@ -1476,7 +1507,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                     taxAmount: Math.round(taxAmount * 100) / 100,
                     subTotal: Math.round(subTotalBeforeTax * 100) / 100,
                     total: Math.round(total * 100) / 100,
-                    issuedDate, dueDate, note: params.note
+                    issuedDate, dueDate, note: params.note,
+                    paymentTerm: params.paymentTermId ? paymentTerm : undefined
                 },
                     (err: any) => {
                         if (err) {
