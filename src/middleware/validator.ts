@@ -232,7 +232,7 @@ export const Validations = {
 
   deleteJobCharges: [check('jobChargesId').exists()],
 
-  //createInvoice: [],
+  createInvoice: [check('jobId').optional().isMongoId().withMessage(Messages.WrongId), check('purchaseOrderId').optional().isMongoId().withMessage(Messages.WrongId), check('estimateId').optional().isMongoId().withMessage(Messages.WrongId), check('customerId').optional().isMongoId().withMessage(Messages.WrongId), check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId)],
 
   sendInvoice: [check('invoiceId').exists()],
 
