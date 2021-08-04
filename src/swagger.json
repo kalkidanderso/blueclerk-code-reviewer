@@ -7282,6 +7282,13 @@
             "description": "Due date of the invoice"
           },
           {
+            "name": "paymentTermId",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Pass payment term id"
+          },
+          {
             "name": "estimateId",
             "in": "formData",
             "required": false,

@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose'
 import { ICustomer, IQBAddress } from '../models/Customer';
 import { IItem } from '../models/Item';
 import { IJob } from '../models/Job';
+import { IPaymentTerm } from '../models/PaymentTerm';
 
 export interface IInvoice extends Document {
     invoice: any[]
@@ -13,6 +14,7 @@ export interface IInvoice extends Document {
     jobPurchaseOrders: [Schema.Types.ObjectId]
     issuedDate?: Date
     dueDate?: Date
+    paymentTerm?: Schema.Types.ObjectId | IPaymentTerm
     customer: Schema.Types.ObjectId | ICustomer
     company: Schema.Types.ObjectId
     note: string
@@ -142,6 +144,10 @@ const InvoiceSchema = new Schema({
     },
     dueDate: {
         type: Date
+    },
+    paymentTerm: {
+        type: Schema.Types.ObjectId,
+        ref: 'PaymentTerm'
     },
     note: {
         type: String,

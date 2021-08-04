@@ -18,7 +18,8 @@ import {sendInvoiceEmailToCustomer} from '../services/aws';
 import {CompanyInvoice} from '../models/CompanyInvoice';
 import { IJobReport, JobReport } from '../models/JobReport';
 import { IPriceTier } from '../models/PriceTier';
-import { _createQBInvoice } from './quickbook';
+import { IPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
+import { _createQBInvoice } from '../controllers/quickbook';
 
 export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
@@ -930,6 +931,11 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     let invoiceItems: any[] = []
     // Find Customer object to see the itemTier and customPrice info
     const customerObj = await Customer.findById(customer);
+    let paymentTerm: IPaymentTerm;
+    if (params.paymentTermId) {
+        paymentTerm = await PaymentTerm.findOne({ _id: params.paymentTermId, isActive: true });
+    }
+    const paymentTermId = paymentTerm?._id || customerObj?.paymentTerm || company?.paymentTerm || undefined;
 
     if (items.length > 0) {
 
@@ -1052,6 +1058,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         jobPurchaseOrders: purchaseOrderIds,
         issuedDate: params.issuedDate ? new Date(params.issuedDate) : Date.now(),
         dueDate: params.dueDate ? new Date(params.dueDate) : moment().add(30, 'd').valueOf(),
+        paymentTerm: paymentTermId,
         customer: customer,
         company: req.companyId,
         note: params.note,
@@ -1508,6 +1515,10 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
             ]
         })
         .populate({
+            path: 'paymentTerm',
+            select: '-company -__v'
+        })
+        .populate({
             path: 'items.item',
             select: 'name isFixed charges tax',
             populate: [{path: 'jobType'}]
@@ -1625,6 +1636,10 @@ export const getInvoices = (req: Request, res: Response) => {
                 { path: 'equipment', select: 'info maintenance type brand', populate: [ { path: 'type', select: 'title' }, { path: 'brand', select: 'title' }]},
                 { path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price' }
             ]
+        })
+        .populate({
+            path: 'paymentTerm',
+            select: '-company -__v'
         })
         .populate({
             path: 'items.item',

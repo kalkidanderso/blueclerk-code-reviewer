@@ -1299,7 +1299,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Create_Invoice),
-        //validate(Validations.createInvoice),
+        validate(Validations.createInvoice),
         invoiceController.createInvoice
     )
     router.post(
