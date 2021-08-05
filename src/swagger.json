@@ -7926,22 +7926,19 @@
       }
     },
     "/getInvoicesByCustomerId": {
-      "post": {
+      "get": {
         "tags": [
           "Payment"
         ],
         "summary": "To get invoice of customer to record payment",
         "description": "",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
         "produces": [
           "application/json"
         ],
         "parameters": [
           {
-            "name": "customer",
-            "in": "formData",
+            "name": "customerId",
+            "in": "query",
             "type": "string",
             "required": true,
             "description": "id of the customer you want to fetch invoices for"
@@ -7977,88 +7974,13 @@
         ]
       }
     },
-    "/recordPayment": {
-      "post": {
-        "tags": [
-          "Payment"
-        ],
-        "summary": "To record the payment for invoice(s) made by the customer",
-        "description": "",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "name": "invoices",
-            "in": "formData",
-            "description": "comma seprated invoice ids",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "amount",
-            "in": "formData",
-            "required": true,
-            "type": "number",
-            "description": "Amount how much customer has paid"
-          },
-          {
-            "name": "referenceNumber",
-            "in": "formData",
-            "required": true,
-            "type": "string",
-            "description": "Reference number of the payment made by client"
-          },
-          {
-            "name": "paymentType",
-            "in": "formData",
-            "required": false,
-            "type": "string",
-            "description": "Method name how customer has paid"
-          },
-          {
-            "name": "customer",
-            "in": "formData",
-            "required": true,
-            "type": "string",
-            "description": "Pass customer id to who made the payment"
-          },
-          {
-            "name": "paidAt",
-            "in": "formData",
-            "required": true,
-            "type": "string",
-            "description": "Time when the customer has made the payment"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "$ref": "#/definitions/GeneralAPIResponse"
-            }
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
     "/getPayments": {
-      "post": {
+      "get": {
         "tags": [
           "Payment"
         ],
         "summary": "To get payments of a company",
         "description": "",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
         "produces": [
           "application/json"
         ],
@@ -8093,22 +8015,19 @@
       }
     },
     "/getPaymentsByCustomerId": {
-      "post": {
+      "get": {
         "tags": [
           "Payment"
         ],
         "summary": "To get payments by customer id",
         "description": "",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
         "produces": [
           "application/json"
         ],
         "parameters": [
           {
-            "name": "customer",
-            "in": "formData",
+            "name": "customerId",
+            "in": "query",
             "description": "id of the customer you want to fetch payments for",
             "required": true,
             "type": "string"
@@ -8144,13 +8063,84 @@
         ]
       }
     },
-    "/updatePayment": {
+    "/recordPayment": {
       "post": {
         "tags": [
           "Payment"
         ],
-        "summary": "To update payment record",
+        "summary": "To record the payment for invoice made by the customer",
         "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Pass customer id to who made the payment"
+          },
+          {
+            "name": "invoiceId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of invoice to be paid"
+          },
+          {
+            "name": "amount",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "Amount how much customer has paid"
+          },
+          {
+            "name": "referenceNumber",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Reference number of the payment made by client"
+          },
+          {
+            "name": "paymentType",
+            "in": "formData",
+            "type": "string",
+            "enum": ["ACH", "Bank Wire", "Credit Card/Debit Card", "Check", "Cash"],
+            "description": "Method name how customer has paid"
+          },
+          {
+            "name": "paidAt",
+            "in": "formData",
+            "type": "string",
+            "description": "Time when the customer has made the payment"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/WIP/updatePayment": {
+      "put": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "WIP: To update payment record",
+        "description": "WIP: To update payment record",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -8194,7 +8184,7 @@
             "description": "Method name how customer has paid"
           },
           {
-            "name": "customer",
+            "name": "customerId",
             "in": "formData",
             "required": true,
             "type": "string",

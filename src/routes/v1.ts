@@ -1517,15 +1517,6 @@ export default function (sio: any) {
         companyController.getCompanyContractorActivity
     )
 
-    router.post(
-        '/getInvoicesByCustomerId',
-        passport.authenticate('jwt', { session: false }),
-        getCompanyId(),
-        validate(Validations.getInvoiceByCustomer),
-        checkUserPermissions(Permissions.Get_Customer_Invoices),
-        invoiceController.getInvoicesByCustomerId
-    )
-
     // PAYMENT TERM
 
     router.post(
@@ -1585,25 +1576,24 @@ export default function (sio: any) {
 
     // PAYMENT
 
-    router.post(
-        '/recordPayment',
+    router.get(
+        '/getInvoicesByCustomerId',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        validate(Validations.recordPayment),
-        checkUserPermissions(Permissions.Create_Payment),
-        paymentController.createPayment
+        validate(Validations.getInvoicesByCustomerId),
+        checkUserPermissions(Permissions.Get_Customer_Invoices),
+        invoiceController.getInvoicesByCustomerId
     )
 
-    router.post(
-        '/updatePayment',
+    router.get(
+        '/getPayments',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        validate(Validations.updatePayment),
-        checkUserPermissions(Permissions.Update_Payment),
-        paymentController.updatePayment
+        checkUserPermissions(Permissions.Get_Payments),
+        paymentController.getPayments
     )
 
-    router.post(
+    router.get(
         '/getPaymentsByCustomerId',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
@@ -1613,11 +1603,21 @@ export default function (sio: any) {
     )
 
     router.post(
-        '/getPayments',
+        '/recordPayment',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Payments),
-        paymentController.getPayments
+        validate(Validations.recordPayment),
+        checkUserPermissions(Permissions.Create_Payment),
+        paymentController.createPayment
+    )
+
+    router.put(
+        '/updatePayment',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.updatePayment),
+        checkUserPermissions(Permissions.Update_Payment),
+        paymentController.updatePayment
     )
 
     // CODE LOCATION TAG

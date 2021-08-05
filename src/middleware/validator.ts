@@ -270,8 +270,6 @@ export const Validations = {
 
   updateItem: [check('itemId').exists(), check('charges').exists(), check('isFixed').exists(), check('tax').exists()],
 
-  getInvoiceByCustomer: [check('customer').exists()],
-
   // Payment Term
 
   setCompanyDefaultPaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
@@ -286,11 +284,22 @@ export const Validations = {
 
   // Payment
 
-  recordPayment: [check('amount').exists(), check('referenceNumber').exists(), check('paidAt').exists(), check('customer').exists(), check('invoices').exists()],
+  getInvoicesByCustomerId: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId)],
 
-  updatePayment: [check('paymentId').exists(), check('amount').exists(), check('referenceNumber').exists(), check('paidAt').exists(), check('invoices').exists()],
+  getPaymentsByCustomer: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId)],
 
-  getPaymentsByCustomer: [check('customer').exists()],
+  recordPayment: [
+    check('invoiceId').exists().withMessage(Messages.Required),
+    check('invoiceId').isMongoId().withMessage(Messages.WrongId),
+    check('amount').exists().withMessage(Messages.Required),
+    check('referenceNumber').exists().withMessage(Messages.Required),
+    check('customerId').exists().withMessage(Messages.Required),
+    check('customerId').isMongoId().withMessage(Messages.WrongId)
+  ],
+
+  updatePayment: [check('paymentId').exists().withMessage(Messages.Required), check('paymentId').isMongoId().withMessage(Messages.WrongId), check('amount').exists(), check('referenceNumber').exists(), check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId), check('paidAt').exists(), check('invoices').exists()],
+
+  // Code Location
 
   codeLocationTag: [check('nfcTag').exists(), check('customerId').exists()],
 

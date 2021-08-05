@@ -23,9 +23,9 @@ import { _createQBInvoice } from '../controllers/quickbook';
 
 export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
-    const params = req.body
+    const params = req.query;
 
-    Invoice.find({'company': req.companyId, customer: params.customer})
+    Invoice.find({'company': req.companyId, customer: params.customerId})
         .populate({
             path: 'job',
             populate: [{ path: 'type', select: 'title' },{ path: 'customer', select: 'info.email auth.email profile.displayName contactName' }, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' }],
@@ -55,6 +55,7 @@ export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
             return res.json({ 'status': Status.Success, 'invoices': invoices })
         })
+
 }
 
 export const setCustomInvoiceNumber = (req: Request, res: Response) => {
@@ -1075,6 +1076,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         taxAmount: Math.round(taxAmount * 100) / 100,
         subTotal: Math.round(subTotalBeforeTax * 100) / 100,
         total: Math.round(total * 100) / 100,
+        balanceDue: Math.round(total * 100) / 100,
         createdBy: user._id,
         createdAt: Date.now(),
         timeSpent: timeSpent,
