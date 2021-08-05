@@ -151,6 +151,10 @@ export const createPayment = async (req: Request, res: Response) => {
             // Deduct the customer balance
             customer.balance -= parseFloat(params.amount);
 
+            // Fix default paymentApplied and balanceDue for old invoice
+            invoice.paymentApplied = invoice.paymentApplied ?? 0;
+            invoice.balanceDue = invoice.balanceDue ?? invoice.total;
+
             // Update invoice paymentApplied, balanceDue, and status
             invoice.paymentApplied += parseFloat(params.amount);
             invoice.balanceDue -= parseFloat(params.amount);
