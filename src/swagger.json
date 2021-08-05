@@ -7926,22 +7926,19 @@
       }
     },
     "/getInvoicesByCustomerId": {
-      "post": {
+      "get": {
         "tags": [
           "Payment"
         ],
         "summary": "To get invoice of customer to record payment",
         "description": "",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
         "produces": [
           "application/json"
         ],
         "parameters": [
           {
-            "name": "customer",
-            "in": "formData",
+            "name": "customerId",
+            "in": "query",
             "type": "string",
             "required": true,
             "description": "id of the customer you want to fetch invoices for"
@@ -7962,6 +7959,95 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/definitions/Invoice"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getPayments": {
+      "get": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "To get payments of a company",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "invoices": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Payment"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getPaymentsByCustomerId": {
+      "get": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "To get payments by customer id",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "query",
+            "description": "id of the customer you want to fetch payments for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/GeneralAPIResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "invoices": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Payment"
                       }
                     }
                   }
@@ -8020,7 +8106,7 @@
             "description": "Method name how customer has paid"
           },
           {
-            "name": "customer",
+            "name": "customerId",
             "in": "formData",
             "required": true,
             "type": "string",
@@ -8049,103 +8135,8 @@
         ]
       }
     },
-    "/getPayments": {
-      "post": {
-        "tags": [
-          "Payment"
-        ],
-        "summary": "To get payments of a company",
-        "description": "",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/definitions/GeneralAPIResponse"
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "invoices": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/definitions/Payment"
-                      }
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
-    "/getPaymentsByCustomerId": {
-      "post": {
-        "tags": [
-          "Payment"
-        ],
-        "summary": "To get payments by customer id",
-        "description": "",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "name": "customer",
-            "in": "formData",
-            "description": "id of the customer you want to fetch payments for",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/definitions/GeneralAPIResponse"
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "invoices": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/definitions/Payment"
-                      }
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
     "/updatePayment": {
-      "post": {
+      "put": {
         "tags": [
           "Payment"
         ],
@@ -8194,7 +8185,7 @@
             "description": "Method name how customer has paid"
           },
           {
-            "name": "customer",
+            "name": "customerId",
             "in": "formData",
             "required": true,
             "type": "string",

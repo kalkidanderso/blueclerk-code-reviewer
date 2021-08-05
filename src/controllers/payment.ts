@@ -1,10 +1,79 @@
 import { Request, Response } from 'express'
+import { ObjectId } from 'mongodb'
+
 import { Status, Messages } from '../common/constants'
 import { IUser } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
 import { Payment, IPayment } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
-import { ObjectId } from 'mongodb'
+
+export const getPayments = (req: Request, res: Response) => {
+
+    Payment.find({company: req.companyId})
+    .populate({
+        path: 'company',
+        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+    })
+    .populate({
+        path: 'customer',
+        select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+    })
+    .populate({
+        path: 'invoices',
+        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+    })
+    .populate({
+        path: 'createdBy',
+        select: 'profile.displayName auth.email'
+    })
+    .then((payments: IPayment[] | null) =>{
+
+        return res.json({ 'status': Status.Success, 'payment': payments })
+    })
+    .catch((error: any) => {
+        if (error.message != undefined) {
+            return res.json({ 'status': Status.Error, 'message': error.message })
+        } else {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
+    })
+
+}
+
+export const getPaymentsByCustomerId = (req: Request, res: Response) => {
+
+    const params = req.query;
+
+    Payment.find({company: req.companyId, customer: params.customerId})
+    .populate({
+        path: 'company',
+        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+    })
+    .populate({
+        path: 'customer',
+        select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+    })
+    .populate({
+        path: 'invoices',
+        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+    })
+    .populate({
+        path: 'createdBy',
+        select: 'profile.displayName auth.email'
+    })
+    .then((payments: IPayment[] | null) =>{
+
+        return res.json({ 'status': Status.Success, 'payment': payments })
+    })
+    .catch((error: any) => {
+        if (error.message != undefined) {
+            return res.json({ 'status': Status.Error, 'message': error.message })
+        } else {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
+    })
+
+}
 
 export const createPayment = async (req: Request, res: Response) => {
 
@@ -37,13 +106,13 @@ export const createPayment = async (req: Request, res: Response) => {
     }
 
     // Find and check if customer exist
-    const customer = await Customer.findById(params.customer);
+    const customer = await Customer.findById(params.customerId);
     if (!customer) {
         return res.json({ status: Status.Error, message: 'Customer not found' });
     }
 
     const payment = new Payment({
-        customer: params.customer,
+        customer,
         amountPaid: params.amount,
         referenceNumber: params.referenceNumber,
         paymentType: params.paymentType,
@@ -115,7 +184,7 @@ export const updatePayment = (req: Request, res: Response) => {
         
         return new Promise<void>((resolve, reject) =>{
         
-            Customer.findById(params.customer)
+            Customer.findById(params.customerId)
             .then((customer: ICustomer) =>{
         
                 let newBalance = customer.balance + previousDedeuctedBalance
@@ -142,71 +211,6 @@ export const updatePayment = (req: Request, res: Response) => {
     })
     .catch((error: any) => {
         if (error != undefined && error.message != undefined) {
-            return res.json({ 'status': Status.Error, 'message': error.message })
-        } else {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        }
-    })
-}
-
-export const getPayments = (req: Request, res: Response) => {
-
-    Payment.find({company: req.companyId})
-    .populate({
-        path: 'company',
-        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-    })
-    .populate({
-        path: 'customer',
-        select: 'info.email auth.email profile.displayName address contact contactName vendorId'
-    })
-    .populate({
-        path: 'invoices',
-        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
-    })
-    .populate({
-        path: 'createdBy',
-        select: 'profile.displayName auth.email'
-    })
-    .then((payments: IPayment[] | null) =>{
-    
-        return res.json({ 'status': Status.Success, 'payment': payments })
-    })
-    .catch((error: any) => {
-        if (error.message != undefined) {
-            return res.json({ 'status': Status.Error, 'message': error.message })
-        } else {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        }
-    })
-}
-
-export const getPaymentsByCustomerId = (req: Request, res: Response) => {
-
-    const params = req.body
-    Payment.find({company: req.companyId, customer: params.customer})
-    .populate({
-        path: 'company',
-        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-    })
-    .populate({
-        path: 'customer',
-        select: 'info.email auth.email profile.displayName address contact contactName vendorId'
-    })
-    .populate({
-        path: 'invoices',
-        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
-    })
-    .populate({
-        path: 'createdBy',
-        select: 'profile.displayName auth.email'
-    })
-    .then((payments: IPayment[] | null) =>{
-    
-        return res.json({ 'status': Status.Success, 'payment': payments })
-    })
-    .catch((error: any) => {
-        if (error.message != undefined) {
             return res.json({ 'status': Status.Error, 'message': error.message })
         } else {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
