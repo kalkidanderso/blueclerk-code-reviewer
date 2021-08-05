@@ -17,6 +17,7 @@ export interface ICustomer extends IUser {
     jobLocations: [Schema.Types.ObjectId | IJobLocation]
     quickbookId: string
     balance: number,
+    credit: number,
     itemTier: Schema.Types.ObjectId | IPriceTier
     isCustomPrice?: boolean
     customPrices?: {
@@ -92,6 +93,10 @@ const CustomerSchema = new Schema({
         default: null
     },
     balance: {
+        type: Number,
+        default: 0
+    },
+    credit: {
         type: Number,
         default: 0
     },

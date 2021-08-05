@@ -1076,6 +1076,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         taxAmount: Math.round(taxAmount * 100) / 100,
         subTotal: Math.round(subTotalBeforeTax * 100) / 100,
         total: Math.round(total * 100) / 100,
+        balanceDue: Math.round(total * 100) / 100,
         createdBy: user._id,
         createdAt: Date.now(),
         timeSpent: timeSpent,

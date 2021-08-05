@@ -1,7 +1,8 @@
 import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb'
 
-import { Status, Messages } from '../common/constants'
+import { Status, Messages, InvoiceStatus } from '../common/constants'
+import { ICompany } from '../models/Company'
 import { IUser } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
 import { Payment, IPayment } from '../models/Payment'
@@ -75,7 +76,100 @@ export const getPaymentsByCustomerId = (req: Request, res: Response) => {
 
 }
 
+/**
+ * Create payment for single invoice
+ */
 export const createPayment = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const company = <ICompany>req.company;
+    const user = <IUser>req.user;
+
+    // Find and check if customer existed
+    const customer = await Customer.findOne({
+        _id: params.customerId,
+        company: company._id
+    });
+
+    if (!customer) {
+        return res.json({ status: Status.Error, message: 'Customer not found.' });
+    }
+
+    // Find and check if invoice exited and belongs to the customer
+    const invoice = await Invoice.findOne({
+        _id: params.invoiceId,
+        customer: customer._id,
+        company: company._id
+    });
+
+    if (!invoice) {
+        return res.json({ status: Status.Error, message: 'Invoice not found or does not belong to the customer.' });
+    }
+    if (invoice.status === InvoiceStatus.PAID) {
+        return res.json({ status: Status.Success, message: 'Invoice already paid off.' });
+    }
+
+    // Construct payment entry
+    const payment = new Payment({
+        customer,
+        invoice,
+        amountPaid: params.amount,
+        referenceNumber: params.referenceNumber,
+        paymentType: params.paymentType,
+        paidAt: params.paidAt ? new Date(params.paidAt) : Date.now(),
+        company,
+        createdBy: user,
+        createdAt: Date.now()
+    });
+
+    try {
+        // Save the new payment
+        await payment.save();
+
+        // Handle underpayment and overpayment
+        // 
+        if (parseFloat(params.amount) >= invoice.balanceDue) {
+            /**
+             * This will handle overpayment/exact payment
+             */
+
+            // Deduct the customer balance
+            customer.balance -= invoice.balanceDue;
+            // Add on the customer credit if any
+            customer.credit += (parseFloat(params.amount) - invoice.balanceDue);
+
+            // Update invoice paymentApplied, balanceDue, and status
+            invoice.paymentApplied += invoice.balanceDue;
+            invoice.balanceDue = 0;
+            invoice.status = InvoiceStatus.PAID;
+            invoice.paid = true;
+        } else {
+            /**
+             * This will handle underpayment
+             */
+
+            // Deduct the customer balance
+            customer.balance -= parseFloat(params.amount);
+
+            // Update invoice paymentApplied, balanceDue, and status
+            invoice.paymentApplied += parseFloat(params.amount);
+            invoice.balanceDue -= parseFloat(params.amount);
+            invoice.status = InvoiceStatus.PARTIALLY_PAID;
+        }
+
+        // Save the customer's changes
+        await customer.save();
+        // Save the invoice's changes
+        await invoice.save();
+
+        return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
+    } catch (error) {
+        return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
+    }
+
+}
+
+export const createPaymentMultipleInvoices = async (req: Request, res: Response) => {
 
     const params = req.body;
     const user = <IUser>req.user;

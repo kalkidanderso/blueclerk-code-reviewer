@@ -140,6 +140,20 @@ export enum PaymentTermNames {
     NET_30 = 'Net 30'
 }
 
+export enum InvoiceStatus {
+    UNPAID = 'UNPAID',
+    PARTIALLY_PAID = 'PARTIALLY_PAID',
+    PAID = 'PAID'
+}
+
+export enum PaymentTypes {
+    ACH = 'ACH',
+    BANK_WIRE = 'Bank Wire',
+    CREDIT_DEBIT_CARD = 'Credit Card/Debit Card',
+    CHECK = 'Check',
+    CASH = 'Cash',
+}
+
 export const enum Permissions {
     None,
     Permission_Get_All,

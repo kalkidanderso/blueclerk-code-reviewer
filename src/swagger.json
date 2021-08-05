@@ -8068,7 +8068,7 @@
         "tags": [
           "Payment"
         ],
-        "summary": "To record the payment for invoice(s) made by the customer",
+        "summary": "To record the payment for invoice made by the customer",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -8078,11 +8078,18 @@
         ],
         "parameters": [
           {
-            "name": "invoices",
+            "name": "customerId",
             "in": "formData",
-            "description": "comma seprated invoice ids",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "description": "Pass customer id to who made the payment"
+          },
+          {
+            "name": "invoiceId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of invoice to be paid"
           },
           {
             "name": "amount",
@@ -8101,21 +8108,13 @@
           {
             "name": "paymentType",
             "in": "formData",
-            "required": false,
             "type": "string",
+            "enum": ["ACH", "Bank Wire", "Credit Card/Debit Card", "Check", "Cash"],
             "description": "Method name how customer has paid"
-          },
-          {
-            "name": "customerId",
-            "in": "formData",
-            "required": true,
-            "type": "string",
-            "description": "Pass customer id to who made the payment"
           },
           {
             "name": "paidAt",
             "in": "formData",
-            "required": true,
             "type": "string",
             "description": "Time when the customer has made the payment"
           }
@@ -8135,13 +8134,13 @@
         ]
       }
     },
-    "/updatePayment": {
+    "/WIP/updatePayment": {
       "put": {
         "tags": [
           "Payment"
         ],
-        "summary": "To update payment record",
-        "description": "",
+        "summary": "WIP: To update payment record",
+        "description": "WIP: To update payment record",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
