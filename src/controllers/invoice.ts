@@ -1078,6 +1078,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         paymentTerm,
         customerPO: params.customerPO ?? ticket?.customerPO,
         customerContactId: params.customerContactId ?? ticket?.customerContactId,
+        vendorId: params.vendorId ?? customerObj.vendorId,
         customer: customer,
         company: req.companyId,
         note: params.note,
@@ -1390,7 +1391,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                             isDraft: params.isDraft,
                             paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                             customerPO: params.customerPO,
-                            customerContactId: customerContact
+                            customerContactId: customerContact,
+                            vendorId: params.vendorId
                         }, { omitUndefined: true },
 
                             (err: any) => {
@@ -1545,7 +1547,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                     isDraft: params.isDraft,
                     paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                     customerPO: params.customerPO,
-                    customerContactId: customerContact
+                    customerContactId: customerContact,
+                    vendorId: params.vendorId
                 }, { omitUndefined: true },
                     (err: any) => {
                         if (err) {

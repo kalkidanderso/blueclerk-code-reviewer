@@ -7315,6 +7315,12 @@
             "description": "Pass customer contact id to replace ticket's customer contact id if any (optional)"
           },
           {
+            "name": "vendorId",
+            "in": "formData",
+            "type": "string",
+            "description": "Pass customer vendor id to replace the default customer's vendor id (optional)"
+          },
+          {
             "name": "customerId",
             "in": "formData",
             "required": false,
@@ -7567,6 +7573,12 @@
             "in": "formData",
             "type": "string",
             "description": "Pass customer contact id to replace ticket's customer contact id if any (optional)"
+          },
+          {
+            "name": "vendorId",
+            "in": "formData",
+            "type": "string",
+            "description": "Pass customer vendor id to replace the default customer's vendor id (optional)"
           },
           {
             "name": "charges",

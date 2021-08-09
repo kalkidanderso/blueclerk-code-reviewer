@@ -20,6 +20,7 @@ export interface IInvoice extends Document {
     paymentTerm?: Schema.Types.ObjectId | IPaymentTerm
     customerPO?: string
     customerContactId?: Schema.Types.ObjectId | IContact
+    vendorId?: string
     customer: Schema.Types.ObjectId | ICustomer
     company: Schema.Types.ObjectId
     note: string
@@ -170,6 +171,7 @@ const InvoiceSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Contact',
     },
+    vendorId: String,
     customer: {
         type: Schema.Types.ObjectId,
         ref: 'User',

@@ -4205,6 +4205,10 @@ paths:
           in: formData
           type: string
           desription: Pass customer contact id to replace ticket's customer contact id if any (optional)
+        - name: vendorId
+          in: formData
+          type: string
+          description: Pass customer vendor id to replace the default customer's vendor id (optional)
         - name: customerId
           in: formData
           required: false
@@ -4316,6 +4320,10 @@ paths:
           in: formData
           type: string
           desription: Pass customer contact id to replace ticket's customer contact id if any (optional)
+        - name: vendorId
+          in: formData
+          type: string
+          description: Pass customer vendor id to replace the default customer's vendor id (optional)
         - name: charges
           in: formData
           type: number
