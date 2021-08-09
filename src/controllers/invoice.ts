@@ -2,12 +2,15 @@ import {Request, Response} from 'express';
 import {ObjectId} from 'mongodb'
 import moment from 'moment';
 
+import { IContact } from '../common/contact';
+import { Contact } from '../models/Contact';
 import {IInvoice, Invoice} from '../models/Invoice';
 import {Messages, Status} from '../common/constants';
 import {ICompanyAdmin} from '../models/CompanyAdmin';
 import {Company, ICompany} from '../models/Company';
 import {IInvoicePrefix, InvoicePrefix} from '../models/InvoicePrefix';
 import {IUser} from '../models/User';
+import { IServiceTicket } from '../models/ServiceTicket';
 import {IJob, Job} from '../models/Job';
 import {IPurchaseOrder, PurchaseOrder} from '../models/PurchaseOrder';
 import { IItem, Item } from '../models/Item';
@@ -815,6 +818,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     let subTotalBeforeTax: number = 0
     let total: number = 0;
     let invoiceType: number = 0;
+    let ticket: IServiceTicket;
     let customer : string
     let jobId : string
     // let hourlyRate: number = 0
@@ -830,6 +834,9 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         invoiceType = 0
         customer = job.customer
         jobId = job._id
+
+        await job.populate({ path: 'ticket' }).execPopulate();
+        ticket = job.ticket;
 
         /**
          * Kris' remark (Jun 30th, 2021):
@@ -1067,7 +1074,10 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         jobPurchaseOrders: purchaseOrderIds,
         issuedDate: params.issuedDate ? new Date(params.issuedDate) : Date.now(),
         dueDate: params.dueDate ? new Date(params.dueDate) : moment().add(paymentTerm?.dueDays ?? 30, 'd').valueOf(),
+        isDraft: params.isDraft,
         paymentTerm,
+        customerPO: params.customerPO ?? ticket?.customerPO,
+        customerContactId: params.customerContactId ?? ticket?.customerContactId,
         customer: customer,
         company: req.companyId,
         note: params.note,
@@ -1182,11 +1192,18 @@ export const updateInvoice = (req: Request, res: Response) => {
             // Populate payment term from the company
             await company.populate({ path: 'paymentTerm' }).execPopulate();
 
-            // Retrive payment term for this invoice
+            // Retrieve payment term for this invoice
             let paymentTerm: IPaymentTerm;
             if (params.paymentTermId) {
                 paymentTerm = await PaymentTerm.findOne({ _id: params.paymentTermId, isActive: true });
             }
+
+            // Retrieve customer contact for this invoice
+            let customerContact: IContact;
+            if (params.customerContactId) {
+                customerContact = await Contact.findById(params.customerContactId);
+            }
+
             /**
              * Priority order: 1) User params 2) Customer default term 3) Company default term,
              * otherwise leave paymentTerm to be blank
@@ -1198,7 +1215,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                 Job.findById(invoice.job)
                     .then((job : any) => {
                         if (job == undefined || job == null) {
-                            throw new Error('job for this invoice is not fount')
+                            throw new Error('job for this invoice is not found')
                         }
 
                         const POPromise = PurchaseOrder.find({
@@ -1230,6 +1247,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                         let taxAmount: number = 0;
                         let subTotalBeforeTax: number = 0;
                         let total: number = 0;
+                        let balanceDue = invoice.balanceDue;
+                        const oldTotal = invoice.total;
 
                         // if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
                         //     (params.charges == undefined || params.charges == null || params.charges == '""' )) {
@@ -1339,6 +1358,7 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                         // Add the grand total with the tax amount
                         total += taxAmount;
+                        balanceDue += (total - oldTotal);
 
                         /**
                          * Check if invoice coming from Job and customer uses customPrice,
@@ -1365,9 +1385,13 @@ export const updateInvoice = (req: Request, res: Response) => {
                             taxAmount: Math.round(taxAmount * 100) / 100,
                             subTotal: Math.round(subTotalBeforeTax * 100) / 100,
                             total: Math.round(total * 100) / 100,
+                            balanceDue: Math.round(balanceDue * 100) / 100,
                             charges, issuedDate, dueDate, note: params.note,
-                            paymentTerm: params.paymentTermId ? paymentTerm : undefined
-                        },
+                            isDraft: params.isDraft,
+                            paymentTerm: params.paymentTermId ? paymentTerm : undefined,
+                            customerPO: params.customerPO,
+                            customerContactId: customerContact
+                        }, { omitUndefined: true },
 
                             (err: any) => {
                                 if (err) {
@@ -1376,6 +1400,10 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                                 return res.json({'status': Status.Success, 'message': "Invoice updated successfully."})
                             })
+                    })
+                    .catch((error: any) => {
+                        console.log('== error:', error);
+                        return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
                     })
             } else {
 
@@ -1395,6 +1423,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                 let taxAmount: number = 0;
                 let subTotalBeforeTax: number = 0;
                 let total: number = 0;
+                let balanceDue = invoice.balanceDue;
+                const oldTotal = invoice.total;
 
                 // if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
                 //     (params.charges == undefined || params.charges == null || params.charges == '""' )) {
@@ -1483,6 +1513,7 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                 // Add the grand total with the tax amount
                 total +=  taxAmount;
+                balanceDue += (total - oldTotal);
 
                 /**
                  * Check if invoice coming from Job and customer uses customPrice,
@@ -1509,9 +1540,13 @@ export const updateInvoice = (req: Request, res: Response) => {
                     taxAmount: Math.round(taxAmount * 100) / 100,
                     subTotal: Math.round(subTotalBeforeTax * 100) / 100,
                     total: Math.round(total * 100) / 100,
+                    balanceDue: Math.round(balanceDue * 100) / 100,
                     issuedDate, dueDate, note: params.note,
-                    paymentTerm: params.paymentTermId ? paymentTerm : undefined
-                },
+                    isDraft: params.isDraft,
+                    paymentTerm: params.paymentTermId ? paymentTerm : undefined,
+                    customerPO: params.customerPO,
+                    customerContactId: customerContact
+                }, { omitUndefined: true },
                     (err: any) => {
                         if (err) {
                             return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -1551,6 +1586,10 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
         .populate({
             path: 'paymentTerm',
             select: '-company -__v'
+        })
+        .populate({
+            path: 'customerContactId',
+            select: '-__v'
         })
         .populate({
             path: 'items.item',
@@ -1674,6 +1713,10 @@ export const getInvoices = (req: Request, res: Response) => {
         .populate({
             path: 'paymentTerm',
             select: '-company -__v'
+        })
+        .populate({
+            path: 'customerContactId',
+            select: '-__v'
         })
         .populate({
             path: 'items.item',

@@ -4180,11 +4180,31 @@ paths:
           in: formData
           type: string
           description: Due date of the invoice
+        - name: isDraft
+          in: formData
+          type: boolean
+          enum:
+            - true
+            - false
+          description: Mark the invoice as draft, default to true for new invoice
+        - name: paymentTermId
+          in: formData
+          required: false
+          type: string
+          description: Pass payment term id
         - name: estimateId
           in: formData
           required: false
           type: string
           description: Pass estimate id to create estimate invoice (optional)
+        - name: customerPO
+          in: formData
+          type: string
+          description: Pass customer PO to replace ticket's customer PO if any (optional)
+        - name: customerContactId
+          in: formData
+          type: string
+          desription: Pass customer contact id to replace ticket's customer contact id if any (optional)
         - name: customerId
           in: formData
           required: false
@@ -4276,6 +4296,26 @@ paths:
           in: formData
           type: string
           description: Due date of the invoice
+        - name: isDraft
+          in: formData
+          type: boolean
+          enum:
+            - true
+            - false
+          description: Mark the invoice as draft, default to true for new invoice
+        - name: paymentTermId
+          in: formData
+          required: false
+          type: string
+          description: Pass payment term id
+        - name: customerPO
+          in: formData
+          type: string
+          description: Pass customer PO to replace ticket's customer PO if any (optional)
+        - name: customerContactId
+          in: formData
+          type: string
+          desription: Pass customer contact id to replace ticket's customer contact id if any (optional)
         - name: charges
           in: formData
           type: number
@@ -4406,6 +4446,160 @@ paths:
   #           $ref: '#/definitions/GeneralAPIResponse'
   #     security:
   #       - Bearer: []
+  /setCompanyDefaultPaymentTerm:
+    post:
+      tags:
+        - Payment Term
+      summary: To set default payment term for company
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: paymentTermId
+          in: formData
+          type: string
+          required: true
+          description: Id of the payment term
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /setCustomerPaymentTerm:
+    post:
+      tags:
+        - Payment Term
+      summary: To set payment term for customer
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: customerId
+          in: formData
+          type: string
+          required: true
+          description: Id of the customer
+        - name: paymentTermId
+          in: formData
+          type: string
+          required: true
+          description: Id of the payment term
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getPaymentTerms:
+    get:
+      tags:
+        - Payment Term
+      summary: To get all payment terms of company
+      description: ''
+      produces:
+        - application/json
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /createPaymentTerm:
+    post:
+      tags:
+        - Payment Term
+      summary: To create a new payment term
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: name
+          in: formData
+          type: string
+          required: true
+          description: Name of the payment term
+        - name: dueDays
+          in: formData
+          type: number
+          required: true
+          description: Due days of the payment term
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updatePaymentTerm:
+    put:
+      tags:
+        - Payment Term
+      summary: 'To update a payment term'
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: paymentTermId
+          in: formData
+          type: string
+          required: true
+          description: Id of the payment term
+        - name: name
+          in: formData
+          type: string
+          description: Name of the payment term
+        - name: dueDays
+          in: formData
+          type: number
+          description: Due days of the payment term
+        - name: isActive
+          in: formData
+          type: boolean
+          enum:
+            - true
+            - false
+          description: Active status of the payment term
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /deletePaymentTerm:
+    get:
+      tags:
+        - Payment Term
+      summary: 'To delete a payment term'
+      description: ''
+      produces:
+        - application/json
+      parameters:
+        - name: paymentTermId
+          in: query
+          type: string
+          required: true
+          description: Id of the payment term to be deleted
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /getInvoicesByCustomerId:
     post:
       tags:
