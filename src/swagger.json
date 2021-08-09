@@ -7282,6 +7282,13 @@
             "description": "Due date of the invoice"
           },
           {
+            "name": "isDraft",
+            "in": "formData",
+            "type": "boolean",
+            "enum": [true, false],
+            "description": "Mark the invoice as draft, default to true for new invoice"
+          },
+          {
             "name": "paymentTermId",
             "in": "formData",
             "required": false,
@@ -7294,6 +7301,18 @@
             "required": false,
             "type": "string",
             "description": "Pass estimate id to create estimate invoice (optional)"
+          },
+          {
+            "name": "customerPO",
+            "in": "formData",
+            "type": "string",
+            "description": "Pass customer PO to replace ticket's customer PO if any (optional)"
+          },
+          {
+            "name": "customerContactId",
+            "in": "formData",
+            "type": "string",
+            "description": "Pass customer contact id to replace ticket's customer contact id if any (optional)"
           },
           {
             "name": "customerId",
@@ -7524,11 +7543,30 @@
             "description": "Due date of the invoice"
           },
           {
+            "name": "isDraft",
+            "in": "formData",
+            "type": "boolean",
+            "enum": [true, false],
+            "description": "Mark the invoice as draft, default to true for new invoice"
+          },
+          {
             "name": "paymentTermId",
             "in": "formData",
             "required": false,
             "type": "string",
             "description": "Pass payment term id"
+          },
+          {
+            "name": "customerPO",
+            "in": "formData",
+            "type": "string",
+            "description": "Pass customer PO to replace ticket's customer PO if any (optional)"
+          },
+          {
+            "name": "customerContactId",
+            "in": "formData",
+            "type": "string",
+            "description": "Pass customer contact id to replace ticket's customer contact id if any (optional)"
           },
           {
             "name": "charges",

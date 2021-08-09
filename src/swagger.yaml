@@ -4180,11 +4180,26 @@ paths:
           in: formData
           type: string
           description: Due date of the invoice
+        - name: isDraft
+          in: formData
+          type: boolean
+          enum:
+            - true
+            - false
+          description: Mark the invoice as draft, default to true for new invoice
         - name: estimateId
           in: formData
           required: false
           type: string
           description: Pass estimate id to create estimate invoice (optional)
+        - name: customerPO
+          in: formData
+          type: string
+          description: Pass customer PO to replace ticket's customer PO if any (optional)
+        - name: customerContactId
+          in: formData
+          type: string
+          desription: Pass customer contact id to replace ticket's customer contact id if any (optional)
         - name: customerId
           in: formData
           required: false
@@ -4276,6 +4291,21 @@ paths:
           in: formData
           type: string
           description: Due date of the invoice
+        - name: isDraft
+          in: formData
+          type: boolean
+          enum:
+            - true
+            - false
+          description: Mark the invoice as draft, default to true for new invoice
+        - name: customerPO
+          in: formData
+          type: string
+          description: Pass customer PO to replace ticket's customer PO if any (optional)
+        - name: customerContactId
+          in: formData
+          type: string
+          desription: Pass customer contact id to replace ticket's customer contact id if any (optional)
         - name: charges
           in: formData
           type: number

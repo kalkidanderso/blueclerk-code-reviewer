@@ -232,7 +232,14 @@ export const Validations = {
 
   deleteJobCharges: [check('jobChargesId').exists()],
 
-  createInvoice: [check('jobId').optional().isMongoId().withMessage(Messages.WrongId), check('purchaseOrderId').optional().isMongoId().withMessage(Messages.WrongId), check('estimateId').optional().isMongoId().withMessage(Messages.WrongId), check('customerId').optional().isMongoId().withMessage(Messages.WrongId), check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId)],
+  createInvoice: [
+    check('jobId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('purchaseOrderId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('estimateId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId)
+  ],
 
   sendInvoice: [check('invoiceId').exists()],
 
@@ -240,7 +247,12 @@ export const Validations = {
 
   createPOInvoice: [check('purchaseOrderId').exists()],
 
-  updateInvoice: [check('invoiceId').exists().withMessage(Messages.Required), check('invoiceId').isMongoId().withMessage(Messages.WrongId), check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId)],
+  updateInvoice: [
+    check('invoiceId').exists().withMessage(Messages.Required),
+    check('invoiceId').isMongoId().withMessage(Messages.WrongId),
+    check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId)
+  ],
 
   companyInvoice: [check('companyInvoiceId').exists()],
 

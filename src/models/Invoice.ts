@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import { InvoiceStatus } from '../common/constants';
 import { ICustomer, IQBAddress } from '../models/Customer';
+import { IContact } from '../common/contact';
 import { IItem } from '../models/Item';
 import { IJob } from '../models/Job';
 import { IPaymentTerm } from '../models/PaymentTerm';
@@ -15,7 +16,10 @@ export interface IInvoice extends Document {
     jobPurchaseOrders: [Schema.Types.ObjectId]
     issuedDate?: Date
     dueDate?: Date
+    isDraft?: boolean
     paymentTerm?: Schema.Types.ObjectId | IPaymentTerm
+    customerPO?: string
+    customerContactId?: Schema.Types.ObjectId | IContact
     customer: Schema.Types.ObjectId | ICustomer
     company: Schema.Types.ObjectId
     note: string
@@ -149,6 +153,10 @@ const InvoiceSchema = new Schema({
     dueDate: {
         type: Date
     },
+    isDraft: {
+        type: Boolean,
+        default: true
+    },
     paymentTerm: {
         type: Schema.Types.ObjectId,
         ref: 'PaymentTerm'
@@ -156,6 +164,11 @@ const InvoiceSchema = new Schema({
     note: {
         type: String,
         required: false
+    },
+    customerPO: String,
+    customerContactId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Contact',
     },
     customer: {
         type: Schema.Types.ObjectId,
