@@ -5,7 +5,7 @@ import moment from 'moment';
 import { IContact } from '../common/contact';
 import { Contact } from '../models/Contact';
 import {IInvoice, Invoice} from '../models/Invoice';
-import {Messages, Status} from '../common/constants';
+import {InvoiceStatus, Messages, Status} from '../common/constants';
 import {ICompanyAdmin} from '../models/CompanyAdmin';
 import {Company, ICompany} from '../models/Company';
 import {IInvoicePrefix, InvoicePrefix} from '../models/InvoicePrefix';
@@ -1249,6 +1249,9 @@ export const updateInvoice = (req: Request, res: Response) => {
                         let subTotalBeforeTax: number = 0;
                         let total: number = 0;
                         let balanceDue = invoice.balanceDue;
+                        let paymentApplied = invoice.paymentApplied;
+                        let paid = invoice.paid;
+                        let status = invoice.status;
                         const oldTotal = invoice.total;
 
                         // if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
@@ -1361,6 +1364,27 @@ export const updateInvoice = (req: Request, res: Response) => {
                         total += taxAmount;
                         balanceDue += (total - oldTotal);
 
+                        // Check if invoice updated and several conditions met
+                        if (balanceDue <= 0) {
+                            /**
+                             * Invoice updated to the point balanceDue paid off or even minus,
+                             * if minus, will put the extra payment to cust's credit,
+                             * then mark invoice as PAID
+                             */
+                            customerObj.credit += Math.abs(balanceDue);
+                            paymentApplied = total;
+                            balanceDue = 0;
+                            status = InvoiceStatus.PAID;
+                            paid = true;
+                        } else {
+                            /**
+                             * Balance due still existed or even come back,
+                             * make sure status goes to PARTIALLY PAID or UNPAID
+                             */
+                            status = paymentApplied > 0 ? InvoiceStatus.PARTIALLY_PAID : InvoiceStatus.UNPAID;
+                            paid = false;
+                        }
+
                         /**
                          * Check if invoice coming from Job and customer uses customPrice,
                          * Use the customer customPrice's price as the grand total of invoice
@@ -1387,6 +1411,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                             subTotal: Math.round(subTotalBeforeTax * 100) / 100,
                             total: Math.round(total * 100) / 100,
                             balanceDue: Math.round(balanceDue * 100) / 100,
+                            paymentApplied: Math.round(paymentApplied * 100) / 100,
+                            status, paid,
                             charges, issuedDate, dueDate, note: params.note,
                             isDraft: params.isDraft,
                             paymentTerm: params.paymentTermId ? paymentTerm : undefined,
@@ -1395,12 +1421,18 @@ export const updateInvoice = (req: Request, res: Response) => {
                             vendorId: params.vendorId
                         }, { omitUndefined: true },
 
-                            (err: any) => {
+                            async (err: any) => {
                                 if (err) {
-                                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                                    return res.json({ status: Status.Error, message: Messages.GenericError });
                                 }
 
-                                return res.json({'status': Status.Success, 'message': "Invoice updated successfully."})
+                                // Save the new credit of customer
+                                await customerObj.save();
+
+                                // Retrieve invoice after the update process
+                                invoice = await Invoice.findById(invoice._id);
+
+                                return res.json({ status: Status.Success, message: "Invoice updated successfully.", invoice });
                             })
                     })
                     .catch((error: any) => {
@@ -1426,6 +1458,9 @@ export const updateInvoice = (req: Request, res: Response) => {
                 let subTotalBeforeTax: number = 0;
                 let total: number = 0;
                 let balanceDue = invoice.balanceDue;
+                let paymentApplied = invoice.paymentApplied;
+                let paid = invoice.paid;
+                let status = invoice.status;
                 const oldTotal = invoice.total;
 
                 // if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
@@ -1517,6 +1552,27 @@ export const updateInvoice = (req: Request, res: Response) => {
                 total +=  taxAmount;
                 balanceDue += (total - oldTotal);
 
+                // Check if invoice updated and several conditions met
+                if (balanceDue <= 0) {
+                    /**
+                     * Invoice updated to the point balanceDue paid off or even minus,
+                     * if minus, will put the extra payment to cust's credit,
+                     * then mark invoice as PAID
+                     */
+                    customerObj.credit += Math.abs(balanceDue);
+                    paymentApplied = total;
+                    balanceDue = 0;
+                    status = InvoiceStatus.PAID;
+                    paid = true;
+                } else {
+                    /**
+                     * Balance due still existed or even come back,
+                     * make sure status goes to PARTIALLY PAID or UNPAID
+                     */
+                    status = paymentApplied > 0 ? InvoiceStatus.PARTIALLY_PAID : InvoiceStatus.UNPAID;
+                    paid = false;
+                }
+
                 /**
                  * Check if invoice coming from Job and customer uses customPrice,
                  * Use the customer customPrice's price as the grand total of invoice
@@ -1543,6 +1599,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                     subTotal: Math.round(subTotalBeforeTax * 100) / 100,
                     total: Math.round(total * 100) / 100,
                     balanceDue: Math.round(balanceDue * 100) / 100,
+                    paymentApplied: Math.round(paymentApplied * 100) / 100,
+                    status, paid,
                     issuedDate, dueDate, note: params.note,
                     isDraft: params.isDraft,
                     paymentTerm: params.paymentTermId ? paymentTerm : undefined,
@@ -1550,12 +1608,18 @@ export const updateInvoice = (req: Request, res: Response) => {
                     customerContactId: customerContact,
                     vendorId: params.vendorId
                 }, { omitUndefined: true },
-                    (err: any) => {
+                    async (err: any) => {
                         if (err) {
-                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            return res.json({ status: Status.Error, message: Messages.GenericError });
                         }
 
-                        return res.json({'status': Status.Success, 'message': "Invoice updated successfully."})
+                        // Save the new credit of customer
+                        await customerObj.save();
+
+                        // Retrieve invoice after the update process
+                        invoice = await Invoice.findById(invoice._id);
+
+                        return res.json({ status: Status.Success, message: "Invoice updated successfully.", invoice });
                     })
 
             }

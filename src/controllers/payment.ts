@@ -127,7 +127,6 @@ export const createPayment = async (req: Request, res: Response) => {
         await payment.save();
 
         // Handle underpayment and overpayment
-        // 
         if (parseFloat(params.amount) >= invoice.balanceDue) {
             /**
              * This will handle overpayment/exact payment
