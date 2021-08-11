@@ -33,6 +33,18 @@ export const DefaultPaymentTerms = [
     }
 ]
 
+export interface IQBPaymentTerm {
+
+    Id?: string
+    Name: string
+    Active: boolean
+    DueDays: number
+    Type?: 'STANDARD' | 'DATE_DRIVEN'
+    DiscountPercent?: number
+    DiscountDays?: number
+
+}
+
 const PaymentTermSchema = new Schema(
 
     {

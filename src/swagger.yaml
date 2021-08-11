@@ -5629,6 +5629,23 @@ paths:
             $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
+  /syncQBPaymentTerms:
+    post:
+      tags:
+        - Quickbooks Payment Term
+      summary: Manually syncing ALL payment terms
+      description: Manually syncing ALL payment terms from BlueClerk to QuickBooks and vice versa,
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /syncQBInvoices:
     post:
       tags:

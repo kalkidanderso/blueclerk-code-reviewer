@@ -74,6 +74,8 @@ export interface ICompany extends Document{
         customersSyncedAt?: Date
         itemsSynced?: boolean
         itemsSyncedAt?: Date
+        paymentTermSynced?: boolean
+        paymentTermSynedAt?: Date
         invoicesSynced?: boolean
         invoicesSyncedAt?: Date
     }
@@ -216,6 +218,11 @@ const CompanySchema = new Schema({
             default: false
         },
         itemsSyncedAt: Date,
+        paymentTermSynced: {
+            type: Boolean,
+            default: false
+        },
+        paymentTermSynedAt: Date,
         invoicesSynced: {
             type: Boolean,
             default: false
