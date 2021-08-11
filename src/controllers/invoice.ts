@@ -22,7 +22,7 @@ import {CompanyInvoice} from '../models/CompanyInvoice';
 import { IJobReport, JobReport } from '../models/JobReport';
 import { IPriceTier } from '../models/PriceTier';
 import { IPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
-import { _createQBInvoice } from '../controllers/quickbook';
+import { _createQBInvoice } from '../controllers/quickbook.invoice';
 
 export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 

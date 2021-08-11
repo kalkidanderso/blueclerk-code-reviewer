@@ -32,6 +32,7 @@ import * as customerImportController from '../controllers/customerImport'
 import * as serviceTicketController from '../controllers/serviceTicket'
 import * as quickBookController from '../controllers/quickbook'
 import * as quickBookPaymentTermController from '../controllers/quickbook.paymentTerm'
+import * as quickBookInvoiceController from '../controllers/quickbook.invoice'
 import * as companyController from '../controllers/company'
 import * as invoiceController from '../controllers/invoice'
 import * as partController from '../controllers/part'
@@ -1077,14 +1078,14 @@ export default function (sio: any) {
         '/createQBInvoice',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        quickBookController.createQBInvoice
+        quickBookInvoiceController.createQBInvoice
     )
 
     router.post(
         '/syncQBInvoices',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        quickBookController.syncQBInvoices
+        quickBookInvoiceController.syncQBInvoices
     )
 
     router.post(

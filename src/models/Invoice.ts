@@ -79,6 +79,10 @@ export interface IQBInvoice {
     TaxTaxDetail?: {
         TotalTax?: number
     }
+    SalesTermRef?: {
+        name?: string
+        value: string
+    }
     CustomerRef: {
         name?: string
         value: string
