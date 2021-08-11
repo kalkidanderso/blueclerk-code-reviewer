@@ -29,7 +29,7 @@ const _oauthClient = new OAuthClient({
     redirectUri: qbConfig.qb_redirect_uri
 });
 
-const _getQbo = (oauthToken: string, realmId: string, refreshToken: string) => {
+export const _getQbo = (oauthToken: string, realmId: string, refreshToken: string) => {
     return new QuickBooks(
         qbConfig.qb_client_id,
         qbConfig.qb_client_secret,
@@ -44,7 +44,7 @@ const _getQbo = (oauthToken: string, realmId: string, refreshToken: string) => {
     )
 };
 
-const _refreshToken = (req: Request, res: Response, company: ICompany, next: (error: number, errorMessage: string, company: ICompany) => void) => {
+export const _refreshToken = (req: Request, res: Response, company: ICompany, next: (error: number, errorMessage: string, company: ICompany) => void) => {
 
     var oauthClient = new OAuthClient({
         clientId: qbConfig.qb_client_id,

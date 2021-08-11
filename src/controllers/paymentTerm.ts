@@ -3,7 +3,8 @@ import { Status } from '../common/constants';
 import { IUser } from '../models/User';
 import { ICompany } from '../models/Company';
 import { Customer } from '../models/Customer';
-import { IPaymentTerm, DefaultPaymentTerms, PaymentTerm } from '../models/PaymentTerm';
+import { IPaymentTerm, DefaultPaymentTerms, IQBPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
+import { _createQBPaymentTerm } from '../controllers/quickbook.paymentTerm';
 
 export const _createDefaultPaymentTerms = async (company: ICompany): Promise<void> => {
 
@@ -119,7 +120,24 @@ export const createPaymentTerm = async (req: Request, res: Response) => {
 
     await paymentTerm.save();
 
-    return res.json({ status: Status.Success, message: 'Payment Term successfully created', paymentTerm });
+    if (company.qbAuthorized) {
+        // Create QB Payment Term
+        _createQBPaymentTerm(req, res, company, paymentTerm, async (err: any, errMsg: any, qbPaymentTerm: IQBPaymentTerm) => {
+            if (err) {
+                return res.json({ status: err, message: errMsg });
+            }
+
+            if (qbPaymentTerm) {
+                // Update quickbookId of our Payment Term
+                paymentTerm.quickbookId = qbPaymentTerm.Id;
+                await paymentTerm.save();
+
+                return res.json({ status: Status.Success, message: 'Payment Term successfully created', paymentTerm, quickbookPaymentTerm: qbPaymentTerm });
+            }
+        })
+    } else {
+        return res.json({ status: Status.Success, message: 'Payment Term successfully created', paymentTerm });
+    }
 
 }
 
