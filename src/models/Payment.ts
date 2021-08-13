@@ -15,10 +15,52 @@ export interface IPayment extends Document {
     paymentType: PaymentTypes
     paidAt: Date
     company: Schema.Types.ObjectId | ICompany
+    quickbookId?: string
     createdBy: Schema.Types.ObjectId | IUser
     createdAt: Date
     updatedBy: Schema.Types.ObjectId | IUser
     updatedAt: Date
+}
+
+export interface IQBPayment {
+    Id?: string
+    TxnDate?: Date
+    CustomerRef: {
+        value: string
+        name?: string
+    }
+    Line: {
+        Amount: number
+        LinkedTxn: {
+            TxnId: string
+            TxnType: IQBPaymentTxnTypes
+            TxnLineId?: string
+        }[]
+    }[]
+    TotalAmt: number
+    UnappliedAmt?: number
+    PaymentRefNum?: string
+    PaymentMethodRef?: {
+        value: string
+        name?: string
+    }
+    PrivateNote?: string
+}
+
+export interface IQBPaymentMethod {
+    Id?: string
+    Name: string
+    Type: 'CREDIT_CARD' | 'NON_CREDIT_CARD'
+    Active?: boolean
+}
+
+export enum IQBPaymentTxnTypes {
+    EXPENSE = 'Expense',
+    CHECK = 'Check',
+    CREDIT_CARD_CREDIT = 'CreditCardCredit',
+    JOURNAL_ENTRY = 'JournalEntry',
+    CREDIT_MEMO = 'CreditMemo',
+    INVOICE = 'Invoice'
 }
 
 const PaymentSchema = new Schema({
@@ -50,6 +92,7 @@ const PaymentSchema = new Schema({
         ref: 'Company',
         required: true
     },
+    quickbookId: String,
     createdBy: {
         type: Schema.Types.ObjectId,
         ref: 'User',

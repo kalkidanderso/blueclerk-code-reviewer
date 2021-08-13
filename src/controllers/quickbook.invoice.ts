@@ -9,8 +9,10 @@ import { IServiceTicket } from '../models/ServiceTicket';
 import { IJob } from '../models/Job';
 import { IItem } from '../models/Item';
 import { IPaymentTerm } from '../models/PaymentTerm';
+import { Payment } from '../models/Payment';
 import { IInvoice, IQBInvoice, IQBInvoiceLine, LineDetailTypes, Invoice } from '../models/Invoice';
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
+import { _createQBPayment } from '../controllers/quickbook.payment';
 
 // ===================================
 // =======[ QUICKBOOK INVOICE ]=======
@@ -35,6 +37,7 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
             }, { path: 'jobLocation' }]
         })
         .populate({ path: 'items.item' })
+        .populate({ path: 'customerContactId' })
         .execPopulate();
 
     // Customer of the invoice
@@ -43,6 +46,7 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
     const job = <IJob>invoice.job;
     const serviceTicket = <IServiceTicket>job?.ticket;
     const jobLocation = <IJobLocation>job?.jobLocation;
+    const invCustContact = <IContact>invoice.customerContactId;
     const customerContact = <IContact>serviceTicket?.customerContactId;
 
     // Always refresh the token first because token valid only for 60 minutes
@@ -126,13 +130,13 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
                     DefinitionId: '1',
                     Name: 'Customer PO',
                     Type: 'StringType',
-                    StringValue: serviceTicket?.customerPO
+                    StringValue: invoice.customerPO || serviceTicket?.customerPO
                 },
                 {
                     DefinitionId: '2',
                     Name: 'Vendor Number',
                     Type: 'StringType',
-                    StringValue: customer.vendorId
+                    StringValue: invoice.vendorId || customer.vendorId
                 }
             ]
         };
@@ -148,9 +152,9 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
         }
 
         // Fill in Customer Contact associated if any
-        if (customerContact) {
+        if (invCustContact || customerContact) {
             qbInvoiceEntry.CustomerMemo = {
-                value: `ORDERED BY:\n${customerContact?.name}`
+                value: `ORDERED BY:\n${invCustContact?.name || customerContact?.name}`
             }
         }
 
@@ -218,18 +222,38 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
         quickbookId: { $exists: false }
     });
 
+    /**
+     * Retrieve all payments of this company from Database,
+     * that doesn't have quickbookId 
+     */ 
+    const payments = await Payment.find({
+        company: company._id,
+        quickbookId: { $exists: false }
+    });
+
     // Return immediately when no invoices to be synced
-    if (invoices.length <= 0) {
-        return res.json({ status: Status.Success, message: 'No invoices to be synced.' });
+    if (invoices.length <= 0 && payments.length <= 0) {
+        return res.json({ status: Status.Success, message: 'No invoices & payments to be synced.' });
     }
 
     // Iterate all invoices from DB
     for (const invoice of invoices) {
-        // Invoice not exist on QB, create it
+        // Create invoice on QB
         _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
             if (qbInvoice) {
-                invoice.quickbookId = qbInvoice.Id;
-                invoice.save();
+                // invoice.quickbookId = qbInvoice.Id;
+                // invoice.save();
+                Invoice.findByIdAndUpdate(invoice._id, { quickbookId: qbInvoice.Id }).exec();
+            }
+        })
+    }
+
+    // Iterate all paymens from DB
+    for (const payment of payments) {
+        // Create payment on QB
+        _createQBPayment(req, res, company, payment, (err, errMsg, qbPayment) => {
+            if (qbPayment) {
+                Payment.findByIdAndUpdate(payment._id, { quickbookId: qbPayment.Id }).exec();
             }
         })
     }
@@ -238,7 +262,7 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
     company.qbSync.invoicesSyncedAt = new Date();
     company.save();
 
-    return res.json({ status: Status.Success, message: 'Invoice synced successfully.' });
+    return res.json({ status: Status.Success, message: 'Invoices & payments synced successfully.' });
 
 }
 
