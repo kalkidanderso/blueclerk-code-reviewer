@@ -7,6 +7,7 @@ import { IUser } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
 import { Payment, IPayment } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
+import { _createQBPayment } from './quickbook.payment'
 
 export const getPayments = (req: Request, res: Response) => {
 
@@ -161,11 +162,33 @@ export const createPayment = async (req: Request, res: Response) => {
         }
 
         // Save the customer's changes
-        await customer.save();
+        customer.save();
         // Save the invoice's changes
-        await invoice.save();
+        invoice.save();
 
-        return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
+        if (company.qbAuthorized) {
+            // Create new Payment in QuickBooks
+            _createQBPayment(req, res, company, payment, (err, errMsg, qbPayment) => {
+                if (err) {
+                    return res.json({ status: err, message: errMsg });
+                }
+
+                if (qbPayment) {
+                    payment.quickbookId = qbPayment.Id;
+                    payment.save();
+                }
+
+                return res.json({
+                    status: Status.Success,
+                    message: 'Payment successfully created.',
+                    payment, quickbookPayment: qbPayment,
+                    customer, invoice
+                });
+            });
+        } else {
+            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
+        }
+
     } catch (error) {
         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
     }

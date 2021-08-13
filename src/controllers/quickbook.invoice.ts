@@ -35,6 +35,7 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
             }, { path: 'jobLocation' }]
         })
         .populate({ path: 'items.item' })
+        .populate({ path: 'customerContactId' })
         .execPopulate();
 
     // Customer of the invoice
@@ -43,6 +44,7 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
     const job = <IJob>invoice.job;
     const serviceTicket = <IServiceTicket>job?.ticket;
     const jobLocation = <IJobLocation>job?.jobLocation;
+    const invCustContact = <IContact>invoice.customerContactId;
     const customerContact = <IContact>serviceTicket?.customerContactId;
 
     // Always refresh the token first because token valid only for 60 minutes
@@ -126,13 +128,13 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
                     DefinitionId: '1',
                     Name: 'Customer PO',
                     Type: 'StringType',
-                    StringValue: serviceTicket?.customerPO
+                    StringValue: invoice.customerPO || serviceTicket?.customerPO
                 },
                 {
                     DefinitionId: '2',
                     Name: 'Vendor Number',
                     Type: 'StringType',
-                    StringValue: customer.vendorId
+                    StringValue: invoice.vendorId || customer.vendorId
                 }
             ]
         };
@@ -148,9 +150,9 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
         }
 
         // Fill in Customer Contact associated if any
-        if (customerContact) {
+        if (invCustContact || customerContact) {
             qbInvoiceEntry.CustomerMemo = {
-                value: `ORDERED BY:\n${customerContact?.name}`
+                value: `ORDERED BY:\n${invCustContact?.name || customerContact?.name}`
             }
         }
 
