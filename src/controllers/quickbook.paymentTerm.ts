@@ -2,12 +2,39 @@ import { Request, Response } from 'express';
 import { Status, Messages, Role } from '../common/constants';
 import { IUser } from '../models/User';
 import { ICompany, Company } from '../models/Company';
-import { IPaymentTerm, IQBPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
+import { IPaymentTerm, DefaultPaymentTerms, IQBPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
 
 // =========================================
 // =======[ QUICKBOOKS PAYMENT TERM ]=======
 // =========================================
+
+export const _syncQBDefaultPaymentTerms = async (req: Request, res: Response, company: ICompany) => {
+
+    // Collect all default payment terms name in one array
+    const names = DefaultPaymentTerms.map(term => term.name);
+
+    // Search default payment terms of the company
+    const defaultTerms = await PaymentTerm.find({
+        company: company._id,
+        isActive: true,
+        name: { $in: names }
+    });
+
+    // Iterate the default terms to check if it is synced or not
+    for (const paymentTerm of defaultTerms) {
+        if (!paymentTerm.quickbookId) {
+            // Payment term doesn't have quickbookId, find/create it on QB
+            _createQBPaymentTerm(req, res, company, paymentTerm, async (err: any, errMsg: any, qbPaymentTerm: IQBPaymentTerm) => {
+                if (qbPaymentTerm) {
+                    // Update quickbookId of our Payment Term
+                    PaymentTerm.findByIdAndUpdate(paymentTerm._id, { quickbookId: qbPaymentTerm.Id }).exec();
+                }
+            });
+        }
+    };
+
+}
 
 export const _createQBPaymentTerm = async (req: Request, res: Response, company: ICompany, paymentTerm: IPaymentTerm, next: (error: number, errorMessage: string, qbPaymentTerm: IQBPaymentTerm) => void) => {
 

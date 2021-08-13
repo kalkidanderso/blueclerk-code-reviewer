@@ -4,7 +4,7 @@ import { IUser } from '../models/User';
 import { ICompany } from '../models/Company';
 import { Customer } from '../models/Customer';
 import { IPaymentTerm, DefaultPaymentTerms, IQBPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
-import { _createQBPaymentTerm } from '../controllers/quickbook.paymentTerm';
+import { _syncQBDefaultPaymentTerms, _createQBPaymentTerm } from '../controllers/quickbook.paymentTerm';
 
 export const _createDefaultPaymentTerms = async (company: ICompany): Promise<void> => {
 
@@ -92,7 +92,11 @@ export const getPaymentTerms = async (req: Request, res: Response) => {
 
     const company = <ICompany>req.company;
 
+    // Check and create default payment terms of the company
     await _createDefaultPaymentTerms(company);
+
+    // Check and sync default payments in background
+    _syncQBDefaultPaymentTerms(req, res, company);
 
     const paymentTerms = await PaymentTerm.find({
         company: company._id,
