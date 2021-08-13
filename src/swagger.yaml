@@ -5650,8 +5650,8 @@ paths:
     post:
       tags:
         - Quickbooks Integration
-      summary: Manually syncing ALL invoices
-      description: 'Manually syncing ALL invoices **from BlueClerk to QuickBooks only**'
+      summary: Manually syncing UNSYNCED invoices & payments
+      description: 'Manually syncing UNSYNCED invoices & payment **from BlueClerk to QuickBooks only**'
       consumes:
         - application/x-www-form-urlencoded
       produces:
