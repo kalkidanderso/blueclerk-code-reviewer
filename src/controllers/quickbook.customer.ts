@@ -1,4 +1,4 @@
-import {Request, Response} from 'express'
+import { Request, Response } from 'express'
 import { Status, Messages, Role} from '../common/constants'
 import { qbConfig } from '../common/config'
 
@@ -9,7 +9,7 @@ import { ICompany, Company } from '../models/Company'
 import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
 import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
-import { _getQbo, _refreshToken, get } from '../controllers/quickbook';
+import { _getQbo, _refreshToken } from '../controllers/quickbook';
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");

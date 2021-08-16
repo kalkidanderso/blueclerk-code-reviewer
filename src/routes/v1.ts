@@ -32,6 +32,7 @@ import * as customerImportController from '../controllers/customerImport'
 import * as serviceTicketController from '../controllers/serviceTicket'
 import * as quickBookController from '../controllers/quickbook'
 import * as quickbookCustomerController from '../controllers/quickbook.customer'
+import * as quickbookItemController from '../controllers/quickbook.item'
 import * as quickBookPaymentTermController from '../controllers/quickbook.paymentTerm'
 import * as quickBookInvoiceController from '../controllers/quickbook.invoice'
 import * as companyController from '../controllers/company'
@@ -1068,7 +1069,7 @@ export default function (sio: any) {
         '/syncQBItems',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        quickBookController.syncQBItems
+        quickbookItemController.syncQBItems
     )
 
     router.post(
