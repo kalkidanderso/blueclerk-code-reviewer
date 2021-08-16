@@ -8,7 +8,7 @@ import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { User, IUser } from '../models/User'
 import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 import { IPriceTier } from '../models/PriceTier'
-import { _createQBCustomer } from './quickbook'
+import { _createQBCustomer } from './quickbook.customer'
 
 export const createCustomer = async (req: Request, res: Response) => {
 

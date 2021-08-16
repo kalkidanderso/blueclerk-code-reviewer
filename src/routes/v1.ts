@@ -31,6 +31,8 @@ import * as permissionController from '../controllers/permission'
 import * as customerImportController from '../controllers/customerImport'
 import * as serviceTicketController from '../controllers/serviceTicket'
 import * as quickBookController from '../controllers/quickbook'
+import * as quickbookCustomerController from '../controllers/quickbook.customer'
+import * as quickbookItemController from '../controllers/quickbook.item'
 import * as quickBookPaymentTermController from '../controllers/quickbook.paymentTerm'
 import * as quickBookInvoiceController from '../controllers/quickbook.invoice'
 import * as companyController from '../controllers/company'
@@ -1033,14 +1035,17 @@ export default function (sio: any) {
 
 
     // Quickbooks
-    // TODO: To be deprecated
+    /**
+     * @deprecated
+     * TODO: To be deprecated
+     */
     // router.post(
     //     '/getQBCustomers',
     //     passport.authenticate('jwt', { session: false }),
     //     getCompanyId(),
     //     checkUserPermissions(Permissions.Get_QB_Customers),
     //     // validate(Validations.getQBCustomers),
-    //     quickBookController.getQBCustomers
+    //     quickbookCustomerController.getQBCustomers
     // )
 
     router.post(
@@ -1048,7 +1053,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_QB_Customers),
-        quickBookController.syncQBCustomers
+        quickbookCustomerController.syncQBCustomers
     )
 
     router.post(
@@ -1057,14 +1062,14 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Create_QB_customer),
         validate(Validations.createQBCustomer),
-        quickBookController.createQBCustomer
+        quickbookCustomerController.createQBCustomer
     )
 
     router.post(
         '/syncQBItems',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        quickBookController.syncQBItems
+        quickbookItemController.syncQBItems
     )
 
     router.post(

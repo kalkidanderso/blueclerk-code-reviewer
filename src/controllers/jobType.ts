@@ -7,7 +7,7 @@ import { IUser } from '../models/User'
 import { Customer } from '../models/Customer';
 import { ICompany } from '../models/Company'
 import { Item, IItem, IQBItem } from '../models/Item'
-import { _createQBItem } from '../controllers/quickbook';
+import { _createQBItem } from '../controllers/quickbook.item';
 
 export const createJobType = (req: Request, res: Response) => {
 
