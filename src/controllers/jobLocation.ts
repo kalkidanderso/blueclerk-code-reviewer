@@ -5,7 +5,7 @@ import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { ICompany } from '../models/Company'
 import { Customer } from '../models/Customer'
 import { Contact } from '../models/Contact'
-import { _createQBCustomerJob } from './quickbook';
+import { _createQBCustomerJob } from './quickbook.customer';
 
 export const get = (req: Request, res: Response) => {
     const { id } = req.params
