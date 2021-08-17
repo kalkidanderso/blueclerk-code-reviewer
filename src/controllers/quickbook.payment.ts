@@ -1,13 +1,14 @@
 import { Request, Response } from 'express';
 import { Status, Messages, PaymentTypes } from '../common/constants';
 
-import { ICustomer } from '../models/Customer';
+import { ICustomer, Customer } from '../models/Customer';
 import { ICompany, Company } from '../models/Company'
-import { IInvoice } from '../models/Invoice';
+import { IInvoice, Invoice } from '../models/Invoice';
 import { IJob } from '../models/Job';
 import { IJobLocation } from '../models/JobLocation';
 import { IPayment, IQBPayment, IQBPaymentMethod, IQBPaymentTxnTypes, Payment } from '../models/Payment';
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
+import { _calculateInvoiceBalance } from '../controllers/payment';
 
 // ===================================
 // =======[ QUICKBOOK PAYMENT ]=======
@@ -91,6 +92,85 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
     })
 
 }
+
+/**
+ * Called by quickbook controller when handle webhook from Quickbooks
+ */
+export const createBCPayment = async (req: Request, res: Response, company: ICompany, qbPaymentId: string, next: (error: number, errorMessage: string, payments: IPayment[]) => void) => {
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        const paymentEntries: IPayment[] = [];
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        // Get QB Payment by ID sent through webhook
+        qbo.getPayment(qbPaymentId, async (err: any, qbPayment: IQBPayment) => {
+            if (err) {
+                return next(
+                    Status.Error,
+                    err.Fault?.Error[0]?.Detail
+                    || err.Fault?.Error[0]?.Message
+                    || err.fault?.error[0]?.detail
+                    || err.fault?.error[0]?.message
+                    || Messages.GenericError,
+                    null
+                );
+            }
+
+            // Get BC Customer by QB Payment's Customer quickbookId
+            const customer = await Customer.findOne({ quickbookId: qbPayment.CustomerRef?.value });
+
+            // Get QB Payment Method by QB Payment's Payment Method ID
+            qbo.getPaymentMethod(qbPayment.PaymentMethodRef?.value, async (err: any, qbPaymentMethod: { Name: string }) => {
+
+                // Iterate all invoice lines on the payment
+                for (const line of qbPayment.Line) {
+                    // Get BC Invoice by QB line's Invoice quickbookId
+                    const invoice = await Invoice.findOne({ quickbookId: line.LinkedTxn[0]?.TxnId, company });
+
+                    // BC Invoice found, proceed the payment for the invoice
+                    if (invoice) {
+                        paymentEntries.push(new Payment({
+                            customer,
+                            invoice,
+                            amountPaid: line.Amount,
+                            referenceNumber: qbPayment.PaymentRefNum,
+                            paymentType: qbPaymentMethod?.Name,
+                            paidAt: qbPayment.TxnDate ? new Date(qbPayment.TxnDate) : Date.now(),
+                            company,
+                            quickbookId: qbPayment.Id,
+                            createdBy: company.admin,
+                            createdAt: Date.now()
+                        }));
+                    }
+                }
+
+                // No payment to create, return directly
+                if (!paymentEntries.length || paymentEntries.length <= 0) {
+                    return next(null, null, []);
+                }
+
+                if (paymentEntries.length > 0) {
+                    // Create all payment entries on one shot
+                    await Payment.create(paymentEntries, async (err, payments) => {
+
+                        // Iterate all created payments and calculate invoices
+                        for (const payment of payments) {
+                            // Handle invoice balance due, underpayment, and overpayment
+                            await _calculateInvoiceBalance(<IInvoice>payment.invoice, <ICustomer>payment.customer, payment.amountPaid);
+                        }
+
+                        return next(null, null, payments);
+                    });
+                }
+            })
+        })
+    })
+
+}
+
 
 // PRIVATE METHODS
 

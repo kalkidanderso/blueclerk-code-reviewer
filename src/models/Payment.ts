@@ -12,7 +12,7 @@ export interface IPayment extends Document {
     // invoices: [Schema.Types.ObjectId]
     amountPaid: number
     referenceNumber: string
-    paymentType: PaymentTypes
+    paymentType?: PaymentTypes | string
     paidAt: Date
     company: Schema.Types.ObjectId | ICompany
     quickbookId?: string
@@ -81,11 +81,7 @@ const PaymentSchema = new Schema({
         default: 0
     },
     referenceNumber: String,
-    paymentType: {
-        type: String,
-        enum: Object.values(PaymentTypes),
-        required: true
-    },
+    paymentType: String,
     paidAt: Date,
     company: {
         type: Schema.Types.ObjectId,
