@@ -200,15 +200,36 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
     // Handle Entity Event Trigger
     switch (eventEntity?.name) {
 
+        // => CUSTOMER ENTITY EVENT
+        case QBEntityNames.CUSTOMER:
+            switch (eventEntity?.operation) {
+                // => CUSTOMER CREATE ACTION
+                case QBEntityOperations.CREATE:
+                    // Create BC Customer here
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        // => ITEM ENTITY EVENT
+        case QBEntityNames.ITEM:
+            switch (eventEntity?.operation) {
+                // => ITEM CREATE ACTION
+                case QBEntityOperations.CREATE:
+                    // Create BC Job Type and Item here
+                    break;
+
+                default:
+                    break;
+            }
+
         // => PAYMENT ENTITY EVENT
         case QBEntityNames.PAYMENT:
-
-            // Handle Entity Action
             switch (eventEntity?.operation) {
-
                 // => PAYMENT CREATE ACTION
                 case QBEntityOperations.CREATE:
-
                     // Call quickbook payment to handle BC Payment
                     createBCPayment(req, res, company, eventEntity?.id, (err, errMsg, payments) => {
                         // Implement another actions here
@@ -219,6 +240,18 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
                     break;
             }
             break;
+
+        // => PAYMENT TERM ENTITY EVENT
+        case QBEntityNames.TERM:
+            switch (eventEntity?.operation) {
+                // => PAYMENT TERM CREATE ACTION
+                case QBEntityOperations.CREATE:
+                    // Create BC Payment Term here
+                    break;
+
+                default:
+                    break;
+            }
 
         default:
             break;

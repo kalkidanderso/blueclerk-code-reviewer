@@ -144,7 +144,6 @@ const _getCustomers = (req: Request, res: Response, company: ICompany, next: (re
 }
 
 /**
- * @deprecated
  * TODO: To be deprecated
  */
 // export const getQBCustomers = (req: Request, res: Response) => {

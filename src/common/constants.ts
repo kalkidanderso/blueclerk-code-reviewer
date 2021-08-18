@@ -155,11 +155,17 @@ export enum PaymentTypes {
 }
 
 export enum QBEntityNames {
-    PAYMENT = 'Payment'
+    CUSTOMER = 'Customer',
+    ITEM = 'Item',
+    PAYMENT = 'Payment',
+    TERM = 'Term'
 }
 
 export enum QBEntityOperations {
-    CREATE = 'Create'
+    CREATE = 'Create',
+    UPDATE = 'Update',
+    DELETE = 'Delete',
+    VOID = 'Void'
 }
 
 export const enum Permissions {
