@@ -9,6 +9,25 @@ import { ICompany } from '../models/Company'
 import { Item, IItem, IQBItem } from '../models/Item'
 import { _createQBItem } from '../controllers/quickbook.item';
 
+/**
+ * To reset Job Type & Item quickbookId,
+ * used when /disconnectQB API called
+ */
+export const _resetItemQB = (company: ICompany): void => {
+
+    JobType.updateMany(
+        { createdBy: company._id, quickbookId: { $ne: null } },
+        { $set: { quickbookId: null } }
+    ).exec();
+
+    Item.updateMany(
+        { company: company._id, quickbookId: { $ne: null } },
+        { $set: { quickbookId: null } }
+    ).exec();
+
+    return;
+}
+
 export const createJobType = (req: Request, res: Response) => {
 
     const params = req.body

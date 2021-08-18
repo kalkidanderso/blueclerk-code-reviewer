@@ -219,7 +219,7 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
     const invoices = await Invoice.find({
         company: company._id,
         invoiceType: { $ne: 3 },
-        quickbookId: { $exists: false }
+        quickbookId: null
     });
 
     /**
@@ -228,7 +228,7 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
      */ 
     const payments = await Payment.find({
         company: company._id,
-        quickbookId: { $exists: false }
+        quickbookId: null
     });
 
     // Return immediately when no invoices to be synced

@@ -142,8 +142,7 @@ export const syncQBItems = async (req: Request, res: Response) => {
                   _createQBItem(req, res, company, item, (err, errMsg, qbItem) => {
                       if (qbItem) {
                           // QB Item created, update DB Item & JobType's quickbookId
-                          item.quickbookId = qbItem.Id;
-                          item.save();
+                          Item.findByIdAndUpdate(item, { quickbookId: qbItem.Id }).exec();
                           JobType.findByIdAndUpdate(item.jobType, { quickbookId: qbItem.Id }).exec();
                       }
                   })
@@ -158,8 +157,8 @@ export const syncQBItems = async (req: Request, res: Response) => {
               if (item) {
                   // Item found, check and update quickbookId
                   if (item.quickbookId !== qbItem.Id) {
-                      item.quickbookId = qbItem.Id;
-                      item.save();
+                      Item.findByIdAndUpdate(item, { quickbookId: qbItem.Id }).exec();
+                      JobType.findByIdAndUpdate(item.jobType, { quickbookId: qbItem.Id }).exec();
 
                       updatedItems.push({ _id: item._id, name: item.name });
                   }
@@ -175,7 +174,7 @@ export const syncQBItems = async (req: Request, res: Response) => {
                       // Collect all Job Types in array first
                       jobTypesToCreate.push(new JobType({
                           title: qbItem.Name,
-                          createdBy: user._id,
+                          createdBy: company._id,
                           quickbookId: qbItem.Id
                       }));
                   }

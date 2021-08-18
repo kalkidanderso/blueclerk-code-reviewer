@@ -9873,6 +9873,35 @@
         ]
       }
     },
+    "/disconnectQB": {
+      "post": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "Disconnect from QuickBooks integration",
+        "description": "Disconnect from QB and will **reset QB synced status** for: Customer, Job Type, Item, Payment Term, Invoice, and Payment",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/jobSite": {
       "post": {
         "tags": [

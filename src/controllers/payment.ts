@@ -60,6 +60,21 @@ export const _calculateInvoiceBalance = async (invoice: IInvoice, customer: ICus
 
 }
 
+/**
+ * To reset Payment quickbookId,
+ * used when /disconnectQB API called
+ */
+export const _resetPaymentQB = (company: ICompany): void => {
+
+    Payment.updateMany(
+        { company: company._id, quickbookId: { $ne: null } },
+        { $set: { quickbookId: null } }
+    ).exec();
+
+    return;
+
+};
+
 export const getPayments = (req: Request, res: Response) => {
 
     Payment.find({company: req.companyId})

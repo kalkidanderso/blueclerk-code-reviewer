@@ -2,7 +2,13 @@ import { Request, Response } from 'express'
 import { Status, Messages, QBEntityNames, QBEntityOperations} from '../common/constants'
 import { qbConfig } from '../common/config'
 
-import { ICompany, IQBCompany, Company } from '../models/Company'
+import { ICompany, IQBCompany, Company } from '../models/Company';
+import { _resetCompanyQB } from '../controllers/company';
+import { _resetCustomerQB } from '../controllers/customer';
+import { _resetItemQB } from '../controllers/jobType';
+import { _resetPaymentTermQB } from '../controllers/paymentTerm';
+import { _resetInvoiceQB } from '../controllers/invoice';
+import { _resetPaymentQB } from '../controllers/payment';
 import { createBCPayment } from '../controllers/quickbook.payment';
 
 var QuickBooks = require('node-quickbooks')
@@ -183,6 +189,31 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
     .catch(function (err: any) {
         return res.json({'status': Status.Error, 'message': err.error_description || err.originalMessage || err.message || Messages.GenericError});
     });
+}
+
+export const disconnectQB = async (req: Request, res: Response) => {
+
+    const company = <ICompany>req.company;
+
+    /**
+     * Construct the response message now before qb data wiped out,
+     * doing this to make sure even company is already diconnected,
+     * BE will wiped out company stuff's quickbookId
+     */
+    const message = company.qbAuthorized
+        ? `Company successfully disconnected from QuickBooks: ${company.qbCompanyName}.`
+        : `Company already disconnected.`;
+
+    // Remove all quickbookId across company's stuff
+    _resetCompanyQB(company);
+    _resetCustomerQB(company);
+    _resetItemQB(company);
+    _resetPaymentTermQB(company);
+    _resetInvoiceQB(company);
+    _resetPaymentQB(company);
+
+    return res.json({ status: Status.Success, message });
+
 }
 
 /**

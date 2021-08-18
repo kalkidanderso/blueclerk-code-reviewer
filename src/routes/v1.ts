@@ -1111,6 +1111,14 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/disconnectQB',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_QB_Uri),
+        quickBookController.disconnectQB
+    )
+
+    router.post(
         '/blueclerkSyncWebhook',
         quickBookController.blueclerkSyncWebhook
     )

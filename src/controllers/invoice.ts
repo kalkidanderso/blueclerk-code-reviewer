@@ -24,6 +24,21 @@ import { IPriceTier } from '../models/PriceTier';
 import { IPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
 import { _createQBInvoice } from '../controllers/quickbook.invoice';
 
+/**
+ * To reset Invoice quickbookId,
+ * used when /disconnectQB API called
+ */
+export const _resetInvoiceQB = (company: ICompany): void => {
+
+    Invoice.updateMany(
+        { company: company._id, quickbookId: { $ne: null } },
+        { $set: { quickbookId: null } }
+    ).exec();
+
+    return;
+
+}
+
 export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
     const params = req.query;

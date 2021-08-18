@@ -355,7 +355,7 @@ const _processJobLocations = async (req: Request, res: Response, company: ICompa
    * Iterate all job locations of the customer,
    * check, then create on QB it not existed
    */
-  for (const custJobLoc of customer.jobLocations) {
+  for (const custJobLoc of customer?.jobLocations) {
       const jobLocation = <IJobLocation>custJobLoc;
 
       // Check if job location has quickbook Id, then check if it exists or not
@@ -605,7 +605,7 @@ export const createQBCustomer = async (req: Request, res: Response) => {
                                    * Iterate all job locations of the customer,
                                    * check, then create on QB it not existed
                                    */
-                                  for (const custJobLoc of customer.jobLocations) {
+                                  for (const custJobLoc of customer?.jobLocations) {
                                       const jobLocation = <IJobLocation>custJobLoc;
 
                                       // Check if job location doesn't have associated quickbookId
@@ -649,7 +649,7 @@ export const createQBCustomer = async (req: Request, res: Response) => {
                * Iterate all job locations of the customer,
                * check, then create on QB it not existed
                */
-              for (const custJobLoc of customer.jobLocations) {
+              for (const custJobLoc of customer?.jobLocations) {
                   const jobLocation = <IJobLocation>custJobLoc;
 
                   // Check if job location doesn't have associated quickbookId
@@ -830,7 +830,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
               }
 
               // Find if job location already exist on the customer's job locations
-              const jobLocation = <IJobLocation>parentCustomer.jobLocations?.find((jl: IJobLocation) => jl.quickbookId === qbCustJob.Id);
+              const jobLocation = <IJobLocation>parentCustomer?.jobLocations?.find((jl: IJobLocation) => jl.quickbookId === qbCustJob.Id);
 
               // Job location not found, create a new one
               if (!jobLocation) {
