@@ -25,7 +25,7 @@ export interface IPayment extends Document {
 
 export interface IQBPayment {
     Id?: string
-    TxnDate?: Date
+    TxnDate?: string
     CustomerRef: {
         value: string
         name?: string

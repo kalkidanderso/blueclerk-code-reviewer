@@ -304,12 +304,11 @@ export const Validations = {
     check('invoiceId').exists().withMessage(Messages.Required),
     check('invoiceId').isMongoId().withMessage(Messages.WrongId),
     check('amount').exists().withMessage(Messages.Required),
-    check('referenceNumber').exists().withMessage(Messages.Required),
     check('customerId').exists().withMessage(Messages.Required),
     check('customerId').isMongoId().withMessage(Messages.WrongId)
   ],
 
-  updatePayment: [check('paymentId').exists().withMessage(Messages.Required), check('paymentId').isMongoId().withMessage(Messages.WrongId), check('amount').exists(), check('referenceNumber').exists(), check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId), check('paidAt').exists(), check('invoices').exists()],
+  updatePayment: [check('paymentId').exists().withMessage(Messages.Required), check('paymentId').isMongoId().withMessage(Messages.WrongId), check('amount').exists(), check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId), check('paidAt').exists(), check('invoices').exists()],
 
   // Code Location
 

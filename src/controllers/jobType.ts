@@ -149,8 +149,16 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
                 }
 
                 if (qbItem) {
+                    jobType.quickbookId = qbItem.Id;
+                    await jobType.save();
                     item.quickbookId = qbItem.Id;
                     await item.save();
+
+                    // If company's items already synced, update the synced date
+                    if (company.qbSync?.itemsSynced) {
+                        company.qbSync.itemsSyncedAt = new Date();
+                        await company.save();
+                    }
                 }
 
                 return next(item, qbItem);

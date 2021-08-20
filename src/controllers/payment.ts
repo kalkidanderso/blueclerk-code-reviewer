@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb'
+import moment from 'moment'
 
 import { Status, Messages, InvoiceStatus } from '../common/constants'
 import { ICompany } from '../models/Company'
@@ -181,9 +182,9 @@ export const createPayment = async (req: Request, res: Response) => {
         customer,
         invoice,
         amountPaid: params.amount,
-        referenceNumber: params.referenceNumber,
+        referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
         paymentType: params.paymentType,
-        paidAt: params.paidAt ? new Date(params.paidAt) : Date.now(),
+        paidAt: params.paidAt ? moment(params.paidAt).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
         company,
         createdBy: user,
         createdAt: Date.now()
@@ -206,6 +207,12 @@ export const createPayment = async (req: Request, res: Response) => {
                 if (qbPayment) {
                     payment.quickbookId = qbPayment.Id;
                     payment.save();
+
+                    // If company's payments already synced, update the synced date
+                    if (company.qbSync?.paymentsSynced) {
+                        company.qbSync.paymentsSyncedAt = new Date();
+                        company.save();
+                    }
                 }
 
                 return res.json({

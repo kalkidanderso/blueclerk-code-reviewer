@@ -407,6 +407,12 @@ export const createInvoice = (req: Request, res: Response) => {
                         if (qbInvoice) {
                             invoice.quickbookId = qbInvoice.Id;
                             invoice.save();
+
+                            // If company's invoices already synced, update the synced date
+                            if (company.qbSync?.invoicesSynced) {
+                                company.qbSync.invoicesSyncedAt = new Date();
+                                company.save();
+                            }
                         }
 
                         return res.json({
@@ -506,6 +512,12 @@ export const createInvoice = (req: Request, res: Response) => {
                         if (qbInvoice) {
                             invoice.quickbookId = qbInvoice.Id;
                             invoice.save();
+
+                            // If company's invoices already synced, update the synced date
+                            if (company.qbSync?.invoicesSynced) {
+                                company.qbSync.invoicesSyncedAt = new Date();
+                                company.save();
+                            }
                         }
 
                         return res.json({
@@ -666,6 +678,12 @@ export const createInvoice = (req: Request, res: Response) => {
                         if (qbInvoice) {
                             invoice.quickbookId = qbInvoice.Id;
                             invoice.save();
+
+                            // If company's invoices already synced, update the synced date
+                            if (company.qbSync?.invoicesSynced) {
+                                company.qbSync.invoicesSyncedAt = new Date();
+                                company.save();
+                            }
                         }
 
                         return res.json({
@@ -784,6 +802,12 @@ export const createInvoice = (req: Request, res: Response) => {
                                                 if (qbInvoice) {
                                                     newInvoice.quickbookId = qbInvoice.Id;
                                                     newInvoice.save();
+
+                                                    // If company's invoices already synced, update the synced date
+                                                    if (company.qbSync?.invoicesSynced) {
+                                                        company.qbSync.invoicesSyncedAt = new Date();
+                                                        company.save();
+                                                    }
                                                 }
 
                                                 return res.json({

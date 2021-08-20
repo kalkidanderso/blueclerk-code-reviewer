@@ -151,6 +151,12 @@ export const createPaymentTerm = async (req: Request, res: Response) => {
                 paymentTerm.quickbookId = qbPaymentTerm.Id;
                 await paymentTerm.save();
 
+                // If company's payment terms already synced, update the synced date
+                if (company.qbSync?.paymentTermSynced) {
+                    company.qbSync.paymentTermSynedAt = new Date();
+                    await company.save();
+                }
+
                 return res.json({ status: Status.Success, message: 'Payment Term successfully created', paymentTerm, quickbookPaymentTerm: qbPaymentTerm });
             }
         })

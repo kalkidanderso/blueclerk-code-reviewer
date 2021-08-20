@@ -8151,7 +8151,6 @@
           {
             "name": "referenceNumber",
             "in": "formData",
-            "required": true,
             "type": "string",
             "description": "Reference number of the payment made by client"
           },
@@ -8222,7 +8221,6 @@
           {
             "name": "referenceNumber",
             "in": "formData",
-            "required": true,
             "type": "string",
             "description": "Reference number of the payment made by client"
           },

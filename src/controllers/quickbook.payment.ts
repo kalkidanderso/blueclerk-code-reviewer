@@ -53,7 +53,7 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
 
         // QB Payment Object
         const qbPaymentEntry: IQBPayment = {
-            TxnDate: payment.paidAt,
+            TxnDate: moment(payment.paidAt).format('YYYY-MM-DD'),
             CustomerRef: {
                 value: jobLocation?.quickbookId || customer.quickbookId
             },
@@ -135,14 +135,43 @@ export const syncQBPayments = async (req: Request, res: Response) => {
 
             // Iterate all payments from DB
             for (const payment of payments) {
-                let existQBPayment: IQBPayment = qbPayments.find(qbPayment => {
-                    return (
-                        (payment.referenceNumber
-                            && payment.referenceNumber === qbPayment.PaymentRefNum)
+                const invoice = <IInvoice>payment.invoice;
+
+                let existQBPayment: IQBPayment;
+
+                /**
+                 * Find exist QB Payment,
+                 * need to check several things because payment doesn't have
+                 * one unique reference number
+                 */
+                for (const qbPayment of qbPayments) {
+                    if (
+                        !moment(payment.paidAt).utc().isSame(new Date(qbPayment.TxnDate), 'day')
+                        ||  (payment.referenceNumber
+                            && payment.referenceNumber !== qbPayment.PaymentRefNum)
                         || (payment.quickbookRefNum
-                            && Buffer.from(payment.quickbookRefNum, 'base64').toString() === qbPayment.MetaData?.CreateTime)
-                    );
-                })
+                            && Buffer.from(payment.quickbookRefNum, 'base64').toString() !== qbPayment.MetaData?.CreateTime)
+                    ) {
+                        // Skip qb payment because either date, referenceNumber, or qbRefNum is different
+                        continue;
+                    }
+
+                    for (const qbPLine of qbPayment.Line) {
+                        if (payment?.amountPaid !== qbPLine?.Amount) {
+                            // Skip qb payment because amountPaid is different
+                            continue;
+                        }
+
+                        for (const line of qbPLine?.LineEx?.any) {
+                            if (line?.value?.Name === 'txnReferenceNumber' && line?.value?.Value === invoice?.invoiceId ) {
+                                existQBPayment = qbPayment;
+                                break;
+                            }
+                        }
+                        if (existQBPayment) { break; };
+                    }
+                    if (existQBPayment) { break; };
+                }
 
                 if (!existQBPayment) {
                     // Create payment on QB
@@ -218,8 +247,16 @@ export const createBCPayment = async (req: Request, res: Response, company: ICom
                     // Get BC Invoice by QB line's Invoice quickbookId
                     const invoice = await Invoice.findOne({ quickbookId: line.LinkedTxn[0]?.TxnId, company });
 
+                    const existPayment = await Payment.findOne({
+                        company,
+                        customer,
+                        invoice,
+                        amountPaid: line.Amount,
+                        referenceNumber: qbPayment.PaymentRefNum,
+                    });
+
                     // BC Invoice found, proceed the payment for the invoice
-                    if (invoice) {
+                    if (invoice && !existPayment) {
                         paymentEntries.push(new Payment({
                             customer,
                             invoice,
