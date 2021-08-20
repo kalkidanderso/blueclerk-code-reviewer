@@ -9723,8 +9723,8 @@
         "tags": [
           "Quickbooks Integration"
         ],
-        "summary": "Manually syncing UNSYNCED invoices & payments",
-        "description": "Manually syncing UNSYNCED invoices & payments **from BlueClerk to QuickBooks only**",
+        "summary": "Manually syncing UNSYNCED invoices",
+        "description": "Manually syncing UNSYNCED invoices **from BlueClerk to QuickBooks only**",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -9767,6 +9767,34 @@
             "type": "string",
             "description": "Id of an invoice to be associated"
           }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/syncQBPayments": {
+      "post": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "Manually syncing UNSYNCED payments",
+        "description": "Manually syncing UNSYNCED payments **from BlueClerk to QuickBooks only**",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
         ],
         "responses": {
           "200": {

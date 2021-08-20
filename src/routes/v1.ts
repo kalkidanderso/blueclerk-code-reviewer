@@ -1095,6 +1095,13 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/syncQBPayments',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookPaymentController.syncQBPayments
+    )
+
+    router.post(
         '/getQBUri',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
