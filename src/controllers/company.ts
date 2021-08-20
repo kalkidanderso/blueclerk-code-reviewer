@@ -18,6 +18,33 @@ import { IPriceTier, PriceTier } from '../models/PriceTier'
 
 const Hubspot = require('hubspot')
 
+/**
+ * To reset Company QB information and synced status,
+ * used when /disconnectQB API called
+ */
+export const _resetCompanyQB = (company: ICompany): Promise<void> => {
+
+    Company.findByIdAndUpdate(company, {
+        qbAuthorized: false,
+        qbAccessToken: null,
+        qbRefreshToken: null,
+        qbRefeshTokenExpiry: null,
+        qbCompanyName: null,
+        qbCompanyEmail: null,
+        'qbSync.customersSynced': false,
+        'qbSync.itemsSynced': false,
+        'qbSync.paymentTermSynced': false,
+        'qbSync.invoicesSynced': false,
+        'qbSync.customersSyncedAt': null,
+        'qbSync.itemsSyncedAt': null,
+        'qbSync.paymentTermSynedAt': null,
+        'qbSync.invoicesSyncedAt': null,
+    }).exec();
+
+    return;
+
+}
+
 export const updateCompanyProfile = (req: Request, res: Response) => {
 
     const params = req.body

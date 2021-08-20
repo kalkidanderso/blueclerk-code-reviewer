@@ -154,6 +154,20 @@ export enum PaymentTypes {
     CASH = 'Cash',
 }
 
+export enum QBEntityNames {
+    CUSTOMER = 'Customer',
+    ITEM = 'Item',
+    PAYMENT = 'Payment',
+    TERM = 'Term'
+}
+
+export enum QBEntityOperations {
+    CREATE = 'Create',
+    UPDATE = 'Update',
+    DELETE = 'Delete',
+    VOID = 'Void'
+}
+
 export const enum Permissions {
     None,
     Permission_Get_All,

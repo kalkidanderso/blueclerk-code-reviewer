@@ -10,6 +10,21 @@ import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipme
 import { IPriceTier } from '../models/PriceTier'
 import { _createQBCustomer } from './quickbook.customer'
 
+/**
+ * To reset Customer quickbookId,
+ * used when /disconnectQB API called
+ */
+export const _resetCustomerQB = (company: ICompany): void => {
+
+    Customer.updateMany(
+        { company: company._id, quickbookId: { $ne: null } },
+        { $set: { quickbookId: null } }
+    ).exec();
+
+    return;
+
+}
+
 export const createCustomer = async (req: Request, res: Response) => {
 
     const params = req.body
@@ -124,6 +139,12 @@ export const createCustomer = async (req: Request, res: Response) => {
                                         // Create new Customer in QuickBooks
                                         customer.quickbookId = qbCustomer.Id;
                                         await customer.save();
+
+                                        // If company's customers already synced, update the synced date
+                                        if (company.qbSync?.customersSynced) {
+                                            company.qbSync.customersSyncedAt = new Date();
+                                            await company.save();
+                                        }
                                     }
 
                                     return res.json({ status: Status.Success, message: 'Customer created successfully.', customer, quickbookCustomer: qbCustomer });

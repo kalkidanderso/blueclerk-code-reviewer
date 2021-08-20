@@ -1,13 +1,15 @@
 import { Request, Response } from 'express';
+import moment from 'moment';
 import { Status, Messages, PaymentTypes } from '../common/constants';
 
-import { ICustomer } from '../models/Customer';
+import { ICustomer, Customer } from '../models/Customer';
 import { ICompany, Company } from '../models/Company'
-import { IInvoice } from '../models/Invoice';
+import { IInvoice, Invoice } from '../models/Invoice';
 import { IJob } from '../models/Job';
-import { IJobLocation } from '../models/JobLocation';
+import { IJobLocation, JobLocation } from '../models/JobLocation';
 import { IPayment, IQBPayment, IQBPaymentMethod, IQBPaymentTxnTypes, Payment } from '../models/Payment';
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
+import { _calculateInvoiceBalance } from '../controllers/payment';
 
 // ===================================
 // =======[ QUICKBOOK PAYMENT ]=======
@@ -49,12 +51,9 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
         // Initiate node-quickbooks object with the refreshed company token
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
-        // Get QB Payment Method ID
-        const paymentMethodId = await _getPaymentMethod(qbo, payment);
-
         // QB Payment Object
         const qbPaymentEntry: IQBPayment = {
-            TxnDate: payment.paidAt,
+            TxnDate: moment(payment.paidAt).format('YYYY-MM-DD'),
             CustomerRef: {
                 value: jobLocation?.quickbookId || customer.quickbookId
             },
@@ -68,7 +67,7 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
             TotalAmt: payment.amountPaid,
             PaymentRefNum: payment.referenceNumber,
             PaymentMethodRef: {
-                value: paymentMethodId
+                value: payment.paymentType ? await _getPaymentMethod(qbo, payment) : null
             }
         };
 
@@ -91,6 +90,215 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
     })
 
 }
+
+/**
+* To syncing payments from BC to QB only
+*/
+export const syncQBPayments = async (req: Request, res: Response) => {
+
+    const updatedPayments: { _id: string, referenceNumber: string, quickbookRefNum: string}[] = [];
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, req.company, async (err, errMsg, company) => {
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        /**
+         * Retrieve all payments of this company from Database,
+         * that doesn't have quickbookId 
+         */ 
+        const payments = await Payment.find({
+            company: company._id,
+            quickbookId: null
+        }).sort({ paidAt: 1 }).populate({ path: 'invoice' });
+
+        // Return immediately when no payments to be synced
+        if (payments.length <= 0) {
+            return res.json({ status: Status.Success, message: 'No payments to be synced.' });
+        }
+
+        // Find QB payments start from the first payments date
+        qbo.findPayments([
+            { field: 'TxnDate', value: moment(payments[0]?.paidAt).subtract(1, 'days').format('YYYY-MM-DD'), operator: '>=' }
+        ], async (err: any, data: any) => {
+            if (err) {
+                return res.json({
+                    status: Status.Error,
+                    message: err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError
+                })
+            }
+
+            const qbPayments: IQBPayment[] = data?.QueryResponse?.Payment;
+
+            // Iterate all payments from DB
+            for (const payment of payments) {
+                const invoice = <IInvoice>payment.invoice;
+
+                let existQBPayment: IQBPayment;
+
+                /**
+                 * Find exist QB Payment,
+                 * need to check several things because payment doesn't have
+                 * one unique reference number
+                 */
+                for (const qbPayment of qbPayments) {
+                    if (
+                        !moment(payment.paidAt).utc().isSame(new Date(qbPayment.TxnDate), 'day')
+                        ||  (payment.referenceNumber
+                            && payment.referenceNumber !== qbPayment.PaymentRefNum)
+                        || (payment.quickbookRefNum
+                            && Buffer.from(payment.quickbookRefNum, 'base64').toString() !== qbPayment.MetaData?.CreateTime)
+                    ) {
+                        // Skip qb payment because either date, referenceNumber, or qbRefNum is different
+                        continue;
+                    }
+
+                    for (const qbPLine of qbPayment.Line) {
+                        if (payment?.amountPaid !== qbPLine?.Amount) {
+                            // Skip qb payment because amountPaid is different
+                            continue;
+                        }
+
+                        for (const line of qbPLine?.LineEx?.any) {
+                            if (line?.value?.Name === 'txnReferenceNumber' && line?.value?.Value === invoice?.invoiceId ) {
+                                existQBPayment = qbPayment;
+                                break;
+                            }
+                        }
+                        if (existQBPayment) { break; };
+                    }
+                    if (existQBPayment) { break; };
+                }
+
+                if (!existQBPayment) {
+                    // Create payment on QB
+                    _createQBPayment(req, res, company, payment, (err, errMsg, qbPayment) => {
+                        if (qbPayment) {
+                            // QB Payment created, update DB Payment quickbookId
+                            Payment.findByIdAndUpdate(payment, { quickbookId: qbPayment.Id }).exec();
+                        }
+                    })
+                } else {
+                    if (payment.quickbookId !== existQBPayment.Id) {
+                        // QB Payment exist, update DB Payment quickbookId directly
+                        Payment.findByIdAndUpdate(payment, { quickbookId: existQBPayment.Id }).exec();
+
+                        updatedPayments.push({ _id: payment._id, referenceNumber: payment.referenceNumber, quickbookRefNum: payment.quickbookRefNum });
+                    }
+                }
+            }
+
+            company.qbSync.paymentsSynced = true;
+            company.qbSync.paymentsSyncedAt = new Date();
+            company.save();
+
+            return res.json({ status: Status.Success, message: 'Payments synced successfully.', updatedPayments });
+        });
+    })
+
+}
+
+/**
+ * Called by quickbook controller when handle webhook from Quickbooks
+ */
+export const createBCPayment = async (req: Request, res: Response, company: ICompany, qbPaymentId: string, next: (error: number, errorMessage: string, payments: IPayment[]) => void) => {
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        const paymentEntries: IPayment[] = [];
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        // Get QB Payment by ID sent through webhook
+        qbo.getPayment(qbPaymentId, async (err: any, qbPayment: IQBPayment) => {
+            if (err) {
+                return next(
+                    Status.Error,
+                    err.Fault?.Error[0]?.Detail
+                    || err.Fault?.Error[0]?.Message
+                    || err.fault?.error[0]?.detail
+                    || err.fault?.error[0]?.message
+                    || Messages.GenericError,
+                    null
+                );
+            }
+
+            // Get BC Customer by QB Payment's Customer quickbookId
+            let customer = await Customer.findOne({ quickbookId: qbPayment.CustomerRef?.value });
+
+            /**
+             * Invoice was recorded to Customer Job Location in QB,
+             * Get the Customer ID from the Job Location
+             */
+            if (!customer) {
+                const jobLocation = await JobLocation.findOne({ quickbookId: qbPayment.CustomerRef?.value });
+                customer = await Customer.findById(jobLocation?.customerId);
+            }
+
+            // Get QB Payment Method by QB Payment's Payment Method ID
+            qbo.getPaymentMethod(qbPayment.PaymentMethodRef?.value, async (err: any, qbPaymentMethod: { Name: string }) => {
+
+                // Iterate all invoice lines on the payment
+                for (const line of qbPayment.Line) {
+                    // Get BC Invoice by QB line's Invoice quickbookId
+                    const invoice = await Invoice.findOne({ quickbookId: line.LinkedTxn[0]?.TxnId, company });
+
+                    const existPayment = await Payment.findOne({
+                        company,
+                        customer,
+                        invoice,
+                        amountPaid: line.Amount,
+                        referenceNumber: qbPayment.PaymentRefNum,
+                    });
+
+                    // BC Invoice found, proceed the payment for the invoice
+                    if (invoice && !existPayment) {
+                        paymentEntries.push(new Payment({
+                            customer,
+                            invoice,
+                            amountPaid: line.Amount,
+                            referenceNumber: qbPayment.PaymentRefNum,
+                            paymentType: qbPaymentMethod?.Name,
+                            paidAt: qbPayment.TxnDate ? new Date(qbPayment.TxnDate) : Date.now(),
+                            company,
+                            quickbookRefNum: Buffer.from(qbPayment.MetaData?.CreateTime).toString('base64'),
+                            quickbookId: qbPayment.Id,
+                            createdBy: company.admin,
+                            createdAt: Date.now()
+                        }));
+                    }
+                }
+
+                // No payment to create, return directly
+                if (!paymentEntries.length || paymentEntries.length <= 0) {
+                    return next(null, null, []);
+                }
+
+                if (paymentEntries.length > 0) {
+                    // Create all payment entries on one shot
+                    await Payment.create(paymentEntries, async (err, payments) => {
+
+                        if (payments.length > 0) {
+                            // Iterate all created payments and calculate invoices
+                            for (const payment of payments) {
+                                // Handle invoice balance due, underpayment, and overpayment
+                                await _calculateInvoiceBalance(<IInvoice>payment.invoice, <ICustomer>payment.customer, payment.amountPaid);
+                            }
+                        }
+
+                        return next(null, null, payments);
+                    });
+                }
+            })
+        })
+    })
+
+}
+
 
 // PRIVATE METHODS
 

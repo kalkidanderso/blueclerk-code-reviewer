@@ -5650,8 +5650,8 @@ paths:
     post:
       tags:
         - Quickbooks Integration
-      summary: Manually syncing UNSYNCED invoices & payments
-      description: 'Manually syncing UNSYNCED invoices & payment **from BlueClerk to QuickBooks only**'
+      summary: Manually syncing UNSYNCED invoices
+      description: 'Manually syncing UNSYNCED invoices **from BlueClerk to QuickBooks only**'
       consumes:
         - application/x-www-form-urlencoded
       produces:
@@ -5679,6 +5679,23 @@ paths:
           required: true
           type: string
           description: Id of an invoice to be associated
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /syncQBPayments:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Manually syncing UNSYNCED payments
+      description: 'Manually syncing UNSYNCED payments **from BlueClerk to QuickBooks only**'
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
       responses:
         '200':
           description: Success
@@ -5735,6 +5752,25 @@ paths:
           in: query
           required: true
           type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /disconnectQB:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Disconnect from QuickBooks integration
+      description
+      description: 'Disconnect from QB and **will reset QB synced status** for: Customer, Job Type, Item, Payment Term, Invoice, and Payment'
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters: []
       responses:
         '200':
           description: Success

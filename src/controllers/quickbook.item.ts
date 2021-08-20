@@ -135,18 +135,25 @@ export const syncQBItems = async (req: Request, res: Response) => {
           // Iterate all items from DB
           for (const item of items) {
               // Check if there any item on DB that not on QB yet
-              const exist = qbItems?.find((qbItem: IQBItem) => qbItem.Name?.toLowerCase() === item.name.toLowerCase());
+              const existQBItem = qbItems?.find((qbItem: IQBItem) => qbItem.Name?.toLowerCase() === item.name.toLowerCase());
 
               // Item not exist on QB, create it
-              if (!exist) {
+              if (!existQBItem) {
                   _createQBItem(req, res, company, item, (err, errMsg, qbItem) => {
                       if (qbItem) {
                           // QB Item created, update DB Item & JobType's quickbookId
-                          item.quickbookId = qbItem.Id;
-                          item.save();
+                          Item.findByIdAndUpdate(item, { quickbookId: qbItem.Id }).exec();
                           JobType.findByIdAndUpdate(item.jobType, { quickbookId: qbItem.Id }).exec();
                       }
                   })
+              } else {
+                  if (item.quickbookId !== existQBItem.Id) {
+                      // QB Item exist, update DB Item & JobType's quickbookId directly
+                      Item.findByIdAndUpdate(item, { quickbookId: existQBItem.Id }).exec();
+                      JobType.findByIdAndUpdate(item.jobType, { quickbookId: existQBItem.Id }).exec();
+
+                      updatedItems.push({ _id: item._id, name: item.name });
+                  }
               }
           }
 
@@ -158,8 +165,8 @@ export const syncQBItems = async (req: Request, res: Response) => {
               if (item) {
                   // Item found, check and update quickbookId
                   if (item.quickbookId !== qbItem.Id) {
-                      item.quickbookId = qbItem.Id;
-                      item.save();
+                      Item.findByIdAndUpdate(item, { quickbookId: qbItem.Id }).exec();
+                      JobType.findByIdAndUpdate(item.jobType, { quickbookId: qbItem.Id }).exec();
 
                       updatedItems.push({ _id: item._id, name: item.name });
                   }
@@ -175,7 +182,7 @@ export const syncQBItems = async (req: Request, res: Response) => {
                       // Collect all Job Types in array first
                       jobTypesToCreate.push(new JobType({
                           title: qbItem.Name,
-                          createdBy: user._id,
+                          createdBy: company._id,
                           quickbookId: qbItem.Id
                       }));
                   }
@@ -203,8 +210,10 @@ export const syncQBItems = async (req: Request, res: Response) => {
               const itemsCreated = await Item.create(itemsToCreate);
 
               // Iterate all created Items as the response information
-              for (const item of itemsCreated) {
-                  createdItems.push({ _id: item._id, name: item.name });
+              if (itemsCreated.length > 0) {
+                  for (const item of itemsCreated) {
+                      createdItems.push({ _id: item._id, name: item.name });
+                  }
               }
           }
 

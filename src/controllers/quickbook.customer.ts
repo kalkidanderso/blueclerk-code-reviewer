@@ -144,7 +144,6 @@ const _getCustomers = (req: Request, res: Response, company: ICompany, next: (re
 }
 
 /**
- * @deprecated
  * TODO: To be deprecated
  */
 // export const getQBCustomers = (req: Request, res: Response) => {
@@ -356,7 +355,7 @@ const _processJobLocations = async (req: Request, res: Response, company: ICompa
    * Iterate all job locations of the customer,
    * check, then create on QB it not existed
    */
-  for (const custJobLoc of customer.jobLocations) {
+  for (const custJobLoc of customer?.jobLocations) {
       const jobLocation = <IJobLocation>custJobLoc;
 
       // Check if job location has quickbook Id, then check if it exists or not
@@ -368,14 +367,13 @@ const _processJobLocations = async (req: Request, res: Response, company: ICompa
           if (!qbCustomerJob) {
               _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, async (err, errMsg, qbCustomerJob) => {
                   if (qbCustomerJob) {
-                      jobLocation.quickbookId = qbCustomerJob.Id;
-                      await jobLocation.save();
+                      // QB Customer Job created, update DB Job Location quickbookId
+                      JobLocation.findByIdAndUpdate(jobLocation, { quickbookId: qbCustomerJob.Id }).exec();
                   }
               })
           } else {
-              // QB Cust Job exist, associated to that Job
-              jobLocation.quickbookId = qbCustomerJob.Id;
-              await jobLocation.save();
+              // QB Cust Job exist, update DB Job Location quickbookId directly
+              JobLocation.findByIdAndUpdate(jobLocation, { quickbookId: qbCustomerJob.Id }).exec();
           }
 
       }
@@ -606,7 +604,7 @@ export const createQBCustomer = async (req: Request, res: Response) => {
                                    * Iterate all job locations of the customer,
                                    * check, then create on QB it not existed
                                    */
-                                  for (const custJobLoc of customer.jobLocations) {
+                                  for (const custJobLoc of customer?.jobLocations) {
                                       const jobLocation = <IJobLocation>custJobLoc;
 
                                       // Check if job location doesn't have associated quickbookId
@@ -650,7 +648,7 @@ export const createQBCustomer = async (req: Request, res: Response) => {
                * Iterate all job locations of the customer,
                * check, then create on QB it not existed
                */
-              for (const custJobLoc of customer.jobLocations) {
+              for (const custJobLoc of customer?.jobLocations) {
                   const jobLocation = <IJobLocation>custJobLoc;
 
                   // Check if job location doesn't have associated quickbookId
@@ -722,13 +720,14 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
               if (!qbCustomer) {
                   _createQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
                       if (qbCustomer) {
-                          // QB Customer created, update DB Customer's quickbookId
+                          // QB Customer created, update DB Customer quickbookId
                           Customer.findByIdAndUpdate(customer._id, { quickbookId: qbCustomer.Id }).exec();
 
                           _processJobLocations(req, res, company, qbCustomers, customer);
                       }
                   })
               } else {
+                  // QB Customer exist, update DB Customer quickbookId directly
                   Customer.findByIdAndUpdate(customer._id, { quickbookId: qbCustomer.Id }).exec();
 
                   _processJobLocations(req, res, company, qbCustomers, customer);
@@ -831,7 +830,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
               }
 
               // Find if job location already exist on the customer's job locations
-              const jobLocation = <IJobLocation>parentCustomer.jobLocations?.find((jl: IJobLocation) => jl.quickbookId === qbCustJob.Id);
+              const jobLocation = <IJobLocation>parentCustomer?.jobLocations?.find((jl: IJobLocation) => jl.quickbookId === qbCustJob.Id);
 
               // Job location not found, create a new one
               if (!jobLocation) {

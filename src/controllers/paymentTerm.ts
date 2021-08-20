@@ -35,6 +35,21 @@ export const _createDefaultPaymentTerms = async (company: ICompany): Promise<voi
 
 }
 
+/**
+ * To reset Payment Term quickbookId,
+ * used when /disconnectQB API called
+ */
+export const _resetPaymentTermQB = async (company: ICompany): Promise<void> => {
+
+    PaymentTerm.updateMany(
+        { company: company._id, quickbookId: { $ne: null } },
+        { $set: { quickbookId: null } }
+    ).exec();
+
+    return;
+
+}
+
 export const setCompanyDefaultPaymentTerm = async (req: Request, res: Response) => {
 
     const params = req.body;
@@ -135,6 +150,12 @@ export const createPaymentTerm = async (req: Request, res: Response) => {
                 // Update quickbookId of our Payment Term
                 paymentTerm.quickbookId = qbPaymentTerm.Id;
                 await paymentTerm.save();
+
+                // If company's payment terms already synced, update the synced date
+                if (company.qbSync?.paymentTermSynced) {
+                    company.qbSync.paymentTermSynedAt = new Date();
+                    await company.save();
+                }
 
                 return res.json({ status: Status.Success, message: 'Payment Term successfully created', paymentTerm, quickbookPaymentTerm: qbPaymentTerm });
             }

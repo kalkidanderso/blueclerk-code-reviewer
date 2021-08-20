@@ -31,10 +31,11 @@ import * as permissionController from '../controllers/permission'
 import * as customerImportController from '../controllers/customerImport'
 import * as serviceTicketController from '../controllers/serviceTicket'
 import * as quickBookController from '../controllers/quickbook'
-import * as quickbookCustomerController from '../controllers/quickbook.customer'
-import * as quickbookItemController from '../controllers/quickbook.item'
+import * as quickBookCustomerController from '../controllers/quickbook.customer'
+import * as quickBookItemController from '../controllers/quickbook.item'
 import * as quickBookPaymentTermController from '../controllers/quickbook.paymentTerm'
 import * as quickBookInvoiceController from '../controllers/quickbook.invoice'
+import * as quickBookPaymentController from '../controllers/quickbook.payment'
 import * as companyController from '../controllers/company'
 import * as invoiceController from '../controllers/invoice'
 import * as partController from '../controllers/part'
@@ -1053,7 +1054,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_QB_Customers),
-        quickbookCustomerController.syncQBCustomers
+        quickBookCustomerController.syncQBCustomers
     )
 
     router.post(
@@ -1062,14 +1063,14 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Create_QB_customer),
         validate(Validations.createQBCustomer),
-        quickbookCustomerController.createQBCustomer
+        quickBookCustomerController.createQBCustomer
     )
 
     router.post(
         '/syncQBItems',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        quickbookItemController.syncQBItems
+        quickBookItemController.syncQBItems
     )
 
     router.post(
@@ -1094,6 +1095,13 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/syncQBPayments',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookPaymentController.syncQBPayments
+    )
+
+    router.post(
         '/getQBUri',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
@@ -1107,6 +1115,19 @@ export default function (sio: any) {
         (req, res) => {
             quickBookController.getCallBackToken(req, res, sio)
         }
+    )
+
+    router.post(
+        '/disconnectQB',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_QB_Uri),
+        quickBookController.disconnectQB
+    )
+
+    router.post(
+        '/blueclerkSyncWebhook',
+        quickBookController.blueclerkSyncWebhook
     )
 
     // Company

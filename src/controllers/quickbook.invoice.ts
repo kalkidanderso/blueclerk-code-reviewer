@@ -1,18 +1,17 @@
 import { Request, Response } from 'express';
+import moment from 'moment';
 import { Status, Messages } from '../common/constants';
 
 import { IContact } from '../common/contact';
 import { ICompany, Company } from '../models/Company'
-import { ICustomer, IQBCustomer } from '../models/Customer'
+import { ICustomer } from '../models/Customer'
 import { IJobLocation } from '../models/JobLocation';
 import { IServiceTicket } from '../models/ServiceTicket';
 import { IJob } from '../models/Job';
 import { IItem } from '../models/Item';
 import { IPaymentTerm } from '../models/PaymentTerm';
-import { Payment } from '../models/Payment';
 import { IInvoice, IQBInvoice, IQBInvoiceLine, LineDetailTypes, Invoice } from '../models/Invoice';
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
-import { _createQBPayment } from '../controllers/quickbook.payment';
 
 // ===================================
 // =======[ QUICKBOOK INVOICE ]=======
@@ -208,61 +207,78 @@ export const createQBInvoice = async (req: Request, res: Response) => {
 
 }
 
+/**
+* To syncing payments from BC to QB only
+*/
 export const syncQBInvoices = async (req: Request, res: Response) => {
 
-    const company = <ICompany>req.company;
+    const updatedInvoices: { _id: string, invoiceId: string}[] = [];
 
-    /**
-     * Retrieve all invoices of this company from Database,
-     * that not a manual invoice and doesn't have quickbookId 
-     */ 
-    const invoices = await Invoice.find({
-        company: company._id,
-        invoiceType: { $ne: 3 },
-        quickbookId: { $exists: false }
-    });
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, req.company, async (err, errMsg, company) => {
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
-    /**
-     * Retrieve all payments of this company from Database,
-     * that doesn't have quickbookId 
-     */ 
-    const payments = await Payment.find({
-        company: company._id,
-        quickbookId: { $exists: false }
-    });
+        /**
+         * Retrieve all invoices of this company from Database,
+         * that not a manual invoice and doesn't have quickbookId 
+         */ 
+        const invoices = await Invoice.find({
+            company: company._id,
+            invoiceType: { $ne: 3 },
+            quickbookId: null
+        }).sort({ issuedDate: 1 });
 
-    // Return immediately when no invoices to be synced
-    if (invoices.length <= 0 && payments.length <= 0) {
-        return res.json({ status: Status.Success, message: 'No invoices & payments to be synced.' });
-    }
+        // Return immediately when no invoices to be synced
+        if (invoices.length <= 0) {
+            return res.json({ status: Status.Success, message: 'No invoices to be synced.' });
+        }
 
-    // Iterate all invoices from DB
-    for (const invoice of invoices) {
-        // Create invoice on QB
-        _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
-            if (qbInvoice) {
-                // invoice.quickbookId = qbInvoice.Id;
-                // invoice.save();
-                Invoice.findByIdAndUpdate(invoice._id, { quickbookId: qbInvoice.Id }).exec();
+        // Find QB payments start from the first invoices date
+        qbo.findInvoices([
+            { field: 'TxnDate', value: moment(invoices[0]?.issuedDate || invoices[0]?.createdAt).subtract(1, 'days').format('YYYY-MM-DD'), operator: '>=' }
+        ], async (err: any, data: any) => {
+            if (err) {
+                return res.json({
+                    status: Status.Error,
+                    message: err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError
+                })
             }
-        })
-    }
 
-    // Iterate all paymens from DB
-    for (const payment of payments) {
-        // Create payment on QB
-        _createQBPayment(req, res, company, payment, (err, errMsg, qbPayment) => {
-            if (qbPayment) {
-                Payment.findByIdAndUpdate(payment._id, { quickbookId: qbPayment.Id }).exec();
+            const qbInvoices: IQBInvoice[] = data?.QueryResponse?.Invoice;
+
+            // Iterate all invoices from DB
+            for (const invoice of invoices) {
+                const existQBInvoice = qbInvoices.find(qbInvoice => qbInvoice.DocNumber === invoice.invoiceId);
+
+                if (!existQBInvoice) {
+                    // Create invoice on QB
+                    _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                        if (qbInvoice) {
+                            // QB Invoice created, updated DB Invoice quickbookId
+                            Invoice.findByIdAndUpdate(invoice, { quickbookId: qbInvoice.Id }).exec();
+                        }
+                    })
+                } else {
+                    if (invoice.quickbookId !== existQBInvoice.Id) {
+                        // QB Invoice exist, update DB Invoice quickbookId directly
+                        Invoice.findByIdAndUpdate(invoice, { quickbookId: existQBInvoice.Id }).exec();
+
+                        updatedInvoices.push({ _id: invoice._id, invoiceId: invoice.invoiceId });
+                    }
+                }
             }
-        })
-    }
 
-    company.qbSync.invoicesSynced = true;
-    company.qbSync.invoicesSyncedAt = new Date();
-    company.save();
+            company.qbSync.invoicesSynced = true;
+            company.qbSync.invoicesSyncedAt = new Date();
+            company.save();
 
-    return res.json({ status: Status.Success, message: 'Invoices & payments synced successfully.' });
+            return res.json({ status: Status.Success, message: 'Invoices synced successfully.', updatedInvoices });
+        });
+    })
 
 }
 

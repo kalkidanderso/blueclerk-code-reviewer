@@ -1,8 +1,15 @@
 import { Request, Response } from 'express'
-import { Status, Messages} from '../common/constants'
+import { Status, Messages, QBEntityNames, QBEntityOperations} from '../common/constants'
 import { qbConfig } from '../common/config'
 
-import { ICompany, IQBCompany, Company } from '../models/Company'
+import { ICompany, IQBCompany, Company } from '../models/Company';
+import { _resetCompanyQB } from '../controllers/company';
+import { _resetCustomerQB } from '../controllers/customer';
+import { _resetItemQB } from '../controllers/jobType';
+import { _resetPaymentTermQB } from '../controllers/paymentTerm';
+import { _resetInvoiceQB } from '../controllers/invoice';
+import { _resetPaymentQB } from '../controllers/payment';
+import { createBCPayment } from '../controllers/quickbook.payment';
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");
@@ -182,4 +189,105 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
     .catch(function (err: any) {
         return res.json({'status': Status.Error, 'message': err.error_description || err.originalMessage || err.message || Messages.GenericError});
     });
+}
+
+export const disconnectQB = async (req: Request, res: Response) => {
+
+    const company = <ICompany>req.company;
+
+    /**
+     * Construct the response message now before qb data wiped out,
+     * doing this to make sure even company is already diconnected,
+     * BE will wiped out company stuff's quickbookId
+     */
+    const message = company.qbAuthorized
+        ? `Company successfully disconnected from QuickBooks: ${company.qbCompanyName}.`
+        : `Company already disconnected.`;
+
+    // Remove all quickbookId across company's stuff
+    _resetCompanyQB(company);
+    _resetCustomerQB(company);
+    _resetItemQB(company);
+    _resetPaymentTermQB(company);
+    _resetInvoiceQB(company);
+    _resetPaymentQB(company);
+
+    return res.json({ status: Status.Success, message });
+
+}
+
+/**
+ * Endpoint to handle webhook action from Quickbooks
+ */
+export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const eventNotification = params?.eventNotifications[0];
+    const eventEntity = eventNotification?.dataChangeEvent?.entities[0];
+
+    // Get BC Company based on the realmId
+    const company = await Company.findOne({ realmId: eventNotification?.realmId });
+
+    // Handle Entity Event Trigger
+    switch (eventEntity?.name) {
+
+        // => CUSTOMER ENTITY EVENT
+        case QBEntityNames.CUSTOMER:
+            switch (eventEntity?.operation) {
+                // => CUSTOMER CREATE ACTION
+                case QBEntityOperations.CREATE:
+                    // Create BC Customer here
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        // => ITEM ENTITY EVENT
+        case QBEntityNames.ITEM:
+            switch (eventEntity?.operation) {
+                // => ITEM CREATE ACTION
+                case QBEntityOperations.CREATE:
+                    // Create BC Job Type and Item here
+                    break;
+
+                default:
+                    break;
+            }
+
+        // => PAYMENT ENTITY EVENT
+        case QBEntityNames.PAYMENT:
+            switch (eventEntity?.operation) {
+                // => PAYMENT CREATE ACTION
+                case QBEntityOperations.CREATE:
+                    // Call quickbook payment to handle BC Payment
+                    createBCPayment(req, res, company, eventEntity?.id, (err, errMsg, payments) => {
+                        // Implement another actions here
+                    });
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        // => PAYMENT TERM ENTITY EVENT
+        case QBEntityNames.TERM:
+            switch (eventEntity?.operation) {
+                // => PAYMENT TERM CREATE ACTION
+                case QBEntityOperations.CREATE:
+                    // Create BC Payment Term here
+                    break;
+
+                default:
+                    break;
+            }
+
+        default:
+            break;
+    }
+
+    res.status(200).json({});
+
 }

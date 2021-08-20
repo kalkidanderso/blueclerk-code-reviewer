@@ -78,6 +78,8 @@ export interface ICompany extends Document{
         paymentTermSynedAt?: Date
         invoicesSynced?: boolean
         invoicesSyncedAt?: Date
+        paymentsSynced?: boolean
+        paymentsSyncedAt?: Date
     }
     socketId: string,
     qbAuthorized: boolean,
@@ -228,6 +230,11 @@ const CompanySchema = new Schema({
             default: false
         },
         invoicesSyncedAt: Date,
+        paymentsSynced: {
+            type: Boolean,
+            default: false
+        },
+        paymentsSyncedAt: Date,
     },
     socketId: String,
     qbAuthorized: {

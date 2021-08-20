@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb'
+import moment from 'moment'
 
 import { Status, Messages, InvoiceStatus } from '../common/constants'
 import { ICompany } from '../models/Company'
@@ -8,6 +9,72 @@ import { Invoice, IInvoice } from '../models/Invoice'
 import { Payment, IPayment } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
 import { _createQBPayment } from './quickbook.payment'
+
+
+/**
+ * To calculate invoice and customer payment amount related,
+ * invoice's balanceDue, paymentApplied, status, and paid,
+ * customer's balance and credit
+ */
+export const _calculateInvoiceBalance = async (invoice: IInvoice, customer: ICustomer, amountPaid: number): Promise<void> => {
+
+    // Handle invoice balance due, underpayment, and overpayment
+    if (amountPaid >= invoice.balanceDue) {
+        /**
+         * This will handle overpayment/exact payment
+         */
+
+        // Deduct the customer balance
+        customer.balance -= invoice.balanceDue;
+        // Add on the customer credit if any
+        customer.credit += (amountPaid - invoice.balanceDue);
+
+        // Update invoice paymentApplied, balanceDue, and status
+        invoice.paymentApplied += invoice.balanceDue;
+        invoice.balanceDue = 0;
+        invoice.status = InvoiceStatus.PAID;
+        invoice.paid = true;
+    } else {
+        /**
+         * This will handle underpayment
+         */
+
+        // Deduct the customer balance
+        customer.balance -= amountPaid;
+
+        // Fix default paymentApplied and balanceDue for old invoice
+        invoice.paymentApplied = invoice.paymentApplied ?? 0;
+        invoice.balanceDue = invoice.balanceDue ?? invoice.total;
+
+        // Update invoice paymentApplied, balanceDue, and status
+        invoice.paymentApplied += amountPaid;
+        invoice.balanceDue -= amountPaid;
+        invoice.status = InvoiceStatus.PARTIALLY_PAID;
+    }
+
+    // // Save the customer's changes
+    await customer.save();
+    // // Save the invoice's changes
+    await invoice.save();
+
+    return;
+
+}
+
+/**
+ * To reset Payment quickbookId,
+ * used when /disconnectQB API called
+ */
+export const _resetPaymentQB = (company: ICompany): void => {
+
+    Payment.updateMany(
+        { company: company._id, quickbookId: { $ne: null } },
+        { $set: { quickbookId: null } }
+    ).exec();
+
+    return;
+
+};
 
 export const getPayments = (req: Request, res: Response) => {
 
@@ -115,9 +182,9 @@ export const createPayment = async (req: Request, res: Response) => {
         customer,
         invoice,
         amountPaid: params.amount,
-        referenceNumber: params.referenceNumber,
+        referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
         paymentType: params.paymentType,
-        paidAt: params.paidAt ? new Date(params.paidAt) : Date.now(),
+        paidAt: params.paidAt ? moment(params.paidAt).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
         company,
         createdBy: user,
         createdAt: Date.now()
@@ -127,44 +194,8 @@ export const createPayment = async (req: Request, res: Response) => {
         // Save the new payment
         await payment.save();
 
-        // Handle underpayment and overpayment
-        if (parseFloat(params.amount) >= invoice.balanceDue) {
-            /**
-             * This will handle overpayment/exact payment
-             */
-
-            // Deduct the customer balance
-            customer.balance -= invoice.balanceDue;
-            // Add on the customer credit if any
-            customer.credit += (parseFloat(params.amount) - invoice.balanceDue);
-
-            // Update invoice paymentApplied, balanceDue, and status
-            invoice.paymentApplied += invoice.balanceDue;
-            invoice.balanceDue = 0;
-            invoice.status = InvoiceStatus.PAID;
-            invoice.paid = true;
-        } else {
-            /**
-             * This will handle underpayment
-             */
-
-            // Deduct the customer balance
-            customer.balance -= parseFloat(params.amount);
-
-            // Fix default paymentApplied and balanceDue for old invoice
-            invoice.paymentApplied = invoice.paymentApplied ?? 0;
-            invoice.balanceDue = invoice.balanceDue ?? invoice.total;
-
-            // Update invoice paymentApplied, balanceDue, and status
-            invoice.paymentApplied += parseFloat(params.amount);
-            invoice.balanceDue -= parseFloat(params.amount);
-            invoice.status = InvoiceStatus.PARTIALLY_PAID;
-        }
-
-        // Save the customer's changes
-        customer.save();
-        // Save the invoice's changes
-        invoice.save();
+        // Handle invoice balance due, underpayment, and overpayment
+        await _calculateInvoiceBalance(invoice, customer, parseFloat(params.amount));
 
         if (company.qbAuthorized) {
             // Create new Payment in QuickBooks
@@ -176,6 +207,12 @@ export const createPayment = async (req: Request, res: Response) => {
                 if (qbPayment) {
                     payment.quickbookId = qbPayment.Id;
                     payment.save();
+
+                    // If company's payments already synced, update the synced date
+                    if (company.qbSync?.paymentsSynced) {
+                        company.qbSync.paymentsSyncedAt = new Date();
+                        company.save();
+                    }
                 }
 
                 return res.json({
