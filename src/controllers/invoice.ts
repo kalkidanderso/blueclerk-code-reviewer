@@ -2,12 +2,15 @@ import {Request, Response} from 'express';
 import {ObjectId} from 'mongodb'
 import moment from 'moment';
 
+import { IContact } from '../common/contact';
+import { Contact } from '../models/Contact';
 import {IInvoice, Invoice} from '../models/Invoice';
-import {Messages, Status} from '../common/constants';
+import {InvoiceStatus, Messages, Status} from '../common/constants';
 import {ICompanyAdmin} from '../models/CompanyAdmin';
 import {Company, ICompany} from '../models/Company';
 import {IInvoicePrefix, InvoicePrefix} from '../models/InvoicePrefix';
 import {IUser} from '../models/User';
+import { IServiceTicket } from '../models/ServiceTicket';
 import {IJob, Job} from '../models/Job';
 import {IPurchaseOrder, PurchaseOrder} from '../models/PurchaseOrder';
 import { IItem, Item } from '../models/Item';
@@ -18,13 +21,29 @@ import {sendInvoiceEmailToCustomer} from '../services/aws';
 import {CompanyInvoice} from '../models/CompanyInvoice';
 import { IJobReport, JobReport } from '../models/JobReport';
 import { IPriceTier } from '../models/PriceTier';
-import { _createQBInvoice } from './quickbook';
+import { IPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
+import { _createQBInvoice } from '../controllers/quickbook.invoice';
+
+/**
+ * To reset Invoice quickbookId,
+ * used when /disconnectQB API called
+ */
+export const _resetInvoiceQB = (company: ICompany): void => {
+
+    Invoice.updateMany(
+        { company: company._id, quickbookId: { $ne: null } },
+        { $set: { quickbookId: null } }
+    ).exec();
+
+    return;
+
+}
 
 export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
-    const params = req.body
+    const params = req.query;
 
-    Invoice.find({'company': req.companyId, customer: params.customer})
+    Invoice.find({'company': req.companyId, customer: params.customerId})
         .populate({
             path: 'job',
             populate: [{ path: 'type', select: 'title' },{ path: 'customer', select: 'info.email auth.email profile.displayName contactName' }, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' }],
@@ -54,6 +73,7 @@ export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
             return res.json({ 'status': Status.Success, 'invoices': invoices })
         })
+
 }
 
 export const setCustomInvoiceNumber = (req: Request, res: Response) => {
@@ -387,6 +407,12 @@ export const createInvoice = (req: Request, res: Response) => {
                         if (qbInvoice) {
                             invoice.quickbookId = qbInvoice.Id;
                             invoice.save();
+
+                            // If company's invoices already synced, update the synced date
+                            if (company.qbSync?.invoicesSynced) {
+                                company.qbSync.invoicesSyncedAt = new Date();
+                                company.save();
+                            }
                         }
 
                         return res.json({
@@ -486,6 +512,12 @@ export const createInvoice = (req: Request, res: Response) => {
                         if (qbInvoice) {
                             invoice.quickbookId = qbInvoice.Id;
                             invoice.save();
+
+                            // If company's invoices already synced, update the synced date
+                            if (company.qbSync?.invoicesSynced) {
+                                company.qbSync.invoicesSyncedAt = new Date();
+                                company.save();
+                            }
                         }
 
                         return res.json({
@@ -646,6 +678,12 @@ export const createInvoice = (req: Request, res: Response) => {
                         if (qbInvoice) {
                             invoice.quickbookId = qbInvoice.Id;
                             invoice.save();
+
+                            // If company's invoices already synced, update the synced date
+                            if (company.qbSync?.invoicesSynced) {
+                                company.qbSync.invoicesSyncedAt = new Date();
+                                company.save();
+                            }
                         }
 
                         return res.json({
@@ -764,6 +802,12 @@ export const createInvoice = (req: Request, res: Response) => {
                                                 if (qbInvoice) {
                                                     newInvoice.quickbookId = qbInvoice.Id;
                                                     newInvoice.save();
+
+                                                    // If company's invoices already synced, update the synced date
+                                                    if (company.qbSync?.invoicesSynced) {
+                                                        company.qbSync.invoicesSyncedAt = new Date();
+                                                        company.save();
+                                                    }
                                                 }
 
                                                 return res.json({
@@ -788,7 +832,7 @@ export const createInvoice = (req: Request, res: Response) => {
 const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobTypeitems: IItem[], purchaseOrders: any, purchaseOrder: any, estimate: any, next: (req: Request, res: Response, invoice: IInvoice, invoiceId: number) => void) =>{
 
     const params = req.body
-    const company = req.company
+    const company = <ICompany>req.company
     const user = <IUser>req.user
 
     let currentInvoiceId = 0;
@@ -813,6 +857,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     let subTotalBeforeTax: number = 0
     let total: number = 0;
     let invoiceType: number = 0;
+    let ticket: IServiceTicket;
     let customer : string
     let jobId : string
     // let hourlyRate: number = 0
@@ -828,6 +873,9 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         invoiceType = 0
         customer = job.customer
         jobId = job._id
+
+        await job.populate({ path: 'ticket' }).execPopulate();
+        ticket = job.ticket;
 
         /**
          * Kris' remark (Jun 30th, 2021):
@@ -928,8 +976,21 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     }
 
     let invoiceItems: any[] = []
-    // Find Customer object to see the itemTier and customPrice info
-    const customerObj = await Customer.findById(customer);
+    // Find Customer object to see the itemTier, customPrice, & payment term info
+    const customerObj = await Customer.findById(customer).populate({ path: 'paymentTerm' });
+    // Populate payment term from the company
+    await company.populate({ path: 'paymentTerm' }).execPopulate();
+
+    // Retrive payment term for this invoice
+    let paymentTerm: IPaymentTerm;
+    if (params.paymentTermId) {
+        paymentTerm = await PaymentTerm.findOne({ _id: params.paymentTermId, isActive: true });
+    }
+    /**
+     * Priority order: 1) User params 2) Customer default term 3) Company default term,
+     * otherwise leave paymentTerm to be blank
+     */
+    paymentTerm = paymentTerm || <IPaymentTerm>customerObj?.paymentTerm || <IPaymentTerm>company?.paymentTerm;
 
     if (items.length > 0) {
 
@@ -1051,7 +1112,12 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         purchaseOrder: purchaseOrderId,
         jobPurchaseOrders: purchaseOrderIds,
         issuedDate: params.issuedDate ? new Date(params.issuedDate) : Date.now(),
-        dueDate: params.dueDate ? new Date(params.dueDate) : moment().add(30, 'd').valueOf(),
+        dueDate: params.dueDate ? new Date(params.dueDate) : moment().add(paymentTerm?.dueDays ?? 30, 'd').valueOf(),
+        isDraft: params.isDraft,
+        paymentTerm,
+        customerPO: params.customerPO ?? ticket?.customerPO,
+        customerContactId: params.customerContactId ?? ticket?.customerContactId,
+        vendorId: params.vendorId ?? customerObj.vendorId,
         customer: customer,
         company: req.companyId,
         note: params.note,
@@ -1060,6 +1126,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         taxAmount: Math.round(taxAmount * 100) / 100,
         subTotal: Math.round(subTotalBeforeTax * 100) / 100,
         total: Math.round(total * 100) / 100,
+        balanceDue: Math.round(total * 100) / 100,
         createdBy: user._id,
         createdAt: Date.now(),
         timeSpent: timeSpent,
@@ -1148,6 +1215,7 @@ export const createPOInvoice = (req: Request, res: Response) => {
 export const updateInvoice = (req: Request, res: Response) => {
 
     const params = req.body
+    const company = <ICompany>req.company;
 
     Invoice.findOne({'_id': params.invoiceId, 'company': req.companyId},
         async (err: any, invoice: IInvoice) => {
@@ -1159,15 +1227,35 @@ export const updateInvoice = (req: Request, res: Response) => {
                 return res.json({'status': Status.Success, 'message': "Invalid invoice id."})
             }
 
-            // Find Customer object to see the itemTier and customPrice info
-            const customerObj = await Customer.findById(invoice.customer);
+            // Find Customer object to see the itemTier, customPrice, * payment term info
+            const customerObj = await Customer.findById(invoice.customer).populate({ path: 'paymentTerm' });
+            // Populate payment term from the company
+            await company.populate({ path: 'paymentTerm' }).execPopulate();
+
+            // Retrieve payment term for this invoice
+            let paymentTerm: IPaymentTerm;
+            if (params.paymentTermId) {
+                paymentTerm = await PaymentTerm.findOne({ _id: params.paymentTermId, isActive: true });
+            }
+
+            // Retrieve customer contact for this invoice
+            let customerContact: IContact;
+            if (params.customerContactId) {
+                customerContact = await Contact.findById(params.customerContactId);
+            }
+
+            /**
+             * Priority order: 1) User params 2) Customer default term 3) Company default term,
+             * otherwise leave paymentTerm to be blank
+             */
+            paymentTerm = paymentTerm || <IPaymentTerm>customerObj?.paymentTerm || <IPaymentTerm>company?.paymentTerm;
 
             if(invoice.invoiceType == 0) {
 
                 Job.findById(invoice.job)
                     .then((job : any) => {
                         if (job == undefined || job == null) {
-                            throw new Error('job for this invoice is not fount')
+                            throw new Error('job for this invoice is not found')
                         }
 
                         const POPromise = PurchaseOrder.find({
@@ -1187,7 +1275,11 @@ export const updateInvoice = (req: Request, res: Response) => {
                             return res.json({'status': Status.Error, 'message': 'Tax Percentage or charges are required'})
                         }
                         const issuedDate = params.issuedDate ? new Date(params.issuedDate) : invoice.issuedDate;
-                        const dueDate = params.dueDate ? new Date(params.dueDate) : invoice.issuedDate;
+                        const dueDate = params.paymentTermId && paymentTerm
+                            ? moment(issuedDate).add(paymentTerm?.dueDays, 'd').valueOf()
+                            : params.dueDate
+                                ? new Date(params.dueDate)
+                                : issuedDate
                         // let tax: number = invoice.tax;
                         // let taxPercentage: number = invoice.taxPercentage;
                         let charges: number = invoice.charges;
@@ -1195,6 +1287,11 @@ export const updateInvoice = (req: Request, res: Response) => {
                         let taxAmount: number = 0;
                         let subTotalBeforeTax: number = 0;
                         let total: number = 0;
+                        let balanceDue = invoice.balanceDue;
+                        let paymentApplied = invoice.paymentApplied;
+                        let paid = invoice.paid;
+                        let status = invoice.status;
+                        const oldTotal = invoice.total;
 
                         // if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
                         //     (params.charges == undefined || params.charges == null || params.charges == '""' )) {
@@ -1304,6 +1401,28 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                         // Add the grand total with the tax amount
                         total += taxAmount;
+                        balanceDue += (total - oldTotal);
+
+                        // Check if invoice updated and several conditions met
+                        if (balanceDue <= 0) {
+                            /**
+                             * Invoice updated to the point balanceDue paid off or even minus,
+                             * if minus, will put the extra payment to cust's credit,
+                             * then mark invoice as PAID
+                             */
+                            customerObj.credit += Math.abs(balanceDue);
+                            paymentApplied = total;
+                            balanceDue = 0;
+                            status = InvoiceStatus.PAID;
+                            paid = true;
+                        } else {
+                            /**
+                             * Balance due still existed or even come back,
+                             * make sure status goes to PARTIALLY PAID or UNPAID
+                             */
+                            status = paymentApplied > 0 ? InvoiceStatus.PARTIALLY_PAID : InvoiceStatus.UNPAID;
+                            paid = false;
+                        }
 
                         /**
                          * Check if invoice coming from Job and customer uses customPrice,
@@ -1330,16 +1449,34 @@ export const updateInvoice = (req: Request, res: Response) => {
                             taxAmount: Math.round(taxAmount * 100) / 100,
                             subTotal: Math.round(subTotalBeforeTax * 100) / 100,
                             total: Math.round(total * 100) / 100,
-                            charges, issuedDate, dueDate, note: params.note
-                        },
+                            balanceDue: Math.round(balanceDue * 100) / 100,
+                            paymentApplied: Math.round(paymentApplied * 100) / 100,
+                            status, paid,
+                            charges, issuedDate, dueDate, note: params.note,
+                            isDraft: params.isDraft,
+                            paymentTerm: params.paymentTermId ? paymentTerm : undefined,
+                            customerPO: params.customerPO,
+                            customerContactId: customerContact,
+                            vendorId: params.vendorId
+                        }, { omitUndefined: true },
 
-                            (err: any) => {
+                            async (err: any) => {
                                 if (err) {
-                                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                                    return res.json({ status: Status.Error, message: Messages.GenericError });
                                 }
 
-                                return res.json({'status': Status.Success, 'message': "Invoice updated successfully."})
+                                // Save the new credit of customer
+                                await customerObj.save();
+
+                                // Retrieve invoice after the update process
+                                invoice = await Invoice.findById(invoice._id);
+
+                                return res.json({ status: Status.Success, message: "Invoice updated successfully.", invoice });
                             })
+                    })
+                    .catch((error: any) => {
+                        console.log('== error:', error);
+                        return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
                     })
             } else {
 
@@ -1347,7 +1484,11 @@ export const updateInvoice = (req: Request, res: Response) => {
                     return res.json({'status': Status.Error, 'message': 'Tax Percentage or charges are required'})
                 }
                 const issuedDate = params.issuedDate ? new Date(params.issuedDate) : invoice.issuedDate;
-                const dueDate = params.dueDate ? new Date(params.dueDate) : invoice.issuedDate;
+                const dueDate = params.paymentTermId && paymentTerm
+                    ? moment(issuedDate).add(paymentTerm?.dueDays, 'd').valueOf()
+                    : params.dueDate
+                        ? new Date(params.dueDate)
+                        : issuedDate
                 // let tax: number = invoice.tax;
                 // let taxPercentage: number = invoice.taxPercentage;
                 let charges: number = invoice.charges;
@@ -1355,6 +1496,11 @@ export const updateInvoice = (req: Request, res: Response) => {
                 let taxAmount: number = 0;
                 let subTotalBeforeTax: number = 0;
                 let total: number = 0;
+                let balanceDue = invoice.balanceDue;
+                let paymentApplied = invoice.paymentApplied;
+                let paid = invoice.paid;
+                let status = invoice.status;
+                const oldTotal = invoice.total;
 
                 // if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
                 //     (params.charges == undefined || params.charges == null || params.charges == '""' )) {
@@ -1443,6 +1589,28 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                 // Add the grand total with the tax amount
                 total +=  taxAmount;
+                balanceDue += (total - oldTotal);
+
+                // Check if invoice updated and several conditions met
+                if (balanceDue <= 0) {
+                    /**
+                     * Invoice updated to the point balanceDue paid off or even minus,
+                     * if minus, will put the extra payment to cust's credit,
+                     * then mark invoice as PAID
+                     */
+                    customerObj.credit += Math.abs(balanceDue);
+                    paymentApplied = total;
+                    balanceDue = 0;
+                    status = InvoiceStatus.PAID;
+                    paid = true;
+                } else {
+                    /**
+                     * Balance due still existed or even come back,
+                     * make sure status goes to PARTIALLY PAID or UNPAID
+                     */
+                    status = paymentApplied > 0 ? InvoiceStatus.PARTIALLY_PAID : InvoiceStatus.UNPAID;
+                    paid = false;
+                }
 
                 /**
                  * Check if invoice coming from Job and customer uses customPrice,
@@ -1469,14 +1637,28 @@ export const updateInvoice = (req: Request, res: Response) => {
                     taxAmount: Math.round(taxAmount * 100) / 100,
                     subTotal: Math.round(subTotalBeforeTax * 100) / 100,
                     total: Math.round(total * 100) / 100,
-                    issuedDate, dueDate, note: params.note
-                },
-                    (err: any) => {
+                    balanceDue: Math.round(balanceDue * 100) / 100,
+                    paymentApplied: Math.round(paymentApplied * 100) / 100,
+                    status, paid,
+                    issuedDate, dueDate, note: params.note,
+                    isDraft: params.isDraft,
+                    paymentTerm: params.paymentTermId ? paymentTerm : undefined,
+                    customerPO: params.customerPO,
+                    customerContactId: customerContact,
+                    vendorId: params.vendorId
+                }, { omitUndefined: true },
+                    async (err: any) => {
                         if (err) {
-                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            return res.json({ status: Status.Error, message: Messages.GenericError });
                         }
 
-                        return res.json({'status': Status.Success, 'message': "Invoice updated successfully."})
+                        // Save the new credit of customer
+                        await customerObj.save();
+
+                        // Retrieve invoice after the update process
+                        invoice = await Invoice.findById(invoice._id);
+
+                        return res.json({ status: Status.Success, message: "Invoice updated successfully.", invoice });
                     })
 
             }
@@ -1506,6 +1688,14 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                 { path: 'equipment', select: 'info maintenance type brand', populate: [ { path: 'type', select: 'title' }, { path: 'brand', select: 'title' }]},
                 { path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price' }
             ]
+        })
+        .populate({
+            path: 'paymentTerm',
+            select: '-company -__v'
+        })
+        .populate({
+            path: 'customerContactId',
+            select: '-__v'
         })
         .populate({
             path: 'items.item',
@@ -1625,6 +1815,14 @@ export const getInvoices = (req: Request, res: Response) => {
                 { path: 'equipment', select: 'info maintenance type brand', populate: [ { path: 'type', select: 'title' }, { path: 'brand', select: 'title' }]},
                 { path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price' }
             ]
+        })
+        .populate({
+            path: 'paymentTerm',
+            select: '-company -__v'
+        })
+        .populate({
+            path: 'customerContactId',
+            select: '-__v'
         })
         .populate({
             path: 'items.item',

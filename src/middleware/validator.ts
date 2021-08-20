@@ -232,7 +232,14 @@ export const Validations = {
 
   deleteJobCharges: [check('jobChargesId').exists()],
 
-  //createInvoice: [],
+  createInvoice: [
+    check('jobId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('purchaseOrderId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('estimateId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId)
+  ],
 
   sendInvoice: [check('invoiceId').exists()],
 
@@ -240,7 +247,12 @@ export const Validations = {
 
   createPOInvoice: [check('purchaseOrderId').exists()],
 
-  updateInvoice: [check('invoiceId').exists()],
+  updateInvoice: [
+    check('invoiceId').exists().withMessage(Messages.Required),
+    check('invoiceId').isMongoId().withMessage(Messages.WrongId),
+    check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId)
+  ],
 
   companyInvoice: [check('companyInvoiceId').exists()],
 
@@ -270,13 +282,35 @@ export const Validations = {
 
   updateItem: [check('itemId').exists(), check('charges').exists(), check('isFixed').exists(), check('tax').exists()],
 
-  getInvoiceByCustomer: [check('customer').exists()],
+  // Payment Term
 
-  recordPayment: [check('amount').exists(), check('referenceNumber').exists(), check('paidAt').exists(), check('customer').exists(), check('invoices').exists()],
+  setCompanyDefaultPaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
 
-  updatePayment: [check('paymentId').exists(), check('amount').exists(), check('referenceNumber').exists(), check('paidAt').exists(), check('invoices').exists()],
+  setCustomerPaymentTerm: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId), check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
 
-  getPaymentsByCustomer: [check('customer').exists()],
+  createPaymentTerm: [check('name').exists().withMessage(Messages.Required), check('dueDays').exists().withMessage(Messages.Required), check('dueDays').isInt().withMessage('invalid format')],
+
+  updatePaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId), check('dueDays').optional().isInt().withMessage('invalid format')],
+
+  deletePaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
+
+  // Payment
+
+  getInvoicesByCustomerId: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId)],
+
+  getPaymentsByCustomer: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId)],
+
+  recordPayment: [
+    check('invoiceId').exists().withMessage(Messages.Required),
+    check('invoiceId').isMongoId().withMessage(Messages.WrongId),
+    check('amount').exists().withMessage(Messages.Required),
+    check('customerId').exists().withMessage(Messages.Required),
+    check('customerId').isMongoId().withMessage(Messages.WrongId)
+  ],
+
+  updatePayment: [check('paymentId').exists().withMessage(Messages.Required), check('paymentId').isMongoId().withMessage(Messages.WrongId), check('amount').exists(), check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId), check('paidAt').exists(), check('invoices').exists()],
+
+  // Code Location
 
   codeLocationTag: [check('nfcTag').exists(), check('customerId').exists()],
 
@@ -296,15 +330,15 @@ export const Validations = {
   updateNotification: [check('isRead').optional().isBoolean(), check('isDismissed').optional().isBoolean()],
 
   createIntegrationServiceTicket: [
-    check('source').exists().withMessage('is required'),
-    check('name').exists().withMessage('is required'),
-    check('email').exists().withMessage('is required'),
-    check('email').isEmail().withMessage('invalid format (not email format)'),
-    check('street').exists().withMessage('is required'),
-    check('city').exists().withMessage('is required'),
-    check('state').exists().withMessage('is required'),
-    check('zipCode').exists().withMessage('is required'),
-    check('phone').exists().withMessage('is required')
+    check('source').exists().withMessage(Messages.Required),
+    check('name').exists().withMessage(Messages.Required),
+    check('email').exists().withMessage(Messages.Required),
+    check('email').isEmail().withMessage(Messages.InvalidEmail),
+    check('street').exists().withMessage(Messages.Required),
+    check('city').exists().withMessage(Messages.Required),
+    check('state').exists().withMessage(Messages.Required),
+    check('zipCode').exists().withMessage(Messages.Required),
+    check('phone').exists().withMessage(Messages.Required)
   ],
 
 }

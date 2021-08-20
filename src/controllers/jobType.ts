@@ -7,7 +7,26 @@ import { IUser } from '../models/User'
 import { Customer } from '../models/Customer';
 import { ICompany } from '../models/Company'
 import { Item, IItem, IQBItem } from '../models/Item'
-import { _createQBItem } from '../controllers/quickbook';
+import { _createQBItem } from '../controllers/quickbook.item';
+
+/**
+ * To reset Job Type & Item quickbookId,
+ * used when /disconnectQB API called
+ */
+export const _resetItemQB = (company: ICompany): void => {
+
+    JobType.updateMany(
+        { createdBy: company._id, quickbookId: { $ne: null } },
+        { $set: { quickbookId: null } }
+    ).exec();
+
+    Item.updateMany(
+        { company: company._id, quickbookId: { $ne: null } },
+        { $set: { quickbookId: null } }
+    ).exec();
+
+    return;
+}
 
 export const createJobType = (req: Request, res: Response) => {
 
@@ -130,8 +149,16 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
                 }
 
                 if (qbItem) {
+                    jobType.quickbookId = qbItem.Id;
+                    await jobType.save();
                     item.quickbookId = qbItem.Id;
                     await item.save();
+
+                    // If company's items already synced, update the synced date
+                    if (company.qbSync?.itemsSynced) {
+                        company.qbSync.itemsSyncedAt = new Date();
+                        await company.save();
+                    }
                 }
 
                 return next(item, qbItem);

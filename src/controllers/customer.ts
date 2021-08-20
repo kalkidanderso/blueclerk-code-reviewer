@@ -8,7 +8,22 @@ import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { User, IUser } from '../models/User'
 import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 import { IPriceTier } from '../models/PriceTier'
-import { _createQBCustomer } from './quickbook'
+import { _createQBCustomer } from './quickbook.customer'
+
+/**
+ * To reset Customer quickbookId,
+ * used when /disconnectQB API called
+ */
+export const _resetCustomerQB = (company: ICompany): void => {
+
+    Customer.updateMany(
+        { company: company._id, quickbookId: { $ne: null } },
+        { $set: { quickbookId: null } }
+    ).exec();
+
+    return;
+
+}
 
 export const createCustomer = async (req: Request, res: Response) => {
 
@@ -124,6 +139,12 @@ export const createCustomer = async (req: Request, res: Response) => {
                                         // Create new Customer in QuickBooks
                                         customer.quickbookId = qbCustomer.Id;
                                         await customer.save();
+
+                                        // If company's customers already synced, update the synced date
+                                        if (company.qbSync?.customersSynced) {
+                                            company.qbSync.customersSyncedAt = new Date();
+                                            await company.save();
+                                        }
                                     }
 
                                     return res.json({ status: Status.Success, message: 'Customer created successfully.', customer, quickbookCustomer: qbCustomer });
@@ -256,7 +277,7 @@ export const getCustomers = (req: Request, res: Response) => {
         })
 
         User.find({_id : {$in: customerIds}},
-            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId itemTier quickbookId')
+            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId itemTier paymentTerm quickbookId')
             .populate({ path: 'itemTier', select: '-companyId -__v' })
             .exec((err: any, users: IUser[]) =>{
 
@@ -401,7 +422,7 @@ export const customerDetail = (req: Request, res: Response) => {
     CompanyCustomer.findOne({ 'customer': params.customerId, company: companyId})
     .populate({
         path: 'customer',
-        populate: [{ path: 'jobLocations', populate: {path: 'jobSites'}}, { path: 'equipments'}, { path: 'itemTier', select: '-companyId -__v' }]
+        populate: [{ path: 'jobLocations', populate: {path: 'jobSites'}}, { path: 'equipments'}, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
     })
     .exec().then((companyCustomer: ICompanyCustomer)=>{
         const customer: any = companyCustomer.customer;

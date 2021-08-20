@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import {ICompanyInvoice} from './CompanyInvoice';
 import { IPriceTier } from './PriceTier';
+import { IPaymentTerm } from '../models/PaymentTerm';
 
 export interface ICompany extends Document{
 
@@ -73,8 +74,12 @@ export interface ICompany extends Document{
         customersSyncedAt?: Date
         itemsSynced?: boolean
         itemsSyncedAt?: Date
+        paymentTermSynced?: boolean
+        paymentTermSynedAt?: Date
         invoicesSynced?: boolean
         invoicesSyncedAt?: Date
+        paymentsSynced?: boolean
+        paymentsSyncedAt?: Date
     }
     socketId: string,
     qbAuthorized: boolean,
@@ -87,6 +92,7 @@ export interface ICompany extends Document{
         count: number
         list: { tier: Schema.Types.ObjectId | IPriceTier }[]
     }
+    paymentTerm?: Schema.Types.ObjectId | IPaymentTerm
     companyInvoices: ICompanyInvoice[];
 }
 
@@ -214,11 +220,21 @@ const CompanySchema = new Schema({
             default: false
         },
         itemsSyncedAt: Date,
+        paymentTermSynced: {
+            type: Boolean,
+            default: false
+        },
+        paymentTermSynedAt: Date,
         invoicesSynced: {
             type: Boolean,
             default: false
         },
         invoicesSyncedAt: Date,
+        paymentsSynced: {
+            type: Boolean,
+            default: false
+        },
+        paymentsSyncedAt: Date,
     },
     socketId: String,
     qbAuthorized: {
@@ -267,6 +283,10 @@ const CompanySchema = new Schema({
                 ref: 'PriceTier'
             },
         }]
+    },
+    paymentTerm: {
+        type: Schema.Types.ObjectId,
+        ref: 'PaymentTerm'
     },
     companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
 })

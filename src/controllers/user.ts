@@ -281,6 +281,7 @@ export const getCompanyProfile = (req: Request, res: Response) => {
     const { companyId } = req.params;
     Company.findById(companyId)
         .populate({ path: 'itemTier.list.tier', select: '-companyId -__v' })
+        .populate({ path: 'paymentTerm', select: '-company -__v'})
         .exec((err: any, company: ICompany) => {
         if (err) {
             return res.status(500).json({ 'status': Status.Error, 'message':  'something went wrong'})

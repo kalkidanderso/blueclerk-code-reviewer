@@ -1,7 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { InvoiceStatus } from '../common/constants';
 import { ICustomer, IQBAddress } from '../models/Customer';
+import { IContact } from '../common/contact';
 import { IItem } from '../models/Item';
 import { IJob } from '../models/Job';
+import { IPaymentTerm } from '../models/PaymentTerm';
 
 export interface IInvoice extends Document {
     invoice: any[]
@@ -13,6 +16,11 @@ export interface IInvoice extends Document {
     jobPurchaseOrders: [Schema.Types.ObjectId]
     issuedDate?: Date
     dueDate?: Date
+    isDraft?: boolean
+    paymentTerm?: Schema.Types.ObjectId | IPaymentTerm
+    customerPO?: string
+    customerContactId?: Schema.Types.ObjectId | IContact
+    vendorId?: string
     customer: Schema.Types.ObjectId | ICustomer
     company: Schema.Types.ObjectId
     note: string
@@ -40,7 +48,10 @@ export interface IInvoice extends Document {
         taxAmount: number
         subTotal: number
     }]
-    paid: boolean
+    paymentApplied: number
+    balanceDue: number
+    paid: boolean // TODO: to be deprecated
+    status: InvoiceStatus
     emailHistory?: [{
         sentTo: string
         sentAt: Date
@@ -67,6 +78,10 @@ export interface IQBInvoice {
     Notes?: string
     TaxTaxDetail?: {
         TotalTax?: number
+    }
+    SalesTermRef?: {
+        name?: string
+        value: string
     }
     CustomerRef: {
         name?: string
@@ -143,10 +158,24 @@ const InvoiceSchema = new Schema({
     dueDate: {
         type: Date
     },
+    isDraft: {
+        type: Boolean,
+        default: true
+    },
+    paymentTerm: {
+        type: Schema.Types.ObjectId,
+        ref: 'PaymentTerm'
+    },
     note: {
         type: String,
         required: false
     },
+    customerPO: String,
+    customerContactId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Contact',
+    },
+    vendorId: String,
     customer: {
         type: Schema.Types.ObjectId,
         ref: 'User',
@@ -249,9 +278,19 @@ const InvoiceSchema = new Schema({
             default: 0
         },
     }],
+    paymentApplied: {
+        type: Number,
+        default: 0
+    },
+    balanceDue: Number,
     paid:{
         type: Boolean,
         default: false
+    },
+    status: {
+        type: String,
+        enum: Object.values(InvoiceStatus),
+        default: InvoiceStatus.UNPAID
     },
     emailHistory: [{
         _id: false,

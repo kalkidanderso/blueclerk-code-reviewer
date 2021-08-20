@@ -135,6 +135,10 @@
       "description": "For invoices of jobs"
     },
     {
+      "name": "Payment Term",
+      "description": "For payment terms of invoices"
+    },
+    {
       "name": "Payment",
       "description": "For payments of invoices"
     },
@@ -7278,11 +7282,43 @@
             "description": "Due date of the invoice"
           },
           {
+            "name": "isDraft",
+            "in": "formData",
+            "type": "boolean",
+            "enum": [true, false],
+            "description": "Mark the invoice as draft, default to true for new invoice"
+          },
+          {
+            "name": "paymentTermId",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Pass payment term id"
+          },
+          {
             "name": "estimateId",
             "in": "formData",
             "required": false,
             "type": "string",
             "description": "Pass estimate id to create estimate invoice (optional)"
+          },
+          {
+            "name": "customerPO",
+            "in": "formData",
+            "type": "string",
+            "description": "Pass customer PO to replace ticket's customer PO if any (optional)"
+          },
+          {
+            "name": "customerContactId",
+            "in": "formData",
+            "type": "string",
+            "description": "Pass customer contact id to replace ticket's customer contact id if any (optional)"
+          },
+          {
+            "name": "vendorId",
+            "in": "formData",
+            "type": "string",
+            "description": "Pass customer vendor id to replace the default customer's vendor id (optional)"
           },
           {
             "name": "customerId",
@@ -7513,6 +7549,38 @@
             "description": "Due date of the invoice"
           },
           {
+            "name": "isDraft",
+            "in": "formData",
+            "type": "boolean",
+            "enum": [true, false],
+            "description": "Mark the invoice as draft, default to true for new invoice"
+          },
+          {
+            "name": "paymentTermId",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Pass payment term id"
+          },
+          {
+            "name": "customerPO",
+            "in": "formData",
+            "type": "string",
+            "description": "Pass customer PO to replace ticket's customer PO if any (optional)"
+          },
+          {
+            "name": "customerContactId",
+            "in": "formData",
+            "type": "string",
+            "description": "Pass customer contact id to replace ticket's customer contact id if any (optional)"
+          },
+          {
+            "name": "vendorId",
+            "in": "formData",
+            "type": "string",
+            "description": "Pass customer vendor id to replace the default customer's vendor id (optional)"
+          },
+          {
             "name": "charges",
             "in": "formData",
             "type": "number",
@@ -7665,12 +7733,12 @@
         ]
       }
     },
-    "/getInvoicesByCustomerId": {
+    "/setCompanyDefaultPaymentTerm": {
       "post": {
         "tags": [
-          "Payment"
+          "Payment Term"
         ],
-        "summary": "To get invoice of customer to record payment",
+        "summary": "To set default payment term for company",
         "description": "",
         "consumes": [
           "application/x-www-form-urlencoded"
@@ -7680,8 +7748,247 @@
         ],
         "parameters": [
           {
-            "name": "customer",
+            "name": "paymentTermId",
             "in": "formData",
+            "type": "string",
+            "required": true,
+            "description": "Id of the payment term"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/setCustomerPaymentTerm": {
+      "post": {
+        "tags": [
+          "Payment Term"
+        ],
+        "summary": "To set payment term for customer",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "formData",
+            "type": "string",
+            "required": true,
+            "description": "Id of the customer"
+          },
+          {
+            "name": "paymentTermId",
+            "in": "formData",
+            "type": "string",
+            "required": true,
+            "description": "Id of the payment term"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getPaymentTerms": {
+      "get": {
+        "tags": [
+          "Payment Term"
+        ],
+        "summary": "To get all payment terms of company",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createPaymentTerm": {
+      "post": {
+        "tags": [
+          "Payment Term"
+        ],
+        "summary": "To create a new payment term",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "formData",
+            "type": "string",
+            "required": true,
+            "description": "Name of the payment term"
+          },
+          {
+            "name": "dueDays",
+            "in": "formData",
+            "type": "number",
+            "required": true,
+            "description": "Due days of the payment term"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updatePaymentTerm": {
+      "put": {
+        "tags": [
+          "Payment Term"
+        ],
+        "summary": "To update a payment term",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "paymentTermId",
+            "in": "formData",
+            "type": "string",
+            "required": true,
+            "description": "Id of the payment term"
+          },
+          {
+            "name": "name",
+            "in": "formData",
+            "type": "string",
+            "description": "Name of the payment term"
+          },
+          {
+            "name": "dueDays",
+            "in": "formData",
+            "type": "number",
+            "description": "Due days of the payment term"
+          },
+          {
+            "name": "isActive",
+            "in": "formData",
+            "type": "boolean",
+            "enum": [true, false],
+            "description": "Active status of the payment term"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/deletePaymentTerm": {
+      "delete": {
+        "tags": [
+          "Payment Term"
+        ],
+        "summary": "To delete a payment term",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "paymentTermId",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Id of the payment term to be deleted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getInvoicesByCustomerId": {
+      "get": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "To get invoice of customer to record payment",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "query",
             "type": "string",
             "required": true,
             "description": "id of the customer you want to fetch invoices for"
@@ -7717,88 +8024,13 @@
         ]
       }
     },
-    "/recordPayment": {
-      "post": {
-        "tags": [
-          "Payment"
-        ],
-        "summary": "To record the payment for invoice(s) made by the customer",
-        "description": "",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "name": "invoices",
-            "in": "formData",
-            "description": "comma seprated invoice ids",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "amount",
-            "in": "formData",
-            "required": true,
-            "type": "number",
-            "description": "Amount how much customer has paid"
-          },
-          {
-            "name": "referenceNumber",
-            "in": "formData",
-            "required": true,
-            "type": "string",
-            "description": "Reference number of the payment made by client"
-          },
-          {
-            "name": "paymentType",
-            "in": "formData",
-            "required": false,
-            "type": "string",
-            "description": "Method name how customer has paid"
-          },
-          {
-            "name": "customer",
-            "in": "formData",
-            "required": true,
-            "type": "string",
-            "description": "Pass customer id to who made the payment"
-          },
-          {
-            "name": "paidAt",
-            "in": "formData",
-            "required": true,
-            "type": "string",
-            "description": "Time when the customer has made the payment"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "schema": {
-              "$ref": "#/definitions/GeneralAPIResponse"
-            }
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
     "/getPayments": {
-      "post": {
+      "get": {
         "tags": [
           "Payment"
         ],
         "summary": "To get payments of a company",
         "description": "",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
         "produces": [
           "application/json"
         ],
@@ -7833,22 +8065,19 @@
       }
     },
     "/getPaymentsByCustomerId": {
-      "post": {
+      "get": {
         "tags": [
           "Payment"
         ],
         "summary": "To get payments by customer id",
         "description": "",
-        "consumes": [
-          "application/x-www-form-urlencoded"
-        ],
         "produces": [
           "application/json"
         ],
         "parameters": [
           {
-            "name": "customer",
-            "in": "formData",
+            "name": "customerId",
+            "in": "query",
             "description": "id of the customer you want to fetch payments for",
             "required": true,
             "type": "string"
@@ -7884,13 +8113,83 @@
         ]
       }
     },
-    "/updatePayment": {
+    "/recordPayment": {
       "post": {
         "tags": [
           "Payment"
         ],
-        "summary": "To update payment record",
+        "summary": "To record the payment for invoice made by the customer",
         "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Pass customer id to who made the payment"
+          },
+          {
+            "name": "invoiceId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Id of invoice to be paid"
+          },
+          {
+            "name": "amount",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "Amount how much customer has paid"
+          },
+          {
+            "name": "referenceNumber",
+            "in": "formData",
+            "type": "string",
+            "description": "Reference number of the payment made by client"
+          },
+          {
+            "name": "paymentType",
+            "in": "formData",
+            "type": "string",
+            "enum": ["ACH", "Bank Wire", "Credit Card/Debit Card", "Check", "Cash"],
+            "description": "Method name how customer has paid"
+          },
+          {
+            "name": "paidAt",
+            "in": "formData",
+            "type": "string",
+            "description": "Time when the customer has made the payment"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/WIP/updatePayment": {
+      "put": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "WIP: To update payment record",
+        "description": "WIP: To update payment record",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -7922,7 +8221,6 @@
           {
             "name": "referenceNumber",
             "in": "formData",
-            "required": true,
             "type": "string",
             "description": "Reference number of the payment made by client"
           },
@@ -7934,7 +8232,7 @@
             "description": "Method name how customer has paid"
           },
           {
-            "name": "customer",
+            "name": "customerId",
             "in": "formData",
             "required": true,
             "type": "string",
@@ -9390,13 +9688,41 @@
         ]
       }
     },
+    "/syncQBPaymentTerms": {
+      "post": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "Manually syncing ALL payment terms",
+        "description": "Manually syncing ALL payment terms from BlueClerk to QuickBooks and vice versa",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/syncQBInvoices": {
       "post": {
         "tags": [
           "Quickbooks Integration"
         ],
-        "summary": "Manually syncing ALL invoices",
-        "description": "Manually syncing ALL invoices **from BlueClerk to QuickBooks only**",
+        "summary": "Manually syncing UNSYNCED invoices",
+        "description": "Manually syncing UNSYNCED invoices **from BlueClerk to QuickBooks only**",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -9439,6 +9765,34 @@
             "type": "string",
             "description": "Id of an invoice to be associated"
           }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/syncQBPayments": {
+      "post": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "Manually syncing UNSYNCED payments",
+        "description": "Manually syncing UNSYNCED payments **from BlueClerk to QuickBooks only**",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
         ],
         "responses": {
           "200": {
@@ -9530,6 +9884,35 @@
             "type": "string"
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/disconnectQB": {
+      "post": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "Disconnect from QuickBooks integration",
+        "description": "Disconnect from QB and will **reset QB synced status** for: Customer, Job Type, Item, Payment Term, Invoice, and Payment",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Success",

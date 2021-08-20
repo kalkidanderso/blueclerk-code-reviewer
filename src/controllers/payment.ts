@@ -1,12 +1,238 @@
 import { Request, Response } from 'express'
-import { Status, Messages } from '../common/constants'
+import { ObjectId } from 'mongodb'
+import moment from 'moment'
+
+import { Status, Messages, InvoiceStatus } from '../common/constants'
+import { ICompany } from '../models/Company'
 import { IUser } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
 import { Payment, IPayment } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
-import { ObjectId } from 'mongodb'
+import { _createQBPayment } from './quickbook.payment'
 
+
+/**
+ * To calculate invoice and customer payment amount related,
+ * invoice's balanceDue, paymentApplied, status, and paid,
+ * customer's balance and credit
+ */
+export const _calculateInvoiceBalance = async (invoice: IInvoice, customer: ICustomer, amountPaid: number): Promise<void> => {
+
+    // Handle invoice balance due, underpayment, and overpayment
+    if (amountPaid >= invoice.balanceDue) {
+        /**
+         * This will handle overpayment/exact payment
+         */
+
+        // Deduct the customer balance
+        customer.balance -= invoice.balanceDue;
+        // Add on the customer credit if any
+        customer.credit += (amountPaid - invoice.balanceDue);
+
+        // Update invoice paymentApplied, balanceDue, and status
+        invoice.paymentApplied += invoice.balanceDue;
+        invoice.balanceDue = 0;
+        invoice.status = InvoiceStatus.PAID;
+        invoice.paid = true;
+    } else {
+        /**
+         * This will handle underpayment
+         */
+
+        // Deduct the customer balance
+        customer.balance -= amountPaid;
+
+        // Fix default paymentApplied and balanceDue for old invoice
+        invoice.paymentApplied = invoice.paymentApplied ?? 0;
+        invoice.balanceDue = invoice.balanceDue ?? invoice.total;
+
+        // Update invoice paymentApplied, balanceDue, and status
+        invoice.paymentApplied += amountPaid;
+        invoice.balanceDue -= amountPaid;
+        invoice.status = InvoiceStatus.PARTIALLY_PAID;
+    }
+
+    // // Save the customer's changes
+    await customer.save();
+    // // Save the invoice's changes
+    await invoice.save();
+
+    return;
+
+}
+
+/**
+ * To reset Payment quickbookId,
+ * used when /disconnectQB API called
+ */
+export const _resetPaymentQB = (company: ICompany): void => {
+
+    Payment.updateMany(
+        { company: company._id, quickbookId: { $ne: null } },
+        { $set: { quickbookId: null } }
+    ).exec();
+
+    return;
+
+};
+
+export const getPayments = (req: Request, res: Response) => {
+
+    Payment.find({company: req.companyId})
+    .populate({
+        path: 'company',
+        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+    })
+    .populate({
+        path: 'customer',
+        select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+    })
+    .populate({
+        path: 'invoices',
+        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+    })
+    .populate({
+        path: 'createdBy',
+        select: 'profile.displayName auth.email'
+    })
+    .then((payments: IPayment[] | null) =>{
+
+        return res.json({ 'status': Status.Success, 'payment': payments })
+    })
+    .catch((error: any) => {
+        if (error.message != undefined) {
+            return res.json({ 'status': Status.Error, 'message': error.message })
+        } else {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
+    })
+
+}
+
+export const getPaymentsByCustomerId = (req: Request, res: Response) => {
+
+    const params = req.query;
+
+    Payment.find({company: req.companyId, customer: params.customerId})
+    .populate({
+        path: 'company',
+        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+    })
+    .populate({
+        path: 'customer',
+        select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+    })
+    .populate({
+        path: 'invoices',
+        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+    })
+    .populate({
+        path: 'createdBy',
+        select: 'profile.displayName auth.email'
+    })
+    .then((payments: IPayment[] | null) =>{
+
+        return res.json({ 'status': Status.Success, 'payment': payments })
+    })
+    .catch((error: any) => {
+        if (error.message != undefined) {
+            return res.json({ 'status': Status.Error, 'message': error.message })
+        } else {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
+    })
+
+}
+
+/**
+ * Create payment for single invoice
+ */
 export const createPayment = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const company = <ICompany>req.company;
+    const user = <IUser>req.user;
+
+    // Find and check if customer existed
+    const customer = await Customer.findOne({
+        _id: params.customerId,
+        company: company._id
+    });
+
+    if (!customer) {
+        return res.json({ status: Status.Error, message: 'Customer not found.' });
+    }
+
+    // Find and check if invoice exited and belongs to the customer
+    const invoice = await Invoice.findOne({
+        _id: params.invoiceId,
+        customer: customer._id,
+        company: company._id
+    });
+
+    if (!invoice) {
+        return res.json({ status: Status.Error, message: 'Invoice not found or does not belong to the customer.' });
+    }
+    if (invoice.status === InvoiceStatus.PAID) {
+        return res.json({ status: Status.Success, message: 'Invoice already paid off.' });
+    }
+
+    // Construct payment entry
+    const payment = new Payment({
+        customer,
+        invoice,
+        amountPaid: params.amount,
+        referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
+        paymentType: params.paymentType,
+        paidAt: params.paidAt ? moment(params.paidAt).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+        company,
+        createdBy: user,
+        createdAt: Date.now()
+    });
+
+    try {
+        // Save the new payment
+        await payment.save();
+
+        // Handle invoice balance due, underpayment, and overpayment
+        await _calculateInvoiceBalance(invoice, customer, parseFloat(params.amount));
+
+        if (company.qbAuthorized) {
+            // Create new Payment in QuickBooks
+            _createQBPayment(req, res, company, payment, (err, errMsg, qbPayment) => {
+                if (err) {
+                    return res.json({ status: err, message: errMsg });
+                }
+
+                if (qbPayment) {
+                    payment.quickbookId = qbPayment.Id;
+                    payment.save();
+
+                    // If company's payments already synced, update the synced date
+                    if (company.qbSync?.paymentsSynced) {
+                        company.qbSync.paymentsSyncedAt = new Date();
+                        company.save();
+                    }
+                }
+
+                return res.json({
+                    status: Status.Success,
+                    message: 'Payment successfully created.',
+                    payment, quickbookPayment: qbPayment,
+                    customer, invoice
+                });
+            });
+        } else {
+            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
+        }
+
+    } catch (error) {
+        return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
+    }
+
+}
+
+export const createPaymentMultipleInvoices = async (req: Request, res: Response) => {
 
     const params = req.body;
     const user = <IUser>req.user;
@@ -37,13 +263,13 @@ export const createPayment = async (req: Request, res: Response) => {
     }
 
     // Find and check if customer exist
-    const customer = await Customer.findById(params.customer);
+    const customer = await Customer.findById(params.customerId);
     if (!customer) {
         return res.json({ status: Status.Error, message: 'Customer not found' });
     }
 
     const payment = new Payment({
-        customer: params.customer,
+        customer,
         amountPaid: params.amount,
         referenceNumber: params.referenceNumber,
         paymentType: params.paymentType,
@@ -115,7 +341,7 @@ export const updatePayment = (req: Request, res: Response) => {
         
         return new Promise<void>((resolve, reject) =>{
         
-            Customer.findById(params.customer)
+            Customer.findById(params.customerId)
             .then((customer: ICustomer) =>{
         
                 let newBalance = customer.balance + previousDedeuctedBalance
@@ -142,71 +368,6 @@ export const updatePayment = (req: Request, res: Response) => {
     })
     .catch((error: any) => {
         if (error != undefined && error.message != undefined) {
-            return res.json({ 'status': Status.Error, 'message': error.message })
-        } else {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        }
-    })
-}
-
-export const getPayments = (req: Request, res: Response) => {
-
-    Payment.find({company: req.companyId})
-    .populate({
-        path: 'company',
-        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-    })
-    .populate({
-        path: 'customer',
-        select: 'info.email auth.email profile.displayName address contact contactName vendorId'
-    })
-    .populate({
-        path: 'invoices',
-        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
-    })
-    .populate({
-        path: 'createdBy',
-        select: 'profile.displayName auth.email'
-    })
-    .then((payments: IPayment[] | null) =>{
-    
-        return res.json({ 'status': Status.Success, 'payment': payments })
-    })
-    .catch((error: any) => {
-        if (error.message != undefined) {
-            return res.json({ 'status': Status.Error, 'message': error.message })
-        } else {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        }
-    })
-}
-
-export const getPaymentsByCustomerId = (req: Request, res: Response) => {
-
-    const params = req.body
-    Payment.find({company: req.companyId, customer: params.customer})
-    .populate({
-        path: 'company',
-        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-    })
-    .populate({
-        path: 'customer',
-        select: 'info.email auth.email profile.displayName address contact contactName vendorId'
-    })
-    .populate({
-        path: 'invoices',
-        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
-    })
-    .populate({
-        path: 'createdBy',
-        select: 'profile.displayName auth.email'
-    })
-    .then((payments: IPayment[] | null) =>{
-    
-        return res.json({ 'status': Status.Success, 'payment': payments })
-    })
-    .catch((error: any) => {
-        if (error.message != undefined) {
             return res.json({ 'status': Status.Error, 'message': error.message })
         } else {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
