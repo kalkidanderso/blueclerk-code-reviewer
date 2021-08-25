@@ -317,17 +317,17 @@ const _getPaymentMethod = (qbo: any, payment: IPayment): Promise<string> => {
                 //         || Messages.GenericError,
                 //     null);
             }
-    
+
             if (data?.QueryResponse?.PaymentMethod?.length > 0) {
                 resolve(data?.QueryResponse?.PaymentMethod[0]?.Id);
             }
-    
+
             // Payment Method not found, construct QB Payment Method Object
             const qbPaymentMethodEntry: IQBPaymentMethod = {
                 Name: payment.paymentType,
                 Type: payment.paymentType === PaymentTypes.CREDIT_DEBIT_CARD ? 'CREDIT_CARD' : 'NON_CREDIT_CARD'
             };
-    
+
             // Create new QB Payment Method
             qbo.createPaymentMethod(qbPaymentMethodEntry, async (err: any, qbPaymentMethod: IQBPaymentMethod) => {
                 if (err) {
