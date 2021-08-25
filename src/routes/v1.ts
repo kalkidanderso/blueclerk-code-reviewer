@@ -37,6 +37,7 @@ import * as quickBookPaymentTermController from '../controllers/quickbook.paymen
 import * as quickBookInvoiceController from '../controllers/quickbook.invoice'
 import * as quickBookPaymentController from '../controllers/quickbook.payment'
 import * as companyController from '../controllers/company'
+import * as emailDefaultController from '../controllers/emailDefault'
 import * as invoiceController from '../controllers/invoice'
 import * as partController from '../controllers/part'
 import * as purchaseOrderController from '../controllers/purchaseOrder'
@@ -1166,6 +1167,8 @@ export default function (sio: any) {
         companyController.updateCompanyProfile
     )
 
+    // Item Tier
+
     router.get(
         '/getItemTierList',
         passport.authenticate('jwt', { session: false }),
@@ -1186,6 +1189,21 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateItemTier),
         companyController.updateItemTier
+    )
+
+    // Email Default
+    router.get(
+        '/getCompanyEmailDefault',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        emailDefaultController.getCompanyEmailDefault
+    )
+
+    router.put(
+        '/updateCompanyEmailDefault',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        emailDefaultController.updateCompanyEmailDefault
     )
 
     router.post(

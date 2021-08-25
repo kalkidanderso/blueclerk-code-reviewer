@@ -18,6 +18,8 @@ tags:
     description: For all kind of users
   - name: Company
     description: For all kind of company stuff
+  - name: Email Default
+    description: For all kind of company email default
   - name: Equipment Type
     description: For equipment types
   - name: Equipment Brand
@@ -1252,6 +1254,47 @@ paths:
           required: true
           type: string
         - name: fax
+          in: formData
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getCompanyEmailDefault:
+    get:
+      tags:
+        - Email Default
+      summary: To get company email default
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateCompanyEmailDefault:
+    put:
+      tags:
+        - Email Default
+      summary: To update company email default
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: subject
+          in: formData
+          type: string
+        - name: body
           in: formData
           type: string
       responses:
