@@ -14,9 +14,9 @@ export interface IEmailDefault extends Document {
 }
 
 export const DefaultEmailTemplate = {
-    subject: '{Job Report/Invoice #12345} from',
-    body: `Dear {customer},\n\nPlease see your {job report/invoice #12345} attached with {$ 0} due on {receipt/net15/net30 terms date}.\n\n{PDF attachment}\n\nThank you for doing business with {company name}.\n\n{Company logo}`
-}
+    subject: '${invoice_number} from our company',
+    body: '<div style=\"background-color: #EAECF3; text-align:center\"><p><img style=\"width:350px\" src=\"${company_logo}\" alt=\"${company_name}\" /></p><p><strong>${company_name}</strong></p></div><div style=\"text-align:center\"><h2>${invoice_number}</h2></div><div><p>Dear ${customer_name},</p><p>Please see your invoice <strong>${invoice_number}</strong> attached with <strong>$${invoice_amount}</strong> due on <strong>${invoice_due_date}</strong>.</p><br /><p>Thank you for doing business with <strong>${company_name}</strong></p><img style=\"width:150px\" src=\"${company_logo}\" alt=\"${company_name}\" /></div>'
+  }
 
 const EmailDefaultSchema = new Schema(
     
