@@ -241,7 +241,10 @@ export const Validations = {
     check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
-  sendInvoice: [check('invoiceId').exists()],
+  sendInvoice: [
+    check('invoiceId').exists().withMessage(Messages.Required),
+    check('invoiceId').isMongoId().withMessage(Messages.WrongId),
+  ],
 
   sendReport: [check('jobReportId').exists()],
 
