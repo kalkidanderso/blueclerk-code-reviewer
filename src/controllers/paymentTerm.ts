@@ -120,7 +120,7 @@ export const getPaymentTerms = async (req: Request, res: Response) => {
         .sort({ name: 1 })
         .populate({ path: 'createdBy', select: 'profile' });
 
-    return res.json({ status: Status.Success, message: 'ok', paymentTerms });
+    return res.json({ status: Status.Success, paymentTerms });
 
 }
 
