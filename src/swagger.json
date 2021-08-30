@@ -2269,7 +2269,7 @@
             "type": "string"
           },
           {
-            "name": "body",
+            "name": "message",
             "in": "formData",
             "type": "string"
           }

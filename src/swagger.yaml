@@ -1294,7 +1294,7 @@ paths:
         - name: subject
           in: formData
           type: string
-        - name: body
+        - name: message
           in: formData
           type: string
       responses:
