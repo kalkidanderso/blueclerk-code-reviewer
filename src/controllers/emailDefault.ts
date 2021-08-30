@@ -22,7 +22,7 @@ export const getCompanyEmailDefault = async (req: Request, res: Response) => {
 export const updateCompanyEmailDefault = async (req: Request, res: Response) => {
 
     const params = req.body;
-    const { subject, body } = params;
+    const { subject, message } = params;
     const user = <IUser>req.user;
     const company = <ICompany>req.company;
 
@@ -33,7 +33,7 @@ export const updateCompanyEmailDefault = async (req: Request, res: Response) => 
     let emailDefault = await EmailDefault.findOne({ company });
 
     emailDefault.subject = subject ?? emailDefault.subject;
-    emailDefault.body = body ?? emailDefault.body;
+    emailDefault.message = message ?? emailDefault.message;
     emailDefault.updatedBy = user;
     await emailDefault.save();
 
@@ -58,7 +58,7 @@ const _createCompanyDefaultEmail = async (company: ICompany): Promise<void> => {
 
     await new EmailDefault({
         subject: DefaultEmailTemplate.subject,
-        body: DefaultEmailTemplate.body,
+        message: DefaultEmailTemplate.message,
         company
     }).save();
 
