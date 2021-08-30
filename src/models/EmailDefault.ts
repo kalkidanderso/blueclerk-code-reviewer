@@ -15,7 +15,7 @@ export interface IEmailDefault extends Document {
 
 export const DefaultEmailTemplate = {
     subject: '${invoice_number} from our company',
-    message: '<div style=\"background-color: #EAECF3; text-align:center\"><p><img style=\"width:350px\" src=\"${company_logo}\" alt=\"${company_name}\" /></p><p><strong>${company_name}</strong></p></div><div style=\"text-align:center\"><h2>${invoice_number}</h2></div><div><p>Dear ${customer_name},</p><p>Please see your invoice <strong>${invoice_number}</strong> attached with <strong>$${invoice_amount}</strong> due on <strong>${invoice_due_date}</strong>.</p><br /><p>Thank you for doing business with <strong>${company_name}</strong></p><img style=\"width:150px\" src=\"${company_logo}\" alt=\"${company_name}\" /></div>'
+    message: '<div style=\"font-family:roboto; padding:10px\"><div style=\"background-color:#EAECF3; padding:10px; text-align:center\"><p><img style=\"height:150px\" src=\"${company_logo}\" alt=\"${company_name}\" /></p><p><strong>${company_name}</strong></p></div><div style=\"text-align:center\"><h1>${invoice_number}</h1></div><div><p>Dear ${customer_name},</p><p>Please see your invoice <strong>${invoice_number}</strong> attached with <strong>$${invoice_amount}</strong> due on <strong>${invoice_due_date}</strong>.</p><br /><p>Thank you for doing business with <strong>${company_name}</strong></p><img style=\"width:150px\" src=\"${company_logo}\" alt=\"${company_name}\" /></div></div>'
   }
 
 const EmailDefaultSchema = new Schema(

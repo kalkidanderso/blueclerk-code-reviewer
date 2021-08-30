@@ -8,6 +8,7 @@ import {
     checkUserScanPermissions
 } from '../middleware/permissions'
 import { getCompanyId } from '../middleware/company'
+import { uploadInvoices } from '../middleware/multer';
 
 import { Role, Permissions } from '../common/constants'
 
@@ -1355,13 +1356,15 @@ export default function (sio: any) {
         validate(Validations.createInvoice),
         invoiceController.createInvoice
     )
+
     router.post(
         '/sendInvoice',
         passport.authenticate('jwt', { session: false }),
+        uploadInvoices.single('invoicePdf'),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Invoice_Detail),
         validate(Validations.sendInvoice),
-        invoiceController.sendInvoice
+        invoiceController.sendInvoiceEmail
     )
 
     router.post(
