@@ -1357,6 +1357,15 @@ export default function (sio: any) {
         invoiceController.createInvoice
     )
 
+    router.get(
+        '/getInvoiceEmailTemplate',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoice_Detail),
+        validate(Validations.sendInvoice),
+        invoiceController.getInvoiceEmailTemplate
+    )
+
     router.post(
         '/sendInvoice',
         passport.authenticate('jwt', { session: false }),

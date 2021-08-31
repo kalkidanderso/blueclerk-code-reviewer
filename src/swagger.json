@@ -7769,6 +7769,43 @@
         ]
       }
     },
+    "/getInvoiceEmailTemplate": {
+      "get": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "Get the invoice email template before send the email",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Id of invoice"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/sendInvoice": {
       "post": {
         "tags": [

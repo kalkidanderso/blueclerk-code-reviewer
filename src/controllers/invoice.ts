@@ -25,6 +25,7 @@ import { EmailDefault } from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer } from '../services/aws';
 import { _createQBInvoice } from '../controllers/quickbook.invoice';
+import { transformPlaceholders, getPlaceholderValues } from './emailDefault';
 
 /**
  * To reset Invoice quickbookId,
@@ -1798,6 +1799,50 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
 //         return res.json({'status': Status.Error, 'message': err.message});
 //     }
 // }
+
+export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
+
+    const params = req.query;
+    const company = <ICompany>req.company;
+
+    // Retrieve invoice and populate customer and paymentTerm info
+    const invoice = await Invoice
+        .findOne({ company, _id: params.invoiceId })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+        })
+
+    if (!invoice) {
+        return res.json({ status: Status.Error, message: 'Invoice not found.' });
+    }
+
+    const customer = <ICustomer>invoice.customer;
+
+    // Retrieve company email default
+    const emailDefault = await EmailDefault.findOne({ company });
+
+    /**
+     * Transfrom the email default placeholder symbol to fit Javascript Template Literal,
+     * '{{' become '${' & '}}' become '}'
+     */
+    await transformPlaceholders(emailDefault);
+
+    // Get available placeholder values for Invoice email template
+    const { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date } = await getPlaceholderValues(company, invoice, customer);
+
+    return res.json({
+        status: Status.Success,
+        emailTemplate: {
+            from: company_email,
+            to: customer_email,
+            subject: eval('`' + emailDefault.subject + '`'),
+            message: eval('`' + emailDefault.message + '`')
+        },
+        invoice
+    });
+
+}
 
 export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
