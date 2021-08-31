@@ -270,7 +270,7 @@ export const sendInvoiceEmailToCustomer = async function(options: any) {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
 
-  const { subject, message, sender_email, company_name, company_email, company_logo, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date, invoice_pdf, invoice_pdf_name, term_name, term_due_days } = options;
+  let { subject, message, sender_email, company_name, company_email, company_logo, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date, invoice_pdf, invoice_pdf_name, term_name, term_due_days } = options;
 
   AWS.config.update({
     region: AWS_REGION,
@@ -281,18 +281,27 @@ export const sendInvoiceEmailToCustomer = async function(options: any) {
   const ses = new AWS.SES({ apiVersion: '2012-10-17' });
   const boundary = `NextPart${Math.random().toString().substr(2)}`;
 
+  // Fill in the small_company_logo placeholder
+  message = message.replace(/{{small_company_logo}}/gi, `<img style=\"width:150px\" src=\"${company_logo}\" alt=\"${company_name}\" />`);
+  // Replace \n to <br /> in HTML
+  message = message.replace(/\\n/gi, '<br />');
+
   const SENDER = `${company_name} <${APP_EMAIL_NOREPLY ?? sender_email ?? company_email}>`;
   const RECIPIENT = customer_email;
   const SUBJECT = eval('`' + subject + '`');
-  const BODY_HTML = `${eval('`' + message + '`')}
+  const BODY_HTML = `<div style=\"font-family:roboto; padding:10px; background-color: #EAECF3; text-align:center;\">
+                      <p><img style=\"width:350px\" src=\"${company_logo}\" alt=\"${company_name}\" /></p>
+                      <p><strong>${company_name}</strong></p>
+                    </div>
+                    <div style=\"font-family:roboto; padding:10px; text-align:center\">
+                      <h2>${invoice_number}</h2>
+                    </div>
                     <div style=\"font-family:roboto; padding:10px\">
-                      <br />
+                      ${eval('`' + message + '`')}
+                      <br /><br />
                       <p style="padding:0px">Sent with BlueClerk Software</p>
                       <a href="https://app.blueclerk.com"><img src="https://blueclerk.com/wp-content/uploads/2020/07/logo.png" /></a>
                     </div>`;
-
-  const pdfFile = fs.readFileSync(invoice_pdf);
-  const ATTACHMENT = pdfFile.toString("base64").replace(/([^\0]{76})/g, "$1\n");
 
   const rawMessage = [
     `From: ${SENDER}`,
@@ -303,13 +312,20 @@ export const sendInvoiceEmailToCustomer = async function(options: any) {
     `--${boundary}`,
     `Content-Type: text/html\n`,
     `${BODY_HTML}\n`,
-    `--${boundary}`,
-    `Content-Type: application/octet-stream; name=\"${invoice_pdf_name}\"`,
-    `Content-Transfer-Encoding: base64`,
-    `Content-Disposition: attachment\n`,
-    `${ATTACHMENT}\n`,
-    `--${boundary}--`
+    `--${boundary}`
   ];
+
+  // Attachment PDF if provided
+  if (invoice_pdf) {
+    const pdfFile = fs.readFileSync(invoice_pdf);
+    const ATTACHMENT = pdfFile.toString("base64").replace(/([^\0]{76})/g, "$1\n");
+
+    rawMessage.push(`Content-Type: application/octet-stream; name=\"${invoice_pdf_name}\"`);
+    rawMessage.push(`Content-Transfer-Encoding: base64`);
+    rawMessage.push(`Content-Disposition: attachment\n`);
+    rawMessage.push(`${ATTACHMENT}\n`);
+    rawMessage.push(`--${boundary}--`);
+  }
 
   await ses.sendRawEmail({
     Source: SENDER,
