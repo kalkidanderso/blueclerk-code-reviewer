@@ -4705,54 +4705,6 @@ paths:
                       $ref: '#/definitions/Invoice'
       security:
         - Bearer: []
-  /recordPayment:
-    post:
-      tags:
-        - Payment
-      summary: To record the payment for invoice(s) made by the customer
-      description: ''
-      consumes:
-        - application/x-www-form-urlencoded
-      produces:
-        - application/json
-      parameters:
-        - name: invoices
-          in: formData
-          description: comma seprated invoice ids
-          required: true
-          type: string
-        - name: amount
-          in: formData
-          required: true
-          type: number
-          description: Amount how much customer has paid
-        - name: referenceNumber
-          in: formData
-          required: true
-          type: string
-          description: Reference number of the payment made by client
-        - name: paymentType
-          in: formData
-          required: false
-          type: string
-          description: Method name how customer has paid
-        - name: customer
-          in: formData
-          required: true
-          type: string
-          description: Pass customer id to who made the payment 
-        - name: paidAt
-          in: formData
-          required: true
-          type: string
-          description: Time when the customer has made the payment
-      responses:
-        '200':
-          description: Success
-          schema:
-            $ref: '#/definitions/GeneralAPIResponse'
-      security:
-        - Bearer: []
   /getPayments:
     post:
       tags:
@@ -4807,27 +4759,27 @@ paths:
                       $ref: '#/definitions/Payment'
       security:
         - Bearer: []
-  /updatePayment:
+  /recordPayment:
     post:
       tags:
         - Payment
-      summary: To update payment record
+      summary: To record the payment for invoice made by the customer
       description: ''
       consumes:
         - application/x-www-form-urlencoded
       produces:
         - application/json
       parameters:
-        - name: paymentId
+        - name: customerId
           in: formData
           required: true
           type: string
-          description: Id of payment you want to edit
-        - name: invoices
+          description: Pass customer id to who made the payment 
+        - name: invoiceId
           in: formData
-          description: comma seprated invoice ids
           required: true
           type: string
+          description: Id of invoice to be paid
         - name: amount
           in: formData
           required: true
@@ -4835,24 +4787,72 @@ paths:
           description: Amount how much customer has paid
         - name: referenceNumber
           in: formData
-          required: true
           type: string
           description: Reference number of the payment made by client
         - name: paymentType
           in: formData
-          required: false
           type: string
+          enum:
+            - ACH
+            - Bank Wire
+            - Credit Card/Debit Card
+            - Check
+            - Cash
           description: Method name how customer has paid
-        - name: customer
+        - name: paidAt
+          in: formData
+          type: string
+          description: Date when the customer has made the payment
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updatePayment:
+    put:
+      tags:
+        - Payment
+      summary: To update payment record
+      description: To update payment record
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: customerId
           in: formData
           required: true
           type: string
           description: Pass customer id to who made the payment 
-        - name: paidAt
+        - name: paymentId
           in: formData
           required: true
           type: string
-          description: Time when the customer has made the payment
+          description: Id of payment to edit
+        - name: amount
+          in: formData
+          type: number
+          description: Amount how much customer has paid
+        - name: referenceNumber
+          in: formData
+          type: string
+          description: Reference number of the payment made by client
+        - name: paymentType
+          in: formData
+          type: string
+          enum:
+            - ACH
+            - Bank Wire
+            - Credit Card/Debit Card
+            - Check
+            - Cash
+          description: Method name how customer has paid
+        - name: paidAt
+          in: formData
+          type: string
+          description: Date when the customer has made the payment
       responses:
         '200':
           description: Success
