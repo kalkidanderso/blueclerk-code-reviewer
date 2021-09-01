@@ -1,6 +1,7 @@
 import AWS from 'aws-sdk'
 import multer from 'multer'
 import multerS3 from 'multer-s3'
+import fs from 'fs';
 import {Request, Response} from 'express'
 import uuid from 'uuid'
 import {Messages, Status} from '../common/constants';
@@ -14,7 +15,6 @@ import {IContact} from '../common/contact';
 import {ICustomer} from '../models/Customer';
 import {EmailSchedule} from '../models/EmailSchedule';
 import { v4 as uuidv4 } from 'uuid';
-const fs = require('fs');
 const http = require("http");
 
 export const sendEmail = function(options: any) {
@@ -212,60 +212,131 @@ export const sendContractStartEmail = function(options: any) {
   })
 }
 
+/**
+ * Kris' Remark (Aug 30st, 2021):
+ * TODO: To remove, this already been refactored below
+ */
+// export const sendInvoiceEmailToCustomer = function(options: any) {
+//   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
+//   AWS.config.update({
+//     region: AWS_REGION,
+//     accessKeyId: AWS_SES_ACCESSKEYID,
+//     secretAccessKey: AWS_SES_SECRETACCESSKEY,
+//   })
+//   const ses = new AWS.SES({ apiVersion: '2012-10-17' })
+//   return new Promise((resolve, reject) => {
+//     ses.sendEmail(
+//         {
+//           Source: `${options.companyName}<${APP_EMAIL_NOREPLY}>`,
+//           Destination: {
+//             CcAddresses: [],
+//             ToAddresses: [options.customerEmail],
+//           },
+//           Message: {
+//             Subject: {
+//               Data: `${options.companyName} has sent you an invoice`,
+//             },
+//             Body: {
+//               Html: {
+//                 Data: `
+//               <div style="text-align: center;">
+//               <p>Dear  ${options.customerName}</p>
+//               <p>Please see your invoice information below :</p> 
+//               <br />
+//               <hr>
+//               <p><strong>Invoice Number:</strong> ${options.invoiceNumber}</p>
+//               <p><strong>Invoice Amount:</strong> ${options.invoiceAmount}</p>
+//               <br />
+//               <img src='https://blueclerk.com/wp-content/uploads/2020/07/logo.png' alt="blueclerk" />
+//               </div>
+//               `
+//               },
+//             },
+//           },
+//           ReplyToAddresses: [options.companyEmail],
+//         },
+//         (err, info) => {
+//           if (err) {
+//             reject(err)
+//           } else {
+//             resolve(info)
+//           }
+//         },
+//     )
+//   })
+// }
 
-export const sendInvoiceEmailToCustomer = function(options: any) {
+export const sendInvoiceEmailToCustomer = async function(options: any) {
 
-  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
+  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
+
+  let { subject, message, sender_email, company_name, company_email, company_logo, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date, invoice_pdf, invoice_pdf_name, term_name, term_due_days } = options;
 
   AWS.config.update({
     region: AWS_REGION,
     accessKeyId: AWS_SES_ACCESSKEYID,
     secretAccessKey: AWS_SES_SECRETACCESSKEY,
-  })
+  });
 
-  const ses = new AWS.SES({ apiVersion: '2012-10-17' })
+  const ses = new AWS.SES({ apiVersion: '2012-10-17' });
+  const boundary = `NextPart${Math.random().toString().substr(2)}`;
 
-  return new Promise((resolve, reject) => {
-    ses.sendEmail(
-        {
-          Source: `${options.companyName}<${APP_EMAIL_NOREPLY}>`,
-          Destination: {
-            CcAddresses: [],
-            ToAddresses: [options.customerEmail],
-          },
-          Message: {
-            Subject: {
-              Data: `${options.companyName} has sent you an invoice`,
-            },
-            Body: {
-              Html: {
-                Data: `
-              <div style="text-align: center;">
-              <p>Dear  ${options.customerName}</p>
-              <p>Please see your invoice information below :</p> 
-              <br />
-              <hr>
-              <p><strong>Invoice Number:</strong> ${options.invoiceNumber}</p>
-              <p><strong>Invoice Amount:</strong> ${options.invoiceAmount}</p>
-              <br />
-              <img src='https://blueclerk.com/wp-content/uploads/2020/07/logo.png' alt="blueclerk" />
-              </div>
-              `
-              },
-            },
-          },
-          ReplyToAddresses: [options.companyEmail],
-        },
-        (err, info) => {
-          if (err) {
-            reject(err)
-          } else {
-            resolve(info)
-          }
-        },
-    )
-  })
+  // Fill in the small_company_logo placeholder
+  message = message.replace(/{{small_company_logo}}/gi, `<img style=\"width:150px\" src=\"${company_logo}\" alt=\"${company_name}\" />`);
+  // Replace \n to <br /> in HTML
+  message = message.replace(/\\n/gi, '<br />');
+
+  const SENDER = `${company_name} <${APP_EMAIL_NOREPLY ?? sender_email ?? company_email}>`;
+  const RECIPIENT = customer_email;
+  const SUBJECT = eval('`' + subject + '`');
+  const BODY_HTML = `<div style=\"font-family:roboto; padding:10px; background-color: #EAECF3; text-align:center;\">
+                      <p><img style=\"width:350px\" src=\"${company_logo}\" alt=\"${company_name}\" /></p>
+                      <p><strong>${company_name}</strong></p>
+                    </div>
+                    <div style=\"font-family:roboto; padding:10px; text-align:center\">
+                      <h2>${invoice_number}</h2>
+                    </div>
+                    <div style=\"font-family:roboto; padding:10px\">
+                      ${eval('`' + message + '`')}
+                      <br /><br />
+                      <p style="padding:0px">Sent with BlueClerk Software</p>
+                      <a href="https://app.blueclerk.com"><img src="https://blueclerk.com/wp-content/uploads/2020/07/logo.png" /></a>
+                    </div>`;
+
+  const rawMessage = [
+    `From: ${SENDER}`,
+    `To: ${RECIPIENT}`,
+    `Subject: ${SUBJECT}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: multipart/mixed; boundary=\"${boundary}\"\n`,
+    `--${boundary}`,
+    `Content-Type: text/html\n`,
+    `${BODY_HTML}\n`,
+    `--${boundary}`
+  ];
+
+  // Attachment PDF if provided
+  if (invoice_pdf) {
+    const pdfFile = fs.readFileSync(invoice_pdf);
+    const ATTACHMENT = pdfFile.toString("base64").replace(/([^\0]{76})/g, "$1\n");
+
+    rawMessage.push(`Content-Type: application/octet-stream; name=\"${invoice_pdf_name}\"`);
+    rawMessage.push(`Content-Transfer-Encoding: base64`);
+    rawMessage.push(`Content-Disposition: attachment\n`);
+    rawMessage.push(`${ATTACHMENT}\n`);
+    rawMessage.push(`--${boundary}--`);
+  }
+
+  await ses.sendRawEmail({
+    Source: SENDER,
+    Destinations: [ RECIPIENT ],
+    RawMessage: { Data: rawMessage.join("\n") }
+  }).promise();
+
+  return;
+
 }
+
 export const sendReportEmailToCustomer = function(options: any) {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env

@@ -32,6 +32,10 @@
       "description": "For all kind of company stuff"
     },
     {
+      "name": "Email Default",
+      "description": "For all kind of company email default"
+    },
+    {
       "name": "Equipment Type",
       "description": "For equipment types"
     },
@@ -2197,6 +2201,75 @@
           },
           {
             "name": "fax",
+            "in": "formData",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getCompanyEmailDefault": {
+      "get": {
+        "tags": [
+          "Email Default"
+        ],
+        "summary": "To get company email default",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateCompanyEmailDefault": {
+      "put": {
+        "tags": [
+          "Email Default"
+        ],
+        "summary": "To update company email default",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "subject",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "message",
             "in": "formData",
             "type": "string"
           }
@@ -7696,6 +7769,43 @@
         ]
       }
     },
+    "/getInvoiceEmailTemplate": {
+      "get": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "Get the invoice email template before send the email",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Id of invoice"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/sendInvoice": {
       "post": {
         "tags": [
@@ -7704,7 +7814,7 @@
         "summary": "Send an email about the invoice",
         "description": "",
         "consumes": [
-          "application/x-www-form-urlencoded"
+          "multipart/form-data"
         ],
         "produces": [
           "application/json"
@@ -7716,6 +7826,24 @@
             "required": true,
             "type": "string",
             "description": "Id of invoice"
+          },
+          {
+            "name": "subject",
+            "in": "formData",
+            "type": "string",
+            "description": "Subject of the email, if not provided will use company's email default"
+          },
+          {
+            "name": "message",
+            "in": "formData",
+            "type": "string",
+            "description": "Message of the email, if not provided will use company's email default"
+          },
+          {
+            "name": "invoicePdf",
+            "in": "formData",
+            "type": "file",
+            "description": "PDF file of invoice"
           }
         ],
         "responses": {

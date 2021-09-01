@@ -1,28 +1,31 @@
-import {Request, Response} from 'express';
-import {ObjectId} from 'mongodb'
+import { Request, Response } from 'express';
+import { ObjectId } from 'mongodb';
 import moment from 'moment';
 
+import { InvoiceStatus, Messages, Status } from '../common/constants';
 import { IContact } from '../common/contact';
 import { Contact } from '../models/Contact';
-import {IInvoice, Invoice} from '../models/Invoice';
-import {InvoiceStatus, Messages, Status} from '../common/constants';
-import {ICompanyAdmin} from '../models/CompanyAdmin';
-import {Company, ICompany} from '../models/Company';
-import {IInvoicePrefix, InvoicePrefix} from '../models/InvoicePrefix';
-import {IUser} from '../models/User';
-import { IServiceTicket } from '../models/ServiceTicket';
-import {IJob, Job} from '../models/Job';
-import {IPurchaseOrder, PurchaseOrder} from '../models/PurchaseOrder';
+import { IUser } from '../models/User';
+import { Company, ICompany } from '../models/Company';
+import { ICompanyAdmin } from '../models/CompanyAdmin';
+import { CompanyInvoice } from '../models/CompanyInvoice';
+import { Customer, ICustomer } from '../models/Customer';
 import { IItem, Item } from '../models/Item';
-import {Customer, ICustomer} from '../models/Customer';
-import {Estimate, IEstimate} from '../models/Estimate';
-import {IScan, Scan} from '../models/Scan';
-import {sendInvoiceEmailToCustomer} from '../services/aws';
-import {CompanyInvoice} from '../models/CompanyInvoice';
-import { IJobReport, JobReport } from '../models/JobReport';
 import { IPriceTier } from '../models/PriceTier';
+import { IServiceTicket } from '../models/ServiceTicket';
+import { IJob, Job } from '../models/Job';
+import { IJobReport, JobReport } from '../models/JobReport';
+import { IPurchaseOrder, PurchaseOrder } from '../models/PurchaseOrder';
+import { Estimate, IEstimate } from '../models/Estimate';
+import { IInvoicePrefix, InvoicePrefix } from '../models/InvoicePrefix';
 import { IPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
+import { IInvoice, Invoice } from '../models/Invoice';
+import { IScan, Scan } from '../models/Scan';
+import { EmailDefault } from '../models/EmailDefault';
+
+import { sendInvoiceEmailToCustomer } from '../services/aws';
 import { _createQBInvoice } from '../controllers/quickbook.invoice';
+import { transformPlaceholders, getPlaceholderValues } from './emailDefault';
 
 /**
  * To reset Invoice quickbookId,
@@ -1745,52 +1748,160 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
         })
 }
 
-export const sendInvoice = (req: Request, res: Response) => {
-    const params = req.body
+/**
+ * Kris' Remark (Aug 30st, 2021):
+ * TODO: To remove, this already been refactored below
+ */
+// export const sendInvoice = (req: Request, res: Response) => {
+//     const params = req.body
+//     const company = <ICompany>req.company;
+
+//     // Check if invoiceId was a valid ObjectId
+//     if (params.invoiceId && !ObjectId.isValid(params.invoiceId)) {
+//         return res.json({ status: Status.Error, message: Messages.WrongId });
+//     }
+
+//     try {
+//         Invoice.findOne({ _id: params.invoiceId, 'company': req.companyId})
+//             .populate({
+//                 path: 'customer',
+//                 select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+//             })
+//             .then(async (invoice: IInvoice)=>{
+//                 if (!invoice) {
+//                     return res.json({'status': Status.Error, 'message': 'Invoice not found'})
+//                 }
+
+//                 const customer = <ICustomer>invoice.customer;
+
+//                 sendInvoiceEmailToCustomer({
+//                     companyName: company.info.companyName,
+//                     companyEmail: company.info.companyEmail,
+//                     customerName: customer.profile.displayName,
+//                     customerEmail: customer.info.email,
+//                     invoiceNumber: invoice.invoiceId,
+//                     invoiceAmount: invoice.total,
+//                 });
+
+//                 // Update email history and last email sent info
+//                 const sendingDate = new Date();
+//                 invoice.emailHistory.push({
+//                     sentTo: customer.info.email,
+//                     sentAt: sendingDate
+//                 });
+//                 invoice.lastEmailSent = sendingDate;
+//                 await invoice.save();
+
+//                 return res.json({ status: Status.Success, message: 'Invoice has been sent successfully!' });
+//             })
+
+//     } catch (err) {
+//         return res.json({'status': Status.Error, 'message': err.message});
+//     }
+// }
+
+export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
+
+    const params = req.query;
     const company = <ICompany>req.company;
 
-    // Check if invoiceId was a valid ObjectId
-    if (params.invoiceId && !ObjectId.isValid(params.invoiceId)) {
-        return res.json({ status: Status.Error, message: Messages.WrongId });
+    // Retrieve invoice and populate customer and paymentTerm info
+    const invoice = await Invoice
+        .findOne({ company, _id: params.invoiceId })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+        })
+
+    if (!invoice) {
+        return res.json({ status: Status.Error, message: 'Invoice not found.' });
     }
 
-    try {
-        Invoice.findOne({ _id: params.invoiceId, 'company': req.companyId})
-            .populate({
-                path: 'customer',
-                select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
-            })
-            .then(async (invoice: IInvoice)=>{
-                if (!invoice) {
-                    return res.json({'status': Status.Error, 'message': 'Invoice not found'})
-                }
+    const customer = <ICustomer>invoice.customer;
 
-                const customer = <ICustomer>invoice.customer;
+    // Retrieve company email default
+    const emailDefault = await EmailDefault.findOne({ company });
 
-                sendInvoiceEmailToCustomer({
-                    companyName: company.info.companyName,
-                    companyEmail: company.info.companyEmail,
-                    customerName: customer.profile.displayName,
-                    customerEmail: customer.info.email,
-                    invoiceNumber: invoice.invoiceId,
-                    invoiceAmount: invoice.total,
-                });
+    /**
+     * Transfrom the email default placeholder symbol to fit Javascript Template Literal,
+     * '{{' become '${' & '}}' become '}'
+     */
+    await transformPlaceholders(emailDefault);
 
-                // Update email history and last email sent info
-                const sendingDate = new Date();
-                invoice.emailHistory.push({
-                    sentTo: customer.info.email,
-                    sentAt: sendingDate
-                });
-                invoice.lastEmailSent = sendingDate;
-                await invoice.save();
+    // Get available placeholder values for Invoice email template
+    const { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date } = await getPlaceholderValues(company, invoice, customer);
 
-                return res.json({ status: Status.Success, message: 'Invoice has been sent successfully!' });
-            })
+    return res.json({
+        status: Status.Success,
+        emailTemplate: {
+            from: company_email,
+            to: customer_email,
+            subject: eval('`' + emailDefault.subject + '`'),
+            message: eval('`' + emailDefault.message + '`')
+        },
+        invoice
+    });
 
-    } catch (err) {
-        return res.json({'status': Status.Error, 'message': err.message});
+}
+
+export const sendInvoiceEmail = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const user = <IUser>req.user;
+    const company = <ICompany>req.company;
+
+    // Retrieve invoice and populate customer and paymentTerm info
+    const invoice = await Invoice
+        .findOne({ company, _id: params.invoiceId })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+        })
+        .populate({
+            path: 'paymentTerm',
+            select: 'name dueDays'
+        })
+
+    if (!invoice) {
+        return res.json({ status: Status.Error, message: 'Invoice not found.' });
     }
+
+    const customer = <ICustomer>invoice.customer;
+    const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
+
+    // Retrieve company email default
+    const emailDefault = await EmailDefault.findOne({ company });
+
+    // Call AWS SES method
+    sendInvoiceEmailToCustomer({
+        subject: params.subject ?? emailDefault?.subject,
+        message: params.message ?? emailDefault?.message,
+        sender_email: user.auth?.email,
+        company_name: company.info?.companyName,
+        company_email: company.info?.companyEmail,
+        company_logo: company.info?.logoUrl,
+        customer_name: customer.profile?.displayName,
+        customer_email: customer.info?.email,
+        invoice_number: invoice.invoiceId,
+        invoice_amount: invoice.total,
+        invoice_due_date: moment(invoice.dueDate).format('MMMM DD, YYYY'),
+        invoice_pdf: req.file?.path,
+        invoice_pdf_name: req.file?.originalname,
+        term_name: paymentTerm?.name,
+        term_due_days: paymentTerm?.dueDays
+    });
+
+    // Update email history and last email sent info
+    const sendingDate = new Date();
+    invoice.emailHistory.push({
+        sentTo: customer.info?.email,
+        sentAt: sendingDate
+    });
+    invoice.lastEmailSent = sendingDate;
+    await invoice.save();
+
+    return res.json({ status: Status.Success, message: 'Invoice has been sent successfully.' });
+
 }
 
 export const getInvoices = (req: Request, res: Response) => {

@@ -18,6 +18,8 @@ tags:
     description: For all kind of users
   - name: Company
     description: For all kind of company stuff
+  - name: Email Default
+    description: For all kind of company email default
   - name: Equipment Type
     description: For equipment types
   - name: Equipment Brand
@@ -1252,6 +1254,47 @@ paths:
           required: true
           type: string
         - name: fax
+          in: formData
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getCompanyEmailDefault:
+    get:
+      tags:
+        - Email Default
+      summary: To get company email default
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateCompanyEmailDefault:
+    put:
+      tags:
+        - Email Default
+      summary: To update company email default
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: subject
+          in: formData
+          type: string
+        - name: message
           in: formData
           type: string
       responses:
@@ -4397,11 +4440,11 @@ paths:
                       $ref: '#/definitions/ScanDetail'
       security:
         - Bearer: []
-  /sendInvoice:
-    post:
+  /getInvoiceEmailTemplate:
+    get:
       tags:
         - Invoice
-      summary: Send an email about the invoice
+      summary: Get the invoice email template before send the email
       description: ''
       consumes:
         - application/x-www-form-urlencoded
@@ -4413,22 +4456,46 @@ paths:
           required: true
           type: string
           description: Id of invoice
-      response:
+      responses:
         '200':
           description: Success
           schema:
-            allOf:
-              - $ref: '#/definitions/GeneralAPIResponse'
-              - type: object
-                properties:
-                  invoice:
-                    type: array
-                    items:
-                      $ref: '#/definitions/InvoiceDetail'
-                  scans:
-                    type: array
-                    items:
-                      $ref: '#/definitions/ScanDetail'
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /sendInvoice:
+    post:
+      tags:
+        - Invoice
+      summary: Send an email about the invoice
+      description: ''
+      consumes:
+        - multipart/form-data
+      produces:
+        - application/json
+      parameters:
+        - name: invoiceId
+          in: formData
+          required: true
+          type: string
+          description: Id of invoice
+        - name: subject
+          in: formData
+          type: string
+          description: Subject of the email, if not provided will use company's email default
+        - name: message
+          in: formData
+          type: string
+          description: Message of the email, if not provided will use company's email default
+        - name: invoicePdf
+          in: formData
+          type: string
+          description: PDF file of invoice
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
       security:
         - Bearer: []
   # /createPOInvoice:

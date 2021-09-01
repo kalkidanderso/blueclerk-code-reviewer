@@ -17,6 +17,8 @@ import { _createQBPayment } from './quickbook.payment'
  * customer's balance and credit
  */
 export const _calculateInvoiceBalance = async (invoice: IInvoice, customer: ICustomer, amountPaid: number): Promise<void> => {
+    // Check and set invoice balanceDue if not found
+    invoice.balanceDue = invoice.balanceDue ?? invoice.total;
 
     // Handle invoice balance due, underpayment, and overpayment
     if (amountPaid >= invoice.balanceDue) {
