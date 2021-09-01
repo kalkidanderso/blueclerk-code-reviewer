@@ -8,7 +8,7 @@ import { IUser } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
 import { Payment, IPayment } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
-import { _createQBPayment } from './quickbook.payment'
+import { _createQBPayment, _updateQBPayment } from './quickbook.payment'
 
 
 /**
@@ -52,11 +52,16 @@ export const _calculateInvoiceBalance = async (invoice: IInvoice, customer: ICus
         invoice.paymentApplied += amountPaid;
         invoice.balanceDue -= amountPaid;
         invoice.status = InvoiceStatus.PARTIALLY_PAID;
+        invoice.paid = false;
+
+        if (invoice.paymentApplied === 0) {
+            invoice.status = InvoiceStatus.UNPAID;
+        }
     }
 
-    // // Save the customer's changes
+    // Save the customer's changes
     await customer.save();
-    // // Save the invoice's changes
+    // Save the invoice's changes
     await invoice.save();
 
     return;
@@ -165,7 +170,7 @@ export const createPayment = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Customer not found.' });
     }
 
-    // Find and check if invoice exited and belongs to the customer
+    // Find and check if invoice existed and belongs to the customer
     const invoice = await Invoice.findOne({
         _id: params.invoiceId,
         customer: customer._id,
@@ -312,7 +317,104 @@ const updateInvoice = (invoice: IInvoice) => {
     });
   }
 
-export const updatePayment = (req: Request, res: Response) => {
+/**
+ * Update payment for single invoice
+ */
+export const updatePayment = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const company = <ICompany>req.company;
+    const user = <IUser>req.user;
+
+    // Find and check if customer existed
+    const customer = await Customer.findOne({
+        _id: params.customerId,
+        company: company._id
+    });
+
+    if (!customer) {
+        return res.json({ status: Status.Error, message: 'Customer not found.' });
+    }
+
+    // Find and check if payment existed and belongs to the customer
+    const payment = await Payment.findOne({
+        _id: params.paymentId,
+        customer: customer._id,
+        company: company._id
+    }).populate({ path: 'invoice' });
+
+    if (!payment) {
+        return res.json({ status: Status.Error, message: 'Payment not found or does not belong to the customer.' });
+    }
+
+    const invoice = <IInvoice>payment.invoice;
+    const oldAmountPaid = payment.amountPaid;
+    let newAmountPaid, diffAmountPaid = 0;
+
+    if (params.amount) {
+        newAmountPaid = Number(params.amount);
+        diffAmountPaid = newAmountPaid - oldAmountPaid ;
+    }
+
+    payment.amountPaid = newAmountPaid ?? payment.amountPaid;
+    payment.referenceNumber = params.referenceNumber;
+    payment.paymentType = params.paymentType;
+    payment.paidAt = params.paidAt ? new Date(moment(params.paidAt).format('YYYY-MM-DD')) : payment.paidAt;
+    payment.updatedBy = user;
+    payment.updatedAt = new Date();
+
+    try {
+        // Save the updated payment
+        await payment.save();
+
+        // If amount changed, recalculate invoice & customer balance
+        if (newAmountPaid && diffAmountPaid !== 0) {
+            /**
+             * If invoice full paid and the new amount still cover the whole invoice,
+             * the deducted amount will only deduct customer's credit
+             */
+            if (invoice.balanceDue === 0 && diffAmountPaid < 0 && newAmountPaid >= invoice.total) {
+                customer.credit += diffAmountPaid;
+                customer.save();
+            } else {
+                // Otherwise, recalculate invoice & customer balance
+                await _calculateInvoiceBalance(invoice, customer, diffAmountPaid)
+            }
+        }
+
+        if (company.qbAuthorized && invoice.quickbookId && payment.quickbookId) {
+            // Sync the update to Payment in QuickBooks
+            _updateQBPayment(req, res, company, payment, (err, errMsg, qbPayment) => {
+                if (err) {
+                    return res.json({ status: err, message: errMsg });
+                }
+
+                if (qbPayment) {
+                    // If company's payments already synced, update the synced date
+                    if (company.qbSync?.paymentsSynced) {
+                        company.qbSync.paymentsSyncedAt = new Date();
+                        company.save();
+                    }
+                }
+
+                return res.json({
+                    status: Status.Success,
+                    message: 'Payment successfully updated.',
+                    payment, quickbookPayment: qbPayment,
+                    customer, invoice
+                });
+            })
+        } else {
+            return res.json({ status: Status.Success, message: 'Payment successfully updated.', payment, customer, invoice });
+        }
+
+    } catch (error) {
+        return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
+    }
+
+}
+
+export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
 
     const params = req.body
     const user = <IUser>req.user

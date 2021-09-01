@@ -311,7 +311,12 @@ export const Validations = {
     check('customerId').isMongoId().withMessage(Messages.WrongId)
   ],
 
-  updatePayment: [check('paymentId').exists().withMessage(Messages.Required), check('paymentId').isMongoId().withMessage(Messages.WrongId), check('amount').exists(), check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId), check('paidAt').exists(), check('invoices').exists()],
+  updatePayment: [
+    check('paymentId').exists().withMessage(Messages.Required),
+    check('paymentId').isMongoId().withMessage(Messages.WrongId),
+    check('customerId').exists().withMessage(Messages.Required),
+    check('customerId').isMongoId().withMessage(Messages.WrongId),
+  ],
 
   // Code Location
 
