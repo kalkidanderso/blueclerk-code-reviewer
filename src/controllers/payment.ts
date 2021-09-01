@@ -8,7 +8,7 @@ import { IUser } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
 import { Payment, IPayment } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
-import { _createQBPayment } from './quickbook.payment'
+import { _createQBPayment, _updateQBPayment } from './quickbook.payment'
 
 
 /**
@@ -382,9 +382,28 @@ export const updatePayment = async (req: Request, res: Response) => {
             }
         }
 
-        if (company.qbAuthorized && invoice.quickbookId) {
-            // TODO: Update QB Payment
-            return res.json({ status: Status.Success, message: 'Payment successfully updated.', payment, customer, invoice });
+        if (company.qbAuthorized && invoice.quickbookId && payment.quickbookId) {
+            // Sync the update to Payment in QuickBooks
+            _updateQBPayment(req, res, company, payment, (err, errMsg, qbPayment) => {
+                if (err) {
+                    return res.json({ status: err, message: errMsg });
+                }
+
+                if (qbPayment) {
+                    // If company's payments already synced, update the synced date
+                    if (company.qbSync?.paymentsSynced) {
+                        company.qbSync.paymentsSyncedAt = new Date();
+                        company.save();
+                    }
+                }
+
+                return res.json({
+                    status: Status.Success,
+                    message: 'Payment successfully updated.',
+                    payment, quickbookPayment: qbPayment,
+                    customer, invoice
+                });
+            })
         } else {
             return res.json({ status: Status.Success, message: 'Payment successfully updated.', payment, customer, invoice });
         }

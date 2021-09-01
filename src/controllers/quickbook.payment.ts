@@ -91,6 +91,58 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
 
 }
 
+export const _updateQBPayment = async (req: Request, res: Response, company: ICompany, payment: IPayment, next: (error: number, errorMessage: string, qbPayment: IQBPayment) => void) => {
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        // Get the QB Payment object based on payment quickbookId
+        qbo.getPayment(payment.quickbookId, async (err: any, qbPayment: IQBPayment) => {
+
+            // Set the new value from the updated payment object
+            qbPayment.Line[0].Amount = payment.amountPaid;
+            qbPayment.TotalAmt = payment.amountPaid;
+            qbPayment.PaymentRefNum = payment.referenceNumber;
+            qbPayment.PaymentMethodRef.value = payment.paymentType ? await _getPaymentMethod(qbo, payment) : null;
+            qbPayment.TxnDate = moment(payment.paidAt).format('YYYY-MM-DD');
+
+            // Update QB Payment
+            qbo.updatePayment(qbPayment, async (err: any, qbPayment: IQBPayment) => {
+                if (err) {
+                    return next(
+                        Status.Error,
+                        err.Fault?.Error[0]?.Detail
+                        || err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError,
+                        null
+                    );
+                }
+
+                return next(null, null, qbPayment);
+            });
+        });
+    });
+
+}
+
 /**
 * To syncing payments from BC to QB only
 */
