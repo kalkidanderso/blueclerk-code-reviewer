@@ -105,6 +105,7 @@ export interface IQBInvoice {
         Type?: string
         StringValue?: string
     }[]
+    status?: string
 }
 
 export interface IQBInvoiceLine {

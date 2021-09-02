@@ -177,31 +177,20 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
 
 }
 
+/**
+ * Generic function to update QuickBooks Invoice,
+ * this used by Invoice Controller when updating invoice
+ */
 export const _updateQBInvoice = async (req: Request, res: Response, company: ICompany, invoice: IInvoice, next: (error: number, errorMessage: string, qbInvoice: IQBInvoice) => void) => {
 
     // Populate the invoice to have customer and item object
     await invoice
-        .populate({ path: 'customer' })
         .populate({ path: 'paymentTerm' })
-        .populate({
-            path: 'job',
-            populate: [{
-                path: 'ticket',
-                populate: [{ path: 'customerContactId' }]
-            }, { path: 'jobLocation' }]
-        })
         .populate({ path: 'items.item' })
-        .populate({ path: 'customerContactId' })
         .execPopulate();
 
-    // Customer of the invoice
-    const customer = <ICustomer>invoice.customer;
+    // Payment Term of the invoice
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
-    const job = <IJob>invoice.job;
-    const serviceTicket = <IServiceTicket>job?.ticket;
-    const jobLocation = <IJobLocation>job?.jobLocation;
-    const invCustContact = <IContact>invoice.customerContactId;
-    const customerContact = <IContact>serviceTicket?.customerContactId;
 
     // Always refresh the token first because token valid only for 60 minutes
     _refreshToken(req, res, company, async (err, errMsg, company) => {
@@ -284,6 +273,50 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
 
                 return next(null, null, qbInvoice);
             });
+        });
+    });
+
+}
+
+/**
+ * Generic function to delete QuickBooks Invoice,
+ * this used by Invoice Controller when updating invoice to draft
+ */
+export const _deleteQBInvoice = async (req: Request, res: Response, company: ICompany, invoice: IInvoice, next: (error: number, errorMessage: string, status: string) => void) => {
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.deleteInvoice(invoice.quickbookId, async (err: any, response: { Invoice: IQBInvoice }) => {
+            if (err) {
+                return next(
+                    Status.Error,
+                    err.Fault?.Error[0]?.Detail
+                    || err.Fault?.Error[0]?.Message
+                    || err.fault?.error[0]?.detail
+                    || err.fault?.error[0]?.message
+                    || Messages.GenericError,
+                    null
+                );
+            }
+
+            return next(null, null, response.Invoice.status);
         });
     });
 

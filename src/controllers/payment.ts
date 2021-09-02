@@ -177,7 +177,7 @@ export const createPayment = async (req: Request, res: Response) => {
         company: company._id
     });
 
-    if (!invoice) {
+    if (!invoice || invoice.isDraft) {
         return res.json({ status: Status.Error, message: 'Invoice not found or does not belong to the customer.' });
     }
     if (invoice.status === InvoiceStatus.PAID) {

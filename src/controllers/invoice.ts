@@ -25,7 +25,7 @@ import { IScan, Scan } from '../models/Scan';
 import { EmailDefault } from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer } from '../services/aws';
-import { _createQBInvoice, _updateQBInvoice } from '../controllers/quickbook.invoice';
+import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice } from '../controllers/quickbook.invoice';
 import { transformPlaceholders, getPlaceholderValues } from './emailDefault';
 
 /**
@@ -1188,6 +1188,10 @@ export const updateInvoice = (req: Request, res: Response) => {
                 return res.json({'status': Status.Success, 'message': "Invalid invoice id."})
             }
 
+            if (params.isDraft && invoice.status !== InvoiceStatus.UNPAID) {
+                return res.json({ status: Status.Error, message: 'Cannot update a PAID/PARTIALLY PAID invoce to become draft.' });
+            }
+
             // Find Customer object to see the itemTier, customPrice, * payment term info
             const customerObj = await Customer.findById(invoice.customer).populate({ path: 'paymentTerm' });
             // Populate payment term from the company
@@ -2018,8 +2022,23 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
             jobReport.save();
         }
 
-        // TODO: Remove QB Invoice?
-        return next(invoice, null);
+        if (company.qbAuthorized) {
+            // Delete Invoice in QuickBooks
+            _deleteQBInvoice(req, res, company, invoice, (err, errMsg, status) => {
+                if (status === 'Deleted') {
+                    invoice.quickbookId = null;
+                    invoice.save();
+
+                    // If company's invoices already synced, update the synced date
+                    if (company.qbSync?.invoicesSynced) {
+                        company.qbSync.invoicesSyncedAt = new Date();
+                        company.save();
+                    }
+                }
+
+                return next(invoice, null);
+            })
+        }
 
     } else if (!oldIsDraft && !invoice.isDraft) {
         /**
@@ -2031,9 +2050,8 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         // Save customer credit
         customer.save()
 
-        // Update QB Invoice
         if (company.qbAuthorized) {
-            // Create new Invoice in QuickBooks
+            // Update Invoice in QuickBooks
             _updateQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                 if (qbInvoice) {
                     // If company's invoices already synced, update the synced date

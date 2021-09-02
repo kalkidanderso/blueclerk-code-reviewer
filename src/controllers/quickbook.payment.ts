@@ -15,6 +15,11 @@ import { _calculateInvoiceBalance } from '../controllers/payment';
 // =======[ QUICKBOOK PAYMENT ]=======
 // ===================================
 
+/**
+ * Generic function to create QuickBooks Payment,
+ * this used by Payment Controller when creating new payment,
+ * and this contoller when syncing payments
+ */
 export const _createQBPayment = async (req: Request, res: Response, company: ICompany, payment: IPayment, next: (error: number, errorMessage: string, qbPayment: IQBPayment) => void) => {
 
     // Populate the payment to sub object
@@ -92,6 +97,10 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
 
 }
 
+/**
+ * Generic function to update QuickBooks Payment,
+ * this used by Payment Controller when updating payment
+ */
 export const _updateQBPayment = async (req: Request, res: Response, company: ICompany, payment: IPayment, next: (error: number, errorMessage: string, qbPayment: IQBPayment) => void) => {
 
     // Always refresh the token first because token valid only for 60 minutes
