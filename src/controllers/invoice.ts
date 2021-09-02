@@ -25,7 +25,7 @@ import { IScan, Scan } from '../models/Scan';
 import { EmailDefault } from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer } from '../services/aws';
-import { _createQBInvoice } from '../controllers/quickbook.invoice';
+import { _createQBInvoice, _updateQBInvoice } from '../controllers/quickbook.invoice';
 import { transformPlaceholders, getPlaceholderValues } from './emailDefault';
 
 /**
@@ -2028,11 +2028,24 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
          * customer credit already processed & calculated
          */
 
-        // TODO: Save customerObj?
+        // Save customer credit
         customer.save()
 
-        // TODO: Update QB Invoice
-        return next(invoice, null);
+        // Update QB Invoice
+        if (company.qbAuthorized) {
+            // Create new Invoice in QuickBooks
+            _updateQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                if (qbInvoice) {
+                    // If company's invoices already synced, update the synced date
+                    if (company.qbSync?.invoicesSynced) {
+                        company.qbSync.invoicesSyncedAt = new Date();
+                        company.save();
+                    }
+                }
+
+                return next(invoice, qbInvoice);
+            })
+        }
 
     } else {
         /**
