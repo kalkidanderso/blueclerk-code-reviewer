@@ -8294,6 +8294,12 @@
             "in": "formData",
             "type": "string",
             "description": "Date when the customer has made the payment"
+          },
+          {
+            "name": "note",
+            "in": "formData",
+            "type": "string",
+            "description": "Note of the payment"
           }
         ],
         "responses": {
@@ -8363,6 +8369,12 @@
             "in": "formData",
             "type": "string",
             "description": "Date when the customer has made the payment"
+          },
+          {
+            "name": "note",
+            "in": "formData",
+            "type": "string",
+            "description": "Note of the payment"
           }
         ],
         "responses": {

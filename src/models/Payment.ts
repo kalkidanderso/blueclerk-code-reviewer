@@ -14,6 +14,7 @@ export interface IPayment extends Document {
     referenceNumber: string
     paymentType?: PaymentTypes | string
     paidAt: Date
+    note?: string
     company: Schema.Types.ObjectId | ICompany
     quickbookRefNum?: string
     quickbookId?: string
@@ -102,6 +103,7 @@ const PaymentSchema = new Schema({
     referenceNumber: String,
     paymentType: String,
     paidAt: Date,
+    note: String,
     company: {
         type: Schema.Types.ObjectId,
         ref: 'Company',

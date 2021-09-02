@@ -192,6 +192,7 @@ export const createPayment = async (req: Request, res: Response) => {
         referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
         paymentType: params.paymentType,
         paidAt: params.paidAt ? moment(params.paidAt).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+        note: params.note,
         company,
         createdBy: user,
         createdAt: Date.now()
@@ -360,6 +361,7 @@ export const updatePayment = async (req: Request, res: Response) => {
     payment.referenceNumber = params.referenceNumber;
     payment.paymentType = params.paymentType;
     payment.paidAt = params.paidAt ? new Date(moment(params.paidAt).format('YYYY-MM-DD')) : payment.paidAt;
+    payment.note = params.note;
     payment.updatedBy = user;
     payment.updatedAt = new Date();
 
