@@ -8293,7 +8293,13 @@
             "name": "paidAt",
             "in": "formData",
             "type": "string",
-            "description": "Time when the customer has made the payment"
+            "description": "Date when the customer has made the payment"
+          },
+          {
+            "name": "note",
+            "in": "formData",
+            "type": "string",
+            "description": "Note of the payment"
           }
         ],
         "responses": {
@@ -8311,13 +8317,13 @@
         ]
       }
     },
-    "/WIP/updatePayment": {
+    "/updatePayment": {
       "put": {
         "tags": [
           "Payment"
         ],
-        "summary": "WIP: To update payment record",
-        "description": "WIP: To update payment record",
+        "summary": "To update payment record",
+        "description": "To update payment record",
         "consumes": [
           "application/x-www-form-urlencoded"
         ],
@@ -8326,23 +8332,22 @@
         ],
         "parameters": [
           {
+            "name": "customerId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Pass customer id to who made the payment"
+          },
+          {
             "name": "paymentId",
             "in": "formData",
             "required": true,
             "type": "string",
-            "description": "Id of payment you want to edit"
-          },
-          {
-            "name": "invoices",
-            "in": "formData",
-            "description": "comma seprated invoice ids",
-            "required": true,
-            "type": "string"
+            "description": "Id of payment to edit"
           },
           {
             "name": "amount",
             "in": "formData",
-            "required": true,
             "type": "number",
             "description": "Amount how much customer has paid"
           },
@@ -8355,23 +8360,21 @@
           {
             "name": "paymentType",
             "in": "formData",
-            "required": false,
             "type": "string",
+            "enum": ["ACH", "Bank Wire", "Credit Card/Debit Card", "Check", "Cash"],
             "description": "Method name how customer has paid"
-          },
-          {
-            "name": "customerId",
-            "in": "formData",
-            "required": true,
-            "type": "string",
-            "description": "Pass customer id to who made the payment"
           },
           {
             "name": "paidAt",
             "in": "formData",
-            "required": true,
             "type": "string",
-            "description": "Time when the customer has made the payment"
+            "description": "Date when the customer has made the payment"
+          },
+          {
+            "name": "note",
+            "in": "formData",
+            "type": "string",
+            "description": "Note of the payment"
           }
         ],
         "responses": {

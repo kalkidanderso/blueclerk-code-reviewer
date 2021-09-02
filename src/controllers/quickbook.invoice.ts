@@ -177,6 +177,151 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
 
 }
 
+/**
+ * Generic function to update QuickBooks Invoice,
+ * this used by Invoice Controller when updating invoice
+ */
+export const _updateQBInvoice = async (req: Request, res: Response, company: ICompany, invoice: IInvoice, next: (error: number, errorMessage: string, qbInvoice: IQBInvoice) => void) => {
+
+    // Populate the invoice to have customer and item object
+    await invoice
+        .populate({ path: 'paymentTerm' })
+        .populate({ path: 'items.item' })
+        .execPopulate();
+
+    // Payment Term of the invoice
+    const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        const qbInvoiceLines: IQBInvoiceLine[] = [];
+        // Iterate all items in the invoice and construct is to QB Inv Lines
+        for (const invItem of invoice.items) {
+            const item = <IItem>invItem.item;
+
+            qbInvoiceLines.push({
+                DetailType: LineDetailTypes.SalesItemLineDetail,
+                Amount: invItem.subTotal,
+                SalesItemLineDetail: {
+                    ItemRef: {
+                        value: item.quickbookId
+                    },
+                    Qty: invItem.quantity,
+                    UnitPrice: invItem.price,
+                }
+            });
+        }
+
+        if (invoice.subTotal) {
+            qbInvoiceLines.push({
+                DetailType: LineDetailTypes.SubTotalLineDetail,
+                Amount: invoice.subTotal,
+                SalesItemLineDetail: {}
+            });
+        }
+
+        // Get the QB Invoice object based on invoice quickbookId
+        qbo.getInvoice(invoice.quickbookId, async (err: any, qbInvoice: IQBInvoice) => {
+
+            // Set the new value from the updated invoice object
+            qbInvoice.TxnDate = moment(invoice.issuedDate).format("YYYY-MM-DD");
+            qbInvoice.DueDate = moment(invoice.dueDate).format("YYYY-MM-DD");
+            qbInvoice.Line = qbInvoiceLines;
+            if (qbInvoice.SalesTermRef) {
+                qbInvoice.SalesTermRef.value = paymentTerm?.quickbookId;
+            }
+
+            // Set the new value for Custom Fields
+            const qbCustomerPO = qbInvoice.CustomField?.find(f => f.Name === 'Customer PO');
+            if (qbCustomerPO) {
+                qbCustomerPO.StringValue = invoice.customerPO;
+            }
+            const qbVendorId = qbInvoice.CustomField?.find(f => f.Name === 'Vendor Number');
+            if (qbVendorId) {
+                qbVendorId.StringValue = invoice.vendorId;
+            }
+
+            qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
+                if (err) {
+                    return next(
+                        Status.Error,
+                        err.Fault?.Error[0]?.Detail
+                        || err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError,
+                        null
+                    );
+                }
+
+                return next(null, null, qbInvoice);
+            });
+        });
+    });
+
+}
+
+/**
+ * Generic function to delete QuickBooks Invoice,
+ * this used by Invoice Controller when updating invoice to draft
+ */
+export const _deleteQBInvoice = async (req: Request, res: Response, company: ICompany, invoice: IInvoice, next: (error: number, errorMessage: string, status: string) => void) => {
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.deleteInvoice(invoice.quickbookId, async (err: any, response: { Invoice: IQBInvoice }) => {
+            if (err) {
+                return next(
+                    Status.Error,
+                    err.Fault?.Error[0]?.Detail
+                    || err.Fault?.Error[0]?.Message
+                    || err.fault?.error[0]?.detail
+                    || err.fault?.error[0]?.message
+                    || Messages.GenericError,
+                    null
+                );
+            }
+
+            return next(null, null, response.Invoice.status);
+        });
+    });
+
+}
+
 export const createQBInvoice = async (req: Request, res: Response) => {
 
     const params = req.body;
