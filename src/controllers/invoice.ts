@@ -20,7 +20,7 @@ import { Estimate, IEstimate } from '../models/Estimate';
 import { IInvoicePrefix, InvoicePrefix } from '../models/InvoicePrefix';
 import { IPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
 import { Payment } from '../models/Payment';
-import { IInvoice, Invoice } from '../models/Invoice';
+import { IInvoice, IQBInvoice, Invoice } from '../models/Invoice';
 import { IScan, Scan } from '../models/Scan';
 import { EmailDefault } from '../models/EmailDefault';
 
@@ -361,47 +361,37 @@ export const createInvoice = (req: Request, res: Response) => {
             })
             .then((invoice: any) => {
 
-                return new Promise((resolve, reject) => {
+                return new Promise(async (resolve, reject) => {
 
-                    Customer.findById(invoice.customer)
-                        .then((customer: ICustomer) => {
-                            if(customer == null){
-                                reject()
-                            }else{
-                                let newBalance = customer.balance + invoice.total
-                                customer.updateOne({balance: newBalance})
-                                    .then(() => {
-                                        resolve(invoice)
-                                    })
-                                    .catch(()=>{
-                                        reject()
-                                    })
-                            }
-                        })
-                        .catch(()=>{
-                            reject()
-                        })
+                    if (!invoice.isDraft) {
+                        const customer = await Customer.findById(invoice.customer);
+                        customer.balance += invoice.total;
+                        await customer.save();
+                    }
+
+                    resolve(invoice);
                 })
             })
             .then((invoice: any) => {
 
                 // Mark the job report as it has been invoiced
-                return new Promise((resolve, reject) => {
-                    JobReport.findOne({ job: invoice.job })
-                        .then(async (jobReport: IJobReport) => {
-                            if (jobReport) {
-                                jobReport.invoiceCreated = true;
-                                jobReport.invoice = invoice._id;
-                                await jobReport.save();
-                            }
+                return new Promise(async (resolve, reject) => {
 
-                            resolve(invoice);
-                        })
+                    if (!invoice.isDraft) {
+                        const jobReport = await JobReport.findOne({ job: invoice.job });
+                        if (jobReport) {
+                            jobReport.invoiceCreated = true;
+                            jobReport.invoice = invoice._id;
+                            await jobReport.save();
+                        }
+                    }
+
+                    resolve(invoice);
                 })
 
             })
             .then((invoice: IInvoice) => {
-                if (company.qbAuthorized) {
+                if (company.qbAuthorized && !invoice.isDraft) {
                     // Create new Invoice in QuickBooks
                     _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                         if (err) {
@@ -483,30 +473,19 @@ export const createInvoice = (req: Request, res: Response) => {
             .then((response: any) => {
 
                 const invoice = response[0]
-                return new Promise((resolve, reject) => {
+                return new Promise(async (resolve, reject) => {
 
-                    Customer.findById(invoice.customer)
-                        .then((customer: ICustomer) => {
-                            if(customer == null){
-                                reject()
-                            }else{
-                                let newBalance = customer.balance + invoice.total
-                                customer.updateOne({balance: newBalance})
-                                    .then(() => {
-                                        resolve(invoice)
-                                    })
-                                    .catch(()=>{
-                                        reject()
-                                    })
-                            }
-                        })
-                        .catch(()=>{
-                            reject()
-                        })
+                    if (!invoice.isDraft) {
+                        const customer = await Customer.findById(invoice.customer);
+                        customer.balance += invoice.total;
+                        await customer.save();
+                    }
+
+                    resolve(invoice);
                 })
             })
             .then((invoice: IInvoice) => {
-                if (company.qbAuthorized) {
+                if (company.qbAuthorized && !invoice.isDraft) {
                     // Create new Invoice in QuickBooks
                     _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                         if (err) {
@@ -544,7 +523,6 @@ export const createInvoice = (req: Request, res: Response) => {
             })
 
 
-        // fdasdf
         // (err: any, previousInvoice: IInvoice) => {
 
         //     if (err) {
@@ -649,30 +627,19 @@ export const createInvoice = (req: Request, res: Response) => {
             .then((response: any) => {
 
                 const invoice = response[0]
-                return new Promise((resolve, reject) => {
+                return new Promise(async (resolve, reject) => {
 
-                    Customer.findById(invoice.customer)
-                        .then((customer: ICustomer) => {
-                            if(customer == null){
-                                reject()
-                            }else{
-                                let newBalance = customer.balance + invoice.total
-                                customer.updateOne({balance: newBalance})
-                                    .then(() => {
-                                        resolve(invoice)
-                                    })
-                                    .catch(()=>{
-                                        reject()
-                                    })
-                            }
-                        })
-                        .catch(()=>{
-                            reject()
-                        })
+                    if (!invoice.isDraft) {
+                        const customer = await Customer.findById(invoice.customer);
+                        customer.balance += invoice.total;
+                        await customer.save();
+                    }
+
+                    resolve(invoice);
                 })
             })
             .then((invoice: IInvoice) => {
-                if (company.qbAuthorized) {
+                if (company.qbAuthorized && !invoice.isDraft) {
                     // Create new Invoice in QuickBooks
                     _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                         if (err) {
@@ -778,55 +745,45 @@ export const createInvoice = (req: Request, res: Response) => {
                 }
 
                 company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
-                    .exec((companyError: any) => {
+                    .exec(async (companyError: any) => {
                         if (companyError) {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
 
-                        Customer.findById(newInvoice.customer)
-                            .exec((err: any, customer: ICustomer) => {
+                        if (!newInvoice.isDraft) {
+                            const customer = await Customer.findById(newInvoice.customer);
+                            customer.balance += newInvoice.total;
+                            await customer.save();
+                        }
+
+                        if (company.qbAuthorized && !newInvoice.isDraft) {
+                            // Create new Invoice in QuickBooks
+                            _createQBInvoice(req, res, company, newInvoice, (err, errMsg, qbInvoice) => {
                                 if (err) {
-                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                    return res.json({ status: err, message: errMsg })
                                 }
 
-                                let newBalance = customer.balance + newInvoice.total
-                                customer.updateOne({balance: newBalance})
-                                    .exec((err: any) =>{
-                                        if (err) {
-                                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                                        }
+                                if (qbInvoice) {
+                                    newInvoice.quickbookId = qbInvoice.Id;
+                                    newInvoice.save();
 
-                                        if (company.qbAuthorized) {
-                                            // Create new Invoice in QuickBooks
-                                            _createQBInvoice(req, res, company, newInvoice, (err, errMsg, qbInvoice) => {
-                                                if (err) {
-                                                    return res.json({ status: err, message: errMsg })
-                                                }
+                                    // If company's invoices already synced, update the synced date
+                                    if (company.qbSync?.invoicesSynced) {
+                                        company.qbSync.invoicesSyncedAt = new Date();
+                                        company.save();
+                                    }
+                                }
 
-                                                if (qbInvoice) {
-                                                    newInvoice.quickbookId = qbInvoice.Id;
-                                                    newInvoice.save();
-
-                                                    // If company's invoices already synced, update the synced date
-                                                    if (company.qbSync?.invoicesSynced) {
-                                                        company.qbSync.invoicesSyncedAt = new Date();
-                                                        company.save();
-                                                    }
-                                                }
-
-                                                return res.json({
-                                                    status: Status.Success,
-                                                    message: 'Invoice created successfully.',
-                                                    invoice: newInvoice,
-                                                    quickbookInvoice: qbInvoice
-                                                });
-                                            })
-                                        } else {
-                                            return res.json({ status: Status.Success, message: 'Invoice created successfully.', invoice: newInvoice });
-                                        }
-
-                                    })
+                                return res.json({
+                                    status: Status.Success,
+                                    message: 'Invoice created successfully.',
+                                    invoice: newInvoice,
+                                    quickbookInvoice: qbInvoice
+                                });
                             })
+                        } else {
+                            return res.json({ status: Status.Success, message: 'Invoice created successfully.', invoice: newInvoice });
+                        }
                     })
             })
         })
@@ -1235,6 +1192,8 @@ export const updateInvoice = (req: Request, res: Response) => {
             const customerObj = await Customer.findById(invoice.customer).populate({ path: 'paymentTerm' });
             // Populate payment term from the company
             await company.populate({ path: 'paymentTerm' }).execPopulate();
+            // Save the invoice old isDraft before it is replaced
+            const oldIsDraft = invoice.isDraft;
 
             // Retrieve payment term for this invoice
             let paymentTerm: IPaymentTerm;
@@ -1457,7 +1416,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                             paymentApplied: Math.round(paymentApplied * 100) / 100,
                             status, paid,
                             charges, issuedDate, dueDate, note: params.note,
-                            isDraft: params.isDraft,
+                            isDraft: params.isDraft ?? invoice.isDraft,
                             paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                             customerPO: params.customerPO,
                             customerContactId: customerContact,
@@ -1469,13 +1428,11 @@ export const updateInvoice = (req: Request, res: Response) => {
                                     return res.json({ status: Status.Error, message: Messages.GenericError });
                                 }
 
-                                // Save the new credit of customer
-                                await customerObj.save();
+                                // To handle the switch of Invoice isDraft
+                                _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (invoice, qbInvoice) => {
 
-                                // Retrieve invoice after the update process
-                                invoice = await Invoice.findById(invoice._id);
-
-                                return res.json({ status: Status.Success, message: "Invoice updated successfully.", invoice });
+                                    return res.json({ status: Status.Success, message: "Invoice updated successfully.", invoice, quickbookInvoice: qbInvoice });
+                                });
                             })
                     })
                     .catch((error: any) => {
@@ -1645,7 +1602,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                     paymentApplied: Math.round(paymentApplied * 100) / 100,
                     status, paid,
                     issuedDate, dueDate, note: params.note,
-                    isDraft: params.isDraft,
+                    isDraft: params.isDraft ?? invoice.isDraft,
                     paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                     customerPO: params.customerPO,
                     customerContactId: customerContact,
@@ -1656,15 +1613,12 @@ export const updateInvoice = (req: Request, res: Response) => {
                             return res.json({ status: Status.Error, message: Messages.GenericError });
                         }
 
-                        // Save the new credit of customer
-                        await customerObj.save();
+                        // To handle the switch of Invoice isDraft
+                        _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (invoice, qbInvoice) => {
 
-                        // Retrieve invoice after the update process
-                        invoice = await Invoice.findById(invoice._id);
-
-                        return res.json({ status: Status.Success, message: "Invoice updated successfully.", invoice });
+                            return res.json({ status: Status.Success, message: "Invoice updated successfully.", invoice, quickbookInvoice: qbInvoice });
+                        });
                     })
-
             }
         });
 }
@@ -1992,4 +1946,101 @@ export const getCompanyInvoiceDetails = (req: Request, res: Response) => {
             }
             return res.json({ 'status': Status.Success, 'companyInvoice': invoices })
         });
+}
+
+
+/**
+ * ===================================
+ * =====[ PRIVATE METHODS BELOW ]=====
+ * ===================================
+ */
+
+/**
+ * To handle the switch of Invoice isDraft,
+ * Add or deduct customer balance,
+ * Create, update, or remove QB Invoice
+ */
+const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company: ICompany, customer: ICustomer, invoice: IInvoice, oldIsDraft: boolean, next: (invoice: IInvoice, qbInvoice: IQBInvoice) => void) => {
+
+    // Retrieve the latest invoice
+    invoice = await Invoice.findById(invoice._id);
+
+    if (oldIsDraft && !invoice.isDraft) {
+        /**
+         * Update & switch from DRAFT to ACTIVE invoice
+         */
+
+        // Add customer balance
+        const balance = customer.balance + invoice.total;
+        Customer.findByIdAndUpdate(customer._id, { balance }).exec();
+
+        // Update Job Report invoice
+        const jobReport = await JobReport.findOne({ job: invoice.job });
+        if (jobReport) {
+            jobReport.invoiceCreated = true;
+            jobReport.invoice = invoice._id;
+            jobReport.save();
+        }
+
+        // Create QB Invoice
+        if (company.qbAuthorized) {
+            // Create new Invoice in QuickBooks
+            _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                if (qbInvoice) {
+                    invoice.quickbookId = qbInvoice.Id;
+                    invoice.save();
+
+                    // If company's invoices already synced, update the synced date
+                    if (company.qbSync?.invoicesSynced) {
+                        company.qbSync.invoicesSyncedAt = new Date();
+                        company.save();
+                    }
+                }
+
+                return next(invoice, qbInvoice);
+            })
+        }
+
+    } else if (!oldIsDraft && invoice.isDraft) {
+        /**
+         * Update & switch from ACTIVE to DRAFT invoice
+         */
+
+        // Deduct customer balance
+        const balance = customer.balance -= invoice.total;
+        Customer.findByIdAndUpdate(customer._id, { balance }).exec();
+
+        // Remove Job Report invoice
+        const jobReport = await JobReport.findOne({ job: invoice.job });
+        if (jobReport) {
+            jobReport.invoiceCreated = false;
+            jobReport.invoice = null;
+            jobReport.save();
+        }
+
+        // TODO: Remove QB Invoice?
+        return next(invoice, null);
+
+    } else if (!oldIsDraft && !invoice.isDraft) {
+        /**
+         * Invoice is not DRAFT,
+         * only save the customer as on the previous code,
+         * customer credit already processed & calculated
+         */
+
+        // TODO: Save customerObj?
+        customer.save()
+
+        // TODO: Update QB Invoice
+        return next(invoice, null);
+
+    } else {
+        /**
+         * Invoice remains DRAFT,
+         * nothing to do
+         */
+
+        return next(invoice, null);
+    }
+
 }
