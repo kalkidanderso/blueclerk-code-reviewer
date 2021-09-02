@@ -161,7 +161,7 @@ const InvoiceSchema = new Schema({
     },
     isDraft: {
         type: Boolean,
-        default: true
+        default: false
     },
     paymentTerm: {
         type: Schema.Types.ObjectId,

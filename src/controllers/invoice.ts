@@ -1074,7 +1074,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         jobPurchaseOrders: purchaseOrderIds,
         issuedDate: params.issuedDate ? new Date(params.issuedDate) : Date.now(),
         dueDate: params.dueDate ? new Date(params.dueDate) : moment().add(paymentTerm?.dueDays ?? 30, 'd').valueOf(),
-        isDraft: params.isDraft,
+        isDraft: params.isDraft ?? true,
         paymentTerm,
         customerPO: params.customerPO ?? ticket?.customerPO,
         customerContactId: params.customerContactId ?? ticket?.customerContactId,
