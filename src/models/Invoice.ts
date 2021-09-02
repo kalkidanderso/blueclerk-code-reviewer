@@ -105,6 +105,7 @@ export interface IQBInvoice {
         Type?: string
         StringValue?: string
     }[]
+    status?: string
 }
 
 export interface IQBInvoiceLine {
@@ -160,7 +161,7 @@ const InvoiceSchema = new Schema({
     },
     isDraft: {
         type: Boolean,
-        default: true
+        default: false
     },
     paymentTerm: {
         type: Schema.Types.ObjectId,
