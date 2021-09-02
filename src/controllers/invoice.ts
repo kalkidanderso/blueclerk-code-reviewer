@@ -19,6 +19,7 @@ import { IPurchaseOrder, PurchaseOrder } from '../models/PurchaseOrder';
 import { Estimate, IEstimate } from '../models/Estimate';
 import { IInvoicePrefix, InvoicePrefix } from '../models/InvoicePrefix';
 import { IPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
+import { Payment } from '../models/Payment';
 import { IInvoice, Invoice } from '../models/Invoice';
 import { IScan, Scan } from '../models/Scan';
 import { EmailDefault } from '../models/EmailDefault';
@@ -1738,12 +1739,17 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                     populate: [{ path: 'brand', select: 'title' },{ path: 'type', select: 'title' }],
 
                 })
-                .exec ((err: any, scans: IScan[]) => {
+                .exec (async (err: any, scans: IScan[]) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
 
-                    return res.json({ 'status': Status.Success, 'invoice': invoice, 'scans': scans })
+                    const payments = await Payment.find({
+                        company: req.companyId,
+                        invoice: invoice._id
+                    });
+
+                    return res.json({ status: Status.Success, invoice, scans, payments });
                 })
         })
 }

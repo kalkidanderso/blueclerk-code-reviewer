@@ -68,7 +68,8 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
             PaymentRefNum: payment.referenceNumber,
             PaymentMethodRef: {
                 value: payment.paymentType ? await _getPaymentMethod(qbo, payment) : null
-            }
+            },
+            PrivateNote: payment.note
         };
 
         // Create QB Payment
@@ -121,6 +122,7 @@ export const _updateQBPayment = async (req: Request, res: Response, company: ICo
             qbPayment.PaymentRefNum = payment.referenceNumber;
             qbPayment.PaymentMethodRef.value = payment.paymentType ? await _getPaymentMethod(qbo, payment) : null;
             qbPayment.TxnDate = moment(payment.paidAt).format('YYYY-MM-DD');
+            qbPayment.PrivateNote = payment.note;
 
             // Update QB Payment
             qbo.updatePayment(qbPayment, async (err: any, qbPayment: IQBPayment) => {
