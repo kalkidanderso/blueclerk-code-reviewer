@@ -377,13 +377,11 @@ export const createInvoice = (req: Request, res: Response) => {
                 // Mark the job report as it has been invoiced
                 return new Promise(async (resolve, reject) => {
 
-                    if (!invoice.isDraft) {
-                        const jobReport = await JobReport.findOne({ job: invoice.job });
-                        if (jobReport) {
-                            jobReport.invoiceCreated = true;
-                            jobReport.invoice = invoice._id;
-                            await jobReport.save();
-                        }
+                    const jobReport = await JobReport.findOne({ job: invoice.job });
+                    if (jobReport) {
+                        jobReport.invoiceCreated = true;
+                        jobReport.invoice = invoice._id;
+                        await jobReport.save();
                     }
 
                     resolve(invoice);
@@ -1977,14 +1975,6 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         // Add customer balance
         const balance = customer.balance + invoice.total;
         Customer.findByIdAndUpdate(customer._id, { balance }).exec();
-
-        // Update Job Report invoice
-        const jobReport = await JobReport.findOne({ job: invoice.job });
-        if (jobReport) {
-            jobReport.invoiceCreated = true;
-            jobReport.invoice = invoice._id;
-            jobReport.save();
-        }
 
         // Create QB Invoice
         if (company.qbAuthorized) {
