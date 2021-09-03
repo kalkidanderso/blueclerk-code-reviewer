@@ -916,7 +916,7 @@ export const getAllJobReports = (req: Request, res: Response) => {
         })
         .populate({
             path: 'invoice',
-            select: 'invoiceId invoiceType paid issuedDate dueDate createdAt taxAmount subTotal total',
+            select: '-__v -jobPurchaseOrders -job -customer -company -createdBy -lastEmailSent -emailHistory'
         })
         .exec().then((reports: IJobReport[]) => {
         if (reports.length) {
@@ -964,7 +964,10 @@ export const getJobReportDetails = (req: Request, res: Response) => {
         .populate('PurchaseOrder')
         .populate({
             path: 'invoice',
-            select: 'invoiceType jobPurchaseOrders charges shippingCost tax taxPercentage taxAmount paid invoiceId purchaseOrder issuedDate dueDate subTotal total items estimate createdAt'
+            populate: [
+                { path: 'paymentTerm', select: '-__v' },
+                { path: 'customerContactId', select: '-__v'}
+            ]
         })
         .exec()
         .then((report: IJobReport) => {
