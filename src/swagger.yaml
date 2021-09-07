@@ -4224,7 +4224,7 @@ paths:
           in: formData
           required: false
           type: string
-          description: Pass note if create manual invoice (required in manual invoice) 
+          description: Pass note for invoice
         - name: shippingCost
           in: formData
           type: number
