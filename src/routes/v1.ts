@@ -873,13 +873,13 @@ export default function (sio: any) {
     //     userController.updateSub
     // )
 
-    router.post(
-        '/contractorSignup',
-        validate(Validations.contractorSignup),
-        (req, res) => {
-            userController.createContractor(req, res, sio)
-        }
-    )
+    // router.post(
+    //     '/contractorSignup',
+    //     validate(Validations.contractorSignup),
+    //     (req, res) => {
+    //         userController.createContractor(req, res, sio)
+    //     }
+    // )
 
     router.post(
         '/searchContractor',

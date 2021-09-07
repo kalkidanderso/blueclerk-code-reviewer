@@ -366,11 +366,12 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
 
         /**
          * Retrieve all invoices of this company from Database,
-         * that not a manual invoice and doesn't have quickbookId 
+         * that not a manual invoice, not draft, and doesn't have quickbookId 
          */ 
         const invoices = await Invoice.find({
             company: company._id,
             invoiceType: { $ne: 3 },
+            $or: [{ isDraft: null }, { isDraft: false }],
             quickbookId: null
         }).sort({ issuedDate: 1 });
 

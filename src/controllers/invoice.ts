@@ -897,10 +897,6 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             return res.json({ 'status': Status.Error, 'message': 'customer is required' })
         }
 
-        if(params.note == undefined || params.note == null || params.note == '""' ){
-            return res.json({ 'status': Status.Error, 'message': 'Note is required ' })
-        }
-
         if (params.charges == undefined || params.charges == null || params.charges === '""') {
             return res.json({ 'status': Status.Error, 'message': 'charges are required' })
         }

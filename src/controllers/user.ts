@@ -259,7 +259,37 @@ export const createCompany = (req: Request, res: Response, sio: any) => {
 
                 company.updateOne({
                     'admin': companyAdmin._id
-                }, (err: any, raq: any) => {
+                }, async (err: any, raq: any) => {
+
+                    const isContractInvitation = params.isci === 'false' || params.isci === 'undefined' || params.isci === 'null' || params.isci === '0'
+                        ? false
+                        : !!params.isci;
+
+                    if (isContractInvitation) {
+                        const hiringCompany = await Company.findById(params.cid);
+
+                        if (hiringCompany) {
+                            // Start contract
+                            const contract = new Contract({
+                                company: hiringCompany._id,
+                                contractor: company._id,
+                                status: ContractStatus.PENDING
+                            });
+                            await contract.save();
+
+                            // Construct notification entry to be saved
+                            let notificationEntry: INotificationContract = new NotificationContract({
+                                company: company._id,
+                                notificationType: NotificationTypes.CONTRACT_INVITATION,
+                                message: {
+                                    title: 'New vendor contract received',
+                                    body: `Company ${hiringCompany.info?.companyName} has invited you to be a vendor`
+                                },
+                                metadata: contract._id
+                            });
+                            await notificationEntry.save();
+                        };
+                    }
 
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': err.message })
@@ -1152,8 +1182,8 @@ export const inviteContractor = (req: Request, res: Response) => {
 
     const params = req.body
     const user = <IUser>req.user
-
     const company = <ICompany>req.company;
+
     if (company.paid == false && new Date() > company.chargeDate) {
         return res.json({ 'status': Status.Error, 'message': 'You can\'t invite contractors, please contact blueclerk for details.' });
     }
@@ -1170,7 +1200,7 @@ export const inviteContractor = (req: Request, res: Response) => {
             }
 
             // ToDo email email with singup link
-            sendInvitationToContractor({ to: params.email, company: req.company.info.companyName })
+            sendInvitationToContractor({ to: params.email, company: company.info?.companyName, companyId: company._id });
             return res.json({ 'status': Status.Success, 'message': 'Invitation sent.' })
         }
     )
