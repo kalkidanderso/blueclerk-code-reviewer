@@ -979,6 +979,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
                 obj.description = item.description
             } else {
                 obj.item = item.item
+                obj.description = item.description || item.item?.name
             }
             invoiceItems.push(obj)
 
@@ -1029,6 +1030,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             obj.taxAmount = Math.round(itemTaxAmount * 100) / 100
             obj.subTotal = Math.round(subTotal * 100) / 100
             obj.item = jobTypeitem._id
+            obj.description = jobTypeitem.name
 
             invoiceItems.push(obj)
 
@@ -1352,6 +1354,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                                     obj.description = item.description
                                 } else {
                                     obj.item = item.item
+                                    obj.description = item.description || item.item?.name
                                 }
                                 invoiceItems.push(obj)
 
@@ -1538,6 +1541,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                             obj.description = item.description
                         } else {
                             obj.item = item.item
+                            obj.description = item.description || item.item?.name
                         }
                         invoiceItems.push(obj)
 
