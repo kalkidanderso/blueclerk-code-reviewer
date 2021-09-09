@@ -385,7 +385,7 @@ const _processJobLocations = async (req: Request, res: Response, company: ICompa
 * this used by Job Location Controller when creating new job location,
 * and this contoller when syncing customer job
 */
-export const _createQBCustomerJob = async (req: Request, res: Response, company: ICompany, jobLocation: IJobLocation, parentQBCustomerId: string, next: (error: number, errorMessage: string, qbCustomerJob: any) => void) => {
+export const _createQBCustomerJob = async (req: Request, res: Response, company: ICompany, jobLocation: IJobLocation, parentQBCustomerId: string, next: (error: number, errorMessage: string, qbCustomerJob: IQBCustomer) => void) => {
 
     // Populate the job location to have customer object
     await jobLocation
@@ -426,6 +426,7 @@ export const _createQBCustomerJob = async (req: Request, res: Response, company:
             FamilyName: contact?.name?.split(/[ ,]+/)[1] || customer?.profile?.lastName,
             CompanyName: customer?.profile?.displayName,
             Job: true,
+            Active: jobLocation.isActive ?? true,
             ParentRef: { value: parentQBCustomerId },
             PrimaryPhone: {
                 FreeFormNumber: customer?.contact?.phone
@@ -465,6 +466,71 @@ export const _createQBCustomerJob = async (req: Request, res: Response, company:
             return next(null, null, qbCustomer);
         })
     })
+
+}
+
+/**
+ * Generic function to update QuickBooks Customer Job,
+ * this used by Job Location Controller when updating job location
+ */
+export const _updateQBCustomerJob = async (req: Request, res: Response, company: ICompany, jobLocation: IJobLocation, parentQBCustomerId: string, next: (error: number, errorMessage: string, qbCustomerJob: IQBCustomer) => void) => {
+
+    // Populate the job location to have customer object
+    await jobLocation
+        .populate({ path: 'customerId' })
+        .populate({ path: 'contacts '})
+        .execPopulate();
+
+    // Customer of the job location
+    const customer = <ICustomer>jobLocation.customerId;
+    const contact = <IContact>jobLocation.contacts[0];
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.getCustomer(jobLocation.quickbookId, async (err: any, qbCustomerJob: IQBCustomer) => {
+
+            qbCustomerJob.DisplayName = jobLocation.name;
+            qbCustomerJob.ShipAddr.Line1 = jobLocation?.address?.street;
+            qbCustomerJob.BillAddr.City = jobLocation?.address?.city;
+            qbCustomerJob.BillAddr.CountrySubDivisionCode = jobLocation?.address?.state;
+            qbCustomerJob.BillAddr.PostalCode = jobLocation?.address?.zipcode;
+            qbCustomerJob.BillAddr.Long = jobLocation?.location?.coordinates[0]?.toString();
+            qbCustomerJob.BillAddr.Lat = jobLocation?.location?.coordinates[1]?.toString();
+
+            qbo.updateCustomer(qbCustomerJob, async (err: any, qbCustomerJob: IQBCustomer) => {
+                if (err) {
+                    return next(
+                        Status.Error,
+                        err.Fault?.Error[0]?.Detail
+                        || err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError,
+                        null
+                    );
+                }
+
+                return next(null, null, qbCustomerJob);
+            });
+        });
+    });
 
 }
 
@@ -878,5 +944,53 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
             return res.json({ status: Status.Success, message: 'Customer synced successfully.', createdCustomers, updatedCustomers });
         })
     })
+
+}
+
+/**
+ * Called by quickbook controller when handle webhook from Quickbooks
+ */
+export const updateBCCustomerJob = async (req: Request, res: Response, company: ICompany, qbCustomerId: string, next: (error: number, errorMessage: string, jobLocation: IJobLocation) => void) => {
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        let jobLocation: IJobLocation;
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        // Get QB Customer by ID sent through webhook
+        qbo.getCustomer(qbCustomerId, async (err: any, qbCustomer: IQBCustomer) => {
+            if (err) {
+                return next(
+                    Status.Error,
+                    err.Fault?.Error[0]?.Detail
+                    || err.Fault?.Error[0]?.Message
+                    || err.fault?.error[0]?.detail
+                    || err.fault?.error[0]?.message
+                    || Messages.GenericError,
+                    null
+                );
+            }
+
+            // Handle QB Customer Job only for this method
+            if (qbCustomer.Job) {
+                // Get BC Job Location by QB Customer Job's quickbookId
+                jobLocation = await JobLocation.findOne({ quickbookId: qbCustomer.Id });
+
+                // Update Job Location data based on QB Customer Job
+                jobLocation.name = qbCustomer.DisplayName;
+                jobLocation.isActive = qbCustomer.Active;
+                jobLocation.address.street = qbCustomer.ShipAddr?.Line1;
+                jobLocation.address.city = qbCustomer.ShipAddr?.City;
+                jobLocation.address.state = qbCustomer.ShipAddr?.CountrySubDivisionCode;
+                jobLocation.address.zipcode = qbCustomer.ShipAddr?.PostalCode;
+
+                await jobLocation.save();
+            }
+
+            return next(null, null, jobLocation);
+        });
+    });
 
 }
