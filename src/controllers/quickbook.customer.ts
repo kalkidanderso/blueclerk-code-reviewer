@@ -385,7 +385,7 @@ const _processJobLocations = async (req: Request, res: Response, company: ICompa
 * this used by Job Location Controller when creating new job location,
 * and this contoller when syncing customer job
 */
-export const _createQBCustomerJob = async (req: Request, res: Response, company: ICompany, jobLocation: IJobLocation, parentQBCustomerId: string, next: (error: number, errorMessage: string, qbCustomerJob: any) => void) => {
+export const _createQBCustomerJob = async (req: Request, res: Response, company: ICompany, jobLocation: IJobLocation, parentQBCustomerId: string, next: (error: number, errorMessage: string, qbCustomerJob: IQBCustomer) => void) => {
 
     // Populate the job location to have customer object
     await jobLocation
@@ -465,6 +465,71 @@ export const _createQBCustomerJob = async (req: Request, res: Response, company:
             return next(null, null, qbCustomer);
         })
     })
+
+}
+
+/**
+ * Generic function to update QuickBooks Customer Job,
+ * this used by Job Location Controller when updating job location
+ */
+export const _updateQBCustomerJob = async (req: Request, res: Response, company: ICompany, jobLocation: IJobLocation, parentQBCustomerId: string, next: (error: number, errorMessage: string, qbCustomerJob: IQBCustomer) => void) => {
+
+    // Populate the job location to have customer object
+    await jobLocation
+        .populate({ path: 'customerId' })
+        .populate({ path: 'contacts '})
+        .execPopulate();
+
+    // Customer of the job location
+    const customer = <ICustomer>jobLocation.customerId;
+    const contact = <IContact>jobLocation.contacts[0];
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.getCustomer(jobLocation.quickbookId, async (err: any, qbCustomerJob: IQBCustomer) => {
+
+            qbCustomerJob.DisplayName = jobLocation.name;
+            qbCustomerJob.ShipAddr.Line1 = jobLocation?.address?.street;
+            qbCustomerJob.BillAddr.City = jobLocation?.address?.city;
+            qbCustomerJob.BillAddr.CountrySubDivisionCode = jobLocation?.address?.state;
+            qbCustomerJob.BillAddr.PostalCode = jobLocation?.address?.zipcode;
+            qbCustomerJob.BillAddr.Long = jobLocation?.location?.coordinates[0]?.toString();
+            qbCustomerJob.BillAddr.Lat = jobLocation?.location?.coordinates[1]?.toString();
+
+            qbo.updateCustomer(qbCustomerJob, async (err: any, qbCustomerJob: IQBCustomer) => {
+                if (err) {
+                    return next(
+                        Status.Error,
+                        err.Fault?.Error[0]?.Detail
+                        || err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError,
+                        null
+                    );
+                }
+
+                return next(null, null, qbCustomerJob);
+            });
+        });
+    });
 
 }
 

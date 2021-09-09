@@ -5,7 +5,7 @@ import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { ICompany } from '../models/Company'
 import { Customer } from '../models/Customer'
 import { Contact } from '../models/Contact'
-import { _createQBCustomerJob } from './quickbook.customer';
+import { _createQBCustomerJob, _updateQBCustomerJob } from './quickbook.customer';
 
 export const get = (req: Request, res: Response) => {
     const { jobLocationId } = req.params
@@ -115,10 +115,17 @@ export const update = async (req: Request, res: Response) => {
     const { jobLocationId } = req.params;
     const company = <ICompany>req.company;
 
+    // Find and check if customer existed
+    const customer = await Customer.findOne({ company, _id: params.customerId });
+
+    if (!customer) {
+        return res.json({ status: Status.Error, message: 'Customer not found.' });
+    }
+
     // Find and check if job locatino existed
     const jobLocation = await JobLocation.findOne({
         companyId: company._id,
-        customerId: params.customerId,
+        customerId: customer._id,
         _id: jobLocationId
     });
 
@@ -142,6 +149,31 @@ export const update = async (req: Request, res: Response) => {
     jobLocation.address.zipcode = params.zipcode ?? jobLocation.address?.zipcode;
     await jobLocation.save();
 
-    return res.json({ status: Status.Success, message: 'Job Location updated successfully.', jobLocation });
+    if (company.qbAuthorized && customer.quickbookId && jobLocation.quickbookId) {
+        // Sync the update to Customer Job in QuickBooks
+        _updateQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, (err, errMsg, qbCustomerJob) => {
+            if (err) {
+                return res.json({ status: err, message: errMsg });
+            }
+
+            if (qbCustomerJob) {
+                // If company's customers already synced, update the synced date
+                if (company.qbSync?.customersSynced) {
+                    company.qbSync.customersSyncedAt = new Date();
+                    company.save();
+                }
+            }
+
+            return res.json({
+                status: Status.Success,
+                message: 'Job Location updated successfully.',
+                jobLocation,
+                quickbookCustomerJob: qbCustomerJob
+            })
+        })
+    } else {
+        return res.json({ status: Status.Success, message: 'Job Location updated successfully.', jobLocation });
+    }
+
 
 }
