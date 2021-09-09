@@ -3825,28 +3825,23 @@
         ],
         "parameters": [
           {
+            "name": "customerId",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
             "name": "name",
             "in": "formData",
             "required": true,
             "type": "string"
           },
           {
-            "name": "contactName",
+            "name": "contact",
             "in": "formData",
             "required": false,
-            "type": "string"
-          },
-          {
-            "name": "contactPhone",
-            "in": "formData",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "contactEmail",
-            "in": "formData",
-            "required": false,
-            "type": "string"
+            "type": "string",
+            "description": "Example: {name: \"Georgianna Streich\", phone: \"6713291523\", email: \"clustertest@getnada.com\"}"
           },
           {
             "name": "locationLat",
@@ -3882,12 +3877,6 @@
             "name": "zipcode",
             "in": "formData",
             "required": false,
-            "type": "string"
-          },
-          {
-            "name": "customerId",
-            "in": "formData",
-            "required": true,
             "type": "string"
           }
         ],
@@ -3943,7 +3932,7 @@
         ]
       }
     },
-    "/jobLocation/{id}": {
+    "/jobLocation/{jobLocationId}": {
       "put": {
         "tags": [
           "Job Location"
@@ -3956,16 +3945,57 @@
         "parameters": [
           {
             "in": "path",
-            "name": "id",
+            "name": "jobLocationId",
             "type": "string",
-            "required": true
+            "required": true,
+            "description": "Id of job location to be updated"
           },
           {
-            "in": "body",
-            "name": "body",
-            "schema": {
-              "$ref": "#/definitions/jobLocation"
-            }
+            "name": "customerId",
+            "in": "formData",
+            "type": "string",
+            "required": true,
+            "description": "Id of customer that owns the job location"
+          },
+          {
+            "name": "name",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "isActive",
+            "in": "formData",
+            "type": "boolean"
+          },
+          {
+            "name": "locationLat",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "locationLong",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "street",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "city",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "state",
+            "in": "formData",
+            "type": "string"
+          },
+          {
+            "name": "zipcode",
+            "in": "formData",
+            "type": "string"
           }
         ],
         "responses": {
@@ -3991,7 +4021,7 @@
         "parameters": [
           {
             "in": "path",
-            "name": "id",
+            "name": "jobLocationId",
             "type": "string",
             "required": true
           }

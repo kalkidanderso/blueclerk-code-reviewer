@@ -17,6 +17,7 @@ export interface IJobLocation extends Document {
       zipcode: string
     },
     jobSites?: [Schema.Types.ObjectId]
+    isActive?: boolean
     customerId: Schema.Types.ObjectId | ICustomer
     companyId: Schema.Types.ObjectId | ICompany
     quickbookId?: string
@@ -51,6 +52,10 @@ const JobLocationSchema = new Schema({
       state: String,
       street: String,
       zipcode: String
+    },
+    isActive: {
+      type: Boolean,
+      default: true
     },
     customerId: {
         type: Schema.Types.ObjectId,

@@ -329,8 +329,25 @@ export const Validations = {
   getLocationTagJobs: [check('nfcTag').exists()],
 
   getOpenServiceTickets: [check('page').exists().isNumeric(), check('pagesize').exists().isNumeric(), check('customerNames').optional(), check('jobTypeTitle').optional(), check('dueDate').optional(), check('ticketId').optional()],
-// Job location
-  createJobLocation: [check('name').exists(), check('customerId').exists()],
+
+  // Job location
+  getJobLocation: [
+    check('jobLocationId').exists().withMessage(Messages.Required),
+    check('jobLocationId').isMongoId().withMessage(Messages.WrongId)
+  ],
+
+  createJobLocation: [
+    check('customerId').exists().withMessage(Messages.Required),
+    check('customerId').isMongoId().withMessage(Messages.WrongId),
+    check('name').exists().withMessage(Messages.Required)
+  ],
+
+  updateJobLocation: [
+    check('customerId').exists().withMessage(Messages.Required),
+    check('customerId').isMongoId().withMessage(Messages.WrongId),
+    check('jobLocationId').exists().withMessage(Messages.Required),
+    check('jobLocationId').isMongoId().withMessage(Messages.WrongId)
+  ],
 
   // Notification
   getNotifications: [check('isRead').optional().isIn(['ALL', true, false, 1, 0]), check('isDismissed').optional().isIn(['ALL', true, false, 1, 0])],
