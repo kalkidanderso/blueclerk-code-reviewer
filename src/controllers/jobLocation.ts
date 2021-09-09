@@ -8,17 +8,17 @@ import { Contact } from '../models/Contact'
 import { _createQBCustomerJob, _updateQBCustomerJob } from './quickbook.customer';
 
 export const get = (req: Request, res: Response) => {
-    const { jobLocationId } = req.params
+    const { id } = req.params
     const { query: queryParams = {} } = req
     const loggedInCompanyId = req.companyId;
     let { customerId, companyId } = queryParams
     let query = {}
 
-    if (!jobLocationId && !customerId && !companyId && loggedInCompanyId) {
+    if (!id && !customerId && !companyId && loggedInCompanyId) {
         companyId = loggedInCompanyId;
     }
-    if (jobLocationId) {
-        query = { _id: jobLocationId }
+    if (id) {
+        query = { _id: id }
     } else if (customerId && companyId) {
         query = { customerId, companyId }
     } else if (customerId) {
@@ -112,7 +112,7 @@ export const create = async (req: Request, res: Response) => {
 export const update = async (req: Request, res: Response) => {
 
     const params = req.body;
-    const { jobLocationId } = req.params;
+    const { id } = req.params;
     const company = <ICompany>req.company;
 
     // Find and check if customer existed
@@ -126,7 +126,7 @@ export const update = async (req: Request, res: Response) => {
     const jobLocation = await JobLocation.findOne({
         companyId: company._id,
         customerId: customer._id,
-        _id: jobLocationId
+        _id: id
     });
 
     if (!jobLocation) {

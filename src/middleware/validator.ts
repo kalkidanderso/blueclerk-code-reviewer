@@ -332,8 +332,9 @@ export const Validations = {
 
   // Job location
   getJobLocation: [
-    check('jobLocationId').exists().withMessage(Messages.Required),
-    check('jobLocationId').isMongoId().withMessage(Messages.WrongId)
+    check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('id').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
   createJobLocation: [
@@ -345,8 +346,8 @@ export const Validations = {
   updateJobLocation: [
     check('customerId').exists().withMessage(Messages.Required),
     check('customerId').isMongoId().withMessage(Messages.WrongId),
-    check('jobLocationId').exists().withMessage(Messages.Required),
-    check('jobLocationId').isMongoId().withMessage(Messages.WrongId)
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId)
   ],
 
   // Notification

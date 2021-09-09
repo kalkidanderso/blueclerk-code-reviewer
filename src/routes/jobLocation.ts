@@ -16,14 +16,14 @@ router.post(
 )
 
 router.put(
-    '/:jobLocationId',
+    '/:id',
     passport.authenticate('jwt', { session: false }),
     getCompanyId(),
     validate(Validations.updateJobLocation),
     update
 )
 
-router.get('/:jobLocationId?',
+router.get('/:id?',
     passport.authenticate('jwt', { session: false }),
     getCompanyId(),
     validate(Validations.getJobLocation),
