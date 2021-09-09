@@ -3932,7 +3932,7 @@
         ]
       }
     },
-    "/jobLocation/{jobLocationId}": {
+    "/jobLocation/{id}": {
       "put": {
         "tags": [
           "Job Location"
@@ -3945,7 +3945,7 @@
         "parameters": [
           {
             "in": "path",
-            "name": "jobLocationId",
+            "name": "id",
             "type": "string",
             "required": true,
             "description": "Id of job location to be updated"
@@ -4021,7 +4021,7 @@
         "parameters": [
           {
             "in": "path",
-            "name": "jobLocationId",
+            "name": "id",
             "type": "string",
             "required": true
           }
