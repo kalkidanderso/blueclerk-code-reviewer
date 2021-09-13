@@ -691,11 +691,9 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
     let query: any = {};
     query['$or'] = [{ contractor: companyId }, { company: companyId } ];
     if (todaysJobs === "true") {
-        let date = new Date()
-        date.setHours(0, 0, 0, 0)
-        let endDate = new Date()
-        endDate.setHours(23, 59, 59, 59)
-        query.dateTime = {$gte: date, $lte: endDate};
+        let date = moment().startOf('day');
+        let endDate = moment().endOf('day');
+        query.scheduleDate = {$gte: date, $lte: endDate};
     }
 
     if (customerNames && customerNames.length) {
