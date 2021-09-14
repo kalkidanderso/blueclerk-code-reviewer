@@ -1823,7 +1823,7 @@ export const editJob = async (req: Request, res: Response) => {
                                 })
                                 // Save the service ticket
                                 await serviceTicket.updateOne({
-                                    jobTypes,
+                                    tasks: jobTypes,
                                     track: ticketTrack
                                 })
                             }
