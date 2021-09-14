@@ -1,5 +1,5 @@
 import {Request, Response} from 'express'
-import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, SocketEvents, NotificationTypes } from '../common/constants'
+import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, JobStatus, SocketEvents, NotificationTypes } from '../common/constants'
 
 import { ICompany } from '../models/Company'
 import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket'
@@ -512,6 +512,13 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                         action += '|Updated JobTypes|';
                         isJobTypesUpdated = true;
                     }
+                    // If job types changed, check if there any running jobs
+                    if (isJobTypesUpdated) {
+                        const jobs = await Job.find({ ticket: serviceTicket._id });
+                        if (jobs.find(job => job.status !== JobStatus.PENDING && job.status !== JobStatus.RESCHEDULED)) {
+                            return res.json({ status: Status.Error, message: 'Cannot update ticket when tied to a job in progress' });
+                        }
+                    }
                     //=== END HANDLE params jobTypes
 
                     if (
@@ -566,7 +573,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                                     })
                                     // Save the job
                                     await job.updateOne({
-                                        jobTypes,
+                                        tasks: jobTypes,
                                         track: jobTrack
                                     });
                                 }
