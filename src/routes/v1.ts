@@ -13,6 +13,7 @@ import { uploadInvoices } from '../middleware/multer';
 import { Role, Permissions } from '../common/constants'
 
 import * as userController from '../controllers/user'
+import * as vendorController from '../controllers/vendor'
 import * as jobTypeController from '../controllers/jobType'
 import * as equipmentTypeController from '../controllers/equipmentType'
 import * as equipmentBrandController from '../controllers/equipmentBrand'
@@ -877,14 +878,14 @@ export default function (sio: any) {
     //     '/contractorSignup',
     //     validate(Validations.contractorSignup),
     //     (req, res) => {
-    //         userController.createContractor(req, res, sio)
+    //         vendorController.createContractor(req, res, sio)
     //     }
     // )
 
     router.post(
         '/searchContractor',
         validate(Validations.searchContractor),
-        userController.searchContractor
+        vendorController.searchContractor
     )
 
     router.post(
@@ -894,7 +895,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Invite_Contractor),
         validate(Validations.inviteContractor),
         (req, res) => {
-            userController.startContract(req, res, sio)
+            vendorController.startContract(req, res, sio)
         }
     )
 
@@ -904,7 +905,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Invite_Contractor),
         validate(Validations.searchContractor),
-        userController.inviteContractor
+        vendorController.inviteContractor
     )
 
     // limit only for contractors
@@ -913,7 +914,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_All_Contracts),
-        userController.getAllContracts
+        vendorController.getAllContracts
     )
 
     // limit only for contractors
@@ -924,7 +925,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Accept_Reject_Contract),
         validate(Validations.updateContract),
         (req, res) => {
-            userController.acceptRejectContract(req, res, sio)
+            vendorController.acceptRejectContract(req, res, sio)
         }
     )
 
@@ -935,7 +936,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Cancel_Finish_Contract),
         validate(Validations.updateContract),
         (req, res) => {
-            userController.cancelOrFinishContract(req, res, sio)
+            vendorController.cancelOrFinishContract(req, res, sio)
         }
     )
 
@@ -953,7 +954,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         checkUserPermissions(Permissions.Upgrade_To_Company),
         validate(Validations.upgradeToCompany),
-        userController.upgradeToCompany
+        vendorController.upgradeToCompany
     )
 
     router.post(
