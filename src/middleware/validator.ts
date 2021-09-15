@@ -51,13 +51,13 @@ export const Validations = {
 
   contractorSocialSignUp: [check('email').exists(), check('email').isEmail(), check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
 
-  searchContractor: [check('email').exists(), check('email').isEmail()],
+  searchContractor: [check('email').exists().withMessage(Messages.Required), check('email').isEmail()],
 
-  inviteContractor: [check('contractorId').exists()],
+  inviteContractor: [check('contractorId').exists().withMessage(Messages.Required), check('contractorId').isMongoId().withMessage(Messages.WrongId)],
 
-  updateContract: [check('contractId').exists(), check('status').exists()],
+  updateContract: [check('contractId').exists().withMessage(Messages.Required), check('contractId').isMongoId().withMessage(Messages.WrongId), check('status').exists().withMessage(Messages.Required)],
 
-  contractorPermissions: [check('contractorId').exists(), check('permissions').exists()],
+  contractorPermissions: [check('contractorId').exists().withMessage(Messages.Required), check('contractorId').isMongoId().withMessage(Messages.WrongId), check('permissions').exists()],
 
   upgradeToCompany: [check('token').exists(), check('ending').exists()],
 
