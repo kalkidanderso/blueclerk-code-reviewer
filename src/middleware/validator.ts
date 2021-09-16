@@ -134,13 +134,36 @@ export const Validations = {
   changeJobTypeStatus: [check('jobTypeId').exists(), check('status').exists()],
 
   //Job
-  createJob: [check('scheduleDate').exists(), check('customerId').exists(), check('jobTypes').exists(), check('ticketId').exists(), check('employeeType').exists(), check('employeeType').isNumeric()],
+  createJob: [
+    check('scheduleDate').exists().withMessage(Messages.Required),
+    check('customerId').exists().withMessage(Messages.Required),
+    check('customerId').isMongoId().withMessage(Messages.WrongId),
+    check('jobTypes').exists().withMessage(Messages.Required),
+    check('ticketId').exists().withMessage(Messages.Required),
+    check('ticketId').isMongoId().withMessage(Messages.WrongId),
+    check('employeeType').exists().withMessage(Messages.Required),
+    check('employeeType').isNumeric(),
+    check('equipmentId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId)
+  ],
 
-  createSubJob: [check('parentJobId').exists(), check('employeeType').exists(), check('employeeType').isNumeric()],
+  createSubJob: [
+    check('parentJobId').exists().withMessage(Messages.Required),
+    check('parentJobId').isMongoId().withMessage(Messages.WrongId),
+    check('employeeType').exists().withMessage(Messages.Required),
+    check('employeeType').isNumeric(),
+    check('equipmentId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
 
   searchJob: [check('pageSize').isNumeric(), check('page').isNumeric()],
 
-  generalJob: [check('jobId').exists()],
+  generalJob: [check('jobId').exists().withMessage(Messages.Required)],
 
   startJobTask: [
     check('jobId').exists().withMessage(Messages.Required),
@@ -158,13 +181,28 @@ export const Validations = {
     check('status').isIn([JobStatus.PAUSED, JobStatus.FINISHED]).withMessage('Only paused and finished are allowed')
   ],
 
-  updateJob: [check('status').exists(), check('jobId').exists()],
+  updateJob: [
+    check('jobId').exists().withMessage(Messages.Required),
+    check('jobId').isMongoId().withMessage(Messages.WrongId),
+    check('status').exists().withMessage(Messages.Required),
+    check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId)
+  ],
 
-  editJob: [check('jobId').exists(), check('scheduleDate').exists()],
+  editJob: [
+    check('jobId').exists().withMessage(Messages.Required),
+    check('jobId').isMongoId().withMessage(Messages.WrongId),
+    check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('scheduleDate').exists().withMessage(Messages.Required)
+  ],
 
-  updateJobTime: [check('jobId').exists()],
+  updateJobTime: [check('jobId').exists().withMessage(Messages.Required), check('jobId').isMongoId().withMessage(Messages.WrongId)],
 
-  technicianJobs: [check('employeeId').exists()],
+  technicianJobs: [check('employeeId').exists().withMessage(Messages.Required), check('employeeId').isMongoId().withMessage(Messages.WrongId)],
 
   //Group
   createGroup: [check('title').exists()],
