@@ -111,7 +111,9 @@ export const getPaymentTerms = async (req: Request, res: Response) => {
     await _createDefaultPaymentTerms(company);
 
     // Check and sync default payments in background
-    _syncQBDefaultPaymentTerms(req, res, company);
+    if (company.qbAuthorized) {
+        _syncQBDefaultPaymentTerms(req, res, company);
+    }
 
     const paymentTerms = await PaymentTerm.find({
         company: company._id,
