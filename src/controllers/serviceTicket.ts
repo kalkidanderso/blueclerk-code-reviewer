@@ -10,7 +10,7 @@ import {Contact} from '../models/Contact';
 import { Item } from '../models/Item'
 import { NotificationServiceTicket, INotificationServiceTicket } from '../models/NotificationServiceTicket';
 import { IJobTypes } from '../models/JobType'
-import { Job } from '../models/Job';
+import { ITask, Job } from '../models/Job';
 import { _handleJobTypesJson } from '../controllers/jobType';
 
 export const createServiceTicket = (req: Request, res: Response, sio: any) => {
@@ -561,22 +561,25 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             }
 
                             // Update jobs related to this service ticket is jobTypes updated
-                            if (isJobTypesUpdated) {
-                                const jobs = await Job.find({ ticket: serviceTicket._id });
-                                for (const job of jobs) {
-                                    // Update job's track
-                                    const jobTrack = job.track;
-                                    jobTrack.push({
-                                        user: user._id,
-                                        action: '|Updated JobTypes|',
-                                        date: new Date()
-                                    })
-                                    // Save the job
-                                    await job.updateOne({
-                                        tasks: jobTypes,
-                                        track: jobTrack
-                                    });
+                            const jobs = await Job.find({ ticket: serviceTicket._id });
+                            for (const job of jobs) {
+                                // Update job's track
+                                const jobTrack = job.track;
+                                jobTrack.push({
+                                    user: user._id,
+                                    action: '|Updated JobTypes|',
+                                    date: new Date()
+                                })
+                                // Update Job data for these disable data for Job
+                                job.jobLocation = jobLocationId;
+                                job.customerContactId = customerContactId;
+                                job.customerPO = customerPO;
+                                job.track = jobTrack;
+                                if (isJobTypesUpdated) {
+                                    job.tasks = <ITask[]>jobTypes;
                                 }
+                                // Save the job
+                                job.save();
                             }
 
                             return res.json({'status': Status.Success, 'message': 'Ticket updated successfully.', invalidJobTypes})

@@ -3227,16 +3227,10 @@ paths:
           in: formData
           type: string
           description: 'Id of job site'
-        - name: jobTypeId
-          in: formData
-          type: string
-          description: >-
-            Id of a job type selected from the list received by /getJobTypes
-            api
         - name: jobTypes
           in: formData
           type: string
-          description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]'
+          description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]. Id of a job type from the list received by /getJobTypes api'
       responses:
         '200':
           description: Success
@@ -3412,7 +3406,7 @@ paths:
         - name: jobTypes
           in: formData
           type: string
-          description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]'
+          description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]. Id of a job type from the list received by /getJobTypes api'
       responses:
         '200':
           description: Success
@@ -3558,17 +3552,22 @@ paths:
           type: string
           description: >-
             Id of a equipment for single scan
+        - name: employeeType
+          in: formData
+          required: true
+          type: number
+          description: 0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor
         - name: technicianId
           in: formData
           type: string
           description: >-
-            Id of a technician selected from the list received by
+            Required when employeeType = 0. Id of a technician selected from the list received by
             /getEmployeesForJob api
         - name: contractorId
           in: formData
           type: string
           description: >-
-            Id of a contractor selected from the list received by
+            Required when employeeType = 1. Id of a contractor selected from the list received by
             /getCompanyContracts api
         - name: customerId
           in: formData
@@ -3585,35 +3584,23 @@ paths:
           in: formData
           type: string
           description: 'Id of job site'
-        - name: jobTypeId
-          in: formData
-          type: string
-          description: Id of a job type selected from the list received by /getJobTypes api
         - name: jobTypes
           in: formData
           required: true
           type: string
-          description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]'
+          description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]. Id of a job type from the list received by /getJobTypes api'
         - name: description
           in: formData
           type: string
           description: Description of the job 
-        - name: employeeType
+        - name: customerContactId
           in: formData
-          required: true
-          type: number
-          description: 0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor
-        # - name: isFixed
-        #   in: formData
-        #   required: true
-        #   type: boolean
-        #   description: >-
-        #     Either the job is fixed price or hourly. true->if fixed
-        #     false->is hourly
-        # - name: charges
-        #   in: formData
-        #   type: number
-        #   description: Enter charges amount if you want to customize for this job 
+          type: string
+          description: Customer contact Id associated of the job
+        - name: customerPO
+          in: formData
+          type: string
+          description: Customer PO of the job
         - name: companyId
           in: formData
           type: string
@@ -3653,23 +3640,23 @@ paths:
           in: formData
           type: string
           description: Id of a equipment for single scan (will use parent job's equipmentId when not provided)
-        - name: technicianId
-          in: formData
-          type: string
-          description: Id of a technician selected from the list received by /getEmployeesForJob api
-        - name: contractorId
-          in: formData
-          type: string
-          description: Id of a contractor selected from the list received by /getCompanyContracts api
-        - name: description
-          in: formData
-          type: string
-          description: Description of the job (will use parent job's description when not provided)
         - name: employeeType
           in: formData
           required: true
           type: number
           description: 0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor
+        - name: technicianId
+          in: formData
+          type: string
+          description: Required when employeeType = 0. Id of a technician selected from the list received by /getEmployeesForJob api
+        - name: contractorId
+          in: formData
+          type: string
+          description: Required when employeeType = 1. Id of a contractor selected from the list received by /getCompanyContracts api
+        - name: description
+          in: formData
+          type: string
+          description: Description of the job (will use parent job's description when not provided)
         - name: companyId
           in: formData
           type: string
@@ -3987,12 +3974,12 @@ paths:
           in: formData
           required: false
           type: string
-          description: Id of assignee (employee to whom the job is assigned)
+          description: Required when employeeType = 0. Id of assignee (employee to whom the job is assigned)
         - name: contractorId
           in: formData
           required: false
           type: string
-          description: Id of contractor (whom the job is assigned)
+          description: Required when employeeType = 1. Id of contractor (whom the job is assigned)
         - name: scheduleDate
           in: formData
           required: true
@@ -4023,22 +4010,7 @@ paths:
         - name: jobTypes
           in: formData
           type: string
-          description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]'
-        # - name: isFixed
-        #   in: formData
-        #   required: true
-        #   type: boolean
-        #   description: >-
-        #     Either the job is fixed price or hourly. true->if fixed
-        #     false->is hourly
-        # - name: charges
-        #   in: formData
-        #   type: number
-        #   description: Enter charges amount if you want to customize for this job 
-        - name: companyId
-          in: formData
-          type: string
-          description: 'Id of company if contractor is hitting for other company'
+          description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]. Id of a job type from the list received by /getJobTypes api'
         - name: startTime
           in: formData
           type: string
@@ -4047,6 +4019,18 @@ paths:
           in: formData
           type: string
           description: 'Job end time if you want to change it'
+        - name: customerContactId
+          in: formData
+          type: string
+          description: Customer contact Id associated of the job
+        - name: customerPO
+          in: formData
+          type: string
+          description: Customer PO of the job
+        - name: companyId
+          in: formData
+          type: string
+          description: 'Id of company if contractor is hitting for other company'
       responses:
         '200':
           description: Success

@@ -34,8 +34,7 @@ pipelines:
             - echo "Registering new container definition..."
             - aws ecs register-task-definition --region "${REGION}" --family "${TASK_DEFINITION_NAME}" --container-definitions "${NEW_CONTAINER_DEFINITION}"
             - echo "Updating the service..."
-            - aws ecs update-service --region "${REGION}" --cluster "${CLUSTER_NAME}" --service "${SERVICE_NAME}"  --task-definition "${TASK_DEFINITION_NAME}"
-
+            - aws ecs update-service --region "${REGION}" --cluster "${CLUSTER_NAME}" --service "${SERVICE_NAME}"  --task-definition "${TASK_DEFINITION_NAME}" 
     master:
       - step:
           #python image with aws-cli installed

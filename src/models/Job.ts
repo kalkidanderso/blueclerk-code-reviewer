@@ -15,6 +15,8 @@ export interface IJob extends Document {
     customer: Schema.Types.ObjectId | any
     jobLocation: Schema.Types.ObjectId | any
     jobSite: Schema.Types.ObjectId | any
+    customerContactId: Schema.Types.ObjectId | any
+    customerPO: string
     type: Schema.Types.ObjectId | any // TODO: To be deprecated
     tasks: ITask[]
     company: Schema.Types.ObjectId | any
@@ -112,6 +114,11 @@ const JobSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'JobSite',
     },
+    customerContactId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Contact'
+    },
+    customerPO: String,
     type: {
         // TODO: To be deprecated
         type: Schema.Types.ObjectId,
