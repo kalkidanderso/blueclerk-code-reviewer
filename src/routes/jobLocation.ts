@@ -19,12 +19,14 @@ router.put(
     '/:id',
     passport.authenticate('jwt', { session: false }),
     getCompanyId(),
+    validate(Validations.updateJobLocation),
     update
 )
 
 router.get('/:id?',
     passport.authenticate('jwt', { session: false }),
     getCompanyId(),
+    validate(Validations.getJobLocation),
     get
 )
 

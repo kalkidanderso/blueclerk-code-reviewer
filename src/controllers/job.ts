@@ -24,85 +24,6 @@ import { INotificationJob, NotificationJob } from '../models/NotificationMetadat
 import { IJobType, IJobTypes } from '../models/JobType';
 import { _handleJobTypesJson } from '../controllers/jobType';
 
-/**
- * To update Task's property when pause, finish, or update the endTime
- */
-const _updateTask = async ({ job, task, user, params, status }: {job: IJob, task: ITask, user: IUser, params: any, status: number}) => {
-
-    /**
-     * Find item information related to the task/job type,
-     * to get the item charges based on customer's price tier
-     */
-    const item = await Item.findOne({ jobType: task.jobType });
-    const customer = <ICustomer>job.customer;
-
-    await _handleTaskCharges({ job, task, item, customer, params });
-
-    // Update the task properties
-    task.status = status || params.status;
-    task.tempStartTime = null;
-    task.pausedCount = Number(params.status) === JobStatus.PAUSED ? task.pausedCount + 1 : task.pausedCount;
-    task.timeUpdatedBy = user;
-    task.timeUpdatedAt = new Date();
-
-    return;
-
-}
-
-/**
- * To handle task charges and timeSpent,
- * either pause, finish, or update the endTime of FINISHED task
- */
-const _handleTaskCharges = async ({ job, task, item, customer, params, isDeduct }: { job: IJob, task: ITask, item: IItem, customer: ICustomer, params: any, isDeduct?: boolean }) => {
-
-    // Find the item tier based on customer assigned item tier
-    const tier = item.tiers?.find(t => t.tier?.toString() === customer.itemTier?.toString());
-    // Find the tier charge and use tier number 1 and item's charges as the fallback
-    const tierCharge = tier?.charge || item.tiers[0]?.charge || item?.charges;
-    let charges = task.charges || 0;
-
-    if (!isDeduct) {
-        /**
-         * Get the timeSpent based on the difference task's time,
-         * current time as the endTime and the startTime or tempStartTime (for PAUSED task)
-         */
-        const timeSpent = moment().diff(moment(task.tempStartTime || task.startTime), 'minutes');
-
-        /**
-         * If item isFixed, charges will not sum up over and over,
-         * if item hourly, charges will be sum up each time it is paused/finished
-         */
-        charges = item.isFixed ? tierCharge : charges + (tierCharge * (timeSpent / 60));
-
-        task.timeSpent += timeSpent;
-        task.endTime = Number(params.status) === JobStatus.FINISHED ? new Date() : undefined;
-        task.charges = Math.round(charges * 100) / 100;
-        job.timeSpent += timeSpent;
-    } else {
-        // Remove excessed timeSpent
-        /**
-         * Get the timeSpentToDeduct based on the difference task's time,
-         * the wrong endTime and the new endTime from params
-         */
-        const timeSpentToDeduct = moment(task.endTime).diff(moment(params.endTime), 'minutes');
-
-        /**
-         * If item isFixed, charges will not be deducted,
-         * if item hourly, charges will be deducted
-         */
-        charges = item.isFixed ? tierCharge : charges - (tierCharge * (timeSpentToDeduct / 60));
-
-        task.timeSpent -= timeSpentToDeduct;
-        task.endTime = new Date(params.endTime);
-        task.charges = Math.round(charges * 100) / 100;
-        job.timeSpent -= timeSpentToDeduct;
-        job.endTime = new Date(Math.max(...job.tasks.map(task => task.endTime.getTime())));
-    }
-
-    return;
-
-}
-
 export const createJob = (req: Request, res: Response) => {
     const params = req.body
 
@@ -249,17 +170,13 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
     // Will use serviceTicket's jobTypes if no jobTypes on params
     let jobTypes = serviceTicket.tasks;
     let invalidJobTypes: string[];
-    /**
-     * Kris' remark (July 30th, 2021):
-     * FE has error typo when sending the jobTypeId on payload,
-     * will revert this back when FE fix the issue
-     */
-    // try {
-    //     // Call JobType's function to handle Job Types JSON params
-    //     ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(customer, params.jobTypes, jobTypes));
-    // } catch (error) {
-    //     return res.json({ status: Status.Error, message: error.message });
-    // }
+
+    try {
+        // Call JobType's function to handle Job Types JSON params
+        ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(customer, params.jobTypes, jobTypes));
+    } catch (error) {
+        return res.json({ status: Status.Error, message: error.message });
+    }
     //=== END HANDLE params jobTypes
 
     if (params.ticketId) {
@@ -281,19 +198,21 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
     }
 
     const job = new Job({
-        parentJob: parentJob && parentJob._id,
-        scheduleDate: params.scheduleDate || parentJob && parentJob.scheduleDate,
+        parentJob: parentJob?._id,
+        scheduleDate: params.scheduleDate ?? parentJob?.scheduleDate,
         jobId: jobId,
-        ticket: params.ticketId || parentJob && parentJob.ticket,
+        ticket: params.ticketId ?? parentJob?.ticket,
         technician: technicianId,
         contractor: params.contractorId,
         customer,
-        jobLocation: params.jobLocationId || parentJob && parentJob.jobLocation,
-        jobSite: params.jobSiteId || parentJob && parentJob.jobSite,
-        type: params.jobTypeId || parentJob && parentJob.type, // TODO: To be deprecated
-        tasks: jobTypes || parentJob && parentJob.tasks,
+        jobLocation: params.jobLocationId ?? parentJob?.jobLocation,
+        jobSite: params.jobSiteId ?? parentJob?.jobSite,
+        customerContactId: params.customerContactId ?? parentJob?.customerContactId,
+        customerPO: params.customerPO ?? parentJob?.customerPO,
+        // type: params.jobTypeId ?? parentJob?.type, // TODO: To be deprecated
+        tasks: jobTypes ?? parentJob?.tasks,
         company: companyId,
-        description: params.description || parentJob && parentJob.description,
+        description: params.description ?? parentJob?.description,
         createdAt: Date.now(),
         createdBy: user._id,
         track: track,
@@ -691,11 +610,9 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
     let query: any = {};
     query['$or'] = [{ contractor: companyId }, { company: companyId } ];
     if (todaysJobs === "true") {
-        let date = new Date()
-        date.setHours(0, 0, 0, 0)
-        let endDate = new Date()
-        endDate.setHours(23, 59, 59, 59)
-        query.dateTime = {$gte: date, $lte: endDate};
+        let date = moment().startOf('day');
+        let endDate = moment().endOf('day');
+        query.scheduleDate = {$gte: date, $lte: endDate};
     }
 
     if (customerNames && customerNames.length) {
@@ -792,6 +709,10 @@ export const getJobs = (req: Request, res: Response) => {
             select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
         })
         .populate({
+            path: 'customerContactId',
+            select: '-id -__v'
+        })
+        .populate({
             path: 'type',
             select: 'title'
         })
@@ -845,6 +766,10 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
         .populate({
             path: 'customer',
             select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
+        })
+        .populate({
+            path: 'customerContactId',
+            select: '-id -__v'
         })
         .populate({
             path: 'type',
@@ -942,6 +867,7 @@ export const getJobReportDetails = (req: Request, res: Response) => {
                 { path: 'ticket', select: 'ticketId note scheduleDateTime image customerPO customerContactId' },
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
                 { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
+                { path: 'customerContactId', select: '-id -__v' },
                 { path: 'type', select: 'title' },
                 { path: 'tasks.jobType', select: 'title' },
                 { path: 'tasks.timeUpdatedBy', select: 'profile.displayName' },
@@ -1710,6 +1636,20 @@ export const editJob = async (req: Request, res: Response) => {
                 job.type = params.jobTypeId;
                 if (linkedJob) { linkedJob.type = params.jobTypeId; }
             }
+            if (params.customerContactId) {
+                if (params.customerContactId !== job.customerContactId) {
+                    action += '|Updated Contact Associated|';
+                }
+                job.customerContactId = params.customerContactId;
+                if (linkedJob) { linkedJob.customerContactId = params.customerContactId; }
+            }
+            if (params.customerPO) {
+                if (params.customerPO !== job.customerPO) {
+                    action += '|Updated Customer PO|';
+                }
+                job.customerPO = params.customerPO;
+                if (linkedJob) { linkedJob.customerPO = params.customerPO; }
+            }
 
             //=== HANDLE params jobTypes
             let currentJobTypes = job.tasks;
@@ -1825,7 +1765,7 @@ export const editJob = async (req: Request, res: Response) => {
                                 })
                                 // Save the service ticket
                                 await serviceTicket.updateOne({
-                                    jobTypes,
+                                    tasks: jobTypes,
                                     track: ticketTrack
                                 })
                             }
@@ -1865,6 +1805,10 @@ export const getJobDetails = (req: Request, res: Response) => {
         .populate({
             path: 'customer',
             populate: 'contacts'
+        })
+        .populate({
+            path: 'customerContactId',
+            select: '-id -__v'
         })
         .populate({
             path: 'type',
@@ -2023,6 +1967,7 @@ export const sendJobReport = (req: Request, res: Response) => {
                 { path: 'ticket', select: 'ticketId note scheduleDateTime' },
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
                 { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
+                { path: 'customerContactId', select: '-id -__v' },
                 { path: 'type', select: 'title' },
                 { path: 'tasks.jobType', select: 'title' },
                 { path: 'tasks.timeUpdatedBy', select: 'profile.displayName' },
@@ -2097,6 +2042,10 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
         .populate({
             path: 'customer',
             select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
+        })
+        .populate({
+            path: 'customerContactId',
+            select: '-id -__v'
         })
         .populate({
             path: 'type',
@@ -2221,4 +2170,85 @@ export const updateJobTime = (req: Request, res: Response) => {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
     })
+}
+
+// PRIVATE METHODS
+
+/**
+ * To update Task's property when pause, finish, or update the endTime
+ */
+ const _updateTask = async ({ job, task, user, params, status }: {job: IJob, task: ITask, user: IUser, params: any, status: number}) => {
+
+    /**
+     * Find item information related to the task/job type,
+     * to get the item charges based on customer's price tier
+     */
+    const item = await Item.findOne({ jobType: task.jobType });
+    const customer = <ICustomer>job.customer;
+
+    await _handleTaskCharges({ job, task, item, customer, params });
+
+    // Update the task properties
+    task.status = status || params.status;
+    task.tempStartTime = null;
+    task.pausedCount = Number(params.status) === JobStatus.PAUSED ? task.pausedCount + 1 : task.pausedCount;
+    task.timeUpdatedBy = user;
+    task.timeUpdatedAt = new Date();
+
+    return;
+
+}
+
+/**
+ * To handle task charges and timeSpent,
+ * either pause, finish, or update the endTime of FINISHED task
+ */
+const _handleTaskCharges = async ({ job, task, item, customer, params, isDeduct }: { job: IJob, task: ITask, item: IItem, customer: ICustomer, params: any, isDeduct?: boolean }) => {
+
+    // Find the item tier based on customer assigned item tier
+    const tier = item.tiers?.find(t => t.tier?.toString() === customer.itemTier?.toString());
+    // Find the tier charge and use tier number 1 and item's charges as the fallback
+    const tierCharge = tier?.charge || item.tiers[0]?.charge || item?.charges;
+    let charges = task.charges || 0;
+
+    if (!isDeduct) {
+        /**
+         * Get the timeSpent based on the difference task's time,
+         * current time as the endTime and the startTime or tempStartTime (for PAUSED task)
+         */
+        const timeSpent = moment().diff(moment(task.tempStartTime || task.startTime), 'minutes');
+
+        /**
+         * If item isFixed, charges will not sum up over and over,
+         * if item hourly, charges will be sum up each time it is paused/finished
+         */
+        charges = item.isFixed ? tierCharge : charges + (tierCharge * (timeSpent / 60));
+
+        task.timeSpent += timeSpent;
+        task.endTime = Number(params.status) === JobStatus.FINISHED ? new Date() : undefined;
+        task.charges = Math.round(charges * 100) / 100;
+        job.timeSpent += timeSpent;
+    } else {
+        // Remove excessed timeSpent
+        /**
+         * Get the timeSpentToDeduct based on the difference task's time,
+         * the wrong endTime and the new endTime from params
+         */
+        const timeSpentToDeduct = moment(task.endTime).diff(moment(params.endTime), 'minutes');
+
+        /**
+         * If item isFixed, charges will not be deducted,
+         * if item hourly, charges will be deducted
+         */
+        charges = item.isFixed ? tierCharge : charges - (tierCharge * (timeSpentToDeduct / 60));
+
+        task.timeSpent -= timeSpentToDeduct;
+        task.endTime = new Date(params.endTime);
+        task.charges = Math.round(charges * 100) / 100;
+        job.timeSpent -= timeSpentToDeduct;
+        job.endTime = new Date(Math.max(...job.tasks.map(task => task.endTime.getTime())));
+    }
+
+    return;
+
 }

@@ -5,7 +5,7 @@ import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { ICompany } from '../models/Company'
 import { Customer } from '../models/Customer'
 import { Contact } from '../models/Contact'
-import { _createQBCustomerJob } from './quickbook.customer';
+import { _createQBCustomerJob, _updateQBCustomerJob } from './quickbook.customer';
 
 export const get = (req: Request, res: Response) => {
     const { id } = req.params
@@ -43,9 +43,7 @@ export const create = async (req: Request, res: Response) => {
         companyId = req.otherCompanyId
     }
     const name = params.name;
-    const contactName = params.contactName;
-    const contactPhone = params.contactPhone;
-    const contactEmail = params.contactEmail;
+    const contact = params.contact ? JSON.parse(params.contact) : {};
     const locationLat = params.locationLat;
     const locationLong = params.locationLong;
     const street = params.street;
@@ -57,8 +55,6 @@ export const create = async (req: Request, res: Response) => {
     if (!(locationLat && locationLong) && !(street && city && state && zipcode)) {
         return res.json({'status': Status.Error, 'message': "Either location or address is required."})
     }
-    let contact = null;
-
     let jobLocationData: any = {
         name,
         address: {
@@ -71,14 +67,14 @@ export const create = async (req: Request, res: Response) => {
         customerId,
         companyId
     }
-    if (contactName || contactPhone || contactEmail) {
-        contact = new Contact({
-            name: contactName,
-            phone: contactPhone,
-            email: contactEmail
+    if (contact?.name || contact?.phone || contact?.email) {
+        const contactEntry = new Contact({
+            name: contact?.name,
+            phone: contact?.phone,
+            email: contact?.email
         });
-        await contact.save();
-        jobLocationData.contacts.push(contact._id);
+        await contactEntry.save();
+        jobLocationData.contacts.push(contactEntry._id);
     }
 
     if (locationLong && locationLat) {
@@ -113,59 +109,71 @@ export const create = async (req: Request, res: Response) => {
     })
 }
 
-export const update = (req: Request, res: Response) => {
-    const params = req.body
-    const company = <ICompany>req.company
-    const companyId = company ? company._id : null
-    const { id } = req.params
-    const {
-        name,
-        contact: {
-            name: contactName,
-            phone,
-            email
-        },
-        location: {
-            lat,
-            long
-        },
-        address,
-        customerId
-    } = params
+export const update = async (req: Request, res: Response) => {
 
-    const missingParams = []
-    if (!id) missingParams.push('id')
-    if (!name) missingParams.push('name')
-    if (!(lat && long) || !address) missingParams.push('location or address')
-    if (!customerId) missingParams.push('customerId')
-    if (!companyId) missingParams.push('companyId')
-    const isMissingParams = missingParams.length > 0
+    const params = req.body;
+    const { id } = req.params;
+    const company = <ICompany>req.company;
 
-    if (isMissingParams) {
-        const message = `${Messages.MissingParams}: ${missingParams.join(', ')}`
-        res.status(Status.MissingParameters)
-        res.send(message)
-        return () => {}
+    // Find and check if customer existed
+    const customer = await Customer.findOne({ company, _id: params.customerId });
+
+    if (!customer) {
+        return res.json({ status: Status.Error, message: 'Customer not found.' });
     }
 
-    JobLocation.updateOne({ _id: id }, {
-        name,
-        contact: {
-            name: contactName,
-            phone,
-            email
-        },
-        location: {
-            coordinates: [long, lat]
-        },
-        address,
-        customerId,
-        companyId
-    }, (err: any) => {
-        if (err) {
-            return res.json({'status': Status.Error, 'message': err.message});
-        } else {
-            return res.json({'status': Status.Success, 'message': 'job location has been updated successfully.'});
-        }
-    })
+    // Find and check if job locatino existed
+    const jobLocation = await JobLocation.findOne({
+        companyId: company._id,
+        customerId: customer._id,
+        _id: id
+    });
+
+    if (!jobLocation) {
+        return res.json({ status: Status.Error, message: 'Job Location not found.' });
+    }
+
+    // Check the value of params req.body.isActive
+    const isActive = params.isActive === undefined || params.isActive === null
+        ? jobLocation.isActive
+        : params.isActive === 'false' || params.isActive === '0'
+            ? false
+            : !!params.isActive;
+
+    // Update job location
+    jobLocation.name = params.name ?? jobLocation.name;
+    jobLocation.isActive =  isActive;
+    jobLocation.address.street = params.street ?? jobLocation.address?.street;
+    jobLocation.address.city = params.city ?? jobLocation.address?.city;
+    jobLocation.address.state = params.state ?? jobLocation.address?.state;
+    jobLocation.address.zipcode = params.zipcode ?? jobLocation.address?.zipcode;
+    await jobLocation.save();
+
+    if (company.qbAuthorized && customer.quickbookId && jobLocation.quickbookId) {
+        // Sync the update to Customer Job in QuickBooks
+        _updateQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, (err, errMsg, qbCustomerJob) => {
+            if (err) {
+                return res.json({ status: err, message: errMsg });
+            }
+
+            if (qbCustomerJob) {
+                // If company's customers already synced, update the synced date
+                if (company.qbSync?.customersSynced) {
+                    company.qbSync.customersSyncedAt = new Date();
+                    company.save();
+                }
+            }
+
+            return res.json({
+                status: Status.Success,
+                message: 'Job Location updated successfully.',
+                jobLocation,
+                quickbookCustomerJob: qbCustomerJob
+            })
+        })
+    } else {
+        return res.json({ status: Status.Success, message: 'Job Location updated successfully.', jobLocation });
+    }
+
+
 }
