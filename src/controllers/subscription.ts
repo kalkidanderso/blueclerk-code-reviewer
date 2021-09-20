@@ -1,15 +1,17 @@
-import {Request, Response} from 'express'
-import {Status, Messages, ContractStatus, EmployeeStatus, Role, CompanyType} from '../common/constants'
-import { chargeSubscription} from '../services/stripe'
-import { ICompany, Company } from '../models/Company'
-import {Contract} from '../models/Contract';
-import {Employee} from '../models/Employee';
-import { ObjectId } from 'mongodb'
-import {sendAccountDowngradeEmail, sendAccountUpgradeEmail, sendDeclinedOrderEmail} from '../services/aws';
-import {CronJob} from 'cron';
+import { Request, Response } from 'express';
+import { CronJob } from 'cron';
+import { ObjectId } from 'mongodb';
 import request from 'request';
 import moment from 'moment-timezone';
+
+import { Status, Messages, ContractStatus, EmployeeStatus, Role, CompanyType, NotificationTypes } from '../common/constants';
+import { sendAccountDowngradeEmail, sendAccountUpgradeEmail, sendDeclinedOrderEmail } from '../services/aws';
+import { chargeSubscription, createStripeInvoice, payStripeInvoice } from '../services/stripe';
+import { ICompany, Company } from '../models/Company';
+import { Contract } from '../models/Contract';
+import { Employee } from '../models/Employee';
 import {CompanyInvoice, ICompanyInvoice} from '../models/CompanyInvoice';
+import { INotificationContract, NotificationContract } from '../models/NotificationContract';
 
 export const addCompanySubscriptions = (req: Request, res: Response) => {
 
@@ -266,4 +268,98 @@ export const chargeCompanySubscription = (req: Request, res: Response) => {
             }
             return res.json({response: responses});
         });
+}
+
+/**
+ * Finalize any draft company invoices,
+ * this is called by cron job at the end of each day,
+ * will create the invoice in STRIPE for any pending invoice items,
+ * then will do the automatically payment for the invoice
+ */
+export const finalizeCompanyInvoices = async (req: Request, res: Response) => {
+
+    let companyStripeIds = [];
+    const companyInvoices = await CompanyInvoice.find({ isDraft: true })
+        .populate({ path: 'company', select: 'stripeId' });
+
+    if (companyInvoices?.length > 0) {
+        for (const companyInvoice of companyInvoices) {
+            const company = <ICompany>companyInvoice.company;
+            companyStripeIds.push({
+                companyInvoiceId: companyInvoice._id,
+                companyId: company._id,
+                stripeId: company.stripeId
+            });
+        };
+
+        // Remove any duplicate entries
+        companyStripeIds = [...new Set(companyStripeIds)];
+
+        if (companyStripeIds.length > 0) {
+            for (const company of companyStripeIds) {
+                try {
+                    const stripeInvoice = await createStripeInvoice(company.stripeId);
+
+                    if (stripeInvoice) {
+                        await CompanyInvoice.findByIdAndUpdate(company.companyInvoiceId, {
+                            isDraft: false,
+                            stripeId: stripeInvoice?.id
+                        })
+
+                        const paidInvoice = await payStripeInvoice(stripeInvoice?.id);
+
+                        if (paidInvoice) {
+                            CompanyInvoice.findByIdAndUpdate(company.companyInvoiceId, {
+                                paid: true,
+                                paidAt: new Date()
+                            }).exec();
+                        }
+                    }
+
+                } catch (err) {
+                    let title, body;
+
+                    if (err.code === 'missing' && err.param === 'card') {
+                        title = 'Payment for company billing failed';
+                        body = 'Payment for company billing failed due to a missing card';
+                    } else if (err.code === 'card_declined') {
+                        title = err.message;
+                        body = err.body
+                    }
+
+                    if (title) {
+                        // Construct notification entry to be saved
+                        let notificationEntry: INotificationContract = new NotificationContract({
+                            company: company.companyId,
+                            notificationType: NotificationTypes.COMPANY_INVOICE_FAILED,
+                            message: {
+                                title,
+                                body
+                            },
+                            metadata: company.companyInvoiceId
+                        });
+
+                        // Save the notification with Contrac as the metadata
+                        notificationEntry.save(async (err: any, notification: INotificationContract) => {
+
+                            // if (err) {
+                            //     return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+                            // }
+
+                            // TODO: send notification to sio to company if payment failed
+                            // Send notification message to specific room based on the Company ID
+                            // await notification.populate('metadata').execPopulate();
+                            // await sio.to(company.companyId.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
+                        });
+
+                        // TODO: send email to company if payment failed
+                    }
+
+                }
+            }
+        }
+    }
+
+    return res.json({ status: Status.Success });
+
 }

@@ -138,6 +138,12 @@ new CronJob('59 23 4 * *', function() {
     });
 }, null, true, 'America/Chicago');
 
+// Cron Job to finalize all draft company invoices at the end of each day
+new CronJob('59 23 * * *', () => {
+  request(`http://localhost:${app.get('port')}/api/v1/finalizeStripeInvoices`, (response: any) => {
+    console.log('== response:', response);
+  });
+}, null, true, 'America/Chicago');
 
 /**
  * This is for email scheduling

@@ -869,6 +869,11 @@ export default function (sio: any) {
         subscriptionController.chargeCompanySubscription
     )
 
+    router.get(
+        '/finalizeStripeInvoices',
+        subscriptionController.finalizeCompanyInvoices
+    )
+
     // router.post(
     //     '/updateSubscription',
     //     userController.updateSub

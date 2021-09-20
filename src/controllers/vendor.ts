@@ -3,7 +3,7 @@ import moment from 'moment-timezone';
 
 import { CompanyType, ContractStatus, Messages, NotificationTypes, Role, Status, UserPermissions, SocketEvents } from '../common/constants';
 import { sendAccountUpgradeEmail, sendContractStartEmail, sendContractStartEmailToCompany, sendContractStatusChangeEmailToCompany, sendContractStatusChangeEmailToContractor, sendEmail, sendInvitationToContractor } from '../services/aws';
-import { addCustomerAndCharge, chargeSubscription } from '../services/stripe';
+import { addCustomerAndCharge, chargeSubscription, createStripeInvoiceItem } from '../services/stripe';
 
 import { Company, ICompany } from '../models/Company';
 import { IUser } from '../models/User';
@@ -152,6 +152,11 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                 return res.json({ 'status': Status.Error, 'message': 'Invalid vendor.' })
             }
 
+            // TODO: Check for company credit card
+            if (!company.stripeId) {
+                return res.json({ status: Status.Error, message: 'Cannot add vendor right now, please update the company billing method first. (Go to menu: Admin > Billing > Billing Methods)' });
+            }
+
             /**
              * Check if contract with PENDING or ACCEPTED already existed,
              * otherwise, company can resend new contract to the same vendor
@@ -173,11 +178,11 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                         {
                             company: req.companyId,
                             contractor: contractor._id,
-                            status: ContractStatus.PENDING,
+                            status: ContractStatus.ACCEPTED,
                         }
                     )
 
-                    contract.save((err: any) => {
+                    contract.save(async (err: any) => {
 
                         if (err) {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -185,7 +190,51 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
 
                         // ToDo send email to contractor for contract started
                         sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName, companyEmail: req.company.info.companyEmail })
-                        sendContractStartEmailToCompany({ to: req.company.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
+
+                        // Get the pro-rated charge
+                        const { amount, tax } = await _getProRatedAmount();
+
+                        // Create a pending invoice items to Stripe
+                        const invoiceItem = await createStripeInvoiceItem(company.stripeId, amount + tax, contractor.info?.companyName);
+
+                        // Find existing company invoice
+                        let companyInvoice = await CompanyInvoice.findOne({
+                            company: company._id,
+                            isDraft: true
+                        });
+
+                        // No company invoice, create new
+                        if (!companyInvoice) {
+                            companyInvoice = new CompanyInvoice({
+                                technicians: 0,
+                                managers: 0,
+                                officeAdmins: 0,
+                                admins: 0,
+                                contractors: 0,
+                                charges: amount,
+                                tax: tax,
+                                total: invoiceItem.amount / 100,
+                                isDraft: true,
+                                company: company._id
+                            })
+                            await companyInvoice.save();
+                        }
+
+                        // Update company invoice data
+                        companyInvoice.contractors += 1;
+                        companyInvoice.charges += amount;
+                        companyInvoice.tax += tax;
+                        companyInvoice.total += invoiceItem.amount / 100;
+                        await companyInvoice.save();
+
+                        // TODO: Send the prorate charge/invoice email to the company
+
+                        /**
+                         * Kris' remark (Sept 16th, 2021):
+                         * Disable contract start email to company for now,
+                         * Based on [BLUECLERK-352] Fix Vendor Stuff
+                         */
+                        // sendContractStartEmailToCompany({ to: req.company.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
 
                         // Construct notification entry to be saved
                         let notificationEntry: INotificationContract = new NotificationContract({
@@ -193,7 +242,7 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                             notificationType: NotificationTypes.CONTRACT_INVITATION,
                             message: {
                                 title: 'New vendor contract received',
-                                body: `Company ${company.info.companyName} has invited you to be a vendor`
+                                body: `Company ${company.info.companyName} has added you to be a vendor`
                             },
                             metadata: contract._id
                         });
@@ -730,4 +779,26 @@ export const upgradeToCompany = (req: Request, res: Response) => {
 
         }
     )
+}
+
+// PRIVATE METHOD
+
+const _getProRatedAmount = async (): Promise<{ amount: number, tax: number }> => {
+
+    const now = new Date();
+    const daysRemaining = now.getDate();
+    const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const daysToCharge = daysInCurrentMonth - daysRemaining + 1
+
+    const perDay = 3 / daysInCurrentMonth;
+    let amount = Math.round((perDay * daysToCharge) * 100) / 100;
+
+    /**
+     * Chris' tax rate is 8.25%,
+     * however, the state picks up 20% of that
+     */
+    const tax = Math.round(((amount * 0.8) * 0.0825) * 100) / 100;
+
+    return { amount, tax };
+
 }
