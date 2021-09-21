@@ -60,6 +60,8 @@ export const _createQBItem = async (req: Request, res: Response, company: ICompa
         // Construct QB Item Entry
         const qbItemEntry: IQBItem = {
             Name: item.name,
+            Description: item.description,
+            Sku: item.sku,
             Type: QBItemTypes.SERVICE,
             Active: item.isActive,
             SalesTaxIncluded: false,
@@ -182,6 +184,8 @@ export const syncQBItems = async (req: Request, res: Response) => {
                         // Collect all Job Types in array first
                         jobTypesToCreate.push(new JobType({
                             title: qbItem.Name,
+                            description: qbItem.Description,
+                            sku: qbItem.Sku,
                             createdBy: company._id,
                             quickbookId: qbItem.Id
                         }));
@@ -199,6 +203,8 @@ export const syncQBItems = async (req: Request, res: Response) => {
                     // Collect all Items in array first
                     itemsToCreate.push(new Item({
                         name: jobType.title,
+                        description: jobType.description,
+                        sku: jobType.sku,
                         tiers: [...company.itemTier?.list],
                         company: company._id,
                         jobType: jobType._id,
