@@ -1,6 +1,5 @@
 import { Request, Response } from 'express'
 import { Status, Messages, Role} from '../common/constants'
-import { qbConfig } from '../common/config'
 
 import { IContact } from '../common/contact';
 import { Contact } from '../models/Contact';
@@ -40,8 +39,10 @@ const _getQBCustomers = (qbo: any): Promise<IQBCustomer[]> => {
 
 const _getCustomers = (req: Request, res: Response, company: ICompany, next: (req: Request, res: Response, error: number, errorMessage: string, customers: any) => void) => {
 
-    var qbo = new QuickBooks(qbConfig.qb_client_id,
-        qbConfig.qb_client_secret,
+    const { QB_ENVIRONMENT, QB_CLIENT_ID, QB_CLIENT_SECRET, QB_REDIRECT_URI } = process.env;
+
+    var qbo = new QuickBooks(QB_CLIENT_ID,
+        QB_CLIENT_SECRET,
         company.qbAccessToken,
         false, // no token secret for oAuth 2.0
         company.realmId,
@@ -74,8 +75,8 @@ const _getCustomers = (req: Request, res: Response, company: ICompany, next: (re
                                 return 
                             }
 
-                            qbo = new QuickBooks(qbConfig.qb_client_id,
-                                qbConfig.qb_client_secret,
+                            qbo = new QuickBooks(QB_CLIENT_ID,
+                                QB_CLIENT_SECRET,
                                 newCompany.qbAccessToken,
                                 false, // no token secret for oAuth 2.0
                                 newCompany.realmId,
@@ -567,8 +568,10 @@ export const createQBCustomer = async (req: Request, res: Response) => {
             return res.json({'status': Status.QBUnauthorized, 'message': Messages.QBUnAuthorized })
         }
 
-        var qbo = new QuickBooks(qbConfig.qb_client_id,
-            qbConfig.qb_client_secret,
+        const { QB_ENVIRONMENT, QB_CLIENT_ID, QB_CLIENT_SECRET, QB_REDIRECT_URI } = process.env;
+
+        var qbo = new QuickBooks(QB_CLIENT_ID,
+            QB_CLIENT_SECRET,
             company.qbAccessToken,
             false, // no token secret for oAuth 2.0
             company.realmId,
@@ -633,8 +636,8 @@ export const createQBCustomer = async (req: Request, res: Response) => {
                                 })
                             }
 
-                            qbo = new QuickBooks(qbConfig.qb_client_id,
-                                qbConfig.qb_client_secret,
+                            qbo = new QuickBooks(QB_CLIENT_ID,
+                                QB_CLIENT_SECRET,
                                 newCompany.qbAccessToken,
                                 false, // no token secret for oAuth 2.0
                                 newCompany.realmId,
