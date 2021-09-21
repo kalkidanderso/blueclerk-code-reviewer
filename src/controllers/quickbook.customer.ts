@@ -46,7 +46,7 @@ const _getCustomers = (req: Request, res: Response, company: ICompany, next: (re
         company.qbAccessToken,
         false, // no token secret for oAuth 2.0
         company.realmId,
-        true, // use the sandbox?
+        QB_ENVIRONMENT === 'production' ? false : true, // use the sandbox?
         false, // enable debugging?
         14, // set minorversion, or null for the latest version
         '2.0', //oAuth version
@@ -80,7 +80,7 @@ const _getCustomers = (req: Request, res: Response, company: ICompany, next: (re
                                 newCompany.qbAccessToken,
                                 false, // no token secret for oAuth 2.0
                                 newCompany.realmId,
-                                true, // use the sandbox?
+                                QB_ENVIRONMENT === 'production' ? false : true, // use the sandbox?
                                 false, // enable debugging?
                                 14, // set minorversion, or null for the latest version
                                 '2.0', //oAuth version
@@ -575,7 +575,7 @@ export const createQBCustomer = async (req: Request, res: Response) => {
             company.qbAccessToken,
             false, // no token secret for oAuth 2.0
             company.realmId,
-            true, // use the sandbox?
+            QB_ENVIRONMENT === 'production' ? false : true, // use the sandbox?
             false, // enable debugging?
             14, // set minorversion, or null for the latest version
             '2.0', //oAuth version
@@ -641,7 +641,7 @@ export const createQBCustomer = async (req: Request, res: Response) => {
                                 newCompany.qbAccessToken,
                                 false, // no token secret for oAuth 2.0
                                 newCompany.realmId,
-                                true, // use the sandbox?
+                                QB_ENVIRONMENT === 'production' ? false : true, // use the sandbox?
                                 false, // enable debugging?
                                 14, // set minorversion, or null for the latest version
                                 '2.0', //oAuth version
