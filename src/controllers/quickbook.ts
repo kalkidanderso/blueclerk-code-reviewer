@@ -27,7 +27,7 @@ export const _getQbo = (oauthToken: string, realmId: string, refreshToken: strin
         oauthToken,
         false, // no token secret for oAuth 2.0
         realmId,
-        true, // use the sandbox?
+        QB_ENVIRONMENT === 'production' ? false : true, // use the sandbox?
         false, // enable debugging?
         14, // set minorversion, or null for the latest version
         '2.0', //oAuth version
