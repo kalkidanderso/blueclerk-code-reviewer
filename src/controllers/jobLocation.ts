@@ -7,6 +7,21 @@ import { Customer } from '../models/Customer'
 import { Contact } from '../models/Contact'
 import { _createQBCustomerJob, _updateQBCustomerJob } from './quickbook.customer';
 
+/**
+ * To reset Job Location quickbookId,
+ * used when /disconnectQB API called
+ */
+ export const _resetJobLocationQB = (company: ICompany): void => {
+
+    JobLocation.updateMany(
+        { companyId: company._id, quickbookId: { $ne: null } },
+        { $set: { quickbookId: null } }
+    ).exec();
+
+    return;
+
+}
+
 export const get = (req: Request, res: Response) => {
     const { id } = req.params
     const { query: queryParams = {} } = req

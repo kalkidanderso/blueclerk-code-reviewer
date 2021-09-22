@@ -362,18 +362,20 @@ const _processJobLocations = async (req: Request, res: Response, company: ICompa
         if (!jobLocation.quickbookId) {
 
             // Find if job exist on QB
-            const qbCustomerJob = qbCustomers.find(qbCustomer => !qbCustomer.Job && qbCustomer.DisplayName === jobLocation.name);
+            const qbCustomerJob = qbCustomers.find(qbCustomer => qbCustomer.Job 
+                && qbCustomer.ParentRef.value === customer.quickbookId
+                && qbCustomer.DisplayName === jobLocation.name);
 
             if (!qbCustomerJob) {
-                _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, async (err, errMsg, qbCustomerJob) => {
+                await _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, async (err, errMsg, qbCustomerJob) => {
                     if (qbCustomerJob) {
                         // QB Customer Job created, update DB Job Location quickbookId
-                        JobLocation.findByIdAndUpdate(jobLocation, { quickbookId: qbCustomerJob.Id }).exec();
+                        await JobLocation.findByIdAndUpdate(jobLocation, { quickbookId: qbCustomerJob.Id }).exec();
                     }
                 })
             } else {
                 // QB Cust Job exist, update DB Job Location quickbookId directly
-                JobLocation.findByIdAndUpdate(jobLocation, { quickbookId: qbCustomerJob.Id }).exec();
+                await JobLocation.findByIdAndUpdate(jobLocation, { quickbookId: qbCustomerJob.Id }).exec();
             }
 
         }
@@ -401,7 +403,7 @@ export const _createQBCustomerJob = async (req: Request, res: Response, company:
     // Always refresh the token first because token valid only for 60 minutes
     _refreshToken(req, res, company, async (err, errMsg, company) => {
         if (err === 0) {
-            return res.json({ status: Status.Error, message: errMsg });
+            return next(Status.QBUnauthorized, errMsg, null);
         }
 
         if (err === 400) {
@@ -765,8 +767,17 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
         // Initiate node-quickbooks object with the refreshed company token
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
+        /**
+         * QB authentication and token refresh successfully,
+         * return the HTTP request of user directly here,
+         * to avoid time out issue,
+         * later we can upgrade the logic to use socket.io,
+         * to tell FE the progress or notification
+         */
+        res.json({ status: Status.Success, message: 'Customer syncing in the background, try to refresh the page later' });
+
         // Find customers from DB and populate its jobLocations
-        const customers = await Customer.find({ company: company._id }).populate({ path: 'jobLocations' });
+        let customers = await Customer.find({ company: company._id }).populate({ path: 'jobLocations' });
 
         qbo.findCustomers({}, async (err: any, data: any) => {
             if (err) {
@@ -787,19 +798,21 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
 
                 // Customer not exist on QB, create it
                 if (!qbCustomer) {
-                    _createQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
+                    await _createQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
                         if (qbCustomer) {
                             // QB Customer created, update DB Customer quickbookId
-                            Customer.findByIdAndUpdate(customer._id, { quickbookId: qbCustomer.Id }).exec();
+                            customer.quickbookId = qbCustomer.Id;
+                            await customer.save();
 
-                            _processJobLocations(req, res, company, qbCustomers, customer);
+                            await _processJobLocations(req, res, company, qbCustomers, customer);
                         }
                     })
                 } else {
                     // QB Customer exist, update DB Customer quickbookId directly
-                    Customer.findByIdAndUpdate(customer._id, { quickbookId: qbCustomer.Id }).exec();
+                    customer.quickbookId = qbCustomer.Id;
+                    await customer.save();
 
-                    _processJobLocations(req, res, company, qbCustomers, customer);
+                    await _processJobLocations(req, res, company, qbCustomers, customer);
                 }
             }
 
@@ -819,7 +832,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                 if (customer) {
                     // Customer found, check and update quickbookId
                     if (customer.quickbookId !== qbCustomer.Id) {
-                        Customer.findByIdAndUpdate(customer._id, { quickbookId: qbCustomer.Id }).exec();
+                        await Customer.findByIdAndUpdate(customer._id, { quickbookId: qbCustomer.Id }).exec();
 
                         updatedCustomers.push({ _id: customer._id, name: customer.profile?.displayName });
                     }
@@ -877,13 +890,16 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                 }
 
                 // Create all customers to DB at once
-                Customer.create(custsToCreate);
+                await Customer.create(custsToCreate);
                 // Create all company customers to DB at once
-                CompanyCustomer.create(compCustsToCreate);
+                await CompanyCustomer.create(compCustsToCreate);
             }
 
             // Split and filter QuickBooks' only jobs for this phase
             const qbCustomerJobs = qbCustomers.filter(qbCustomer => qbCustomer.Job);
+
+            // Update customers data from DB and populate its jobLocations
+            customers = await Customer.find({ company: company._id }).populate({ path: 'jobLocations' });
 
             // Iterate all QuickBooks jobs only
             for (const qbCustJob of qbCustomerJobs) {
@@ -891,7 +907,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                 let parentCustomer = customers.find(customer => customer.quickbookId === qbCustJob.ParentRef?.value);
 
                 /**
-                 * No customer found, find on customer entries to be create,
+                 * No parent customer found, find on customer entries to be create,
                  * as probably it is a new customer as well from QB
                  */
                 if (!parentCustomer) {
@@ -899,10 +915,16 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                 }
 
                 // Find if job location already exist on the customer's job locations
-                const jobLocation = <IJobLocation>parentCustomer?.jobLocations?.find((jl: IJobLocation) => jl.quickbookId === qbCustJob.Id);
+                const jobLocation = <IJobLocation>parentCustomer?.jobLocations?.find((jl: IJobLocation) => {
+                    return (jl.quickbookId === qbCustJob.Id || jl.name === qbCustJob.DisplayName);
+                });
 
-                // Job location not found, create a new one
-                if (!jobLocation) {
+                if (jobLocation) {
+                    if (jobLocation.quickbookId !== qbCustJob.Id) {
+                        await JobLocation.findByIdAndUpdate(jobLocation._id, { quickbookId: qbCustJob.Id }).exec();
+                    }
+                } else {
+                    // Job location not found, create a new one
                     const jobLocationEntry = new JobLocation({
                         name: qbCustJob.DisplayName,
                         address: {
@@ -933,18 +955,23 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                     }
 
                     jobLocationToCreate.push(jobLocationEntry);
-                    Customer.findByIdAndUpdate(parentCustomer._id, { $push: { jobLocations: jobLocationEntry._id } }).exec();
+                    await Customer.findByIdAndUpdate(parentCustomer._id, { $push: { jobLocations: jobLocationEntry._id } }).exec();
                 }
             }
 
             // Create all job locations to DB at once
-            JobLocation.create(jobLocationToCreate);
+            await JobLocation.create(jobLocationToCreate);
 
             company.qbSync.customersSynced = true;
             company.qbSync.customersSyncedAt = new Date();
-            company.save();
+            await company.save();
 
-            return res.json({ status: Status.Success, message: 'Customer synced successfully.', createdCustomers, updatedCustomers });
+            /**
+             * Kris' remark (Sept 22nd, 2021):
+             * Comment this return because we want to return the response directly,
+             * after refreshing the QB token above
+             */
+            // return res.json({ status: Status.Success, message: 'Customer synced successfully.', createdCustomers, updatedCustomers });
         })
     })
 

@@ -4,6 +4,7 @@ import { Status, Messages, QBEntityNames, QBEntityOperations} from '../common/co
 import { ICompany, IQBCompany, Company } from '../models/Company';
 import { _resetCompanyQB } from '../controllers/company';
 import { _resetCustomerQB } from '../controllers/customer';
+import { _resetJobLocationQB } from './jobLocation';
 import { _resetItemQB } from '../controllers/jobType';
 import { _resetPaymentTermQB } from '../controllers/paymentTerm';
 import { _resetInvoiceQB } from '../controllers/invoice';
@@ -209,6 +210,7 @@ export const disconnectQB = async (req: Request, res: Response) => {
     // Remove all quickbookId across company's stuff
     _resetCompanyQB(company);
     _resetCustomerQB(company);
+    _resetJobLocationQB(company);
     _resetItemQB(company);
     _resetPaymentTermQB(company);
     _resetInvoiceQB(company);
