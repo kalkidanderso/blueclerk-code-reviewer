@@ -35,10 +35,12 @@ export const _resetCompanyQB = (company: ICompany): Promise<void> => {
         'qbSync.itemsSynced': false,
         'qbSync.paymentTermSynced': false,
         'qbSync.invoicesSynced': false,
+        'qbSync.paymentsSynced': false,
         'qbSync.customersSyncedAt': null,
         'qbSync.itemsSyncedAt': null,
         'qbSync.paymentTermSynedAt': null,
         'qbSync.invoicesSyncedAt': null,
+        'qbSync.paymentsSyncedAt': null,
     }).exec();
 
     return;

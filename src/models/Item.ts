@@ -4,6 +4,8 @@ import { IPriceTier } from './PriceTier';
 export interface IItem extends Document {
 
     name: string
+    description: string
+    sku: string
     isFixed: boolean
     charges?: number
     tax: number
@@ -17,6 +19,8 @@ export interface IItem extends Document {
     company?: Schema.Types.ObjectId
     isActive: boolean
     quickbookId?: string
+    createdAt?: Date
+    updatedAt?: Date
 
 }
 
@@ -60,6 +64,8 @@ export interface IQBItem {
 const ItemSchema = new Schema({
 
     name: String,
+    description: String,
+    sku: String,
     // hourly fixed
     isFixed: {
         type: Boolean,
@@ -100,6 +106,7 @@ const ItemSchema = new Schema({
     },
     quickbookId: String
 
-})
+}, { timestamps: { createdAt: true, updatedAt: true } }
+)
 
 export const Item = mongoose.model<IItem>('Item', ItemSchema)

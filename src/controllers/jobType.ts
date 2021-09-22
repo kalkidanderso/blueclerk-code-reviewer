@@ -63,6 +63,8 @@ export const createJobType = (req: Request, res: Response) => {
 
             const jobType = new JobType({
                 title: params.title,
+                description: params.description,
+                sku: params.sku,
                 industry: industryId,
                 createdBy:  userId
             })
@@ -93,6 +95,8 @@ export const createJobType = (req: Request, res: Response) => {
 
             const jobType = new JobType({
                 title: params.title,
+                description: params.description,
+                sku: params.sku,
                 industry: industryId,
                 createdBy:  userId
             })
@@ -130,6 +134,8 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
     const item = new Item(
         {
             name: params.title,
+            description: params.description,
+            sku: params.sku,
             tiers: itemTiers,
             company: companyId,
             jobType: jobType._id,
@@ -227,7 +233,7 @@ export const editJobType = (req: Request, res: Response) => {
         }
 
 
-        jobType.updateOne({title: params.title},(err: any, raw: any) => {
+        jobType.updateOne({title: params.title, description: params.description, sku: params.sku},(err: any, raw: any) => {
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
@@ -266,6 +272,8 @@ const _updateItem = (req: Request, res: Response, jobType: IJobType, jobTitle: s
             const item = new Item(
                 {
                     name: jobType.title,
+                    description: jobType.description,
+                    sku: jobType.sku,
                     company: companyId,
                     jobType: jobType._id,
                 }
