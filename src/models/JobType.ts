@@ -3,10 +3,14 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface IJobType extends Document {
 
     title: string
+    description?: string
+    sku?: string
     industry: string
     createdBy: Schema.Types.ObjectId
     isActive: boolean
     quickbookId?: string
+    createdAt?: Date
+    updatedAt?: Date
 }
 
 export interface IJobTypes {
@@ -18,6 +22,8 @@ export interface IJobTypes {
 const JobTypeSchema = new Schema({
 
     title: String,
+    description: String,
+    sku: String,
     industry: {
         type: Schema.Types.ObjectId,
         ref: 'Industry',
@@ -33,6 +39,7 @@ const JobTypeSchema = new Schema({
     },
     quickbookId: String
 
-})
+}, { timestamps: { createdAt: true, updatedAt: true } }
+)
 
 export const JobType = mongoose.model<IJobType>('JobType', JobTypeSchema)
