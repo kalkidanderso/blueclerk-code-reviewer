@@ -688,11 +688,15 @@ export const getServiceTicketDetail = (req: Request, res: Response) => {
         })
         .populate({
             path: 'jobType',
-            select: 'title'
+            select: 'title description sku'
+        })
+        .populate({
+            path: 'item',
+            select: 'name description sku'
         })
         .populate({
             path: 'tasks.jobType',
-            select: 'title'
+            select: 'title description sku'
         })
         .populate({
             path: 'track.user',

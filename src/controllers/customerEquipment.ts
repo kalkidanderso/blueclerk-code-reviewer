@@ -400,7 +400,7 @@ export const getEquipmentJobs = (req: Request, res: Response) => {
             Scan.find({equipment: customerEquipment._id}, '_id')
             .populate({
                 path: 'job',
-                populate: [{ path: 'customer', select: 'profile.displayName' },{ path: 'type', select: 'title' }, 'jobSite', 'jobLocation'],
+                populate: [{ path: 'customer', select: 'profile.displayName' },{ path: 'type', select: 'title description sku' }, 'jobSite', 'jobLocation'],
             })
             .exec((err:any, scans: IScan[])=>{
 

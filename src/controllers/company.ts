@@ -1117,7 +1117,7 @@ export const getJobCharges = (req: Request, res: Response) => {
     JobCharges.find({'company': req.companyId})
     .populate({
         path: 'jobType',
-        select: 'title',
+        select: 'title description sku',
     })
     .populate({
         path: 'salesTax',
@@ -1161,7 +1161,7 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
                 })
                 .populate({
                     path: 'type',
-                    select: 'title'
+                    select: 'title description sku'
                 })
                 .exec((err: any, jobs: IJob[]) => {
 
