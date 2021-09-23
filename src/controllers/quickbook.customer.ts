@@ -779,7 +779,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
         // Find customers from DB and populate its jobLocations
         let customers = await Customer.find({ company: company._id }).populate({ path: 'jobLocations' });
 
-        qbo.findCustomers({}, async (err: any, data: any) => {
+        qbo.findCustomers({ fetchAll: true }, async (err: any, data: any) => {
             if (err) {
                 return res.json({
                     status: Status.Error,
@@ -821,10 +821,13 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
 
             // Iterate all QuickBooks customers only
             for (const qbCustomer of qbCustomersOnly) {
-
                 // Check if there any customer on QB that not on DB yet
                 const customer = customers.find(customer => {
-                    if (customer.info?.email?.toLowerCase() === qbCustomer.PrimaryEmailAddr?.Address?.toLowerCase() || customer.quickbookId === qbCustomer.Id) {
+                    if (
+                        (customer.info?.email?.toLowerCase() === qbCustomer.PrimaryEmailAddr?.Address?.toLowerCase()
+                        && customer.profile?.displayName.toLowerCase() === qbCustomer.DisplayName.toLowerCase())
+                        || customer.quickbookId === qbCustomer.Id
+                    ) {
                         return customer;
                     }
                 });
@@ -832,7 +835,8 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                 if (customer) {
                     // Customer found, check and update quickbookId
                     if (customer.quickbookId !== qbCustomer.Id) {
-                        await Customer.findByIdAndUpdate(customer._id, { quickbookId: qbCustomer.Id }).exec();
+                        customer.quickbookId = qbCustomer.Id;
+                        await customer.save();
 
                         updatedCustomers.push({ _id: customer._id, name: customer.profile?.displayName });
                     }
@@ -866,13 +870,20 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                         quickbookId: qbCustomer.Id,
                     });
 
-                    if (qbCustomer.BillAddr?.Long && qbCustomer.BillAddr?.Lat) {
-                        custEntry.location = {
-                            coordinates: [Number(qbCustomer.BillAddr?.Long), Number(qbCustomer.BillAddr?.Lat)]
-                        }
-                    }
+                    /**
+                     * Kris' remark (Sept 23rd, 2021):
+                     * Disable this one for know,
+                     * since we can't save lat long on QB Online
+                     */
+                    // if (qbCustomer.BillAddr?.Long && qbCustomer.BillAddr?.Lat) {
+                    //     custEntry.location = {
+                    //         coordinates: [Number(qbCustomer.BillAddr?.Long), Number(qbCustomer.BillAddr?.Lat)]
+                    //     }
+                    // }
 
                     custsToCreate.push(custEntry);
+                    // Save the new customer from QB
+                    await custEntry.save();
                 }
             }
 
@@ -889,14 +900,12 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                     )
                 }
 
-                // Create all customers to DB at once
-                await Customer.create(custsToCreate);
                 // Create all company customers to DB at once
                 await CompanyCustomer.create(compCustsToCreate);
             }
 
-            // Split and filter QuickBooks' only jobs for this phase
-            const qbCustomerJobs = qbCustomers.filter(qbCustomer => qbCustomer.Job);
+            // Split and filter QuickBooks' only jobs level 1 for this phase
+            const qbCustomerJobs = qbCustomers.filter(qbCustomer => qbCustomer.Job && qbCustomer.Level === 1);
 
             // Update customers data from DB and populate its jobLocations
             customers = await Customer.find({ company: company._id }).populate({ path: 'jobLocations' });
@@ -912,6 +921,14 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                  */
                 if (!parentCustomer) {
                     parentCustomer = custsToCreate.find(customer => customer.quickbookId === qbCustJob.ParentRef?.value);
+                }
+
+                if (!parentCustomer) {
+                    /**
+                     * Parent Customer still not found,
+                     * TODO: need to collect the information and send through notifacation or email
+                     */
+                    continue;
                 }
 
                 // Find if job location already exist on the customer's job locations
@@ -955,12 +972,12 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                     }
 
                     jobLocationToCreate.push(jobLocationEntry);
+                    // Save the new Job Location from QB Customer Job Level 1
+                    await jobLocationEntry.save();
+                    // Save the create Job Location to the Customer's jobLocations
                     await Customer.findByIdAndUpdate(parentCustomer._id, { $push: { jobLocations: jobLocationEntry._id } }).exec();
                 }
             }
-
-            // Create all job locations to DB at once
-            await JobLocation.create(jobLocationToCreate);
 
             company.qbSync.customersSynced = true;
             company.qbSync.customersSyncedAt = new Date();
