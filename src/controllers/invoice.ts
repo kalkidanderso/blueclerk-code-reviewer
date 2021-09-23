@@ -50,11 +50,11 @@ export const getInvoicesByCustomerId = (req: Request, res: Response) => {
     Invoice.find({'company': req.companyId, customer: params.customerId})
         .populate({
             path: 'job',
-            populate: [{ path: 'type', select: 'title' },{ path: 'customer', select: 'info.email auth.email profile.displayName contactName' }, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' }],
+            populate: [{ path: 'type', select: 'title description sku' },{ path: 'customer', select: 'info.email auth.email profile.displayName contactName' }, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' }],
         })
         .populate({
             path: 'items.item',
-            select: 'name itemCode note cost price',
+            select: 'name description sku itemCode note cost price',
             populate: [{path: 'jobType'}]
         })
         .populate({
@@ -1636,7 +1636,8 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
         .populate({
             path: 'job',
             populate: [
-                { path: 'type', select: 'title' },
+                { path: 'type', select: 'title description sku' },
+                { path: 'tasks.jobType', select: 'title description sku'},
                 { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
                 { path: 'contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
@@ -1663,7 +1664,7 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
         })
         .populate({
             path: 'items.item',
-            select: 'name isFixed charges tax',
+            select: 'name description sku isFixed charges tax',
             populate: [{path: 'jobType'}]
         })
         .populate({
@@ -1876,7 +1877,8 @@ export const getInvoices = (req: Request, res: Response) => {
         .populate({
             path: 'job',
             populate: [
-                { path: 'type', select: 'title' },
+                { path: 'type', select: 'title description sku' },
+                { path: 'tasks.jobType', select: 'title description sku' },
                 { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
                 { path: 'contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
@@ -1903,7 +1905,7 @@ export const getInvoices = (req: Request, res: Response) => {
         })
         .populate({
             path: 'items.item',
-            select: 'name isFixed charges tax',
+            select: 'name description sku isFixed charges tax',
             populate: [{path: 'jobType'}]
         })
         .populate({

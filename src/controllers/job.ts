@@ -277,11 +277,11 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
         })
         .populate({
             path:'type',
-            select:'title'
+            select:'title description sku'
         })
         .populate({
             path: 'tasks.jobType',
-            select: 'title'
+            select: 'title description sku'
         })
         .populate({
             path: 'tasks.timeUpdatedBy',
@@ -451,11 +451,11 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
     })
     .populate({
         path:'type',
-        select:'title'
+        select:'title description sku'
     })
     .populate({
         path: 'tasks.jobType',
-        select: 'title'
+        select: 'title description sku'
     })
     .populate({
         path: 'tasks.timeUpdatedBy',
@@ -648,11 +648,11 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
         })
         .populate({
             path: 'type',
-            select: 'title'
+            select: 'title description sku'
         })
         .populate({
             path: 'tasks.jobType',
-            select: 'title'
+            select: 'title description sku'
         })
         .populate({
             path: 'tasks.timeUpdatedBy',
@@ -694,7 +694,7 @@ export const getJobs = (req: Request, res: Response) => {
     Job.find({ $or: [{ contractor: companyId }, { company: companyId }] })
         .populate({
             path: 'ticket',
-            populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title' }]
+            populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
         })
         .populate({
             path: 'technician',
@@ -714,11 +714,11 @@ export const getJobs = (req: Request, res: Response) => {
         })
         .populate({
             path: 'type',
-            select: 'title'
+            select: 'title description sku'
         })
         .populate({
             path: 'tasks.jobType',
-            select: 'title'
+            select: 'title description sku'
         })
         .populate({
             path: 'tasks.timeUpdatedBy',
@@ -773,11 +773,11 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
         })
         .populate({
             path: 'type',
-            select: 'title'
+            select: 'title description sku'
         })
         .populate({
             path: 'tasks.jobType',
-            select: 'title'
+            select: 'title description sku'
         })
         .populate({
             path: 'tasks.timeUpdatedBy',
@@ -868,8 +868,8 @@ export const getJobReportDetails = (req: Request, res: Response) => {
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
                 { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
                 { path: 'customerContactId', select: '-id -__v' },
-                { path: 'type', select: 'title' },
-                { path: 'tasks.jobType', select: 'title' },
+                { path: 'type', select: 'title description sku' },
+                { path: 'tasks.jobType', select: 'title description sku' },
                 { path: 'tasks.timeUpdatedBy', select: 'profile.displayName' },
                 { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
                 { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
@@ -1812,11 +1812,11 @@ export const getJobDetails = (req: Request, res: Response) => {
         })
         .populate({
             path: 'type',
-            select: 'title'
+            select: 'title description sku'
         })
         .populate({
             path: 'tasks.jobType',
-            select: 'title'
+            select: 'title description sku'
         })
         .populate({
             path: 'tasks.timeUpdatedBy',
@@ -1968,8 +1968,8 @@ export const sendJobReport = (req: Request, res: Response) => {
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
                 { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
                 { path: 'customerContactId', select: '-id -__v' },
-                { path: 'type', select: 'title' },
-                { path: 'tasks.jobType', select: 'title' },
+                { path: 'type', select: 'title description sku' },
+                { path: 'tasks.jobType', select: 'title description sku' },
                 { path: 'tasks.timeUpdatedBy', select: 'profile.displayName' },
                 { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
                 { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
@@ -2049,11 +2049,11 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
         })
         .populate({
             path: 'type',
-            select: 'title'
+            select: 'title description sku'
         })
         .populate({
             path: 'tasks.jobType',
-            select: 'title'
+            select: 'title description sku'
         })
         .populate({
             path: 'tasks.timeUpdatedBy',

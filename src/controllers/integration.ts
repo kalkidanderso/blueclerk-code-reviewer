@@ -44,8 +44,8 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
             await serviceTicket
                 .populate({ path: 'company', select: 'info.companyName address contact' })
-                .populate({ path: 'jobType', select: 'title' })
-                .populate({ path: 'item', select: 'name isFixed charges tax' })
+                .populate({ path: 'jobType', select: 'title description sku' })
+                .populate({ path: 'item', select: 'name description sku isFixed charges tax' })
                 .populate({ path: 'createdBy', select: 'profile.displayName auth.email' })
                 .execPopulate();
 

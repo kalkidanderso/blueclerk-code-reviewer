@@ -215,39 +215,32 @@ export const editJobType = (req: Request, res: Response) => {
 
     const params = req.body
 
-    JobType.findOne({_id: params.jobTypeId}, (err: any, jobType: IJobType) =>{
+    JobType.findOne({_id: params.jobTypeId}, async (err: any, jobType: IJobType) =>{
         if (err) {
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
 
-        if(jobType == undefined || jobType == null) {
+        if(!jobType) {
             return res.json({'status': Status.Error, 'message': "Invalid job Type id"})
         }
 
         if(!jobType.isActive) {
-            return res.json({'status': Status.Error, 'message': "Job type is inactive activate to edit."})
+            return res.json({'status': Status.Error, 'message': "Job type is inactive, activate to edit."})
         }
 
-        if(jobType.title == params.title) {
-            return res.json({'status': Status.Error, 'message': "Job type with title "+ params.title + " already exists."})
-        }
+        jobType.title = params.title;
+        jobType.description = params.description;
+        jobType.sku = params.sku;
+        await jobType.save();
 
-
-        jobType.updateOne({title: params.title, description: params.description, sku: params.sku},(err: any, raw: any) => {
-
-            if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-            }
-
-            _updateItem(req, res, jobType, params.title, (req: Request, res: Response) => {
-                return res.json({'status': Status.Success, 'message': 'Job type update successfully.'})
-            })
-
-        })
+        _updateItem(req, res, jobType, (req: Request, res: Response) => {
+            return res.json({ status: Status.Success, message: 'Job type update successfully.', jobType });
+        });
     })
+
 }
 
-const _updateItem = (req: Request, res: Response, jobType: IJobType, jobTitle: string, next: (req: Request, res: Response) => void) => {
+const _updateItem = (req: Request, res: Response, jobType: IJobType, next: (req: Request, res: Response) => void) => {
 
     var companyId = req.companyId;
 
@@ -259,8 +252,12 @@ const _updateItem = (req: Request, res: Response, jobType: IJobType, jobTitle: s
             return res.json({'status': Status.Error, 'message': Messages.GenericError})
         }
 
-        if(item != undefined && item != null) {
-            item.updateOne({name: jobTitle}, (err: any, raw: any) => {
+        if(item) {
+            item.updateOne({
+                name: jobType.title,
+                description: jobType.description,
+                sku: jobType.sku
+            }, (err: any, raw: any) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
