@@ -2183,6 +2183,12 @@ paths:
           in: formData
           required: true
           type: string
+        - name: description
+          in: formData
+          type: string
+        - name: sku
+          in: formData
+          type: string
         - name: industryId
           in: formData
           type: string
@@ -2213,6 +2219,12 @@ paths:
         - name: title
           in: formData
           required: true
+          type: string
+        - name: description
+          in: formData
+          type: string
+        - name: sku
+          in: formData
           type: string
       responses:
         '200':

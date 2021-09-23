@@ -35,10 +35,12 @@ export const _resetCompanyQB = (company: ICompany): Promise<void> => {
         'qbSync.itemsSynced': false,
         'qbSync.paymentTermSynced': false,
         'qbSync.invoicesSynced': false,
+        'qbSync.paymentsSynced': false,
         'qbSync.customersSyncedAt': null,
         'qbSync.itemsSyncedAt': null,
         'qbSync.paymentTermSynedAt': null,
         'qbSync.invoicesSyncedAt': null,
+        'qbSync.paymentsSyncedAt': null,
     }).exec();
 
     return;
@@ -1115,7 +1117,7 @@ export const getJobCharges = (req: Request, res: Response) => {
     JobCharges.find({'company': req.companyId})
     .populate({
         path: 'jobType',
-        select: 'title',
+        select: 'title description sku',
     })
     .populate({
         path: 'salesTax',
@@ -1159,7 +1161,7 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
                 })
                 .populate({
                     path: 'type',
-                    select: 'title'
+                    select: 'title description sku'
                 })
                 .exec((err: any, jobs: IJob[]) => {
 

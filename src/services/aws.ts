@@ -853,11 +853,11 @@ export const sendScheduledJobEmailToAssignee = function(jobs: IJob[], to: string
         })
         .populate({
           path:'type',
-          select:'title'
+          select:'title description sku'
         })
         .populate({
           path: 'tasks.jobType',
-          select: 'title'
+          select: 'title description sku'
         })
         .populate('jobSite')
         .populate('company')

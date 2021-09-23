@@ -1,10 +1,10 @@
 import { Request, Response } from 'express'
 import { Status, Messages, QBEntityNames, QBEntityOperations} from '../common/constants'
-import { qbConfig } from '../common/config'
 
 import { ICompany, IQBCompany, Company } from '../models/Company';
 import { _resetCompanyQB } from '../controllers/company';
 import { _resetCustomerQB } from '../controllers/customer';
+import { _resetJobLocationQB } from './jobLocation';
 import { _resetItemQB } from '../controllers/jobType';
 import { _resetPaymentTermQB } from '../controllers/paymentTerm';
 import { _resetInvoiceQB } from '../controllers/invoice';
@@ -19,21 +19,16 @@ var OAuthClient = require("intuit-oauth");
 // =======[ PRIVATE & GENERIC FUNCTION ]======
 // ===========================================
 
-const _oauthClient = new OAuthClient({
-    clientId: qbConfig.qb_client_id,
-    clientSecret: qbConfig.qb_client_secret,
-    environment: qbConfig.qb_environment,
-    redirectUri: qbConfig.qb_redirect_uri
-});
-
 export const _getQbo = (oauthToken: string, realmId: string, refreshToken: string) => {
+    const { QB_ENVIRONMENT, QB_CLIENT_ID, QB_CLIENT_SECRET, QB_REDIRECT_URI } = process.env;
+
     return new QuickBooks(
-        qbConfig.qb_client_id,
-        qbConfig.qb_client_secret,
+        QB_CLIENT_ID,
+        QB_CLIENT_SECRET,
         oauthToken,
         false, // no token secret for oAuth 2.0
         realmId,
-        true, // use the sandbox?
+        QB_ENVIRONMENT === 'production' ? false : true, // use the sandbox?
         false, // enable debugging?
         14, // set minorversion, or null for the latest version
         '2.0', //oAuth version
@@ -43,11 +38,13 @@ export const _getQbo = (oauthToken: string, realmId: string, refreshToken: strin
 
 export const _refreshToken = (req: Request, res: Response, company: ICompany, next: (error: number, errorMessage: string, company: ICompany) => void) => {
 
+    const { QB_ENVIRONMENT, QB_CLIENT_ID, QB_CLIENT_SECRET, QB_REDIRECT_URI } = process.env;
+
     var oauthClient = new OAuthClient({
-        clientId: qbConfig.qb_client_id,
-        clientSecret: qbConfig.qb_client_secret,
-        environment: qbConfig.qb_environment,
-        redirectUri: qbConfig.qb_redirect_uri,
+        clientId: QB_CLIENT_ID,
+        clientSecret: QB_CLIENT_SECRET,
+        environment: QB_ENVIRONMENT,
+        redirectUri: QB_REDIRECT_URI,
     });
 
     oauthClient
@@ -81,6 +78,7 @@ export const _refreshToken = (req: Request, res: Response, company: ICompany, ne
     .catch(function (err: any) {
         return next(err.authResponse?.response?.status || Status.Error, 'Unable to refersh the token', null);
     });
+
 }
 
 export const get = function(obj: any, key: any) {
@@ -91,13 +89,15 @@ export const get = function(obj: any, key: any) {
 
 export const getQBUri = (req: Request, res: Response) => {
 
-    const params = req.body
+    const params = req.body;
+
+    const { QB_ENVIRONMENT, QB_CLIENT_ID, QB_CLIENT_SECRET, QB_REDIRECT_URI } = process.env;
 
     var oauthClient = new OAuthClient({
-        clientId: qbConfig.qb_client_id,
-        clientSecret: qbConfig.qb_client_secret,
-        environment: qbConfig.qb_environment,
-        redirectUri: params.redirectUri || qbConfig.qb_redirect_uri,
+        clientId: QB_CLIENT_ID,
+        clientSecret: QB_CLIENT_SECRET,
+        environment: QB_ENVIRONMENT,
+        redirectUri: params.redirectUri || QB_REDIRECT_URI,
     });
 
     var authUri = oauthClient.authorizeUri({
@@ -129,11 +129,13 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
 
     const query = req.query;
 
+    const { QB_ENVIRONMENT, QB_CLIENT_ID, QB_CLIENT_SECRET, QB_REDIRECT_URI } = process.env;
+
     var oauthClient = new OAuthClient({
-        clientId: qbConfig.qb_client_id,
-        clientSecret: qbConfig.qb_client_secret,
-        environment: qbConfig.qb_environment,
-        redirectUri: query.redirectUri || qbConfig.qb_redirect_uri,
+        clientId: QB_CLIENT_ID,
+        clientSecret: QB_CLIENT_SECRET,
+        environment: QB_ENVIRONMENT,
+        redirectUri: query.redirectUri || QB_REDIRECT_URI,
     });
     
     oauthClient
@@ -208,6 +210,7 @@ export const disconnectQB = async (req: Request, res: Response) => {
     // Remove all quickbookId across company's stuff
     _resetCompanyQB(company);
     _resetCustomerQB(company);
+    _resetJobLocationQB(company);
     _resetItemQB(company);
     _resetPaymentTermQB(company);
     _resetInvoiceQB(company);

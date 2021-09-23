@@ -1,10 +1,4 @@
-import {stripeConfig} from '../common/config'
 import Stripe from 'stripe';
-
-import { ICompany } from '../models/Company';
-
-const stripe = require("stripe")(stripeConfig.sk_secret);
-
 
 /**
  * @param number
@@ -26,7 +20,10 @@ export const createCard = async (
     state: string,
     zipcode: string
 ) => {
-    const stripe = require('stripe')(stripeConfig.sk_secret);
+
+    const { STRIPE_SK_SECRET } = process.env;
+
+    const stripe = require('stripe')(STRIPE_SK_SECRET);
     let expirationData = expiration.split('/');
     let card: any = {
         number: number,
@@ -42,10 +39,13 @@ export const createCard = async (
     return await stripe.tokens.create({
         card: card
     });
+
 }
 
 export const checkCardExist = async (token: any, customerId: any) => {
-    const stripe = require('stripe')(stripeConfig.sk_secret);
+    const { STRIPE_SK_SECRET } = process.env;
+
+    const stripe = require('stripe')(STRIPE_SK_SECRET);
 
     const tokenObj = await stripe.tokens.retrieve(
         token.id
@@ -57,11 +57,13 @@ export const checkCardExist = async (token: any, customerId: any) => {
     );
     return customerCards.data.filter((cc: any) => {return JSON.stringify(cc.fingerprint)=== JSON.stringify(cardFingerPrint);}).length > 0;
 
-
 }
+
 export const createCustomer = (email: string, description: string, token: string, callback: Function) => {
 
-    const stripe = new Stripe(stripeConfig.sk_secret);
+    const { STRIPE_SK_SECRET } = process.env;
+
+    const stripe = new Stripe(STRIPE_SK_SECRET);
     stripe.customers.create({
         email: email,
         description: description,
@@ -85,11 +87,14 @@ export const createCustomer = (email: string, description: string, token: string
         }
         return callback(0, message);
     })
+
 }
 
 export const addCustomerAndCharge = (email: string, description: string, token: string, amount: number, callback: Function) => {
 
-    const stripe = new Stripe(stripeConfig.sk_secret);
+    const { STRIPE_SK_SECRET } = process.env;
+
+    const stripe = new Stripe(STRIPE_SK_SECRET);
     stripe.customers.create({
         email: email,
         description: description,
@@ -144,11 +149,14 @@ export const addCustomerAndCharge = (email: string, description: string, token: 
         }
         return callback(0, null, null, message);
     })
+
 }
 
 export const detachCustomerSource = (stripeId: String, cardId: String, callback: Function) => {
 
-    const stripe = require("stripe")(stripeConfig.sk_secret);
+    const { STRIPE_SK_SECRET } = process.env;
+
+    const stripe = require("stripe")(STRIPE_SK_SECRET);
 
     stripe.customers.deleteSource(stripeId, cardId)
     .then(function( raw: any) {
@@ -167,11 +175,14 @@ export const detachCustomerSource = (stripeId: String, cardId: String, callback:
         }
         return callback(message);
     })
+
 }
 
 export const addCustomerSource = (stripeId: String, token: String, callback: Function) => {
 
-    const stripe = require("stripe")(stripeConfig.sk_secret);
+    const { STRIPE_SK_SECRET } = process.env;
+
+    const stripe = require("stripe")(STRIPE_SK_SECRET);
 
         stripe.customers.createSource(stripeId, {
             source: token // obtained with Stripe.js
@@ -195,10 +206,14 @@ export const addCustomerSource = (stripeId: String, token: String, callback: Fun
             return callback(0, null, message);
         }
     )
+
 }
 
 export const chargeSubscription = function (amount: any, customerId: String, callback: Function) {
-    const stripe = require("stripe")(stripeConfig.sk_secret);
+
+    const { STRIPE_SK_SECRET } = process.env;
+
+    const stripe = require("stripe")(STRIPE_SK_SECRET);
     let tax = (amount * 0.8)*0.0825;
     let total: number = (amount + tax) * 100;
     total = Math.ceil(total);
@@ -229,10 +244,14 @@ export const chargeSubscription = function (amount: any, customerId: String, cal
 
         return callback(0, null, message);
     });
+
 }
 
-export const chargeCustomer = function (amount: any, customerId: String,  cardId: String, callback: Function) {
-    const stripe = require("stripe")(stripeConfig.sk_secret);
+export const chargeCustomer = function (amount: any, customerId: String, cardId: String, callback: Function) {
+
+    const { STRIPE_SK_SECRET } = process.env;
+
+    const stripe = require("stripe")(STRIPE_SK_SECRET);
 
     let total: number = amount * 100;
     total = Math.ceil(total)
@@ -263,11 +282,14 @@ export const chargeCustomer = function (amount: any, customerId: String,  cardId
         }
         return callback(0, null, message);
     });
+
 }
 
 // export const getPlans = function (callback: Function) {
 
-//     const stripe = require("stripe")(stripeConfig.sk_secret);
+//     const { STRIPE_SK_SECRET } = process.env;
+
+//     const stripe = require("stripe")(STRIPE_SK_SECRET);
 
 //     stripe.plans.list()
 //     .then(function( plans: any) {
@@ -298,9 +320,12 @@ export const chargeCustomer = function (amount: any, customerId: String,  cardId
 //     });
 
 // }
+
 export const subscribe = function (customerId: String, cardId: String, planId: String, callback: Function) {
 
-    const stripe = require("stripe")(stripeConfig.sk_secret);
+    const { STRIPE_SK_SECRET } = process.env;
+
+    const stripe = require("stripe")(STRIPE_SK_SECRET);
 
     stripe.customers.update(customerId, {
     default_source: cardId
@@ -348,13 +373,13 @@ export const subscribe = function (customerId: String, cardId: String, planId: S
         return callback(0, null, message);
     });
 
-
 }
 
 export const unsubscribe = function (subscriptionId: String, callback: Function) {
 
-    const stripe = require("stripe")(stripeConfig.sk_secret);
+    const { STRIPE_SK_SECRET } = process.env;
 
+    const stripe = require("stripe")(STRIPE_SK_SECRET);
 
     stripe.subscriptions.del(subscriptionId)
     .then(function( raw: any) {
@@ -380,7 +405,9 @@ export const unsubscribe = function (subscriptionId: String, callback: Function)
 
 export const listSubscriptions = function (callback: Function) {
 
-    const stripe = require("stripe")(stripeConfig.sk_secret);
+    const { STRIPE_SK_SECRET } = process.env;
+
+    const stripe = require("stripe")(STRIPE_SK_SECRET);
 
     stripe.subscriptions.list()
     .then(function( subscriptions: any) {
@@ -424,6 +451,9 @@ export const listSubscriptions = function (callback: Function) {
  */
 export const getStripeInvoices = async (stripeCustId: string): Promise<any> => {
 
+    const { STRIPE_SK_SECRET } = process.env;
+    const stripe = require('stripe')(STRIPE_SK_SECRET);
+
     const invoices = await stripe.invoices.list({ customer: stripeCustId });
 
     return invoices;
@@ -437,6 +467,9 @@ export const getStripeInvoices = async (stripeCustId: string): Promise<any> => {
  */
 export const getStripeInvoiceItems = async (stripeCustId: string): Promise<any> => {
 
+    const { STRIPE_SK_SECRET } = process.env;
+    const stripe = require('stripe')(STRIPE_SK_SECRET);
+
     const invoiceItems = await stripe.invoiceItems.list({ customer: stripeCustId });
 
     return invoiceItems;
@@ -449,6 +482,9 @@ export const getStripeInvoiceItems = async (stripeCustId: string): Promise<any> 
  * then finalize it
  */
 export const createStripeInvoiceItem = async (stripeCustId: string, amount: number, vendorName: string): Promise<any> => {
+
+    const { STRIPE_SK_SECRET } = process.env;
+    const stripe = require('stripe')(STRIPE_SK_SECRET);
 
     const invoiceItem = await stripe.invoiceItems.create({
         customer: stripeCustId,
@@ -467,6 +503,9 @@ export const createStripeInvoiceItem = async (stripeCustId: string, amount: numb
  */
 export const createStripeInvoice = async (stripeCustId: string): Promise<any> => {
 
+    const { STRIPE_SK_SECRET } = process.env;
+    const stripe = require('stripe')(STRIPE_SK_SECRET);
+
     // Create a draft Stripe invoice based on company's stripeId
     const stripeInvoice = await stripe.invoices.create({ customer: stripeCustId });
 
@@ -479,6 +518,9 @@ export const createStripeInvoice = async (stripeCustId: string): Promise<any> =>
  * using payment method stored in Stripe
  */
 export const payStripeInvoice = async (stripeInvId: string): Promise<any> => {
+
+    const { STRIPE_SK_SECRET } = process.env;
+    const stripe = require('stripe')(STRIPE_SK_SECRET);
 
     // Pay stripe invoice
     const paidInvoice = await stripe.invoices.pay(stripeInvId);
