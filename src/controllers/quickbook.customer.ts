@@ -510,12 +510,13 @@ export const _updateQBCustomerJob = async (req: Request, res: Response, company:
         qbo.getCustomer(jobLocation.quickbookId, async (err: any, qbCustomerJob: IQBCustomer) => {
 
             qbCustomerJob.DisplayName = jobLocation.name;
+            qbCustomerJob.ShipAddr = qbCustomerJob.ShipAddr ?? {};
             qbCustomerJob.ShipAddr.Line1 = jobLocation?.address?.street;
-            qbCustomerJob.BillAddr.City = jobLocation?.address?.city;
-            qbCustomerJob.BillAddr.CountrySubDivisionCode = jobLocation?.address?.state;
-            qbCustomerJob.BillAddr.PostalCode = jobLocation?.address?.zipcode;
-            qbCustomerJob.BillAddr.Long = jobLocation?.location?.coordinates[0]?.toString();
-            qbCustomerJob.BillAddr.Lat = jobLocation?.location?.coordinates[1]?.toString();
+            qbCustomerJob.ShipAddr.City = jobLocation?.address?.city;
+            qbCustomerJob.ShipAddr.CountrySubDivisionCode = jobLocation?.address?.state;
+            qbCustomerJob.ShipAddr.PostalCode = jobLocation?.address?.zipcode;
+            qbCustomerJob.ShipAddr.Long = jobLocation?.location?.coordinates[0]?.toString();
+            qbCustomerJob.ShipAddr.Lat = jobLocation?.location?.coordinates[1]?.toString();
 
             qbo.updateCustomer(qbCustomerJob, async (err: any, qbCustomerJob: IQBCustomer) => {
                 if (err) {
