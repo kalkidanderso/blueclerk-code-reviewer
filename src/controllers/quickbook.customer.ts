@@ -510,6 +510,7 @@ export const _updateQBCustomerJob = async (req: Request, res: Response, company:
         qbo.getCustomer(jobLocation.quickbookId, async (err: any, qbCustomerJob: IQBCustomer) => {
 
             qbCustomerJob.DisplayName = jobLocation.name;
+            qbCustomerJob.Active = jobLocation.isActive;
             qbCustomerJob.ShipAddr = qbCustomerJob.ShipAddr ?? {};
             qbCustomerJob.ShipAddr.Line1 = jobLocation?.address?.street;
             qbCustomerJob.ShipAddr.City = jobLocation?.address?.city;
