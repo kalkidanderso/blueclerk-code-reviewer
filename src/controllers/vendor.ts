@@ -14,6 +14,7 @@ import { CompanyInvoice, ICompanyInvoice } from '../models/CompanyInvoice';
 import { Contract, IContract } from '../models/Contract';
 import { NotificationContract, INotificationContract } from '../models/NotificationContract';
 import { _createHubSpotContact, _upgradeHubSpotContact, checkCompanyEmailExists, login } from '../controllers/user';
+import { _handleNotification } from './notification';
 
 // new contractor signup
 export const createContractor = (req: Request, res: Response, sio: any) => {
@@ -274,26 +275,37 @@ export const inviteContractor = (req: Request, res: Response) => {
     const user = <IUser>req.user
     const company = <ICompany>req.company;
 
-    if (company.paid == false && new Date() > company.chargeDate) {
-        return res.json({ 'status': Status.Error, 'message': 'You can\'t invite contractors, please contact blueclerk for details.' });
+    if (!company.paid && new Date() > company.chargeDate) {
+        return res.json({ status: Status.Error, message: 'You can\'t invite contractors, please contact blueclerk for details.' });
     }
 
     Company.findOne({ 'info.companyEmail': params.email },
-        (err: any, contractor: ICompany) => {
+        async (err: any, contractor: ICompany) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ status: Status.Error, message: Messages.GenericError });
             }
 
-            if (contractor != undefined) {
-                return res.json({ 'status': Status.Error, 'message': 'Email already taken.' })
+            if (contractor) {
+                return res.json({ status: Status.Error, message: 'Email already taken.' });
             }
 
-            // ToDo email email with singup link
+            // TODO: Create contract without customer
+            const contract = new Contract({
+                company: company._id,
+                contractorEmail: params.email,
+                status: ContractStatus.ACCOUNT_NOT_CREATED,
+                createdBy: user._id
+            });
+            await contract.save();
+
+            // ToDo email email with signup link
             sendInvitationToContractor({ to: params.email, company: company.info?.companyName, companyId: company._id });
-            return res.json({ 'status': Status.Success, 'message': 'Invitation sent.' })
+
+            return res.json({ status: Status.Success, message: 'Invitation sent.', contract });
         }
     )
+
 }
 
 // get all contracts for contractor
@@ -708,6 +720,55 @@ export const cancelOrFinishContract = (req: Request, res: Response, sio: any) =>
                 })
         }
     )
+}
+
+export const finishContract = async (req: Request, res: Response, sio: any) => {
+
+    const params = req.body;
+    const user = <IUser>req.user;
+    const company = <ICompany>req.company;
+
+    const contract = await Contract.findOne({ _id: params.contractId, company });
+
+    if (!contract) {
+        return res.json({ status: Status.Error, message: 'Contract not found.' });
+    }
+
+    if (contract.status === ContractStatus.FINISHED) {
+        return res.json({ status: Status.Error, message: 'Contract is already finished.' });
+    }
+
+    contract.status = ContractStatus.FINISHED;
+    contract.finishedBy = user;
+    contract.finishedAt = new Date();
+    await contract.save();
+
+    const contractorCompany = await Company.findById(contract.contractor);
+
+    // Save notification
+    let notificationEntry: INotificationContract = new NotificationContract({
+        company: contractorCompany._id,
+        notificationType: NotificationTypes.CONTRACT_FINISHED,
+        message: {
+            title: 'Contract finished',
+            body: `Company ${company.info?.companyName} has finished your vendor contract`
+        },
+        metadata: contract._id
+    });
+
+    notificationEntry.save(async (err: any, notification: INotificationContract) => {
+
+        if (err) {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+        }
+
+        // Send notification message to specific room based on the Company ID
+        await notification.populate('metadata').execPopulate();
+        await sio.to(contractorCompany?._id?.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
+    })
+
+    return res.json({ status: Status.Success, message: 'Contract finished successfully.' });
+
 }
 
 export const upgradeToCompany = (req: Request, res: Response) => {

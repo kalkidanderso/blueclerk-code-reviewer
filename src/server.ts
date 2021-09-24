@@ -35,7 +35,7 @@ const { DB_USER, DB_PASS, DB_HOST, DB_NAME } = process.env
 
 mongoose.set('useCreateIndex', true)
 mongoose.connect(
-  // 'mongodb://localhost:27017/norton',
+  // `mongodb://localhost:27017/${DB_NAME}`,
   `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`,
   {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false},
   (err: MongoError) => {

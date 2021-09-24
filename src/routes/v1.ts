@@ -923,16 +923,16 @@ export default function (sio: any) {
     )
 
     // limit only for contractors
-    router.post(
-        '/acceptOrRejectContract',
-        passport.authenticate('jwt', { session: false }),
-        getCompanyId(),
-        checkUserPermissions(Permissions.Accept_Reject_Contract),
-        validate(Validations.updateContract),
-        (req, res) => {
-            vendorController.acceptRejectContract(req, res, sio)
-        }
-    )
+    // router.post(
+    //     '/acceptOrRejectContract',
+    //     passport.authenticate('jwt', { session: false }),
+    //     getCompanyId(),
+    //     checkUserPermissions(Permissions.Accept_Reject_Contract),
+    //     validate(Validations.updateContract),
+    //     (req, res) => {
+    //         vendorController.acceptRejectContract(req, res, sio)
+    //     }
+    // )
 
     router.post(
         '/CancelOrFinish',
@@ -942,6 +942,17 @@ export default function (sio: any) {
         validate(Validations.updateContract),
         (req, res) => {
             vendorController.cancelOrFinishContract(req, res, sio)
+        }
+    )
+
+    router.post(
+        '/finishContract',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Cancel_Finish_Contract),
+        validate(Validations.finishContract),
+        (req, res) => {
+            vendorController.finishContract(req, res, sio)
         }
     )
 

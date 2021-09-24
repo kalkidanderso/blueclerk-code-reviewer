@@ -57,6 +57,8 @@ export const Validations = {
 
   updateContract: [check('contractId').exists().withMessage(Messages.Required), check('contractId').isMongoId().withMessage(Messages.WrongId), check('status').exists().withMessage(Messages.Required)],
 
+  finishContract: [check('contractId').exists().withMessage(Messages.Required), check('contractId').isMongoId().withMessage(Messages.WrongId)],
+
   contractorPermissions: [check('contractorId').exists().withMessage(Messages.Required), check('contractorId').isMongoId().withMessage(Messages.WrongId), check('permissions').exists()],
 
   upgradeToCompany: [check('token').exists(), check('ending').exists()],

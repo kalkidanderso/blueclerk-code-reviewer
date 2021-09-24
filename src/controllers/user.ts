@@ -241,13 +241,22 @@ export const createCompany = (req: Request, res: Response, sio: any) => {
                         const hiringCompany = await Company.findById(params.cid);
 
                         if (hiringCompany) {
-                            // Start contract
-                            const contract = new Contract({
+                            let contract = await Contract.findOne({
                                 company: hiringCompany._id,
-                                contractor: company._id,
-                                status: ContractStatus.PENDING
+                                contractorEmail: company.info?.companyEmail,
+                                status: ContractStatus.ACCOUNT_NOT_CREATED
                             });
+
+                            if (!contract) {
+                                // Start contract
+                                contract = new Contract({ company: hiringCompany._id });
+                            }
+                            contract.contractor = company._id;
+                            contract.contractorEmail = null;
+                            contract.status = ContractStatus.ACCEPTED;
                             await contract.save();
+
+                            // TODO: Charge the hiring company ?
 
                             // Construct notification entry to be saved
                             let notificationEntry: INotificationContract = new NotificationContract({
@@ -255,7 +264,7 @@ export const createCompany = (req: Request, res: Response, sio: any) => {
                                 notificationType: NotificationTypes.CONTRACT_INVITATION,
                                 message: {
                                     title: 'New vendor contract received',
-                                    body: `Company ${hiringCompany.info?.companyName} has invited you to be a vendor`
+                                    body: `Company ${hiringCompany.info?.companyName} has added you to be a vendor`
                                 },
                                 metadata: contract._id
                             });

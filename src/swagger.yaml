@@ -338,11 +338,67 @@ paths:
                       $ref: '#/definitions/ContractorActivity'
       security:
         - Bearer: []
-  /acceptOrRejectContract:
+  # /acceptOrRejectContract:
+  #   post:
+  #     tags:
+  #       - Vendor
+  #     summary: Accepting or rejecting a contract by vendor
+  #     # description: Only a global admin can create an industry
+  #     consumes:
+  #       - application/x-www-form-urlencoded
+  #     produces:
+  #       - application/json
+  #     parameters:
+  #       - name: contractId
+  #         in: formData
+  #         description: Id of a contract fetched by /getContracts api
+  #         required: true
+  #         type: string
+  #       - name: status
+  #         in: formData
+  #         description: status of contract accept / reject
+  #         required: true
+  #         type: string
+  #     responses:
+  #       '200':
+  #         description: Success
+  #         schema:
+  #           $ref: '#/definitions/GeneralAPIResponse'
+  #     security:
+  #       - Bearer: []
+  # /CancelOrFinish:
+  #   post:
+  #     tags:
+  #       - Vendor
+  #     summary: Accepting or rejecting a contract by vendor
+  #     # description: Only a global admin can create an industry
+  #     consumes:
+  #       - application/x-www-form-urlencoded
+  #     produces:
+  #       - application/json
+  #     parameters:
+  #       - name: contractId
+  #         in: formData
+  #         description: Id of a contract fetched by /getContracts api
+  #         required: true
+  #         type: string
+  #       - name: status
+  #         in: formData
+  #         description: status of contract accept / reject
+  #         required: true
+  #         type: string
+  #     responses:
+  #       '200':
+  #         description: Success
+  #         schema:
+  #           $ref: '#/definitions/GeneralAPIResponse'
+  #     security:
+  #       - Bearer: []
+  /finishContract:
     post:
       tags:
         - Vendor
-      summary: Accepting or rejecting a contract by vendor
+      summary: Finishing contract by company
       # description: Only a global admin can create an industry
       consumes:
         - application/x-www-form-urlencoded
@@ -352,39 +408,6 @@ paths:
         - name: contractId
           in: formData
           description: Id of a contract fetched by /getContracts api
-          required: true
-          type: string
-        - name: status
-          in: formData
-          description: status of contract accept / reject
-          required: true
-          type: string
-      responses:
-        '200':
-          description: Success
-          schema:
-            $ref: '#/definitions/GeneralAPIResponse'
-      security:
-        - Bearer: []
-  /CancelOrFinish:
-    post:
-      tags:
-        - Vendor
-      summary: Canceling of Finishing contract by company
-      # description: Only a global admin can create an industry
-      consumes:
-        - application/x-www-form-urlencoded
-      produces:
-        - application/json
-      parameters:
-        - name: contractId
-          in: formData
-          description: Id of a contract fetched by /getContracts api
-          required: true
-          type: string
-        - name: status
-          in: formData
-          description: status of contract cancel / finish
           required: true
           type: string
       responses:

@@ -195,7 +195,7 @@ export const sendContractStartEmail = function(options: any) {
             Body: {
               Html: {
                 Data: "<p>Hi! "+ options.contractor+"</p>\
-              <p>"+options.company+" has sent you an invitation to become a vendor for their organization. Please login to view details <a href=\"https://app.blueclerk.com/login/\ target=\"_blank\">app.blueclerk.com</a></p>",
+              <p>"+options.company+" has added you to become a vendor for their organization. You do not need to do anything at this time. Please login to view details <a href=\"https://app.blueclerk.com/login/\ target=\"_blank\">app.blueclerk.com</a></p>",
               },
             },
           },

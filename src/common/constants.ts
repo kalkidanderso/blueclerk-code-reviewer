@@ -98,7 +98,8 @@ export const enum ContractStatus {
     ACCEPTED,
     CANCELED,
     REJECTED,
-    FINISHED
+    FINISHED,
+    ACCOUNT_NOT_CREATED
 }
 
 export const enum PurchaseOrderStatus {
