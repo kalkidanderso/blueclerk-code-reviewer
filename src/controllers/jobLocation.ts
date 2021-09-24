@@ -43,7 +43,10 @@ export const get = (req: Request, res: Response) => {
     }
 
 
-    JobLocation.find(query).populate('jobSites', 'name location').exec().then((jobLocations: any) => {
+    JobLocation.find(query)
+        .populate('jobSites', '-__v -locationId -customerId')
+        .populate('contacts', '-__v')
+        .exec().then((jobLocations: any) => {
         return res.json(jobLocations);
     }).catch((err) => {
         return res.json({'status': Status.Error, 'message': err.message});
@@ -100,7 +103,12 @@ export const create = async (req: Request, res: Response) => {
         customer.jobLocations.push(jobLocation._id);
         await customer.save();
 
-        if (company.qbAuthorized) {
+        await jobLocation
+            .populate({ path: 'jobSites', select: '-__v -locationId -customerId' })
+            .populate({ path: 'contacts', select: '-__v' })
+            .execPopulate();
+
+        if (company.qbAuthorized && customer.quickbookId) {
             // Create QB Customer Job
             _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, (err, errMsg, qbCustomerJob) => {
                 if (err) {
@@ -162,7 +170,15 @@ export const update = async (req: Request, res: Response) => {
     jobLocation.address.city = params.city ?? jobLocation.address?.city;
     jobLocation.address.state = params.state ?? jobLocation.address?.state;
     jobLocation.address.zipcode = params.zipcode ?? jobLocation.address?.zipcode;
+    if (params.locationLong && params.locationLat) {
+        jobLocation.location = {coordinates: [params.locationLong, params.locationLat]};
+    }
     await jobLocation.save();
+
+    await jobLocation
+        .populate({ path: 'jobSites', select: '-__v -locationId -customerId' })
+        .populate({ path: 'contacts', select: '-__v' })
+        .execPopulate();
 
     if (company.qbAuthorized && customer.quickbookId && jobLocation.quickbookId) {
         // Sync the update to Customer Job in QuickBooks
