@@ -437,6 +437,10 @@ export const sendContractStartEmailToCompany = function(options: any) {
   })
 }
 
+/**
+ * // TODO: To be deprecated
+ * @deprecated
+ */
 export const sendContractStatusChangeEmailToContractor = function(options: any) {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
@@ -481,6 +485,10 @@ export const sendContractStatusChangeEmailToContractor = function(options: any) 
   })
 }
 
+/**
+ * // TODO: To be deprecated
+ * @deprecated
+ */
 export const sendContractStatusChangeEmailToCompany = function(options: any) {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
@@ -1130,7 +1138,7 @@ export const sendDeclinedOrderEmail = function(options: any) {
   })
 }
 
-export const sendAccountUpgradeEmail = function(options: any) {
+export const sendAccountUpgradeEmail = async (options: any) => {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
 
@@ -1140,7 +1148,46 @@ export const sendAccountUpgradeEmail = function(options: any) {
     secretAccessKey: AWS_SES_SECRETACCESSKEY,
   })
 
-  const ses = new AWS.SES({ apiVersion: '2012-10-17' })
+  const ses = new AWS.SES({ apiVersion: '2012-10-17' });
+
+  // Construct email body HTML
+  let BODY_HTML = `<p>Congratulations! A payment  Your card has been successfully charged for the amount of $ ${options.amount}.</p>
+                    <h4>Summary</h4>
+                    <table style="width:80%; border:1px solid; border-collapse: collapse">
+                      <tr> <th style="border:1px solid">Type</tr> <th style="border:1px solid">Total</tr> </tr>
+                      <tr> <td style="border:1px solid">Tecnicians</td> <td style="border:1px solid">${options.technicians}</td> </tr>
+                      <tr> <td style="border:1px solid">Office Admins</td> <td style="border:1px solid">${options.officeAdmins}</td> </tr>
+                      <tr> <td style="border:1px solid">Admins</td> <td style="border:1px solid">${options.admins}</td> </tr>
+                      <tr> <td style="border:1px solid">Managers</td> <td style="border:1px solid">${options.managers}</td> </tr>
+                      <tr> <td style="border:1px solid">Contractors/Vendor</td> <td style="border:1px solid">${options.contractors}</td> </tr>
+                    </table>`;
+
+  // CHARGE DETAILS
+  if (options.chargeDetails?.length > 0) {
+    BODY_HTML += `<h4>Charge Details</h4>
+                  <table style="width:80%; border:1px solid; border-collapse: collapse"> <tr> <th style="border:1px solid">Description</tr> <th style="border:1px solid">Amount</tr> </tr>`
+
+    for (const charge of options.chargeDetails) {
+      BODY_HTML += `<tr> <td style="border:1px solid">${charge.description}</td> <td style="border:1px solid">$${charge.amount}</td> </tr>`
+    }
+
+    BODY_HTML += `</table>`;
+  }
+
+  // INVOICE URLs
+  if (options.stripeHostedInvoiceUrl && options.stripeInvoicePdf) {
+    BODY_HTML += `<div>
+                    <p>You can see the invoice detail <a href="${options.stripeHostedInvoiceUrl}">here</a>.</p>
+                    <p>You can download the invoice PDF <a href="${options.stripeInvoicePdf}">here</a></p>
+                  </div>`;
+  }
+
+  // FOOTER
+  BODY_HTML += `<div>
+                  <a href="https://app.blueclerk.com/login/" target="_blank">
+                    <img src="https://blueclerk.com/wp-content/uploads/2020/07/logo.png" style="width: 20%;" alt='BlueClerk' >
+                  </a>
+                </div>`;
 
   return new Promise((resolve, reject) => {
     ses.sendEmail(
@@ -1156,17 +1203,7 @@ export const sendAccountUpgradeEmail = function(options: any) {
           },
           Body: {
             Html: {
-              Data: `<p>Congratulations ! Your card has been successfully charged for the amount of $ ${options.amount}.</p>
-                    <p> ${options.technicians ? 'Technicians: ' + options.technicians : 'Technicians: 0'} </p>
-                    <p> ${options.managers ? 'Managers: ' + options.managers : 'Managers: 0'} </p>
-                    <p> ${options.admins ? 'Admins: ' + options.admins : 'Admins: 0'} </p>
-                    <p> ${options.officeAdmins ? 'Office Admins: ' + options.officeAdmins : 'Office Admins: 0'} </p>
-                    <p> ${options.contractors ? 'Contractors: ' + options.contractors : 'Contractors: 0'} </p>
-                    <div>
-                    <a href="https://app.blueclerk.com/login/" target="_blank">
-                    <img src="https://blueclerk.com/wp-content/uploads/2020/07/logo.png" style="width: 20%;" alt='BlueClerk' >
-                    </a>
-                    </div>`,
+              Data: BODY_HTML
             },
           },
         },

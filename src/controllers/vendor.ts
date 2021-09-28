@@ -189,7 +189,7 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
 
-                        // ToDo send email to contractor for contract started
+                        // Send email to contractor for contract started
                         sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName, companyEmail: req.company.info.companyEmail })
 
                         // Get the pro-rated charge
@@ -212,9 +212,9 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                                 officeAdmins: 0,
                                 admins: 0,
                                 contractors: 0,
-                                charges: amount,
-                                tax: tax,
-                                total: invoiceItem.amount / 100,
+                                charges: 0,
+                                tax: 0,
+                                total: 0,
                                 isDraft: true,
                                 company: company._id
                             })
@@ -227,6 +227,10 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                         companyInvoice.tax += tax;
                         companyInvoice.total += invoiceItem.amount / 100;
                         await companyInvoice.save();
+
+                        company.companyInvoices = company.companyInvoices ?? [];
+                        company.companyInvoices.push(companyInvoice);
+                        await company.save();
 
                         // TODO: Send the prorate charge/invoice email to the company
 
@@ -844,7 +848,7 @@ export const upgradeToCompany = (req: Request, res: Response) => {
 
 // PRIVATE METHOD
 
-const _getProRatedAmount = async (): Promise<{ amount: number, tax: number }> => {
+export const _getProRatedAmount = async (): Promise<{ amount: number, tax: number }> => {
 
     const now = new Date();
     const daysRemaining = now.getDate();

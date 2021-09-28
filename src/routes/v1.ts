@@ -871,7 +871,9 @@ export default function (sio: any) {
 
     router.get(
         '/finalizeStripeInvoices',
-        subscriptionController.finalizeCompanyInvoices
+        (req, res) => {
+            subscriptionController.finalizeCompanyInvoices(req, res, sio)
+        }
     )
 
     // router.post(

@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb';
 import request from 'request';
 import moment from 'moment-timezone';
 
-import { Status, Messages, ContractStatus, EmployeeStatus, Role, CompanyType, NotificationTypes } from '../common/constants';
+import { Status, Messages, ContractStatus, EmployeeStatus, Role, CompanyType, NotificationTypes, SocketEvents } from '../common/constants';
 import { sendAccountDowngradeEmail, sendAccountUpgradeEmail, sendDeclinedOrderEmail } from '../services/aws';
 import { chargeSubscription, createStripeInvoice, payStripeInvoice } from '../services/stripe';
 import { ICompany, Company } from '../models/Company';
@@ -276,88 +276,112 @@ export const chargeCompanySubscription = (req: Request, res: Response) => {
  * will create the invoice in STRIPE for any pending invoice items,
  * then will do the automatically payment for the invoice
  */
-export const finalizeCompanyInvoices = async (req: Request, res: Response) => {
+export const finalizeCompanyInvoices = async (req: Request, res: Response, sio: any) => {
 
-    let companyStripeIds = [];
-    const companyInvoices = await CompanyInvoice.find({ isDraft: true })
-        .populate({ path: 'company', select: 'stripeId' });
+    // Retrieve all draft company invoices
+    const companyInvoices = await CompanyInvoice.find({ isDraft: true }).populate({ path: 'company' });
 
     if (companyInvoices?.length > 0) {
         for (const companyInvoice of companyInvoices) {
             const company = <ICompany>companyInvoice.company;
-            companyStripeIds.push({
-                companyInvoiceId: companyInvoice._id,
-                companyId: company._id,
-                stripeId: company.stripeId
-            });
-        };
 
-        // Remove any duplicate entries
-        companyStripeIds = [...new Set(companyStripeIds)];
+            try {
+                // Create all pending items to a draft invoice in Stripe
+                const stripeInvoice = await createStripeInvoice(company.stripeId);
 
-        if (companyStripeIds.length > 0) {
-            for (const company of companyStripeIds) {
-                try {
-                    const stripeInvoice = await createStripeInvoice(company.stripeId);
+                if (stripeInvoice) {
+                    companyInvoice.isDraft = false;
+                    companyInvoice.stripeId = stripeInvoice.id;
 
-                    if (stripeInvoice) {
-                        await CompanyInvoice.findByIdAndUpdate(company.companyInvoiceId, {
-                            isDraft: false,
-                            stripeId: stripeInvoice?.id
-                        })
+                    // Paid the draft invoice in Stripe
+                    const paidInvoice = await payStripeInvoice(stripeInvoice?.id);
 
-                        const paidInvoice = await payStripeInvoice(stripeInvoice?.id);
-
-                        if (paidInvoice) {
-                            CompanyInvoice.findByIdAndUpdate(company.companyInvoiceId, {
-                                paid: true,
-                                paidAt: new Date()
-                            }).exec();
-                        }
+                    if (paidInvoice) {
+                        companyInvoice.paid = true;
+                        companyInvoice.paidAt = new Date();
+                        companyInvoice.stripeHostedInvoiceUrl = paidInvoice.hosted_invoice_url;
+                        companyInvoice.stripeInvoicePdf = paidInvoice.invoice_pdf;
                     }
 
-                } catch (err) {
-                    let title, body;
+                    await companyInvoice.save();
 
-                    if (err.code === 'missing' && err.param === 'card') {
-                        title = 'Payment for company billing failed';
-                        body = 'Payment for company billing failed due to a missing card';
-                    } else if (err.code === 'card_declined') {
-                        title = err.message;
-                        body = err.body
-                    }
+                    // Update company information
+                    company.plan = CompanyType.SUBSCRIBED;
+                    company.paid = true;
+                    company.chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month').toDate();
+                    await company.save();
 
-                    if (title) {
-                        // Construct notification entry to be saved
-                        let notificationEntry: INotificationContract = new NotificationContract({
-                            company: company.companyId,
-                            notificationType: NotificationTypes.COMPANY_INVOICE_FAILED,
-                            message: {
-                                title,
-                                body
-                            },
-                            metadata: company.companyInvoiceId
+                    // Collect all invoice charge details for the email
+                    const chargeDetails = [];
+                    for (const data of stripeInvoice.lines?.data) {
+                        chargeDetails.push({
+                            description: data.description,
+                            amount: data.amount / 100
                         });
-
-                        // Save the notification with Contrac as the metadata
-                        notificationEntry.save(async (err: any, notification: INotificationContract) => {
-
-                            // if (err) {
-                            //     return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
-                            // }
-
-                            // TODO: send notification to sio to company if payment failed
-                            // Send notification message to specific room based on the Company ID
-                            // await notification.populate('metadata').execPopulate();
-                            // await sio.to(company.companyId.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
-                        });
-
-                        // TODO: send email to company if payment failed
                     }
 
+                    // TODO: Download stripe invoice and attach it
+
+                    // Send account upgrade and invoice email to company
+                    sendAccountUpgradeEmail({
+                        to: company.info?.companyEmail,
+                        amount: paidInvoice.amount_paid / 100,
+                        technicians: companyInvoice.technicians ?? 0,
+                        officeAdmins: companyInvoice.officeAdmins ?? 0,
+                        admins: companyInvoice.admins ?? 0,
+                        managers: companyInvoice.managers ?? 0,
+                        contractors: companyInvoice.contractors ?? 0,
+                        chargeDetails,
+                        stripeHostedInvoiceUrl: companyInvoice.stripeHostedInvoiceUrl,
+                        stripeInvoicePdf: companyInvoice.stripeInvoicePdf
+                    }).then(async () => {
+                        companyInvoice.emailHistory.push({
+                            sentTo: company.info?.companyEmail
+                        });
+                        await companyInvoice.save();
+                    });
                 }
+
+            } catch (err) {
+                let title, body;
+
+                if (err.code === 'missing' && err.param === 'card') {
+                    title = 'Payment for company billing failed';
+                    body = 'Payment for company billing failed due to a missing card';
+                } else if (err.code === 'card_declined') {
+                    title = err.message;
+                    body = err.body
+                }
+
+                // if (title) {
+                //     // Construct notification entry to be saved
+                //     let notificationEntry: INotificationContract = new NotificationContract({
+                //         company: company._id,
+                //         notificationType: NotificationTypes.COMPANY_INVOICE_FAILED,
+                //         message: {
+                //             title,
+                //             body
+                //         },
+                //         metadata: companyInvoice._id
+                //     });
+
+                //     // Save the notification with Contrac as the metadata
+                //     notificationEntry.save(async (err: any, notification: INotificationContract) => {
+
+                //         // if (err) {
+                //         //     return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+                //         // }
+
+                //         // TODO: Send notification to sio to company if payment failed
+                //         // Send notification message to specific room based on the Company ID
+                //         await notification.populate('metadata').execPopulate();
+                //         await sio.to(company?._id.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
+                //     });
+
+                //     // TODO: Send email to company if payment failed
+                // }
             }
-        }
+        };
     }
 
     return res.json({ status: Status.Success });

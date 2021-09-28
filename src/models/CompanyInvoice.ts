@@ -14,6 +14,8 @@ export interface ICompanyInvoice extends Document {
     total: number;
     isDraft: boolean;
     stripeId?: string;
+    stripeHostedInvoiceUrl?: string;
+    stripeInvoicePdf?: string;
     paid: boolean;
     paidAt?: Date;
     createdAt: Date;
@@ -67,6 +69,8 @@ const CompanyInvoiceSchema = new Schema({
         default: false
     },
     stripeId: String,
+    stripeHostedInvoiceUrl: String,
+    stripeInvoicePdf: String,
     paid: {
         type: Boolean,
         default: false

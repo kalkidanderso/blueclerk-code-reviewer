@@ -4,7 +4,7 @@ import moment from 'moment-timezone';
 
 import { CompanyType, ContractStatus, Messages, NotificationTypes, Role, Status, UserPermissions } from '../common/constants';
 import { sendEmail, sendEmployeeEmail, sendPasswordEmail, uploadImageInS3 } from '../services/aws';
-import { chargeSubscription } from '../services/stripe';
+import { chargeSubscription, createStripeInvoiceItem } from '../services/stripe';
 
 import { Company, ICompany } from '../models/Company';
 import { IUser, User } from '../models/User';
@@ -13,6 +13,8 @@ import { Contract } from '../models/Contract';
 import { CompanyAdmin, ICompanyAdmin } from '../models/CompanyAdmin';
 import { IIndustry, Industry } from '../models/Industry';
 import { NotificationContract, INotificationContract } from '../models/NotificationContract';
+import { CompanyInvoice } from '../models/CompanyInvoice';
+import { _getProRatedAmount } from '../controllers/vendor';
 
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
@@ -256,7 +258,47 @@ export const createCompany = (req: Request, res: Response, sio: any) => {
                             contract.status = ContractStatus.ACCEPTED;
                             await contract.save();
 
-                            // TODO: Charge the hiring company ?
+                            // Charge the hiring company here
+                            // Get the pro-rated charge
+                            const { amount, tax } = await _getProRatedAmount();
+
+                            // Create a pending invoice items to Stripe
+                            const invoiceItem = await createStripeInvoiceItem(hiringCompany.stripeId, amount + tax, company.info?.companyName);
+
+                            // Find existing company invoice
+                            let companyInvoice = await CompanyInvoice.findOne({
+                                company: hiringCompany._id,
+                                isDraft: true
+                            });
+
+                            // No company invoice, create new
+                            if (!companyInvoice) {
+                                companyInvoice = new CompanyInvoice({
+                                    technicians: 0,
+                                    managers: 0,
+                                    officeAdmins: 0,
+                                    admins: 0,
+                                    contractors: 0,
+                                    charges: 0,
+                                    tax: 0,
+                                    total: 0,
+                                    isDraft: true,
+                                    company: hiringCompany._id
+                                })
+                                await companyInvoice.save();
+                            }
+
+                            // Update company invoice data
+                            companyInvoice.contractors += 1;
+                            companyInvoice.charges += amount;
+                            companyInvoice.tax += tax;
+                            companyInvoice.total += invoiceItem.amount / 100;
+                            await companyInvoice.save();
+
+                            // Add the company invoice
+                            hiringCompany.companyInvoices = hiringCompany.companyInvoices ?? [];
+                            hiringCompany.companyInvoices.push(companyInvoice);
+                            await hiringCompany.save();
 
                             // Construct notification entry to be saved
                             let notificationEntry: INotificationContract = new NotificationContract({
