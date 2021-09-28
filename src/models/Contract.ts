@@ -1,12 +1,20 @@
-import mongoose, { Document, Schema } from 'mongoose'
-import { ICompany } from './Company'
+import mongoose, { Document, Schema } from 'mongoose';
+import { ICompany } from '../models/Company';
+import { IUser } from '../models/User';
 
 export interface IContract extends Document {
 
     company: Schema.Types.ObjectId | any
     contractor: Schema.Types.ObjectId | ICompany
+    contractorEmail: string // Used when inviting new contractor before they signed up
     status: number
+    createdBy: Schema.Types.ObjectId | IUser
+    finishedBy: Schema.Types.ObjectId | IUser
+    finishedAt: Date
     extraPermissions: [number]
+    createdAt: Date
+    updatedAt: Date
+
 }
 
 const ContractSchema = new Schema({
@@ -19,12 +27,20 @@ const ContractSchema = new Schema({
     contractor: {
         type: Schema.Types.ObjectId,
         ref: 'Company',
-        required: true
     },
-    status: {type: Number, default: 0}, // 0 for pending 1 For Active 2 For disabled
+    contractorEmail: String,
+    status: { type: Number, default: 0 }, // 0 for pending 1 For Active 2 For disabled
+    createdBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    finishedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    finishedAt: Date,
     extraPermissions: [Number]
 
-
-})
+}, { timestamps: { createdAt: true, updatedAt: true } });
 
 export const Contract = mongoose.model<IContract>('Contract', ContractSchema)

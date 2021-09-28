@@ -440,3 +440,91 @@ export const listSubscriptions = function (callback: Function) {
     });
 
 }
+
+
+// STRIPE INVOICE STUFF BELLOW
+
+/**
+ * To list all invoices by the company's stripeId,
+ * the invoices are returned sorted by creation date,
+ * with the most recently created invoices appearing first
+ */
+export const getStripeInvoices = async (stripeCustId: string): Promise<any> => {
+
+    const { STRIPE_SK_SECRET } = process.env;
+    const stripe = require('stripe')(STRIPE_SK_SECRET);
+
+    const invoices = await stripe.invoices.list({ customer: stripeCustId });
+
+    return invoices;
+
+}
+
+/**
+ * To list all pending invoice items by the company's stripeId,
+ * invoice items are returned sorted by creation date,
+ * with the most recently created invoice items appearing first
+ */
+export const getStripeInvoiceItems = async (stripeCustId: string): Promise<any> => {
+
+    const { STRIPE_SK_SECRET } = process.env;
+    const stripe = require('stripe')(STRIPE_SK_SECRET);
+
+    const invoiceItems = await stripe.invoiceItems.list({ customer: stripeCustId });
+
+    return invoiceItems;
+
+}
+
+/**
+ * To create a pending invoice items,
+ * in the end of each day cron job will run to create the invoice,
+ * then finalize it
+ */
+export const createStripeInvoiceItem = async (stripeCustId: string, amount: number, vendorName: string): Promise<any> => {
+
+    const { STRIPE_SK_SECRET } = process.env;
+    const stripe = require('stripe')(STRIPE_SK_SECRET);
+
+    const invoiceItem = await stripe.invoiceItems.create({
+        customer: stripeCustId,
+        amount: ~~(amount * 100), // Send the amount as integer cents
+        currency: 'usd',
+        description: `Contractor/vendor added: ${vendorName}`
+    });
+
+    return invoiceItem;
+
+}
+
+/**
+ * To create invoice for any pending invoice items on Stripe,
+ * then pay the invoice to pay & finalize on Stripe
+ */
+export const createStripeInvoice = async (stripeCustId: string): Promise<any> => {
+
+    const { STRIPE_SK_SECRET } = process.env;
+    const stripe = require('stripe')(STRIPE_SK_SECRET);
+
+    // Create a draft Stripe invoice based on company's stripeId
+    const stripeInvoice = await stripe.invoices.create({ customer: stripeCustId });
+
+    return stripeInvoice;
+
+}
+
+/**
+ * To pay invoice on Stripe,
+ * using payment method stored in Stripe
+ */
+export const payStripeInvoice = async (stripeInvId: string): Promise<any> => {
+
+    const { STRIPE_SK_SECRET } = process.env;
+    const stripe = require('stripe')(STRIPE_SK_SECRET);
+
+    // Pay stripe invoice
+    const paidInvoice = await stripe.invoices.pay(stripeInvId);
+
+    return paidInvoice;
+
+}
