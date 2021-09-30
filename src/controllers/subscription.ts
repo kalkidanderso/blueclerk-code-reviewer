@@ -320,6 +320,20 @@ export const finalizeCompanyInvoices = async (req: Request, res: Response, sio: 
                         });
                     }
 
+                    /**
+                     * List the applied balance if exist,
+                     * one of the reason why applied balance exist automatically is,
+                     * amount on previous invoice less than Stripe minimum chargeable amount,
+                     * ref: https://stripe.com/docs/billing/customer/balance#types
+                     * ref: https://stripe.com/docs/currencies#minimum-and-maximum-charge-amounts
+                     */
+                    if (stripeInvoice.starting_balance) {
+                        chargeDetails.push({
+                            description: 'Applied customer balance',
+                            amount: stripeInvoice.starting_balance / 100
+                        });
+                    }
+
                     // TODO: Download stripe invoice and attach it
 
                     // Send account upgrade and invoice email to company

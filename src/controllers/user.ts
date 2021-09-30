@@ -297,8 +297,13 @@ export const createCompany = (req: Request, res: Response, sio: any) => {
 
                             // Add the company invoice
                             hiringCompany.companyInvoices = hiringCompany.companyInvoices ?? [];
-                            hiringCompany.companyInvoices.push(companyInvoice);
-                            await hiringCompany.save();
+                            const existCompanyInvoice = hiringCompany.companyInvoices.find(
+                                inv => inv.toString() === companyInvoice._id.toString()
+                            );
+                            if (!existCompanyInvoice) {
+                                hiringCompany.companyInvoices.push(companyInvoice);
+                                await hiringCompany.save();
+                            }
 
                             // Construct notification entry to be saved
                             let notificationEntry: INotificationContract = new NotificationContract({
