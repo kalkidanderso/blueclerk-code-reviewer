@@ -228,11 +228,15 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                         companyInvoice.total += invoiceItem.amount / 100;
                         await companyInvoice.save();
 
+                        // Add the company invoice
                         company.companyInvoices = company.companyInvoices ?? [];
-                        company.companyInvoices.push(companyInvoice);
-                        await company.save();
-
-                        // TODO: Send the prorate charge/invoice email to the company
+                        const existCompanyInvoice = company.companyInvoices.find(
+                            inv => inv.toString() === companyInvoice._id.toString()
+                        );
+                        if (!existCompanyInvoice) {
+                            company.companyInvoices.push(companyInvoice);
+                            await company.save();
+                        }
 
                         /**
                          * Kris' remark (Sept 16th, 2021):
@@ -855,8 +859,12 @@ export const _getProRatedAmount = async (): Promise<{ amount: number, tax: numbe
     const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const daysToCharge = daysInCurrentMonth - daysRemaining + 1
 
-    const perDay = 3 / daysInCurrentMonth;
+    // Vendor price is $5/month
+    const perDay = 5 / daysInCurrentMonth;
     let amount = Math.round((perDay * daysToCharge) * 100) / 100;
+
+    // Set amount to $5 in max
+    amount = amount > 5 ? 5 : amount;
 
     /**
      * Chris' tax rate is 8.25%,
