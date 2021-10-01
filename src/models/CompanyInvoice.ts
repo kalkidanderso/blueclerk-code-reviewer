@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { ICompany } from '../models/Company';
 
 export interface ICompanyInvoice extends Document {
     technicians: number;
@@ -6,12 +7,19 @@ export interface ICompanyInvoice extends Document {
     officeAdmins: number;
     admins: number;
     contractors: number;
-    company: Schema.Types.ObjectId;
+    company: Schema.Types.ObjectId | ICompany;
     note : String;
     charges: number;
     tax: number;
     total: number;
+    isDraft: boolean;
+    stripeId?: string;
+    stripeHostedInvoiceUrl?: string;
+    stripeInvoicePdf?: string;
+    paid: boolean;
+    paidAt?: Date;
     createdAt: Date;
+    updatedAt: Date;
     emailHistory: any[];
 }
 
@@ -22,27 +30,27 @@ const CompanyInvoiceSchema = new Schema({
         default: '0',
         required: false
     },
-    managers :{
+    managers: {
         type: Number,
         default: '0',
         required: false
     },
-    officeAdmins :{
+    officeAdmins: {
         type: Number,
         default: '0',
         required: false
     },
-    admins :{
+    admins: {
         type: Number,
         default: '0',
         required: false
     },
-    contractors :{
+    contractors: {
         type: Number,
         default: '0',
         required: false
     },
-    charges :{
+    charges: {
         type: Number,
         default: '0',
         required: true
@@ -51,11 +59,23 @@ const CompanyInvoiceSchema = new Schema({
         type: Number,
         default: 0
     },
-    total :{
+    total: {
         type: Number,
         default: '0',
         required: true
     },
+    isDraft: {
+        type: Boolean,
+        default: false
+    },
+    stripeId: String,
+    stripeHostedInvoiceUrl: String,
+    stripeInvoicePdf: String,
+    paid: {
+        type: Boolean,
+        default: false
+    },
+    paidAt: Date,
     note: {
         type: String,
         required: false
@@ -65,10 +85,6 @@ const CompanyInvoiceSchema = new Schema({
         ref: 'Company',
         required: true
     },
-    createdAt: {
-        type: Date,
-        default: Date.now()
-    },
     emailHistory: [{
         sentTo: String,
         sentAt: {
@@ -76,6 +92,6 @@ const CompanyInvoiceSchema = new Schema({
             default: Date.now
         }
     }],
-})
+}, { timestamps: { createdAt: true, updatedAt: true } });
 
 export const CompanyInvoice = mongoose.model<ICompanyInvoice>('CompanyInvoice', CompanyInvoiceSchema)

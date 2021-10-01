@@ -338,11 +338,67 @@ paths:
                       $ref: '#/definitions/ContractorActivity'
       security:
         - Bearer: []
-  /acceptOrRejectContract:
+  # /acceptOrRejectContract:
+  #   post:
+  #     tags:
+  #       - Vendor
+  #     summary: Accepting or rejecting a contract by vendor
+  #     # description: Only a global admin can create an industry
+  #     consumes:
+  #       - application/x-www-form-urlencoded
+  #     produces:
+  #       - application/json
+  #     parameters:
+  #       - name: contractId
+  #         in: formData
+  #         description: Id of a contract fetched by /getContracts api
+  #         required: true
+  #         type: string
+  #       - name: status
+  #         in: formData
+  #         description: status of contract accept / reject
+  #         required: true
+  #         type: string
+  #     responses:
+  #       '200':
+  #         description: Success
+  #         schema:
+  #           $ref: '#/definitions/GeneralAPIResponse'
+  #     security:
+  #       - Bearer: []
+  # /CancelOrFinish:
+  #   post:
+  #     tags:
+  #       - Vendor
+  #     summary: Accepting or rejecting a contract by vendor
+  #     # description: Only a global admin can create an industry
+  #     consumes:
+  #       - application/x-www-form-urlencoded
+  #     produces:
+  #       - application/json
+  #     parameters:
+  #       - name: contractId
+  #         in: formData
+  #         description: Id of a contract fetched by /getContracts api
+  #         required: true
+  #         type: string
+  #       - name: status
+  #         in: formData
+  #         description: status of contract accept / reject
+  #         required: true
+  #         type: string
+  #     responses:
+  #       '200':
+  #         description: Success
+  #         schema:
+  #           $ref: '#/definitions/GeneralAPIResponse'
+  #     security:
+  #       - Bearer: []
+  /finishContract:
     post:
       tags:
         - Vendor
-      summary: Accepting or rejecting a contract by vendor
+      summary: Finishing contract by company
       # description: Only a global admin can create an industry
       consumes:
         - application/x-www-form-urlencoded
@@ -352,39 +408,6 @@ paths:
         - name: contractId
           in: formData
           description: Id of a contract fetched by /getContracts api
-          required: true
-          type: string
-        - name: status
-          in: formData
-          description: status of contract accept / reject
-          required: true
-          type: string
-      responses:
-        '200':
-          description: Success
-          schema:
-            $ref: '#/definitions/GeneralAPIResponse'
-      security:
-        - Bearer: []
-  /CancelOrFinish:
-    post:
-      tags:
-        - Vendor
-      summary: Canceling of Finishing contract by company
-      # description: Only a global admin can create an industry
-      consumes:
-        - application/x-www-form-urlencoded
-      produces:
-        - application/json
-      parameters:
-        - name: contractId
-          in: formData
-          description: Id of a contract fetched by /getContracts api
-          required: true
-          type: string
-        - name: status
-          in: formData
-          description: status of contract cancel / finish
           required: true
           type: string
       responses:
@@ -3533,7 +3556,7 @@ paths:
       summary: To create a job
       description: ''
       consumes:
-        - application/x-www-form-urlencoded
+        - multipart/form-data
       produces:
         - application/json
       parameters:
@@ -3541,7 +3564,7 @@ paths:
           in: formData
           required: true
           type: string
-          description: 'schedule date of job. e.g. 2020-08-12'
+          description: 'schedule date of job. e.g. 2021-08-15'
         - name: scheduledStartTime
           in: formData
           required: false
@@ -3613,6 +3636,9 @@ paths:
           in: formData
           type: string
           description: Customer PO of the job
+        - name: image
+          in: formData
+          type: file
         - name: companyId
           in: formData
           type: string
@@ -3964,7 +3990,7 @@ paths:
       summary: To edit job to change assignee and date time of job
       description: ''
       consumes:
-        - application/x-www-form-urlencoded
+        - multipart/form-data
       produces:
         - application/json
       parameters:
@@ -3996,7 +4022,7 @@ paths:
           in: formData
           required: true
           type: string
-          description: 'date of job. e.g. 2019-12-20'
+          description: 'date of job. e.g. 2021-08-15'
         - name: scheduledStartTime
           in: formData
           required: false
@@ -4039,6 +4065,9 @@ paths:
           in: formData
           type: string
           description: Customer PO of the job
+        - name: image
+          in: formData
+          type: file
         - name: companyId
           in: formData
           type: string

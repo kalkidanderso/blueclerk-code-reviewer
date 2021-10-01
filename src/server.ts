@@ -35,7 +35,7 @@ const { DB_USER, DB_PASS, DB_HOST, DB_NAME } = process.env
 
 mongoose.set('useCreateIndex', true)
 mongoose.connect(
-  // 'mongodb://localhost:27017/norton',
+  // `mongodb://localhost:27017/${DB_NAME}`,
   `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`,
   {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false},
   (err: MongoError) => {
@@ -138,6 +138,12 @@ new CronJob('59 23 4 * *', function() {
     });
 }, null, true, 'America/Chicago');
 
+// Cron Job to finalize all draft company invoices at the end of each day
+new CronJob('59 23 * * *', () => {
+  request(`http://localhost:${app.get('port')}/api/v1/finalizeStripeInvoices`, (response: any) => {
+    console.log('== response:', response);
+  });
+}, null, true, 'America/Chicago');
 
 /**
  * This is for email scheduling

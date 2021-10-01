@@ -25,78 +25,93 @@ import { IJobType, IJobTypes } from '../models/JobType';
 import { _handleJobTypesJson } from '../controllers/jobType';
 
 export const createJob = (req: Request, res: Response) => {
-    const params = req.body
 
-    if (params.employeeType == 1) {
-        if (params.contractorId == undefined) {
-            throw new Error('Contractor Id must be specified when employeeType is contractor')
-        }
-    } else if (params.employeeType == 0) {
-        if (params.technicianId == undefined) {
-            throw new Error('technicianId Id must be specified when employeeType is employee')
-        }
+    const params = req.body;
+    const paramsImageFile = req.file;
+    const imageUrl = paramsImageFile?.location;
+
+    const company = <ICompany>req.company;
+
+    if (params.employeeType == 0 && !params.technicianId) {
+        return res.json({ status: Status.Error, message: 'technicianId must be provided when employeeType is employee' });
     }
-    ServiceTicket.findById(params.ticketId)
-    .then((serviceTicket: IServiceTicket) => {
-        if (serviceTicket == undefined) {
-            throw new Error('Invalid ticket Id')
-        }
-        if (serviceTicket.status == ServiceTicketStatus.ARCHIVED) {
-            throw new Error('You can\'t create a job using canceled ticket.')
-        }
-        if (serviceTicket.jobCreated) {
-            throw new Error('Job already created for this ticket.')
-        }
-        let jobId = serviceTicket.ticketId.replace("Ticket",'Job')
 
-        if(params.scheduledStartTime && params.scheduledEndTime) {
-            let newStartTime: any = null
-            let newEndTime: any = null
-            let date;
-            if(params.scheduledStartTime){
-                date = new Date(params.scheduleDate)
-                newStartTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledStartTime)
+    if (params.employeeType == 1 && !params.contractorId) {
+        return res.json({ status: Status.Error, message: 'contractorId must be provided when employeeType is contractor' });
+    }
+
+    ServiceTicket.findOne({ _id: params.ticketId, company })
+        .then((serviceTicket: IServiceTicket) => {
+            if (!serviceTicket) {
+                throw new Error('Service Ticket not found');
             }
-            if(params.scheduledEndTime){
-                date = new Date(params.scheduleDate)
-                newEndTime = new Date(date.getFullYear()+'-'+(date.getMonth()+1) +'-'+date.getDate()+' '+params.scheduledEndTime)
+            if (serviceTicket.status == ServiceTicketStatus.ARCHIVED) {
+                throw new Error(`You can't create a job using canceled ticket.`);
+            }
+            if (serviceTicket.jobCreated) {
+                throw new Error('Job already created for this ticket.');
             }
 
-            return new Promise((resolve, reject) => {
+            let jobId = serviceTicket.ticketId.replace('Ticket', 'Job');
 
-                Job.findOne( { $or: [ { company: req.companyId, technician:params.technicianId, scheduleDate: new Date(params.scheduleDate), scheduledStartTime: { $lte: newStartTime} , scheduledEndTime: { $gte: newStartTime } },
-                     { company: req.companyId, technician:params.technicianId, scheduleDate: new Date(params.scheduleDate), scheduledStartTime: { $lte: newEndTime} , scheduledEndTime: { $gte: newEndTime }} ] }, (err: any, job: IJob) => {
-                    if(job != undefined) {
-                        reject(new Error('Technician is scheduled at time you selected, try scheduling after '+ job.scheduledEndTime))
-                    }else{
-                        resolve([jobId, serviceTicket])
-                    }
-                })
-            })
-        }else{
-            return [jobId, serviceTicket]
-        }
+            if (params.scheduledStartTime && params.scheduledEndTime) {
+                let newStartTime: any = null
+                let newEndTime: any = null
+                let date;
+                if (params.scheduledStartTime) {
+                    date = new Date(params.scheduleDate)
+                    newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
+                }
+                if (params.scheduledEndTime) {
+                    date = new Date(params.scheduleDate)
+                    newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
+                }
 
-    })
-    .then(async (response: any) =>{
-        const jobId = response[0]
-        const serviceTicket = response[1]
-
-        await _createJob(req, res, undefined, jobId, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob, invalidJobTypes: string[]) => {
-            if(err != null){
-                return res.json({'status': Status.Error, 'message': err})
+                return new Promise((resolve, reject) => {
+                    Job.findOne({
+                        $or: [
+                            {
+                                company: company._id,
+                                technician: params.technicianId,
+                                scheduleDate: new Date(params.scheduleDate),
+                                scheduledStartTime: { $lte: newStartTime },
+                                scheduledEndTime: { $gte: newStartTime }
+                            },
+                            {
+                                company: company._id,
+                                technician: params.technicianId,
+                                scheduleDate: new Date(params.scheduleDate),
+                                scheduledStartTime: { $lte: newEndTime },
+                                scheduledEndTime: { $gte: newEndTime }
+                            }
+                        ]
+                    }, (err: any, job: IJob) => {
+                        if (job) {
+                            reject(new Error(`Technician is scheduled at time you selected, try scheduling after ${job.scheduledEndTime}`));
+                        } else {
+                            resolve([jobId, serviceTicket])
+                        }
+                    });
+                });
+            } else {
+                return [jobId, serviceTicket]
             }
-            return res.json({'status': Status.Success, 'message': 'Job created successfully.', invalidJobTypes})
+
         })
+        .then(async (response: any) => {
+            const jobId = response[0]
+            const serviceTicket = response[1]
 
-    })
-    .catch((error: any) => {
-        if (error.message != undefined) {
-            return res.json({ 'status': Status.Error, 'message': error.message })
-        } else {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        }
-    })
+            await _createJob(req, res, undefined, jobId, imageUrl, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob, invalidJobTypes: string[]) => {
+                if (err != null) {
+                    return res.json({ status: Status.Error, message: err });
+                }
+                return res.json({ status: Status.Success, message: 'Job created successfully.', invalidJobTypes, job: newJob });
+            });
+        })
+        .catch((error: any) => {
+            return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+        });
 
 }
 
@@ -104,23 +119,22 @@ export const createJob = (req: Request, res: Response) => {
  * For Vendor to be able to create sub job for its Sub Vendor
  */
 export const createSubJob = async (req: Request, res: Response) => {
+
     const params = req.body;
     const companyId = req.companyId;
 
-    if (params.employeeType == 1) {
-        if (!params.contractorId) {
-            return res.json({ 'status': Status.Error, 'message': 'Contractor Id must be specified when employeeType is contractor' });
-        }
-    } else if (params.employeeType == 0) {
-        if (!params.technicianId) {
-            return res.json({ 'status': Status.Error, 'message': 'technicianId Id must be specified when employeeType is employee' });
-        }
+    if (params.employeeType == 0 && !params.technicianId) {
+        return res.json({ status: Status.Error, message: 'technicianId must be provided when employeeType is employee' });
+    }
+
+    if (params.employeeType == 1 && !params.contractorId) {
+        return res.json({ status: Status.Error, message: 'contractorId must be provided when employeeType is contractor' });
     }
 
     // Search and check if Parent Job existed
     const parentJob: IJob = await Job.findOne({ _id: params.parentJobId, contractor: companyId, status: JobStatus.PENDING });
     if (!parentJob) {
-        return res.json({ 'status': Status.Error, 'message': 'Parent Job is not found!' });
+        return res.json({ status: Status.Error, message: 'Parent Job not found' });
     }
 
     // Count the existing sub job for the same parent job
@@ -129,16 +143,17 @@ export const createSubJob = async (req: Request, res: Response) => {
     const jobId = `${parentJob.jobId} - ${jobCount + 1}`;
 
     const serviceTicket = await ServiceTicket.findById(parentJob.ticket);
-    await _createJob(req, res, parentJob, jobId, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob, invalidJobTypes: string[]) => {
+    await _createJob(req, res, parentJob, jobId, undefined, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob, invalidJobTypes: string[]) => {
         if (err) {
-            return res.json({ 'status': Status.Error, 'message': err });
+            return res.json({ status: Status.Error, message: err ?? Messages.GenericError });
         }
 
-        return res.json({ 'status': Status.Success, 'message': 'Job created successfully.', invalidJobTypes });
-    })
+        return res.json({ status: Status.Success, message: 'Job created successfully.', invalidJobTypes, job: newJob });
+    });
+
 }
 
-const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: string, serviceTicket: IServiceTicket, next: (req: Request, res: Response, err: any, job: IJob, invalidJobTypes: string[]) => void) => {
+const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: string, imageUrl: string, serviceTicket: IServiceTicket, next: (req: Request, res: Response, err: any, job: IJob, invalidJobTypes: string[]) => void) => {
 
     const params = req.body
 
@@ -209,6 +224,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         jobSite: params.jobSiteId ?? parentJob?.jobSite,
         customerContactId: params.customerContactId ?? parentJob?.customerContactId,
         customerPO: params.customerPO ?? parentJob?.customerPO,
+        image: imageUrl ?? parentJob?.image,
         // type: params.jobTypeId ?? parentJob?.type, // TODO: To be deprecated
         tasks: jobTypes ?? parentJob?.tasks,
         company: companyId,
@@ -341,8 +357,10 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                         await emailSchedule.save();
                         break;
                     }
+                    case 2: {
+                        break;
+                    }
                     default: {
-                        sendJobEmailToAssignee({to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, location: job.jobLocation, site: job.jobSite,ticket: job.ticket, notes: job.description, dateTime: job.scheduleDate});
                         break;
                     }
                 }
@@ -366,9 +384,12 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                             });
                         }
                         await emailSchedule.save();
-                        break;                    }
+                        break;
+                    }
+                    case 2: {
+                        break;
+                    }
                     default: {
-                        sendJobEmailToAssignee({to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, notes: job.description, location: job.jobLocation, site: job.jobSite,ticket: job.ticket, dateTime: job.scheduleDate})
                         break;
                     }
 
@@ -1508,24 +1529,21 @@ export const updateJobTask = async (req: Request, res: Response) => {
 
 export const editJob = async (req: Request, res: Response) => {
 
-    const params = req.body
+    const params = req.body;
+    const paramsImageFile = req.file;
+    const imageUrl = paramsImageFile?.location;
     var companyId = req.companyId;
     const user = <IUser>req.user;
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
 
-    // If company update assignee of the job
-    if (params.employeeType != undefined && (params.contractorId || params.technicianId)) {
-        if (params.employeeType == 1) {
-            if (!params.contractorId) {
-                return res.json({ 'status': Status.Error, 'message': 'Contractor Id must be specified when employeeType is contractor' });
-            }
-        } else if (params.employeeType == 0) {
-            if (!params.technicianId) {
-                return res.json({ 'status': Status.Error, 'message': 'technicianId Id must be specified when employeeType is employee' });
-            }
-        }
+    if (params.employeeType == 0 && !params.technicianId) {
+        return res.json({ status: Status.Error, message: 'technicianId must be provided when employeeType is employee' });
+    }
+
+    if (params.employeeType == 1 && !params.contractorId) {
+        return res.json({ status: Status.Error, message: 'contractorId must be provided when employeeType is contractor' });
     }
 
     Job.findOne(
@@ -1650,6 +1668,13 @@ export const editJob = async (req: Request, res: Response) => {
                 job.customerPO = params.customerPO;
                 if (linkedJob) { linkedJob.customerPO = params.customerPO; }
             }
+            if (imageUrl) {
+                if (imageUrl !== job.image) {
+                    action += '|Updated image|';
+                }
+                job.image = imageUrl;
+                if (linkedJob) { linkedJob.image = imageUrl; }
+            }
 
             //=== HANDLE params jobTypes
             let currentJobTypes = job.tasks;
@@ -1744,7 +1769,7 @@ export const editJob = async (req: Request, res: Response) => {
                     }
 
                     if (!linkedJob) {
-                        return res.json({'status': Status.Success, 'message': 'Job edited successfully.'})
+                        return res.json({ status: Status.Success, message: 'Job edited successfully.', invalidJobTypes, job });
                     }
 
                     linkedJob.updateOne(linkedJob, async (err: any, raw: any) => {
@@ -1771,13 +1796,13 @@ export const editJob = async (req: Request, res: Response) => {
                             }
                         }
 
-                        return res.json({'status': Status.Success, 'message': 'Job edited successfully.', invalidJobTypes})
+                        return res.json({ status: Status.Success, message: 'Job edited successfully.', invalidJobTypes, job });
                     });
                 }
             )
-
         }
     )
+
 }
 
 export const getJobDetails = (req: Request, res: Response) => {

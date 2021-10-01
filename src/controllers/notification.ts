@@ -4,6 +4,8 @@ import { Messages, NotificationTypes, SocketEvents, Status } from '../common/con
 import { IUser } from '../models/User';
 import { Notification, INotification, INotificationQuery } from '../models/Notification';
 import { NotificationServiceTicket, INotificationServiceTicket } from '../models/NotificationServiceTicket';
+import { NotificationContract } from '../models/NotificationContract';
+import { NotificationJob } from '../models/NotificationMetadata';
 
 /**
  * Construct and get query for notification,
@@ -39,6 +41,24 @@ const _getNotificationQuery = (
  * and send through SocketIO to the company
  */
 export const _handleNotification = async ({ sio, companyId, notificationType, messageTitle, messageBody, metadataId }: { sio: any, companyId: string, notificationType: NotificationTypes, messageTitle: string, messageBody: string, metadataId: string }) => {
+
+    // TODO: Refactor model discriminator calling to this dynamic one
+    // ref: https://stackoverflow.com/a/34656123/1272973
+    // const notificationModels = {
+    //     NotificationServiceTicket,
+    //     NotificationContract,
+    //     NotificationJob
+    // }
+
+    // const notificationA = new notificationModels['NotificationContract']({
+    //     company: companyId,
+    //     notificationType,
+    //     message: {
+    //         title: messageTitle,
+    //         body: messageBody
+    //     },
+    //     metadata: metadataId
+    // })
 
     // Construct notification entry to be saved
     const notification: INotificationServiceTicket = new NotificationServiceTicket({
