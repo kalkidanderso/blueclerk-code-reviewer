@@ -76,7 +76,7 @@ export const _refreshToken = (req: Request, res: Response, company: ICompany, ne
         })
     })
     .catch(function (err: any) {
-        return next(err.authResponse?.response?.status || Status.Error, 'Unable to refersh the token', null);
+        return next(err.authResponse?.response?.status || Status.Error, 'Unable to refresh the token', null);
     });
 
 }

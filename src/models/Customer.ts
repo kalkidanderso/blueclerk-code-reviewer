@@ -43,7 +43,7 @@ export interface IQBCustomer {
     CompanyName?: string
     BusinessNumber?: string
     PrimaryPhone?: {
-        FreeFormNumber: string
+        FreeFormNumber?: string
     }
     Active?: boolean
     Job?: boolean

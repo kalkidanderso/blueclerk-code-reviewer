@@ -8,7 +8,7 @@ import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { User, IUser } from '../models/User'
 import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 import { IPriceTier } from '../models/PriceTier'
-import { _createQBCustomer } from './quickbook.customer'
+import { _createQBCustomer, _updateQBCustomer } from './quickbook.customer'
 
 /**
  * To reset Customer quickbookId,
@@ -321,6 +321,12 @@ export const updateCustomer = (req: Request, res: Response) => {
 
         // Handle the stringify boolean value
         const isCustomPrice = params.isCustomPrice === 'false' || params.isCustomPrice === false ? false : !!params.isCustomPrice;
+        const isActive = params.isActive === undefined || params.isActive === null
+            ? customer.isActive
+            : params.isActive === 'false' || params.isActive === '0'
+                ? false
+                : !!params.isActive;
+
         // Check if customer has customPrices or not when isCustomPrice set to true
         const warningMessage = isCustomPrice && customer.customPrices.length <= 0 ? 'Customer will use custom price, but no custom price is configured currently.' : undefined;
 
@@ -336,6 +342,7 @@ export const updateCustomer = (req: Request, res: Response) => {
             'address.zipCode': params.zipCode,
             'contact.phone': params.phone,
             'contact.fax': params.fax,
+            isActive,
             itemTier: companyTier && companyTier.tier,
             isCustomPrice,
             contactName: params.contactName,
@@ -350,8 +357,37 @@ export const updateCustomer = (req: Request, res: Response) => {
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': err.message });
             }
-            return res.json({ 'status': Status.Success, 'message': 'Customer updated successfully.', warningMessage });
-        })
+
+            // Find customer to get updated customer data
+            Customer.findOne({ _id: params.customerId }).exec( async (err: any, customer: ICustomer)=> {
+                if (company.qbAuthorized && customer.quickbookId) {
+                    // Sync the update to Customer in QuickBooks
+                    _updateQBCustomer(req, res, company, customer, customer.quickbookId, (err, errMsg, qbCustomer) => {
+                        if (err) {
+                            return res.json({ status: err, message: errMsg });
+                        }
+        
+                        if (qbCustomer) {
+                            // If company's customers already synced, update the synced date
+                            if (company.qbSync?.customersSynced) {
+                                company.qbSync.customersSyncedAt = new Date();
+                                company.save();
+                            }
+                        }
+        
+                        return res.json({
+                            status: Status.Success,
+                            message: 'Customer Updated Successfully',
+                            customer,
+                            quickbookCustomer: qbCustomer
+                        });
+                    });
+
+                } else {
+                    return res.json({ 'status': Status.Success, 'message': 'Customer updated successfully.', warningMessage });
+                }
+            });
+        });
     })
 }
 

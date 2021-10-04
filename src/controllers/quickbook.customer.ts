@@ -345,6 +345,72 @@ export const _createQBCustomer = async (req: Request, res: Response, company: IC
 
 }
 
+export const _updateQBCustomer = async (req: Request, res: Response, company: ICompany, customer: ICustomer, parentQBCustomerId: string, next: (error: number, errorMessage: string, qbCustomer: IQBCustomer) => void) => {
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.getCustomer(customer.quickbookId, async (err: any, qbCustomer: IQBCustomer) => {
+
+            qbCustomer.Active = customer.isActive;
+            qbCustomer.DisplayName = customer?.profile?.displayName;
+            qbCustomer.GivenName = customer?.profile?.firstName;
+            qbCustomer.FamilyName = customer?.profile?.lastName;
+            qbCustomer.CompanyName = customer?.profile?.displayName;
+            qbCustomer.PrimaryPhone = qbCustomer.PrimaryPhone ?? {};
+            qbCustomer.PrimaryPhone.FreeFormNumber = customer?.contact?.phone
+
+            qbCustomer.BillAddr = qbCustomer.BillAddr ?? {};
+            qbCustomer.BillAddr.Line1 = customer?.address?.street,
+            qbCustomer.BillAddr.Line2 = customer?.address?.unit,
+            qbCustomer.BillAddr.City = customer?.address?.city,
+            qbCustomer.BillAddr.CountrySubDivisionCode = customer?.address?.state,
+            qbCustomer.BillAddr.PostalCode = customer?.address?.zipCode,
+            qbCustomer.BillAddr.Long = customer?.location?.coordinates[0]?.toString(),
+            qbCustomer.BillAddr.Lat = customer?.location?.coordinates[1]?.toString(),
+
+            qbCustomer.ShipAddr = qbCustomer.ShipAddr ?? {};
+            qbCustomer.ShipAddr.Line1 = customer?.address?.street;
+            qbCustomer.ShipAddr.City = customer?.address?.city;
+            qbCustomer.ShipAddr.CountrySubDivisionCode = customer?.address?.state;
+            qbCustomer.ShipAddr.PostalCode = customer?.address?.zipCode;
+            qbCustomer.ShipAddr.Long = customer?.location?.coordinates[0]?.toString();
+            qbCustomer.ShipAddr.Lat = customer?.location?.coordinates[1]?.toString();
+            
+            qbo.updateCustomer(qbCustomer, async (err: any, qbCustomer: IQBCustomer) => {
+                if (err) {
+                    return next(
+                        Status.Error,
+                        err.Fault?.Error[0]?.Detail
+                        || err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError,
+                        null
+                    )
+                }
+
+                return next(null, null, qbCustomer)
+            })
+        })
+    })
+}
+
 /**
 * Generic function to process Customer's Job Locations,
 * will check if it is existed on QuickBooks or not
