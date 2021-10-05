@@ -141,6 +141,6 @@ const CustomerSchema = new Schema({
         required: false
     }]
 
-}, { timestamps: { createdAt: true, updatedAt: true } });
+});
 
 export const Customer = User.discriminator<ICustomer>('Customer', CustomerSchema)

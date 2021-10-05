@@ -120,7 +120,7 @@ const UserSchema = new Schema({
         required: false
     }]
 
-})
+}, { timestamps: { createdAt: true, updatedAt: true } })
 
 UserSchema.pre('save', async function(next) {
 
