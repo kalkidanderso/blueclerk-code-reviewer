@@ -1065,10 +1065,11 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
 /**
  * Called by quickbook controller when handle webhook from Quickbooks
  */
-export const updateBCCustomerJob = async (req: Request, res: Response, company: ICompany, qbCustomerId: string, next: (error: number, errorMessage: string, jobLocation: IJobLocation) => void) => {
+export const updateBCCustomer = async (req: Request, res: Response, company: ICompany, qbCustomerId: string, next: (error: number, errorMessage: string, customer: ICustomer, jobLocation: IJobLocation) => void) => {
 
     // Always refresh the token first because token valid only for 60 minutes
     _refreshToken(req, res, company, async (err, errMsg, company) => {
+        let customer: ICustomer;
         let jobLocation: IJobLocation;
 
         // Initiate node-quickbooks object with the refreshed company token
@@ -1084,12 +1085,33 @@ export const updateBCCustomerJob = async (req: Request, res: Response, company: 
                     || err.fault?.error[0]?.detail
                     || err.fault?.error[0]?.message
                     || Messages.GenericError,
-                    null
+                    null,
+                    null,
                 );
             }
 
-            // Handle QB Customer Job only for this method
-            if (qbCustomer.Job) {
+            // Handle QB Customer for this method
+            if (!qbCustomer.Job) {
+                // Get BC Customer by QB Customer's quickbookId
+                customer = await Customer.findOne({ quickbookId: qbCustomer.Id });
+
+                // Update Customer data based on QB Customer
+                customer.isActive = qbCustomer.Active;
+                customer.profile.displayName = qbCustomer.DisplayName;
+                customer.profile.firstName = qbCustomer.GivenName;
+                customer.profile.lastName = qbCustomer.FamilyName;
+                customer.profile.displayName = qbCustomer.CompanyName;
+                customer.contact = customer.contact ?? { phone: '' };
+                customer.contact.phone = qbCustomer.PrimaryPhone?.FreeFormNumber;
+                customer.address = customer.address ?? {};
+                customer.address.street = qbCustomer.BillAddr?.Line1;
+                customer.address.unit = qbCustomer.BillAddr?.Line2;
+                customer.address.city = qbCustomer.BillAddr?.City;
+                customer.address.state = qbCustomer.BillAddr?.CountrySubDivisionCode ;
+                customer.address.zipCode = qbCustomer.BillAddr?.PostalCode;
+
+                await customer.save();
+            } else {
                 // Get BC Job Location by QB Customer Job's quickbookId
                 jobLocation = await JobLocation.findOne({ quickbookId: qbCustomer.Id });
 
@@ -1104,7 +1126,7 @@ export const updateBCCustomerJob = async (req: Request, res: Response, company: 
                 await jobLocation.save();
             }
 
-            return next(null, null, jobLocation);
+            return next(null, null, customer, jobLocation);
         });
     });
 

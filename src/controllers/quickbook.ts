@@ -9,7 +9,7 @@ import { _resetItemQB } from '../controllers/jobType';
 import { _resetPaymentTermQB } from '../controllers/paymentTerm';
 import { _resetInvoiceQB } from '../controllers/invoice';
 import { _resetPaymentQB } from '../controllers/payment';
-import { updateBCCustomerJob } from '../controllers/quickbook.customer';
+import { updateBCCustomer } from '../controllers/quickbook.customer';
 import { createBCPayment } from '../controllers/quickbook.payment';
 
 var QuickBooks = require('node-quickbooks')
@@ -245,7 +245,7 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
 
                 case QBEntityOperations.UPDATE:
                     // Update BC Customer / Job Location here
-                    updateBCCustomerJob(req, res, company, eventEntity?.id, (err, errMsg, jobLocation) => {
+                    updateBCCustomer(req, res, company, eventEntity?.id, (err, errMsg, customer, jobLocation) => {
                         // Implement another actions here
                     });
                     break;
