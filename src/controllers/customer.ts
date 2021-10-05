@@ -294,7 +294,8 @@ export const getCustomers = (req: Request, res: Response) => {
 
 export const updateCustomer = (req: Request, res: Response) => {
 
-    const params = req.body
+    const params = req.body;
+    const user = <IUser>req.user;
     let companyTier: { tier: any };
     Customer.findById(params.customerId)
     .exec(async (err: any, customer: ICustomer)=>{
@@ -347,7 +348,14 @@ export const updateCustomer = (req: Request, res: Response) => {
             isCustomPrice,
             contactName: params.contactName,
             vendorId: params.vendorId,
-            contacts: params.contacts
+            contacts: params.contacts,
+            inactiveAt: '',
+            inactiveBy: '',
+        }
+
+        if (!isActive) {
+            data.inactiveAt = new Date();
+            data.inactiveBy = user._id;
         }
 
         if (params.latitude && params.longitude) {
