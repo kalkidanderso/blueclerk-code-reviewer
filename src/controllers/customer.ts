@@ -370,11 +370,11 @@ export const updateCustomer = (req: Request, res: Response) => {
             Customer.findOne({ _id: params.customerId }).exec( async (err: any, customer: ICustomer)=> {
                 if (company.qbAuthorized && customer.quickbookId) {
                     // Sync the update to Customer in QuickBooks
-                    _updateQBCustomer(req, res, company, customer, customer.quickbookId, (err, errMsg, qbCustomer) => {
+                    _updateQBCustomer(req, res, company, customer, (err, errMsg, qbCustomer) => {
                         if (err) {
                             return res.json({ status: err, message: errMsg });
                         }
-        
+
                         if (qbCustomer) {
                             // If company's customers already synced, update the synced date
                             if (company.qbSync?.customersSynced) {
@@ -382,17 +382,18 @@ export const updateCustomer = (req: Request, res: Response) => {
                                 company.save();
                             }
                         }
-        
+
                         return res.json({
                             status: Status.Success,
                             message: 'Customer Updated Successfully',
                             customer,
-                            quickbookCustomer: qbCustomer
+                            quickbookCustomer: qbCustomer,
+                            quickbookMessage: errMsg
                         });
                     });
 
                 } else {
-                    return res.json({ 'status': Status.Success, 'message': 'Customer updated successfully.', warningMessage });
+                    return res.json({ status: Status.Success, message: 'Customer updated successfully.', warningMessage });
                 }
             });
         });

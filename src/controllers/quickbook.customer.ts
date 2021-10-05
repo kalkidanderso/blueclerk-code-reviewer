@@ -345,7 +345,8 @@ export const _createQBCustomer = async (req: Request, res: Response, company: IC
 
 }
 
-export const _updateQBCustomer = async (req: Request, res: Response, company: ICompany, customer: ICustomer, parentQBCustomerId: string, next: (error: number, errorMessage: string, qbCustomer: IQBCustomer) => void) => {
+export const _updateQBCustomer = async (req: Request, res: Response, company: ICompany, customer: ICustomer, next: (error: number, errorMessage: string, qbCustomer: IQBCustomer) => void) => {
+
     // Always refresh the token first because token valid only for 60 minutes
     _refreshToken(req, res, company, async (err, errMsg, company) => {
         if (err === 0) {
@@ -366,12 +367,25 @@ export const _updateQBCustomer = async (req: Request, res: Response, company: IC
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
         qbo.getCustomer(customer.quickbookId, async (err: any, qbCustomer: IQBCustomer) => {
+            if (err) {
+                return next(
+                    Status.Error,
+                    err.Fault?.Error[0]?.Detail
+                    || err.Fault?.Error[0]?.Message
+                    || err.fault?.error[0]?.detail
+                    || err.fault?.error[0]?.message
+                    || Messages.GenericError,
+                    null
+                )
+            }
 
             qbCustomer.Active = customer.isActive;
             qbCustomer.DisplayName = customer?.profile?.displayName;
             qbCustomer.GivenName = customer?.profile?.firstName;
             qbCustomer.FamilyName = customer?.profile?.lastName;
             qbCustomer.CompanyName = customer?.profile?.displayName;
+            qbCustomer.PrimaryEmailAddr = qbCustomer.PrimaryEmailAddr ?? { Address: '' };
+            qbCustomer.PrimaryEmailAddr.Address = customer?.info?.email;
             qbCustomer.PrimaryPhone = qbCustomer.PrimaryPhone ?? {};
             qbCustomer.PrimaryPhone.FreeFormNumber = customer?.contact?.phone
 
@@ -386,6 +400,7 @@ export const _updateQBCustomer = async (req: Request, res: Response, company: IC
 
             qbCustomer.ShipAddr = qbCustomer.ShipAddr ?? {};
             qbCustomer.ShipAddr.Line1 = customer?.address?.street;
+            qbCustomer.ShipAddr.Line2 = customer?.address?.unit,
             qbCustomer.ShipAddr.City = customer?.address?.city;
             qbCustomer.ShipAddr.CountrySubDivisionCode = customer?.address?.state;
             qbCustomer.ShipAddr.PostalCode = customer?.address?.zipCode;
@@ -402,13 +417,14 @@ export const _updateQBCustomer = async (req: Request, res: Response, company: IC
                         || err.fault?.error[0]?.message
                         || Messages.GenericError,
                         null
-                    )
+                    );
                 }
 
-                return next(null, null, qbCustomer)
-            })
-        })
-    })
+                return next(null, null, qbCustomer);
+            });
+        });
+    });
+
 }
 
 /**
