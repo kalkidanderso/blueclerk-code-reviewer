@@ -1482,6 +1482,9 @@ paths:
           in: formData
           required: true
           type: string
+        - name: isActive
+          in: formData
+          type: boolean
         - name: itemTierId
           in: formData
           type: string
