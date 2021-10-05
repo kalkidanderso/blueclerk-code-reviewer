@@ -28,8 +28,8 @@ export interface ICustomer extends IUser {
     vendorId?: string,
     contacts: [Schema.Types.ObjectId],
     contactEmail: string
-    inactiveAt: string
-    inactiveBy: string
+    inactiveAt?: string
+    inactiveBy?: Schema.Types.ObjectId | IUser
 
 }
 
@@ -72,12 +72,6 @@ export interface IQBAddress {
 const CustomerSchema = new Schema({
 
     isActive: {type: Boolean, default: true},
-    inactiveAt: {
-        type: Date
-    },
-    inactiveBy: {
-        type: String
-    },
     info:{
         email: String
     },
@@ -139,7 +133,14 @@ const CustomerSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Contact',
         required: false
-    }]
+    }],
+    inactiveAt: {
+        type: Date
+    },
+    inactiveBy: {
+        type: String,
+        ref: 'User'
+    },
 
 });
 

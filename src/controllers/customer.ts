@@ -249,7 +249,7 @@ export const getCustomers = (req: Request, res: Response) => {
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-    var filter
+    var filter = {}
     if (params.includeActive == 'true' && params.includeNonActive == 'true') {
         filter = {}
     }else if (params.includeActive == 'true') {
@@ -276,17 +276,18 @@ export const getCustomers = (req: Request, res: Response) => {
             return obj.customer
         })
 
-        User.find({_id : {$in: customerIds}},
-            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId itemTier paymentTerm quickbookId')
+        Customer.find({_id : {$in: customerIds}, ...filter},
+            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId itemTier paymentTerm quickbookId inactiveBy inactiveAt')
             .populate({ path: 'itemTier', select: '-companyId -__v' })
-            .exec((err: any, users: IUser[]) =>{
+            .populate({ path: 'inactiveBy', select: 'profile' })
+            .exec((err: any, customers: ICustomer[]) =>{
 
             if (err) {
 
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            return res.json({'status': Status.Success, 'customers': users})
+            return res.json({'status': Status.Success, 'customers': customers})
         })
 
     })
