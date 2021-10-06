@@ -4,7 +4,7 @@ import moment from 'moment';
 
 import { Status } from '../common/constants';
 import { ICompany } from '../models/Company';
-import { IUser } from '../models/User';
+import { IUser, User } from '../models/User';
 import { Job } from '../models/Job';
 import { JobRoute } from '../models/JobRoute';
 
@@ -81,12 +81,19 @@ export const createJobRoute = async (req: Request, res: Response) => {
     const params = req.body;
     const user = <IUser>req.user;
     const company = <ICompany>req.company;
-    const technician = <IUser>req.technician;
+    // const technician = <IUser>req.technician;
     const contractor = <ICompany>req.contractor;
 
     const routes = [];
     const invalidJobIds = [];
     let parsedRoutes = [];
+
+    // Retrieve technician and check if it is exist
+    const technician = await User.findById(params.technicianId);
+
+    if (!technician) {
+        return res.json({ status: Status.Error, message: 'Technician not found' });
+    }
 
     try {
         parsedRoutes = JSON.parse(params.routes);
@@ -133,9 +140,9 @@ export const createJobRoute = async (req: Request, res: Response) => {
     const jobRoute = new JobRoute({
         company: company._id,
         scheduleDate: new Date(params.scheduleDate),
-        employeeType: params.employeeType,
-        technician,
-        contractor: contractor._id,
+        employeeType: params.employeeType ?? 0,
+        technician: technician?._id,
+        contractor: contractor?._id,
         routes,
         createdBy: user._id
     });

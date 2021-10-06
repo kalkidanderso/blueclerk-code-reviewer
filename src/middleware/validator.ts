@@ -209,8 +209,8 @@ export const Validations = {
   // Job Route
   jobRoute: [
     check('scheduleDate').exists().withMessage(Messages.Required),
-    check('employeeType').exists().withMessage(Messages.Required),
-    check('employeeType').isNumeric(),
+    // check('employeeType').exists().withMessage(Messages.Required),
+    // check('employeeType').isNumeric(),
     check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
     check('contractorId').optional().isMongoId().withMessage(Messages.WrongId)
   ],

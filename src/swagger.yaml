@@ -4249,7 +4249,7 @@ paths:
           in: formData
           required: true
           type: string
-          description: 'Json string of the customPrices e.g [{\"order\":1,\"jobId\":\"608c21ec125ed4202189d6e9\"},{\"order\":2,\"jobId\":\"608c26d58397bc206669870f\"}]. The order have to be sufficient, no missing sequence.'
+          description: 'Json string of the routes e.g [\"608c26d58397bc206669870f\",\"608c21ec125ed4202189d6e9\"]. The order of array will determine the order of job route.'
       responses:
         '200':
           description: Success
@@ -4277,7 +4277,7 @@ paths:
           in: formData
           required: true
           type: string
-          description: 'Json string of the customPrices e.g [{\"order\":1,\"jobId\":\"608c21ec125ed4202189d6e9\"},{\"order\":2,\"jobId\":\"608c26d58397bc206669870f\"}]. The order have to be sufficient, no missing sequence.'
+          description: 'Json string of the routes e.g [\"608c26d58397bc206669870f\",\"608c21ec125ed4202189d6e9\"]. The order of array will determine the order of job route.'
       responses:
         '200':
           description: Success

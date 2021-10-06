@@ -7,15 +7,15 @@ export interface IJobRoute extends Document {
 
     company: Schema.Types.ObjectId | ICompany
     scheduleDate: Date
-    employeeType: boolean
+    employeeType?: boolean
     technician?: Schema.Types.ObjectId | IUser
     contractor?: Schema.Types.ObjectId | ICompany
     routes: {
         order: number
         job: Schema.Types.ObjectId | IJob
     }[]
-    createdBy: Schema.Types.ObjectId | IUser
-    updatedBy: Schema.Types.ObjectId | IUser
+    createdBy?: Schema.Types.ObjectId | IUser
+    updatedBy?: Schema.Types.ObjectId | IUser
 
 }
 
@@ -33,7 +33,7 @@ const JobRouteSchema = new Schema(
         },
         employeeType: {
             type: Number,
-            required: true
+            required: false
         },
         technician: {
             type: Schema.Types.ObjectId,

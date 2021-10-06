@@ -7254,29 +7254,28 @@
           {
             "name": "employeeType",
             "in": "formData",
-            "required": true,
             "type": "number",
             "description": "0 to create job route to an employee/admin of company and 1 to create job route to a contractor/vendor",
-            "enum": [0, 1]
           },
           {
             "name": "technicianId",
             "in": "formData",
+            "required": true,
             "type": "string",
-            "description": "**Required when employeeType = 0**. Id of a technician selected from the list received by /getEmployeesForJob api"
+            "description": "Id of a technician selected from the list received by /getEmployeesForJob api"
           },
           {
             "name": "contractorId",
             "in": "formData",
             "type": "string",
-            "description": "**Required when employeeType = 1**. Id of a contractor selected from the list received by /getCompanyContracts api"
+            "description": "Id of a contractor selected from the list received by /getCompanyContracts api"
           },
           {
             "name": "routes",
             "in": "formData",
             "required": true,
             "type": "string",
-            "description": "Json string of the customPrices e.g [{\"order\":1,\"jobId\":\"608c21ec125ed4202189d6e9\"},{\"order\":2,\"jobId\":\"608c26d58397bc206669870f\"}]. The order have to be sufficient, no missing sequence."
+            "description": "Json string of the routes e.g [\"608c26d58397bc206669870f\",\"608c21ec125ed4202189d6e9\"]. The order of array will determine the order of job route."
           }
         ],
         "responses": {
@@ -7320,7 +7319,7 @@
             "in": "formData",
             "required": true,
             "type": "string",
-            "description": "Json string of the customPrices e.g [{\"order\":1,\"jobId\":\"608c21ec125ed4202189d6e9\"},{\"order\":2,\"jobId\":\"608c26d58397bc206669870f\"}]. The order have to be sufficient, no missing sequence."
+            "description": "Json string of the routes e.g [\"608c26d58397bc206669870f\",\"608c21ec125ed4202189d6e9\"]. The order of array will determine the order of job route."
           }
         ],
         "responses": {
