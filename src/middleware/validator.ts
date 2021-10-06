@@ -206,6 +206,25 @@ export const Validations = {
 
   technicianJobs: [check('employeeId').exists().withMessage(Messages.Required), check('employeeId').isMongoId().withMessage(Messages.WrongId)],
 
+  // Job Route
+  jobRoute: [
+    check('scheduleDate').exists().withMessage(Messages.Required),
+    check('employeeType').exists().withMessage(Messages.Required),
+    check('employeeType').isNumeric(),
+    check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('contractorId').optional().isMongoId().withMessage(Messages.WrongId)
+  ],
+
+  createJobRoute: [
+    check('routes').exists().withMessage(Messages.Required),
+  ],
+
+  updateJobRoute: [
+    check('jobRouteId').exists().withMessage(Messages.Required),
+    check('jobRouteId').isMongoId().withMessage(Messages.WrongId),
+    check('routes').exists().withMessage(Messages.Required),
+  ],
+
   //Group
   createGroup: [check('title').exists()],
 

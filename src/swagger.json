@@ -107,12 +107,12 @@
       "description": "For creating and getting service tickets"
     },
     {
-      "name": "Notification",
-      "description": "For retrieving and updating notifications"
-    },
-    {
       "name": "Job",
       "description": "For scheduled jobs"
+    },
+    {
+      "name": "Job Route",
+      "description": "For job routing"
     },
     {
       "name": "Part Inventory",
@@ -160,6 +160,10 @@
     },
     {
       "name": "Subscription"
+    },
+    {
+      "name": "Notification",
+      "description": "For retrieving and updating notifications"
     },
     {
       "name": "Permission",
@@ -2802,7 +2806,7 @@
             "name": "customPrices",
             "in": "formData",
             "type": "string",
-            "description": "Json string of the customPrices e.g [{\"quantity\":1,\"price\":45},{\"quantity\":2,\"price\":85},{\"quantity\":3,\"price\":125},{\"quantity\":4,\"price\":165},{\"quantity\":5,\"price\":206},{\"quantity\":6,\"price\":245}]. The the quantities have to be sufficient, no missing sequence."
+            "description": "Json string of the customPrices e.g [{\"quantity\":1,\"price\":45},{\"quantity\":2,\"price\":85},{\"quantity\":3,\"price\":125},{\"quantity\":4,\"price\":165},{\"quantity\":5,\"price\":206},{\"quantity\":6,\"price\":245}]. The quantities have to be sufficient, no missing sequence."
           }
         ],
         "responses": {
@@ -7116,6 +7120,207 @@
             "in": "formData",
             "type": "string",
             "description": "Id of company if contractor is hiting for other company"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getAllJobRoutes": {
+      "get": {
+        "tags": [
+          "Job Route"
+        ],
+        "summary": "Get all job routes by today or filter date",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "scheduleDate",
+            "in": "query",
+            "type": "string",
+            "description": "Filter job routes by schedule date, if not provided will search all job routes for today"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getJobRoute": {
+      "get": {
+        "tags": [
+          "Job Route"
+        ],
+        "summary": "Get the job routing for technician for the specific date",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "scheduleDate",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Schedule date of job routing"
+          },
+          {
+            "name": "employeeType",
+            "in": "query",
+            "required": true,
+            "type": "number",
+            "description": "0 to search job route of an employee/admin of company and 1 to search job route of a contractor/vendor",
+            "enum": [0, 1]
+          },
+          {
+            "name": "technicianId",
+            "in": "query",
+            "type": "string",
+            "description": "**Required when employeeType = 0**. Id of a technician selected from the list received by /getEmployeesForJob api"
+          },
+          {
+            "name": "contractorId",
+            "in": "query",
+            "type": "string",
+            "description": "**Required when employeeType = 1**. Id of a contractor selected from the list received by /getCompanyContracts api"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createJobRoute": {
+      "post": {
+        "tags": [
+          "Job Route"
+        ],
+        "summary": "Create new job routing for technician/contractor",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "scheduleDate",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Schedule date of the job route"
+          },
+          {
+            "name": "employeeType",
+            "in": "formData",
+            "required": true,
+            "type": "number",
+            "description": "0 to create job route to an employee/admin of company and 1 to create job route to a contractor/vendor",
+            "enum": [0, 1]
+          },
+          {
+            "name": "technicianId",
+            "in": "formData",
+            "type": "string",
+            "description": "**Required when employeeType = 0**. Id of a technician selected from the list received by /getEmployeesForJob api"
+          },
+          {
+            "name": "contractorId",
+            "in": "formData",
+            "type": "string",
+            "description": "**Required when employeeType = 1**. Id of a contractor selected from the list received by /getCompanyContracts api"
+          },
+          {
+            "name": "routes",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Json string of the customPrices e.g [{\"order\":1,\"jobId\":\"608c21ec125ed4202189d6e9\"},{\"order\":2,\"jobId\":\"608c26d58397bc206669870f\"}]. The order have to be sufficient, no missing sequence."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateJobRoute": {
+      "put": {
+        "tags": [
+          "Job Route"
+        ],
+        "summary": "Update job route for technician/contractor",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "jobRouteId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Job Route Id to be updated"
+          },
+          {
+            "name": "routes",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Json string of the customPrices e.g [{\"order\":1,\"jobId\":\"608c21ec125ed4202189d6e9\"},{\"order\":2,\"jobId\":\"608c26d58397bc206669870f\"}]. The order have to be sufficient, no missing sequence."
           }
         ],
         "responses": {
