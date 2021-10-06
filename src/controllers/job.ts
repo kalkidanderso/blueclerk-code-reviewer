@@ -23,6 +23,7 @@ import {CompanyCustomer} from '../models/CompanyCustomer';
 import { INotificationJob, NotificationJob } from '../models/NotificationMetadata'
 import { IJobType, IJobTypes } from '../models/JobType';
 import { _handleJobTypesJson } from '../controllers/jobType';
+import { JobRoute } from '../models/JobRoute';
 
 export const createJob = (req: Request, res: Response) => {
     const params = req.body
@@ -740,12 +741,34 @@ export const getJobs = (req: Request, res: Response) => {
             path: 'jobSite',
             select: 'name location address'
         })
-        .exec((err: any, jobs: IJob[])=>{
+        .exec(async (err: any, jobs: IJob[])=>{
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-            return res.json({'status': Status.Success, 'jobs': jobs, 'total': jobs.length });
+
+            const jobRoutes = await JobRoute.find({ company: companyId })
+                .populate({
+                    path: 'routes.job',
+                    select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
+                    populate: [
+                        { path: 'tasks.jobType', select: 'title description sku' },
+                        { path: 'type', select: 'title description sku' },
+                        { path: 'ticket', select: '-__v -track' },
+                        { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
+                        { path: 'jobSite', select: '-__v -locationId -customerId' }
+                    ]
+                })
+                .populate({ path: 'technician', select: 'profile' })
+                .populate({ path: 'createdBy', select: 'profile' })
+                .populate({ path: 'updatedBy', select: 'profile' });
+
+            return res.json({
+                status: Status.Success,
+                jobs,
+                total: jobs.length,
+                jobRoutes
+            });
         }
     )
 

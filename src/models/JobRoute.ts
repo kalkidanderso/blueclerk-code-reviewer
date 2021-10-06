@@ -10,11 +10,10 @@ export interface IJobRoute extends Document {
     employeeType: boolean
     technician?: Schema.Types.ObjectId | IUser
     contractor?: Schema.Types.ObjectId | ICompany
-    routeOrder: Schema.Types.ObjectId[] | IJob[]
     routes: {
         order: number
         job: Schema.Types.ObjectId | IJob
-    }[],
+    }[]
     createdBy: Schema.Types.ObjectId | IUser
     updatedBy: Schema.Types.ObjectId | IUser
 
@@ -44,10 +43,6 @@ const JobRouteSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: 'Company'
         },
-        routeOrder: [{
-            type: Schema.Types.ObjectId,
-            ref: 'Job'
-        }],
         routes: [{
             _id: false,
             order: {

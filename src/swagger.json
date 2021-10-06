@@ -7121,13 +7121,52 @@
         ]
       }
     },
+    "/getAllJobRoutes": {
+      "get": {
+        "tags": [
+          "Job Route"
+        ],
+        "summary": "Get all job routes by today or filter date",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "scheduleDate",
+            "in": "query",
+            "type": "string",
+            "description": "Filter job routes by schedule date, if not provided will search all job routes for today"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getJobRoute": {
       "get": {
         "tags": [
           "Job Route"
         ],
-        "summary": "Get the job routing for technician",
+        "summary": "Get the job routing for technician for the specific date",
         "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
         "produces": [
           "application/json"
         ],
@@ -7144,7 +7183,7 @@
             "in": "query",
             "required": true,
             "type": "number",
-            "description": "0 to search job route of a employee/admin of company and 1 to search job route of a contractor/vendor",
+            "description": "0 to search job route of an employee/admin of company and 1 to search job route of a contractor/vendor",
             "enum": [0, 1]
           },
           {
@@ -7180,8 +7219,11 @@
         "tags": [
           "Job Route"
         ],
-        "summary": "Create new job routing for technician",
+        "summary": "Create new job routing for technician/contractor",
         "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
         "produces": [
           "application/json"
         ],
@@ -7191,14 +7233,14 @@
             "in": "formData",
             "required": true,
             "type": "string",
-            "description": "Schedule date of job routing"
+            "description": "Schedule date of the job route"
           },
           {
             "name": "employeeType",
             "in": "formData",
             "required": true,
             "type": "number",
-            "description": "0 to search job route of a employee/admin of company and 1 to search job route of a contractor/vendor",
+            "description": "0 to create job route to an employee/admin of company and 1 to create job route to a contractor/vendor",
             "enum": [0, 1]
           },
           {
@@ -7216,6 +7258,51 @@
           {
             "name": "routes",
             "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Json string of the customPrices e.g [{\"order\":1,\"jobId\":\"608c21ec125ed4202189d6e9\"},{\"order\":2,\"jobId\":\"608c26d58397bc206669870f\"}]. The order have to be sufficient, no missing sequence."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GeneralAPIResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateJobRoute": {
+      "put": {
+        "tags": [
+          "Job Route"
+        ],
+        "summary": "Update job route for technician/contractor",
+        "description": "",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "jobRouteId",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": "Job Route Id to be updated"
+          },
+          {
+            "name": "routes",
+            "in": "formData",
+            "required": true,
             "type": "string",
             "description": "Json string of the customPrices e.g [{\"order\":1,\"jobId\":\"608c21ec125ed4202189d6e9\"},{\"order\":2,\"jobId\":\"608c26d58397bc206669870f\"}]. The order have to be sufficient, no missing sequence."
           }

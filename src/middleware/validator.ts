@@ -219,6 +219,12 @@ export const Validations = {
     check('routes').exists().withMessage(Messages.Required),
   ],
 
+  updateJobRoute: [
+    check('jobRouteId').exists().withMessage(Messages.Required),
+    check('jobRouteId').isMongoId().withMessage(Messages.WrongId),
+    check('routes').exists().withMessage(Messages.Required),
+  ],
+
   //Group
   createGroup: [check('title').exists()],
 

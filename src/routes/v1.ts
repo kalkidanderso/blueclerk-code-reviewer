@@ -661,6 +661,14 @@ export default function (sio: any) {
     // JOB ROUTE
 
     router.get(
+        '/getAllJobRoutes',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Get_Technician),
+        jobRouteController.getAllJobRoutes
+    )
+
+    router.get(
         '/getJobRoute',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
@@ -679,6 +687,15 @@ export default function (sio: any) {
         validate(Validations.createJobRoute),
         getTechnicianContractor(),
         jobRouteController.createJobRoute
+    )
+
+    router.put(
+        '/updateJobRoute',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Get_Technician),
+        validate(Validations.updateJobRoute),
+        jobRouteController.updateJobRoute
     )
 
     // JOB REPORT
