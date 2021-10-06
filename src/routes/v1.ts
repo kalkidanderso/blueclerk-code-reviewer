@@ -687,7 +687,6 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Job_Get_Technician),
         validate(Validations.jobRoute),
         validate(Validations.createJobRoute),
-        getTechnicianContractor(),
         jobRouteController.createJobRoute
     )
 
