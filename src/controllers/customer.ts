@@ -350,8 +350,8 @@ export const updateCustomer = (req: Request, res: Response) => {
             contactName: params.contactName,
             vendorId: params.vendorId,
             contacts: params.contacts,
-            inactiveAt: '',
-            inactiveBy: '',
+            inactiveAt: null,
+            inactiveBy: null,
         }
 
         if (!isActive) {
