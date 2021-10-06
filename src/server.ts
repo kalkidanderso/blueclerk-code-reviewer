@@ -25,7 +25,7 @@ import {IJob, Job} from './models/Job';
 import {sendJobEmailToAssignee, sendScheduledJobEmailToAssignee} from './services/aws';
 import {Company} from './models/Company';
 import {Customer} from './models/Customer';
-import { Status, Messages } from './common/constants';
+import { Status, Messages, JobStatus } from './common/constants';
 const timeout = require('connect-timeout');
 
 dotenv.config()
@@ -143,6 +143,18 @@ new CronJob('59 23 * * *', () => {
   request(`http://localhost:${app.get('port')}/api/v1/finalizeStripeInvoices`, (response: any) => {
     console.log('== response:', response);
   });
+}, null, true, 'America/Chicago');
+
+// Cron Job to handle and update all incomplete job at the end of each day
+new CronJob('59 23 * * *', async () => {
+  try {
+    await Job.updateMany(
+      { status: { $in: [JobStatus.STARTED, JobStatus.PAUSED] } },
+      { $set: { status: JobStatus.INCOMPLETE } }
+    ).exec();
+  } catch (err) {
+    console.log('== Handle incomplete jobs err:', err);
+  };
 }, null, true, 'America/Chicago');
 
 /**

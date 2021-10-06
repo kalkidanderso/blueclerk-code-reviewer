@@ -7,7 +7,7 @@ import {
     checkUserPermissions,
     checkUserScanPermissions
 } from '../middleware/permissions'
-import { uploadInvoices } from '../middleware/multer'
+import { uploadInvoices, uploadImageInS3 } from '../middleware/multer';
 import { getCompanyId } from '../middleware/company'
 import { getTechnicianContractor } from '../middleware/job'
 
@@ -544,6 +544,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Job_Create),
+        uploadImageInS3.single('image'),
         validate(Validations.createJob),
         jobController.createJob
     )
@@ -645,6 +646,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Job_Edit),
+        uploadImageInS3.single('image'),
         validate(Validations.editJob),
         jobController.editJob
     )

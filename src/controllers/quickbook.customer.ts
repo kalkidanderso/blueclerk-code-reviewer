@@ -345,6 +345,88 @@ export const _createQBCustomer = async (req: Request, res: Response, company: IC
 
 }
 
+export const _updateQBCustomer = async (req: Request, res: Response, company: ICompany, customer: ICustomer, next: (error: number, errorMessage: string, qbCustomer: IQBCustomer) => void) => {
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.getCustomer(customer.quickbookId, async (err: any, qbCustomer: IQBCustomer) => {
+            if (err) {
+                return next(
+                    Status.Error,
+                    err.Fault?.Error[0]?.Detail
+                    || err.Fault?.Error[0]?.Message
+                    || err.fault?.error[0]?.detail
+                    || err.fault?.error[0]?.message
+                    || Messages.GenericError,
+                    null
+                )
+            }
+
+            qbCustomer.Active = customer.isActive;
+            qbCustomer.DisplayName = customer?.profile?.displayName;
+            qbCustomer.GivenName = customer?.profile?.firstName;
+            qbCustomer.FamilyName = customer?.profile?.lastName;
+            qbCustomer.CompanyName = customer?.profile?.displayName;
+            qbCustomer.PrimaryEmailAddr = qbCustomer.PrimaryEmailAddr ?? { Address: '' };
+            qbCustomer.PrimaryEmailAddr.Address = customer?.info?.email;
+            qbCustomer.PrimaryPhone = qbCustomer.PrimaryPhone ?? {};
+            qbCustomer.PrimaryPhone.FreeFormNumber = customer?.contact?.phone
+
+            qbCustomer.BillAddr = qbCustomer.BillAddr ?? {};
+            qbCustomer.BillAddr.Line1 = customer?.address?.street,
+            qbCustomer.BillAddr.Line2 = customer?.address?.unit,
+            qbCustomer.BillAddr.City = customer?.address?.city,
+            qbCustomer.BillAddr.CountrySubDivisionCode = customer?.address?.state,
+            qbCustomer.BillAddr.PostalCode = customer?.address?.zipCode,
+            qbCustomer.BillAddr.Long = customer?.location?.coordinates[0]?.toString(),
+            qbCustomer.BillAddr.Lat = customer?.location?.coordinates[1]?.toString(),
+
+            qbCustomer.ShipAddr = qbCustomer.ShipAddr ?? {};
+            qbCustomer.ShipAddr.Line1 = customer?.address?.street;
+            qbCustomer.ShipAddr.Line2 = customer?.address?.unit,
+            qbCustomer.ShipAddr.City = customer?.address?.city;
+            qbCustomer.ShipAddr.CountrySubDivisionCode = customer?.address?.state;
+            qbCustomer.ShipAddr.PostalCode = customer?.address?.zipCode;
+            qbCustomer.ShipAddr.Long = customer?.location?.coordinates[0]?.toString();
+            qbCustomer.ShipAddr.Lat = customer?.location?.coordinates[1]?.toString();
+            
+            qbo.updateCustomer(qbCustomer, async (err: any, qbCustomer: IQBCustomer) => {
+                if (err) {
+                    return next(
+                        Status.Error,
+                        err.Fault?.Error[0]?.Detail
+                        || err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError,
+                        null
+                    );
+                }
+
+                return next(null, null, qbCustomer);
+            });
+        });
+    });
+
+}
+
 /**
 * Generic function to process Customer's Job Locations,
 * will check if it is existed on QuickBooks or not
@@ -999,10 +1081,11 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
 /**
  * Called by quickbook controller when handle webhook from Quickbooks
  */
-export const updateBCCustomerJob = async (req: Request, res: Response, company: ICompany, qbCustomerId: string, next: (error: number, errorMessage: string, jobLocation: IJobLocation) => void) => {
+export const updateBCCustomer = async (req: Request, res: Response, company: ICompany, qbCustomerId: string, next: (error: number, errorMessage: string, customer: ICustomer, jobLocation: IJobLocation) => void) => {
 
     // Always refresh the token first because token valid only for 60 minutes
     _refreshToken(req, res, company, async (err, errMsg, company) => {
+        let customer: ICustomer;
         let jobLocation: IJobLocation;
 
         // Initiate node-quickbooks object with the refreshed company token
@@ -1018,12 +1101,33 @@ export const updateBCCustomerJob = async (req: Request, res: Response, company: 
                     || err.fault?.error[0]?.detail
                     || err.fault?.error[0]?.message
                     || Messages.GenericError,
-                    null
+                    null,
+                    null,
                 );
             }
 
-            // Handle QB Customer Job only for this method
-            if (qbCustomer.Job) {
+            // Handle QB Customer for this method
+            if (!qbCustomer.Job) {
+                // Get BC Customer by QB Customer's quickbookId
+                customer = await Customer.findOne({ quickbookId: qbCustomer.Id });
+
+                // Update Customer data based on QB Customer
+                customer.isActive = qbCustomer.Active;
+                customer.profile.displayName = qbCustomer.DisplayName;
+                customer.profile.firstName = qbCustomer.GivenName;
+                customer.profile.lastName = qbCustomer.FamilyName;
+                customer.profile.displayName = qbCustomer.CompanyName;
+                customer.contact = customer.contact ?? { phone: '' };
+                customer.contact.phone = qbCustomer.PrimaryPhone?.FreeFormNumber;
+                customer.address = customer.address ?? {};
+                customer.address.street = qbCustomer.BillAddr?.Line1;
+                customer.address.unit = qbCustomer.BillAddr?.Line2;
+                customer.address.city = qbCustomer.BillAddr?.City;
+                customer.address.state = qbCustomer.BillAddr?.CountrySubDivisionCode ;
+                customer.address.zipCode = qbCustomer.BillAddr?.PostalCode;
+
+                await customer.save();
+            } else {
                 // Get BC Job Location by QB Customer Job's quickbookId
                 jobLocation = await JobLocation.findOne({ quickbookId: qbCustomer.Id });
 
@@ -1038,7 +1142,7 @@ export const updateBCCustomerJob = async (req: Request, res: Response, company: 
                 await jobLocation.save();
             }
 
-            return next(null, null, jobLocation);
+            return next(null, null, customer, jobLocation);
         });
     });
 

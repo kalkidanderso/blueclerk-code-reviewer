@@ -320,7 +320,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
             }
 
             if (params.dueDate) {
-                criteria.$or = [{dueDate:null}, {dueDate: {"$gte": new Date(params.dueDate), "$lte": new Date(params.dueDate+ ' 23:59:00.000Z')}}]
+                criteria.$or = [{dueDate: {"$gte": new Date(params.dueDate), "$lte": new Date(params.dueDate+ ' 23:59:00.000Z')}}]
             }
 
             if (params.ticketId) {
@@ -363,6 +363,14 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                 {
                     $lookup: {
                         from: 'jobtypes',
+                        localField: 'tasks.jobType',
+                        foreignField: '_id',
+                        as: 'tasks'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'jobtypes',
                         localField: 'jobType',
                         foreignField: '_id',
                         as: 'jobType'
@@ -383,6 +391,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                       "customer": {$arrayElemAt:["$customer",0]},
                       "jobSite": {$arrayElemAt:["$jobSite",0]},
                       "jobLocation": {$arrayElemAt:["$jobLocation",0]},
+                      "tasks": 1,
                       "jobType": {$arrayElemAt:["$jobType",0]},
                       "company.info":{$arrayElemAt:["$companyInfo.info",0]},
                       "jobCreated" : 1,

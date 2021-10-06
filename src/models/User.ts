@@ -2,6 +2,7 @@ import mongoose, {Document, Mongoose, Schema} from 'mongoose'
 import jwt from 'jsonwebtoken'
 import { Role } from '../common/constants'
 import bcrypt from "bcrypt-nodejs"
+import moment from 'moment'
 
 export interface IUser extends Document {
 
@@ -20,11 +21,11 @@ export interface IUser extends Document {
         imageUrl: string
     }
     address: {
-        street: string
-        unit: string
-        city: string
-        state: string
-        zipCode: string
+        street?: string
+        unit?: string
+        city?: string
+        state?: string
+        zipCode?: string
     }
     location: {
         type?: 'Point',
@@ -32,7 +33,7 @@ export interface IUser extends Document {
     },
     contact: {
         phone: string
-        fax: string
+        fax?: string
     }
     permissions: {
         role: Role,
@@ -100,13 +101,14 @@ const UserSchema = new Schema({
     emailPreferences: {
         preferences: {
             type: Number,
-            default: 0
+            default: 1
             // 0 for email everytime a job is scheduled
-            // 1 for once a day at night
+            // 1 for once at the specified time
             // 2 no emails
         },
         time: {
-            type: Date
+            type: Date,
+            default: moment().local().hour(18).minute(0o0).second(0o0)
         },
         timeZone: {
             type: String,
@@ -120,7 +122,7 @@ const UserSchema = new Schema({
         required: false
     }]
 
-})
+}, { timestamps: { createdAt: true, updatedAt: true } })
 
 UserSchema.pre('save', async function(next) {
 

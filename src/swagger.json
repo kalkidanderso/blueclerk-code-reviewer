@@ -2695,6 +2695,12 @@
             "type": "string"
           },
           {
+            "name": "isActive",
+            "in": "formData",
+            "type": "boolean"
+          },
+
+          {
             "name": "itemTierId",
             "in": "formData",
             "type": "string"
@@ -6132,7 +6138,7 @@
         "summary": "To create a job",
         "description": "",
         "consumes": [
-          "application/x-www-form-urlencoded"
+          "multipart/form-data"
         ],
         "produces": [
           "application/json"
@@ -6143,7 +6149,7 @@
             "in": "formData",
             "required": true,
             "type": "string",
-            "description": "schedule date of job. e.g. 2020-08-12"
+            "description": "schedule date of job. e.g. 2021-08-15"
           },
           {
             "name": "scheduledStartTime",
@@ -6236,6 +6242,11 @@
             "in": "formData",
             "type": "string",
             "description": "Customer PO of the job"
+          },
+          {
+            "name": "image",
+            "in": "formData",
+            "type": "file"
           },
           {
             "name": "companyId",
@@ -6892,7 +6903,7 @@
         "summary": "To edit job to change assignee and date time of job",
         "description": "",
         "consumes": [
-          "application/x-www-form-urlencoded"
+          "multipart/form-data"
         ],
         "produces": [
           "application/json"
@@ -6936,7 +6947,7 @@
             "in": "formData",
             "required": true,
             "type": "string",
-            "description": "date of job. e.g. 2019-12-20"
+            "description": "date of job. e.g. 2021-08-15"
           },
           {
             "name": "scheduledStartTime",
@@ -6993,6 +7004,11 @@
             "in": "formData",
             "type": "string",
             "description": "Customer PO of the job"
+          },
+          {
+            "name": "image",
+            "in": "formData",
+            "type": "file"
           },
           {
             "name": "companyId",
