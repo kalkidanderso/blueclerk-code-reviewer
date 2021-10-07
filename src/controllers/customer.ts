@@ -354,7 +354,7 @@ export const updateCustomer = (req: Request, res: Response) => {
             inactiveBy: null,
         }
 
-        if (!isActive) {
+        if (customer.isActive && !isActive) {
             data.inactiveAt = new Date();
             data.inactiveBy = user._id;
         }
