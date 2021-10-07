@@ -166,7 +166,12 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
     }
     const customer = params.customerId || parentJob && parentJob.customer;
     let contractor = await Company.findOne({_id: params.contractorId});
-    let technicianId: any = await User.findOne({_id: params.technicianId});
+    let technicianId: any = await User.findOne({ _id: params.technicianId });
+    const employeeType = params.employeeType === undefined || params.employeeType === null
+        ? false
+        : params.employeeType === 'false' || params.employeeType === '0'
+            ? false
+            : !!params.employeeType;
     if (!contractor && ! technicianId) {
         return next(req, res, "Contractor/Technician not found!", null, null)
     }
@@ -233,7 +238,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         createdAt: Date.now(),
         createdBy: user._id,
         track: track,
-        employeeType: params.employeeType,
+        employeeType,
     })
 
     let newStartTime: any = null
@@ -1596,9 +1601,14 @@ export const editJob = async (req: Request, res: Response) => {
             let trackLinkedJob = linkedJob && linkedJob.track || [];
             const oldContractor = job.contractor;
             let action = '';
+            const employeeType = params.employeeType === undefined || params.employeeType === null
+                ? job.employeeType
+                : params.employeeType === 'false' || params.employeeType === '0'
+                    ? false
+                    : !!params.employeeType;
 
             // If company update assignee of the job
-            if (params.employeeType && !!(params.employeeType) !== job.employeeType) {
+            if (employeeType !== job.employeeType) {
                 if (job.status != JobStatus.PENDING) {
                     return res.json({ 'status': Status.Error, 'message': 'Cannot update assignee for a non PENDING job' });
                 }
@@ -1611,7 +1621,7 @@ export const editJob = async (req: Request, res: Response) => {
                 }
 
                 // Manage job's contractor and technician
-                job.employeeType = params.employeeType;
+                job.employeeType = employeeType;
                 if (params.technicianId) {
                     job.contractor = null;
                     job.technician = params.technicianId;
@@ -1731,7 +1741,7 @@ export const editJob = async (req: Request, res: Response) => {
                 });
             }
             // Manage linked job status & track
-            if (isParentJob && params.employeeType != undefined && (oldContractor != params.contractorId)) {
+            if (isParentJob && employeeType != undefined && (oldContractor != params.contractorId)) {
                 //  Mark sub job to be CLOSED as the contractor is updated
                 if (linkedJob) {
                     linkedJob.status = JobStatus.CANCELED;
@@ -1741,7 +1751,7 @@ export const editJob = async (req: Request, res: Response) => {
                         date: new Date()
                     });
                 }
-            } else if (!isParentJob && params.employeeType != undefined && (oldContractor != params.contractorId)) {
+            } else if (!isParentJob && employeeType != undefined && (oldContractor != params.contractorId)) {
                 /**
                  * This is sub job update that update its assignee,
                  * hence will not update the parent job to CLOSED,

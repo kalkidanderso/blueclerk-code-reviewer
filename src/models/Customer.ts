@@ -28,7 +28,7 @@ export interface ICustomer extends IUser {
     vendorId?: string,
     contacts: [Schema.Types.ObjectId],
     contactEmail: string
-    inactiveAt?: string
+    inactiveAt?: Date
     inactiveBy?: Schema.Types.ObjectId | IUser
 
 }

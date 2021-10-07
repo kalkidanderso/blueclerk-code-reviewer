@@ -379,7 +379,7 @@ export const _updateQBCustomer = async (req: Request, res: Response, company: IC
                 )
             }
 
-            qbCustomer.Active = customer.isActive;
+            // qbCustomer.Active = customer.isActive;
             qbCustomer.DisplayName = customer?.profile?.displayName;
             qbCustomer.GivenName = customer?.profile?.firstName;
             qbCustomer.FamilyName = customer?.profile?.lastName;
@@ -1110,6 +1110,7 @@ export const updateBCCustomer = async (req: Request, res: Response, company: ICo
             if (!qbCustomer.Job) {
                 // Get BC Customer by QB Customer's quickbookId
                 customer = await Customer.findOne({ quickbookId: qbCustomer.Id });
+                const currentIsActive = customer.isActive;
 
                 // Update Customer data based on QB Customer
                 customer.isActive = qbCustomer.Active;
@@ -1123,13 +1124,20 @@ export const updateBCCustomer = async (req: Request, res: Response, company: ICo
                 customer.address.street = qbCustomer.BillAddr?.Line1;
                 customer.address.unit = qbCustomer.BillAddr?.Line2;
                 customer.address.city = qbCustomer.BillAddr?.City;
-                customer.address.state = qbCustomer.BillAddr?.CountrySubDivisionCode ;
+                customer.address.state = qbCustomer.BillAddr?.CountrySubDivisionCode;
                 customer.address.zipCode = qbCustomer.BillAddr?.PostalCode;
+                if (currentIsActive && !qbCustomer.Active) {
+                    customer.inactiveAt = new Date();
+                } else if (qbCustomer.Active) {
+                    customer.inactiveAt = null;
+                    customer.inactiveBy = null;
+                }
 
                 await customer.save();
             } else {
                 // Get BC Job Location by QB Customer Job's quickbookId
                 jobLocation = await JobLocation.findOne({ quickbookId: qbCustomer.Id });
+                const currentIsActive = jobLocation.isActive;
 
                 // Update Job Location data based on QB Customer Job
                 jobLocation.name = qbCustomer.DisplayName;
@@ -1138,6 +1146,12 @@ export const updateBCCustomer = async (req: Request, res: Response, company: ICo
                 jobLocation.address.city = qbCustomer.ShipAddr?.City;
                 jobLocation.address.state = qbCustomer.ShipAddr?.CountrySubDivisionCode;
                 jobLocation.address.zipcode = qbCustomer.ShipAddr?.PostalCode;
+                if (currentIsActive && !qbCustomer.Active) {
+                    jobLocation.inactiveAt = new Date();
+                } else if (qbCustomer.Active) {
+                    jobLocation.inactiveAt = null;
+                    jobLocation.inactiveBy = null;
+                }
 
                 await jobLocation.save();
             }
