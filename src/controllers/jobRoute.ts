@@ -31,6 +31,7 @@ export const getAllJobRoutes = async (req: Request, res: Response) => {
             path: 'routes.job',
             select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
             populate: [
+                { path: 'customer', select: 'profile vendorId address location' },
                 { path: 'tasks.jobType', select: 'title description sku' },
                 { path: 'type', select: 'title description sku' },
                 { path: 'ticket', select: '-__v -track' },
@@ -65,9 +66,21 @@ export const getJobRoute = async (req: Request, res: Response) => {
     };
 
     const jobRoute = await JobRoute.findOne(query)
-        .populate({ path: 'technician', select: '-auth -address -location -permissions -emailPreferences -contact -contacts -company -__v' })
-        .populate({ path: 'routes.job', select: '-track -__v' })
-        .populate({ path: 'createdBy', select: 'profile '})
+        .populate({
+            path: 'routes.job',
+            select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
+            populate: [
+                { path: 'customer', select: 'profile vendorId address location' },
+                { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'type', select: 'title description sku' },
+                { path: 'ticket', select: '-__v -track' },
+                { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
+                { path: 'jobSite', select: '-__v -locationId -customerId' }
+            ]
+        })
+        .populate({ path: 'technician', select: 'profile' })
+        .populate({ path: 'createdBy', select: 'profile' })
+        .populate({ path: 'updatedBy', select: 'profile' });
 
     return res.json({ status: Status.Success, jobRoute });
 
@@ -147,6 +160,24 @@ export const createJobRoute = async (req: Request, res: Response) => {
         createdBy: user._id
     });
     await jobRoute.save();
+
+    await jobRoute
+        .populate({
+            path: 'routes.job',
+            select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
+            populate: [
+                { path: 'customer', select: 'profile vendorId address location' },
+                { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'type', select: 'title description sku' },
+                { path: 'ticket', select: '-__v -track' },
+                { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
+                { path: 'jobSite', select: '-__v -locationId -customerId' }
+            ]
+        })
+        .populate({ path: 'technician', select: 'profile' })
+        .populate({ path: 'createdBy', select: 'profile' })
+        .populate({ path: 'updatedBy', select: 'profile' })
+        .execPopulate();
 
     return res.json({ status: Status.Success, message: 'Job route created successfully', jobRoute, invalidJobIds });
 

@@ -778,6 +778,7 @@ export const getJobs = (req: Request, res: Response) => {
                     path: 'routes.job',
                     select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
                     populate: [
+                        { path: 'customer', select: 'profile vendorId address location' },
                         { path: 'tasks.jobType', select: 'title description sku' },
                         { path: 'type', select: 'title description sku' },
                         { path: 'ticket', select: '-__v -track' },
@@ -2154,6 +2155,7 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
                     path: 'routes.job',
                     select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
                     populate: [
+                        { path: 'customer', select: 'profile vendorId address location' },
                         { path: 'tasks.jobType', select: 'title description sku' },
                         { path: 'type', select: 'title description sku' },
                         { path: 'ticket', select: '-__v -track' },
