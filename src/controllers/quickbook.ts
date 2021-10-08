@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { Status, Messages, QBEntityNames, QBEntityOperations} from '../common/constants'
+import { Status, Messages, QBEntityNames, QBEntityOperations, NotificationTypes} from '../common/constants'
 
 import { ICompany, IQBCompany, Company } from '../models/Company';
 import { _resetCompanyQB } from '../controllers/company';
@@ -11,6 +11,7 @@ import { _resetInvoiceQB } from '../controllers/invoice';
 import { _resetPaymentQB } from '../controllers/payment';
 import { updateBCCustomer } from '../controllers/quickbook.customer';
 import { createBCPayment } from '../controllers/quickbook.payment';
+import { NotificationServiceTicket } from '../models/NotificationServiceTicket';
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");
@@ -228,6 +229,23 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
     const params = req.body;
     const eventNotification = params?.eventNotifications[0];
     const eventEntities = eventNotification?.dataChangeEvent?.entities;
+
+    // For testing purpose to know if Webhook received on staging and production
+    const notification = new NotificationServiceTicket({
+        company: '60884254898eb7068283bfcd',
+        notificationType: NotificationTypes.SERVICE_TICKET_CREATED,
+        message: {
+            title: 'Quickbook Webhook Received',
+            body: `${JSON.stringify(eventNotification)} | ${JSON.stringify(eventEntities)}}`
+        },
+        metadata: '60884254898eb7068283bfce'
+    });
+
+    await notification.save();
+
+    console.log('== Quickbook Webhook received ==');
+    console.log('== eventNotification:', eventNotification);
+    console.log('== eventEntities:', eventEntities);
 
     // Get BC Company based on the realmId
     const company = await Company.findOne({ realmId: eventNotification?.realmId });
