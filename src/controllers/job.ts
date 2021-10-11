@@ -23,6 +23,7 @@ import {CompanyCustomer} from '../models/CompanyCustomer';
 import { INotificationJob, NotificationJob } from '../models/NotificationMetadata'
 import { IJobType, IJobTypes } from '../models/JobType';
 import { _handleJobTypesJson } from '../controllers/jobType';
+import { JobRoute } from '../models/JobRoute';
 
 export const createJob = (req: Request, res: Response) => {
 
@@ -165,7 +166,12 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
     }
     const customer = params.customerId || parentJob && parentJob.customer;
     let contractor = await Company.findOne({_id: params.contractorId});
-    let technicianId: any = await User.findOne({_id: params.technicianId});
+    let technicianId: any = await User.findOne({ _id: params.technicianId });
+    const employeeType = params.employeeType === undefined || params.employeeType === null
+        ? false
+        : params.employeeType === 'false' || params.employeeType === '0'
+            ? false
+            : !!params.employeeType;
     if (!contractor && ! technicianId) {
         return next(req, res, "Contractor/Technician not found!", null, null)
     }
@@ -232,8 +238,8 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         createdAt: Date.now(),
         createdBy: user._id,
         track: track,
-        employeeType: params.employeeType,
-    });
+        employeeType,
+    })
 
     let newStartTime: any = null
     let newEndTime: any = null
@@ -761,12 +767,35 @@ export const getJobs = (req: Request, res: Response) => {
             path: 'jobSite',
             select: 'name location address'
         })
-        .exec((err: any, jobs: IJob[])=>{
+        .exec(async (err: any, jobs: IJob[])=>{
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
-            return res.json({'status': Status.Success, 'jobs': jobs, 'total': jobs.length });
+
+            const jobRoutes = await JobRoute.find({ company: companyId })
+                .populate({
+                    path: 'routes.job',
+                    select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
+                    populate: [
+                        { path: 'customer', select: 'profile vendorId address location' },
+                        { path: 'tasks.jobType', select: 'title description sku' },
+                        { path: 'type', select: 'title description sku' },
+                        { path: 'ticket', select: '-__v -track' },
+                        { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
+                        { path: 'jobSite', select: '-__v -locationId -customerId' }
+                    ]
+                })
+                .populate({ path: 'technician', select: 'profile' })
+                .populate({ path: 'createdBy', select: 'profile' })
+                .populate({ path: 'updatedBy', select: 'profile' });
+
+            return res.json({
+                status: Status.Success,
+                jobs,
+                total: jobs.length,
+                jobRoutes
+            });
         }
     )
 
@@ -785,8 +814,16 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
             select: 'profile.displayName'
         })
         .populate({
+            path: 'jobLocation',
+            select: 'name address location'
+        })
+        .populate({
+            path: 'jobSite',
+            select: 'name address location'
+        })
+        .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
+            select: 'info.email auth.email profile.displayName address location contactName'
         })
         .populate({
             path: 'customerContactId',
@@ -1576,9 +1613,14 @@ export const editJob = async (req: Request, res: Response) => {
             let trackLinkedJob = linkedJob && linkedJob.track || [];
             const oldContractor = job.contractor;
             let action = '';
+            const employeeType = params.employeeType === undefined || params.employeeType === null
+                ? job.employeeType
+                : params.employeeType === 'false' || params.employeeType === '0'
+                    ? false
+                    : !!params.employeeType;
 
             // If company update assignee of the job
-            if (params.employeeType && !!(params.employeeType) !== job.employeeType) {
+            if (employeeType !== job.employeeType) {
                 if (job.status != JobStatus.PENDING) {
                     return res.json({ 'status': Status.Error, 'message': 'Cannot update assignee for a non PENDING job' });
                 }
@@ -1591,7 +1633,7 @@ export const editJob = async (req: Request, res: Response) => {
                 }
 
                 // Manage job's contractor and technician
-                job.employeeType = params.employeeType;
+                job.employeeType = employeeType;
                 if (params.technicianId) {
                     job.contractor = null;
                     job.technician = params.technicianId;
@@ -1715,7 +1757,7 @@ export const editJob = async (req: Request, res: Response) => {
                 });
             }
             // Manage linked job status & track
-            if (isParentJob && params.employeeType != undefined && (oldContractor != params.contractorId)) {
+            if (isParentJob && employeeType != undefined && (oldContractor != params.contractorId)) {
                 //  Mark sub job to be CLOSED as the contractor is updated
                 if (linkedJob) {
                     linkedJob.status = JobStatus.CANCELED;
@@ -1725,7 +1767,7 @@ export const editJob = async (req: Request, res: Response) => {
                         date: new Date()
                     });
                 }
-            } else if (!isParentJob && params.employeeType != undefined && (oldContractor != params.contractorId)) {
+            } else if (!isParentJob && employeeType != undefined && (oldContractor != params.contractorId)) {
                 /**
                  * This is sub job update that update its assignee,
                  * hence will not update the parent job to CLOSED,
@@ -2055,15 +2097,13 @@ export const sendJobReport = (req: Request, res: Response) => {
 
 export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
 
-    let date = new Date()
-    date.setHours(0, 0, 0, 0)
-    let endDate = new Date()
-    endDate.setHours(23, 59, 59, 59)
-    const params = req.body
+    const params = req.body;
+    const startOfDay = moment().startOf('day').utc();
+    const endOfDay = moment().endOf('day').utc();
 
     Job.find({ technician: params.employeeId, $and: [ { status: { $ne: 2 } }, { status: { $ne: 3 } } ], scheduleDate: {
-        $gte: date,
-        $lte: endDate
+        $gte: startOfDay,
+        $lte: endOfDay
     } })
         .populate({
             path: 'ticket',
@@ -2073,8 +2113,16 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
             select: 'profile.displayName'
         })
         .populate({
+            path: 'jobLocation',
+            select: 'name address location'
+        })
+        .populate({
+            path: 'jobSite',
+            select: 'name address location'
+        })
+        .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
+            select: 'info.email auth.email profile.displayName address location contactName'
         })
         .populate({
             path: 'customerContactId',
@@ -2100,13 +2148,34 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
             path: 'createdBy',
             select: 'profile.displayName'
         })
-        .exec((err: any, jobs: IJob[])=>{
+        .exec(async (err: any, jobs: IJob[])=>{
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            return res.json({'status': Status.Success, 'jobs': jobs})
+            // Retrieve today's jobRoute by the technician
+            const jobRoutes = await JobRoute.findOne({
+                technician: params.employeeId,
+                scheduleDate: { $gte: startOfDay, $lte: endOfDay }
+            })
+                .populate({
+                    path: 'routes.job',
+                    select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
+                    populate: [
+                        { path: 'customer', select: 'profile vendorId address location' },
+                        { path: 'tasks.jobType', select: 'title description sku' },
+                        { path: 'type', select: 'title description sku' },
+                        { path: 'ticket', select: '-__v -track' },
+                        { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
+                        { path: 'jobSite', select: '-__v -locationId -customerId' }
+                    ]
+                })
+                .populate({ path: 'technician', select: 'profile' })
+                .populate({ path: 'createdBy', select: 'profile' })
+                .populate({ path: 'updatedBy', select: 'profile' });
+
+            return res.json({ status: Status.Success, jobs, jobRoutes });
 
         }
     )

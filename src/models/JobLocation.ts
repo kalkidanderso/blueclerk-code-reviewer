@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose'
 import { IContact } from '../common/contact'
 import { ICustomer } from '../models/Customer'
 import { ICompany } from '../models/Company'
+import { IUser } from '../models/User'
 
 export interface IJobLocation extends Document {
     name: string
@@ -20,7 +21,11 @@ export interface IJobLocation extends Document {
     isActive?: boolean
     customerId: Schema.Types.ObjectId | ICustomer
     companyId: Schema.Types.ObjectId | ICompany
+    inactiveAt?: Date
+    inactiveBy?: Schema.Types.ObjectId | IUser
     quickbookId?: string
+    createdAt?: Date
+    updatedAt?: Date
 }
 
 const JobLocationSchema = new Schema({
@@ -67,8 +72,15 @@ const JobLocationSchema = new Schema({
         ref: 'Company',
         required: true
     },
+    inactiveAt: {
+        type: Date
+    },
+    inactiveBy: {
+        type: String,
+        ref: 'User'
+    },
     quickbookId: String
 
-})
+}, { timestamps: { createdAt: true, updatedAt: true } });
 
 export const JobLocation = mongoose.model<IJobLocation>('JobLocation', JobLocationSchema)

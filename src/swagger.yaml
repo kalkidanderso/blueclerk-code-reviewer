@@ -3842,6 +3842,139 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
+  /getAllJobRoutes:
+    get:
+      tags:
+        - Job Route
+      summary: Get all job routes by today or filter date
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: scheduleDate
+          in: query
+          type: string
+          description: Filter job routes by schedule date, if not provided will search all job routes for today
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getJobRoute:
+    get:
+      tags:
+        - Job Route
+      summary: Get the job routing for technician for the specific date
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: scheduleDate
+          in: query
+          required: true
+          type: string
+          description: Filter job routes by schedule date, if not provided will search all job routes for today
+        - name: employeeType
+          in: query
+          required: true
+          type: number
+          description: 0 to search job route of an employee/admin of company and 1 to search job route of a contractor/vendor
+          enum:
+            - 0
+            - 1
+        - name: technicianId
+          in: query
+          type: string
+          description: '**Required when employeeType = 0**. Id of a technician selected from the list received by /getEmployeesForJob api'
+        - name: contractorId
+          in: query
+          type: string
+          description: '**Required when employeeType = 1**. Id of a contractor selected from the list received by /getCompanyContracts api'
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /createJobRoute:
+    post:
+      tags:
+        - Job Route
+      summary: Create new job routing for technician/contractor
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: scheduleDate
+          in: formData
+          required: true
+          type: string
+          description: Schedule date of the job route
+        - name: employeeType
+          in: formData
+          required: true
+          type: number
+          description: 0 to create job route to an employee/admin of company and 1 to create job route to a contractor/vendor
+          enum:
+            - 0
+            - 1
+        - name: technicianId
+          in: formData
+          type: string
+          description: '**Required when employeeType = 0**. Id of a technician selected from the list received by /getEmployeesForJob api'
+        - name: contractorId
+          in: formData
+          type: string
+          description: '**Required when employeeType = 1**. Id of a contractor selected from the list received by /getCompanyContracts api'
+        - name: routes
+          in: formData
+          required: true
+          type: string
+          description: 'Json string of the routes e.g [\"608c26d58397bc206669870f\",\"608c21ec125ed4202189d6e9\"]. The order of array will determine the order of job route.'
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateJobRoute:
+    put:
+      tags:
+        - Job Route
+      summary: Update job routing for technician/contractor
+      description: ''
+      consumes:
+        - application/x-www-form-urlencoded
+      produces:
+        - application/json
+      parameters:
+        - name: jobRouteId
+          in: formData
+          required: true
+          type: string
+          description: Job Route Id to be updated
+        - name: routes
+          in: formData
+          required: true
+          type: string
+          description: 'Json string of the routes e.g [\"608c26d58397bc206669870f\",\"608c21ec125ed4202189d6e9\"]. The order of array will determine the order of job route.'
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /getJobReport:
     post:
       tags:

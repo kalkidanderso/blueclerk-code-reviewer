@@ -1,4 +1,5 @@
 import {Request, Response} from 'express'
+import moment from 'moment';
 import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, JobStatus, SocketEvents, NotificationTypes } from '../common/constants'
 
 import { ICompany } from '../models/Company'
@@ -304,9 +305,10 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                 customerNames = params.customerNames.split(',')
             }
 
-            let criteria : any = {
+            let criteria: any = {
                 company: companyId,
-                jobCreated: false
+                jobCreated: false,
+                status: { '$in': [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] }
             };
 
             if (params.contactName) {
@@ -320,7 +322,12 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
             }
 
             if (params.dueDate) {
-                criteria.$or = [{dueDate: {"$gte": new Date(params.dueDate), "$lte": new Date(params.dueDate+ ' 23:59:00.000Z')}}]
+                // Retrieve the dueDate using Moment in UTC format
+                const startOfDay = moment(params.dueDate).startOf('day').utc().toISOString();
+                const endOfDay = moment(params.dueDate).endOf('day').utc().toISOString();
+
+                // Convert back the date to ISODate using new Date()
+                criteria.dueDate = { '$gte': new Date(startOfDay), '$lte': new Date(endOfDay) };
             }
 
             if (params.ticketId) {
@@ -394,6 +401,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                       "tasks": 1,
                       "jobType": {$arrayElemAt:["$jobType",0]},
                       "company.info":{$arrayElemAt:["$companyInfo.info",0]},
+                      "status" : 1,
                       "jobCreated" : 1,
                       "dueDate" : 1,
                       "note": 1,

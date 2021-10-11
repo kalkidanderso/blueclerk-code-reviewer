@@ -7,8 +7,9 @@ import {
     checkUserPermissions,
     checkUserScanPermissions
 } from '../middleware/permissions'
-import { getCompanyId } from '../middleware/company'
 import { uploadInvoices, uploadImageInS3 } from '../middleware/multer';
+import { getCompanyId } from '../middleware/company'
+import { getTechnicianContractor } from '../middleware/job'
 
 import { Role, Permissions } from '../common/constants'
 
@@ -21,6 +22,7 @@ import * as customerController from '../controllers/customer'
 import * as customerEquipmentController from '../controllers/customerEquipment'
 import * as industryController from '../controllers/industry'
 import * as jobController from '../controllers/job'
+import * as jobRouteController from '../controllers/jobRoute'
 import * as imageController from '../controllers/image'
 import * as groupController from '../controllers/group'
 import * as companyEquipmentController from '../controllers/companyEquipment'
@@ -657,6 +659,48 @@ export default function (sio: any) {
         validate(Validations.updateJobTime),
         jobController.updateJobTime
     )
+
+    // JOB ROUTE
+
+    router.get(
+        '/getAllJobRoutes',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Get_Technician),
+        jobRouteController.getAllJobRoutes
+    )
+
+    router.get(
+        '/getJobRoute',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Get_Technician),
+        validate(Validations.jobRoute),
+        getTechnicianContractor(),
+        jobRouteController.getJobRoute
+    )
+
+    router.post(
+        '/createJobRoute',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Get_Technician),
+        validate(Validations.jobRoute),
+        validate(Validations.createJobRoute),
+        jobRouteController.createJobRoute
+    )
+
+    router.put(
+        '/updateJobRoute',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Get_Technician),
+        validate(Validations.updateJobRoute),
+        jobRouteController.updateJobRoute
+    )
+
+    // JOB REPORT
+
     router.get(
         '/getJobReport',
         passport.authenticate('jwt', { session: false }),

@@ -79,6 +79,10 @@
       "description": "For Inventory of company equipments"
     },
     {
+      "name": "Job Location",
+      "description": "For company Job locations"
+    },
+    {
       "name": "Job Type",
       "description": "For job types"
     },
@@ -103,12 +107,12 @@
       "description": "For creating and getting service tickets"
     },
     {
-      "name": "Notification",
-      "description": "For retrieve and update notification"
-    },
-    {
       "name": "Job",
       "description": "For scheduled jobs"
+    },
+    {
+      "name": "Job Route",
+      "description": "For job routing"
     },
     {
       "name": "Part Inventory",
@@ -135,6 +139,10 @@
       "description": "For invoices of jobs"
     },
     {
+      "name": "Payment Term",
+      "description": "For payment terms of invoices"
+    },
+    {
       "name": "Payment",
       "description": "For payments of invoices"
     },
@@ -154,6 +162,10 @@
       "name": "Subscription"
     },
     {
+      "name": "Notification",
+      "description": "For retrieving and updating notification"
+    },
+    {
       "name": "Permission",
       "description": "For employee or company permissions"
     },
@@ -162,12 +174,20 @@
       "description": "For vendor login, signup and details"
     },
     {
-      "name": "Import Customer",
+      "name": "Import Customer Data",
       "description": "For import customers through excel file"
     },
     {
       "name": "Quickbooks Integration",
       "description": "For Quickbooks customers integration"
+    },
+    {
+      "name": "Integration",
+      "description": "For creating service ticket via web"
+    },
+    {
+      "name": "Script",
+      "description": "To run script, not to be run frequently. Only use these API if you know what you are doing."
     }
   ],
   "paths": {
@@ -419,6 +439,50 @@
         ]
       }
     },
+    "/finishContract": {
+      "post": {
+        "tags": [
+          "Vendor"
+        ],
+        "summary": "Finishing contract by company",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "contractId"
+                ],
+                "properties": {
+                  "contractId": {
+                    "type": "string",
+                    "description": "Id of a contract fetched by /getContracts api"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getContracts": {
       "post": {
         "tags": [
@@ -551,50 +615,6 @@
                       }
                     }
                   }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
-    "/finishContract": {
-      "post": {
-        "tags": [
-          "Vendor"
-        ],
-        "summary": "Finishing contract by company",
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "contractId"
-                ],
-                "properties": {
-                  "contractId": {
-                    "type": "string",
-                    "description": "Id of a contract fetched by /getContracts api"
-                  }
-                }
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GeneralAPIResponse"
                 }
               }
             }
@@ -1217,12 +1237,12 @@
         ]
       }
     },
-    "/createOfficeAdmin": {
+    "/createAdminEmployee": {
       "post": {
         "tags": [
           "Users"
         ],
-        "summary": "To create an office admin",
+        "summary": "To create an admin employee",
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
@@ -1617,6 +1637,110 @@
         ]
       }
     },
+    "/updateEmployeeRole": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "This API used to update employees roles",
+        "description": "0 => OFFICE_ADMIN, 1 => TECHNICIAN, 2 => MANAGER, 3 => COMPANY_ADMIN, 4 => ADMIN_EMPLOYEE",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "employeeId",
+                  "newRole"
+                ],
+                "properties": {
+                  "employeeId": {
+                    "type": "string"
+                  },
+                  "newRole": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateEmployeeEmailPreferences": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "This API used to update employee email preferences",
+        "description": "0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "employeeId",
+                  "emailPreferences"
+                ],
+                "properties": {
+                  "employeeId": {
+                    "type": "string"
+                  },
+                  "emailPreferences": {
+                    "type": "number"
+                  },
+                  "emailTime": {
+                    "type": "string",
+                    "description": "HH:MM:SS"
+                  },
+                  "timeZone": {
+                    "type": "string",
+                    "description": "example: America/Chicago"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getAllEmployees": {
       "post": {
         "tags": [
@@ -1641,6 +1765,42 @@
                       }
                     }
                   }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getEmployeeDetail": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get employee details",
+        "parameters": [
+          {
+            "name": "employeeId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
                 }
               }
             }
@@ -1768,10 +1928,47 @@
         ]
       }
     },
+    "/getCompanyProfile/{companyId}": {
+      "get": {
+        "tags": [
+          "Company"
+        ],
+        "summary": "Retrieve a company profile",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "description": "The id of the company to retrieve from the database",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "$ref": "#/definitions/company"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/updateCompanyProfile": {
       "post": {
         "tags": [
-          "Users"
+          "Company"
         ],
         "summary": "To update profile of a company",
         "requestBody": {
@@ -2315,6 +2512,70 @@
         ]
       }
     },
+    "/updateCustomerEmailPreferences": {
+      "post": {
+        "tags": [
+          "Customer"
+        ],
+        "summary": "This API used to update customer email preferences",
+        "description": "0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "customerId",
+                  "emailPreferences"
+                ],
+                "properties": {
+                  "customerId": {
+                    "type": "string"
+                  },
+                  "emailPreferences": {
+                    "type": "number"
+                  },
+                  "emailTime": {
+                    "type": "string",
+                    "description": "HH:MM:SS"
+                  },
+                  "timeZone": {
+                    "type": "string",
+                    "description": "example: America/Chicago"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    },
+                    "customer": {
+                      "$ref": "#/components/schemas/Customer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getCustomers": {
       "post": {
         "tags": [
@@ -2671,6 +2932,100 @@
           {
             "Bearer": []
           }
+        ]
+      }
+    },
+    "/addContact": {
+      "post": {
+        "tags": [
+          "Contact"
+        ],
+        "summary": "Adds a contact to the customer",
+        "description": "Adds an array contacts list to the customer",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "customer",
+                  "latitude",
+                  "longitude",
+                  "nfcTag"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "Jhon"
+                  },
+                  "email": {
+                    "type": "string",
+                    "example": "jhon@gmail.com"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "example": "9705546998"
+                  },
+                  "type": {
+                    "type": "string",
+                    "example": "Customer"
+                  },
+                  "referenceNumber": {
+                    "type": "string",
+                    "example": "601c9b477c3b392cc2adbd17"
+                  },
+                  "Authorization": {
+                    "type": "string",
+                    "example": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vYXBpLmJsdWVjbGVyay5jb20iLCJpZCI6IjVmMzFiODNlZjdlNDJjYmU5YmVkMDg3ZSIsImlhdCI6MTYxMjI4MTc5NywiZXhwIjoxMDAwMDAwMTYxMjI4MTc5Nn0.XdJEXg9KmH887k81SDyCyPNAf46LJdRNQgOu32jt7D4"
+                  },
+                  "contactId": {
+                    "type": "string",
+                    "example": "601c9b477c3b392cc2adbd19",
+                    "description":"ContactId reference while adding an existing contact to the job location"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Returns new contact information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/ContactSchemaResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getContacts": {
+      "get": {
+        "tags": [
+          "Contact"
+        ]
+      }
+    },
+    "/updateContact": {
+      "put": {
+        "tags": [
+          "Contact"
+        ]
+      }
+    },
+    "/removeContact": {
+      "delete": {
+        "tags": [
+          "Contact"
         ]
       }
     },
@@ -3190,7 +3545,7 @@
     "/jobSite": {
       "post": {
         "tags": [
-          "job Site"
+          "Job Site"
         ],
         "summary": "Create a customer job site",
         "requestBody": {
@@ -3221,7 +3576,7 @@
     "/jobSite/{id}": {
       "get": {
         "tags": [
-          "job Site"
+          "Job Site"
         ],
         "summary": "Get Job site by Id",
         "parameters": [
@@ -3257,7 +3612,7 @@
       },
       "put": {
         "tags": [
-          "job Site"
+          "Job Site"
         ],
         "summary": "Update Job site by Id",
         "parameters": [
@@ -3298,7 +3653,7 @@
     "/jobSite?companyId={companyId}&customerId={customerId}": {
       "get": {
         "tags": [
-          "job Site"
+          "Job Site"
         ],
         "summary": "Get Job site by companyId and/or customerId",
         "parameters": [
@@ -3686,7 +4041,7 @@
         "tags": [
           "Item Pricing Tiers"
         ],
-        "summary": "Retrieve item tier list of company",
+        "summary": "To retrieve item tier list of company",
         "description": "To retrieve all item tier of the logged in user company",
         "responses": {
           "200": {
@@ -3712,7 +4067,7 @@
         "tags": [
           "Item Pricing Tiers"
         ],
-        "summary": "Add new tier to the company",
+        "summary": "To add new tier to the company",
         "description": "To add new item tier to the company then will add the new tier to all items belong to the company",
         "responses": {
           "200": {
@@ -7323,7 +7678,7 @@
     "/importCustomer": {
       "post": {
         "tags": [
-          "Import Customer"
+          "Import Customer Data"
         ],
         "summary": "To upload an image",
         "requestBody": {
@@ -8631,7 +8986,7 @@
     "/syncQBPaymentTerms": {
       "post": {
         "tags": [
-          "Quickbooks Payment Term"
+          "Quickbooks Integration"
         ],
         "summary": "Manually syncing ALL payment terms",
         "description": "Manually syncing ALL payment terms from BlueClerk to QuickBooks and vice versa,",

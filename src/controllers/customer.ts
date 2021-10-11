@@ -8,7 +8,7 @@ import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { User, IUser } from '../models/User'
 import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 import { IPriceTier } from '../models/PriceTier'
-import { _createQBCustomer, _updateQBCustomer } from './quickbook.customer'
+import { _createQBCustomer, _updateQBCustomer } from '../controllers/quickbook.customer'
 
 /**
  * To reset Customer quickbookId,
@@ -350,11 +350,11 @@ export const updateCustomer = (req: Request, res: Response) => {
             contactName: params.contactName,
             vendorId: params.vendorId,
             contacts: params.contacts,
-            inactiveAt: '',
-            inactiveBy: '',
+            inactiveAt: null,
+            inactiveBy: null,
         }
 
-        if (!isActive) {
+        if (customer.isActive && !isActive) {
             data.inactiveAt = new Date();
             data.inactiveBy = user._id;
         }
