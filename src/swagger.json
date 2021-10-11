@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.1",
+  "openapi": "3.0.3",
   "info": {
     "title": "BlueClerk",
     "description": "APIs for both app and website",
@@ -2341,15 +2341,13 @@
                   },
                   "companyId": {
                     "type": "string",
-                    "nullable": "true",
                     "description": "Id of company if contractor is hitting for other company"
                   }
                 }
               }
             }
           },
-          "required": false,
-          "allowEmptyValue": true
+          "required": true
         },
         "responses": {
           "200": {
@@ -5404,6 +5402,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
+                "type": "object",
                 "required": [
                   "customerId",
                   "employeeType",
@@ -6042,6 +6041,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
+                "type": "object",
                 "required": [
                   "jobId",
                   "scheduleDate"
@@ -6111,9 +6111,12 @@
                     "type": "string",
                     "description": "Customer PO of the job"
                   },
-                  "image": {
-                    "type": "string",
-                    "format": "binary"
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
                   },
                   "companyId": {
                     "type": "string",

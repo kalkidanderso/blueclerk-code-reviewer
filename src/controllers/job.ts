@@ -224,7 +224,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         jobSite: params.jobSiteId ?? parentJob?.jobSite,
         customerContactId: params.customerContactId ?? parentJob?.customerContactId,
         customerPO: params.customerPO ?? parentJob?.customerPO,
-        image: imageUrl ?? parentJob?.image,
+        images: [imageUrl ?? parentJob?.images],
         // type: params.jobTypeId ?? parentJob?.type, // TODO: To be deprecated
         tasks: jobTypes ?? parentJob?.tasks,
         company: companyId,
@@ -233,7 +233,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         createdBy: user._id,
         track: track,
         employeeType: params.employeeType,
-    })
+    });
 
     let newStartTime: any = null
     let newEndTime: any = null
@@ -1528,10 +1528,13 @@ export const updateJobTask = async (req: Request, res: Response) => {
 }
 
 export const editJob = async (req: Request, res: Response) => {
-
+    const imagesUrl: string[] = [];
     const params = req.body;
-    const paramsImageFile = req.file;
-    const imageUrl = paramsImageFile?.location;
+    const paramsImageFile = JSON.parse(JSON.stringify(req.files));
+
+    // Push image location from req.files to imagesUrl
+    paramsImageFile.forEach((image:any) => imagesUrl.push(image.location));
+
     var companyId = req.companyId;
     const user = <IUser>req.user;
     if(req.otherCompanyId != undefined) {
@@ -1668,12 +1671,16 @@ export const editJob = async (req: Request, res: Response) => {
                 job.customerPO = params.customerPO;
                 if (linkedJob) { linkedJob.customerPO = params.customerPO; }
             }
-            if (imageUrl) {
-                if (imageUrl !== job.image) {
+
+            if (imagesUrl?.length) {
+                if (JSON.stringify(imagesUrl) !== JSON.stringify(job.images)) {
                     action += '|Updated image|';
                 }
-                job.image = imageUrl;
-                if (linkedJob) { linkedJob.image = imageUrl; }
+
+                imagesUrl.forEach(imageUrl => {
+                    job.images.push(imageUrl);
+                    if (linkedJob) { linkedJob.images.push(imageUrl) }
+                });
             }
 
             //=== HANDLE params jobTypes
@@ -1760,6 +1767,7 @@ export const editJob = async (req: Request, res: Response) => {
                     return res.json({'status': Status.Error, 'message': err.message});
                 });
             }
+
             job.updateOne(
                 job,
                 (err: any, raw: any)=> {

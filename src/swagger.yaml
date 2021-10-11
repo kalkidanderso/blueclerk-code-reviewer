@@ -3026,6 +3026,7 @@ paths:
               properties:
                 companyId:
                   type: string
+                  nullable: true
                   description: Id of company if contractor is hitting for other company
       responses:
         '200':
@@ -3757,7 +3758,7 @@ paths:
                 customerPO:
                   type: string
                   description: Customer PO of the job
-                image:
+                images:
                   type: string
                   format: binary
                 companyId:

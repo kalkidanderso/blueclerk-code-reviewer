@@ -17,7 +17,7 @@ export interface IJob extends Document {
     jobSite: Schema.Types.ObjectId | any
     customerContactId: Schema.Types.ObjectId | any
     customerPO: string
-    image: string
+    images: string[]
     type: Schema.Types.ObjectId | any // TODO: To be deprecated
     tasks: ITask[]
     company: Schema.Types.ObjectId | any
@@ -120,7 +120,7 @@ const JobSchema = new Schema({
         ref: 'Contact'
     },
     customerPO: String,
-    image: String,
+    images: [{ type: String }],
     type: {
         // TODO: To be deprecated
         type: Schema.Types.ObjectId,
@@ -246,7 +246,7 @@ const JobSchema = new Schema({
         type: Number,
         // default: 0
     },
-    completeOnTime:{
+    completeOnTime: {
         type: Boolean,
         required: false
     }
