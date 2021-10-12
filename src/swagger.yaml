@@ -791,11 +791,11 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
-  /createOfficeAdmin:
+  /createAdminEmployee:
     post:
       tags:
         - Users
-      summary: To create an office admin
+      summary: To create an office employee
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -1020,6 +1020,71 @@ paths:
               properties:
                 employeeId:
                   type: string
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateEmployeeRole:
+    post:
+      tags:
+        - Users
+      summary: This API used to update employees roles
+      description: 0 => OFFICE_ADMIN, 1 => TECHNICIAN, 2 => MANAGER, 3 => COMPANY_ADMIN, 4 => ADMIN_EMPLOYEE
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - employeeId
+                - newRole
+              properties:
+                employeeId:
+                  type: string
+                newRole:
+                  type: number
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateEmployeeEmailPreferences:
+    post:
+      tags:
+        - Users
+      summary: This API used to update employee email preferences
+      description: 0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - employeeId
+                - emailPreferences
+              properties:
+                employeeId:
+                  type: string
+                  description: The contractor company id
+                emailPreferences:
+                  type: number
+                emailTime:
+                  type: string
+                  description: HH:MM:SS
+                timeZone:
+                  type: string
+                  description: 'example: America/Chicago'
         required: true
       responses:
         '200':
@@ -1643,6 +1708,42 @@ paths:
                 customPrices:
                   type: string
                   description: '"Json string of the customPrices e.g [{\"quantity\":1,\"price\":45},{\"quantity\":2,\"price\":85},{\"quantity\":3,\"price\":125},{\"quantity\":4,\"price\":165},{\"quantity\":5,\"price\":206},{\"quantity\":6,\"price\":245}]. The the quantities have to be sufficient, no missing sequence."'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateCustomerEmailPreferences:
+    post:
+      tags:
+        - Customer
+      summary: This API used to update customer email preferences
+      description: 0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - customerId
+                - emailPreferences
+              properties:
+                customerId:
+                  type: string
+                  description: The contractor company id
+                emailPreferences:
+                  type: number
+                emailTime:
+                  type: string
+                  description: HH:MM:SS
+                timeZone:
+                  type: string
+                  description: 'example: America/Chicago'
         required: true
       responses:
         '200':
@@ -4976,22 +5077,17 @@ paths:
       security:
         - Bearer: []
   /getInvoicesByCustomerId:
-    post:
+    get:
       tags:
         - Payment
       summary: To get invoice of customer to record payment
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required:
-                - customer
-              properties:
-                customer:
-                  type: string
-                  description: id of the customer you want to fetch invoices for
-        required: true
+      parameters:
+        - name: customerId
+          in: query
+          required: true
+          description: id of the customer you want to fetch invoices for
+          schema:
+            type: string
       responses:
         '200':
           description: Success
@@ -5009,7 +5105,7 @@ paths:
       security:
         - Bearer: []
   /getPayments:
-    post:
+    get:
       tags:
         - Payment
       summary: To get payments of a company
@@ -5030,22 +5126,17 @@ paths:
       security:
         - Bearer: []
   /getPaymentsByCustomerId:
-    post:
+    get:
       tags:
         - Payment
       summary: To get payments by customer id
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required:
-                - customer
-              properties:
-                customer:
-                  type: string
-                  description: id of the customer you want to fetch payments for
-        required: true
+      parameters:
+        - name: customerId
+          in: query
+          required: true
+          description: id of the customer you want to fetch payments for
+          schema:
+            type: string
       responses:
         '200':
           description: Success
@@ -5198,7 +5289,7 @@ paths:
     post:
       tags:
         - Import Customer Data
-      summary: To upload an image
+      summary: Upload customer data as an xlsx file
       requestBody:
         content:
           multipart/form-data:
