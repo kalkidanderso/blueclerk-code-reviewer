@@ -987,6 +987,11 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
+    const paramsImageFile = JSON.parse(JSON.stringify(req.files));
+    const imagesUrl: string[] = [];
+
+    // Push image location from req.files to imagesUrl
+    paramsImageFile.forEach((image:any) => imagesUrl.push(image.location));
 
     if ([JobStatus.RESCHEDULED, JobStatus.INCOMPLETE].includes(Number(params.status)) && !params.note) {
         return res.json({ status: Status.Error, message: 'Note is required when you reschedule or make the job incomplete' });
@@ -1123,6 +1128,16 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
         }
         if(params.jobSiteId) {
             data.jobSite = params.jobSiteId
+        }
+        if (imagesUrl?.length) {
+            if (JSON.stringify(imagesUrl) !== JSON.stringify(job.images)) {
+                action += '|Updated image|';
+            }
+
+            imagesUrl.forEach(imageUrl => {
+                job.images.push(imageUrl);
+                if (linkedJob) { linkedJob.images.push(imageUrl) }
+            });
         }
         if (
             job.comment != params.comment ||
@@ -1565,9 +1580,10 @@ export const updateJobTask = async (req: Request, res: Response) => {
 }
 
 export const editJob = async (req: Request, res: Response) => {
-    const imagesUrl: string[] = [];
+
     const params = req.body;
     const paramsImageFile = JSON.parse(JSON.stringify(req.files));
+    const imagesUrl: string[] = [];
 
     // Push image location from req.files to imagesUrl
     paramsImageFile.forEach((image:any) => imagesUrl.push(image.location));
@@ -1713,7 +1729,6 @@ export const editJob = async (req: Request, res: Response) => {
                 job.customerPO = params.customerPO;
                 if (linkedJob) { linkedJob.customerPO = params.customerPO; }
             }
-
             if (imagesUrl?.length) {
                 if (JSON.stringify(imagesUrl) !== JSON.stringify(job.images)) {
                     action += '|Updated image|';
