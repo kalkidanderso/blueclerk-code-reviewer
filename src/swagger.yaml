@@ -1,4 +1,4 @@
-openapi: 3.0.1
+openapi: 3.0.3
 info:
   title: BlueClerk
   description: APIs for both app and website
@@ -39,6 +39,8 @@ tags:
     description: For company equipment's Check In Check Out history
   - name: Inventory
     description: For Inventory of company equipments
+  - name: Job Location
+    description: For company Job locations
   - name: Job Type
     description: For job types
   - name: Items
@@ -48,13 +50,13 @@ tags:
   - name: Job Charges
     description: For job charges
   - name: Job Site
-    description: For company Job Sites
+    description: For adding, updating and fetching Job Site detail
   - name: Service Ticket
     description: For creating and getting service tickets
-  - name: Notification
-    description: For retrieve and update notification
   - name: Job
     description: For scheduled jobs
+  - name: Job Route
+    description: For job routing
   - name: Part Inventory
     description: For parts inventory
   - name: Purchase Order
@@ -67,6 +69,8 @@ tags:
     description: For salesTax
   - name: Invoice
     description: For invoices of jobs
+  - name: Payment Term
+    description: For payment terms of invoices
   - name: Payment
     description: For payments of invoices
   - name: Image
@@ -76,14 +80,20 @@ tags:
   - name: Tags
     description: For Placing Tags Order
   - name: Subscription
+  - name: Notification
+    description: For retrieving and updating notifications
   - name: Permission
     description: For employee or company permissions
   - name: Vendor
     description: For vendor login, signup and details
-  - name: Import Customer
+  - name: Import Customer Data
     description: For import customers through excel file
   - name: Quickbooks Integration
     description: For Quickbooks customers integration
+  - name: Integration
+    description: For creating service ticket via web
+  - name: Script
+    description: To run script, not to be run frequently. Only use these API if you know what you are doing.
 paths:
   /login:
     post:
@@ -241,6 +251,32 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
+  /finishContract:
+    post:
+      tags:
+        - Vendor
+      summary: Finishing contract by company
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - contractId
+              properties:
+                contractId:
+                  type: string
+                  description: Id of a contract fetched by /getContracts api
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /getContracts:
     post:
       tags:
@@ -287,7 +323,19 @@ paths:
     post:
       tags:
         - Vendor
-      summary: To get detail of a contractor
+      summary: To get detail of a contractor.
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - contractorId
+              properties:
+                contractorId:
+                  type: string
+                  description: Id of contractor for getting detail
+        required: true
       responses:
         '200':
           description: Success
@@ -298,10 +346,46 @@ paths:
                 properties:
                   GeneralAPIResponse:
                     $ref: '#/components/schemas/GeneralAPIResponse'
-                  industries:
+                  contractors:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Contractor'
+                      $ref: '#/components/schemas/Contract'
+      security:
+        - Bearer: []
+  /updateContractorEmailPreferences:
+    post:
+      tags:
+        - Vendor
+      summary: This API used to update contractor email preferences
+      description: 0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails. Needs to be logged in as company admin first
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - contractorId
+                - emailPreferences
+              properties:
+                contractorId:
+                  type: string
+                  description: The contractor company id
+                emailPreferences:
+                  type: number
+                emailTime:
+                  type: string
+                  description: HH:MM:SS
+                timeZone:
+                  type: string
+                  description: 'example: America/Chicago'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
   /getCompanyContractorActivity:
@@ -323,32 +407,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ContractorActivity'
-      security:
-        - Bearer: []
-  /finishContract:
-    post:
-      tags:
-        - Vendor
-      summary: Finishing contract by company
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required:
-                - contractId
-              properties:
-                contractId:
-                  type: string
-                  description: Id of a contract fetched by /getContracts api
-        required: true
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
   /upgradeToCompany:
@@ -993,6 +1051,49 @@ paths:
                       $ref: '#/components/schemas/User'
       security:
         - Bearer: []
+  /getEmployeeDetail:
+    get:
+      tags:
+        - Users
+      summary: Get employee details
+      parameters:
+        - name: employeeId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+                  users:
+                    type: object
+                    properties:
+                      firstName:
+                        type: string
+                      lastName:
+                        type: string
+                      email:
+                        type: string
+                      phone:
+                        type: string
+                      emailPreferences:
+                        type: object
+                        properties:
+                          preferences:
+                            type: string
+                          time:
+                            type: string
+                          timezone:
+                            type: string
+      security:
+        - Bearer: []
   /getEmployeesForJob:
     post:
       tags:
@@ -1060,10 +1161,43 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
+  /getCompanyProfile/{companyId}:
+    get:
+      tags:
+        - Users
+      summary: Retrieve a company profile
+      description: Returns a company profile for the specified company id
+      parameters:
+        - name: companyId
+          in: path
+          description: The id of the company to retrieve from the database
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/company'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+      security:
+        - Bearer: []
   /updateCompanyProfile:
     post:
       tags:
-        - Users
+        - Company
       summary: To update profile of a company
       requestBody:
         content:
@@ -1257,6 +1391,134 @@ paths:
                       $ref: '#/components/schemas/EquipmentBrand'
       security:
         - Bearer: []
+  /addContact:
+    post:
+      tags:
+        - Contact
+      summary: Adds a contact to the customer
+      description: Adds an array contacts list to the customer
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                phone:
+                  type: string
+                type:
+                  type: string
+                referenceNumber:
+                  type: string
+                contactId:
+                  type: string
+                  description: ContactId reference while adding an existing contact to the job location
+                authorization:
+                  type: string
+      responses:
+        '200':
+          description: Returns new contact information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactSchemaResponse'
+      security:
+        - Bearer: []
+  /getContacts:
+    get:
+      tags:
+        - Contact
+      summary: Returns list of contacts for the Customer or Job location
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema: {}
+        - name: referenceNumber
+          in: query
+          required: true
+          schema: {}
+      responses:
+        '200':
+          description: ' Returns list of contacts for the reference number based on the type'
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ContactSchemaResponse'
+      security:
+        - Bearer: []
+  /updateContact:
+    put:
+      tags:
+        - Contact
+      summary: Adds a contact to the customer
+      description: Adds an array contacts list to the customer
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - _id
+              properties:
+                _id:
+                  type: string
+                name:
+                  type: string
+                email:
+                  type: string
+                phone:
+                  type: string
+        required: true
+      responses:
+        '200':
+          description: Returns new contact information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactSchemaResponse'
+      security:
+        - Bearer: []
+  /removeContact:
+    delete:
+      tags:
+        - Contact
+      summary: Removes contact from the Customer or Job location
+      description: Removes the contact from the customer or Job location
+      parameters:
+        - name: contactId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: referenceNumber
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+      security:
+        - Bearer: []
   /createCustomer:
     post:
       tags:
@@ -1413,7 +1675,6 @@ paths:
                   description: Should include non-active clients in the response. true->include false->don't include
                 companyId:
                   type: string
-                  nullable: true
                   description: Id of company if contractor is hitting for other company
         required: true
       responses:
@@ -1930,15 +2191,146 @@ paths:
                                   type: string
       security:
         - Bearer: []
+  /jobLocation:
+    get:
+      tags:
+        - Job Location
+      summary: Get Job location by companyId and/or customerId
+      parameters:
+        - name: companyId
+          in: query
+          schema:
+            type: string
+        - name: customerId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/jobLocation'
+      security:
+        - Bearer: []
+    post:
+      tags:
+        - Job Location
+      summary: Create a customer job location
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - customerId
+                - name
+              properties:
+                customerId:
+                  type: string
+                name:
+                  type: string
+                contact:
+                  type: string
+                  description: 'Example: {name: "Georgianna Streich", phone: "6713291523", email: "clustertest@getnada.com"}'
+                locationLat:
+                  type: string
+                locationLong:
+                  type: string
+                street:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+                zipcode:
+                  type: string
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /jobLocation/{id}:
+    get:
+      tags:
+        - Job Location
+      summary: Get Job location by Id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/jobLocation'
+      security:
+        - Bearer: []
+    put:
+      tags:
+        - Job Location
+      summary: Update Job location by Id
+      parameters:
+        - name: id
+          in: path
+          description: Id of job location to be updated
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - customerId
+              properties:
+                customerId:
+                  type: string
+                  description: Id of customer that owns the job location
+                name:
+                  type: string
+                isActive:
+                  type: boolean
+                locationLat:
+                  type: string
+                locationLong:
+                  type: string
+                street:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+                zipcode:
+                  type: string
+        required: true
+      responses:
+        '200':
+          description: Success
+          content: {}
+      security:
+        - Bearer: []
   /jobSite:
     post:
       tags:
-        - job Site
+        - Job Site
       summary: Create a customer job site
       requestBody:
         content:
-          '*/*':
+          application/json:
             schema:
+              type: object
               $ref: '#/components/schemas/jobSite'
         required: false
       responses:
@@ -1948,11 +2340,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/jobSite'
-      x-codegen-request-body-name: body
+      security:
+        - Bearer: []
   /jobSite/{id}:
     get:
       tags:
-        - job Site
+        - Job Site
       summary: Get Job site by Id
       parameters:
         - name: id
@@ -1972,9 +2365,11 @@ paths:
                     $ref: '#/components/schemas/GeneralAPIResponse'
                   data:
                     $ref: '#/components/schemas/jobSite'
+      security:
+        - Bearer: []
     put:
       tags:
-        - job Site
+        - Job Site
       summary: Update Job site by Id
       parameters:
         - name: id
@@ -1995,22 +2390,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GeneralAPIResponse'
-      x-codegen-request-body-name: body
+      security:
+        - Bearer: []
   /jobSite?companyId={companyId}&customerId={customerId}:
     get:
       tags:
-        - job Site
+        - Job Site
       summary: Get Job site by companyId and/or customerId
       parameters:
         - name: companyId
           in: query
+          required: true
           schema:
-            type: integer
+            type: string
         - name: customerId
           in: query
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         '200':
           description: Success
@@ -2023,6 +2420,8 @@ paths:
                     $ref: '#/components/schemas/GeneralAPIResponse'
                   data:
                     $ref: '#/components/schemas/jobSite'
+      security:
+        - Bearer: []
   /createJobType:
     post:
       tags:
@@ -3026,7 +3425,6 @@ paths:
               properties:
                 companyId:
                   type: string
-                  nullable: true
                   description: Id of company if contractor is hitting for other company
       responses:
         '200':
@@ -3249,8 +3647,8 @@ paths:
                     items:
                       type: object
                       allOf:
-                        - $ref: '#/definitions/Notification'
-                        - $ref: '#/definitions/NotificationServiceTicket'
+                        - $ref: '#/components/schemas/Notification'
+                        - $ref: '#/components/schemas/NotificationServiceTicket'
       security:
         - Bearer: []
   /updateNotification/{notificationId}:
@@ -3284,8 +3682,8 @@ paths:
                   notification:
                     type: object
                     allOf:
-                      - $ref: '#/definitions/Notification'
-                      - $ref: '#/definitions/NotificationServiceTicket'
+                      - $ref: '#/components/schemas/Notification'
+                      - $ref: '#/components/schemas/NotificationServiceTicket'
       security:
         - Bearer: []
       x-codegen-request-body-name: body
@@ -3298,6 +3696,7 @@ paths:
         content:
           multipart/form-data:
             schema:
+              type: object
               required:
                 - customerId
                 - employeeType
@@ -3386,10 +3785,10 @@ paths:
                   description: Id of Parent Job
                 scheduledStartTime:
                   type: string
-                  description: Scheduled start time of job. e.g. 13:05:00 (will use parent job's scheduledStartTime when not provided)
+                  description: scheduled start time of job. e.g. 13:05:00 (will use parent job's scheduledStartTime when not provided)
                 scheduledEndTime:
                   type: string
-                  description: Scheduled end time of job. e.g. 15:05:00 (will use parent job's scheduledEndTime when not provided)
+                  description: scheduled end time of job. e.g. 15:05:00 (will use parent job's scheduledEndTime when not provided)
                 equipmentId:
                   type: string
                   description: Id of a equipment for single scan (will use parent job's equipmentId when not provided)
@@ -3412,7 +3811,10 @@ paths:
       responses:
         '200':
           description: Success
-          content: {}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
   /getJobs:
@@ -3429,6 +3831,58 @@ paths:
                 companyId:
                   type: string
                   description: Id of company if contractor is hitting for other company
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+      security:
+        - Bearer: []
+  /searchJobs:
+    post:
+      tags:
+        - Job
+      summary: To get all jobs of a company or company of employee.
+      parameters:
+        - name: page
+          in: query
+          description: 'The number of the page. example: 1'
+          required: true
+          schema: {}
+        - name: pageSize
+          in: query
+          description: The numbers of items to return per page e.g. 10
+          required: true
+          schema: {}
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                companyId:
+                  type: string
+                  description: Id of company if contractor is hitting for other company
+                todaysJobs:
+                  type: boolean
+                  description: true for getting today's jobs
+                customerNames:
+                  type: array
+                  description: List of customer's displayNames in comma separated strings. eg. name1,name2
+                  items:
+                    type: string
+                jobId:
+                  type: string
+                  description: Job ID e.g. Job 51 or 51
       responses:
         '200':
           description: Success
@@ -3674,8 +4128,7 @@ paths:
                   description: Id of job status as number from one of these (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4, PAUSED => 5, INCOMPLETE => 6).
                 note:
                   type: string
-                  description: |
-                    **Required** when status is RESCHEDULED => 4 or INCOMPLETE => 6
+                  description: '**Required** when status is RESCHEDULED => 4 or INCOMPLETE => 6'
                 comment:
                   type: string
                 jobLocationId:
@@ -3706,6 +4159,7 @@ paths:
         content:
           multipart/form-data:
             schema:
+              type: object
               required:
                 - jobId
                 - scheduleDate
@@ -3740,9 +4194,6 @@ paths:
                 jobSiteId:
                   type: string
                   description: Id of job site
-                jobTypeId:
-                  type: string
-                  description: Id of a job type selected from the list received by /getJobTypes api
                 jobTypes:
                   type: string
                   description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]. Id of a job type from the list received by /getJobTypes api'
@@ -3758,7 +4209,7 @@ paths:
                 customerPO:
                   type: string
                   description: Customer PO of the job
-                images:
+                image:
                   type: string
                   format: binary
                 companyId:
@@ -3842,22 +4293,96 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
-  /getJobReport:
+  /getAllJobRoutes:
+    get:
+      tags:
+        - Job Route
+      summary: Get all job routes by today or filter date
+      parameters:
+        - name: scheduleDate
+          in: query
+          description: Filter job routes by schedule date, if not provided will search all job routes for today
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getJobRoute:
+    get:
+      tags:
+        - Job Route
+      summary: Get the job routing for technician for the specific date
+      parameters:
+        - name: scheduleDate
+          in: query
+          description: Schedule date of job routing
+          required: true
+          schema:
+            type: string
+        - name: employeeType
+          in: query
+          description: 0 to search job route of an employee/admin of company and 1 to search job route of a contractor/vendor
+          required: true
+          schema:
+            type: number
+            enum:
+              - 0
+              - 1
+        - name: technicianId
+          in: query
+          description: '**Required when employeeType = 0**. Id of a technician selected from the list received by /getEmployeesForJob api'
+          schema:
+            type: string
+        - name: contractorId
+          in: query
+          description: '**Required when employeeType = 1**. Id of a contractor selected from the list received by /getCompanyContracts api'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /createJobRoute:
     post:
       tags:
-        - Reports
-      summary: Get report of a finshed job
+        - Job Route
+      summary: Create new job routing for technician/contractor
       requestBody:
         content:
           application/x-www-form-urlencoded:
             schema:
               type: object
               required:
-                - jobId
+                - routes
+                - scheduleDate
+                - technicianId
               properties:
-                jobId:
+                scheduleDate:
                   type: string
-                  description: Id of job to get report (job must be finished and have tags scaned)
+                  description: Schedule date of the job route
+                employeeType:
+                  type: number
+                  description: 0 to create job route to an employee/admin of company and 1 to create job route to a contractor/vendor
+                technicianId:
+                  type: string
+                  description: Id of a technician selected from the list received by /getEmployeesForJob api
+                contractorId:
+                  type: string
+                  description: Id of a contractor selected from the list received by /getCompanyContracts api
+                routes:
+                  type: string
+                  description: Json string of the routes e.g ["608c26d58397bc206669870f","608c21ec125ed4202189d6e9"]. The order of array will determine the order of job route.
         required: true
       responses:
         '200':
@@ -3865,7 +4390,119 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/JobReport'
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateJobRoute:
+    put:
+      tags:
+        - Job Route
+      summary: Update job route for technician/contractor
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - jobRouteId
+                - routes
+              properties:
+                jobRouteId:
+                  type: string
+                  description: Job Route Id to be updated
+                routes:
+                  type: string
+                  description: Json string of the routes e.g ["608c26d58397bc206669870f","608c21ec125ed4202189d6e9"]. The order of array will determine the order of job route.
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getJobReport:
+    get:
+      tags:
+        - Reports
+      summary: Get the report details of a finished job
+      parameters:
+        - name: jobReportId
+          in: query
+          description: Id of the job report
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/jobReportSchema'
+      security:
+        - Bearer: []
+  /getAllJobReports:
+    get:
+      tags:
+        - Reports
+      summary: Get the company's job reports
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getAllJobReportsResponseSchema'
+      security:
+        - Bearer: []
+  /deleteJobReport:
+    delete:
+      tags:
+        - Reports
+      summary: delete a job report
+      parameters:
+        - name: jobReportId
+          in: query
+          description: Id of the job report
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /sendJobReportEmail:
+    post:
+      tags:
+        - Reports
+      summary: send an email about the job report
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - jobReportId
+              properties:
+                jobReportId:
+                  type: string
+                  description: Id of the job report
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
   /createInvoice:
@@ -3891,9 +4528,9 @@ paths:
                 purchaseOrderId:
                   type: string
                   description: Pass purchase order id to create purchase order invoice (optional)
-                invoicedDate:
+                issuedDate:
                   type: string
-                  description: Invoiced date of the invoice
+                  description: Issued date of the invoice
                 dueDate:
                   type: string
                   description: Due date of the invoice
@@ -3914,6 +4551,7 @@ paths:
                   description: Pass customer PO to replace ticket's customer PO if any (optional)
                 customerContactId:
                   type: string
+                  description: Pass customer contact id to replace ticket's customer contact id if any (optional)
                 vendorId:
                   type: string
                   description: Pass customer vendor id to replace the default customer's vendor id (optional)
@@ -3965,6 +4603,54 @@ paths:
                       $ref: '#/components/schemas/Invoice'
       security:
         - Bearer: []
+  /getCompanyInvoices:
+    get:
+      tags:
+        - Invoice
+      summary: To get company invoice
+      description: Those invoices related to the company subscriptions
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+                  companyInvoices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CompanyInvoice'
+      security:
+        - Bearer: []
+  /getCompanyInvoiceDetails:
+    get:
+      tags:
+        - Invoice
+      summary: To get company invoice details
+      parameters:
+        - name: companyInvoiceId
+          in: query
+          description: Id of the company Invoice
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+                  companyInvoice:
+                    $ref: '#/components/schemas/CompanyInvoice'
+      security:
+        - Bearer: []
   /updateInvoice:
     post:
       tags:
@@ -4004,6 +4690,7 @@ paths:
                   description: Pass customer PO to replace ticket's customer PO if any (optional)
                 customerContactId:
                   type: string
+                  description: Pass customer contact id to replace ticket's customer contact id if any (optional)
                 vendorId:
                   type: string
                   description: Pass customer vendor id to replace the default customer's vendor id (optional)
@@ -4077,18 +4764,13 @@ paths:
       tags:
         - Invoice
       summary: Get the invoice email template before send the email
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required:
-                - invoiceId
-              properties:
-                invoiceId:
-                  type: string
-                  description: Id of invoice
-        required: true
+      parameters:
+        - name: invoiceId
+          in: query
+          description: Id of invoice
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Success
@@ -4107,6 +4789,7 @@ paths:
         content:
           multipart/form-data:
             schema:
+              type: object
               required:
                 - invoiceId
               properties:
@@ -4122,6 +4805,7 @@ paths:
                 invoicePdf:
                   type: string
                   description: PDF file of invoice
+                  format: binary
         required: true
       responses:
         '200':
@@ -4271,7 +4955,7 @@ paths:
       security:
         - Bearer: []
   /deletePaymentTerm:
-    get:
+    delete:
       tags:
         - Payment Term
       summary: To delete a payment term
@@ -4485,6 +5169,7 @@ paths:
         content:
           multipart/form-data:
             schema:
+              type: object
               required:
                 - image
               properties:
@@ -4512,7 +5197,7 @@ paths:
   /importCustomer:
     post:
       tags:
-        - Import Customer
+        - Import Customer Data
       summary: To upload an image
       requestBody:
         content:
@@ -5000,6 +5685,7 @@ paths:
             schema:
               type: object
               required:
+                - nbOfAdmins
                 - noOfManagers
                 - noOfOfficeAdmins
                 - noOfTechnicians
@@ -5013,7 +5699,24 @@ paths:
                 noOfTechnicians:
                   type: string
                   description: No of technicians company wants to buy or add more subscriptions, if there is none to buy just send 0 otherwise (1,2,3,...)
+                nbOfAdmins:
+                  type: string
+                  description: No of admins company wants to buy or add more subscriptions, if there is none to buy just send 0 otherwise (1,2,3,...)
         required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getAllSubscriptions:
+    get:
+      tags:
+        - Subscription
+      summary: Get company's subscriptions
       responses:
         '200':
           description: Success
@@ -5034,19 +5737,11 @@ paths:
             schema:
               type: object
               required:
-                - noOfManagers
-                - noOfOfficeAdmins
-                - noOfTechnicians
+                - employeeId
               properties:
-                noOfOfficeAdmins:
+                employeeId:
                   type: string
-                  description: No of office admins company wants to remove from subscription, if there is none to cancel just send 0 otherwise (1,2,3,...)
-                noOfManagers:
-                  type: string
-                  description: No of managers company wants to remove from subscription, if there is none to cancel just send 0 otherwise (1,2,3,...)
-                noOfTechnicians:
-                  type: string
-                  description: No of technicians company wants to remove from subscription, if there is none to cancel just send 0 otherwise (1,2,3,...)
+                  description: Id of the Employee That Will be Removed From The Company Subscription
         required: true
       responses:
         '200':
@@ -5255,7 +5950,7 @@ paths:
               properties:
                 customerId:
                   type: string
-                  description: Id of a customer selected from the list received by /getCustomers api
+                  description: Id of a customer to be associated
                 email:
                   type: string
                   description: To replace customer email from database, to be saved to QuickBooks
@@ -5305,9 +6000,9 @@ paths:
   /syncQBPaymentTerms:
     post:
       tags:
-        - Quickbooks Payment Term
+        - Quickbooks Integration
       summary: Manually syncing ALL payment terms
-      description: Manually syncing ALL payment terms from BlueClerk to QuickBooks and vice versa,
+      description: Manually syncing ALL payment terms from BlueClerk to QuickBooks and vice versa
       responses:
         '200':
           description: Success
@@ -5440,8 +6135,8 @@ paths:
     post:
       tags:
         - Quickbooks Integration
-      summary: Disconnect from QuickBooks integration description
-      description: 'Disconnect from QB and **will reset QB synced status** for: Customer, Job Type, Item, Payment Term, Invoice, and Payment'
+      summary: Disconnect from QuickBooks integration
+      description: 'Disconnect from QB and will **reset QB synced status** for: Customer, Job Type, Item, Payment Term, Invoice, and Payment'
       responses:
         '200':
           description: Success
@@ -5460,6 +6155,7 @@ paths:
         content:
           multipart/form-data:
             schema:
+              type: object
               required:
                 - email
                 - name
@@ -5547,6 +6243,125 @@ paths:
         - Bearer: []
 components:
   schemas:
+    ContactSchemaResponse:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+    jobReportSchema:
+      type: object
+      properties:
+        job:
+          $ref: '#/components/schemas/Job'
+        scans:
+          type: array
+          items:
+            $ref: '#/components/schemas/Scan'
+        PurchaseOrder:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseOrder'
+        company:
+          $ref: '#/components/schemas/company'
+        invoice:
+          $ref: '#/components/schemas/Invoice'
+    getAllJobReportsResponseSchema:
+      type: array
+      items:
+        $ref: '#/components/schemas/jobReportSchema'
+    company:
+      type: object
+      properties:
+        status:
+          type: integer
+        company:
+          type: object
+          properties:
+            info:
+              type: object
+              properties:
+                companyName:
+                  type: string
+                industry:
+                  type: string
+                logoUrl:
+                  type: string
+                companyEmail:
+                  type: string
+            address:
+              type: object
+              properties:
+                street:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+                zipCode:
+                  type: string
+            contact:
+              type: object
+              properties:
+                phone:
+                  type: string
+            other:
+              type: object
+              properties:
+                hasCardOnFile:
+                  type: boolean
+            userPermissions:
+              type: object
+              properties: {}
+    CompanyInvoice:
+      type: object
+      properties:
+        _id:
+          type: string
+        technicians:
+          type: string
+          description: number of technicians
+        managers:
+          type: string
+          description: number of managers
+        officeAdmins:
+          type: string
+          description: number of office admins
+        admins:
+          type: string
+          description: number of admins
+        contractors:
+          type: string
+          description: number of contractors
+        company:
+          $ref: '#/components/schemas/company'
+        charges:
+          type: number
+          description: Charges amount from job or if you have customized while creating invoice
+        tax:
+          type: number
+          description: Tax amount to be added in charges to calculate the total invoice
+        total:
+          type: number
+          description: Total amount to be charged to customer
+        createdAt:
+          type: string
+          description: Date time when the invoice was created
+          format: date-time
+        emailHistory:
+          type: array
+          items:
+            type: object
+            properties:
+              sentTo:
+                type: string
+              sentAt:
+                type: string
     Industry:
       type: object
       properties:
@@ -5596,7 +6411,7 @@ components:
           properties:
             role:
               type: integer
-              description: 0->OFFICE_ADMIN 1->TECHNICIAN 2->MANAGER 3->COMPANY 4->GLOBAL_ADMIN
+              description: 0->OFFICE_ADMIN 1->TECHNICIAN 2->MANAGER 3->COMPANY_ADMIN 4->Admin_Employee 5->GLOBAL_ADMIN 6->Customer
         info:
           type: object
           properties:
@@ -5712,6 +6527,10 @@ components:
         customer:
           type: string
           description: Id of customer
+        jobLocation:
+          type: string
+        jobSite:
+          type: string
     LocationTag:
       type: object
       properties:
@@ -6374,6 +7193,8 @@ components:
         scheduledEndTime:
           type: string
           format: time
+        ticket:
+          $ref: '#/components/schemas/ServiceTicket'
         estimate:
           type: string
           description: Id of the estimate if the Job is Created by estimate
@@ -6400,7 +7221,7 @@ components:
           type: string
           description: Date and time when the job was finished
           format: date-time
-    jobSite:
+    jobLocation:
       type: object
       properties:
         name:
@@ -6422,11 +7243,47 @@ components:
             long:
               type: number
         address:
+          type: object
+          properties:
+            street:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            zipcode:
+              type: string
+        customerId:
+          type: string
+        companyId:
+          type: string
+    jobSite:
+      type: object
+      properties:
+        name:
+          type: string
+        location:
+          type: object
+          properties:
+            lat:
+              type: number
+            long:
+              type: number
+        address:
+          type: object
+          properties:
+            street:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            zipcode:
+              type: string
+        locationId:
           type: string
         customerId:
-          type: integer
-        companyId:
-          type: integer
+          type: string
     ServiceTicket:
       type: object
       properties:
@@ -6441,9 +7298,20 @@ components:
         technician:
           type: string
           description: Id of technician
+        image:
+          type: string
+          description: Image of ticket
         customer:
           type: string
           description: Id of customer
+        customerPO:
+          type: string
+          description: |+
+            Customer PO/Sales Order#
+
+        customerContactId:
+          type: string
+          description: Customer Contact Id
         note:
           type: string
           description: note added while creating ticket
@@ -6456,6 +7324,81 @@ components:
         company:
           type: string
           description: Id of company who created it
+    Notification:
+      type: object
+      properties:
+        _id:
+          type: string
+        company:
+          type: string
+          description: Id of company who owns the notification
+        notificationType:
+          type: string
+          description: Type of the notification
+          enum:
+            - ServiceTicketCreated
+            - ContractInvitation
+            - ContractAccepted
+            - ContractCanceled
+            - ContractRejected
+            - ContractFinished
+        message:
+          type: object
+          properties:
+            title:
+              type: string
+            body:
+              type: string
+          description: Additional message for future use
+        readStatus:
+          type: object
+          properties:
+            isRead:
+              type: boolean
+            readBy:
+              $ref: '#/components/schemas/User'
+            readAt:
+              type: string
+              description: Date time when the notification was read
+              format: date-time
+          description: Read status information of the notification
+        dismissedStatus:
+          type: object
+          properties:
+            isDismissed:
+              type: boolean
+            dismissedBy:
+              $ref: '#/components/schemas/User'
+            dismissedAt:
+              type: string
+              description: Date time when the notification was dismissed
+              format: date-time
+          description: Dismiss status information of the notification
+        createdAt:
+          type: string
+          description: Date time when the notification was created
+          format: date-time
+    NotificationServiceTicket:
+      type: object
+      properties:
+        metadata:
+          $ref: '#/components/schemas/ServiceTicket'
+    NotificationContract:
+      type: object
+      properties:
+        metadata:
+          $ref: '#/components/schemas/Contract'
+    NotificationUpdateBody:
+      type: object
+      properties:
+        isRead:
+          type: boolean
+          description: (Optional) Read status of notification
+          example: true
+        isDismissed:
+          type: boolean
+          description: (Optional) Dismiss status of notification
+          example: false
     Group:
       type: object
       properties:
@@ -6872,85 +7815,10 @@ components:
               description: Tax percentage applied to invoice default will be 0
             tax:
               type: number
-              description: Tax amount to be added in charges to calculate the total invoice
+              description: Tax amount to be added in charges to caculate the total invoice
             total:
               type: number
               description: Total amount to be charged to customer
-    Notification:
-      type: object
-      properties:
-        _id:
-          type: string
-        company:
-          type: string
-          description: Id of company who owns the notification
-        notificationType:
-          type: string
-          description: Type of the notification
-          enum:
-            - ServiceTicketCreated
-            - ContractInvitation
-            - ContractAccepted
-            - ContractCanceled
-            - ContractRejected
-            - ContractFinished
-        message:
-          type: object
-          properties:
-            title:
-              type: string
-            body:
-              type: string
-          description: Additional message for future use
-        readStatus:
-          type: object
-          properties:
-            isRead:
-              type: boolean
-            readBy:
-              $ref: '#/components/schemas/User'
-            readAt:
-              type: string
-              description: Date time when the notification was read
-              format: date-time
-          description: Read status information of the notification
-        dismissedStatus:
-          type: object
-          properties:
-            isDismissed:
-              type: boolean
-            dismissedBy:
-              $ref: '#/components/schemas/User'
-            dismissedAt:
-              type: string
-              description: Date time when the notification was dismissed
-              format: date-time
-          description: Dismiss status information of the notification
-        createdAt:
-          type: string
-          description: Date time when the notification was created
-          format: date-time
-    NotificationServiceTicket:
-      type: object
-      properties:
-        metadata:
-          $ref: '#/components/schemas/ServiceTicket'
-    NotificationContract:
-      type: object
-      properties:
-        metadata:
-          $ref: '#/components/schemas/Contract'
-    NotificationUpdateBody:
-      type: object
-      properties:
-        isRead:
-          type: boolean
-          description: (Optional) Read status of notification
-          example: true
-        isDismissed:
-          type: boolean
-          description: (Optional) Dismiss status of notification
-          example: false
     GeneralAPIResponse:
       type: object
       properties:
