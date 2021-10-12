@@ -4214,7 +4214,7 @@ paths:
       summary: To update job status with comment by any employee
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          multipart/form-data:
             schema:
               type: object
               required:
@@ -4238,6 +4238,11 @@ paths:
                 jobSiteId:
                   type: string
                   description: Id of job site
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
                 companyId:
                   type: string
                   description: Id of company if contractor is hitting for other company
@@ -4310,13 +4315,16 @@ paths:
                 customerPO:
                   type: string
                   description: Customer PO of the job
-                image:
-                  type: string
-                  format: binary
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
                 companyId:
                   type: string
                   description: Id of company if contractor is hitting for other company
         required: true
+        allowEmptyValue: true
       responses:
         '200':
           description: Success
