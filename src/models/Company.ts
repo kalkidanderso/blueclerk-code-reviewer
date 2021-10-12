@@ -1,6 +1,7 @@
-import mongoose, { Document, Schema } from 'mongoose'
-import {ICompanyInvoice} from './CompanyInvoice';
-import { IPriceTier } from './PriceTier';
+import mongoose, { Document, Schema } from 'mongoose';
+import { ICompanyAdmin } from '../models/CompanyAdmin';
+import { ICompanyInvoice } from '../models/CompanyInvoice';
+import { IPriceTier } from '../models/PriceTier';
 import { IPaymentTerm } from '../models/PaymentTerm';
 
 export interface ICompany extends Document{
@@ -61,7 +62,7 @@ export interface ICompany extends Document{
     },
     currentJobId: number,
     prefix: string,
-    admin: Schema.Types.ObjectId,
+    admin: Schema.Types.ObjectId | ICompanyAdmin,
     qbAccessToken: string,
     qbRefreshToken: string,
     realmId: string,
