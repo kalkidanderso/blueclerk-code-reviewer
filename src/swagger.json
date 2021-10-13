@@ -6301,9 +6301,12 @@
                     "type": "string",
                     "description": "Customer PO of the job"
                   },
-                  "image": {
-                    "type": "string",
-                    "format": "binary"
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
                   },
                   "companyId": {
                     "type": "string",

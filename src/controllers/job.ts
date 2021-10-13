@@ -28,8 +28,11 @@ import { JobRoute } from '../models/JobRoute';
 export const createJob = (req: Request, res: Response) => {
 
     const params = req.body;
-    const paramsImageFile = req.file;
-    const imageUrl = paramsImageFile?.location;
+    const paramsImageFile = JSON.parse(JSON.stringify(req.files));
+    const imagesUrl: string[] = [];
+
+    // Push image location from req.files to imagesUrl
+    paramsImageFile.forEach((image:any) => imagesUrl.push(image.location));
 
     const company = <ICompany>req.company;
 
@@ -103,7 +106,7 @@ export const createJob = (req: Request, res: Response) => {
             const jobId = response[0]
             const serviceTicket = response[1]
 
-            await _createJob(req, res, undefined, jobId, imageUrl, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob, invalidJobTypes: string[]) => {
+            await _createJob(req, res, undefined, jobId, imagesUrl, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob, invalidJobTypes: string[]) => {
                 if (err != null) {
                     return res.json({ status: Status.Error, message: err });
                 }
@@ -154,7 +157,7 @@ export const createSubJob = async (req: Request, res: Response) => {
 
 }
 
-const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: string, imageUrl: string, serviceTicket: IServiceTicket, next: (req: Request, res: Response, err: any, job: IJob, invalidJobTypes: string[]) => void) => {
+const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: string, imagesUrl: string[], serviceTicket: IServiceTicket, next: (req: Request, res: Response, err: any, job: IJob, invalidJobTypes: string[]) => void) => {
 
     const params = req.body
 
@@ -230,7 +233,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         jobSite: params.jobSiteId ?? parentJob?.jobSite,
         customerContactId: params.customerContactId ?? parentJob?.customerContactId,
         customerPO: params.customerPO ?? parentJob?.customerPO,
-        images: [imageUrl ?? parentJob?.images],
+        images: [] ?? parentJob?.images,
         // type: params.jobTypeId ?? parentJob?.type, // TODO: To be deprecated
         tasks: jobTypes ?? parentJob?.tasks,
         company: companyId,
@@ -243,6 +246,9 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
 
     let newStartTime: any = null
     let newEndTime: any = null
+    if (imagesUrl?.length) {
+        imagesUrl.forEach(imageUrl => job.images.push(imageUrl));
+    }
     if (params.scheduledStartTime) {
         let date = new Date(params.scheduleDate)
         newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
@@ -1121,8 +1127,8 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
         } else {
             userComment = job.comment ? job.comment : 'N/A';
         }
-        data = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime}
-        dataLinked = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime}
+        data = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime, images: [] ?? job.images}
+        dataLinked = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime, images: []}
         if(params.jobLocationId) {
             data.jobLocation = params.jobLocationId
         }
@@ -1135,8 +1141,8 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             }
 
             imagesUrl.forEach(imageUrl => {
-                job.images.push(imageUrl);
-                if (linkedJob) { linkedJob.images.push(imageUrl) }
+                data.images.push(imageUrl);
+                if (linkedJob) { dataLinked.images.push(imageUrl) }
             });
         }
         if (
