@@ -1229,7 +1229,7 @@ paths:
   /getCompanyProfile/{companyId}:
     get:
       tags:
-        - Users
+        - Company
       summary: Retrieve a company profile
       description: Returns a company profile for the specified company id
       parameters:
@@ -4649,7 +4649,7 @@ paths:
                   type: boolean
                   description: Mark the invoice as draft, default to true for new invoice
                   enum:
-                    - false
+                    - true
                     - false
                 paymentTermId:
                   type: string
@@ -4791,7 +4791,7 @@ paths:
                   type: boolean
                   description: Mark the invoice as draft, default to true for new invoice
                   enum:
-                    - false
+                    - true
                     - false
                 paymentTermId:
                   type: string
@@ -5053,7 +5053,7 @@ paths:
                   type: boolean
                   description: Active status of the payment term
                   enum:
-                    - false
+                    - true
                     - false
         required: true
       responses:
