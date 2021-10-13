@@ -247,7 +247,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
     let newStartTime: any = null
     let newEndTime: any = null
     if (imagesUrl?.length) {
-        imagesUrl.forEach(imageUrl => job.images.push(imageUrl));
+        imagesUrl.forEach(imageUrl => job.images.push({imageUrl, uploadedBy: user.id, createdAt: new Date()}));
     }
     if (params.scheduledStartTime) {
         let date = new Date(params.scheduleDate)
@@ -1127,8 +1127,8 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
         } else {
             userComment = job.comment ? job.comment : 'N/A';
         }
-        data = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime, images: job.images}
-        dataLinked = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime, images: job.images}
+        data = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime, images: job.images ?? []}
+        dataLinked = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime, images: job.images ?? []}
         if(params.jobLocationId) {
             data.jobLocation = params.jobLocationId
         }
@@ -1141,8 +1141,8 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             }
 
             imagesUrl.forEach(imageUrl => {
-                data.images.push(imageUrl);
-                if (linkedJob) { dataLinked.images.push(imageUrl) }
+                data.images.push({imageUrl, uploadedBy: user.id, createdAt: Date.now()});
+                if (linkedJob) { dataLinked.images.push({imageUrl, uploadedBy: user.id, createdAt: Date.now()}) }
             });
         }
         if (
@@ -1741,8 +1741,8 @@ export const editJob = async (req: Request, res: Response) => {
                 }
 
                 imagesUrl.forEach(imageUrl => {
-                    job.images.push(imageUrl);
-                    if (linkedJob) { linkedJob.images.push(imageUrl) }
+                    job.images.push({imageUrl, uploadedBy: user.id, createdAt: new Date()});
+                    if (linkedJob) { linkedJob.images.push({imageUrl, uploadedBy: user.id, createdAt: new Date()}) }
                 });
             }
 

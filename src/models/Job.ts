@@ -17,7 +17,13 @@ export interface IJob extends Document {
     jobSite: Schema.Types.ObjectId | any
     customerContactId: Schema.Types.ObjectId | any
     customerPO: string
-    images: string[]
+    images: {
+        _id?: Schema.Types.ObjectId
+        imageUrl: string
+        uploadedBy: Schema.Types.ObjectId | IUser
+        createdAt?: Date
+        updatedAt?: Date
+    }[]
     type: Schema.Types.ObjectId | any // TODO: To be deprecated
     tasks: ITask[]
     company: Schema.Types.ObjectId | any
@@ -120,7 +126,18 @@ const JobSchema = new Schema({
         ref: 'Contact'
     },
     customerPO: String,
-    images: [{ type: String }],
+    images: [
+        { 
+            imageUrl: {
+                type: String,
+                required: true 
+            },
+            uploadedBy: {
+                type: Schema.Types.ObjectId,
+                ref: 'User'
+            },
+            createdAt: Date
+        }],
     type: {
         // TODO: To be deprecated
         type: Schema.Types.ObjectId,
