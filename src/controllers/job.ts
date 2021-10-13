@@ -1251,11 +1251,6 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
     })
 }
 
-/**
- * Kris' remark (June 18th, 2021):
- * Comment this old code as it is refactored after these commented codes.
- * TODO: this is to be deprecated and cleaned up.
- */
 export const startJob = (req: Request, res: Response) => {
 
     const params = req.body

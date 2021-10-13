@@ -605,7 +605,6 @@ export default function (sio: any) {
         }
     )
 
-    // TODO: To be deprecated?
     router.post(
         '/startJob',
         passport.authenticate('jwt', { session: false }),
