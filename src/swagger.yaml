@@ -3474,7 +3474,7 @@ paths:
       summary: To create a service ticket
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          multipart/form-data:
             schema:
               type: object
               required:
@@ -3503,6 +3503,11 @@ paths:
                 jobTypes:
                   type: string
                   description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]. Id of a job type from the list received by /getJobTypes api'
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
         required: true
       responses:
         '200':
@@ -3641,7 +3646,7 @@ paths:
       summary: To update service ticket
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          multipart/form-data:
             schema:
               type: object
               required:
@@ -3672,6 +3677,11 @@ paths:
                 jobTypes:
                   type: string
                   description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]. Id of a job type from the list received by /getJobTypes api'
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
         required: true
       responses:
         '200':

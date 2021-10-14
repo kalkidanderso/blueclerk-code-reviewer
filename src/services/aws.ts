@@ -630,18 +630,20 @@ export const parseFieldsAndUploadImageInS3 = async function (req: Request, res: 
       })
     })
 
-    const uploadSingle = upload.single('image')
+    const uploadMultiple = upload.array('images')
 
-    uploadSingle(req, res, (err) => {
+    uploadMultiple(req, res, (err) => {
 
       if (err) return next(err, null)
       if (req.body.source === "blueclerk" && !req.body.customerId) {
         return next({message: "Customer is required to create a service ticket"}, null);
       }
-      const imageUrl = req.file ? req.file.location : null;
-      req.body.imageUrl = req.body.imageUrl || imageUrl;
+      const imagesUrl: string[] = [];
+      const imageFiles = JSON.parse(JSON.stringify(req.files));
+      imageFiles.forEach((image:any)=> imagesUrl.push(image.location))
+      req.body.imageUrl = req.body.imageUrl || imagesUrl;
       const body = req.body;
-      return next(null, {imageUrl, body});
+      return next(null, {imagesUrl, body});
     })
   }
 
@@ -679,18 +681,20 @@ export const updateFieldsAndUploadImageInS3 = function(req: Request, res: Respon
     })
   })
 
-  const uploadSingle = upload.single('image')
+  const uploadMultiple = upload.array('images')
 
-  uploadSingle(req, res, (err)=>{
+  uploadMultiple(req, res, (err)=>{
 
     if (err) return next(err, null)
     if(!req.body.ticketId || ! req.body.note)
     {
       return next({'status': Status.Error, 'message': Messages.MissingParams}, null);
     }
-    const imageUrl = req.file ? req.file.location : null;
+    const imagesUrl: string[] = [];
+    const imageFiles = JSON.parse(JSON.stringify(req.files));
+    imageFiles.forEach((image: any) => imagesUrl.push(image.location));
     const body = req.body;
-    next(null, {imageUrl, body})
+    next(null, {imagesUrl, body})
   })
 
 }
@@ -891,7 +895,7 @@ export const sendScheduledJobEmailToAssignee = function(jobs: IJob[], to: string
       let contactDetails: any = {};
       let locationName;
       let customer: ICustomer = job.customer;
-      let image = ticket.image ? ticket.image: null;
+      let image = ticket.images ? ticket.images: [];
       if(contact) {
         contactDetails.contactName = contact.name ? contact.name : null;
         contactDetails.contactPhone = contact.phone ? contact.phone : null;

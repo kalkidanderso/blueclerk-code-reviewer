@@ -72,6 +72,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 jobType: params.jobTypeId, // TODO: To be deprecated
                 tasks: jobTypes,
                 customerPO : customerPo,
+                images: [],
             });
             if (customerId) {
                 serviceTicket.customer = customerId;
@@ -82,7 +83,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                     serviceTicket.customerContactId = checkContact._id;
                 }
             }
-            serviceTicket.image = data.imageUrl ? data.imageUrl : null;
+            data.imagesUrl?.forEach((imageUrl: string) => serviceTicket.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }));
             serviceTicket.source = params.source ? params.source : 'blueclerk';
             await serviceTicket.save(async (err: any) => {
                 if (err) {
@@ -490,7 +491,10 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     if(params.dueDate) {
                         dueDate = new Date(params.dueDate)
                     }
-                    let image = data.imageUrl ? data.imageUrl : serviceTicket.image;
+                    data.imagesUrl.forEach((imageUrl: string) => {
+                        serviceTicket.images ? serviceTicket.images.push({ imageUrl, uploadedBy: user.id ,createdAt: new Date() })
+                        : []
+                    });
 
                     let customerPO = params.customerPO ? params.customerPO : serviceTicket.customerPO;
 
@@ -540,7 +544,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
 
                     if (
                         serviceTicket.dueDate != params.dueDate ||
-                        serviceTicket.image != data.imageUrl ||
+                        JSON.stringify(serviceTicket.images) != JSON.stringify(data.imagesUrl) ||
                         params.customerPO != serviceTicket.customerPO ||
                         serviceTicket.customerContactId != customerContactId ||
                         params.jobLocationId != serviceTicket.jobLocation ||
@@ -564,7 +568,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             jobSite: jobSiteId,
                             jobType: jobTypeId, // TODO: To be deprecated
                             tasks: jobTypes,
-                            image: image,
+                            images: serviceTicket.images,
                             customerPO: customerPO,
                             customerContactId: customerContactId,
                             customer: customer,

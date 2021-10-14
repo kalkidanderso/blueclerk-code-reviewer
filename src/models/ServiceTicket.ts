@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import { IJobTypes } from './JobType';
+import { IUser } from './User';
 
 export interface IServiceTicket extends Document {
 
@@ -10,7 +11,13 @@ export interface IServiceTicket extends Document {
     note: string
     customerPO: string,
     customerContactId: Schema.Types.ObjectId | any
-    image: string
+    images: {
+        _id?: Schema.Types.ObjectId
+        imageUrl: string
+        uploadedBy: Schema.Types.ObjectId | IUser
+        createdAt?: Date
+        updatedAt?: Date
+    }[]
     company: Schema.Types.ObjectId
     technician: Schema.Types.ObjectId
     status: number
@@ -52,7 +59,19 @@ const ServiceTicketSchema = new Schema({
         required: false
     },
     customerPO : String,
-    image: String,
+    images: [
+        { 
+            imageUrl: {
+                type: String,
+                required: true 
+            },
+            uploadedBy: {
+                type: Schema.Types.ObjectId,
+                ref: 'User'
+            },
+            createdAt: Date
+        }
+    ],
     company: {
         type: Schema.Types.ObjectId,
         ref: 'Company',
