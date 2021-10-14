@@ -36,7 +36,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 try {
                     customerId = new ObjectId(params.customerId)
                 } catch (e) {
-                    return res.json({'status': Status.Error, 'message': Messages.WrongId});
+                    return res.json({'status': Status.Error, 'message': `parameter customerId: ${Messages.WrongId}`});
                 }
             }
 

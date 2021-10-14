@@ -630,7 +630,10 @@ export const parseFieldsAndUploadImageInS3 = async function (req: Request, res: 
       })
     })
 
-    const uploadMultiple = upload.array('images')
+    const uploadMultiple = upload.fields([
+      { name: 'image' },
+      { name: 'images' }
+    ])
 
     uploadMultiple(req, res, (err) => {
 
@@ -640,7 +643,8 @@ export const parseFieldsAndUploadImageInS3 = async function (req: Request, res: 
       }
       const imagesUrl: string[] = [];
       const imageFiles = JSON.parse(JSON.stringify(req.files));
-      imageFiles.forEach((image:any)=> imagesUrl.push(image.location))
+      imageFiles?.image?.forEach((image:any)=> imagesUrl.push(image.location))
+      imageFiles?.images?.forEach((image:any)=> imagesUrl.push(image.location))
       req.body.imageUrl = req.body.imageUrl || imagesUrl;
       const body = req.body;
       return next(null, {imagesUrl, body});
@@ -681,7 +685,10 @@ export const updateFieldsAndUploadImageInS3 = function(req: Request, res: Respon
     })
   })
 
-  const uploadMultiple = upload.array('images')
+  const uploadMultiple = upload.fields([
+    { name: 'image' },
+    { name: 'images' }
+  ])
 
   uploadMultiple(req, res, (err)=>{
 
@@ -692,7 +699,8 @@ export const updateFieldsAndUploadImageInS3 = function(req: Request, res: Respon
     }
     const imagesUrl: string[] = [];
     const imageFiles = JSON.parse(JSON.stringify(req.files));
-    imageFiles.forEach((image: any) => imagesUrl.push(image.location));
+    imageFiles?.image?.forEach((image: any) => imagesUrl.push(image.location));
+    imageFiles?.images?.forEach((image: any) => imagesUrl.push(image.location));
     const body = req.body;
     next(null, {imagesUrl, body})
   })
