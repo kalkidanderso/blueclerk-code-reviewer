@@ -2450,7 +2450,11 @@
                     "type": "string"
                   },
                   "type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                      "Customer",
+                      "JobLocation"
+                    ]
                   },
                   "referenceNumber": {
                     "type": "string"
@@ -2588,32 +2592,33 @@
         ],
         "summary": "Removes contact from the Customer or Job location",
         "description": "Removes the contact from the customer or Job location",
-        "parameters": [
-          {
-            "name": "contactId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "contactId",
+                  "type",
+                  "referenceNumber"
+                ],
+                "properties": {
+                  "contactId": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [ "Customer", "JobLocation" ]
+                  },
+                  "referenceNumber": {
+                    "type": "string"
+                  }
+                }
+              }
             }
           },
-          {
-            "name": "type",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "referenceNumber",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Success",

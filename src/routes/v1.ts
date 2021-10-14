@@ -1819,6 +1819,7 @@ export default function (sio: any) {
     router.delete(
         '/removeContact',
         passport.authenticate('jwt', { session: false }),
+        validate(Validations.removeContact),
         checkUserPermissions(Permissions.Customer_Create),
         ContactController.removeContact
     )
