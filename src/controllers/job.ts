@@ -32,7 +32,8 @@ export const createJob = (req: Request, res: Response) => {
     const imagesUrl: string[] = [];
 
     // Push image location from req.files to imagesUrl
-    paramsImageFile.forEach((image:any) => imagesUrl.push(image.location));
+    paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
+    paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
 
     const company = <ICompany>req.company;
 
@@ -221,6 +222,12 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         });
     }
 
+    const images = parentJob?.images?.length
+        ? parentJob?.images
+        : serviceTicket?.images?.length
+            ? serviceTicket?.images
+            : [];
+
     const job = new Job({
         parentJob: parentJob?._id,
         scheduleDate: params.scheduleDate ?? parentJob?.scheduleDate,
@@ -233,7 +240,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         jobSite: params.jobSiteId ?? parentJob?.jobSite,
         customerContactId: params.customerContactId ?? parentJob?.customerContactId,
         customerPO: params.customerPO ?? parentJob?.customerPO,
-        images: [] ?? parentJob?.images,
+        images: images,
         // type: params.jobTypeId ?? parentJob?.type, // TODO: To be deprecated
         tasks: jobTypes ?? parentJob?.tasks,
         company: companyId,
@@ -997,7 +1004,8 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
     const imagesUrl: string[] = [];
 
     // Push image location from req.files to imagesUrl
-    paramsImageFile.forEach((image:any) => imagesUrl.push(image.location));
+    paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
+    paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
 
     if ([JobStatus.RESCHEDULED, JobStatus.INCOMPLETE].includes(Number(params.status)) && !params.note) {
         return res.json({ status: Status.Error, message: 'Note is required when you reschedule or make the job incomplete' });
@@ -1242,7 +1250,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     })
                 };
 
-                return res.json({'status': Status.Success, 'message': 'Job updated successfully.'})
+                return res.json({ 'status': Status.Success, 'message': 'Job updated successfully.', job });
             } catch (err) {
                 return res.json({'status': Status.Error, 'message': err.message});
             }
