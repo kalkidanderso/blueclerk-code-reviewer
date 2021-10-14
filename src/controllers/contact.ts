@@ -1,6 +1,6 @@
 import {Request, Response} from 'express'
 import { Contact } from '../models/Contact'
-import {Status} from '../common/constants'
+import {Messages, Status} from '../common/constants'
 import {Customer, ICustomer} from '../models/Customer'
 import {JobLocation} from '../models/JobLocation'
 import {IContact} from '../common/contact'
@@ -127,10 +127,25 @@ export const removeContact = async (req: Request, res: Response) => {
             } else {
                 return res.json({status: Status.Error, message: 'Customer not found'})
             }
-        } else {
-            return res.json({ status: Status.Error, message: 'Under development'})
+        } else if (req.body.type === 'JobLocation') {
+            // Find and check Job Location if exist
+            const jobLocation = await JobLocation.findById(req.body.referenceNumber)
+            if (!jobLocation) {
+                return res.json({ status: Status.Error, message: 'Job Location not found' });
+            }
+
+            // Remove the Contact ID from the Job Location's contacts
+            await JobLocation.findByIdAndUpdate(jobLocation._id, { $pull: { contacts: req.body.contactId } }, { new: true });
+            // Find and check if there any Job Location that still use the contact
+            const contactJobLocation = await JobLocation.findOne({ contacts: req.body.contactId });
+            if (!contactJobLocation) {
+                // No Job Location uses it anymore, delete it from DB
+                await Contact.findByIdAndRemove(req.body.contactId);
+            }
+
+            return res.json({ status: Status.Success, message: 'Contact removed successfully' });
         }
     } catch (err) {
-        return res.json({status: Status.Error, message: 'Removed the contact'})
+        return res.json({ status: Status.Error, message: err ?? Messages.GenericError });
     }
 }

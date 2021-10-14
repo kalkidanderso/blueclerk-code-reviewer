@@ -409,6 +409,15 @@ export const Validations = {
     check('id').isMongoId().withMessage(Messages.WrongId)
   ],
 
+  // Contact
+  removeContact: [
+    check('contactId').exists().withMessage(Messages.Required),
+    check('contactId').isMongoId().withMessage(Messages.WrongId),
+    check('type').exists().withMessage(Messages.Required),
+    check('referenceNumber').exists().withMessage(Messages.Required),
+    check('referenceNumber').isMongoId().withMessage(Messages.WrongId),
+  ],
+
   // Notification
   getNotifications: [check('isRead').optional().isIn(['ALL', true, false, 1, 0]), check('isDismissed').optional().isIn(['ALL', true, false, 1, 0])],
 

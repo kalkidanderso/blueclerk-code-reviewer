@@ -15,6 +15,6 @@ const ContactSchema = new Schema({
         // unique: true,
         // index: true,
     }
-})
+}, { timestamps: { createdAt: true, updatedAt: true } })
 
 export const Contact = mongoose.model<IContact>('Contact', ContactSchema)
