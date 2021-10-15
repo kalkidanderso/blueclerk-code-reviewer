@@ -738,6 +738,12 @@ export default function (sio: any) {
         imageController.uploadImage
     )
 
+    router.delete(
+        '/deleteImage',
+        passport.authenticate('jwt', { session: false }),
+        checkUserPermissions(Permissions.Image_Delete),
+        imageController.deleteImage
+    )
 
     //Group
     router.post(

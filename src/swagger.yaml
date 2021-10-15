@@ -5312,6 +5312,47 @@ paths:
                     type: string
       security:
         - Bearer: []
+  /deleteImage:
+    delete:
+      tags:
+        - Image
+      summary: To upload an image
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - id
+                - type
+                - imageId
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - Job
+                    - ServiceTicket
+                id:
+                  type: string
+                  description: Id of job or service ticket
+                imageId:
+                  type: string
+                  description: Id of image in job or service ticket
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+                  imageUrl:
+                    type: string
+      security:
+        - Bearer: []
   /importCustomer:
     post:
       tags:
