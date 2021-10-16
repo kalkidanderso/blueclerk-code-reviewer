@@ -741,7 +741,7 @@ export default function (sio: any) {
     router.delete(
         '/deleteImage',
         passport.authenticate('jwt', { session: false }),
-        checkUserPermissions(Permissions.Image_Delete),
+        checkUserPermissions(Permissions.Image_Upload),
         imageController.deleteImage
     )
 
