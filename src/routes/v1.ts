@@ -733,7 +733,6 @@ export default function (sio: any) {
     router.post(
         '/uploadImage',
         passport.authenticate('jwt', { session: false }),
-        // getCompanyId(),
         checkUserPermissions(Permissions.Image_Upload),
         imageController.uploadImage
     )
@@ -741,7 +740,9 @@ export default function (sio: any) {
     router.delete(
         '/deleteImage',
         passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
         checkUserPermissions(Permissions.Image_Upload),
+        validate(Validations.deleteImage),
         imageController.deleteImage
     )
 

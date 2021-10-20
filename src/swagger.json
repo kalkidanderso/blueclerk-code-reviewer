@@ -8653,15 +8653,19 @@
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["Job", "ServiceTicket"]
+                    "description": "To delete image from ServiceTicket or Job",
+                    "enum": [
+                      "ServiceTicket",
+                      "Job"
+                    ]
                   },
                   "id": {
                     "type": "string",
-                    "description": "Id of job or service ticket"
+                    "description": "Id of Job or Service Ticket"
                   },
                   "imageId": {
                     "type": "string",
-                    "description": "Id of image in job or service ticket"
+                    "description": "Id of image in Job or Service Ticket"
                   }
                 }
               }
