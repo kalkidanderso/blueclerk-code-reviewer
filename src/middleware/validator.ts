@@ -418,6 +418,16 @@ export const Validations = {
     check('referenceNumber').isMongoId().withMessage(Messages.WrongId),
   ],
 
+  // Image
+  deleteImage: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['ServiceTicket', 'Job']).withMessage('Only supported for ServiceTicket & Job for now'),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('imageId').exists().withMessage(Messages.Required),
+    check('imageId').isMongoId().withMessage(Messages.WrongId)
+  ],
+
   // Notification
   getNotifications: [check('isRead').optional().isIn(['ALL', true, false, 1, 0]), check('isDismissed').optional().isIn(['ALL', true, false, 1, 0])],
 
