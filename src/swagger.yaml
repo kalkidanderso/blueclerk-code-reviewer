@@ -4429,7 +4429,7 @@ paths:
       parameters:
         - name: scheduleDate
           in: query
-          description: Filter job routes by schedule date, if not provided will search all job routes for today
+          description: 'Filter job routes by schedule date, if not provided will search all job routes for today. Example: "2021-10-30".'
           schema:
             type: string
       responses:
@@ -4449,7 +4449,7 @@ paths:
       parameters:
         - name: scheduleDate
           in: query
-          description: Schedule date of job routing
+          description: 'Schedule date of job routing. Example: "2021-10-30".'
           required: true
           schema:
             type: string
