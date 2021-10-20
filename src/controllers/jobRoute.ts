@@ -57,15 +57,22 @@ export const getJobRoute = async (req: Request, res: Response) => {
     const technician = <IUser>req.technician;
     const contractor = <ICompany>req.contractor;
 
+    // Initialize startOfDay and endOfDay in UTC format
+    const startOfDay = moment(params.scheduleDate).startOf('day').utc();
+    const endOfDay = moment(params.scheduleDate).endOf('day').utc();
+
     const query = {
         company: company._id,
-        scheduleDate: params.scheduleDate,
+        $and: [
+            { scheduleDate: { $gte: startOfDay } },
+            { scheduleDate: { $lte: endOfDay } }
+        ],
         employeeType: params.employeeType,
         technician: technician?._id,
         contractor: contractor?._id
     };
 
-    const jobRoute = await JobRoute.findOne(query)
+    const jobRoute = await JobRoute.findOne(query).sort({ _id: -1 })
         .populate({
             path: 'routes.job',
             select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
