@@ -28,12 +28,14 @@ import { JobRoute } from '../models/JobRoute';
 export const createJob = (req: Request, res: Response) => {
 
     const params = req.body;
-    const paramsImageFile = JSON.parse(JSON.stringify(req.files));
     const imagesUrl: string[] = [];
+    if (req.files) {
+        const paramsImageFile = JSON.parse(JSON.stringify(req.files));
 
-    // Push image location from req.files to imagesUrl
-    paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
-    paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
+        // Push image location from req.files to imagesUrl
+        paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
+        paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
+    }
 
     const company = <ICompany>req.company;
 
@@ -672,7 +674,7 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
         query.jobId = { $regex: jobId, $options: 'i'}
     }
     let count = await Job.find(query).countDocuments();
-    await Job.find(query)
+    await Job.find(query).sort({ _id: -1 })
         .populate('ticket')
         .populate({
             path: 'technician',
@@ -731,7 +733,7 @@ export const getJobs = (req: Request, res: Response) => {
         companyId = req.otherCompanyId;
     }
 
-    Job.find({ $or: [{ contractor: companyId }, { company: companyId }] })
+    Job.find({ $or: [{ contractor: companyId }, { company: companyId }] }).sort({ _id: -1 })
         .populate({
             path: 'ticket',
             populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
@@ -1000,12 +1002,14 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-    const paramsImageFile = JSON.parse(JSON.stringify(req.files));
     const imagesUrl: string[] = [];
+    if (req.files) {
+        const paramsImageFile = JSON.parse(JSON.stringify(req.files));
 
-    // Push image location from req.files to imagesUrl
-    paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
-    paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
+        // Push image location from req.files to imagesUrl
+        paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
+        paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
+    }
 
     if ([JobStatus.RESCHEDULED, JobStatus.INCOMPLETE].includes(Number(params.status)) && !params.note) {
         return res.json({ status: Status.Error, message: 'Note is required when you reschedule or make the job incomplete' });
@@ -1136,7 +1140,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             userComment = job.comment ? job.comment : 'N/A';
         }
         data = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime, images: job.images ?? []}
-        dataLinked = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime, images: job.images ?? []}
+        dataLinked = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime, images: linkedJob.images ?? []}
         if(params.jobLocationId) {
             data.jobLocation = params.jobLocationId
         }
@@ -1591,13 +1595,15 @@ export const updateJobTask = async (req: Request, res: Response) => {
 export const editJob = async (req: Request, res: Response) => {
 
     const params = req.body;
-    const paramsImageFile = JSON.parse(JSON.stringify(req.files));
     const imagesUrl: string[] = [];
+    if (req.files) {
+        const paramsImageFile = JSON.parse(JSON.stringify(req.files));
 
-    // Push image location from req.files to imagesUrl
-    // paramsImageFile.forEach((image:any) => imagesUrl.push(image.location));
-    paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
-    paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
+        // Push image location from req.files to imagesUrl
+        // paramsImageFile.forEach((image:any) => imagesUrl.push(image.location));
+        paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
+        paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
+    }
 
     var companyId = req.companyId;
     const user = <IUser>req.user;
