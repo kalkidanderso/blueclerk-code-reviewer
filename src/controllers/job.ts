@@ -733,7 +733,7 @@ export const getJobs = (req: Request, res: Response) => {
         companyId = req.otherCompanyId;
     }
 
-    Job.find({ $or: [{ contractor: companyId }, { company: companyId }] }).sort({ _id: -1 })
+    Job.find({ $or: [{ contractor: companyId }, { company: companyId }] })
         .populate({
             path: 'ticket',
             populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
