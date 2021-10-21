@@ -674,7 +674,7 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
         query.jobId = { $regex: jobId, $options: 'i'}
     }
     let count = await Job.find(query).countDocuments();
-    await Job.find(query)
+    await Job.find(query).sort({ _id: -1 })
         .populate('ticket')
         .populate({
             path: 'technician',
@@ -733,7 +733,7 @@ export const getJobs = (req: Request, res: Response) => {
         companyId = req.otherCompanyId;
     }
 
-    Job.find({ $or: [{ contractor: companyId }, { company: companyId }] })
+    Job.find({ $or: [{ contractor: companyId }, { company: companyId }] }).sort({ _id: -1 })
         .populate({
             path: 'ticket',
             populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
