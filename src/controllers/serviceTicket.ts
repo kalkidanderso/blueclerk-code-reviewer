@@ -413,6 +413,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                       "createdAt" : 1
                     }
                 },
+                { $sort: { _id: -1 } },
                 {
                   $group: {
                     _id: null,

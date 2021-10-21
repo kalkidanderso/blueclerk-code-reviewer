@@ -1595,7 +1595,9 @@ export const editJob = async (req: Request, res: Response) => {
     const imagesUrl: string[] = [];
 
     // Push image location from req.files to imagesUrl
-    paramsImageFile.forEach((image:any) => imagesUrl.push(image.location));
+    // paramsImageFile.forEach((image:any) => imagesUrl.push(image.location));
+    paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
+    paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
 
     var companyId = req.companyId;
     const user = <IUser>req.user;

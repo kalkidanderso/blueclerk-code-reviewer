@@ -2018,7 +2018,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
             jobReport.save();
         }
 
-        if (company.qbAuthorized) {
+        if (company.qbAuthorized && invoice.quickbookId) {
             // Delete Invoice in QuickBooks
             _deleteQBInvoice(req, res, company, invoice, (err, errMsg, status) => {
                 if (status === 'Deleted') {
@@ -2046,7 +2046,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         // Save customer credit
         customer.save()
 
-        if (company.qbAuthorized) {
+        if (company.qbAuthorized && invoice.quickbookId) {
             // Update Invoice in QuickBooks
             _updateQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                 if (qbInvoice) {
