@@ -1140,7 +1140,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             userComment = job.comment ? job.comment : 'N/A';
         }
         data = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime, images: job.images ?? []}
-        dataLinked = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime, images: linkedJob.images ?? []}
+        dataLinked = {comment: userComment, status: params.status, endTime: Date.now(), timeSpent: timeSpent, charges: newcharges, completeOnTime: finishedOnTime, images: linkedJob?.images ?? []}
         if(params.jobLocationId) {
             data.jobLocation = params.jobLocationId
         }
