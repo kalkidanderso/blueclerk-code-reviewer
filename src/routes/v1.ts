@@ -368,7 +368,7 @@ export default function (sio: any) {
         equipmentBrandController.getEquipmentBrands
     )
 
-    //Customers
+    // Customers
     router.post(
         '/createCustomer',
         passport.authenticate('jwt', { session: false }),
@@ -412,6 +412,22 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Customer_Update),
         validate(Validations.updateCustomPrices),
         customerController.updateCustomPrices
+    )
+
+    router.post(
+        '/filterCustomer',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Customer_Get_All),
+        customerController.filterCustomer
+    )
+
+    router.post(
+        '/mergeCustomer',
+        passport.authenticate('jwt', {session: false}),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Customer_Get_All),
+        customerController.mergeCustomer
     )
 
     //Customer equipments
@@ -536,6 +552,14 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Update_Item),
         jobTypeController.updateItems
+    )
+
+    router.post(
+        '/filterItems',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Items),
+        jobTypeController.filterItems
     )
 
     //Job

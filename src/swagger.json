@@ -2608,7 +2608,10 @@
                   },
                   "type": {
                     "type": "string",
-                    "enum": [ "Customer", "JobLocation" ]
+                    "enum": [
+                      "Customer",
+                      "JobLocation"
+                    ]
                   },
                   "referenceNumber": {
                     "type": "string"
@@ -3018,6 +3021,159 @@
                       "items": {
                         "$ref": "#/components/schemas/Customer"
                       }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/filterCustomer": {
+      "post": {
+        "tags": [
+          "Customer"
+        ],
+        "summary": "To get detail of a customer.",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keyword": {
+                    "name": "string",
+                    "description": "Id of company if contractor is hitting for other company"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    },
+                    "customer": {
+                      "$ref": "#/components/schemas/Customer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/mergeCustomer": {
+      "post": {
+        "tags": [
+          "Customer"
+        ],
+        "summary": "To get detail of a customer.",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "customerId": {
+                    "type": "string"
+                  },
+                  "unusedCustomerIds": {
+                    "type": "string"
+                  },
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "displayName": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "imageUrl": {
+                    "type": "string"
+                  },
+                  "street": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "zipcode": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": "string"
+                  },
+                  "equipment": {
+                    "type": "array"
+                  },
+                  "jobLocations": {
+                    "type": "array"
+                  },
+                  "quickbookId": {
+                    "type": "integer"
+                  },
+                  "balance": {
+                    "type":"integer"
+                  },
+                  "credit": {
+                    "type": "integer"
+                  },
+                  "isCustomPrice": {
+                    "type":"boolean"
+                  },
+                  "contacts": {
+                    "type": "array"
+                  },
+                  "phone": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    },
+                    "customer": {
+                      "$ref": "#/components/schemas/Customer"
                     }
                   }
                 }
@@ -4504,6 +4660,54 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/filterItems": {
+      "post": {
+        "tags": [
+          "Items"
+        ],
+        "summary": "To search item by name.",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keyword": {
+                    "name": "string",
+                    "description": "Id of company if contractor is hitting for other company"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    },
+                    "item": {
+                      "$ref": "#/components/schemas/Item"
+                    }
+                  }
                 }
               }
             }
@@ -8653,7 +8857,10 @@
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["Job", "ServiceTicket"]
+                    "enum": [
+                      "Job",
+                      "ServiceTicket"
+                    ]
                   },
                   "id": {
                     "type": "string",
@@ -10726,6 +10933,81 @@
           "createdBy": {
             "type": "string",
             "description": "Id of the company who created it, or null if the global admin created it."
+          }
+        }
+      },
+      "MergeCustomer": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "unusedCustomerIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "info": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            }
+          },
+          "address": {
+            "type": "object",
+            "properties": {
+              "street": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "zipCode": {
+                "type": "string"
+              }
+            }
+          },
+          "contact": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              }
+            }
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "company": {
+            "type": "string",
+            "description": "Id of company who created this customer"
+          },
+          "contactName": {
+            "type": "string"
+          },
+          "balance": {
+            "type": "number",
+            "description": "how much customer owe to the company"
+          },
+          "vendorId": {
+            "type": "string",
+            "description": "VendorId"
+          },
+          "quickbookId": {
+            "type": "string",
+            "description": "ID of associated customer in QuickBooks"
           }
         }
       },

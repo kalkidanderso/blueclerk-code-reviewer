@@ -5,10 +5,13 @@ import { Status, Messages, Role } from '../common/constants'
 import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
 import { Company, ICompany } from '../models/Company'
 import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
+import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket'
 import { User, IUser } from '../models/User'
-import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 import { IPriceTier } from '../models/PriceTier'
 import { _createQBCustomer, _updateQBCustomer } from '../controllers/quickbook.customer'
+import { Job } from '../models/Job'
+import { JobLocation } from '../models/JobLocation'
+import { JobSite } from 'src/models/JobSite'
 
 /**
  * To reset Customer quickbookId,
@@ -477,6 +480,106 @@ export const customerDetail = (req: Request, res: Response) => {
         }
         return res.json({'status': Status.Success, 'customer': customer})
     }).catch((err) => {
-        return res.json({'status': Status.Error, 'message': err.message});
+        return res.json({ 'status': Status.Error, 'message': err.message });
     });
+}
+
+export const filterCustomer = async (req: Request, res: Response) => {
+    const params = req.body;
+    const companyId = req.companyId;
+
+    console.log(companyId);
+    const customers = await Customer.find({
+        company: companyId,
+        $or: [{
+            'profile.firstName': {
+                $regex: params.keyword
+            }},
+        {
+            'profile.lastName': {
+                $regex: params.keyword
+            }},
+        {
+            'profile.displayName': {
+                $regex: params.keyword
+            }},
+        {
+            'info.email': {
+                $regex: params.keyword
+            }}
+        ]
+    });
+
+    if (!customers.length) {
+        return res.json({ 'status': Status.NotFound, messages: `Customer with keyword ${params.keyword} not found` });
+    }
+
+    customers.forEach(customer => console.log(customer.__t, customer.profile))
+    return res.json({ 'status': Status.Success, 'customer': customers })
+}
+
+export const mergeCustomer = async (req: Request, res: Response) => {
+    const params = req.body;
+    const unusedCustomerIds = JSON.parse(params.unusedCustomerIds);
+    const companyId = req.companyId;
+    let companyTier: { tier: any };
+    
+    Customer.findById(params.customerId)
+    .exec(async (err: any, customer: ICustomer)=> {
+        const unusedCustomers: ICustomer[] = await Customer.find({_id: {$in: unusedCustomerIds}});
+        const mergeEntry: any =  {
+            'info.email': params.email ?? customer.info.email,
+            'profile.firstName': params.firstName ?? customer.profile.firstName,
+            'profile.lastName': params.lastName ?? customer.profile.lastName,
+            'profile.displayName': params.displayName ?? customer.profile.displayName,
+            'address.street': params.street ?? customer.address.street,
+            'address.unit': params.unit ?? customer.address.unit,
+            'address.city': params.city ?? customer.address.city,
+            'address.state': params.state ?? customer.address.state,
+            'address.zipCode': params.zipCode ?? customer.address.zipCode,
+            'contact.phone': params.phone ?? customer.contact.phone,
+            'contact.fax': params.fax ?? customer.contact.fax,
+            itemTier: companyTier && companyTier.tier,
+            isCustomPrice: params.isCustomPrice ?? customer.isCustomPrice,
+            contactName: params.contactName ?? customer.contactName,
+            vendorId: params.vendorId ?? customer.vendorId,
+            contacts: params.contacts ?? customer.contacts,
+            inactiveAt: null,
+            inactiveBy: null,
+        }
+
+        console.log(customer);
+        console.log(unusedCustomerIds);
+        // Update customer on service ticket
+        ServiceTicket.updateMany(
+            { company: companyId, customer: { $in: unusedCustomerIds }},
+            { $set: { customer: params.customerId }}
+        ).exec();
+
+        // Update customer on job
+        Job.updateMany(
+            { company: companyId, customer: {$in: unusedCustomerIds }},
+            { $set: { customer: params.customerId}}
+        ).exec();
+
+        // Update customer on job location
+        JobLocation.updateMany(
+            { companyId: companyId, customerId: {$in: unusedCustomerIds }},
+            { $set: { customerId: params.customerId }}
+        ).exec();
+
+        // Update customer on job site
+        JobSite.updateMany(
+            { customerId: {$in: unusedCustomerIds}},
+            { $set: {customerId: params.customerId }}
+        ).exec();
+
+        customer.updateOne(mergeEntry, { omitUndefined: true }).exec((err: any, raw: any) => {
+        if (err) {
+            return res.json({status: Status.Error, message: Messages.GenericError})
+        } 
+            return res.json({ status: Status.Success, message: customer });
+        });
+
+    })
 }

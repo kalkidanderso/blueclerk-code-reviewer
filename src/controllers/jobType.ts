@@ -536,3 +536,25 @@ export const _handleJobTypesJson = (customerId: string, paramJobTypes: string, j
 
     })
 }
+
+export const filterItems = async (req: Request, res: Response) => {
+    const params = req.body;
+    const companyId = req.companyId;
+
+    const items = await Item.find({
+        company: companyId,
+        name: {
+                $regex: params.keyword
+        }
+    });
+
+    if (!items.length) {
+        return res.json({ 'status': Status.NotFound, messages: `Items with keyword ${params.keyword} not found` });
+    }
+
+    items.forEach(item => console.log(item))
+    return res.json({
+        'status': Status.Success,
+        'item': items
+    });
+}
