@@ -11,7 +11,12 @@ import { IPriceTier } from '../models/PriceTier'
 import { _createQBCustomer, _updateQBCustomer } from '../controllers/quickbook.customer'
 import { Job } from '../models/Job'
 import { JobLocation } from '../models/JobLocation'
-import { JobSite } from 'src/models/JobSite'
+import { JobSite } from '../models/JobSite'
+import { Invoice } from '../models/Invoice'
+import { Payment } from '../models/Payment'
+import { CustomerEquipment } from '../models/CustomerEquipment'
+import { Contact } from '../models/Contact'
+import { PurchaseOrder } from 'src/models/PurchaseOrder'
 
 /**
  * To reset Customer quickbookId,
@@ -514,19 +519,20 @@ export const filterCustomer = async (req: Request, res: Response) => {
         return res.json({ 'status': Status.NotFound, messages: `Customer with keyword ${params.keyword} not found` });
     }
 
-    customers.forEach(customer => console.log(customer.__t, customer.profile))
     return res.json({ 'status': Status.Success, 'customer': customers })
 }
 
 export const mergeCustomer = async (req: Request, res: Response) => {
     const params = req.body;
-    const unusedCustomerIds = JSON.parse(params.unusedCustomerIds);
     const companyId = req.companyId;
+    const unusedCustomerIds = params.unusedCustomerIds?.length ? JSON.parse(params.unusedCustomerIds): [];
+    const jobLocations: string[] = params.jobLocations?.length ? JSON.parse(params.jobLocations): [];
+    const customerEquipments: string[] = params.equipments?.length ? JSON.parse(params.equipments): [];
+    const contacts = params.contact?.length ? JSON.parse(params.contacts) : [];
     let companyTier: { tier: any };
     
     Customer.findById(params.customerId)
     .exec(async (err: any, customer: ICustomer)=> {
-        const unusedCustomers: ICustomer[] = await Customer.find({_id: {$in: unusedCustomerIds}});
         const mergeEntry: any =  {
             'info.email': params.email ?? customer.info.email,
             'profile.firstName': params.firstName ?? customer.profile.firstName,
@@ -539,21 +545,51 @@ export const mergeCustomer = async (req: Request, res: Response) => {
             'address.zipCode': params.zipCode ?? customer.address.zipCode,
             'contact.phone': params.phone ?? customer.contact.phone,
             'contact.fax': params.fax ?? customer.contact.fax,
+            jobLocations: customer?.jobLocations?.length ? customer.jobLocations : [],
+            equipments: customer?.equipments?.length ? customer.equipments : [],
             itemTier: companyTier && companyTier.tier,
+            quickbookId: params.quickbookId ?? customer.quickbookId,
             isCustomPrice: params.isCustomPrice ?? customer.isCustomPrice,
             contactName: params.contactName ?? customer.contactName,
             vendorId: params.vendorId ?? customer.vendorId,
-            contacts: params.contacts ?? customer.contacts,
+            contacts: customer?.contacts?.length ? customer.contacts : [],
             inactiveAt: null,
             inactiveBy: null,
         }
+        
+        if (params.jobLocations?.length) {
+            jobLocations.forEach((jobLocation: any) => {
+                mergeEntry.jobLocations.push(jobLocation);
+            });
 
-        console.log(customer);
-        console.log(unusedCustomerIds);
+            // Update customer on job location
+            JobLocation.updateMany(
+                { _id: {$in: jobLocations}, customerId: {$in: unusedCustomerIds }},
+                { $set: { customerId: params.customerId} }
+            ).exec();
+        }
+
+        if (params.equipments?.length) {
+            customerEquipments.forEach(equipment => {
+                mergeEntry.equipments.push(equipment);
+            });
+
+            CustomerEquipment.updateMany(
+                { _id: {$in: customerEquipments}, customer: {$in: unusedCustomerIds} },
+                { $set: {customer: params.customerId} }
+            ).exec();
+        }
+
+        if (params.contacts?.length) {
+            contacts.forEach((contact: any) => {
+                mergeEntry.contacts.push(contact);
+            });
+        }
+
         // Update customer on service ticket
         ServiceTicket.updateMany(
             { company: companyId, customer: { $in: unusedCustomerIds }},
-            { $set: { customer: params.customerId }}
+            { $set: { customer: params.customerId} }
         ).exec();
 
         // Update customer on job
@@ -562,16 +598,25 @@ export const mergeCustomer = async (req: Request, res: Response) => {
             { $set: { customer: params.customerId}}
         ).exec();
 
-        // Update customer on job location
-        JobLocation.updateMany(
-            { companyId: companyId, customerId: {$in: unusedCustomerIds }},
-            { $set: { customerId: params.customerId }}
-        ).exec();
-
         // Update customer on job site
         JobSite.updateMany(
             { customerId: {$in: unusedCustomerIds}},
-            { $set: {customerId: params.customerId }}
+            { $set: {customerId: params.customerId} }
+        ).exec();
+
+        Invoice.updateMany(
+            { customer: {$in: unusedCustomerIds}, company: companyId },
+            { $set: {customer: params.customerId} }
+        ).exec();
+
+        Payment.updateMany(
+            { customer: {$in : unusedCustomerIds}, company: companyId },
+            { $set: {customer: params.customerId} }
+        ).exec();
+
+        PurchaseOrder.updateMany(
+            { customer: {$in: unusedCustomerIds}, company: companyId },
+            { $set: {customer: params.customerId} }
         ).exec();
 
         customer.updateOne(mergeEntry, { omitUndefined: true }).exec((err: any, raw: any) => {

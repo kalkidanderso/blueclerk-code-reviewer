@@ -3132,11 +3132,11 @@
                   "unit": {
                     "type": "string"
                   },
-                  "equipment": {
-                    "type": "array"
+                  "equipments": {
+                    "type": "string"
                   },
                   "jobLocations": {
-                    "type": "array"
+                    "type": "string"
                   },
                   "quickbookId": {
                     "type": "integer"
@@ -3151,7 +3151,7 @@
                     "type":"boolean"
                   },
                   "contacts": {
-                    "type": "array"
+                    "type": "string"
                   },
                   "phone": {
                     "type": "number"
