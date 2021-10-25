@@ -1667,10 +1667,10 @@ export const editJob = async (req: Request, res: Response) => {
 
                 // Manage job's contractor and technician
                 job.employeeType = employeeType;
-                if (params.technicianId) {
+                if (!employeeType) {
                     job.contractor = null;
                     job.technician = params.technicianId;
-                } else if (params.contractorId) {
+                } else {
                     job.contractor = params.contractorId;
                     job.technician = contractor.admin;
                 }
@@ -2130,12 +2130,16 @@ export const sendJobReport = (req: Request, res: Response) => {
 export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
 
     const params = req.body;
+    let date = new Date()
+    date.setHours(0, 0, 0, 0)
+    let endDate = new Date()
+    endDate.setHours(23, 59, 59, 59)
     const startOfDay = moment().startOf('day').utc();
     const endOfDay = moment().endOf('day').utc();
 
     Job.find({ technician: params.employeeId, $and: [ { status: { $ne: 2 } }, { status: { $ne: 3 } } ], scheduleDate: {
-        $gte: startOfDay,
-        $lte: endOfDay
+        $gte: date,
+        $lte: endDate
     } })
         .populate({
             path: 'ticket',
