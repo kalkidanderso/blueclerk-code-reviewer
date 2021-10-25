@@ -20,14 +20,30 @@ export const getAllJobRoutes = async (req: Request, res: Response) => {
     const startOfDay = moment(params.scheduleDate).startOf('day').utc();
     const endOfDay = moment(params.scheduleDate).endOf('day').utc();
 
-    const jobRoutes = await JobRoute.find({
-        $and: [
-            { company },
-            { scheduleDate: { $gte: startOfDay } },
-            { scheduleDate: { $lte: endOfDay } }
-        ]
-    })
-        .populate({
+    // Using aggregate to find Job Route with jobs for contractor
+    const jobRoutes = await JobRoute.aggregate([
+        {
+            $lookup: {
+                from: 'jobs',
+                localField: 'routes.job',
+                foreignField: '_id',
+                as: 'jobs'
+            }
+        },
+        {
+            $match: {
+                $and: [
+                    { $or: [ { company }, { 'jobs.company': company._id } ] },
+                    { scheduleDate: { $gte: new Date(startOfDay.toISOString()) } },
+                    { scheduleDate: { $lte: new Date(endOfDay.toISOString()) } }
+                ]
+            }
+        },
+        { $project: { jobs: 0 } }
+    ])
+
+    await JobRoute.populate(jobRoutes, [
+        {
             path: 'routes.job',
             select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
             populate: [
@@ -38,12 +54,13 @@ export const getAllJobRoutes = async (req: Request, res: Response) => {
                 { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
                 { path: 'jobSite', select: '-__v -locationId -customerId' }
             ]
-        })
-        .populate({ path: 'technician', select: 'profile' })
-        .populate({ path: 'createdBy', select: 'profile' })
-        .populate({ path: 'updatedBy', select: 'profile' });
+        },
+        { path: 'technician', select: 'profile' },
+        { path: 'createdBy', select: 'profile' },
+        { path: 'updatedBy', select: 'profile' }
+    ]);
 
-    return res.json({ status: Status.Success, jobRoutes });
+    return res.json({ status: Status.Success, jobRoutes: jobRoutes });
 
 }
 
