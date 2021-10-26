@@ -3094,6 +3094,10 @@
             "application/x-www-form-urlencoded": {
               "schema": {
                 "type": "object",
+                "required": [
+                  "customerId",
+                  "unusedCustomerIds"
+                ],
                 "properties": {
                   "customerId": {
                     "type": "string"
@@ -3443,16 +3447,17 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "customer",
-                  "latitude",
-                  "longitude",
+                  "customerId",
                   "nfcTag"
                 ],
                 "properties": {
-                  "latitude": {
+                  "jobLocationId": {
                     "type": "string"
                   },
-                  "longitude": {
+                  "customerId": {
+                    "type": "string"
+                  },
+                  "jobSiteId": {
                     "type": "string"
                   },
                   "nfcTag": {
@@ -3461,9 +3466,6 @@
                   "images": {
                     "type": "string",
                     "description": "comma seprated image Urls"
-                  },
-                  "customer": {
-                    "type": "string"
                   },
                   "note": {
                     "type": "string"

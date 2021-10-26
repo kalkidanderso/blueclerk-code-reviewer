@@ -116,6 +116,8 @@ export const Validations = {
 
   getCustomerDetail: [check('customerId').exists()],
 
+  mergeCustomer: [check('customerId').exists(), check('unusedCustomerIds').exists()],
+
       //Customer Equipment
 
   createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists()],

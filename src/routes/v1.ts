@@ -424,9 +424,10 @@ export default function (sio: any) {
 
     router.post(
         '/mergeCustomer',
-        passport.authenticate('jwt', {session: false}),
+        passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Get_All),
+        checkUserPermissions(Permissions.Customer_Update),
+        validate(Validations.mergeCustomer),
         customerController.mergeCustomer
     )
 

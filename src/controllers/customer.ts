@@ -16,7 +16,8 @@ import { Invoice } from '../models/Invoice'
 import { Payment } from '../models/Payment'
 import { CustomerEquipment } from '../models/CustomerEquipment'
 import { Contact } from '../models/Contact'
-import { PurchaseOrder } from 'src/models/PurchaseOrder'
+import { PurchaseOrder } from '../models/PurchaseOrder'
+import { Estimate } from '../models/Estimate'
 
 /**
  * To reset Customer quickbookId,
@@ -493,7 +494,6 @@ export const filterCustomer = async (req: Request, res: Response) => {
     const params = req.body;
     const companyId = req.companyId;
 
-    console.log(companyId);
     const customers = await Customer.find({
         company: companyId,
         $or: [{
@@ -523,6 +523,7 @@ export const filterCustomer = async (req: Request, res: Response) => {
 }
 
 export const mergeCustomer = async (req: Request, res: Response) => {
+
     const params = req.body;
     const companyId = req.companyId;
     const unusedCustomerIds = params.unusedCustomerIds?.length ? JSON.parse(params.unusedCustomerIds): [];
@@ -530,37 +531,40 @@ export const mergeCustomer = async (req: Request, res: Response) => {
     const customerEquipments: string[] = params.equipments?.length ? JSON.parse(params.equipments): [];
     const contacts = params.contact?.length ? JSON.parse(params.contacts) : [];
     let companyTier: { tier: any };
-    
+
     Customer.findById(params.customerId)
     .exec(async (err: any, customer: ICustomer)=> {
+        if (err) {
+            return res.json({status: Status.NotFound, message: 'Customer not found'})
+        }
+
         const mergeEntry: any =  {
-            'info.email': params.email ?? customer.info.email,
-            'profile.firstName': params.firstName ?? customer.profile.firstName,
-            'profile.lastName': params.lastName ?? customer.profile.lastName,
-            'profile.displayName': params.displayName ?? customer.profile.displayName,
-            'address.street': params.street ?? customer.address.street,
-            'address.unit': params.unit ?? customer.address.unit,
-            'address.city': params.city ?? customer.address.city,
-            'address.state': params.state ?? customer.address.state,
-            'address.zipCode': params.zipCode ?? customer.address.zipCode,
-            'contact.phone': params.phone ?? customer.contact.phone,
-            'contact.fax': params.fax ?? customer.contact.fax,
-            jobLocations: customer?.jobLocations?.length ? customer.jobLocations : [],
-            equipments: customer?.equipments?.length ? customer.equipments : [],
+            'info.email': params.email ?? customer?.info.email,
+            'profile.firstName': params.firstName ?? customer?.profile.firstName,
+            'profile.lastName': params.lastName ?? customer?.profile.lastName,
+            'profile.displayName': params.displayName ?? customer?.profile.displayName,
+            'address.street': params.street ?? customer?.address.street,
+            'address.unit': params.unit ?? customer?.address.unit,
+            'address.city': params.city ?? customer?.address.city,
+            'address.state': params.state ?? customer?.address.state,
+            'address.zipCode': params.zipCode ?? customer?.address.zipCode,
+            'contact.phone': params.phone ?? customer?.contact.phone,
+            'contact.fax': params.fax ?? customer?.contact.fax,
+            jobLocations: customer?.jobLocations?.length ? customer?.jobLocations : [],
+            equipments: customer?.equipments?.length ? customer?.equipments : [],
             itemTier: companyTier && companyTier.tier,
-            quickbookId: params.quickbookId ?? customer.quickbookId,
-            isCustomPrice: params.isCustomPrice ?? customer.isCustomPrice,
-            contactName: params.contactName ?? customer.contactName,
-            vendorId: params.vendorId ?? customer.vendorId,
-            contacts: customer?.contacts?.length ? customer.contacts : [],
+            quickbookId: params.quickbookId ?? customer?.quickbookId,
+            isCustomPrice: params.isCustomPrice ?? customer?.isCustomPrice,
+            contactName: params.contactName ?? customer?.contactName,
+            vendorId: params.vendorId ?? customer?.vendorId,
+            contacts: customer?.contacts?.length ? customer?.contacts : [],
+            isActive: true,
             inactiveAt: null,
             inactiveBy: null,
         }
-        
+
         if (params.jobLocations?.length) {
-            jobLocations.forEach((jobLocation: any) => {
-                mergeEntry.jobLocations.push(jobLocation);
-            });
+            mergeEntry.jobLocations = jobLocations;
 
             // Update customer on job location
             JobLocation.updateMany(
@@ -570,9 +574,7 @@ export const mergeCustomer = async (req: Request, res: Response) => {
         }
 
         if (params.equipments?.length) {
-            customerEquipments.forEach(equipment => {
-                mergeEntry.equipments.push(equipment);
-            });
+            mergeEntry.equipments = customerEquipments;
 
             CustomerEquipment.updateMany(
                 { _id: {$in: customerEquipments}, customer: {$in: unusedCustomerIds} },
@@ -581,9 +583,7 @@ export const mergeCustomer = async (req: Request, res: Response) => {
         }
 
         if (params.contacts?.length) {
-            contacts.forEach((contact: any) => {
-                mergeEntry.contacts.push(contact);
-            });
+            mergeEntry.contacts = contacts;
         }
 
         // Update customer on service ticket
@@ -604,27 +604,82 @@ export const mergeCustomer = async (req: Request, res: Response) => {
             { $set: {customerId: params.customerId} }
         ).exec();
 
+         // Update customer on invoice
         Invoice.updateMany(
             { customer: {$in: unusedCustomerIds}, company: companyId },
             { $set: {customer: params.customerId} }
         ).exec();
 
+         // Update customer on payment
         Payment.updateMany(
             { customer: {$in : unusedCustomerIds}, company: companyId },
             { $set: {customer: params.customerId} }
         ).exec();
 
+         // Update customer on purchase order
         PurchaseOrder.updateMany(
             { customer: {$in: unusedCustomerIds}, company: companyId },
             { $set: {customer: params.customerId} }
         ).exec();
 
+         // Update customer on estimate
+        Estimate.updateMany(
+            { customer: {$in: unusedCustomerIds}, company: companyId },
+            { $set: {customer: params.customerId} }
+        ).exec();
+
+        const company = await Company.findById(customer?.company).populate({path: 'itemTier.list.tier'});
+        if (params.itemTierId) {
+            companyTier = company.itemTier.list.find(t => {
+                const tier = <IPriceTier>t.tier;
+                // Check for the active company item tier
+                return (tier._id.toString() === params.itemTierId && tier.isActive)
+            });
+
+            if (!companyTier) {
+                return res.json({ status: Status.Error, message: 'itemTierId is either not found on the Company or itemTier is not active' })
+            }
+        }
+
         customer.updateOne(mergeEntry, { omitUndefined: true }).exec((err: any, raw: any) => {
-        if (err) {
-            return res.json({status: Status.Error, message: Messages.GenericError})
-        } 
+            if (err) {
+                return res.json({status: Status.Error, message: Messages.GenericError});
+            }
+
+            if (company.qbAuthorized && customer.quickbookId) {
+                // Sync the update to Customer in QuickBooks
+                _updateQBCustomer(req, res, company, customer, (err, errMsg, qbCustomer) => {
+                    if (err) {
+                        return res.json({ status: err, message: errMsg });
+                    }
+                });
+            }
+            
+            unusedCustomerIds.forEach((unusedCustomerId: string) => {
+                Customer.findOne({ _id: unusedCustomerId }).exec((err: any, customer: ICustomer)=> {
+                    if (company.qbAuthorized && customer.quickbookId) {
+                        // Sync the update to Customer in QuickBooks
+                        customer.isActive = false;
+                        _updateQBCustomer(req, res, company, customer, (err, errMsg, qbCustomer) => {
+                            if (err) {
+                                return res.json({ status: err, message: errMsg });
+                            }
+
+                            if (qbCustomer) {
+                                // If company's customers already synced, update the synced date
+                                if (company.qbSync?.customersSynced) {
+                                    company.qbSync.customersSyncedAt = new Date();
+                                    company.save();
+                                }
+                            }
+                        });
+                    } 
+
+                    Customer.deleteOne({ _id: unusedCustomerIds }).exec();
+                });
+            });
+
             return res.json({ status: Status.Success, message: customer });
         });
-
     })
 }
