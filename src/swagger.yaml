@@ -1998,22 +1998,23 @@ paths:
             schema:
               type: object
               required:
-                - customer
-                - latitude
-                - longitude
+                - customerId
                 - nfcTag
               properties:
-                latitude:
+                jobLocationId:
                   type: string
-                longitude:
+                  description: Job location ID
+                customerId:
                   type: string
+                  description: Customer ID
+                jobSiteId:
+                  type: string
+                  description: Job Site ID
                 nfcTag:
                   type: string
                 images:
                   type: string
                   description: comma seprated image Urls
-                customer:
-                  type: string
                 note:
                   type: string
                 address:
@@ -2313,6 +2314,14 @@ paths:
           in: query
           schema:
             type: string
+        - name: isActive
+          in: query
+          description: If not provided will return only ACTIVE job locations
+          schema:
+            enum:
+              - ALL
+              - 'true'
+              - 'false'
       responses:
         '200':
           description: Success
@@ -3485,13 +3494,24 @@ paths:
             schema:
               type: object
               required:
-                - customerId
+                - source
               properties:
+                source:
+                  type: string
+                  description: Source from BlueClerk app or WP plugin
+                  enum:
+                    - blueclerk
+                    - web
                 customerId:
                   type: string
-                  description: Id of a customer selected from the list received by /getCustomers api
+                  description: Id of a customer selected from the list received by /getCustomers api (Required for platform users)
                 note:
                   type: string
+                customerContactId:
+                  type: string
+                customerPO:
+                  type: string
+                  description: Customer PO/Sales Order#
                 technicianId:
                   type: string
                   description: Id of a technician / admin

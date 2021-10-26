@@ -27,7 +27,7 @@ export const get = (req: Request, res: Response) => {
     const { id } = req.params
     const { query: queryParams = {} } = req
     const loggedInCompanyId = req.companyId;
-    let { customerId, companyId } = queryParams
+    let { customerId, companyId, isActive } = queryParams
     let query = {}
 
     if (!id && !customerId && !companyId && loggedInCompanyId) {
@@ -43,6 +43,20 @@ export const get = (req: Request, res: Response) => {
         query = { companyId }
     }
 
+    switch (isActive) {
+        case 'ALL':
+            // Retrieve all job location, query is good at this point
+            break;
+
+        case 'false':
+        case false:
+            query = { ...query, isActive: false };
+            break;
+
+        default:
+            query = { ...query, isActive: true };
+            break;
+    }
 
     JobLocation.find(query)
         .populate('jobSites', '-__v -locationId -customerId')
