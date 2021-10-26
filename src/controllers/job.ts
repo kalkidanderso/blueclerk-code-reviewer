@@ -2137,10 +2137,7 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
     const startOfDay = moment().startOf('day').utc();
     const endOfDay = moment().endOf('day').utc();
 
-    Job.find({ technician: params.employeeId, $and: [ { status: { $ne: 2 } }, { status: { $ne: 3 } } ], scheduleDate: {
-        $gte: date,
-        $lte: endDate
-    } })
+    Job.find({ technician: params.employeeId, scheduleDate: { $gte: date, $lte: endDate } })
         .populate({
             path: 'ticket',
         })
