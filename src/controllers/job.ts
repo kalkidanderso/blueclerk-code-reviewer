@@ -1652,28 +1652,28 @@ export const editJob = async (req: Request, res: Response) => {
                     ? false
                     : !!params.employeeType;
 
+            const contractor = await Company.findOne({ _id: params.contractorId });
+            const technician = await User.findOne({ _id: params.technicianId || contractor?.admin });
+
             // If company update assignee of the job
-            if (employeeType !== job.employeeType) {
-                if (job.status != JobStatus.PENDING) {
-                    return res.json({ 'status': Status.Error, 'message': 'Cannot update assignee for a non PENDING job' });
+            if (
+                employeeType !== job.employeeType
+                || technician?._id?.toString() !== job.technician?.toString()
+                || contractor?._id?.toString() !== job.contractor?.toString()
+            ) {
+                if (![JobStatus.PENDING, JobStatus.RESCHEDULED, JobStatus.INCOMPLETE].includes(job.status)) {
+                    return res.json({ 'status': Status.Error, 'message': 'Cannot update assignee for a non PENDING/RESCHEDULED/INCOMPLETE job' });
                 }
 
-                const contractor = await Company.findOne({ _id: params.contractorId });
-                const technicianId: any = await User.findOne({ _id: params.technicianId, company: companyId });
-
-                if (!contractor && !technicianId) {
-                    return res.json({ 'status': Status.Error, 'message': 'Contractor/Technician not found!' });
+                if (!contractor && !technician) {
+                    return res.json({ 'status': Status.Error, 'message': 'Contractor/Technician not found' });
                 }
 
                 // Manage job's contractor and technician
                 job.employeeType = employeeType;
-                if (!employeeType) {
-                    job.contractor = null;
-                    job.technician = params.technicianId;
-                } else {
-                    job.contractor = params.contractorId;
-                    job.technician = contractor.admin;
-                }
+                job.contractor = contractor?._id;
+                job.technician = technician?._id || contractor?.admin;
+
                 action += '|Updated Assignee|';
             }
             job.scheduleDate = params.scheduleDate;
