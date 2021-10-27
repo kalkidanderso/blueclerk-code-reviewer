@@ -44,8 +44,9 @@ export const get = (req: Request, res: Response) => {
     }
 
     switch (isActive) {
-        case 'ALL':
-            // Retrieve all job location, query is good at this point
+        case 'true':
+        case true:
+            query = { ...query, $or: [{ isActive: true }, { isActive: { $exists: false } }] };
             break;
 
         case 'false':
@@ -54,7 +55,7 @@ export const get = (req: Request, res: Response) => {
             break;
 
         default:
-            query = { ...query, isActive: true };
+            // Retrieve all job location, query is good at this point
             break;
     }
 
