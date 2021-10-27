@@ -141,8 +141,7 @@ export const sendInvitationToContractor = function(options: any) {
               Data: `<div style="text-align: center;">
                 <p>Welcome to BlueClerk! You have been invited to join BlueClerk</p>
                 <p>Click the link to get started: <a href="https://app.blueclerk.com/signup/?email=${options.to}&isci=true&cid=${options.companyId}" target="_blank">app.blueclerk.com</a></p>
-                <br />
-                <br />
+                <p><img src='https://blueclerk.com/wp-content/uploads/2021/10/Welcome-Email-to-Vendor-Pic.jpg' style="width:85%" /></p>
                 <h3>Download BlueClerk Mobile App:</h3>
                 <a href='https://play.google.com/store/apps/details?id=com.blueclerk.app&hl=en'><img alt='Get BlueClerk Mobile App on Google Play' src='https://blueclerk.com/wp-content/uploads/2020/07/playstore.png' style="width: 150px; margin-right:2px"/></a>
                 &nbsp;
