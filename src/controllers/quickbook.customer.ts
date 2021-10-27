@@ -380,7 +380,7 @@ export const _updateQBCustomer = async (req: Request, res: Response, company: IC
                 )
             }
 
-            // qbCustomer.Active = customer.isActive;
+            qbCustomer.Active = customer.isActive;
             qbCustomer.DisplayName = customer?.profile?.displayName;
             qbCustomer.GivenName = customer?.profile?.firstName;
             qbCustomer.FamilyName = customer?.profile?.lastName;

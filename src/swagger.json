@@ -3103,7 +3103,8 @@
                     "type": "string"
                   },
                   "unusedCustomerIds": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "format: [``6179104d040ff5218f9ca97a``, ``6179104d040ff5218f9ca97a``]"
                   },
                   "firstName": {
                     "type": "string"

@@ -12,13 +12,14 @@ import { _createQBCustomer, _updateQBCustomer } from '../controllers/quickbook.c
 import { Job } from '../models/Job'
 import { JobLocation } from '../models/JobLocation'
 import { JobSite } from '../models/JobSite'
-import { Invoice } from '../models/Invoice'
+import { IInvoice, Invoice } from '../models/Invoice'
 import { Payment } from '../models/Payment'
 import { CustomerEquipment } from '../models/CustomerEquipment'
 import { Contact } from '../models/Contact'
 import { PurchaseOrder } from '../models/PurchaseOrder'
 import { Estimate } from '../models/Estimate'
-import { Tag } from 'src/models/Tag'
+import { Tag } from '../models/Tag'
+import { _updateQBInvoice } from './quickbook.invoice'
 
 /**
  * To reset Customer quickbookId,
@@ -538,7 +539,8 @@ export const mergeCustomer = async (req: Request, res: Response) => {
         if (err) {
             return res.json({status: Status.NotFound, message: 'Customer not found'})
         }
-
+        const company = await Company.findById(companyId).populate({path: 'itemTier.list.tier'});
+        console.log(company)
         const mergeEntry: any =  {
             'info.email': params.email ?? customer?.info.email,
             'profile.firstName': params.firstName ?? customer?.profile.firstName,
@@ -580,7 +582,7 @@ export const mergeCustomer = async (req: Request, res: Response) => {
             CustomerEquipment.updateMany(
                 { _id: {$in: customerEquipments}, customer: {$in: unusedCustomerIds} },
                 { $set: {customer: params.customerId} }
-            ).exec();
+            );
         }
 
         if (params.contacts?.length) {
@@ -605,11 +607,27 @@ export const mergeCustomer = async (req: Request, res: Response) => {
             { $set: {customerId: params.customerId} }
         ).exec();
 
-         // Update customer on invoice
-        Invoice.updateMany(
-            { customer: {$in: unusedCustomerIds}, company: companyId },
-            { $set: {customer: params.customerId} }
-        ).exec();
+        // Update invoice in quickbook
+        for (const unusedCustomerId of unusedCustomerIds) {
+            Invoice.findOne({ customer: unusedCustomerId, company: companyId }).exec((err: any, invoice: IInvoice) => {
+                if (company.qbAuthorized) {
+                    // Update Invoice in QuickBooks
+                    _updateQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                        if (qbInvoice) {
+                            // If company's invoices already synced, update the synced date
+                            if (err) {
+                                return res.json({ status: err, message: errMsg });
+                            }
+
+                            Invoice.updateMany(
+                                { customer: {$in: unusedCustomerIds}, company: companyId },
+                                { $set: {customer: params.customerId} }
+                            ).exec();
+                        }
+                    })
+                }
+            })
+        }
 
          // Update customer on payment
         Payment.updateMany(
@@ -634,7 +652,6 @@ export const mergeCustomer = async (req: Request, res: Response) => {
             { $set: {customer: params.customerId} }
         ).exec();
 
-        const company = await Company.findById(customer?.company).populate({path: 'itemTier.list.tier'});
         if (params.itemTierId) {
             companyTier = company.itemTier.list.find(t => {
                 const tier = <IPriceTier>t.tier;
@@ -647,26 +664,27 @@ export const mergeCustomer = async (req: Request, res: Response) => {
             }
         }
 
+        if (company.qbAuthorized && customer.quickbookId) {
+            // Sync the update to Customer in QuickBooks
+            _updateQBCustomer(req, res, company, customer, (err, errMsg, qbCustomer) => {
+                if (err) {
+                    return res.json({ status: err, message: errMsg });
+                }
+            });
+        }
+
         customer.updateOne(mergeEntry, { omitUndefined: true }).exec((err: any, raw: any) => {
             if (err) {
                 return res.json({status: Status.Error, message: Messages.GenericError});
             }
 
-            if (company.qbAuthorized && customer.quickbookId) {
-                // Sync the update to Customer in QuickBooks
-                _updateQBCustomer(req, res, company, customer, (err, errMsg, qbCustomer) => {
-                    if (err) {
-                        return res.json({ status: err, message: errMsg });
-                    }
-                });
-            }
-            
-            unusedCustomerIds.forEach((unusedCustomerId: string) => {
-                Customer.findOne({ _id: unusedCustomerId }).exec((err: any, customer: ICustomer)=> {
+            for (const unusedCustomerId of unusedCustomerIds) {
+                Customer.findOne({ _id: unusedCustomerId }).exec(async (err: any, customer: ICustomer)=> {
                     if (company.qbAuthorized && customer.quickbookId) {
                         // Sync the update to Customer in QuickBooks
                         customer.isActive = false;
-                        _updateQBCustomer(req, res, company, customer, (err, errMsg, qbCustomer) => {
+
+                        await _updateQBCustomer(req, res, company, customer, (err, errMsg, qbCustomer) => {
                             if (err) {
                                 return res.json({ status: err, message: errMsg });
                             }
@@ -683,7 +701,7 @@ export const mergeCustomer = async (req: Request, res: Response) => {
 
                     Customer.deleteOne({ _id: unusedCustomerIds }).exec();
                 });
-            });
+            };
 
             return res.json({ status: Status.Success, message: customer });
         });
