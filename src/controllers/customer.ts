@@ -18,6 +18,7 @@ import { CustomerEquipment } from '../models/CustomerEquipment'
 import { Contact } from '../models/Contact'
 import { PurchaseOrder } from '../models/PurchaseOrder'
 import { Estimate } from '../models/Estimate'
+import { Tag } from 'src/models/Tag'
 
 /**
  * To reset Customer quickbookId,
@@ -624,6 +625,11 @@ export const mergeCustomer = async (req: Request, res: Response) => {
 
          // Update customer on estimate
         Estimate.updateMany(
+            { customer: {$in: unusedCustomerIds}, company: companyId },
+            { $set: {customer: params.customerId} }
+        ).exec();
+
+        Tag.updateMany(
             { customer: {$in: unusedCustomerIds}, company: companyId },
             { $set: {customer: params.customerId} }
         ).exec();
