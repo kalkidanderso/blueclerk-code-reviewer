@@ -1535,8 +1535,8 @@ export const updateJobTask = async (req: Request, res: Response) => {
         jobStatus = JobStatus.FINISHED;
         action += `|Finishing the job|`;
     } else if (allTaskStatus.includes(5) && !allTaskStatus.includes(0)) {
-        // There are tasks with PAUSED and no task with PENDING, Job is INCOMPLETE
-        jobStatus = JobStatus.INCOMPLETE;
+        // No more PENDING tasks, but have at least one PAUSED task
+        jobStatus = JobStatus.PAUSED;
     }
 
     // Log a track history
