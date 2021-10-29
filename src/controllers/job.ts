@@ -1862,7 +1862,7 @@ export const editJob = async (req: Request, res: Response) => {
 
                     // If scheduleDate or technician updated, update the job route
                     if (
-                        !moment(oldScheduleDate).isSame(moment(job.scheduleDate))
+                        !moment(oldScheduleDate).isSame(moment(job.scheduleDate), 'day')
                         || oldTechnician.toString() !== job.technician.toString()
                     ) {
                         // Remove the job from the old job route on the old scheduleDate
