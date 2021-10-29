@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Schema } from 'mongoose';
 import { ObjectId } from 'mongodb';
 import moment from 'moment';
 
@@ -274,5 +275,61 @@ export const updateJobRoute = async (req: Request, res: Response) => {
     await jobRoute.save();
 
     return res.json({ status: Status.Success, message: 'Job route updated successfully.', jobRoute, invalidJobIds });
+
+}
+
+/**
+ *
+ * To add / remove a new created or updated job to existing job route,
+ * if on that scheduleDate existed a job route for the technician
+ */
+export const _addOrRemoveJobRoutes = async (technicianId: string, scheduleDate: Date, action: string, jobId: Schema.Types.ObjectId) => {
+
+    const startOfDay = moment(scheduleDate).startOf('day').utc();
+    const endOfDay = moment(scheduleDate).endOf('day').utc();
+
+    const query = {
+        $and: [
+            { scheduleDate: { $gte: startOfDay } },
+            { scheduleDate: { $lte: endOfDay } }
+        ],
+        technician: technicianId
+    }
+
+    // Retrieve the job route for the technician if exist
+    const jobRoute = await JobRoute.findOne(query).sort({ _id: -1 });
+
+    if (!jobRoute) {
+        return;
+    }
+
+    switch (action) {
+        case 'ADD':
+            // Add the job to the job routes
+            jobRoute.routes.push({
+                order: jobRoute.routes.length + 1,
+                job: jobId
+            });
+            break;
+
+        case 'REMOVE':
+            // Remove the job from job routes
+            const routes = jobRoute.routes.filter(route => route.job.toString() !== jobId.toString());
+
+            // Reorder the order of the route
+            let i = 0;
+            for (const route of routes) {
+                route.order = (i += 1);
+            }
+
+            jobRoute.routes = routes;
+            break;
+
+        default:
+            break;
+    }
+
+    await jobRoute.save();
+    return;
 
 }

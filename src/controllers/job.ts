@@ -22,8 +22,9 @@ import { ICustomer } from '../models/Customer';
 import {CompanyCustomer} from '../models/CompanyCustomer';
 import { INotificationJob, NotificationJob } from '../models/NotificationMetadata'
 import { IJobType, IJobTypes } from '../models/JobType';
-import { _handleJobTypesJson } from '../controllers/jobType';
 import { JobRoute } from '../models/JobRoute';
+import { _handleJobTypesJson } from '../controllers/jobType';
+import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
 
 export const createJob = (req: Request, res: Response) => {
 
@@ -278,10 +279,14 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
             return next(req, res, Messages.GenericError, null, null)
         }
 
-        serviceTicket.updateOne({jobCreated: true}, (serviceTicketError: any, raw: any) => {
+        serviceTicket.updateOne({jobCreated: true}, async (serviceTicketError: any, raw: any) => {
             if (serviceTicketError) {
                 return next(req, res, Messages.GenericError, null, null)
             }
+
+            // Add the new job to the existing job route on the scheduleDate
+            await _addOrRemoveJobRoutes(job.technician, job.scheduleDate, 'ADD', job._id);
+
             scheduleEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => {
                     return next(req, res, null, newJob, invalidJobTypes)
                 });
@@ -1676,6 +1681,9 @@ export const editJob = async (req: Request, res: Response) => {
 
                 action += '|Updated Assignee|';
             }
+
+            // Save the old schedule date to handle job on the job route
+            const oldScheduleDate = job.scheduleDate;
             job.scheduleDate = params.scheduleDate;
             job.description = params.description;
             if (linkedJob) {
@@ -1844,10 +1852,18 @@ export const editJob = async (req: Request, res: Response) => {
 
             job.updateOne(
                 job,
-                (err: any, raw: any)=> {
+                async (err: any, raw: any)=> {
 
                     if (err) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    }
+
+                    // If scheduleDate updated, update the job route
+                    if (!moment(oldScheduleDate).isSame(moment(params.scheduleDate))) {
+                        // Remove the job from the old job route on the old scheduleDate
+                        await _addOrRemoveJobRoutes(job.technician, new Date(oldScheduleDate), 'REMOVE', job._id);
+                        // Add the job to the existing job route on the new scheduleDate
+                        await _addOrRemoveJobRoutes(job.technician, new Date(params.scheduleDate), 'ADD', job._id);
                     }
 
                     if (!linkedJob) {
