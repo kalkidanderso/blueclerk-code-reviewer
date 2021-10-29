@@ -1657,6 +1657,8 @@ export const editJob = async (req: Request, res: Response) => {
                     ? false
                     : !!params.employeeType;
 
+            // Save the old technician to handle job on the job route
+            const oldTechnician = job.technician;
             const contractor = await Company.findOne({ _id: params.contractorId });
             const technician = await User.findOne({ _id: params.technicianId || contractor?.admin });
 
@@ -1858,12 +1860,15 @@ export const editJob = async (req: Request, res: Response) => {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
 
-                    // If scheduleDate updated, update the job route
-                    if (!moment(oldScheduleDate).isSame(moment(params.scheduleDate))) {
+                    // If scheduleDate or technician updated, update the job route
+                    if (
+                        !moment(oldScheduleDate).isSame(moment(job.scheduleDate), 'day')
+                        || oldTechnician.toString() !== job.technician.toString()
+                    ) {
                         // Remove the job from the old job route on the old scheduleDate
-                        await _addOrRemoveJobRoutes(job.technician, new Date(oldScheduleDate), 'REMOVE', job._id);
+                        await _addOrRemoveJobRoutes(oldTechnician, new Date(oldScheduleDate), 'REMOVE', job._id);
                         // Add the job to the existing job route on the new scheduleDate
-                        await _addOrRemoveJobRoutes(job.technician, new Date(params.scheduleDate), 'ADD', job._id);
+                        await _addOrRemoveJobRoutes(job.technician, new Date(job.scheduleDate), 'ADD', job._id);
                     }
 
                     if (!linkedJob) {
