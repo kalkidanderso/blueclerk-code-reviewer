@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://blueclerk-node-api.deploy.blueclerk.com/api/v1"
+      "url": "https://api.blueclerk.com/api/v1"
     }
   ],
   "tags": [
