@@ -410,6 +410,11 @@ export const _updateQBCustomer = async (req: Request, res: Response, company: IC
             
             qbo.updateCustomer(qbCustomer, async (err: any, qbCustomer: IQBCustomer) => {
                 if (err) {
+                console.log('== err.Fault:', err.Fault);
+                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                console.log('== err.fault:', err.fault);
+                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
                     return next(
                         Status.Error,
                         err.Fault?.Error[0]?.Detail

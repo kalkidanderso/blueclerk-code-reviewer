@@ -4,7 +4,7 @@ import { Status, Messages } from '../common/constants';
 
 import { IContact } from '../common/contact';
 import { ICompany, Company } from '../models/Company'
-import { ICustomer } from '../models/Customer'
+import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
 import { IJobLocation } from '../models/JobLocation';
 import { IServiceTicket } from '../models/ServiceTicket';
 import { IJob } from '../models/Job';
@@ -12,6 +12,7 @@ import { IItem } from '../models/Item';
 import { IPaymentTerm } from '../models/PaymentTerm';
 import { IInvoice, IQBInvoice, IQBInvoiceLine, LineDetailTypes, Invoice } from '../models/Invoice';
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
+import { _updateQBCustomer } from './quickbook.customer';
 
 // ===================================
 // =======[ QUICKBOOK INVOICE ]=======
@@ -163,10 +164,10 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
                 return next(
                     Status.Error,
                     err.Fault?.Error[0]?.Detail
-                        || err.Fault?.Error[0]?.Message
-                        || err.fault?.error[0]?.detail
-                        || err.fault?.error[0]?.message
-                        || Messages.GenericError,
+                    || err.Fault?.Error[0]?.Message
+                    || err.fault?.error[0]?.detail
+                    || err.fault?.error[0]?.message
+                    || Messages.GenericError,
                     null
                 );
             }
@@ -278,6 +279,86 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
 
 }
 
+export const _updateQBInvoiceCustomer = async (req: Request, res: Response, company: ICompany, unusedCustomers: ICustomer[], currentCustomer: ICustomer, next: (error: number, errorMessage: string, qbInvoice: IQBInvoice) => void) => {
+
+    // Payment Term of the invoice
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+        }
+
+        // Get old qb customer
+
+        for (const unusedCustomer of unusedCustomers) {
+            // Initiate node-quickbooks object with the refreshed company token
+            const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+            qbo.getCustomer(unusedCustomer.quickbookId, async (err: any, oldCustomer: IQBCustomer) => {
+                qbo.getCustomer(currentCustomer.quickbookId, async (err: any, currentQBCustomer: IQBCustomer) => {
+                    if (!currentQBCustomer?.Active) {
+                        currentCustomer.isActive = true;
+                        console.log('currentCustomer', currentCustomer);
+                        _updateQBCustomer(req, res, company, currentCustomer, (err, errMsg, qbCustomer) => {
+                            if (err) {
+                                return res.json({ status: Status.Error, message: errMsg });
+                            }
+                        });
+                    }
+                });
+
+                qbo.findInvoices([
+                    { field: 'CustomerRef', value: oldCustomer?.Id },
+                ], async (err: any, quickbookInvoice: any) => {
+                    const qbInvoices: IQBInvoice[] = quickbookInvoice?.QueryResponse?.Invoice;
+
+                    if (qbInvoices?.length) {
+                        for (const qbInvoice of qbInvoices) {
+                            qbInvoice.CustomerRef = qbInvoice.CustomerRef ?? {};
+                            qbInvoice.CustomerRef.value = currentCustomer?.quickbookId;
+                            qbInvoice.CustomerRef.name = currentCustomer?.profile?.displayName;
+                            qbInvoice.BillEmail = qbInvoice.BillEmail ?? {};
+                            qbInvoice.BillEmail.Address = currentCustomer?.info?.email;
+
+                            // console.log('this data will be send',qbInvoice);
+                            qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
+                                console.log('qbInvoice', qbInvoice);
+                                if (err) {
+                                    console.log('== err.Fault.Invoice:', err.Fault);
+                                    console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                                    console.log('== err.fault:', err.fault);
+                                    console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                                    console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                                    return next(
+                                        Status.Error,
+                                        err.Fault?.Error[0]?.Detail
+                                        || err.Fault?.Error[0]?.Message
+                                        || err.fault?.error[0]?.detail
+                                        || err.fault?.error[0]?.message
+                                        || Messages.GenericError,
+                                        null
+                                    );
+                                }
+
+                                return next(null, null, qbInvoice);
+                            });
+
+                        }
+                    }
+                });
+
+            })
+        }
+    })
+}
 /**
  * Generic function to delete QuickBooks Invoice,
  * this used by Invoice Controller when updating invoice to draft
@@ -357,7 +438,7 @@ export const createQBInvoice = async (req: Request, res: Response) => {
 */
 export const syncQBInvoices = async (req: Request, res: Response) => {
 
-    const updatedInvoices: { _id: string, invoiceId: string}[] = [];
+    const updatedInvoices: { _id: string, invoiceId: string }[] = [];
 
     // Always refresh the token first because token valid only for 60 minutes
     _refreshToken(req, res, req.company, async (err, errMsg, company) => {
@@ -367,7 +448,7 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
         /**
          * Retrieve all invoices of this company from Database,
          * that not a manual invoice, not draft, and doesn't have quickbookId 
-         */ 
+         */
         const invoices = await Invoice.find({
             company: company._id,
             invoiceType: { $ne: 3 },
@@ -498,7 +579,7 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
 //             for (const qbInvoice of qbInvoices) {
 //                 // Chevk if there any invoice on QB that not on DB yet
 //                 let invoice = invoices.find(invoice => invoice.quickbookId === qbInvoice.Id);
-              
+
 //                 if (!invoice) {
 //                     // Invoice not found, create it
 //                     const customer = customers.find(customer => customer.quickbookId === qbInvoice.CustomerRef?.value);
