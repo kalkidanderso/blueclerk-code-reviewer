@@ -1186,7 +1186,14 @@ export const updateInvoice = (req: Request, res: Response) => {
                 return res.json({'status': Status.Success, 'message': "Invalid invoice id."})
             }
 
-            if (params.isDraft && invoice.status !== InvoiceStatus.UNPAID) {
+            // Handle the stringify boolean value
+            const isDraft = params.isDraft === undefined || params.isDraft === null
+            ? invoice.isDraft
+            : params.isDraft === 'false' || params.isDraft === '0'
+                ? false
+                : !!params.isDraft;
+
+            if (isDraft && invoice.status !== InvoiceStatus.UNPAID) {
                 return res.json({ status: Status.Error, message: 'Cannot update a PAID/PARTIALLY PAID invoce to become draft.' });
             }
 
@@ -1420,7 +1427,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                             paymentApplied: Math.round(paymentApplied * 100) / 100,
                             status, paid,
                             charges, issuedDate, dueDate, note: params.note,
-                            isDraft: params.isDraft ?? invoice.isDraft,
+                            isDraft,
                             paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                             customerPO: params.customerPO,
                             customerContactId: customerContact,
@@ -1608,7 +1615,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                     paymentApplied: Math.round(paymentApplied * 100) / 100,
                     status, paid,
                     issuedDate, dueDate, note: params.note,
-                    isDraft: params.isDraft ?? invoice.isDraft,
+                    isDraft,
                     paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                     customerPO: params.customerPO,
                     customerContactId: customerContact,
@@ -2018,7 +2025,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
             jobReport.save();
         }
 
-        if (company.qbAuthorized) {
+        if (company.qbAuthorized && invoice.quickbookId) {
             // Delete Invoice in QuickBooks
             _deleteQBInvoice(req, res, company, invoice, (err, errMsg, status) => {
                 if (status === 'Deleted') {
@@ -2046,7 +2053,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         // Save customer credit
         customer.save()
 
-        if (company.qbAuthorized) {
+        if (company.qbAuthorized && invoice.quickbookId) {
             // Update Invoice in QuickBooks
             _updateQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                 if (qbInvoice) {

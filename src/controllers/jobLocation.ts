@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import { Status, Messages } from '../common/constants'
 
 import { JobLocation, IJobLocation } from '../models/JobLocation';
+import { IUser } from '../models/User';
 import { ICompany } from '../models/Company'
 import { Customer } from '../models/Customer'
 import { Contact } from '../models/Contact'
@@ -26,7 +27,7 @@ export const get = (req: Request, res: Response) => {
     const { id } = req.params
     const { query: queryParams = {} } = req
     const loggedInCompanyId = req.companyId;
-    let { customerId, companyId } = queryParams
+    let { customerId, companyId, isActive } = queryParams
     let query = {}
 
     if (!id && !customerId && !companyId && loggedInCompanyId) {
@@ -42,6 +43,21 @@ export const get = (req: Request, res: Response) => {
         query = { companyId }
     }
 
+    switch (isActive) {
+        case 'true':
+        case true:
+            query = { ...query, $or: [{ isActive: true }, { isActive: { $exists: false } }] };
+            break;
+
+        case 'false':
+        case false:
+            query = { ...query, isActive: false };
+            break;
+
+        default:
+            // Retrieve all job location, query is good at this point
+            break;
+    }
 
     JobLocation.find(query)
         .populate('jobSites', '-__v -locationId -customerId')
@@ -136,6 +152,7 @@ export const update = async (req: Request, res: Response) => {
 
     const params = req.body;
     const { id } = req.params;
+    const user = <IUser>req.user;
     const company = <ICompany>req.company;
 
     // Find and check if customer existed
@@ -157,6 +174,7 @@ export const update = async (req: Request, res: Response) => {
     }
 
     // Check the value of params req.body.isActive
+    const currentIsActive = jobLocation.isActive;
     const isActive = params.isActive === undefined || params.isActive === null
         ? jobLocation.isActive
         : params.isActive === 'false' || params.isActive === '0'
@@ -172,6 +190,13 @@ export const update = async (req: Request, res: Response) => {
     jobLocation.address.zipcode = params.zipcode ?? jobLocation.address?.zipcode;
     if (params.locationLong && params.locationLat) {
         jobLocation.location = {coordinates: [params.locationLong, params.locationLat]};
+    }
+    if (currentIsActive && !isActive) {
+        jobLocation.inactiveAt = new Date();
+        jobLocation.inactiveBy = user._id;
+    } else if (isActive) {
+        jobLocation.inactiveAt = null;
+        jobLocation.inactiveBy = null;
     }
     await jobLocation.save();
 

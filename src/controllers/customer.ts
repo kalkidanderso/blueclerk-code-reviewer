@@ -8,7 +8,7 @@ import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { User, IUser } from '../models/User'
 import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
 import { IPriceTier } from '../models/PriceTier'
-import { _createQBCustomer } from './quickbook.customer'
+import { _createQBCustomer, _updateQBCustomer } from '../controllers/quickbook.customer'
 
 /**
  * To reset Customer quickbookId,
@@ -249,7 +249,7 @@ export const getCustomers = (req: Request, res: Response) => {
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-    var filter
+    var filter = {}
     if (params.includeActive == 'true' && params.includeNonActive == 'true') {
         filter = {}
     }else if (params.includeActive == 'true') {
@@ -276,17 +276,18 @@ export const getCustomers = (req: Request, res: Response) => {
             return obj.customer
         })
 
-        User.find({_id : {$in: customerIds}},
-            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId itemTier paymentTerm quickbookId')
+        Customer.find({_id : {$in: customerIds}, ...filter},
+            'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId itemTier paymentTerm quickbookId inactiveBy inactiveAt')
             .populate({ path: 'itemTier', select: '-companyId -__v' })
-            .exec((err: any, users: IUser[]) =>{
+            .populate({ path: 'inactiveBy', select: 'profile' })
+            .exec((err: any, customers: ICustomer[]) =>{
 
             if (err) {
 
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            return res.json({'status': Status.Success, 'customers': users})
+            return res.json({'status': Status.Success, 'customers': customers})
         })
 
     })
@@ -294,7 +295,8 @@ export const getCustomers = (req: Request, res: Response) => {
 
 export const updateCustomer = (req: Request, res: Response) => {
 
-    const params = req.body
+    const params = req.body;
+    const user = <IUser>req.user;
     let companyTier: { tier: any };
     Customer.findById(params.customerId)
     .exec(async (err: any, customer: ICustomer)=>{
@@ -321,6 +323,12 @@ export const updateCustomer = (req: Request, res: Response) => {
 
         // Handle the stringify boolean value
         const isCustomPrice = params.isCustomPrice === 'false' || params.isCustomPrice === false ? false : !!params.isCustomPrice;
+        const isActive = params.isActive === undefined || params.isActive === null
+            ? customer.isActive
+            : params.isActive === 'false' || params.isActive === '0'
+                ? false
+                : !!params.isActive;
+
         // Check if customer has customPrices or not when isCustomPrice set to true
         const warningMessage = isCustomPrice && customer.customPrices.length <= 0 ? 'Customer will use custom price, but no custom price is configured currently.' : undefined;
 
@@ -336,11 +344,19 @@ export const updateCustomer = (req: Request, res: Response) => {
             'address.zipCode': params.zipCode,
             'contact.phone': params.phone,
             'contact.fax': params.fax,
+            isActive,
             itemTier: companyTier && companyTier.tier,
             isCustomPrice,
             contactName: params.contactName,
             vendorId: params.vendorId,
-            contacts: params.contacts
+            contacts: params.contacts,
+            inactiveAt: null,
+            inactiveBy: null,
+        }
+
+        if (customer.isActive && !isActive) {
+            data.inactiveAt = new Date();
+            data.inactiveBy = user._id;
         }
 
         if (params.latitude && params.longitude) {
@@ -350,8 +366,38 @@ export const updateCustomer = (req: Request, res: Response) => {
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': err.message });
             }
-            return res.json({ 'status': Status.Success, 'message': 'Customer updated successfully.', warningMessage });
-        })
+
+            // Find customer to get updated customer data
+            Customer.findOne({ _id: params.customerId }).exec( async (err: any, customer: ICustomer)=> {
+                if (company.qbAuthorized && customer.quickbookId) {
+                    // Sync the update to Customer in QuickBooks
+                    _updateQBCustomer(req, res, company, customer, (err, errMsg, qbCustomer) => {
+                        if (err) {
+                            return res.json({ status: err, message: errMsg });
+                        }
+
+                        if (qbCustomer) {
+                            // If company's customers already synced, update the synced date
+                            if (company.qbSync?.customersSynced) {
+                                company.qbSync.customersSyncedAt = new Date();
+                                company.save();
+                            }
+                        }
+
+                        return res.json({
+                            status: Status.Success,
+                            message: 'Customer Updated Successfully',
+                            customer,
+                            quickbookCustomer: qbCustomer,
+                            quickbookMessage: errMsg
+                        });
+                    });
+
+                } else {
+                    return res.json({ status: Status.Success, message: 'Customer updated successfully.', warningMessage });
+                }
+            });
+        });
     })
 }
 

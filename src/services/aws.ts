@@ -141,8 +141,7 @@ export const sendInvitationToContractor = function(options: any) {
               Data: `<div style="text-align: center;">
                 <p>Welcome to BlueClerk! You have been invited to join BlueClerk</p>
                 <p>Click the link to get started: <a href="https://app.blueclerk.com/signup/?email=${options.to}&isci=true&cid=${options.companyId}" target="_blank">app.blueclerk.com</a></p>
-                <br />
-                <br />
+                <p><img src='https://blueclerk.com/wp-content/uploads/2021/10/Welcome-Email-to-Vendor-Pic.jpg' style="width:85%" /></p>
                 <h3>Download BlueClerk Mobile App:</h3>
                 <a href='https://play.google.com/store/apps/details?id=com.blueclerk.app&hl=en'><img alt='Get BlueClerk Mobile App on Google Play' src='https://blueclerk.com/wp-content/uploads/2020/07/playstore.png' style="width: 150px; margin-right:2px"/></a>
                 &nbsp;
@@ -630,18 +629,24 @@ export const parseFieldsAndUploadImageInS3 = async function (req: Request, res: 
       })
     })
 
-    const uploadSingle = upload.single('image')
+    const uploadMultiple = upload.fields([
+      { name: 'image' },
+      { name: 'images' }
+    ])
 
-    uploadSingle(req, res, (err) => {
+    uploadMultiple(req, res, (err) => {
 
       if (err) return next(err, null)
       if (req.body.source === "blueclerk" && !req.body.customerId) {
         return next({message: "Customer is required to create a service ticket"}, null);
       }
-      const imageUrl = req.file ? req.file.location : null;
-      req.body.imageUrl = req.body.imageUrl || imageUrl;
+      const imagesUrl: string[] = [];
+      const imageFiles = JSON.parse(JSON.stringify(req.files));
+      imageFiles?.image?.forEach((image:any)=> imagesUrl.push(image.location))
+      imageFiles?.images?.forEach((image:any)=> imagesUrl.push(image.location))
+      req.body.imageUrl = req.body.imageUrl || imagesUrl;
       const body = req.body;
-      return next(null, {imageUrl, body});
+      return next(null, {imagesUrl, body});
     })
   }
 
@@ -679,18 +684,24 @@ export const updateFieldsAndUploadImageInS3 = function(req: Request, res: Respon
     })
   })
 
-  const uploadSingle = upload.single('image')
+  const uploadMultiple = upload.fields([
+    { name: 'image' },
+    { name: 'images' }
+  ])
 
-  uploadSingle(req, res, (err)=>{
+  uploadMultiple(req, res, (err)=>{
 
     if (err) return next(err, null)
     if(!req.body.ticketId || ! req.body.note)
     {
       return next({'status': Status.Error, 'message': Messages.MissingParams}, null);
     }
-    const imageUrl = req.file ? req.file.location : null;
+    const imagesUrl: string[] = [];
+    const imageFiles = JSON.parse(JSON.stringify(req.files));
+    imageFiles?.image?.forEach((image: any) => imagesUrl.push(image.location));
+    imageFiles?.images?.forEach((image: any) => imagesUrl.push(image.location));
     const body = req.body;
-    next(null, {imageUrl, body})
+    next(null, {imagesUrl, body})
   })
 
 }
@@ -891,7 +902,7 @@ export const sendScheduledJobEmailToAssignee = function(jobs: IJob[], to: string
       let contactDetails: any = {};
       let locationName;
       let customer: ICustomer = job.customer;
-      let image = ticket.image ? ticket.image: null;
+      let image = ticket.images ? ticket.images: [];
       if(contact) {
         contactDetails.contactName = contact.name ? contact.name : null;
         contactDetails.contactPhone = contact.phone ? contact.phone : null;

@@ -21,11 +21,11 @@ export interface IUser extends Document {
         imageUrl: string
     }
     address: {
-        street: string
-        unit: string
-        city: string
-        state: string
-        zipCode: string
+        street?: string
+        unit?: string
+        city?: string
+        state?: string
+        zipCode?: string
     }
     location: {
         type?: 'Point',
@@ -33,7 +33,7 @@ export interface IUser extends Document {
     },
     contact: {
         phone: string
-        fax: string
+        fax?: string
     }
     permissions: {
         role: Role,
@@ -122,7 +122,7 @@ const UserSchema = new Schema({
         required: false
     }]
 
-})
+}, { timestamps: { createdAt: true, updatedAt: true } })
 
 UserSchema.pre('save', async function(next) {
 

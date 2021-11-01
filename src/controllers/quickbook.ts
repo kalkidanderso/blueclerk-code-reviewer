@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { Status, Messages, QBEntityNames, QBEntityOperations} from '../common/constants'
+import { Status, Messages, QBEntityNames, QBEntityOperations, NotificationTypes} from '../common/constants'
 
 import { ICompany, IQBCompany, Company } from '../models/Company';
 import { _resetCompanyQB } from '../controllers/company';
@@ -9,8 +9,9 @@ import { _resetItemQB } from '../controllers/jobType';
 import { _resetPaymentTermQB } from '../controllers/paymentTerm';
 import { _resetInvoiceQB } from '../controllers/invoice';
 import { _resetPaymentQB } from '../controllers/payment';
-import { updateBCCustomerJob } from '../controllers/quickbook.customer';
+import { updateBCCustomer } from '../controllers/quickbook.customer';
 import { createBCPayment } from '../controllers/quickbook.payment';
+import { NotificationServiceTicket } from '../models/NotificationServiceTicket';
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");
@@ -76,7 +77,7 @@ export const _refreshToken = (req: Request, res: Response, company: ICompany, ne
         })
     })
     .catch(function (err: any) {
-        return next(err.authResponse?.response?.status || Status.Error, 'Unable to refersh the token', null);
+        return next(err.authResponse?.response?.status || Status.Error, 'Unable to refresh the token', null);
     });
 
 }
@@ -227,76 +228,96 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
 
     const params = req.body;
     const eventNotification = params?.eventNotifications[0];
-    const eventEntity = eventNotification?.dataChangeEvent?.entities[0];
+    const eventEntities = eventNotification?.dataChangeEvent?.entities;
+
+    // For testing purpose to know if Webhook received on staging and production
+    const notification = new NotificationServiceTicket({
+        company: '60884254898eb7068283bfcd',
+        notificationType: NotificationTypes.SERVICE_TICKET_CREATED,
+        message: {
+            title: 'Quickbook Webhook Received',
+            body: `${JSON.stringify(eventNotification)} | ${JSON.stringify(eventEntities)}}`
+        },
+        metadata: '60884254898eb7068283bfce'
+    });
+
+    await notification.save();
+
+    console.log('== Quickbook Webhook received ==');
+    console.log('== eventNotification:', eventNotification);
+    console.log('== eventEntities:', eventEntities);
 
     // Get BC Company based on the realmId
     const company = await Company.findOne({ realmId: eventNotification?.realmId });
 
-    // Handle Entity Event Trigger
-    switch (eventEntity?.name) {
+    for (const eventEntity of eventEntities) {
 
-        // => CUSTOMER ENTITY EVENT
-        case QBEntityNames.CUSTOMER:
-            switch (eventEntity?.operation) {
-                // => CUSTOMER CREATE ACTION
-                case QBEntityOperations.CREATE:
-                    // Create BC Customer here
-                    break;
+        // Handle Entity Event Trigger
+        switch (eventEntity?.name) {
 
-                case QBEntityOperations.UPDATE:
-                    // Update BC Customer / Job Location here
-                    updateBCCustomerJob(req, res, company, eventEntity?.id, (err, errMsg, jobLocation) => {
-                        // Implement another actions here
-                    });
-                    break;
+            // => CUSTOMER ENTITY EVENT
+            case QBEntityNames.CUSTOMER:
+                switch (eventEntity?.operation) {
+                    // => CUSTOMER CREATE ACTION
+                    case QBEntityOperations.CREATE:
+                        // Create BC Customer here
+                        break;
 
-                default:
-                    break;
-            }
-            break;
+                    case QBEntityOperations.UPDATE:
+                        // Update BC Customer / Job Location here
+                        updateBCCustomer(req, res, company, eventEntity?.id, (err, errMsg, customer, jobLocation) => {
+                            // Implement another actions here
+                        });
+                        break;
 
-        // => ITEM ENTITY EVENT
-        case QBEntityNames.ITEM:
-            switch (eventEntity?.operation) {
-                // => ITEM CREATE ACTION
-                case QBEntityOperations.CREATE:
-                    // Create BC Job Type and Item here
-                    break;
+                    default:
+                        break;
+                }
+                break;
 
-                default:
-                    break;
-            }
+            // => ITEM ENTITY EVENT
+            case QBEntityNames.ITEM:
+                switch (eventEntity?.operation) {
+                    // => ITEM CREATE ACTION
+                    case QBEntityOperations.CREATE:
+                        // Create BC Job Type and Item here
+                        break;
 
-        // => PAYMENT ENTITY EVENT
-        case QBEntityNames.PAYMENT:
-            switch (eventEntity?.operation) {
-                // => PAYMENT CREATE ACTION
-                case QBEntityOperations.CREATE:
-                    // Call quickbook payment to handle BC Payment
-                    createBCPayment(req, res, company, eventEntity?.id, (err, errMsg, payments) => {
-                        // Implement another actions here
-                    });
-                    break;
+                    default:
+                        break;
+                }
 
-                default:
-                    break;
-            }
-            break;
+            // => PAYMENT ENTITY EVENT
+            case QBEntityNames.PAYMENT:
+                switch (eventEntity?.operation) {
+                    // => PAYMENT CREATE ACTION
+                    case QBEntityOperations.CREATE:
+                        // Call quickbook payment to handle BC Payment
+                        createBCPayment(req, res, company, eventEntity?.id, (err, errMsg, payments) => {
+                            // Implement another actions here
+                        });
+                        break;
 
-        // => PAYMENT TERM ENTITY EVENT
-        case QBEntityNames.TERM:
-            switch (eventEntity?.operation) {
-                // => PAYMENT TERM CREATE ACTION
-                case QBEntityOperations.CREATE:
-                    // Create BC Payment Term here
-                    break;
+                    default:
+                        break;
+                }
+                break;
 
-                default:
-                    break;
-            }
+            // => PAYMENT TERM ENTITY EVENT
+            case QBEntityNames.TERM:
+                switch (eventEntity?.operation) {
+                    // => PAYMENT TERM CREATE ACTION
+                    case QBEntityOperations.CREATE:
+                        // Create BC Payment Term here
+                        break;
 
-        default:
-            break;
+                    default:
+                        break;
+                }
+
+            default:
+                break;
+        }
     }
 
     res.status(200).json({});

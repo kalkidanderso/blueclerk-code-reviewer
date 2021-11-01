@@ -3,5 +3,7 @@ declare namespace Express {
        companyId?: string,
        otherCompanyId?: string,
        company?: any,
+       technician?: any,
+       contractor?: any
     }
  }

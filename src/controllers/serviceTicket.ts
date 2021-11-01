@@ -1,4 +1,5 @@
 import {Request, Response} from 'express'
+import moment from 'moment';
 import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, JobStatus, SocketEvents, NotificationTypes } from '../common/constants'
 
 import { ICompany } from '../models/Company'
@@ -35,7 +36,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 try {
                     customerId = new ObjectId(params.customerId)
                 } catch (e) {
-                    return res.json({'status': Status.Error, 'message': Messages.WrongId});
+                    return res.json({'status': Status.Error, 'message': `parameter customerId: ${Messages.WrongId}`});
                 }
             }
 
@@ -71,6 +72,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 jobType: params.jobTypeId, // TODO: To be deprecated
                 tasks: jobTypes,
                 customerPO : customerPo,
+                images: [],
             });
             if (customerId) {
                 serviceTicket.customer = customerId;
@@ -81,7 +83,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                     serviceTicket.customerContactId = checkContact._id;
                 }
             }
-            serviceTicket.image = data.imageUrl ? data.imageUrl : null;
+            data.imagesUrl?.forEach((imageUrl: string) => serviceTicket.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }));
             serviceTicket.source = params.source ? params.source : 'blueclerk';
             await serviceTicket.save(async (err: any) => {
                 if (err) {
@@ -304,9 +306,10 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                 customerNames = params.customerNames.split(',')
             }
 
-            let criteria : any = {
+            let criteria: any = {
                 company: companyId,
-                jobCreated: false
+                jobCreated: false,
+                status: { '$in': [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] }
             };
 
             if (params.contactName) {
@@ -320,7 +323,12 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
             }
 
             if (params.dueDate) {
-                criteria.$or = [{dueDate: {"$gte": new Date(params.dueDate), "$lte": new Date(params.dueDate+ ' 23:59:00.000Z')}}]
+                // Retrieve the dueDate using Moment in UTC format
+                const startOfDay = moment(params.dueDate).startOf('day').utc().toISOString();
+                const endOfDay = moment(params.dueDate).endOf('day').utc().toISOString();
+
+                // Convert back the date to ISODate using new Date()
+                criteria.dueDate = { '$gte': new Date(startOfDay), '$lte': new Date(endOfDay) };
             }
 
             if (params.ticketId) {
@@ -394,6 +402,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                       "tasks": 1,
                       "jobType": {$arrayElemAt:["$jobType",0]},
                       "company.info":{$arrayElemAt:["$companyInfo.info",0]},
+                      "status" : 1,
                       "jobCreated" : 1,
                       "dueDate" : 1,
                       "note": 1,
@@ -404,6 +413,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                       "createdAt" : 1
                     }
                 },
+                { $sort: { _id: -1 } },
                 {
                   $group: {
                     _id: null,
@@ -482,7 +492,10 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     if(params.dueDate) {
                         dueDate = new Date(params.dueDate)
                     }
-                    let image = data.imageUrl ? data.imageUrl : serviceTicket.image;
+                    data.imagesUrl.forEach((imageUrl: string) => {
+                        serviceTicket.images ? serviceTicket.images.push({ imageUrl, uploadedBy: user.id ,createdAt: new Date() })
+                        : []
+                    });
 
                     let customerPO = params.customerPO ? params.customerPO : serviceTicket.customerPO;
 
@@ -532,7 +545,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
 
                     if (
                         serviceTicket.dueDate != params.dueDate ||
-                        serviceTicket.image != data.imageUrl ||
+                        JSON.stringify(serviceTicket.images) != JSON.stringify(data.imagesUrl) ||
                         params.customerPO != serviceTicket.customerPO ||
                         serviceTicket.customerContactId != customerContactId ||
                         params.jobLocationId != serviceTicket.jobLocation ||
@@ -556,7 +569,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             jobSite: jobSiteId,
                             jobType: jobTypeId, // TODO: To be deprecated
                             tasks: jobTypes,
-                            image: image,
+                            images: serviceTicket.images,
                             customerPO: customerPO,
                             customerContactId: customerContactId,
                             customer: customer,

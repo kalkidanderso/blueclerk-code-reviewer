@@ -206,6 +206,25 @@ export const Validations = {
 
   technicianJobs: [check('employeeId').exists().withMessage(Messages.Required), check('employeeId').isMongoId().withMessage(Messages.WrongId)],
 
+  // Job Route
+  jobRoute: [
+    check('scheduleDate').exists().withMessage(Messages.Required),
+    // check('employeeType').exists().withMessage(Messages.Required),
+    // check('employeeType').isNumeric(),
+    check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('contractorId').optional().isMongoId().withMessage(Messages.WrongId)
+  ],
+
+  createJobRoute: [
+    check('routes').exists().withMessage(Messages.Required),
+  ],
+
+  updateJobRoute: [
+    check('jobRouteId').exists().withMessage(Messages.Required),
+    check('jobRouteId').isMongoId().withMessage(Messages.WrongId),
+    check('routes').exists().withMessage(Messages.Required),
+  ],
+
   //Group
   createGroup: [check('title').exists()],
 
@@ -388,6 +407,25 @@ export const Validations = {
     check('customerId').isMongoId().withMessage(Messages.WrongId),
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId)
+  ],
+
+  // Contact
+  removeContact: [
+    check('contactId').exists().withMessage(Messages.Required),
+    check('contactId').isMongoId().withMessage(Messages.WrongId),
+    check('type').exists().withMessage(Messages.Required),
+    check('referenceNumber').exists().withMessage(Messages.Required),
+    check('referenceNumber').isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  // Image
+  deleteImage: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['ServiceTicket', 'Job']).withMessage('Only supported for ServiceTicket & Job for now'),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('imageId').exists().withMessage(Messages.Required),
+    check('imageId').isMongoId().withMessage(Messages.WrongId)
   ],
 
   // Notification

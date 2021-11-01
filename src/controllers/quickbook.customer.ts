@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { Status, Messages, Role} from '../common/constants'
+import { Status, Messages, Role, NotificationTypes} from '../common/constants'
 
 import { IContact } from '../common/contact';
 import { Contact } from '../models/Contact';
@@ -9,6 +9,7 @@ import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
 import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
+import { NotificationServiceTicket } from '../models/NotificationServiceTicket';
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");
@@ -342,6 +343,88 @@ export const _createQBCustomer = async (req: Request, res: Response, company: IC
             return next(null, null, qbCustomer);
         })
     })
+
+}
+
+export const _updateQBCustomer = async (req: Request, res: Response, company: ICompany, customer: ICustomer, next: (error: number, errorMessage: string, qbCustomer: IQBCustomer) => void) => {
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.getCustomer(customer.quickbookId, async (err: any, qbCustomer: IQBCustomer) => {
+            if (err) {
+                return next(
+                    Status.Error,
+                    err.Fault?.Error[0]?.Detail
+                    || err.Fault?.Error[0]?.Message
+                    || err.fault?.error[0]?.detail
+                    || err.fault?.error[0]?.message
+                    || Messages.GenericError,
+                    null
+                )
+            }
+
+            // qbCustomer.Active = customer.isActive;
+            qbCustomer.DisplayName = customer?.profile?.displayName;
+            qbCustomer.GivenName = customer?.profile?.firstName;
+            qbCustomer.FamilyName = customer?.profile?.lastName;
+            qbCustomer.CompanyName = customer?.profile?.displayName;
+            qbCustomer.PrimaryEmailAddr = qbCustomer.PrimaryEmailAddr ?? { Address: '' };
+            qbCustomer.PrimaryEmailAddr.Address = customer?.info?.email;
+            qbCustomer.PrimaryPhone = qbCustomer.PrimaryPhone ?? {};
+            qbCustomer.PrimaryPhone.FreeFormNumber = customer?.contact?.phone
+
+            qbCustomer.BillAddr = qbCustomer.BillAddr ?? {};
+            qbCustomer.BillAddr.Line1 = customer?.address?.street,
+            qbCustomer.BillAddr.Line2 = customer?.address?.unit,
+            qbCustomer.BillAddr.City = customer?.address?.city,
+            qbCustomer.BillAddr.CountrySubDivisionCode = customer?.address?.state,
+            qbCustomer.BillAddr.PostalCode = customer?.address?.zipCode,
+            qbCustomer.BillAddr.Long = customer?.location?.coordinates[0]?.toString(),
+            qbCustomer.BillAddr.Lat = customer?.location?.coordinates[1]?.toString(),
+
+            qbCustomer.ShipAddr = qbCustomer.ShipAddr ?? {};
+            qbCustomer.ShipAddr.Line1 = customer?.address?.street;
+            qbCustomer.ShipAddr.Line2 = customer?.address?.unit,
+            qbCustomer.ShipAddr.City = customer?.address?.city;
+            qbCustomer.ShipAddr.CountrySubDivisionCode = customer?.address?.state;
+            qbCustomer.ShipAddr.PostalCode = customer?.address?.zipCode;
+            qbCustomer.ShipAddr.Long = customer?.location?.coordinates[0]?.toString();
+            qbCustomer.ShipAddr.Lat = customer?.location?.coordinates[1]?.toString();
+            
+            qbo.updateCustomer(qbCustomer, async (err: any, qbCustomer: IQBCustomer) => {
+                if (err) {
+                    return next(
+                        Status.Error,
+                        err.Fault?.Error[0]?.Detail
+                        || err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError,
+                        null
+                    );
+                }
+
+                return next(null, null, qbCustomer);
+            });
+        });
+    });
 
 }
 
@@ -744,265 +827,283 @@ export const createQBCustomer = async (req: Request, res: Response) => {
 
 export const syncQBCustomers = async (req: Request, res: Response) => {
 
-    const user = <IUser>req.user;
-    const createdCustomers: { _id: string, name: string }[] = [];
-    const updatedCustomers: { _id: string, name: string }[] = [];
-    let custsToCreate: ICustomer[] = [];
-    let compCustsToCreate: ICompanyCustomer[] = [];
-    let jobLocationToCreate: IJobLocation[] = [];
+    try {
+        const user = <IUser>req.user;
+        const createdCustomers: { _id: string, name: string }[] = [];
+        const updatedCustomers: { _id: string, name: string }[] = [];
+        let custsToCreate: ICustomer[] = [];
+        let compCustsToCreate: ICompanyCustomer[] = [];
+        let jobLocationToCreate: IJobLocation[] = [];
 
-    // Always refresh the token first because token valid only for 60 minutes
-    _refreshToken(req, res, req.company, async (err, errMsg, company) => {
-        if (err === 0)
-            return res.json({ status: Status.Error, message: errMsg });
+        // Always refresh the token first because token valid only for 60 minutes
+        _refreshToken(req, res, req.company, async (err, errMsg, company) => {
+            if (err === 0)
+                return res.json({ status: Status.Error, message: errMsg });
 
-        if (err === 400) {
-            await Company.findByIdAndUpdate(req.company._id, {
-                qbAuthorized: false,
-                qbAccessToken: undefined,
-                qbRefreshToken: undefined
-            });
-
-            return res.json({ status: Status.QBUnauthorized, message: Messages.QBUnAuthorized });
-        }
-
-        // Initiate node-quickbooks object with the refreshed company token
-        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
-
-        /**
-         * QB authentication and token refresh successfully,
-         * return the HTTP request of user directly here,
-         * to avoid time out issue,
-         * later we can upgrade the logic to use socket.io,
-         * to tell FE the progress or notification
-         */
-        res.json({ status: Status.Success, message: 'Customer syncing in the background, try to refresh the page later' });
-
-        // Find customers from DB and populate its jobLocations
-        let customers = await Customer.find({ company: company._id }).populate({ path: 'jobLocations' });
-
-        qbo.findCustomers({ fetchAll: true }, async (err: any, data: any) => {
-            if (err) {
-                return res.json({
-                    status: Status.Error,
-                    message: err.Fault?.Error[0]?.Message
-                        || err.fault?.error[0]?.detail
-                        || err.fault?.error[0]?.message
-                        || Messages.GenericError
-                })
-            }
-
-            const qbCustomers: IQBCustomer[] = data?.QueryResponse?.Customer;
-
-            // Iterate all customers from DB
-            for (const customer of customers) {
-                const qbCustomer = qbCustomers?.find((qbCustomer: IQBCustomer) => qbCustomer.PrimaryEmailAddr?.Address?.toLowerCase() === customer.info?.email?.toLowerCase());
-
-                // Customer not exist on QB, create it
-                if (!qbCustomer) {
-                    await _createQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
-                        if (qbCustomer) {
-                            // QB Customer created, update DB Customer quickbookId
-                            customer.quickbookId = qbCustomer.Id;
-                            await customer.save();
-
-                            await _processJobLocations(req, res, company, qbCustomers, customer);
-                        }
-                    })
-                } else {
-                    // QB Customer exist, update DB Customer quickbookId directly
-                    customer.quickbookId = qbCustomer.Id;
-                    await customer.save();
-
-                    await _processJobLocations(req, res, company, qbCustomers, customer);
-                }
-            }
-
-            // Split and filter QuickBooks' only customers for this phase
-            const qbCustomersOnly = qbCustomers.filter(qbCustomer => !qbCustomer.Job);
-
-            // Iterate all QuickBooks customers only
-            for (const qbCustomer of qbCustomersOnly) {
-                // Check if there any customer on QB that not on DB yet
-                const customer = customers.find(customer => {
-                    if (
-                        (customer.info?.email?.toLowerCase() === qbCustomer.PrimaryEmailAddr?.Address?.toLowerCase()
-                        && customer.profile?.displayName.toLowerCase() === qbCustomer.DisplayName.toLowerCase())
-                        || customer.quickbookId === qbCustomer.Id
-                    ) {
-                        return customer;
-                    }
+            if (err === 400) {
+                await Company.findByIdAndUpdate(req.company._id, {
+                    qbAuthorized: false,
+                    qbAccessToken: undefined,
+                    qbRefreshToken: undefined
                 });
 
-                if (customer) {
-                    // Customer found, check and update quickbookId
-                    if (customer.quickbookId !== qbCustomer.Id) {
+                return res.json({ status: Status.QBUnauthorized, message: Messages.QBUnAuthorized });
+            }
+
+            // Initiate node-quickbooks object with the refreshed company token
+            const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+            /**
+             * QB authentication and token refresh successfully,
+             * return the HTTP request of user directly here,
+             * to avoid time out issue,
+             * later we can upgrade the logic to use socket.io,
+             * to tell FE the progress or notification
+             */
+            res.json({ status: Status.Success, message: 'Customer syncing in the background, try to refresh the page later' });
+
+            // Find customers from DB and populate its jobLocations
+            let customers = await Customer.find({ company: company._id }).populate({ path: 'jobLocations' });
+
+            qbo.findCustomers({ fetchAll: true }, async (err: any, data: any) => {
+                if (err) {
+                    return res.json({
+                        status: Status.Error,
+                        message: err.Fault?.Error[0]?.Message
+                            || err.fault?.error[0]?.detail
+                            || err.fault?.error[0]?.message
+                            || Messages.GenericError
+                    })
+                }
+
+                const qbCustomers: IQBCustomer[] = data?.QueryResponse?.Customer;
+
+                // Iterate all customers from DB
+                for (const customer of customers) {
+                    const qbCustomer = qbCustomers?.find((qbCustomer: IQBCustomer) => qbCustomer.PrimaryEmailAddr?.Address?.toLowerCase() === customer.info?.email?.toLowerCase());
+
+                    // Customer not exist on QB, create it
+                    if (!qbCustomer) {
+                        await _createQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
+                            if (qbCustomer) {
+                                // QB Customer created, update DB Customer quickbookId
+                                customer.quickbookId = qbCustomer.Id;
+                                await customer.save();
+
+                                await _processJobLocations(req, res, company, qbCustomers, customer);
+                            }
+                        })
+                    } else {
+                        // QB Customer exist, update DB Customer quickbookId directly
                         customer.quickbookId = qbCustomer.Id;
                         await customer.save();
 
-                        updatedCustomers.push({ _id: customer._id, name: customer.profile?.displayName });
+                        await _processJobLocations(req, res, company, qbCustomers, customer);
                     }
-                } else {
-                    // Customer not found, create it
-                    const custEntry = new Customer({
-                        info: { email: qbCustomer.PrimaryEmailAddr?.Address },
-                        profile: {
-                            firstName: qbCustomer.GivenName,
-                            lastName: qbCustomer.FamilyName,
-                            displayName: qbCustomer.DisplayName,
-                            imageUrl: ''
-                        },
-                        address: {
-                            street: qbCustomer.BillAddr?.Line1,
-                            unit: qbCustomer.BillAddr?.Line2,
-                            city: qbCustomer.BillAddr?.City,
-                            state: qbCustomer.BillAddr?.CountrySubDivisionCode,
-                            zipCode: qbCustomer.BillAddr?.PostalCode
-                        },
-                        contact: { phone: qbCustomer.PrimaryPhone?.FreeFormNumber, },
-                        contacts: [
-                            await new Contact({
-                                name: [qbCustomer.GivenName, qbCustomer.FamilyName].join(' ').trim() || qbCustomer.DisplayName,
-                                phone: qbCustomer.PrimaryPhone?.FreeFormNumber,
-                                email: qbCustomer.PrimaryEmailAddr?.Address
-                            }).save()
-                        ],
-                        company: company._id,
-                        permissions: { role: Role.CUSTOMER, extra: [] },
-                        quickbookId: qbCustomer.Id,
+                }
+
+                // Split and filter QuickBooks' only customers for this phase
+                const qbCustomersOnly = qbCustomers.filter(qbCustomer => !qbCustomer.Job);
+
+                // Iterate all QuickBooks customers only
+                for (const qbCustomer of qbCustomersOnly) {
+                    // Check if there any customer on QB that not on DB yet
+                    const customer = customers.find(customer => {
+                        if (
+                            (customer.info?.email?.toLowerCase() === qbCustomer.PrimaryEmailAddr?.Address?.toLowerCase()
+                            && customer.profile?.displayName.toLowerCase() === qbCustomer.DisplayName.toLowerCase())
+                            || customer.quickbookId === qbCustomer.Id
+                        ) {
+                            return customer;
+                        }
                     });
 
-                    /**
-                     * Kris' remark (Sept 23rd, 2021):
-                     * Disable this one for know,
-                     * since we can't save lat long on QB Online
-                     */
-                    // if (qbCustomer.BillAddr?.Long && qbCustomer.BillAddr?.Lat) {
-                    //     custEntry.location = {
-                    //         coordinates: [Number(qbCustomer.BillAddr?.Long), Number(qbCustomer.BillAddr?.Lat)]
-                    //     }
-                    // }
+                    if (customer) {
+                        // Customer found, check and update quickbookId
+                        if (customer.quickbookId !== qbCustomer.Id) {
+                            customer.quickbookId = qbCustomer.Id;
+                            await customer.save();
 
-                    custsToCreate.push(custEntry);
-                    // Save the new customer from QB
-                    await custEntry.save();
-                }
-            }
-
-            if (custsToCreate.length > 0) {
-                // Iterate customer to be create to create Company Customer entries
-                for (const customer of custsToCreate) {
-                    createdCustomers.push({ _id: customer._id, name: customer.profile?.displayName });
-                    compCustsToCreate.push(
-                        new CompanyCustomer({
+                            updatedCustomers.push({ _id: customer._id, name: customer.profile?.displayName });
+                        }
+                    } else {
+                        // Customer not found, create it
+                        const custEntry = new Customer({
+                            info: { email: qbCustomer.PrimaryEmailAddr?.Address },
+                            profile: {
+                                firstName: qbCustomer.GivenName,
+                                lastName: qbCustomer.FamilyName,
+                                displayName: qbCustomer.DisplayName,
+                                imageUrl: ''
+                            },
+                            address: {
+                                street: qbCustomer.BillAddr?.Line1,
+                                unit: qbCustomer.BillAddr?.Line2,
+                                city: qbCustomer.BillAddr?.City,
+                                state: qbCustomer.BillAddr?.CountrySubDivisionCode,
+                                zipCode: qbCustomer.BillAddr?.PostalCode
+                            },
+                            contact: { phone: qbCustomer.PrimaryPhone?.FreeFormNumber, },
+                            contacts: [
+                                await new Contact({
+                                    name: [qbCustomer.GivenName, qbCustomer.FamilyName].join(' ').trim() || qbCustomer.DisplayName,
+                                    phone: qbCustomer.PrimaryPhone?.FreeFormNumber,
+                                    email: qbCustomer.PrimaryEmailAddr?.Address
+                                }).save()
+                            ],
                             company: company._id,
-                            customer: customer._id,
-                            createdAt: Date.now()
-                        })
-                    )
+                            permissions: { role: Role.CUSTOMER, extra: [] },
+                            quickbookId: qbCustomer.Id,
+                        });
+
+                        /**
+                         * Kris' remark (Sept 23rd, 2021):
+                         * Disable this one for know,
+                         * since we can't save lat long on QB Online
+                         */
+                        // if (qbCustomer.BillAddr?.Long && qbCustomer.BillAddr?.Lat) {
+                        //     custEntry.location = {
+                        //         coordinates: [Number(qbCustomer.BillAddr?.Long), Number(qbCustomer.BillAddr?.Lat)]
+                        //     }
+                        // }
+
+                        custsToCreate.push(custEntry);
+                        // Save the new customer from QB
+                        await custEntry.save();
+                    }
                 }
 
-                // Create all company customers to DB at once
-                await CompanyCustomer.create(compCustsToCreate);
-            }
+                if (custsToCreate.length > 0) {
+                    // Iterate customer to be create to create Company Customer entries
+                    for (const customer of custsToCreate) {
+                        createdCustomers.push({ _id: customer._id, name: customer.profile?.displayName });
+                        compCustsToCreate.push(
+                            new CompanyCustomer({
+                                company: company._id,
+                                customer: customer._id,
+                                createdAt: Date.now()
+                            })
+                        )
+                    }
 
-            // Split and filter QuickBooks' only jobs level 1 for this phase
-            const qbCustomerJobs = qbCustomers.filter(qbCustomer => qbCustomer.Job && qbCustomer.Level === 1);
+                    // Create all company customers to DB at once
+                    await CompanyCustomer.create(compCustsToCreate);
+                }
 
-            // Update customers data from DB and populate its jobLocations
-            customers = await Customer.find({ company: company._id }).populate({ path: 'jobLocations' });
+                // Split and filter QuickBooks' only jobs level 1 for this phase
+                const qbCustomerJobs = qbCustomers.filter(qbCustomer => qbCustomer.Job && qbCustomer.Level === 1);
 
-            // Iterate all QuickBooks jobs only
-            for (const qbCustJob of qbCustomerJobs) {
-                // Find BC customer based on customer quickbookId as the parent customer of QB job
-                let parentCustomer = customers.find(customer => customer.quickbookId === qbCustJob.ParentRef?.value);
+                // Update customers data from DB and populate its jobLocations
+                customers = await Customer.find({ company: company._id }).populate({ path: 'jobLocations' });
+
+                // Iterate all QuickBooks jobs only
+                for (const qbCustJob of qbCustomerJobs) {
+                    // Find BC customer based on customer quickbookId as the parent customer of QB job
+                    let parentCustomer = customers.find(customer => customer.quickbookId === qbCustJob.ParentRef?.value);
+
+                    /**
+                     * No parent customer found, find on customer entries to be create,
+                     * as probably it is a new customer as well from QB
+                     */
+                    if (!parentCustomer) {
+                        parentCustomer = custsToCreate.find(customer => customer.quickbookId === qbCustJob.ParentRef?.value);
+                    }
+
+                    if (!parentCustomer) {
+                        /**
+                         * Parent Customer still not found,
+                         * TODO: need to collect the information and send through notifacation or email
+                         */
+                        continue;
+                    }
+
+                    // Find if job location already exist on the customer's job locations
+                    const jobLocation = <IJobLocation>parentCustomer?.jobLocations?.find((jl: IJobLocation) => {
+                        return (jl.quickbookId === qbCustJob.Id || jl.name === qbCustJob.DisplayName);
+                    });
+
+                    if (jobLocation) {
+                        if (jobLocation.quickbookId !== qbCustJob.Id) {
+                            await JobLocation.findByIdAndUpdate(jobLocation._id, { quickbookId: qbCustJob.Id }).exec();
+                        }
+                    } else {
+                        // Job location not found, create a new one
+                        const jobLocationEntry = new JobLocation({
+                            name: qbCustJob.DisplayName,
+                            address: {
+                                street: qbCustJob.BillAddr?.Line1,
+                                city: qbCustJob.BillAddr?.City,
+                                state: qbCustJob.BillAddr?.CountrySubDivisionCode,
+                                zipcode: qbCustJob.BillAddr?.PostalCode
+                            },
+                            contacts: [
+                                await new Contact({
+                                    name: [qbCustJob.GivenName, qbCustJob.FamilyName].join(' ').trim() || qbCustJob.DisplayName,
+                                    phone: qbCustJob.PrimaryPhone?.FreeFormNumber,
+                                    email: qbCustJob.PrimaryEmailAddr?.Address
+                                }).save()
+                            ],
+                            customerId: parentCustomer._id,
+                            companyId: company._id,
+                            quickbookId: qbCustJob.Id
+                        });
+
+                        if (qbCustJob.BillAddr?.Lat && qbCustJob.BillAddr?.Long) {
+                            jobLocationEntry.location = {
+                                coordinates: [
+                                    Number(qbCustJob.BillAddr?.Long),
+                                    Number(qbCustJob.BillAddr?.Lat)
+                                ]
+                            }
+                        }
+
+                        jobLocationToCreate.push(jobLocationEntry);
+                        // Save the new Job Location from QB Customer Job Level 1
+                        await jobLocationEntry.save();
+                        // Save the create Job Location to the Customer's jobLocations
+                        await Customer.findByIdAndUpdate(parentCustomer._id, { $push: { jobLocations: jobLocationEntry._id } }).exec();
+                    }
+                }
+
+                company.qbSync.customersSynced = true;
+                company.qbSync.customersSyncedAt = new Date();
+                await company.save();
 
                 /**
-                 * No parent customer found, find on customer entries to be create,
-                 * as probably it is a new customer as well from QB
+                 * Kris' remark (Sept 22nd, 2021):
+                 * Comment this return because we want to return the response directly,
+                 * after refreshing the QB token above
                  */
-                if (!parentCustomer) {
-                    parentCustomer = custsToCreate.find(customer => customer.quickbookId === qbCustJob.ParentRef?.value);
-                }
-
-                if (!parentCustomer) {
-                    /**
-                     * Parent Customer still not found,
-                     * TODO: need to collect the information and send through notifacation or email
-                     */
-                    continue;
-                }
-
-                // Find if job location already exist on the customer's job locations
-                const jobLocation = <IJobLocation>parentCustomer?.jobLocations?.find((jl: IJobLocation) => {
-                    return (jl.quickbookId === qbCustJob.Id || jl.name === qbCustJob.DisplayName);
-                });
-
-                if (jobLocation) {
-                    if (jobLocation.quickbookId !== qbCustJob.Id) {
-                        await JobLocation.findByIdAndUpdate(jobLocation._id, { quickbookId: qbCustJob.Id }).exec();
-                    }
-                } else {
-                    // Job location not found, create a new one
-                    const jobLocationEntry = new JobLocation({
-                        name: qbCustJob.DisplayName,
-                        address: {
-                            street: qbCustJob.BillAddr?.Line1,
-                            city: qbCustJob.BillAddr?.City,
-                            state: qbCustJob.BillAddr?.CountrySubDivisionCode,
-                            zipcode: qbCustJob.BillAddr?.PostalCode
-                        },
-                        contacts: [
-                            await new Contact({
-                                name: [qbCustJob.GivenName, qbCustJob.FamilyName].join(' ').trim() || qbCustJob.DisplayName,
-                                phone: qbCustJob.PrimaryPhone?.FreeFormNumber,
-                                email: qbCustJob.PrimaryEmailAddr?.Address
-                            }).save()
-                        ],
-                        customerId: parentCustomer._id,
-                        companyId: company._id,
-                        quickbookId: qbCustJob.Id
-                    });
-
-                    if (qbCustJob.BillAddr?.Lat && qbCustJob.BillAddr?.Long) {
-                        jobLocationEntry.location = {
-                            coordinates: [
-                                Number(qbCustJob.BillAddr?.Long),
-                                Number(qbCustJob.BillAddr?.Lat)
-                            ]
-                        }
-                    }
-
-                    jobLocationToCreate.push(jobLocationEntry);
-                    // Save the new Job Location from QB Customer Job Level 1
-                    await jobLocationEntry.save();
-                    // Save the create Job Location to the Customer's jobLocations
-                    await Customer.findByIdAndUpdate(parentCustomer._id, { $push: { jobLocations: jobLocationEntry._id } }).exec();
-                }
-            }
-
-            company.qbSync.customersSynced = true;
-            company.qbSync.customersSyncedAt = new Date();
-            await company.save();
-
-            /**
-             * Kris' remark (Sept 22nd, 2021):
-             * Comment this return because we want to return the response directly,
-             * after refreshing the QB token above
-             */
-            // return res.json({ status: Status.Success, message: 'Customer synced successfully.', createdCustomers, updatedCustomers });
+                // return res.json({ status: Status.Success, message: 'Customer synced successfully.', createdCustomers, updatedCustomers });
+            })
         })
-    })
+    } catch (error) {
+        console.log('== error:', error);
+
+        // For testing purpose to know if Webhook received on staging and production
+        const notification = new NotificationServiceTicket({
+            company: '60884254898eb7068283bfcd',
+            notificationType: NotificationTypes.CONTRACT_REJECTED,
+            message: {
+                title: 'Error on Sync QB Customer',
+                body: `${error}`
+            },
+            metadata: '60884254898eb7068283bfce'
+        });
+
+        await notification.save();
+    }
 
 }
 
 /**
  * Called by quickbook controller when handle webhook from Quickbooks
  */
-export const updateBCCustomerJob = async (req: Request, res: Response, company: ICompany, qbCustomerId: string, next: (error: number, errorMessage: string, jobLocation: IJobLocation) => void) => {
+export const updateBCCustomer = async (req: Request, res: Response, company: ICompany, qbCustomerId: string, next: (error: number, errorMessage: string, customer: ICustomer, jobLocation: IJobLocation) => void) => {
 
     // Always refresh the token first because token valid only for 60 minutes
     _refreshToken(req, res, company, async (err, errMsg, company) => {
+        let customer: ICustomer;
         let jobLocation: IJobLocation;
 
         // Initiate node-quickbooks object with the refreshed company token
@@ -1018,14 +1119,43 @@ export const updateBCCustomerJob = async (req: Request, res: Response, company: 
                     || err.fault?.error[0]?.detail
                     || err.fault?.error[0]?.message
                     || Messages.GenericError,
-                    null
+                    null,
+                    null,
                 );
             }
 
-            // Handle QB Customer Job only for this method
-            if (qbCustomer.Job) {
+            // Handle QB Customer for this method
+            if (!qbCustomer.Job) {
+                // Get BC Customer by QB Customer's quickbookId
+                customer = await Customer.findOne({ company: company._id, quickbookId: qbCustomer.Id });
+                const currentIsActive = customer.isActive;
+
+                // Update Customer data based on QB Customer
+                customer.isActive = qbCustomer.Active;
+                customer.profile.displayName = qbCustomer.DisplayName;
+                customer.profile.firstName = qbCustomer.GivenName;
+                customer.profile.lastName = qbCustomer.FamilyName;
+                customer.profile.displayName = qbCustomer.CompanyName;
+                customer.contact = customer.contact ?? { phone: '' };
+                customer.contact.phone = qbCustomer.PrimaryPhone?.FreeFormNumber;
+                customer.address = customer.address ?? {};
+                customer.address.street = qbCustomer.BillAddr?.Line1;
+                customer.address.unit = qbCustomer.BillAddr?.Line2;
+                customer.address.city = qbCustomer.BillAddr?.City;
+                customer.address.state = qbCustomer.BillAddr?.CountrySubDivisionCode;
+                customer.address.zipCode = qbCustomer.BillAddr?.PostalCode;
+                if (currentIsActive && !qbCustomer.Active) {
+                    customer.inactiveAt = new Date();
+                } else if (qbCustomer.Active) {
+                    customer.inactiveAt = null;
+                    customer.inactiveBy = null;
+                }
+
+                await customer.save();
+            } else {
                 // Get BC Job Location by QB Customer Job's quickbookId
-                jobLocation = await JobLocation.findOne({ quickbookId: qbCustomer.Id });
+                jobLocation = await JobLocation.findOne({ companyId: company._id, quickbookId: qbCustomer.Id });
+                const currentIsActive = jobLocation.isActive;
 
                 // Update Job Location data based on QB Customer Job
                 jobLocation.name = qbCustomer.DisplayName;
@@ -1034,11 +1164,17 @@ export const updateBCCustomerJob = async (req: Request, res: Response, company: 
                 jobLocation.address.city = qbCustomer.ShipAddr?.City;
                 jobLocation.address.state = qbCustomer.ShipAddr?.CountrySubDivisionCode;
                 jobLocation.address.zipcode = qbCustomer.ShipAddr?.PostalCode;
+                if (currentIsActive && !qbCustomer.Active) {
+                    jobLocation.inactiveAt = new Date();
+                } else if (qbCustomer.Active) {
+                    jobLocation.inactiveAt = null;
+                    jobLocation.inactiveBy = null;
+                }
 
                 await jobLocation.save();
             }
 
-            return next(null, null, jobLocation);
+            return next(null, null, customer, jobLocation);
         });
     });
 
