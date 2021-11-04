@@ -284,6 +284,10 @@
                   "isci": {
                     "type": "boolean",
                     "description": "Abbreviation of 'isContractInvitation', boolean value to trigger BE to create notification and vendor contract after the sign up"
+                  },
+                  "cid": {
+                    "type": "string",
+                    "description": "Abbreviation of 'companyId', company that hiring/inviting the contractor"
                   }
                 }
               }
