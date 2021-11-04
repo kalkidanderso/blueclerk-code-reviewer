@@ -354,7 +354,13 @@ export const getSyncInfo = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'No company found.' })
             }
 
-            return res.json({'status': Status.Success, 'customersSyncedAt' : company.customersSyncedAt, 'customersSynced' : company.customersSynced, 'qbAuthorized' : company.qbAuthorized});
+            return res.json({
+                status: Status.Success,
+                qbAuthorized: company.qbAuthorized,
+                qbCompanyName: company.qbCompanyName,
+                qbCompanyEmail: company.qbCompanyEmail,
+                qbSync: company.qbSync
+            });
         }
     )
 }

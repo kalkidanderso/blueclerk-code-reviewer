@@ -258,51 +258,57 @@ export const createCompany = (req: Request, res: Response, sio: any) => {
                             contract.status = ContractStatus.ACCEPTED;
                             await contract.save();
 
-                            // Charge the hiring company here
-                            // Get the pro-rated charge
-                            const { amount, tax } = await _getProRatedAmount();
+                            if (
+                                (hiringCompany.paid
+                                && new Date() < hiringCompany.chargeDate)
+                                || hiringCompany.stripeId
+                            ) {
+                                // Charge the hiring company here
+                                // Get the pro-rated charge
+                                const { amount, tax } = await _getProRatedAmount();
 
-                            // Create a pending invoice items to Stripe
-                            const invoiceItem = await createStripeInvoiceItem(hiringCompany.stripeId, amount + tax, company.info?.companyName);
+                                // Create a pending invoice items to Stripe
+                                const invoiceItem = await createStripeInvoiceItem(hiringCompany.stripeId, amount + tax, company.info?.companyName);
 
-                            // Find existing company invoice
-                            let companyInvoice = await CompanyInvoice.findOne({
-                                company: hiringCompany._id,
-                                isDraft: true
-                            });
+                                // Find existing company invoice
+                                let companyInvoice = await CompanyInvoice.findOne({
+                                    company: hiringCompany._id,
+                                    isDraft: true
+                                });
 
-                            // No company invoice, create new
-                            if (!companyInvoice) {
-                                companyInvoice = new CompanyInvoice({
-                                    technicians: 0,
-                                    managers: 0,
-                                    officeAdmins: 0,
-                                    admins: 0,
-                                    contractors: 0,
-                                    charges: 0,
-                                    tax: 0,
-                                    total: 0,
-                                    isDraft: true,
-                                    company: hiringCompany._id
-                                })
+                                // No company invoice, create new
+                                if (!companyInvoice) {
+                                    companyInvoice = new CompanyInvoice({
+                                        technicians: 0,
+                                        managers: 0,
+                                        officeAdmins: 0,
+                                        admins: 0,
+                                        contractors: 0,
+                                        charges: 0,
+                                        tax: 0,
+                                        total: 0,
+                                        isDraft: true,
+                                        company: hiringCompany._id
+                                    })
+                                    await companyInvoice.save();
+                                }
+
+                                // Update company invoice data
+                                companyInvoice.contractors += 1;
+                                companyInvoice.charges += amount;
+                                companyInvoice.tax += tax;
+                                companyInvoice.total += invoiceItem.amount / 100;
                                 await companyInvoice.save();
-                            }
 
-                            // Update company invoice data
-                            companyInvoice.contractors += 1;
-                            companyInvoice.charges += amount;
-                            companyInvoice.tax += tax;
-                            companyInvoice.total += invoiceItem.amount / 100;
-                            await companyInvoice.save();
-
-                            // Add the company invoice
-                            hiringCompany.companyInvoices = hiringCompany.companyInvoices ?? [];
-                            const existCompanyInvoice = hiringCompany.companyInvoices.find(
-                                inv => inv.toString() === companyInvoice._id.toString()
-                            );
-                            if (!existCompanyInvoice) {
-                                hiringCompany.companyInvoices.push(companyInvoice);
-                                await hiringCompany.save();
+                                // Add the company invoice
+                                hiringCompany.companyInvoices = hiringCompany.companyInvoices ?? [];
+                                const existCompanyInvoice = hiringCompany.companyInvoices.find(
+                                    inv => inv.toString() === companyInvoice._id.toString()
+                                );
+                                if (!existCompanyInvoice) {
+                                    hiringCompany.companyInvoices.push(companyInvoice);
+                                    await hiringCompany.save();
+                                }
                             }
 
                             // Construct notification entry to be saved
