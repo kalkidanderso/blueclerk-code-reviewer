@@ -116,7 +116,9 @@ export const Validations = {
 
   getCustomerDetail: [check('customerId').exists()],
 
-  mergeCustomer: [check('customerId').exists(), check('unusedCustomerIds').exists()],
+  filterCustomer: [check('kyword').exists()],
+
+  mergeCustomer: [check('customerId').exists().isMongoId().withMessage(Messages.WrongId), check('unusedCustomerIds').exists()],
 
       //Customer Equipment
 

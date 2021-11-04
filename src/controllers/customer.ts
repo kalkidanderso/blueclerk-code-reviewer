@@ -8,7 +8,7 @@ import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket'
 import { User, IUser } from '../models/User'
 import { IPriceTier } from '../models/PriceTier'
-import { _createQBCustomer, _updateQBCustomer } from '../controllers/quickbook.customer'
+import { _createQBCustomer, _inactiveQBCustomer, _updateQBCustomer } from '../controllers/quickbook.customer'
 import { Job } from '../models/Job'
 import { JobLocation } from '../models/JobLocation'
 import { JobSite } from '../models/JobSite'
@@ -501,19 +501,23 @@ export const filterCustomer = async (req: Request, res: Response) => {
         $or: [{
             'profile.firstName': {
                 $regex: params.keyword
-            }},
+            }
+        },
         {
             'profile.lastName': {
                 $regex: params.keyword
-            }},
+            }
+        },
         {
             'profile.displayName': {
                 $regex: params.keyword
-            }},
+            }
+        },
         {
             'info.email': {
                 $regex: params.keyword
-            }}
+            }
+        }
         ]
     });
 
@@ -531,7 +535,7 @@ export const mergeCustomer = async (req: Request, res: Response) => {
     const unusedCustomerIds = params.unusedCustomerIds?.length ? JSON.parse(params.unusedCustomerIds) : [];
     const jobLocations: string[] = params.jobLocations?.length ? JSON.parse(params.jobLocations) : [];
     const customerEquipments: string[] = params.equipments?.length ? JSON.parse(params.equipments) : [];
-    const contacts = params.contact?.length ? JSON.parse(params.contacts) : [];
+    const contacts: string[] = params.contact?.length ? JSON.parse(params.contacts) : [];
 
     Customer.findById(params.customerId).exec(async (err: any, customer: ICustomer) => {
         if (err || !customer) {
@@ -563,120 +567,116 @@ export const mergeCustomer = async (req: Request, res: Response) => {
             inactiveBy: null,
         }
 
-       await Customer.find({ _id: { $in: unusedCustomerIds } }).exec(async (err: any, unusedCustomers: ICustomer[]) => {
+        await Customer.find({ _id: { $in: unusedCustomerIds } }).exec(async (err: any, unusedCustomers: ICustomer[]) => {
             if (company?.qbAuthorized) {
+                // Update customer data on database
+                if (params.jobLocations?.length) {
+                    mergeEntry.jobLocations = jobLocations;
+
+                    // Update customer on job location
+                    JobLocation.updateMany(
+                        { _id: { $in: jobLocations }, customerId: { $in: unusedCustomerIds } },
+                        { $set: { customerId: params.customerId } }
+                    ).exec();
+                }
+
+                if (params.equipments?.length) {
+                    mergeEntry.equipments = customerEquipments;
+
+                    CustomerEquipment.updateMany(
+                        { _id: { $in: customerEquipments }, customer: { $in: unusedCustomerIds } },
+                        { $set: { customer: params.customerId } }
+                    ).exec();
+                }
+
+                if (params.contacts?.length) {
+                    mergeEntry.contacts = contacts;
+                }
+
+                // Update customer on service ticket
+                ServiceTicket.updateMany(
+                    { company: companyId, customer: { $in: unusedCustomerIds } },
+                    { $set: { customer: params.customerId } }
+                ).exec();
+
+                // Update customer on job
+                Job.updateMany(
+                    { company: companyId, customer: { $in: unusedCustomerIds } },
+                    { $set: { customer: params.customerId } }
+                ).exec();
+
+                // Update customer on job site
+                JobSite.updateMany(
+                    { customerId: { $in: unusedCustomerIds } },
+                    { $set: { customerId: params.customerId } }
+                ).exec();
+
+                // Update customer on payment
+                Payment.updateMany(
+                    { customer: { $in: unusedCustomerIds }, company: companyId },
+                    { $set: { customer: params.customerId } }
+                ).exec();
+
+                // Update customer on purchase order
+                PurchaseOrder.updateMany(
+                    { customer: { $in: unusedCustomerIds }, company: companyId },
+                    { $set: { customer: params.customerId } }
+                ).exec();
+
+                // Update customer on estimate
+                Estimate.updateMany(
+                    { customer: { $in: unusedCustomerIds }, company: companyId },
+                    { $set: { customer: params.customerId } }
+                ).exec();
+
+                // Update customer tag
+                Tag.updateMany(
+                    { customer: { $in: unusedCustomerIds }, company: companyId },
+                    { $set: { customer: params.customerId } }
+                ).exec();
+
+                // Update customer invoice
+                Invoice.updateMany(
+                    { customer: { $in: unusedCustomerIds }, company: companyId },
+                    { $set: { customer: params.customerId } }
+                ).exec()
+
+                customer.updateOne(mergeEntry, { omitUndefined: true }).exec();
+
                 // Update qb invoice and inactivate unused customer
-                _updateQBInvoiceCustomer(req, res, company, unusedCustomers, customer, (err, errMsg, qbInvoice) => {
+                _updateQBInvoiceCustomer(req, res, company, unusedCustomers, customer, async (err, errMsg, qbInvoice) => {
                     console.log('u re here to update invoice')
                     if (err) {
                         return res.json({ status: err, message: errMsg });
                     }
 
-                    for (const unusedCustomer of unusedCustomers) {
-                        if (unusedCustomer && unusedCustomer?.quickbookId) {
-                            // Sync the update to Customer in QuickBooks
-                            unusedCustomer.balance = 0;
-                            unusedCustomer.isActive = false;
-                            console.log('u re here to remove')
-                            _updateQBCustomer(req, res, company, unusedCustomer, (err, errMsg, qbCustomer) => {
-                                // if (err) {
-                                //     return res.json({ status: err, message: errMsg });
-                                // }
-                            });
+                    _inactiveQBCustomer(req, res, company, unusedCustomers, async (err, errMsg, qbCustomer) => {
+                        if (err) {
+                            return res.json({ status: err, message: errMsg });
                         }
-                    };
+
+                    });
                 });
-            }
-        });
 
-        // Update customer data on database
-        customer.updateOne(mergeEntry, { omitUndefined: true }).exec();
+                // Find updated customer
+                await Customer.find({ _id: params.customerId }).exec(async (err: any, updatedCustomer: ICustomer) => {
+                    if (company.qbAuthorized && customer?.quickbookId) {
+                        // Sync the update to Customer in QuickBooks
+                        _updateQBCustomer(req, res, company, updatedCustomer, (err, errMsg, qbCustomer) => {
+                            if (err) {
+                                return res.json({ status: err, message: errMsg });
+                            }
 
-        // Find updated customer
-        await Customer.find({ _id: params.customerId }).exec(async (err: any, updatedCustomer: ICustomer) => {
-            if (company.qbAuthorized && customer?.quickbookId) {
-                // Sync the update to Customer in QuickBooks
-                _updateQBCustomer(req, res, company, updatedCustomer, (err, errMsg, qbCustomer) => {
-                    if (err) {
-                       return res.json({ status: err, message: errMsg });
+                            // Remove unused customer (Disable for development)
+                            // Customer.deleteMany({_id: {$in: unusedCustomerIds}}).exec();
+                        });
                     }
-    
-                    // Remove unused customer (Disable for testing only)
-                    // Customer.deleteMany({_id: {$in: unusedCustomerIds}}).exec();
                 });
+
+                return res.json({ status: Status.Success, message: customer });
             }
+
         });
 
-        if (params.jobLocations?.length) {
-            mergeEntry.jobLocations = jobLocations;
-
-            // Update customer on job location
-            JobLocation.updateMany(
-                { _id: { $in: jobLocations }, customerId: { $in: unusedCustomerIds } },
-                { $set: { customerId: params.customerId } }
-            ).exec();
-        }
-
-        if (params.equipments?.length) {
-            mergeEntry.equipments = customerEquipments;
-
-            CustomerEquipment.updateMany(
-                { _id: { $in: customerEquipments }, customer: { $in: unusedCustomerIds } },
-                { $set: { customer: params.customerId } }
-            ).exec();
-        }
-
-        if (params.contacts?.length) {
-            mergeEntry.contacts = contacts;
-        }
-
-        // Update customer on service ticket
-        ServiceTicket.updateMany(
-            { company: companyId, customer: { $in: unusedCustomerIds } },
-            { $set: { customer: params.customerId } }
-        ).exec();
-
-        // Update customer on job
-        Job.updateMany(
-            { company: companyId, customer: { $in: unusedCustomerIds } },
-            { $set: { customer: params.customerId } }
-        ).exec();
-
-        // Update customer on job site
-        JobSite.updateMany(
-            { customerId: { $in: unusedCustomerIds } },
-            { $set: { customerId: params.customerId } }
-        ).exec();
-
-        // Update customer on payment
-        Payment.updateMany(
-            { customer: { $in: unusedCustomerIds }, company: companyId },
-            { $set: { customer: params.customerId } }
-        ).exec();
-
-        // Update customer on purchase order
-        PurchaseOrder.updateMany(
-            { customer: { $in: unusedCustomerIds }, company: companyId },
-            { $set: { customer: params.customerId } }
-        ).exec();
-
-        // Update customer on estimate
-        Estimate.updateMany(
-            { customer: { $in: unusedCustomerIds }, company: companyId },
-            { $set: { customer: params.customerId } }
-        ).exec();
-
-        Tag.updateMany(
-            { customer: { $in: unusedCustomerIds }, company: companyId },
-            { $set: { customer: params.customerId } }
-        ).exec();
-
-        // Update invoice in quickbook
-        Invoice.updateMany(
-            { customer: { $in: unusedCustomerIds }, company: companyId },
-            { $set: { customer: params.customerId } }
-        ).exec()
-
-        return res.json({ status: Status.Success, message: customer });
     });
 }

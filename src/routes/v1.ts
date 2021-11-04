@@ -419,6 +419,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Customer_Get_All),
+        validate(Validations.filterCustomer),
         customerController.filterCustomer
     )
 

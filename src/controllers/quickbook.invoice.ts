@@ -12,7 +12,7 @@ import { IItem } from '../models/Item';
 import { IPaymentTerm } from '../models/PaymentTerm';
 import { IInvoice, IQBInvoice, IQBInvoiceLine, LineDetailTypes, Invoice } from '../models/Invoice';
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
-import { _updateQBCustomer } from './quickbook.customer';
+import { _inactiveQBCustomer, _updateQBCustomer } from '../controllers/quickbook.customer';
 
 // ===================================
 // =======[ QUICKBOOK INVOICE ]=======
@@ -298,67 +298,53 @@ export const _updateQBInvoiceCustomer = async (req: Request, res: Response, comp
         }
 
         // Get old qb customer
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+        qbo.getCustomer(currentCustomer.quickbookId, async (err: any, currentQBCustomer: IQBCustomer) => {
+            // Activate base customer
+            console.log('currentQBCustomer', currentQBCustomer);
+            currentQBCustomer.Active = true;
+            qbo.updateCustomer(currentQBCustomer, async (err: any, qbCustomer: IQBCustomer) => {
+                if (qbCustomer) {
+                    for (const unusedCustomer of unusedCustomers) {
+                        // Initiate node-quickbooks object with the refreshed company token
+                        qbo.getCustomer(unusedCustomer.quickbookId, async (err: any, oldCustomer: IQBCustomer) => {
+                            qbo.findInvoices([
+                                { field: 'CustomerRef', value: unusedCustomer?.quickbookId },
+                            ], async (err: any, quickbookInvoice: any) => {
+                                const qbInvoices: IQBInvoice[] = quickbookInvoice?.QueryResponse?.Invoice;
 
-        for (const unusedCustomer of unusedCustomers) {
-            // Initiate node-quickbooks object with the refreshed company token
-            const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
-            qbo.getCustomer(unusedCustomer.quickbookId, async (err: any, oldCustomer: IQBCustomer) => {
-                qbo.getCustomer(currentCustomer.quickbookId, async (err: any, currentQBCustomer: IQBCustomer) => {
-                    if (!currentQBCustomer?.Active) {
-                        currentCustomer.isActive = true;
-                        console.log('currentCustomer', currentCustomer);
-                        _updateQBCustomer(req, res, company, currentCustomer, (err, errMsg, qbCustomer) => {
-                            if (err) {
-                                return res.json({ status: Status.Error, message: errMsg });
-                            }
+                                if (qbInvoices?.length) {
+                                    for (const qbInvoice of qbInvoices) {
+                                        if (qbInvoice && oldCustomer?.Active) {
+                                            qbInvoice.CustomerRef = qbInvoice.CustomerRef ?? {};
+                                            qbInvoice.CustomerRef.value = currentCustomer?.quickbookId;
+                                            qbInvoice.CustomerRef.name = currentCustomer?.profile?.displayName;
+                                            qbInvoice.BillEmail = qbInvoice.BillEmail ?? {};
+                                            qbInvoice.BillEmail.Address = currentCustomer?.info?.email;
+
+                                            // console.log('this data will be send',qbInvoice);
+                                            qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
+                                                if (err) {
+                                                    console.log('== err.Fault Invoice:', err.Fault);
+                                                    console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                                                    console.log('== err.fault:', err.fault);
+                                                    console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                                                    console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                                                }
+                                                return next(null, null, qbInvoice);
+                                            });
+                                        }
+                                    }
+                                }
+                            });
                         });
                     }
-                });
-
-                qbo.findInvoices([
-                    { field: 'CustomerRef', value: oldCustomer?.Id },
-                ], async (err: any, quickbookInvoice: any) => {
-                    const qbInvoices: IQBInvoice[] = quickbookInvoice?.QueryResponse?.Invoice;
-
-                    if (qbInvoices?.length) {
-                        for (const qbInvoice of qbInvoices) {
-                            qbInvoice.CustomerRef = qbInvoice.CustomerRef ?? {};
-                            qbInvoice.CustomerRef.value = currentCustomer?.quickbookId;
-                            qbInvoice.CustomerRef.name = currentCustomer?.profile?.displayName;
-                            qbInvoice.BillEmail = qbInvoice.BillEmail ?? {};
-                            qbInvoice.BillEmail.Address = currentCustomer?.info?.email;
-
-                            // console.log('this data will be send',qbInvoice);
-                            qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
-                                console.log('qbInvoice', qbInvoice);
-                                if (err) {
-                                    console.log('== err.Fault.Invoice:', err.Fault);
-                                    console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
-                                    console.log('== err.fault:', err.fault);
-                                    console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
-                                    console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
-                                    return next(
-                                        Status.Error,
-                                        err.Fault?.Error[0]?.Detail
-                                        || err.Fault?.Error[0]?.Message
-                                        || err.fault?.error[0]?.detail
-                                        || err.fault?.error[0]?.message
-                                        || Messages.GenericError,
-                                        null
-                                    );
-                                }
-
-                                return next(null, null, qbInvoice);
-                            });
-
-                        }
-                    }
-                });
-
+                }
             })
-        }
+        });
     })
 }
+
 /**
  * Generic function to delete QuickBooks Invoice,
  * this used by Invoice Controller when updating invoice to draft
