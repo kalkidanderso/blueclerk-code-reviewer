@@ -284,7 +284,8 @@ export const getCompanyContracts = (req: Request, res: Response) => {
     })
     .populate({
         path: 'contractor',
-        select: 'info.companyName info.companyEmail type'
+        select: 'info.companyName info.companyEmail type',
+        populate: [{ path: 'admin', select: 'profile auth.email contact' }]
     })
     .exec((err: any, contracts: IContract[]) => {
 
