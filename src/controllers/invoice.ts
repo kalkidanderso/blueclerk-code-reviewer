@@ -1261,8 +1261,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                         let taxAmount: number = 0;
                         let subTotalBeforeTax: number = 0;
                         let total: number = 0;
-                        let balanceDue = invoice.balanceDue;
-                        let paymentApplied = invoice.paymentApplied;
+                        let balanceDue = invoice.balanceDue ?? invoice.total;
+                        let paymentApplied = invoice.paymentApplied ?? 0;
                         let paid = invoice.paid;
                         let status = invoice.status;
                         const oldTotal = invoice.total;
@@ -1471,8 +1471,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                 let taxAmount: number = 0;
                 let subTotalBeforeTax: number = 0;
                 let total: number = 0;
-                let balanceDue = invoice.balanceDue;
-                let paymentApplied = invoice.paymentApplied;
+                let balanceDue = invoice.balanceDue ?? invoice.total;
+                let paymentApplied = invoice.paymentApplied ?? 0;
                 let paid = invoice.paid;
                 let status = invoice.status;
                 const oldTotal = invoice.total;
