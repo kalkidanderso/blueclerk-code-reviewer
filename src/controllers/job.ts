@@ -683,15 +683,15 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
         .populate('ticket')
         .populate({
             path: 'technician',
-            select: 'profile.displayName'
+            select: 'profile contact'
         })
         .populate({
             path: 'contractor',
-            select: 'info.companyName info.companyEmail type'
+            select: 'info type contact'
         })
         .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contactName contact'
+            select: 'info.email auth.email profile address location contactName contact'
         })
         .populate({
             path: 'type',
@@ -715,11 +715,11 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
         })
         .populate({
             path: 'jobLocation',
-            select: 'name location'
+            select: 'name address location'
         })
         .populate({
             path: 'jobSite',
-            select: 'name location'
+            select: 'name address location'
         }).skip((currentPage - 1) * pageSize)
         .limit(pageSize)
         .exec((err: any, jobs: IJob[]) => {
