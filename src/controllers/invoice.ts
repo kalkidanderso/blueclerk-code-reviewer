@@ -1179,6 +1179,7 @@ export const updateInvoice = (req: Request, res: Response) => {
     Invoice.findOne({'_id': params.invoiceId, 'company': req.companyId},
         async (err: any, invoice: IInvoice) => {
             if (err) {
+                console.log('== Invoice find error:', err);
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
@@ -1240,6 +1241,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                         let purchaseOrders = result[1]
 
                         if (err) {
+                            console.log('== Invoice find job error:', err);
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
 
@@ -1436,6 +1438,7 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                             async (err: any) => {
                                 if (err) {
+                                    console.log('== Invoice updateOne 1 error:', err);
                                     return res.json({ status: Status.Error, message: Messages.GenericError });
                                 }
 
@@ -1447,7 +1450,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                             })
                     })
                     .catch((error: any) => {
-                        console.log('== error:', error);
+                        console.log('== Invoice update catch error:', error);
                         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
                     })
             } else {
@@ -1623,6 +1626,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                 }, { omitUndefined: true },
                     async (err: any) => {
                         if (err) {
+                            console.log('== Invoice updateOne 2 error:', err);
                             return res.json({ status: Status.Error, message: Messages.GenericError });
                         }
 
@@ -2006,6 +2010,8 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 
                 return next(invoice, qbInvoice);
             })
+        } else {
+            return next(invoice, null);
         }
 
     } else if (!oldIsDraft && invoice.isDraft) {
@@ -2041,6 +2047,8 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 
                 return next(invoice, null);
             })
+        } else {
+            return next(invoice, null);
         }
 
     } else if (!oldIsDraft && !invoice.isDraft) {
@@ -2066,6 +2074,8 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 
                 return next(invoice, qbInvoice);
             })
+        } else {
+            return next(invoice, null);
         }
 
     } else {
