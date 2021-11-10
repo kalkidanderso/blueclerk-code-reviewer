@@ -26,7 +26,7 @@ import { EmailDefault } from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer } from '../services/aws';
 import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice } from '../controllers/quickbook.invoice';
-import { transformPlaceholders, getPlaceholderValues } from './emailDefault';
+import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from './emailDefault';
 
 /**
  * To reset Invoice quickbookId,
@@ -1799,6 +1799,11 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
 
     // Retrieve company email default
     const emailDefault = await EmailDefault.findOne({ company });
+
+    // Create email default if company doesn't have one yet
+    if (!emailDefault) {
+        await _createCompanyDefaultEmail(company);
+    }
 
     /**
      * Transfrom the email default placeholder symbol to fit Javascript Template Literal,
