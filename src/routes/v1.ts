@@ -311,8 +311,7 @@ export default function (sio: any) {
     router.post(
         '/forgotPassword',
         validate(Validations.forgotPassword),
-        userController.fogotPassword)
-
+        userController.forgotPassword)
 
 
     router.post(

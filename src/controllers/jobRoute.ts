@@ -46,9 +46,11 @@ export const getAllJobRoutes = async (req: Request, res: Response) => {
     await JobRoute.populate(jobRoutes, [
         {
             path: 'routes.job',
-            select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
+            select: '-__v -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
             populate: [
                 { path: 'customer', select: 'profile vendorId address location' },
+                { path: 'contractor', select: 'info address contact' },
+                { path: 'technician', select: 'profile contact' },
                 { path: 'tasks.jobType', select: 'title description sku' },
                 { path: 'type', select: 'title description sku' },
                 { path: 'ticket', select: '-__v -track' },
@@ -56,7 +58,7 @@ export const getAllJobRoutes = async (req: Request, res: Response) => {
                 { path: 'jobSite', select: '-__v -locationId -customerId' }
             ]
         },
-        { path: 'technician', select: 'profile' },
+        { path: 'technician', select: 'profile contact' },
         { path: 'createdBy', select: 'profile' },
         { path: 'updatedBy', select: 'profile' }
     ]);

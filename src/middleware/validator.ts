@@ -74,7 +74,10 @@ export const Validations = {
 
   updateProfile: [check('firstName').exists(), check('lastName').exists()],
 
-  changePassword: [check('currentPassword').exists(), check('newPassword').exists()],
+  changePassword: [
+    check('currentPassword').exists().withMessage(Messages.Required),
+    check('newPassword').exists().withMessage(Messages.Required)
+  ],
 
   getContractorDetail: [check('contractorId').exists()],
 
