@@ -482,6 +482,10 @@ export const changePassword = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Error, 'message': 'Current password doesn\'t match.' })
         }
 
+        if (params.currentPassword === params.newPassword) {
+            return res.json({ status: Status.Error, message: `New password can't be your old password` });
+        }
+
         user.hashPassword(params.newPassword, (err?: any, hash?: string) => {
 
             if (err || !hash) {
@@ -508,7 +512,7 @@ export const changePassword = (req: Request, res: Response) => {
 
 }
 
-export const fogotPassword = (req: Request, res: Response) => {
+export const forgotPassword = (req: Request, res: Response) => {
 
     const params = req.body
 
@@ -525,8 +529,9 @@ export const fogotPassword = (req: Request, res: Response) => {
             }
 
             var password = generator.generate({
-                length: 8,
+                length: 9,
                 numbers: true,
+                symbols: '!@#$%&',
                 uppercase: true,
                 excludeSimilarCharacters: true,
                 strict: true
@@ -613,8 +618,9 @@ const createEmployee = (req: Request, res: Response, role: Role) => {
             const roles = ['OfficeAdmin', 'Technician', 'Manager', '', 'Admin'];
 
             var password = generator.generate({
-                length: 8,
+                length: 9,
                 numbers: true,
+                symbols: '!@#$%&',
                 uppercase: true,
                 excludeSimilarCharacters: true,
                 strict: true
