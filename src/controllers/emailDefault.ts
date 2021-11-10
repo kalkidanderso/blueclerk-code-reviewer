@@ -90,7 +90,7 @@ export const getPlaceholderValues = async (company: ICompany, invoice: IInvoice,
  * ===================================
  */
 
-const _createCompanyDefaultEmail = async (company: ICompany): Promise<void> => {
+export const _createCompanyDefaultEmail = async (company: ICompany): Promise<void> => {
 
     const emailDefault = await EmailDefault.findOne({ company });
 
