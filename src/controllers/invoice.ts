@@ -1179,7 +1179,6 @@ export const updateInvoice = (req: Request, res: Response) => {
     Invoice.findOne({'_id': params.invoiceId, 'company': req.companyId},
         async (err: any, invoice: IInvoice) => {
             if (err) {
-                console.log('== Invoice find error:', err);
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
@@ -1221,7 +1220,7 @@ export const updateInvoice = (req: Request, res: Response) => {
              * Priority order: 1) User params 2) Customer default term 3) Company default term,
              * otherwise leave paymentTerm to be blank
              */
-            paymentTerm = paymentTerm || <IPaymentTerm>customerObj?.paymentTerm || <IPaymentTerm>company?.paymentTerm;
+            // paymentTerm = paymentTerm || <IPaymentTerm>customerObj?.paymentTerm || <IPaymentTerm>company?.paymentTerm;
 
             if(invoice.invoiceType == 0) {
 
@@ -1241,7 +1240,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                         let purchaseOrders = result[1]
 
                         if (err) {
-                            console.log('== Invoice find job error:', err);
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
 
@@ -1438,7 +1436,6 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                             async (err: any) => {
                                 if (err) {
-                                    console.log('== Invoice updateOne 1 error:', err);
                                     return res.json({ status: Status.Error, message: Messages.GenericError });
                                 }
 
@@ -1450,7 +1447,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                             })
                     })
                     .catch((error: any) => {
-                        console.log('== Invoice update catch error:', error);
                         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
                     })
             } else {
@@ -1626,7 +1622,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                 }, { omitUndefined: true },
                     async (err: any) => {
                         if (err) {
-                            console.log('== Invoice updateOne 2 error:', err);
                             return res.json({ status: Status.Error, message: Messages.GenericError });
                         }
 
