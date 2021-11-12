@@ -9,7 +9,7 @@ import {
     sendJobEmailToCustomer, sendReportEmailToCustomer
 } from '../services/aws'
 
-import { Job, IJob, ITask } from '../models/Job'
+import { Job, IJob, ITask, INewTask, IJobTypesTask } from '../models/Job'
 import {EmailSchedule} from '../models/EmailSchedule'
 import {Company, ICompany} from '../models/Company'
 import {IUser, User} from '../models/User'
@@ -21,7 +21,7 @@ import { Item, IItem } from '../models/Item'
 import { ICustomer } from '../models/Customer';
 import {CompanyCustomer} from '../models/CompanyCustomer';
 import { INotificationJob, NotificationJob } from '../models/NotificationMetadata'
-import { IJobType, IJobTypes } from '../models/JobType';
+import { IJobType, IJobTypes, JobType } from '../models/JobType';
 import { JobRoute } from '../models/JobRoute';
 import { _handleJobTypesJson } from '../controllers/jobType';
 import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
@@ -164,6 +164,12 @@ export const createSubJob = async (req: Request, res: Response) => {
 const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: string, imagesUrl: string[], serviceTicket: IServiceTicket, next: (req: Request, res: Response, err: any, job: IJob, invalidJobTypes: string[]) => void) => {
 
     const params = req.body
+    let paramTasks = params.tasks ?? [];
+
+    // To handle any over-stringified strings
+    if (!Array.isArray(paramTasks)) {
+        paramTasks = JSON.parse(params.tasks);
+    }
 
     const user = <IUser>req.user
     var companyId = req.companyId;
@@ -186,6 +192,51 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
     if (contractor && !technicianId) {
         technicianId = contractor.admin;
     }
+
+    const tasks = [];
+    let contractorId: any;
+    let technician: any;
+
+    for (const paramTask of paramTasks) {
+        const paramsemployeeType = paramTask.employeeType === undefined || paramTask.employeeType === null
+            ? false 
+            : paramTask.employeeType === 'false' || paramTask.employeeType === '0'
+            ? false
+            : !!paramTask.employeeType;
+
+        if (paramTask.technicianId && !paramTask.contractorId) {
+            technician = await User.findOne({_id: paramTask.technicianId});
+        }
+
+        if (paramTask.contractorId && !paramTask.technicianId) {
+            contractorId = await Company.findOne({_id: paramTask.contractorId});
+            technician = contractorId.admin;
+        }
+
+        if (!contractor && !technician) {
+            return next(req, res, "Contractor/Technician not found!", null, null)
+        }
+
+        tasks.push({
+            employeeType: paramsemployeeType,
+            technician,
+            contractor: contractorId,
+            jobTypes: []
+        });
+
+        for (const jobTypeTask of paramTask.jobTypes) {
+            tasks.forEach(task => {
+                if ( task.contractor._id.toString() === paramTask.contractorId 
+                    || task.technician._id.toString() === paramTask.technicianId
+                ) {
+                    task.jobTypes.push({
+                        jobType: jobTypeTask
+                    });
+                }
+            })
+        }
+    }
+
     let track = [];
     let action = '|Created A Job|';
     track.push({
@@ -246,6 +297,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         images: images,
         // type: params.jobTypeId ?? parentJob?.type, // TODO: To be deprecated
         tasks: jobTypes ?? parentJob?.tasks,
+        newTasks: tasks,
         company: companyId,
         description: params.description ?? parentJob?.description,
         createdAt: Date.now(),
@@ -1353,13 +1405,17 @@ export const startJobTask = async (req: Request, res: Response) => {
     const user = <IUser>req.user;
     const companyId = req.otherCompanyId || req.companyId;
     const params = req.body;
+    const startedJobTypes: IJobType[] = [];
+    let newJobType: IJobType;
+    let actionStatus: string;
+    let taskOutput, history
 
     // TODO: Move to job's middleware
     // Find job and populate the tasks' jobType
     const job = await Job.findOne({
         _id: params.jobId,
         $or: [{ company: companyId }, { contractor: companyId }]
-    }).populate({ path: 'tasks.jobType', select: 'title' });
+    }).populate({ path: 'tasks.jobType', select: 'title' }).populate({ path: 'newTasks.jobTypes.jobType', select: 'title' });
 
     // Check if job exist and job status is not FINISHED or CANCELED
     if (!job)
@@ -1373,52 +1429,117 @@ export const startJobTask = async (req: Request, res: Response) => {
 
     // Check if there is a started task, cannot process to start another task
     const startedTask = job.tasks.find(task => task.status === JobStatus.STARTED);
+    job.newTasks.forEach(task => {
+        task.jobTypes.forEach((jobTypes: any) => {
+            if (jobTypes.jobType._id.toString() === params.jobTypeId && jobTypes.status === JobStatus.STARTED) {
+                startedJobTypes.push(jobTypes.jobType)
+            }
+        });
+    });
+
+    if (startedJobTypes.length) {
+        let startedJobTypeTasks
+        startedJobTypes.forEach(jobType => startedJobTypeTasks = jobType.title);
+        return res.json({ status: Status.Error, message: `You can't start this task, you already have a started task: ${startedJobTypeTasks}.` });
+    }
+    
     if (startedTask) {
         const startedJobType = <IJobType>startedTask.jobType;
         return res.json({ status: Status.Error, message: `You can't start this task, you already have a started task: ${startedJobType.title}.` });
     }
 
     // Find the job type to be started
-    let jobType: IJobType;
-    const task = job.tasks.find(task => {
-        jobType = <IJobType>task.jobType;
-        return jobType._id.toString() === params.jobTypeId;
+    const newTask = job.newTasks.find(task => 
+        task.jobTypes.find((jobType: any) => {
+            return jobType.jobType._id.toString() === params.jobTypeId
+        })
+    );
+
+    taskOutput = newTask
+
+    const jobTypeTask = newTask.jobTypes.find(jobType => {
+        newJobType = <IJobType>jobType.jobType;
+        return newJobType._id.toString() === params.jobTypeId;
     });
 
-    if (!task)
+    if (!newTask)
         return res.json({ status: Status.Error, message: Messages.TaskNotFound });
 
-    if (task.status === JobStatus.STARTED)
-        return res.json({ status: Status.Error, message: `${Messages.TaskCannotBeStarted} started.` })
+    if (jobTypeTask) {
+        if (jobTypeTask.status === JobStatus.STARTED)
+            return res.json({ status: Status.Error, message: `${Messages.TaskCannotBeStarted} started.` })
+    
+        if (jobTypeTask.status === JobStatus.FINISHED)
+            return res.json({ status: Status.Error, message: `${Messages.TaskCannotBeStarted} finished` });
+    
+        // Update the task start time and status
+        let actionStatus: string;
+        if (jobTypeTask.status === JobStatus.PAUSED) {
+            jobTypeTask.tempStartTime = new Date();
+            actionStatus = 'Re-starting';
+        }
+        else {
+            jobTypeTask.startTime = new Date();
+            actionStatus = 'Started';
+        }
+        // Update the task status
+        jobTypeTask.status = JobStatus.STARTED;
+        jobTypeTask.timeUpdatedBy = user;
+        jobTypeTask.timeUpdatedAt = new Date();
+    
+        if (job.status !== JobStatus.STARTED) {
+            job.startTime = new Date();
+        }
 
-    if (task.status === JobStatus.FINISHED)
-        return res.json({ status: Status.Error, message: `${Messages.TaskCannotBeStarted} finished` });
+        history = {
+            user: user._id,
+            action: `|${actionStatus} the Job's task: ${newJobType.title}|`,
+            date: new Date()
+        }
+    } else {
+        let jobType: IJobType;
+        const task = job.tasks.find(task => {
+            jobType = <IJobType>task.jobType;
+            return jobType._id.toString() === params.jobTypeId;
+        });
 
-    // Update the task start time and status
-    let actionStatus: string;
-    if (task.status === JobStatus.PAUSED) {
-        task.tempStartTime = new Date();
-        actionStatus = 'Re-starting';
-    }
-    else {
-        task.startTime = new Date();
-        actionStatus = 'Started';
-    }
-    // Update the task status
-    task.status = JobStatus.STARTED;
-    task.timeUpdatedBy = user;
-    task.timeUpdatedAt = new Date();
+        taskOutput = task
+        if (!task)
+            return res.json({ status: Status.Error, message: Messages.TaskNotFound });
+    
+        if (task.status === JobStatus.STARTED)
+            return res.json({ status: Status.Error, message: `${Messages.TaskCannotBeStarted} started.` })
+    
+        if (task.status === JobStatus.FINISHED)
+            return res.json({ status: Status.Error, message: `${Messages.TaskCannotBeStarted} finished` });
+    
+        // Update the task start time and status
+        
+        if (task.status === JobStatus.PAUSED) {
+            task.tempStartTime = new Date();
+            actionStatus = 'Re-starting';
+        }
+        else {
+            task.startTime = new Date();
+            actionStatus = 'Started';
+        }
+        // Update the task status
+        task.status = JobStatus.STARTED;
+        task.timeUpdatedBy = user;
+        task.timeUpdatedAt = new Date();
+    
+        if (job.status !== JobStatus.STARTED) {
+            job.startTime = new Date();
+        }
 
-    if (job.status !== JobStatus.STARTED) {
-        job.startTime = new Date();
+        // Log a track history
+        history = {
+            user: user._id,
+            action: `|${actionStatus} the Job's task: ${jobType.title}|`,
+            date: new Date()
+        }
     }
 
-    // Log a track history
-    const history = {
-        user: user._id,
-        action: `|${actionStatus} the Job's task: ${jobType.title}|`,
-        date: new Date()
-    }
     job.status = JobStatus.STARTED;
     job.track.push(history);
 
@@ -1457,7 +1578,7 @@ export const startJobTask = async (req: Request, res: Response) => {
         });
     }
 
-    return res.json({ status: Status.Success, message: 'Job Task started successfully.', job, startedTask: task });
+    return res.json({ status: Status.Success, message: 'Job Task started successfully.', job, startedTask: taskOutput});
 
 }
 
@@ -2406,5 +2527,4 @@ const _handleTaskCharges = async ({ job, task, item, customer, params, isDeduct 
     }
 
     return;
-
 }

@@ -6320,6 +6320,10 @@
                     "type": "string",
                     "description": "Required when employeeType = 0. Id of a technician selected from the list received by /getEmployeesForJob api"
                   },
+                  "tasks": {
+                    "type": "string",
+                    "description": "Json string of the technicians e.g [{\"jobTypeId\":\"617a6362558d3631b4d80c1e\",\"technicians\":[{\"employeeType\":\"0\",\"contractorId\":\"\",\"technicianId\":\"6156c57f8e88ba06e4ffe56a\"},{\"employeeType\":\"1\",\"contractorId\":\"61554237278b8615ac410493\",\"technicianId\":\"\"}]},{\"jobTypeId\":\"617a6362558d3631b4d80c21\",\"technicians\":[{\"employeeType\":\"0\",\"contractorId\":\"\",\"technicianId\":\"615426b564da190a5c3f7585\"}]}]"
+                  },
                   "contractorId": {
                     "type": "string",
                     "description": "Required when employeeType = 1. Id of a contractor selected from the list received by /getCompanyContracts api"
@@ -6898,6 +6902,10 @@
                     "type": "string",
                     "description": "Id of task/job type to start"
                   },
+                  "technicianId": {
+                    "type": "string",
+                    "description": "Id of technician to update status"
+                  },
                   "status": {
                     "type": "number",
                     "description": "Id of job task status as number from one of these (FINISHED => 2, PAUSED => 5)."
@@ -7069,6 +7077,9 @@
                   "jobTypes": {
                     "type": "string",
                     "description": "Json string of the jobTypes e.g [{\"jobTypeId\": \"608ae3aeffe3cf17946a08b1\"},{\"jobTypeId\": \"60b90cf138045631806b8e6e\"}]. Id of a job type from the list received by /getJobTypes api"
+                  },
+                  "technicians": {
+                    "type": "string"
                   },
                   "startTime": {
                     "type": "string",
