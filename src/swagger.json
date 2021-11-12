@@ -3035,12 +3035,12 @@
         ]
       }
     },
-    "/filterCustomer": {
+    "/searchDuplicatedCustomers": {
       "post": {
         "tags": [
           "Customer"
         ],
-        "summary": "To get detail of a customer.",
+        "summary": "To any possible duplicated customers by the keyword.",
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
@@ -3052,7 +3052,7 @@
                 "properties": {
                   "keyword": {
                     "name": "string",
-                    "description": "Id of company if contractor is hitting for other company"
+                    "description": "Keyword to search possible duplicated customers"
                   }
                 }
               }
@@ -3086,7 +3086,7 @@
         ]
       }
     },
-    "/mergeCustomer": {
+    "/mergeCustomers": {
       "post": {
         "tags": [
           "Customer"

@@ -415,21 +415,21 @@ export default function (sio: any) {
     )
 
     router.post(
-        '/filterCustomer',
+        '/searchDuplicatedCustomers',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Customer_Get_All),
-        validate(Validations.filterCustomer),
-        customerController.filterCustomer
+        validate(Validations.searchDuplicatedCustomers),
+        customerController.searchDuplicatedCustomers
     )
 
     router.post(
-        '/mergeCustomer',
+        '/mergeCustomers',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Customer_Update),
-        validate(Validations.mergeCustomer),
-        customerController.mergeCustomer
+        validate(Validations.mergeCustomers),
+        customerController.mergeCustomers
     )
 
     //Customer equipments

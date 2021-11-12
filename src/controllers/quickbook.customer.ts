@@ -346,63 +346,11 @@ export const _createQBCustomer = async (req: Request, res: Response, company: IC
 
 }
 
-export const _inactiveQBCustomer = async (req: Request, res: Response, company: ICompany, customers: ICustomer[], next: (error: number, errorMessage: string, qbCustomers: IQBCustomer[]) => void) => {
-
-    // _refreshToken(req, res, company, async (err, errMsg, company) => {
-    //     if (err === 0) {
-    //         return res.json({ status: Status.Error, message: errMsg });
-    //     }
-
-    //     if (err === 400) {
-    //         await Company.findByIdAndUpdate(req.company._id, {
-    //             qbAuthorized: false,
-    //             qbAccessToken: undefined,
-    //             qbRefreshToken: undefined
-    //         });
-
-    //         return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
-    //     }
-
-    const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
-
-    const updatedCustomer: IQBCustomer[] = []
-    for (const customer of customers) {
-        if (customer?.quickbookId) {
-            qbo.getCustomer(customer.quickbookId, async (err: any, qbCustomer: IQBCustomer) => {
-                if (qbCustomer) {
-                    qbCustomer.Active = false;
-                    qbo.updateCustomer(qbCustomer, async (err: any, updatedQbCustomer: IQBCustomer) => {
-                        console.log('quickbook.Customer', updatedQbCustomer)
-
-                        if (err || !updatedQbCustomer) {
-                            console.log('== err.Fault:', err.Fault);
-                            console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
-                            console.log('== err.fault:', err.fault);
-                            console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
-                            console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
-                            return next(
-                                Status.Error,
-                                err.Fault?.Error[0]?.Detail
-                                || err.Fault?.Error[0]?.Message
-                                || err.fault?.error[0]?.detail
-                                || err.fault?.error[0]?.message
-                                || Messages.GenericError,
-                                null
-                            );
-                        }
-
-                        updatedCustomer.push(updatedQbCustomer);
-
-                    });
-                }
-            });
-        }
-    }
-
-    return next(null, null, updatedCustomer);
-    // });
-}
-
+/**
+* Generic function to update QuickBooks Customer,
+* this used by Customer Controller when updating customer,
+* and when merge duplicated customers
+*/
 export const _updateQBCustomer = async (req: Request, res: Response, company: ICompany, customer: ICustomer, next: (error: number, errorMessage: string, qbCustomer: IQBCustomer) => void) => {
 
     // Always refresh the token first because token valid only for 60 minutes
@@ -487,6 +435,43 @@ export const _updateQBCustomer = async (req: Request, res: Response, company: IC
             });
         });
     });
+
+}
+
+/**
+ * Generic function to inactivate/disable Customers in QB,
+ * this used by Customer Controller after merging duplicated customers
+ */
+ export const _inactivateQBCustomers = async (company: ICompany, customers: ICustomer[], next: (error: number, errorMessage: string) => void) => {
+
+    // Get the QB Invoice object based on invoice quickbookId
+    const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+    // Iterate all unused customers and deactive them on QB
+    for (const customer of customers) {
+        if (customer?.quickbookId) {
+            qbo.getCustomer(customer.quickbookId, async (err: any, qbCustomer: IQBCustomer) => {
+                if (qbCustomer) {
+                    qbCustomer.Active = false;
+
+                    qbo.updateCustomer(qbCustomer, async (err: any, updatedQbCustomer: IQBCustomer) => {
+                        if (err || !updatedQbCustomer) {
+                            return next(
+                                Status.Error,
+                                err.Fault?.Error[0]?.Detail
+                                || err.Fault?.Error[0]?.Message
+                                || err.fault?.error[0]?.detail
+                                || err.fault?.error[0]?.message
+                                || Messages.GenericError
+                            );
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    return next(null, null);
 
 }
 

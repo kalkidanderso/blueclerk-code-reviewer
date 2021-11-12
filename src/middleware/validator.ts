@@ -116,9 +116,13 @@ export const Validations = {
 
   getCustomerDetail: [check('customerId').exists()],
 
-  filterCustomer: [check('kyword').exists()],
+  searchDuplicatedCustomers: [check('keyword').exists().withMessage(Messages.Required)],
 
-  mergeCustomer: [check('customerId').exists().isMongoId().withMessage(Messages.WrongId), check('unusedCustomerIds').exists()],
+  mergeCustomers: [
+    check('customerId').exists().withMessage(Messages.Required),
+    check('customerId').isMongoId().withMessage(Messages.WrongId),
+    check('unusedCustomerIds').exists().withMessage(Messages.Required)
+  ],
 
       //Customer Equipment
 

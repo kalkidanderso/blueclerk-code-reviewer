@@ -12,7 +12,7 @@ import { IItem } from '../models/Item';
 import { IPaymentTerm } from '../models/PaymentTerm';
 import { IInvoice, IQBInvoice, IQBInvoiceLine, LineDetailTypes, Invoice } from '../models/Invoice';
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
-import { _inactiveQBCustomer, _updateQBCustomer } from '../controllers/quickbook.customer';
+import { _updateQBCustomer } from '../controllers/quickbook.customer';
 
 // ===================================
 // =======[ QUICKBOOK INVOICE ]=======
@@ -279,9 +279,13 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
 
 }
 
-export const _updateQBInvoiceCustomer = async (req: Request, res: Response, company: ICompany, unusedCustomers: ICustomer[], currentCustomer: ICustomer, next: (error: number, errorMessage: string, qbInvoice: IQBInvoice) => void) => {
+/**
+ * Generic function to tranfers ownership of QuickBooks Invoices,
+ * this used by Customer Controller after merging duplicated customers
+ */
+export const _transferQBInvoices = async (req: Request, res: Response, company: ICompany, unusedCustomers: ICustomer[], currentCustomer: ICustomer, next: (error: number, errorMessage: string) => void) => {
 
-    // Payment Term of the invoice
+    // Always refresh the token first because token valid only for 60 minutes
     _refreshToken(req, res, company, async (err, errMsg, company) => {
         if (err === 0) {
             return res.json({ status: Status.Error, message: errMsg });
@@ -294,44 +298,45 @@ export const _updateQBInvoiceCustomer = async (req: Request, res: Response, comp
                 qbRefreshToken: undefined
             });
 
-            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized);
         }
 
-        // Get old qb customer
+        // Initiate node-quickbooks object with the refreshed company token
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        // Get old QB Customer
         qbo.getCustomer(currentCustomer.quickbookId, async (err: any, currentQBCustomer: IQBCustomer) => {
-            // Activate base customer
-            console.log('currentQBCustomer', currentQBCustomer);
+
+            // Make sure the merged base customer Active
             currentQBCustomer.Active = true;
+
             qbo.updateCustomer(currentQBCustomer, async (err: any, qbCustomer: IQBCustomer) => {
+
                 if (qbCustomer) {
+                    // Iterate all unused customers
                     for (const unusedCustomer of unusedCustomers) {
-                        // Initiate node-quickbooks object with the refreshed company token
-                        qbo.getCustomer(unusedCustomer.quickbookId, async (err: any, oldCustomer: IQBCustomer) => {
+                        qbo.getCustomer(unusedCustomer.quickbookId, async (err: any, unusedQBCustomer: IQBCustomer) => {
+
+                            // Find the invoices of the unused customer
                             qbo.findInvoices([
                                 { field: 'CustomerRef', value: unusedCustomer?.quickbookId },
-                            ], async (err: any, quickbookInvoice: any) => {
-                                const qbInvoices: IQBInvoice[] = quickbookInvoice?.QueryResponse?.Invoice;
+                            ], async (err: any, data: any) => {
+                                const qbInvoices: IQBInvoice[] = data?.QueryResponse?.Invoice;
 
                                 if (qbInvoices?.length) {
+                                    // Iterate all QB Invoices
                                     for (const qbInvoice of qbInvoices) {
-                                        if (qbInvoice && oldCustomer?.Active) {
+                                        if (qbInvoice && unusedQBCustomer?.Active) {
+
+                                            // Move invoice to the new customer
                                             qbInvoice.CustomerRef = qbInvoice.CustomerRef ?? {};
                                             qbInvoice.CustomerRef.value = currentCustomer?.quickbookId;
                                             qbInvoice.CustomerRef.name = currentCustomer?.profile?.displayName;
                                             qbInvoice.BillEmail = qbInvoice.BillEmail ?? {};
                                             qbInvoice.BillEmail.Address = currentCustomer?.info?.email;
 
-                                            // console.log('this data will be send',qbInvoice);
                                             qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
-                                                if (err) {
-                                                    console.log('== err.Fault Invoice:', err.Fault);
-                                                    console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
-                                                    console.log('== err.fault:', err.fault);
-                                                    console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
-                                                    console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
-                                                }
-                                                return next(null, null, qbInvoice);
+                                                // return next(null, null);
                                             });
                                         }
                                     }
@@ -340,6 +345,8 @@ export const _updateQBInvoiceCustomer = async (req: Request, res: Response, comp
                         });
                     }
                 }
+
+                return next(null, null)
             })
         });
     })
