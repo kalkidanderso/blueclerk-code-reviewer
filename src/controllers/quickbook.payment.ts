@@ -296,14 +296,21 @@ export const createBCPayment = async (req: Request, res: Response, company: ICom
                 let customer: ICustomer;
                 if (!qbCustomer.Job) {
                     // Get BC Customer by QB Payment's Customer quickbookId
-                    customer = await Customer.findOne({ quickbookId: qbCustomer.Id });
-                } else {
+                    customer = await Customer.findOne({ quickbookId: qbCustomer.Id, company: company._id });
+                  } else {
                     /**
                      * Invoice was recorded to Customer Job Location in QB,
                      * Get the Customer ID from the Job Location
                      */
-                    const jobLocation = await JobLocation.findOne({ quickbookId: qbCustomer.Id });
-                    customer = await Customer.findById(jobLocation?.customerId);
+                    const jobLocation = await JobLocation.findOne({ quickbookId: qbCustomer.Id, companyId: company._id });
+                    if (jobLocation) {
+                        customer = await Customer.findById(jobLocation.customerId);
+                    }
+                }
+
+                // No customer found, return directly
+                if (!customer) {
+                    return next(null, null, []);
                 }
 
                 // Get QB Payment Method by QB Payment's Payment Method ID
