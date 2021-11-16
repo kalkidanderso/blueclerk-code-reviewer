@@ -73,12 +73,18 @@ export interface ITask extends Document {
 }
 
 export interface INewTask extends Document {
-    employeeType?: boolean
-    technician?: Schema.Types.ObjectId | IUser | any
-    contractor?: Schema.Types.ObjectId | ICompany
+    employeeType: boolean
+    technician: Schema.Types.ObjectId | any
+    contractor: Schema.Types.ObjectId
     jobTypes?: IJobTypesTask[]
 }
 
+export interface TaskEntry {
+    employeeType: string
+    technicianId: string
+    contractorId: string
+    jobTypes: string[]
+}
 export interface IJobTypesTask extends Document {
     jobType: Schema.Types.ObjectId | IJobType
     status?: number
@@ -177,7 +183,7 @@ const JobSchema = new Schema({
         technician: {
             type: Schema.Types.ObjectId,
             ref: 'User',
-            required: true
+            required: false
         },
         contractor: {
             type: Schema.Types.ObjectId,
@@ -189,7 +195,7 @@ const JobSchema = new Schema({
             jobType: {
                 type: Schema.Types.ObjectId,
                 ref: 'JobType',
-                required: true
+                // required: true
             },
             status: {
                 type: Number,

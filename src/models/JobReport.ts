@@ -7,8 +7,10 @@ export interface IJobReport extends Document {
     scans: [Schema.Types.ObjectId] | any[];
     PurchaseOrder: [Schema.Types.ObjectId] | any[];
     company: Schema.Types.ObjectId | any;
+    // To be deprecated
     contractor: Schema.Types.ObjectId | any;
     customerName: string;
+    // To be deprecated
     technicianName: string;
     jobDate: Date | any;
     emailHistory: any[];
