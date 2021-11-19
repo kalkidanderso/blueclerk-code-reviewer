@@ -163,6 +163,9 @@ paths:
                 isci:
                   type: boolean
                   description: Abbreviation of 'isContractInvitation', boolean value to trigger BE to create notification and vendor contract after the sign up
+                cid:
+                  type: string
+                  description: Abbreviation of 'companyId', company that hiring/inviting the contractor
         required: true
       responses:
         '200':
@@ -3837,8 +3840,7 @@ paths:
               type: object
               required:
                 - customerId
-                - employeeType
-                - jobTypes
+                - tasks
                 - scheduleDate
                 - ticketId
               properties:
@@ -3857,15 +3859,9 @@ paths:
                 equipmentId:
                   type: string
                   description: Id of a equipment for single scan
-                employeeType:
-                  type: number
-                  description: 0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor
-                technicianId:
+                tasks:
                   type: string
-                  description: Required when employeeType = 0. Id of a technician selected from the list received by /getEmployeesForJob api
-                contractorId:
-                  type: string
-                  description: Required when employeeType = 1. Id of a contractor selected from the list received by /getCompanyContracts api
+                  description: 'Json string of the technicians e.g [{"employeeType":"0","contractorId":"61554237278b8615ac410493","technicianId":"","jobTypes":[{"jobTypeId": "617a6362558d3631b4d80c1e"},{"jobTypeId": "617a6362558d3631b4d80c21"}]},{"employeeType":"1","contractorId":"","technicianId":"6156b2af9d728306909553ef","jobTypes":[{"jobTypeId": "615417d264da190a5c3f757e"}, {"jobTypeId": "617a6362558d3631b4d80c1e"}]}]'
                 customerId:
                   type: string
                   description: Id of a customer selected from the list received by /getCustomers api
@@ -3875,9 +3871,6 @@ paths:
                 jobSiteId:
                   type: string
                   description: Id of job site
-                jobTypes:
-                  type: string
-                  description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]. Id of a job type from the list received by /getJobTypes api'
                 description:
                   type: string
                   description: Description of the job
@@ -4186,10 +4179,14 @@ paths:
               required:
                 - jobId
                 - jobTypeId
+                - technicianId
               properties:
                 jobId:
                   type: string
                   description: Id of job to start
+                technicianId:
+                  type: string
+                  description: Id of technician to start
                 jobTypeId:
                   type: string
                   description: Id of task/job type to start
@@ -4218,12 +4215,16 @@ paths:
               type: object
               required:
                 - jobId
+                - technicianId
                 - jobTypeId
                 - status
               properties:
                 jobId:
                   type: string
                   description: Id of job to start
+                technicianId:
+                  type: string
+                  description: Id of technician to update status
                 jobTypeId:
                   type: string
                   description: Id of task/job type to start
@@ -4315,15 +4316,6 @@ paths:
                 description:
                   type: string
                   description: Description of the job
-                employeeType:
-                  type: number
-                  description: 0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor
-                technicianId:
-                  type: string
-                  description: Required when employeeType = 0. Id of assignee (employee to whom the job is assigned)
-                contractorId:
-                  type: string
-                  description: Required when employeeType = 1. Id of contractor (whom the job is assigned)
                 scheduleDate:
                   type: string
                   description: date of job. e.g. 2021-08-15
@@ -4339,9 +4331,8 @@ paths:
                 jobSiteId:
                   type: string
                   description: Id of job site
-                jobTypes:
+                tasks:
                   type: string
-                  description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]. Id of a job type from the list received by /getJobTypes api'
                 startTime:
                   type: string
                   description: Job start time if you want to change it
