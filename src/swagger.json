@@ -6313,7 +6313,7 @@
                   },
                   "tasks": {
                     "type": "string",
-                    "description": "Json string of the technicians e.g [{\"employeeType\":\"0\",\"contractorId\":\"61554237278b8615ac410493\",\"technicianId\":\"\",\"jobTypes\":[{\"jobTypeId\": \"617a6362558d3631b4d80c1e\"},{\"jobTypeId\": \"617a6362558d3631b4d80c21\"}]},{\"employeeType\":\"1\",\"contractorId\":\"\",\"technicianId\":\"6156b2af9d728306909553ef\",\"jobTypes\":[{\"jobTypeId\": \"615417d264da190a5c3f757e\"}, {\"jobTypeId\": \"617a6362558d3631b4d80c1e\"}]}]"
+                    "description": "Json string of the technicians e.g [{\"employeeType\":\"0\",\"contractorId\":\"\",\"technicianId\":\"6156b2af9d728306909553ef\",\"jobTypes\":[{\"jobTypeId\": \"617a6362558d3631b4d80c1e\"},{\"jobTypeId\": \"617a6362558d3631b4d80c21\"}]},{\"employeeType\":\"1\",\"contractorId\":\"61554237278b8615ac410493\",\"technicianId\":\"\",\"jobTypes\":[{\"jobTypeId\": \"615417d264da190a5c3f757e\"}, {\"jobTypeId\": \"617a6362558d3631b4d80c1e\"}]}]"
                   },
                   "customerId": {
                     "type": "string",
