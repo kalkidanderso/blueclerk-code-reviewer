@@ -9,7 +9,7 @@ import {
     sendJobEmailToCustomer, sendReportEmailToCustomer
 } from '../services/aws'
 
-import { Job, IJob, ITask, INewTask, IJobTypesTask, TaskEntry } from '../models/Job'
+import { Job, IJob, ITask, ITaskJobType, TaskEntry } from '../models/Job'
 import { EmailSchedule } from '../models/EmailSchedule'
 import { Company, ICompany } from '../models/Company'
 import { IUser, User } from '../models/User'
@@ -231,8 +231,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         customerPO: params.customerPO ?? parentJob?.customerPO,
         images: images,
         // type: params.jobTypeId ?? parentJob?.type, // TODO: To be deprecated
-        tasks: tasks,
-        // newTasks: tasks,
+        tasks,
         company: companyId,
         description: params.description ?? parentJob?.description,
         createdAt: Date.now(),
@@ -309,19 +308,19 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
         //     select: 'title description sku'
         // })
         .populate({
-            path: 'newTasks.contractor',
+            path: 'tasks.contractor',
             select: 'info.companyName info.companyEmail type'
         })
         .populate({
-            path: 'newTasks.technician',
+            path: 'tasks.technician',
             select: 'profile.displayName auth.email emailPreferences'
         })
         .populate({
-            path: 'newTasks.jobTypes.jobType',
+            path: 'tasks.jobTypes.jobType',
             select: 'title description sku'
         })
         .populate({
-            path: 'newTasks.jobTypes.timeUpdatedBy',
+            path: 'tasks.jobTypes.timeUpdatedBy',
             select: 'profile.displayName'
         })
         .populate('jobSite')
@@ -338,7 +337,7 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             var type: any = job.type && job.type.title
             const tasks: string[] = [];
             // let tasks: string[] = job.tasks.map(task => {
-            //     const jt = <IJobTypesTask>task.jobTypes;
+            //     const jt = <ITaskJobType>task.jobTypes;
             //     return jt.title
             // });
             job.tasks.forEach(task => {
@@ -751,19 +750,21 @@ export const getJobs = (req: Request, res: Response) => {
             populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
         })
         .populate({
+            // TODO: To be deprecated
             path: 'technician',
             select: 'profile.displayName'
         })
         .populate({
-            path: 'newTasks.technician',
+            path: 'tasks.technician',
             select: 'profile.displayName'
         })
         .populate({
+            // TODO: To be deprecated
             path: 'contractor',
             select: 'info.companyName info.companyEmail type'
         })
         .populate({
-            path: 'newTasks.contractor',
+            path: 'tasks.contractor',
             select: 'info.companyName info.companyEmail type'
         })
         .populate({
@@ -775,23 +776,26 @@ export const getJobs = (req: Request, res: Response) => {
             select: '-id -__v'
         })
         .populate({
+            // TODO: To be deprecated
             path: 'type',
             select: 'title description sku'
         })
         .populate({
+            // TODO: To be deprecated
             path: 'tasks.jobType',
             select: 'title description sku'
         })
         .populate({
+            // TODO: To be deprecated
             path: 'tasks.timeUpdatedBy',
             select: 'profile.displayName'
         })
         .populate({
-            path: 'newTasks.jobTypes.jobType',
+            path: 'tasks.jobTypes.jobType',
             select: 'title description sku'
         })
         .populate({
-            path: 'newTasks.jobTypes.timeUpdatedBy',
+            path: 'tasks.jobTypes.timeUpdatedBy',
             select: 'profile.displayName'
         })
         .populate({
@@ -847,11 +851,12 @@ export const getJobs = (req: Request, res: Response) => {
 export const getJobsByTechnicianId = (req: Request, res: Response) => {
 
     const params = req.body
-    Job.find({ newTasks: { technician: params.employeeId } })
+    Job.find({ tasks: { technician: params.employeeId } })
     .populate({
         path: 'ticket',
     })
     .populate({
+        // TODO: To be deprecated
         path: 'technician',
         select: 'profile.displayName'
     })
@@ -872,19 +877,21 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
         select: '-id -__v'
     })
     .populate({
+        // TODO: To be deprecated
         path: 'type',
         select: 'title description sku'
     })
     .populate({
+        // TODO: To be deprecated
         path: 'tasks.jobType',
         select: 'title description sku'
     })
     .populate({
-        path: 'newTasks.jobTypes.jobType',
+        path: 'tasks.jobTypes.jobType',
         select: 'title description sku'
     })
     .populate({
-        path: 'newTasks.technician',
+        path: 'tasks.technician',
         select: 'profile.displayName'
     })
     .populate({
@@ -1032,7 +1039,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
 
     const params = req.body
     let companyId = req.companyId;
-    let jobType: IJobTypesTask;
+    let jobType: ITaskJobType;
 
     const user = <IUser>req.user;
     if (req.otherCompanyId != undefined) {
@@ -1068,7 +1075,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
         })
         .then((job: IJob) => {
             const newTask = job.tasks.find(task => {
-                jobType = <IJobTypesTask>task.jobTypes.find(jobTypeTask => [JobStatus.PENDING, JobStatus.STARTED].includes(jobTypeTask.status));
+                jobType = <ITaskJobType>task.jobTypes.find(jobTypeTask => [JobStatus.PENDING, JobStatus.STARTED].includes(jobTypeTask.status));
                 return jobType
             });
 
@@ -1150,7 +1157,6 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             let dataLinked: any = {};
             let track = job.track ? job.track : [];
             let tasks = job.tasks ? job.tasks : [];
-            let newTasks = job.tasks ? job.tasks : [];
             let trackLinked = linkedJob && linkedJob.track || [];
             let tasksLinked = linkedJob && linkedJob.tasks || [];
             let action = '';
@@ -1235,26 +1241,27 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 case JobStatus.CANCELED:
                 case JobStatus.RESCHEDULED:
                 case JobStatus.INCOMPLETE:
-                    // Search any started tasks on this job
-                    const startedTasks: ITask[] = tasks.filter((task: ITask) => task.status === JobStatus.STARTED);
-                    // Iterate all started tasks and update the status to PAUSED
-                    for (const task of startedTasks) {
-                        await _updateTask({ job, jobTypeTask: jobType, user, params, status: JobStatus.PAUSED });
-                    }
+                    // // Search any started tasks on this job
+                    // const startedTasks: ITask[] = tasks.filter((task: ITask) => task.status === JobStatus.STARTED);
+                    // // Iterate all started tasks and update the status to PAUSED
+                    // for (const task of startedTasks) {
+                    //     await _updateTask({ job, jobTypeTask: jobType, user, params, status: JobStatus.PAUSED });
+                    // }
 
-                    const startedNewTasks: INewTask[] = newTasks.filter((task: INewTask) => task.jobTypes.filter(jobType => jobType.status === JobStatus.STARTED));
-                    for (const newtask of startedNewTasks) {
+                    // Search any started tasks on this job
+                    const startedTasks: ITask[] = tasks.filter((task: ITask) => task.jobTypes.filter((jobType: ITaskJobType) => jobType.status === JobStatus.STARTED));
+                    // Iterate all started tasks and update the status to PAUSED
+                    for (const newtask of startedTasks) {
                         for (const jobTypes of newtask.jobTypes) {
                             await _updateTask({ job, jobTypeTask: jobTypes, user, params, status: JobStatus.PAUSED });
                         }
                     }
 
                     data.tasks = tasks;
-                    data.newTasks = newTasks;
 
                     if (linkedJob) {
                         // Search any started tasks on this parent/sub job
-                        const linkedStartedTasks: ITask[] = tasksLinked.filter((task: ITask) => task.status === JobStatus.STARTED);
+                        const linkedStartedTasks: ITask[] = tasksLinked.filter((task: ITask) => task.jobTypes.filter(jobType => jobType.status === JobStatus.STARTED));
                         // Iterate all started tasks and update the status to PAUSED
                         for (const task of linkedStartedTasks) {
                             await _updateTask({ job: linkedJob, jobTypeTask: jobType, user, params, status: JobStatus.PAUSED });
@@ -1417,7 +1424,7 @@ export const startJobTask = async (req: Request, res: Response) => {
     const job = await Job.findOne({
         _id: params.jobId,
         $or: [{ company: companyId }, { contractor: companyId }]
-    }).populate({ path: 'tasks.jobType', select: 'title' }).populate({ path: 'newTasks.jobTypes.jobType', select: 'title' });
+    }).populate({ path: 'tasks.jobType', select: 'title' }).populate({ path: 'tasks.jobTypes.jobType', select: 'title' });
 
     // Check if job exist and job status is not FINISHED or CANCELED
     if (!job)
@@ -1504,9 +1511,9 @@ export const startJobTask = async (req: Request, res: Response) => {
     let linkedJob = await Job.findOne({
         $or: [{ _id: job.parentJob }, { parentJob: job._id }]
     });
-    let linkedJobType: IJobTypesTask;
+    let linkedJobType: ITaskJobType;
     let linkedTask = linkedJob && linkedJob.tasks.find(task => {
-        linkedJobType = <IJobTypesTask>task.jobTypes.find(jobType => jobType.jobType.toString() === params.jobTypeId);
+        linkedJobType = <ITaskJobType>task.jobTypes.find(jobType => jobType.jobType.toString() === params.jobTypeId);
         return linkedJobType
     });
 
@@ -1549,9 +1556,9 @@ export const updateJobTask = async (req: Request, res: Response) => {
         $or: [{ company: companyId }, { contractor: companyId }]
     })
         .populate({ path: 'tasks.jobType', select: 'title' })
-        .populate({ path: 'newTasks.jobTypes.jobType', select: 'title' })
+        .populate({ path: 'tasks.jobTypes.jobType', select: 'title' })
         .populate({ path: 'customer', select: 'profile.displayName itemTier' })
-        .populate({ path: 'newTasks.jobTypes.technician', select: 'profile.displayName' })
+        .populate({ path: 'tasks.jobTypes.technician', select: 'profile.displayName' })
         .populate({ path: 'technician', select: 'profile.displayName' })
         .populate({ path: 'ticket.customer', select: 'profile.displayName' })
 
@@ -1566,7 +1573,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
     let action;
     let jobStatus = job.status;
 
-    // Find the job type in newTasks object to be started
+    // Find the job type in tasks object to be started
     const task = job.tasks.find(task => task.technician.toString() === params.technicianId);
     const jobTypeTask = task.jobTypes.find((task: any) => task.jobType._id.toString() === params.jobTypeId);
 
@@ -1607,7 +1614,15 @@ export const updateJobTask = async (req: Request, res: Response) => {
 
     action = `|${statusAction} the Job's task: ${jobType.title}|`;
     // To update Job's status based on cummulative of tasks status
-    const allTaskStatus = task.jobTypes.map(newTask => newTask.status);
+    // const allTaskStatus = task.jobTypes.map(newTask => newTask.status);
+    const allTaskStatus: Number[] = [];
+    for (const technician of job.tasks) {
+        for (const task of technician.jobTypes) {
+            allTaskStatus.push(task.status);
+        }
+    }
+
+    console.log('== allTaskStatus:', allTaskStatus);
 
     if (allTaskStatus.every(status => status === 2)) {
         // All new tasks status are FINISHED, Job is FINISHED
@@ -1741,7 +1756,7 @@ export const editJob = async (req: Request, res: Response) => {
             let track = job.track ? job.track : [];
             let trackLinkedJob = linkedJob && linkedJob.track || [];
             let isJobTypesUpdated = false;
-            const jobTypes: IJobTypesTask[] = [];
+            const jobTypes: ITaskJobType[] = [];
             const invalidJobTypes: string[] = [];
             const oldContractor = [];
             const oldTechnician: string | any[] = [];
@@ -2025,10 +2040,12 @@ export const getJobDetails = (req: Request, res: Response) => {
             populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title' }]
         })
         .populate({
+            // TODO: To be deprecated
             path: 'technician',
             select: 'profile.displayName'
         })
         .populate({
+            // TODO: To be deprecated
             path: 'contractor',
             select: 'info.companyName info.companyEmail type'
         })
@@ -2041,15 +2058,24 @@ export const getJobDetails = (req: Request, res: Response) => {
             select: '-id -__v'
         })
         .populate({
+            // TODO: To be deprecated
             path: 'type',
             select: 'title description sku'
         })
         .populate({
-            path: 'tasks.jobType',
+            path: 'tasks.technician',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'tasks.contractor',
+            select: 'info.companyName info.companyEmail type'
+        })
+        .populate({
+            path: 'tasks.jobTypes.jobType',
             select: 'title description sku'
         })
         .populate({
-            path: 'tasks.timeUpdatedBy',
+            path: 'tasks.jobTypes.timeUpdatedBy',
             select: 'profile.displayName'
         })
         .populate({
@@ -2100,6 +2126,7 @@ export const getJobDetails = (req: Request, res: Response) => {
             if (error.message != undefined) {
                 return res.json({ 'status': Status.Error, 'message': error.message })
             } else {
+                console.log('== error:', error);
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
         })
@@ -2435,7 +2462,7 @@ export const updateJobTime = (req: Request, res: Response) => {
 /**
  * To update Task's property when pause, finish, or update the endTime
  */
-const _updateTask = async ({ job, jobTypeTask, user, params, status }: { job: IJob, jobTypeTask: IJobTypesTask, user: IUser, params: any, status: number }) => {
+const _updateTask = async ({ job, jobTypeTask, user, params, status }: { job: IJob, jobTypeTask: ITaskJobType, user: IUser, params: any, status: number }) => {
 
     /**
      * Find item information related to the task/job type,
@@ -2465,7 +2492,7 @@ const _updateTask = async ({ job, jobTypeTask, user, params, status }: { job: IJ
  * To handle task charges and timeSpent,
  * either pause, finish, or update the endTime of FINISHED task
  */
-const _handleTaskCharges = async ({ job, jobTypeTask, item, customer, params, isDeduct }: { job: IJob, jobTypeTask: IJobTypesTask, item: IItem, customer: ICustomer, params: any, isDeduct?: boolean }) => {
+const _handleTaskCharges = async ({ job, jobTypeTask, item, customer, params, isDeduct }: { job: IJob, jobTypeTask: ITaskJobType, item: IItem, customer: ICustomer, params: any, isDeduct?: boolean }) => {
 
     // Find the item tier based on customer assigned item tier
     const tier = item.tiers?.find(t => t.tier?.toString() === customer.itemTier?.toString());
@@ -2518,12 +2545,12 @@ const _handleTaskCharges = async ({ job, jobTypeTask, item, customer, params, is
     return;
 }
 
-const _handleMutltipleTechniciansTasks = async (parentJob: IJob, paramTasks: TaskEntry[], serviceTicket: IServiceTicket, req: Request): Promise<INewTask[]> => {
+const _handleMutltipleTechniciansTasks = async (parentJob: IJob, paramTasks: TaskEntry[], serviceTicket: IServiceTicket, req: Request): Promise<ITask[]> => {
     const params = req.body;
     const invalidJobType: any[] = []
     let jobTypes = serviceTicket.tasks;
     let invalidJobTypes: string[];
-    const tasks: INewTask[] = []
+    const tasks: ITask[] = []
 
     const customer = params.customerId || parentJob && parentJob.customer;
 

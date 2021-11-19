@@ -11,8 +11,8 @@ export interface IJob extends Document {
     jobId: string
     parentJob: Schema.Types.ObjectId | IJob
     ticket: Schema.Types.ObjectId | any
-    technician: Schema.Types.ObjectId | any
-    contractor: Schema.Types.ObjectId
+    technician: Schema.Types.ObjectId | any // TODO: To be deprecated
+    contractor: Schema.Types.ObjectId // TODO: To be deprecated
     customer: Schema.Types.ObjectId | any
     jobLocation: Schema.Types.ObjectId | any
     jobSite: Schema.Types.ObjectId | any
@@ -26,8 +26,7 @@ export interface IJob extends Document {
         updatedAt?: Date
     }[]
     type: Schema.Types.ObjectId | any // TODO: To be deprecated
-    tasks: INewTask[]
-    newTasks: INewTask[]
+    tasks: ITask[]
     company: Schema.Types.ObjectId | any
     equipmentId: string
     description: string
@@ -35,7 +34,7 @@ export interface IJob extends Document {
     comment: string
     createdAt: Date,
     createdBy: Schema.Types.ObjectId,
-    employeeType: boolean
+    employeeType: boolean // TODO: To be deprecated
     // isFixed: boolean
     // hourlyRate: number
     charges: number
@@ -56,27 +55,28 @@ export interface IJob extends Document {
     }[]
 }
 
-export interface ITask extends Document {
-    jobType: Schema.Types.ObjectId | IJobType
-    status?: number
-    charges?: number
-    startTime?: Date
-    tempStartTime?: Date
-    endTime?: Date
-    timeSpent?: number
-    pausedCount?: number
-    timeUpdatedBy?: Schema.Types.ObjectId | IUser
-    timeUpdatedAt?: Date
-    // completeOnTime?: boolean
-    equipmentScanned?: boolean
-    noOfEquipmentScanned?: number
-}
+// TODO: To be removed
+// export interface ITask extends Document {
+//     jobType: Schema.Types.ObjectId | IJobType
+//     status?: number
+//     charges?: number
+//     startTime?: Date
+//     tempStartTime?: Date
+//     endTime?: Date
+//     timeSpent?: number
+//     pausedCount?: number
+//     timeUpdatedBy?: Schema.Types.ObjectId | IUser
+//     timeUpdatedAt?: Date
+//     // completeOnTime?: boolean
+//     equipmentScanned?: boolean
+//     noOfEquipmentScanned?: number
+// }
 
-export interface INewTask extends Document {
+export interface ITask extends Document {
     employeeType?: boolean
     technician?: Schema.Types.ObjectId | any
     contractor?: Schema.Types.ObjectId
-    jobTypes?: IJobTypesTask[]
+    jobTypes?: ITaskJobType[]
 }
 
 export interface TaskEntry {
@@ -85,7 +85,8 @@ export interface TaskEntry {
     contractorId: string
     jobTypes: string[]
 }
-export interface IJobTypesTask extends Document {
+
+export interface ITaskJobType extends Document {
     jobType?: Schema.Types.ObjectId | IJobType
     status?: number
     charges?: number
@@ -129,11 +130,13 @@ const JobSchema = new Schema({
         required: false
     },
     technician: {
+        // TODO: To be deprecated
         type: Schema.Types.ObjectId,
         ref: 'User',
         required: false
     },
     contractor: {
+        // TODO: To be deprecated
         type: Schema.Types.ObjectId,
         ref: 'Company',
         required: false
@@ -174,66 +177,10 @@ const JobSchema = new Schema({
         ref: 'JobType',
         // required: true
     },
-    newTasks: [{
-        _id: false,
-        employeeType: {
-            type: Boolean,
-            default: false
-        },
-        technician: {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
-            required: false
-        },
-        contractor: {
-            type: Schema.Types.ObjectId,
-            ref: 'Company',
-            required: false
-        },
-        jobTypes: [{
-            _id: false,
-            jobType: {
-                type: Schema.Types.ObjectId,
-                ref: 'JobType',
-                // required: true
-            },
-            status: {
-                type: Number,
-                default: 0
-            },
-            charges: {
-                type: Number,
-                default: 0
-            },
-            startTime: Date,
-            tempStartTime: Date,
-            endTime: Date,
-            timeSpent: {
-                type: Number,
-                default: 0
-            },
-            pausedCount: {
-                type: Number,
-                default: 0
-            },
-            timeUpdatedBy: {
-                type: Schema.Types.ObjectId,
-                ref: 'User'
-            },
-            timeUpdatedAt: Date,
-            // completeOnTime: Boolean,
-            equipmentScanned: {
-                type: Boolean,
-                default: false
-            },
-            noOfEquipmentScanned: {
-                type: Number,
-                default: 0
-            }
-        }]
-    }],
     tasks: [{
         _id: false,
+        // employee type 0 for company employee
+        // employee type 1 for external employee
         employeeType: {
             type: Boolean,
             default: false
@@ -325,6 +272,7 @@ const JobSchema = new Schema({
     // employee type 0 for company employee
     // employee type 1 for external employee
     employeeType: {
+        // TODO: To be deprecated
         type: Boolean,
         // default: false
     },

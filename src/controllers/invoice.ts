@@ -13,7 +13,7 @@ import { Customer, ICustomer } from '../models/Customer';
 import { IItem, Item } from '../models/Item';
 import { IPriceTier } from '../models/PriceTier';
 import { IServiceTicket } from '../models/ServiceTicket';
-import { IJob, IJobTypesTask, Job } from '../models/Job';
+import { IJob, ITaskJobType, Job } from '../models/Job';
 import { IJobReport, JobReport } from '../models/JobReport';
 import { IPurchaseOrder, PurchaseOrder } from '../models/PurchaseOrder';
 import { Estimate, IEstimate } from '../models/Estimate';
@@ -998,9 +998,9 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         for (const jobTypeitem of jobTypeitems) {
 
             // Find the job task related to find its timeSpent
-            let jobTypes: IJobTypesTask
+            let jobTypes: ITaskJobType
             const task = job.tasks.find(task => {
-                jobTypes = <IJobTypesTask>task.jobTypes.find(jobType => jobType.jobType.toString() === jobTypeitem.jobType.toString())
+                jobTypes = <ITaskJobType>task.jobTypes.find(jobType => jobType.jobType.toString() === jobTypeitem.jobType.toString())
                 return jobTypes;
             });
             let itemTier;
@@ -1656,13 +1656,10 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
             path: 'job',
             populate: [
                 { path: 'type', select: 'title description sku' },
-                // { path: 'tasks.jobType', select: 'title description sku'},
-                { path: 'newTasks.jobTypes.jobType', select: 'title description sku'},
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku'},
                 { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
-                // { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
-                // { path: 'contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
-                { path: 'newTasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
-                { path: 'newTasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
+                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
                 { path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId' }},
                 { path: 'jobLocation', select: 'name location address' },
                 { path: 'jobSite', select: 'name location address' }
