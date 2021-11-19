@@ -688,11 +688,21 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
     await Job.find(query).sort({ _id: -1 })
         .populate('ticket')
         .populate({
+            // TODO: To be deprecated
             path: 'technician',
             select: 'profile contact'
         })
         .populate({
+            // TODO: To be deprecated
             path: 'contractor',
+            select: 'info type contact'
+        })
+        .populate({
+            path: 'tasks.technician',
+            select: 'profile contact'
+        })
+        .populate({
+            path: 'tasks.contractor',
             select: 'info type contact'
         })
         .populate({
@@ -700,15 +710,26 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
             select: 'info.email auth.email profile address location contactName contact'
         })
         .populate({
+            // TODO: To be deprecated
             path: 'type',
             select: 'title description sku'
         })
         .populate({
+            // TODO: To be deprecated
             path: 'tasks.jobType',
             select: 'title description sku'
         })
         .populate({
+            // TODO: To be deprecated
             path: 'tasks.timeUpdatedBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'tasks.jobTypes.jobType',
+            select: 'title description sku'
+        })
+        .populate({
+            path: 'tasks.jobTypes.timeUpdatedBy',
             select: 'profile.displayName'
         })
         .populate({
@@ -851,70 +872,70 @@ export const getJobs = (req: Request, res: Response) => {
 export const getJobsByTechnicianId = (req: Request, res: Response) => {
 
     const params = req.body
-    Job.find({ tasks: { technician: params.employeeId } })
-    .populate({
-        path: 'ticket',
-    })
-    .populate({
-        // TODO: To be deprecated
-        path: 'technician',
-        select: 'profile.displayName'
-    })
-    .populate({
-        path: 'jobLocation',
-        select: 'name address location'
-    })
-    .populate({
-        path: 'jobSite',
-        select: 'name address location'
-    })
-    .populate({
-        path: 'customer',
-        select: 'info.email auth.email profile.displayName address location contactName'
-    })
-    .populate({
-        path: 'customerContactId',
-        select: '-id -__v'
-    })
-    .populate({
-        // TODO: To be deprecated
-        path: 'type',
-        select: 'title description sku'
-    })
-    .populate({
-        // TODO: To be deprecated
-        path: 'tasks.jobType',
-        select: 'title description sku'
-    })
-    .populate({
-        path: 'tasks.jobTypes.jobType',
-        select: 'title description sku'
-    })
-    .populate({
-        path: 'tasks.technician',
-        select: 'profile.displayName'
-    })
-    .populate({
-        path: 'tasks.timeUpdatedBy',
-        select: 'profile.displayName'
-    })
-    .populate({
-        path: 'company',
-        select: 'info.companyName'
-    })
-    .populate({
-        path: 'createdBy',
-        select: 'profile.displayName'
-    })
-    .exec((err: any, jobs: IJob[])=>{
+    Job.find({ $or: [{ "tasks.technician": params.employeeId }, { technician: params.employeeId }] })
+        .populate({
+            path: 'ticket',
+        })
+        .populate({
+            // TODO: To be deprecated
+            path: 'technician',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'jobLocation',
+            select: 'name address location'
+        })
+        .populate({
+            path: 'jobSite',
+            select: 'name address location'
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address location contactName'
+        })
+        .populate({
+            path: 'customerContactId',
+            select: '-id -__v'
+        })
+        .populate({
+            // TODO: To be deprecated
+            path: 'type',
+            select: 'title description sku'
+        })
+        .populate({
+            // TODO: To be deprecated
+            path: 'tasks.jobType',
+            select: 'title description sku'
+        })
+        .populate({
+            path: 'tasks.jobTypes.jobType',
+            select: 'title description sku'
+        })
+        .populate({
+            path: 'tasks.technician',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'tasks.timeUpdatedBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'company',
+            select: 'info.companyName'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'profile.displayName'
+        })
+        .exec((err: any, jobs: IJob[])=>{
 
-        if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            }
+
+            return res.json({'status': Status.Success, 'jobs': jobs})
+
         }
-
-        return res.json({'status': Status.Success, 'jobs': jobs})
-
-    }
     )
 }
 
@@ -2287,12 +2308,17 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
     const startOfDay = moment().startOf('day').utc();
     const endOfDay = moment().endOf('day').utc();
 
-    Job.find({ technician: params.employeeId, scheduleDate: { $gte: date, $lte: endDate } })
+    Job.find({ $or: [{ "tasks.technician": params.employeeId }, { technician: params.employeeId }], scheduleDate: { $gte: date, $lte: endDate } })
         .populate({
             path: 'ticket',
         })
         .populate({
+            // TODO: To be deprecated
             path: 'technician',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'tasks.technician',
             select: 'profile.displayName'
         })
         .populate({
@@ -2312,15 +2338,26 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
             select: '-id -__v'
         })
         .populate({
+            // TODO: To be deprecated
             path: 'type',
             select: 'title description sku'
         })
         .populate({
+            // TODO: To be deprecated
             path: 'tasks.jobType',
             select: 'title description sku'
         })
         .populate({
+            path: 'tasks.jobTypes.jobType',
+            select: 'title description sku'
+        })
+        .populate({
+            // TODO: To be deprecated
             path: 'tasks.timeUpdatedBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'tasks.jobTypes.timeUpdatedBy',
             select: 'profile.displayName'
         })
         .populate({
