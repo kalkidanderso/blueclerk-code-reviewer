@@ -893,10 +893,17 @@ export const sendScheduledJobEmailToAssignee = function(jobs: IJob[], to: string
       let contact: IContact = ticket.customerContactId;
       var type: any = job.type && job.type.title
       // let jobTypes: string[] = job.jobTypes.map(jts => {
-      let jobTypes: string[] = job.tasks.map(task => {
-          const jt = <IJobType>task.jobType;
+      let jobTypes: string[]
+      job.tasks.forEach(task => {
+        jobTypes = task.jobTypes.map(jobType => {
+          const jt = <IJobType>jobType.jobType;
           return jt.title
+        });
       });
+      // let jobTypes: string[] = job.tasks.map(task => {
+      //     const jt = <IJobType>task.jobType;
+      //     return jt.title
+      // });
       const jobTitles = jobTypes.length > 0 ? jobTypes.join(', ') : type;
       let coordinates = [];
       let contactDetails: any = {};

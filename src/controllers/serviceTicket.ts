@@ -598,7 +598,9 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                                 job.customerPO = customerPO;
                                 job.track = jobTrack;
                                 if (isJobTypesUpdated) {
-                                    job.tasks = <ITask[]>jobTypes;
+                                    job.tasks.forEach(task => {
+                                        task.jobTypes = <ITask[]>jobTypes;
+                                    });
                                 }
                                 // Save the job
                                 job.save();

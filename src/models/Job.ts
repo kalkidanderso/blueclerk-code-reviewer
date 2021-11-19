@@ -26,7 +26,7 @@ export interface IJob extends Document {
         updatedAt?: Date
     }[]
     type: Schema.Types.ObjectId | any // TODO: To be deprecated
-    tasks: ITask[]
+    tasks: INewTask[]
     newTasks: INewTask[]
     company: Schema.Types.ObjectId | any
     equipmentId: string
@@ -73,9 +73,9 @@ export interface ITask extends Document {
 }
 
 export interface INewTask extends Document {
-    employeeType: boolean
-    technician: Schema.Types.ObjectId | any
-    contractor: Schema.Types.ObjectId
+    employeeType?: boolean
+    technician?: Schema.Types.ObjectId | any
+    contractor?: Schema.Types.ObjectId
     jobTypes?: IJobTypesTask[]
 }
 
@@ -86,7 +86,7 @@ export interface TaskEntry {
     jobTypes: string[]
 }
 export interface IJobTypesTask extends Document {
-    jobType: Schema.Types.ObjectId | IJobType
+    jobType?: Schema.Types.ObjectId | IJobType
     status?: number
     charges?: number
     startTime?: Date
@@ -234,44 +234,61 @@ const JobSchema = new Schema({
     }],
     tasks: [{
         _id: false,
-        jobType: {
-            type: Schema.Types.ObjectId,
-            ref: 'JobType',
-            required: true
-        },
-        status: {
-            type: Number,
-            default: 0
-        },
-        charges: {
-            type: Number,
-            default: 0
-        },
-        startTime: Date,
-        tempStartTime: Date,
-        endTime: Date,
-        timeSpent: {
-            type: Number,
-            default: 0
-        },
-        pausedCount: {
-            type: Number,
-            default: 0
-        },
-        timeUpdatedBy: {
-            type: Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        timeUpdatedAt: Date,
-        // completeOnTime: Boolean,
-        equipmentScanned: {
+        employeeType: {
             type: Boolean,
             default: false
         },
-        noOfEquipmentScanned: {
-            type: Number,
-            default: 0
-        }
+        technician: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: false
+        },
+        contractor: {
+            type: Schema.Types.ObjectId,
+            ref: 'Company',
+            required: false
+        },
+        jobTypes: [{
+            _id: false,
+            jobType: {
+                type: Schema.Types.ObjectId,
+                ref: 'JobType',
+                // required: true
+            },
+            status: {
+                type: Number,
+                default: 0
+            },
+            charges: {
+                type: Number,
+                default: 0
+            },
+            startTime: Date,
+            tempStartTime: Date,
+            endTime: Date,
+            timeSpent: {
+                type: Number,
+                default: 0
+            },
+            pausedCount: {
+                type: Number,
+                default: 0
+            },
+            timeUpdatedBy: {
+                type: Schema.Types.ObjectId,
+                ref: 'User'
+            },
+            timeUpdatedAt: Date,
+            // completeOnTime: Boolean,
+            equipmentScanned: {
+                type: Boolean,
+                default: false
+            },
+            noOfEquipmentScanned: {
+                type: Number,
+                default: 0
+            }
+        }]
     }],
     company: {
         type: Schema.Types.ObjectId,
@@ -309,7 +326,7 @@ const JobSchema = new Schema({
     // employee type 1 for external employee
     employeeType: {
         type: Boolean,
-        default: false
+        // default: false
     },
     // isFixed: {
     //     type: Boolean,
