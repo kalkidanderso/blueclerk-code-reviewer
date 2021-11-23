@@ -927,16 +927,16 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
             path: 'createdBy',
             select: 'profile.displayName'
         })
-        .exec((err: any, jobs: IJob[])=>{
+        .exec((err: any, jobs: IJob[]) => {
 
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            return res.json({'status': Status.Success, 'jobs': jobs})
+            return res.json({ 'status': Status.Success, 'jobs': jobs })
 
         }
-    )
+        )
 }
 
 
@@ -1488,7 +1488,7 @@ export const startJobTask = async (req: Request, res: Response) => {
     if (jobTypeTask) {
         if (jobTypeTask.status === JobStatus.STARTED)
             return res.json({ status: Status.Error, message: `${Messages.TaskCannotBeStarted} started.` })
-    
+
         if (jobTypeTask.status === JobStatus.FINISHED)
             return res.json({ status: Status.Error, message: `${Messages.TaskCannotBeStarted} finished` });
 
@@ -1643,8 +1643,6 @@ export const updateJobTask = async (req: Request, res: Response) => {
         }
     }
 
-    console.log('== allTaskStatus:', allTaskStatus);
-
     if (allTaskStatus.every(status => status === 2)) {
         // All new tasks status are FINISHED, Job is FINISHED
         job.endTime = new Date();
@@ -1734,7 +1732,6 @@ export const editJob = async (req: Request, res: Response) => {
         paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
     }
 
-
     var companyId = req.companyId;
     const user = <IUser>req.user;
     if (req.otherCompanyId != undefined) {
@@ -1773,215 +1770,116 @@ export const editJob = async (req: Request, res: Response) => {
             }
 
             let action = '';
-            let index = 0;
             let track = job.track ? job.track : [];
             let trackLinkedJob = linkedJob && linkedJob.track || [];
             let isJobTypesUpdated = false;
+            // let taskTechnician: ITask
             const jobTypes: ITaskJobType[] = [];
             const invalidJobTypes: string[] = [];
-            const oldContractor = [];
-            const oldTechnician: string | any[] = [];
+            const serviceTicket = await ServiceTicket.findById(job.ticket);
 
-            for (const paramTask of paramTasks) {
-                let contractor, technician;
-                if (index < job.tasks.length) {
-                    const taskTechnician = job.tasks.find(task => task.technician.toString() === paramTask.technicianId);
-                    if (paramTask.contractorId && !paramTask.technicianId) {
-                        contractor = await Company.findOne({ _id: paramTask.contractorId });
-                    }
-                    if (!paramTask.contractorId && paramTask.technicianId) {
-                        technician = await User.findOne({ _id: paramTask.technicianId || contractor?.admin });
-                    }
-                    const employeeType = paramTask.employeeType === undefined || paramTask.employeeType === null
-                        ? taskTechnician.employeeType
-                        : paramTask.employeeType === 'false' || paramTask.employeeType === '0'
-                            ? false
-                            : !!paramTask.employeeType;
-                    if (
-                        employeeType !== taskTechnician.employeeType
-                        || technician?._id?.toString() !== taskTechnician.technician?.toString()
-                        || contractor?._id?.toString() !== taskTechnician.contractor?.toString()
-                    ) {
-                        if (![JobStatus.PENDING, JobStatus.RESCHEDULED, JobStatus.INCOMPLETE].includes(job.status)) {
-                            return res.json({ 'status': Status.Error, 'message': 'Cannot update assignee for a non PENDING/RESCHEDULED/INCOMPLETE job' });
-                        }
-                        if (!contractor && !technician) {
-                            return res.json({ 'status': Status.Error, 'message': 'Contractor/Technician not found' });
-                        }
-                        // Manage job's contractor and technician
-                        job.tasks[index].employeeType = employeeType;
-                        job.tasks[index].contractor = contractor?._id;
-                        job.tasks[index].technician = technician?._id || contractor?.admin;
-                        action += '|Updated Assignee|';
-                    }
-
-                    const jobTypeTask = paramTask.jobTypes;
-
-                    // Save the old schedule date to handle job on the job route
-                    const oldTaskTechnician = job.tasks[index].technician;
-                    const oldTaskContractor = job.tasks[index].contractor;
-                    oldTechnician.push(oldTaskTechnician);
-                    oldContractor.push(oldTaskContractor);
-
-                    job.scheduleDate = params.scheduleDate;
-                    job.description = params.description;
-                    if (linkedJob) {
-                        linkedJob.scheduleDate = params.scheduleDate;
-                        linkedJob.description = params.description;
-                    }
-
-                    let newStartTime: any = null
-                    let newEndTime: any = null
-                    let date;
-
-                    if (params.scheduledStartTime) {
-                        date = new Date(params.scheduleDate)
-                        newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
-                        if (newStartTime != job.scheduledStartTime) {
-                            action += '|Updated ScheduledStartTime|';
-                        }
-                        job.scheduledStartTime = newStartTime
-                        if (linkedJob) { linkedJob.scheduledStartTime = newStartTime; }
-                    }
-
-                    if (params.scheduledEndTime) {
-                        date = new Date(params.scheduleDate)
-                        newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
-                        if (newEndTime != job.scheduledEndTime) {
-                            action += '|Updated ScheduledEndTime|';
-                        }
-                        job.scheduledEndTime = newEndTime
-                        if (linkedJob) { linkedJob.scheduledEndTime = newEndTime; }
-                    }
-
-                    if (params.equipmentId != undefined && params.equipmentId !== '""') {
-                        if (params.equipmentId != job.equipmentId) {
-                            action += '|Updated EquipmentId|';
-                        }
-                        job.equipmentId = params.equipmentId
-                        if (linkedJob) { linkedJob.equipmentId = params.equipmentId; }
-                    }
-
-                    if (params.jobLocationId) {
-                        if (params.jobLocationId != job.jobLocation) {
-                            action += '|Updated JobLocationId|';
-                        }
-                        job.jobLocation = params.jobLocationId
-                        if (linkedJob) { linkedJob.jobLocation = params.jobLocationId; }
-                    }
-
-                    if (params.jobSiteId) {
-                        if (params.jobSiteId != job.jobSite) {
-                            action += '|Updated JobSiteId|';
-                        }
-                        job.jobSite = params.jobSiteId
-                        if (linkedJob) { linkedJob.jobSite = params.jobSiteId; }
-                    }
-
-                    if (params.customerContactId) {
-                        if (params.customerContactId !== job.customerContactId) {
-                            action += '|Updated Contact Associated|';
-                        }
-                        job.customerContactId = params.customerContactId;
-                        if (linkedJob) { linkedJob.customerContactId = params.customerContactId; }
-                    }
-
-                    if (params.customerPO) {
-                        if (params.customerPO !== job.customerPO) {
-                            action += '|Updated Customer PO|';
-                        }
-                        job.customerPO = params.customerPO;
-                        if (linkedJob) { linkedJob.customerPO = params.customerPO; }
-                    }
-
-                    if (imagesUrl?.length) {
-                        if (JSON.stringify(imagesUrl) !== JSON.stringify(job.images)) {
-                            action += '|Updated image|';
-                        }
-
-                        imagesUrl.forEach(imageUrl => {
-                            job.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() });
-                            if (linkedJob) { linkedJob.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }) }
-                        });
-                    }
-
-                    //=== HANDLE params jobTypes
-                    let currentJobTypes: any = job.tasks[index].jobTypes;
-
-                    try {
-                        // Call JobType's function to handle Job Types JSON params
-                        const handleJobTypes = await _handleJobTypesJson(job.customer, JSON.stringify(jobTypeTask), currentJobTypes);
-
-                        jobTypes.push(...handleJobTypes.jobTypes);
-                        invalidJobTypes.push(...handleJobTypes.invalidJobTypes);
-                    } catch (error) {
-                        return res.json({ status: Status.Error, message: error.message });
-                    }
-
-                    // Check if jobTypes changed or not
-                    if (JSON.stringify(currentJobTypes) !== JSON.stringify(jobTypes)) {
-                        action += '|Updated JobTypes|';
-                        isJobTypesUpdated = true;
-                    }
-
-                    job.tasks[index].jobTypes = jobTypes;
-                    if (linkedJob) { linkedJob.tasks[index].jobTypes = jobTypes };
-                    //=== END HANDLE params jobTypes
-
-                    if (job.status == JobStatus.RESCHEDULED) {
-                        job.status = JobStatus.PENDING;
-                        if (linkedJob) { linkedJob.status = JobStatus.PENDING; }
-                        action += '|Job rescheduled|';
-                    }
-
-                    if (action !== '') {
-                        track.push({
-                            user: user._id,
-                            action,
-                            date: new Date()
-                        });
-                    }
-
-                    // Manage linked job status & track
-                    if (isParentJob && employeeType != undefined && (oldTaskContractor != paramTask.contractorId)) {
-                        //  Mark sub job to be CLOSED as the contractor is updated
-                        if (linkedJob) {
-                            linkedJob.status = JobStatus.CANCELED;
-                            trackLinkedJob.push({
-                                user: user._id,
-                                action: '|Canceling the job|',
-                                date: new Date()
-                            });
-                        }
-                    } else if (!isParentJob && employeeType != undefined && (oldTaskContractor != paramTask.contractorId)) {
-                        /**
-                         * This is sub job update that update its assignee,
-                         * hence will not update the parent job to CLOSED,
-                         * and not update the parent job's track
-                         */
-                        action = action.replace('|Updated Assignee|', '');
-                        if (action != '') {
-                            trackLinkedJob.push({
-                                user: user._id,
-                                action,
-                                date: new Date()
-                            });
-                        }
-                    } else {
-                        if (action !== '') {
-                            trackLinkedJob.push({
-                                user: user._id,
-                                action,
-                                date: new Date()
-                            });
-                        }
-                    }
-
-                    index += 1;
-                }
+            if (![JobStatus.PENDING, JobStatus.RESCHEDULED, JobStatus.INCOMPLETE].includes(job.status)) {
+                return res.json({ 'status': Status.Error, 'message': 'Cannot update assignee for a non PENDING/RESCHEDULED/INCOMPLETE job' });
             }
 
-            const oldScheduleDate = job.scheduleDate;
+            const tasks = await _handleMutltipleTechniciansTasks(job, paramTasks, serviceTicket, req)
+            job.tasks = tasks;
+            job.scheduleDate = params.scheduleDate;
+            job.description = params.description;
+            if (linkedJob) {
+                linkedJob.scheduleDate = params.scheduleDate;
+                linkedJob.description = params.description;
+            }
+
+            let newStartTime: any = null
+            let newEndTime: any = null
+            let date;
+
+            if (params.scheduledStartTime) {
+                date = new Date(params.scheduleDate)
+                newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
+                if (newStartTime != job.scheduledStartTime) {
+                    action += '|Updated ScheduledStartTime|';
+                }
+                job.scheduledStartTime = newStartTime
+                if (linkedJob) { linkedJob.scheduledStartTime = newStartTime; }
+            }
+
+            if (params.scheduledEndTime) {
+                date = new Date(params.scheduleDate)
+                newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
+                if (newEndTime != job.scheduledEndTime) {
+                    action += '|Updated ScheduledEndTime|';
+                }
+                job.scheduledEndTime = newEndTime
+                if (linkedJob) { linkedJob.scheduledEndTime = newEndTime; }
+            }
+
+            if (params.equipmentId != undefined && params.equipmentId !== '""') {
+                if (params.equipmentId != job.equipmentId) {
+                    action += '|Updated EquipmentId|';
+                }
+                job.equipmentId = params.equipmentId
+                if (linkedJob) { linkedJob.equipmentId = params.equipmentId; }
+            }
+
+            if (params.jobLocationId) {
+                if (params.jobLocationId != job.jobLocation) {
+                    action += '|Updated JobLocationId|';
+                }
+                job.jobLocation = params.jobLocationId
+                if (linkedJob) { linkedJob.jobLocation = params.jobLocationId; }
+            }
+
+            if (params.jobSiteId) {
+                if (params.jobSiteId != job.jobSite) {
+                    action += '|Updated JobSiteId|';
+                }
+                job.jobSite = params.jobSiteId
+                if (linkedJob) { linkedJob.jobSite = params.jobSiteId; }
+            }
+
+            if (params.customerContactId) {
+                if (params.customerContactId !== job.customerContactId) {
+                    action += '|Updated Contact Associated|';
+                }
+                job.customerContactId = params.customerContactId;
+                if (linkedJob) { linkedJob.customerContactId = params.customerContactId; }
+            }
+
+            if (params.customerPO) {
+                if (params.customerPO !== job.customerPO) {
+                    action += '|Updated Customer PO|';
+                }
+                job.customerPO = params.customerPO;
+                if (linkedJob) { linkedJob.customerPO = params.customerPO; }
+            }
+
+            if (imagesUrl?.length) {
+                if (JSON.stringify(imagesUrl) !== JSON.stringify(job.images)) {
+                    action += '|Updated image|';
+                }
+
+                imagesUrl.forEach(imageUrl => {
+                    job.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() });
+                    if (linkedJob) { linkedJob.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }) }
+                });
+            }
+
+            if (job.status == JobStatus.RESCHEDULED) {
+                job.status = JobStatus.PENDING;
+                if (linkedJob) { linkedJob.status = JobStatus.PENDING; }
+                action += '|Job rescheduled|';
+            }
+
+            if (action !== '') {
+                track.push({
+                    user: user._id,
+                    action,
+                    date: new Date()
+                });
+            }
+
             job.track = track;
             if (linkedJob) { linkedJob.track = trackLinkedJob; }
             if (job.ticket) {
@@ -2147,7 +2045,6 @@ export const getJobDetails = (req: Request, res: Response) => {
             if (error.message != undefined) {
                 return res.json({ 'status': Status.Error, 'message': error.message })
             } else {
-                console.log('== error:', error);
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
         })
@@ -2608,8 +2505,10 @@ const _handleMutltipleTechniciansTasks = async (parentJob: IJob, paramTasks: Tas
             taskTechnician = technician?._id;
         }
 
+        const paramTechnician = paramTask.technicianId || taskContractor.admin.toString();
+        const technician = parentJob?.tasks.find(task => task.technician.toString() === paramTechnician);
         const paramsemployeeType = paramTask.employeeType === undefined || paramTask.employeeType === null
-            ? false
+            ? technician?.employeeType || false
             : paramTask.employeeType === 'false' || paramTask.employeeType === '0'
                 ? false
                 : !!paramTask.employeeType;
