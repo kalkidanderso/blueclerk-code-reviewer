@@ -182,7 +182,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
     }
     const customer = params.customerId || parentJob && parentJob.customer;
 
-    const tasks = await _handleMutltipleTechniciansTasks(parentJob, paramTasks, serviceTicket, req);
+    const tasks = await _handleMutltipleTechniciansTasks({ req, parentJob, paramTasks, serviceTicket });
 
     let track = [];
     let action = '|Created A Job|';
@@ -271,8 +271,11 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
                 return next(req, res, Messages.GenericError, null, null)
             }
 
-            // Add the new job to the existing job route on the scheduleDate
-            await _addOrRemoveJobRoutes(job.technician, job.scheduleDate, 'ADD', job._id);
+            job.tasks.forEach(async (task) => {
+                // Add the new job to the existing job route on the scheduleDate
+                // await _addOrRemoveJobRoutes(job.technician, job.scheduleDate, 'ADD', job._id);
+                await _addOrRemoveJobRoutes(task.technician, job.scheduleDate, 'ADD', job._id);
+            });
 
             scheduleEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => {
                 return next(req, res, null, newJob, invalidJobType)
@@ -661,7 +664,7 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
         companyId = req.otherCompanyId
     }
     let query: any = {};
-    query['$or'] = [{ contractor: companyId }, { company: companyId }];
+    query['$or'] = [{ contractor: companyId }, { 'tasks.contractor': companyId }, { company: companyId }];
     if (todaysJobs === "true") {
         let date = moment().startOf('day');
         let endDate = moment().endOf('day');
@@ -765,7 +768,7 @@ export const getJobs = (req: Request, res: Response) => {
         companyId = req.otherCompanyId;
     }
 
-    Job.find({ $or: [{ contractor: companyId }, { company: companyId }] })
+    Job.find({ $or: [{ tasks: { contractor: companyId } }, { contractor: companyId }, { company: companyId }] })
         .populate({
             path: 'ticket',
             populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
@@ -913,7 +916,7 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
         })
         .populate({
             path: 'tasks.technician',
-            select: 'profile.displayName'
+            select: 'profile.displayName contact info'
         })
         .populate({
             path: 'tasks.timeUpdatedBy',
@@ -1095,25 +1098,19 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             populate: { path: 'customer', select: 'profile.displayName' }
         })
         .then((job: IJob) => {
-            const newTask = job.tasks.find(task => {
-                jobType = <ITaskJobType>task.jobTypes.find(jobTypeTask => [JobStatus.PENDING, JobStatus.STARTED].includes(jobTypeTask.status));
-                return jobType
-            });
 
             if (job == undefined) {
                 throw new Error("Invalid job id")
             }
 
-            if (Number(params.status) === JobStatus.FINISHED && job.tasks?.find(task => {
-                const jobType = task.jobTypes.find(jobType => [JobStatus.PENDING, JobStatus.STARTED].includes(jobType.status))
-                return jobType
-            })) {
-                throw new Error(`You can't finish this job, it still has a PENDING or STARTED tasks`);
-            }
+            // const pendingStartedTasks = job.tasks.find(task => {
+            //     jobType = <ITaskJobType>task.jobTypes.find(jobTypeTask => [JobStatus.PENDING, JobStatus.STARTED].includes(jobTypeTask.status));
+            //     return jobType
+            // });
 
-            if (Number(params.status) === JobStatus.FINISHED && newTask) {
-                throw new Error(`You can't finish this job, it still has a PENDING or STARTED tasks`);
-            }
+            // if (Number(params.status) === JobStatus.FINISHED && pendingStartedTasks) {
+            //     throw new Error(`You can't finish this job, it still has a PENDING or STARTED tasks`);
+            // }
 
             const itemPromise = Item.findOne({ jobType: job.type })
             let linkedJobPromise;
@@ -1461,8 +1458,8 @@ export const startJobTask = async (req: Request, res: Response) => {
     // const startedTask = job.tasks.find(task => task.status === JobStatus.STARTED);
     // Find the technician on tasks
     const tasks = job.tasks.find(task => task.technician.toString() === params.technicianId);
-    tasks.jobTypes.forEach((jobTypes: any) => {
-        if (jobTypes.jobType._id.toString() === params.jobTypeId && jobTypes.status === JobStatus.STARTED) {
+    tasks?.jobTypes.forEach((jobTypes: any) => {
+        if (jobTypes?.status === JobStatus.STARTED) {
             startedJobTypes.push(jobTypes.jobType)
         }
     });
@@ -1472,7 +1469,6 @@ export const startJobTask = async (req: Request, res: Response) => {
         startedJobTypes.forEach(jobType => startedJobTypeTasks = jobType.title);
         return res.json({ status: Status.Error, message: `You can't start this task, you already have a started task: ${startedJobTypeTasks}.` });
     }
-
 
     taskOutput = tasks
 
@@ -1773,17 +1769,24 @@ export const editJob = async (req: Request, res: Response) => {
             let track = job.track ? job.track : [];
             let trackLinkedJob = linkedJob && linkedJob.track || [];
             let isJobTypesUpdated = false;
-            // let taskTechnician: ITask
             const jobTypes: ITaskJobType[] = [];
             const invalidJobTypes: string[] = [];
+
+            // Get service ticket
             const serviceTicket = await ServiceTicket.findById(job.ticket);
 
-            if (![JobStatus.PENDING, JobStatus.RESCHEDULED, JobStatus.INCOMPLETE].includes(job.status)) {
-                return res.json({ 'status': Status.Error, 'message': 'Cannot update assignee for a non PENDING/RESCHEDULED/INCOMPLETE job' });
+            // Proceed tasks when params.tasks is available and check the job status
+            if (params.tasks) {
+                if (![JobStatus.PENDING, JobStatus.RESCHEDULED, JobStatus.INCOMPLETE].includes(job.status)) {
+                    return res.json({ 'status': Status.Error, 'message': 'Cannot update for a non PENDING/RESCHEDULED/INCOMPLETE job' });
+                }
+
+                // Handle param technician
+                const tasks = await _handleMutltipleTechniciansTasks({ req, parentJob: job, paramTasks, serviceTicket });
+                job.tasks = tasks;
+                action += `|Updated Tasks|`;
             }
 
-            const tasks = await _handleMutltipleTechniciansTasks(job, paramTasks, serviceTicket, req)
-            job.tasks = tasks;
             job.scheduleDate = params.scheduleDate;
             job.description = params.description;
             if (linkedJob) {
@@ -1953,7 +1956,7 @@ export const getJobDetails = (req: Request, res: Response) => {
         companyId = req.otherCompanyId
     }
 
-    Job.findOne({ _id: params.jobId, $or: [{ contractor: companyId }, { company: companyId }] })
+    Job.findOne({ _id: params.jobId, $or: [{ contractor: companyId }, { 'tasks.contractor': companyId }, { company: companyId }] })
         .populate({
             path: 'ticket',
             populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title' }]
@@ -2216,7 +2219,7 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
         })
         .populate({
             path: 'tasks.technician',
-            select: 'profile.displayName'
+            select: 'profile.displayName contact info'
         })
         .populate({
             path: 'jobLocation',
@@ -2479,7 +2482,18 @@ const _handleTaskCharges = async ({ job, jobTypeTask, item, customer, params, is
     return;
 }
 
-const _handleMutltipleTechniciansTasks = async (parentJob: IJob, paramTasks: TaskEntry[], serviceTicket: IServiceTicket, req: Request): Promise<ITask[]> => {
+const _handleMutltipleTechniciansTasks = async ({
+    req,
+    parentJob,
+    paramTasks,
+    serviceTicket
+}: {
+    req: Request,
+    parentJob: IJob,
+    paramTasks: TaskEntry[],
+    serviceTicket: IServiceTicket
+}): Promise<ITask[]> => {
+
     const params = req.body;
     const invalidJobType: any[] = []
     let jobTypes = serviceTicket.tasks;
@@ -2525,7 +2539,6 @@ const _handleMutltipleTechniciansTasks = async (parentJob: IJob, paramTasks: Tas
             employeeType: paramsemployeeType,
             technician: taskTechnician,
             contractor: taskContractor?._id,
-            // jobTypes: []
         };
 
         //=== HANDLE params jobTypes
