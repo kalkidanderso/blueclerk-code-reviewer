@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb';
 import { CronJob } from 'cron';
 import moment from 'moment';
 import momentTz from 'moment-timezone';
+import * as _ from 'lodash';
 import { Status, Messages, JobStatus, ServiceTicketStatus, NotificationTypes, SocketEvents } from '../common/constants'
 import {
     sendJobEmailToAssignee,
@@ -271,12 +272,11 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
                 return next(req, res, Messages.GenericError, null, null)
             }
 
-            job.tasks.forEach(async (task) => {
+            for (const task of job.tasks) {
                 // Add the new job to the existing job route on the scheduleDate
                 // await _addOrRemoveJobRoutes(job.technician, job.scheduleDate, 'ADD', job._id);
                 await _addOrRemoveJobRoutes(task.technician, job.scheduleDate, 'ADD', job._id);
-            });
-
+            }
             scheduleEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => {
                 return next(req, res, null, newJob, invalidJobType)
             });
@@ -1772,8 +1772,9 @@ export const editJob = async (req: Request, res: Response) => {
             const jobTypes: ITaskJobType[] = [];
             const invalidJobTypes: string[] = [];
 
-            // Get service ticket
+            const oldTechnicians = job.tasks.map(task => task.technician.toString());
             const serviceTicket = await ServiceTicket.findById(job.ticket);
+            const oldScheduleDate = job.scheduleDate;
 
             // Proceed tasks when params.tasks is available and check the job status
             if (params.tasks) {
@@ -1909,6 +1910,23 @@ export const editJob = async (req: Request, res: Response) => {
 
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+
+                    const newTechnicians = job?.tasks.map(task => task.technician.toString());
+                    const removedTechnician = _.difference(oldTechnicians, newTechnicians);
+                    const addedTechnician = _.difference(newTechnicians, oldTechnicians);
+
+                    if (
+                        !moment(oldScheduleDate).isSame(moment(job.scheduleDate), 'day') ||
+                        _.difference(newTechnicians, oldTechnicians).length
+                    ) {
+                        removedTechnician.forEach(async (oldTechnician) => {
+                            await _addOrRemoveJobRoutes(oldTechnician, new Date(oldScheduleDate), 'REMOVE', job._id);
+                        });
+
+                        addedTechnician.forEach(async (newTechnician) => {
+                            await _addOrRemoveJobRoutes(newTechnician, new Date(job.scheduleDate), 'ADD', job._id);
+                        });
                     }
 
                     if (!linkedJob) {
