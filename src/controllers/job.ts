@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb';
 import { CronJob } from 'cron';
 import moment from 'moment';
 import momentTz from 'moment-timezone';
+import * as _ from 'lodash';
 import { Status, Messages, JobStatus, ServiceTicketStatus, NotificationTypes, SocketEvents } from '../common/constants'
 import {
     sendJobEmailToAssignee,
@@ -271,12 +272,11 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
                 return next(req, res, Messages.GenericError, null, null)
             }
 
-            job.tasks.forEach(async (task) => {
+            for (const task of job.tasks) {
                 // Add the new job to the existing job route on the scheduleDate
                 // await _addOrRemoveJobRoutes(job.technician, job.scheduleDate, 'ADD', job._id);
                 await _addOrRemoveJobRoutes(task.technician, job.scheduleDate, 'ADD', job._id);
-            });
-
+            }
             scheduleEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => {
                 return next(req, res, null, newJob, invalidJobType)
             });
@@ -1774,6 +1774,8 @@ export const editJob = async (req: Request, res: Response) => {
 
             // Get service ticket
             const serviceTicket = await ServiceTicket.findById(job.ticket);
+            const oldScheduleDate = job.scheduleDate;
+            const oldTechnicians: string[] = job.tasks.map(task => task.technician.toString());
 
             // Proceed tasks when params.tasks is available and check the job status
             if (params.tasks) {
@@ -1909,6 +1911,28 @@ export const editJob = async (req: Request, res: Response) => {
 
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+
+                    // Get the updated technicians and handle
+                    const newTechnicians = job?.tasks.map(task => task.technician.toString());
+                    const removedTechnicians: string[] = _.difference(oldTechnicians, newTechnicians);
+                    const addedTechnicians: string[] = _.difference(newTechnicians, oldTechnicians);
+
+                    /**
+                     * Check if there are update to scheduleDate or technicians,
+                     * and update the Job Route for the technician if exist
+                     */
+                    if (
+                        !moment(oldScheduleDate).isSame(moment(job.scheduleDate), 'day')
+                        || removedTechnicians.length || addedTechnicians.length
+                    ) {
+                        removedTechnicians.forEach(async (oldTechnician) => {
+                            await _addOrRemoveJobRoutes(oldTechnician, new Date(oldScheduleDate), 'REMOVE', job._id);
+                        });
+
+                        addedTechnicians.forEach(async (newTechnician) => {
+                            await _addOrRemoveJobRoutes(newTechnician, new Date(job.scheduleDate), 'ADD', job._id);
+                        });
                     }
 
                     if (!linkedJob) {
@@ -2519,16 +2543,15 @@ const _handleMutltipleTechniciansTasks = async ({
             taskTechnician = technician?._id;
         }
 
-        const paramTechnician = paramTask.technicianId || taskContractor.admin.toString();
-        const technician = parentJob?.tasks.find(task => task.technician.toString() === paramTechnician);
+        const paramTechnician = paramTask.technicianId || taskContractor?.admin?.toString();
         const paramsemployeeType = paramTask.employeeType === undefined || paramTask.employeeType === null
-            ? technician?.employeeType || false
+            ? false
             : paramTask.employeeType === 'false' || paramTask.employeeType === '0'
                 ? false
                 : !!paramTask.employeeType;
 
         if (taskContractor && !taskTechnician) {
-            taskTechnician = taskContractor.admin
+            taskTechnician = taskContractor?.admin
         }
 
         if (!taskContractor && !taskTechnician) {
@@ -2550,4 +2573,5 @@ const _handleMutltipleTechniciansTasks = async ({
     }
 
     return tasks;
+
 }
