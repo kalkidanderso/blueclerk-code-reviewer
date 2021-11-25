@@ -1772,9 +1772,10 @@ export const editJob = async (req: Request, res: Response) => {
             const jobTypes: ITaskJobType[] = [];
             const invalidJobTypes: string[] = [];
 
-            const oldTechnicians = job.tasks.map(task => task.technician.toString());
+            // Get service ticket
             const serviceTicket = await ServiceTicket.findById(job.ticket);
             const oldScheduleDate = job.scheduleDate;
+            const oldTechnicians: string[] = job.tasks.map(task => task.technician.toString());
 
             // Proceed tasks when params.tasks is available and check the job status
             if (params.tasks) {
@@ -1912,19 +1913,24 @@ export const editJob = async (req: Request, res: Response) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
 
+                    // Get the updated technicians and handle
                     const newTechnicians = job?.tasks.map(task => task.technician.toString());
-                    const removedTechnician = _.difference(oldTechnicians, newTechnicians);
-                    const addedTechnician = _.difference(newTechnicians, oldTechnicians);
+                    const removedTechnicians: string[] = _.difference(oldTechnicians, newTechnicians);
+                    const addedTechnicians: string[] = _.difference(newTechnicians, oldTechnicians);
 
+                    /**
+                     * Check if there are update to scheduleDate or technicians,
+                     * and update the Job Route for the technician if exist
+                     */
                     if (
-                        !moment(oldScheduleDate).isSame(moment(job.scheduleDate), 'day') ||
-                        _.difference(newTechnicians, oldTechnicians).length
+                        !moment(oldScheduleDate).isSame(moment(job.scheduleDate), 'day')
+                        || removedTechnicians.length || addedTechnicians.length
                     ) {
-                        removedTechnician.forEach(async (oldTechnician) => {
+                        removedTechnicians.forEach(async (oldTechnician) => {
                             await _addOrRemoveJobRoutes(oldTechnician, new Date(oldScheduleDate), 'REMOVE', job._id);
                         });
 
-                        addedTechnician.forEach(async (newTechnician) => {
+                        addedTechnicians.forEach(async (newTechnician) => {
                             await _addOrRemoveJobRoutes(newTechnician, new Date(job.scheduleDate), 'ADD', job._id);
                         });
                     }
@@ -2537,16 +2543,15 @@ const _handleMutltipleTechniciansTasks = async ({
             taskTechnician = technician?._id;
         }
 
-        const paramTechnician = paramTask.technicianId || taskContractor.admin.toString();
-        const technician = parentJob?.tasks.find(task => task.technician.toString() === paramTechnician);
+        const paramTechnician = paramTask.technicianId || taskContractor?.admin?.toString();
         const paramsemployeeType = paramTask.employeeType === undefined || paramTask.employeeType === null
-            ? technician?.employeeType || false
+            ? false
             : paramTask.employeeType === 'false' || paramTask.employeeType === '0'
                 ? false
                 : !!paramTask.employeeType;
 
         if (taskContractor && !taskTechnician) {
-            taskTechnician = taskContractor.admin
+            taskTechnician = taskContractor?.admin
         }
 
         if (!taskContractor && !taskTechnician) {
@@ -2568,4 +2573,5 @@ const _handleMutltipleTechniciansTasks = async ({
     }
 
     return tasks;
+
 }
