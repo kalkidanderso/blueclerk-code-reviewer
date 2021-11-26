@@ -26,6 +26,7 @@ import { IJobType, IJobTypes, JobType } from '../models/JobType';
 import { JobRoute } from '../models/JobRoute';
 import { _handleJobTypesJson } from '../controllers/jobType';
 import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
+import { param } from 'express-validator';
 
 export const createJob = (req: Request, res: Response) => {
 
@@ -1174,10 +1175,13 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             let data: any = {}
             let dataLinked: any = {};
             let track = job.track ? job.track : [];
-            let tasks = job.tasks ? job.tasks : [];
+            // let tasks = job.tasks ? job.tasks : [];
             let trackLinked = linkedJob && linkedJob.track || [];
             let tasksLinked = linkedJob && linkedJob.tasks || [];
+            const tasks: ITask[] = job.tasks ? job.tasks : [];
             let action = '';
+            let jobType
+
             if (params.status && params.status != job.status) {
                 if (params.status == JobStatus.PENDING) {
                     action = '|Scheduling the job|';
@@ -1191,6 +1195,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     }
                 }
                 if (params.status == JobStatus.FINISHED) {
+
                     action = '|Finishing the job|';
                 }
                 if (params.status == JobStatus.CANCELED) {
@@ -1255,6 +1260,16 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
 
             // To pause any started tasks when job PAUSED, CANCELED, or RESCHEDULED
             switch (Number(params.status)) {
+                case JobStatus.FINISHED:
+                    for (const task of tasks) {
+                        // Get jobType with status PENDING, STARTED or INCOMPLETED
+                        const jobTypeTask = task.jobTypes.find(jobType => jobType.status === JobStatus.PENDING || jobType.status === JobStatus.STARTED || jobType.status === JobStatus.INCOMPLETE);
+                        await _updateTask({ job, jobTypeTask: jobTypeTask, user, params, status: JobStatus.FINISHED });
+                    };
+
+                    data.tasks = tasks;
+                    break;
+
                 case JobStatus.PAUSED:
                 case JobStatus.CANCELED:
                 case JobStatus.RESCHEDULED:
@@ -1435,7 +1450,7 @@ export const startJobTask = async (req: Request, res: Response) => {
     const startedJobTypes: IJobType[] = [];
     let newJobType: IJobType;
     let actionStatus: string;
-    let taskOutput, history
+    let history;
 
     // TODO: Move to job's middleware
     // Find job and populate the tasks' jobType
@@ -1469,8 +1484,6 @@ export const startJobTask = async (req: Request, res: Response) => {
         startedJobTypes.forEach(jobType => startedJobTypeTasks = jobType.title);
         return res.json({ status: Status.Error, message: `You can't start this task, you already have a started task: ${startedJobTypeTasks}.` });
     }
-
-    taskOutput = tasks
 
     // Find jobType to start
     const jobTypeTask = tasks.jobTypes.find(jobType => {
@@ -1556,7 +1569,7 @@ export const startJobTask = async (req: Request, res: Response) => {
         });
     }
 
-    return res.json({ status: Status.Success, message: 'Job Task started successfully.', job, startedTask: taskOutput });
+    return res.json({ status: Status.Success, message: 'Job Task started successfully.', job, startedTask: tasks });
 
 }
 
@@ -1565,6 +1578,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
     const user = <IUser>req.user;
     const companyId = req.otherCompanyId || req.companyId;
     const params = req.body;
+    let isFinished = false;
 
     // TODO: Move to job's middleware
     // Find job and populate the tasks' jobType
@@ -1639,6 +1653,10 @@ export const updateJobTask = async (req: Request, res: Response) => {
         }
     }
 
+    if (task.jobTypes.every(jobType => jobType.status === 2)) {
+        isFinished = true;
+    }
+
     if (allTaskStatus.every(status => status === 2)) {
         // All new tasks status are FINISHED, Job is FINISHED
         job.endTime = new Date();
@@ -1660,6 +1678,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
 
     job.timeUpdatedBy = user._id;
     job.timeUpdatedAt = new Date();
+    task.isSelfFinished = isFinished;
     job.status = jobStatus;
     job.track.push(history);
 
@@ -2543,7 +2562,6 @@ const _handleMutltipleTechniciansTasks = async ({
             taskTechnician = technician?._id;
         }
 
-        const paramTechnician = paramTask.technicianId || taskContractor?.admin?.toString();
         const paramsemployeeType = paramTask.employeeType === undefined || paramTask.employeeType === null
             ? false
             : paramTask.employeeType === 'false' || paramTask.employeeType === '0'

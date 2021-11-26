@@ -77,6 +77,7 @@ export interface ITask extends Document {
     technician?: Schema.Types.ObjectId | any
     contractor?: Schema.Types.ObjectId
     jobTypes?: ITaskJobType[]
+    isSelfFinished?: boolean
 }
 
 export interface TaskEntry {
@@ -194,6 +195,10 @@ const JobSchema = new Schema({
             type: Schema.Types.ObjectId,
             ref: 'Company',
             required: false
+        },
+        isSelfFinished: {
+            type: Boolean,
+            default: false
         },
         jobTypes: [{
             _id: false,
