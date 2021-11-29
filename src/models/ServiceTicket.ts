@@ -62,7 +62,10 @@ const ServiceTicketSchema = new Schema({
     customerPO : String,
     images: [
         { 
-            imageUrl:String,
+            imageUrl: {
+                type: String,
+                required: true
+            },
             uploadedBy: {
                 type: Schema.Types.ObjectId,
                 ref: 'User'

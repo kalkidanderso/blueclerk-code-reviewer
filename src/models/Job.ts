@@ -28,7 +28,7 @@ export interface IJob extends Document {
     }[]
     type: Schema.Types.ObjectId | any // TODO: To be deprecated
     tasks: ITask[]
-    tasksBackup: ITaskJobType[]
+    tasksBackup: ITaskJobType[] // TODO: Temporary, to be removed
     company: Schema.Types.ObjectId | any
     equipmentId: string
     description: string

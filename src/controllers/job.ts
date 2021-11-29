@@ -1192,7 +1192,6 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     }
                 }
                 if (params.status == JobStatus.FINISHED) {
-
                     action = '|Finishing the job|';
                 }
                 if (params.status == JobStatus.CANCELED) {
@@ -1307,6 +1306,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
 
             try {
                 await job.updateOne(data);
+                const updatedJob = await Job.findById(job.id);
                 if (linkedJob) {
                     await linkedJob.updateOne(dataLinked);
                 }
@@ -1354,7 +1354,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     })
                 };
 
-                return res.json({ 'status': Status.Success, 'message': 'Job updated successfully.', job });
+                return res.json({ 'status': Status.Success, 'message': 'Job updated successfully.', job: updatedJob });
             } catch (err) {
                 return res.json({ 'status': Status.Error, 'message': err.message });
             }
@@ -1631,7 +1631,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
         // Return directly to avoid unnecessary changes
         return res.json({ status: Status.Success, message: `Job Task updated successfully.`, job, updatedTask: task });
     }
-    await _updateTask({ job, taskJobType: taskJobType, user, params, status: undefined });
+    await _updateTask({ job, taskJobType, user, params, status: undefined });
     switch (Number(params.status)) {
         case JobStatus.PAUSED:
             statusAction = 'Paused';

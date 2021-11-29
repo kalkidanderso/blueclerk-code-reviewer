@@ -1871,17 +1871,15 @@ export default function (sio: any) {
     )
 
     router.post(
-        '/script/updateJob',
+        '/script/migrateJobTask',
         passport.authenticate('jwt', { session: false }),
-        getCompanyId(),
-        scriptController.syncJobTask
+        scriptController.migrateJobTask
     )
 
     router.post(
-        '/script/updateServiceTicketImages',
+        '/script/migrateTicketAndJobImage',
         passport.authenticate('jwt', { session: false }),
-        getCompanyId(),
-        scriptController.updateServiceTicketImage
+        scriptController.migrateTicketAndJobImage
     )
 
     return router

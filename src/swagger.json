@@ -10418,7 +10418,7 @@
           "Script"
         ],
         "summary": "To update all companies and customers to have Item Price Tier",
-        "description": "**WARNING: Only do this when you know what you are doing.** This will update all companies and customers those don't have Item Price Tier. Will create 1 new Item Tier for the company to be the default tier and update all customers of that company to use the default tier.\n",
+        "description": "**WARNING: Only do this when you know what you are doing.**\nThis will update all companies and customers those don't have Item Price Tier. Will create 1 new Item Tier for the company to be the default tier and update all customers of that company to use the default tier.",
         "responses": {
           "200": {
             "description": "Success",
@@ -10438,13 +10438,13 @@
         ]
       }
     },
-    "/script/updateJob": {
+    "/script/migrateJobTask": {
       "post": {
         "tags": [
           "Script"
         ],
-        "summary": "To update all jobs to new tasks and move old task to tasks backup",
-        "description": "**WARNING: Only do this when you know what you are doing.** This will update all jobs to move old tasks into tasks.jobtypes and move image to images.\n",
+        "summary": "To migrate all old jobs to have new tasks structure and backup old task to tasks backup",
+        "description": "**WARNING: Only do this when you know what you are doing.**\nTo migrate all old jobs to have new tasks structure and backup old task to tasks backup.",
         "responses": {
           "200": {
             "description": "Success",
@@ -10464,13 +10464,13 @@
         ]
       }
     },
-    "/script/updateServiceTicketImages": {
+    "/script/migrateTicketAndJobImage": {
       "post": {
         "tags": [
           "Script"
         ],
-        "summary": "To update all service ticket to have images",
-        "description": "**WARNING: Only do this when you know what you are doing.** This will update all service tickets have only single image to multiple images.\n",
+        "summary": "To migrate all Service Ticket and Job old image to images (in array format)",
+        "description": "**WARNING: Only do this when you know what you are doing.**\nTo migrate all Service Ticket and Job old image to images (in array format).",
         "responses": {
           "200": {
             "description": "Success",
