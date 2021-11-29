@@ -7,6 +7,8 @@ import { Customer } from '../models/Customer';
 import { IPriceTier } from '../models/PriceTier';
 
 import { _addItemTier } from '../controllers/company';
+import { Job } from '../models/Job';
+import { ServiceTicket } from '../models/ServiceTicket';
 
 /**
  * To sync and update all companies and customers to have Item Price Tier,
@@ -75,4 +77,73 @@ export const syncItemTier = async (req: Request, res: Response) => {
         updatedCompanies, updatedCustomers, createdItemTiers
     });
 
+}
+
+export const syncJobTask = async (req: Request, res: Response) => {
+    const jobs = await Job.find({});
+
+    if (!jobs?.length)
+        return res.json({ status: Status.OK, message: 'No jobs to update' });
+
+    for (const job of jobs) {
+        // Hanlde job tasks
+        if (job.technician) {
+            // Move old tasks to tasksBackup
+            job.tasks.forEach(task => {
+                job.tasksBackup.push(task);
+            });
+
+            const jobEntry: any = {
+                technician: job.technician,
+                employeeType: job.employeeType,
+                contractor: job.contractor,
+                jobTypes: job.tasks
+            }
+
+            // Remove old task in tasks object
+            await Job.updateMany({
+                _id: job._id
+            }, { $pull: { tasks: { $exists: true } } });
+
+            // Convert old task to new tasks
+            job.tasks.push(jobEntry);
+        }
+
+        // Handle job image
+        if (job.image) {
+            job.images.push({ imageUrl: job.image, uploadedBy: job.createdBy });
+        }
+
+        job.save();
+    }
+
+    return res.json({
+        status: Status.OK,
+        message: 'Job successfully updated.',
+        jobs
+    })
+}
+
+export const updateServiceTicketImage = async (req: Request, res: Response) => {
+    const serviceTickets = await ServiceTicket.find({});
+
+    if (!serviceTickets)
+        return res.json({ status: Status.OK, message: 'No service tickets to update' });
+
+    for (const serviceTicket of serviceTickets) {
+        if (serviceTicket.image) {
+            serviceTicket.images.push({
+                imageUrl: serviceTicket?.image,
+                uploadedBy: serviceTicket?.createdBy
+            });
+        }
+
+        serviceTicket.save()
+    }
+
+    return res.json({
+        status: Status.OK,
+        message: 'images on service ticket updated',
+        serviceTickets
+    })
 }

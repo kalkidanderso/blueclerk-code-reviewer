@@ -26,7 +26,6 @@ import { IJobType, IJobTypes, JobType } from '../models/JobType';
 import { JobRoute } from '../models/JobRoute';
 import { _handleJobTypesJson } from '../controllers/jobType';
 import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
-import { param } from 'express-validator';
 
 export const createJob = (req: Request, res: Response) => {
 
@@ -1175,12 +1174,10 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             let data: any = {}
             let dataLinked: any = {};
             let track = job.track ? job.track : [];
-            // let tasks = job.tasks ? job.tasks : [];
+            let tasks: ITask[] = job.tasks ? job.tasks : [];
             let trackLinked = linkedJob && linkedJob.track || [];
             let tasksLinked = linkedJob && linkedJob.tasks || [];
-            const tasks: ITask[] = job.tasks ? job.tasks : [];
             let action = '';
-            let jobType
 
             if (params.status && params.status != job.status) {
                 if (params.status == JobStatus.PENDING) {
@@ -1262,9 +1259,13 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             switch (Number(params.status)) {
                 case JobStatus.FINISHED:
                     for (const task of tasks) {
-                        // Get jobType with status PENDING, STARTED or INCOMPLETED
-                        const jobTypeTask = task.jobTypes.find(jobType => jobType.status === JobStatus.PENDING || jobType.status === JobStatus.STARTED || jobType.status === JobStatus.INCOMPLETE);
-                        await _updateTask({ job, jobTypeTask: jobTypeTask, user, params, status: JobStatus.FINISHED });
+                        const pendingStartedTasks: ITaskJobType[] = task.jobTypes.filter(taskJobType =>
+                            [JobStatus.PENDING, JobStatus.STARTED, JobStatus.PAUSED].includes(Number(taskJobType.status))
+                        );
+
+                        for (const task of pendingStartedTasks) {
+                            await _updateTask({ job, taskJobType: task, user, params, status: JobStatus.FINISHED });
+                        };
                     };
 
                     data.tasks = tasks;
@@ -1286,7 +1287,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     // Iterate all started tasks and update the status to PAUSED
                     for (const newtask of startedTasks) {
                         for (const jobTypes of newtask.jobTypes) {
-                            await _updateTask({ job, jobTypeTask: jobTypes, user, params, status: JobStatus.PAUSED });
+                            await _updateTask({ job, taskJobType: jobTypes, user, params, status: JobStatus.PAUSED });
                         }
                     }
 
@@ -1297,7 +1298,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                         const linkedStartedTasks: ITask[] = tasksLinked.filter((task: ITask) => task.jobTypes.filter(jobType => jobType.status === JobStatus.STARTED));
                         // Iterate all started tasks and update the status to PAUSED
                         for (const task of linkedStartedTasks) {
-                            await _updateTask({ job: linkedJob, jobTypeTask: jobType, user, params, status: JobStatus.PAUSED });
+                            await _updateTask({ job: linkedJob, taskJobType: jobType, user, params, status: JobStatus.PAUSED });
                         }
                         dataLinked.tasks = tasksLinked;
                     }
@@ -1486,7 +1487,7 @@ export const startJobTask = async (req: Request, res: Response) => {
     }
 
     // Find jobType to start
-    const jobTypeTask = tasks.jobTypes.find(jobType => {
+    const taskJobType = tasks.jobTypes.find(jobType => {
         newJobType = <IJobType>jobType.jobType;
         return newJobType._id.toString() === params.jobTypeId;
     });
@@ -1494,27 +1495,27 @@ export const startJobTask = async (req: Request, res: Response) => {
     if (!tasks)
         return res.json({ status: Status.Error, message: Messages.TaskNotFound });
 
-    if (jobTypeTask) {
-        if (jobTypeTask.status === JobStatus.STARTED)
+    if (taskJobType) {
+        if (taskJobType.status === JobStatus.STARTED)
             return res.json({ status: Status.Error, message: `${Messages.TaskCannotBeStarted} started.` })
 
-        if (jobTypeTask.status === JobStatus.FINISHED)
+        if (taskJobType.status === JobStatus.FINISHED)
             return res.json({ status: Status.Error, message: `${Messages.TaskCannotBeStarted} finished` });
 
         // Update the task start time and status
         let actionStatus: string;
-        if (jobTypeTask.status === JobStatus.PAUSED) {
-            jobTypeTask.tempStartTime = new Date();
+        if (taskJobType.status === JobStatus.PAUSED) {
+            taskJobType.tempStartTime = new Date();
             actionStatus = 'Re-starting';
         }
         else {
-            jobTypeTask.startTime = new Date();
+            taskJobType.startTime = new Date();
             actionStatus = 'Started';
         }
         // Update the task status
-        jobTypeTask.status = JobStatus.STARTED;
-        jobTypeTask.timeUpdatedBy = user;
-        jobTypeTask.timeUpdatedAt = new Date();
+        taskJobType.status = JobStatus.STARTED;
+        taskJobType.timeUpdatedBy = user;
+        taskJobType.timeUpdatedAt = new Date();
 
         if (job.status !== JobStatus.STARTED) {
             job.startTime = new Date();
@@ -1578,7 +1579,6 @@ export const updateJobTask = async (req: Request, res: Response) => {
     const user = <IUser>req.user;
     const companyId = req.otherCompanyId || req.companyId;
     const params = req.body;
-    let isFinished = false;
 
     // TODO: Move to job's middleware
     // Find job and populate the tasks' jobType
@@ -1606,32 +1606,32 @@ export const updateJobTask = async (req: Request, res: Response) => {
 
     // Find the job type in tasks object to be started
     const task = job.tasks.find(task => task.technician.toString() === params.technicianId);
-    const jobTypeTask = task.jobTypes.find((task: any) => task.jobType._id.toString() === params.jobTypeId);
+    const taskJobType = task.jobTypes.find((task: any) => task.jobType._id.toString() === params.jobTypeId);
 
     if (!task)
         return res.json({ status: Status.Error, message: Messages.TaskNotFound });
 
     // Return error when jobType isn't available
-    if (!jobTypeTask)
+    if (!taskJobType)
         return res.json({ status: Status.NotFound, message: 'jobType task not found' });
-    if (params.endTime && jobTypeTask.status !== JobStatus.FINISHED)
+    if (params.endTime && taskJobType.status !== JobStatus.FINISHED)
         return res.json({ status: Status.Error, message: 'Only able to update endTime for a FINISHED task.' });
-    if (!params.endTime && Number(params.status) === jobTypeTask.status)
+    if (!params.endTime && Number(params.status) === taskJobType.status)
         return res.json({ status: Status.Error, message: `${Messages.TaskCannotBeUpdated} on that state.` });
 
     // To update manual endTime only
     if (params.endTime) {
-        const item = await Item.findOne({ jobType: jobTypeTask.jobType });
+        const item = await Item.findOne({ jobType: taskJobType.jobType });
         const customer = <ICustomer>job.customer;
 
         // Remove excessed timeSpent and charges
-        await _handleTaskCharges({ job, jobTypeTask, item, customer, params, isDeduct: true });
+        await _handleTaskCharges({ job, taskJobType, item, customer, params, isDeduct: true });
 
         await job.save();
         // Return directly to avoid unnecessary changes
         return res.json({ status: Status.Success, message: `Job Task updated successfully.`, job, updatedTask: task });
     }
-    await _updateTask({ job, jobTypeTask, user, params, status: undefined });
+    await _updateTask({ job, taskJobType: taskJobType, user, params, status: undefined });
     switch (Number(params.status)) {
         case JobStatus.PAUSED:
             statusAction = 'Paused';
@@ -1641,7 +1641,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
             break;
     }
 
-    const jobType = await JobType.findById(jobTypeTask.jobType);
+    const jobType = await JobType.findById(taskJobType.jobType);
 
     action = `|${statusAction} the Job's task: ${jobType.title}|`;
     // To update Job's status based on cummulative of tasks status
@@ -1653,8 +1653,8 @@ export const updateJobTask = async (req: Request, res: Response) => {
         }
     }
 
-    if (task.jobTypes.every(jobType => jobType.status === 2)) {
-        isFinished = true;
+    if (taskJobType.status === JobStatus.FINISHED) {
+        taskJobType.isSelfFinished = true;
     }
 
     if (allTaskStatus.every(status => status === 2)) {
@@ -1678,7 +1678,6 @@ export const updateJobTask = async (req: Request, res: Response) => {
 
     job.timeUpdatedBy = user._id;
     job.timeUpdatedAt = new Date();
-    task.isSelfFinished = isFinished;
     job.status = jobStatus;
     job.track.push(history);
 
@@ -1706,7 +1705,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
     // Update linked job's track & task properties
     if (linkedTask) {
         // To update Task's property when paused, finished, or update the endTime
-        await _updateTask({ job: linkedJob, jobTypeTask, user, params, status: undefined });
+        await _updateTask({ job: linkedJob, taskJobType, user, params, status: undefined });
         linkedJob.timeUpdatedBy = user._id;
         linkedJob.timeUpdatedAt = new Date();
         linkedJob.status = jobStatus;
@@ -2442,7 +2441,7 @@ export const updateJobTime = (req: Request, res: Response) => {
 /**
  * To update Task's property when pause, finish, or update the endTime
  */
-const _updateTask = async ({ job, jobTypeTask, user, params, status }: { job: IJob, jobTypeTask: ITaskJobType, user: IUser, params: any, status: number }) => {
+const _updateTask = async ({ job, taskJobType, user, params, status }: { job: IJob, taskJobType: ITaskJobType, user: IUser, params: any, status: number }) => {
 
     /**
      * Find item information related to the task/job type,
@@ -2451,17 +2450,17 @@ const _updateTask = async ({ job, jobTypeTask, user, params, status }: { job: IJ
     let item: IItem;
     let customer: ICustomer;
 
-    if (jobTypeTask) {
+    if (taskJobType) {
         // Update the jobType tasks properties
-        item = await Item.findOne({ jobType: jobTypeTask.jobType });
+        item = await Item.findOne({ jobType: taskJobType.jobType });
         customer = <ICustomer>job.customer;
-        await _handleTaskCharges({ job, jobTypeTask: jobTypeTask, item, customer, params });
+        await _handleTaskCharges({ job, taskJobType, item, customer, params });
 
-        jobTypeTask.status = status || params.status;
-        jobTypeTask.tempStartTime = null;
-        jobTypeTask.pausedCount = Number(params.status) === JobStatus.PAUSED ? jobTypeTask.pausedCount + 1 : jobTypeTask.pausedCount;
-        jobTypeTask.timeUpdatedBy = user;
-        jobTypeTask.timeUpdatedAt = new Date();
+        taskJobType.status = status || params.status;
+        taskJobType.tempStartTime = null;
+        taskJobType.pausedCount = Number(params.status) === JobStatus.PAUSED ? taskJobType.pausedCount + 1 : taskJobType.pausedCount;
+        taskJobType.timeUpdatedBy = user;
+        taskJobType.timeUpdatedAt = new Date();
     }
 
     return;
@@ -2472,20 +2471,20 @@ const _updateTask = async ({ job, jobTypeTask, user, params, status }: { job: IJ
  * To handle task charges and timeSpent,
  * either pause, finish, or update the endTime of FINISHED task
  */
-const _handleTaskCharges = async ({ job, jobTypeTask, item, customer, params, isDeduct }: { job: IJob, jobTypeTask: ITaskJobType, item: IItem, customer: ICustomer, params: any, isDeduct?: boolean }) => {
+const _handleTaskCharges = async ({ job, taskJobType, item, customer, params, isDeduct }: { job: IJob, taskJobType: ITaskJobType, item: IItem, customer: ICustomer, params: any, isDeduct?: boolean }) => {
 
     // Find the item tier based on customer assigned item tier
     const tier = item.tiers?.find(t => t.tier?.toString() === customer.itemTier?.toString());
     // Find the tier charge and use tier number 1 and item's charges as the fallback
     const tierCharge = tier?.charge || item.tiers[0]?.charge || item?.charges;
-    let charges = jobTypeTask.charges || 0;
+    let charges = taskJobType.charges || 0;
 
     if (!isDeduct) {
         /**
          * Get the timeSpent based on the difference task's time,
          * current time as the endTime and the startTime or tempStartTime (for PAUSED task)
          */
-        const timeSpent = moment().diff(moment(jobTypeTask.tempStartTime || jobTypeTask.startTime), 'minutes');
+        const timeSpent = moment().diff(moment(taskJobType.tempStartTime || taskJobType.startTime), 'minutes');
 
         /**
          * If item isFixed, charges will not sum up over and over,
@@ -2493,9 +2492,9 @@ const _handleTaskCharges = async ({ job, jobTypeTask, item, customer, params, is
          */
         charges = item.isFixed ? tierCharge : charges + (tierCharge * (timeSpent / 60));
 
-        jobTypeTask.timeSpent += timeSpent;
-        jobTypeTask.endTime = Number(params.status) === JobStatus.FINISHED ? new Date() : undefined;
-        jobTypeTask.charges = Math.round(charges * 100) / 100;
+        taskJobType.timeSpent += timeSpent;
+        taskJobType.endTime = Number(params.status) === JobStatus.FINISHED ? new Date() : undefined;
+        taskJobType.charges = Math.round(charges * 100) / 100;
         job.timeSpent += timeSpent;
     } else {
         // Remove excessed timeSpent
@@ -2503,7 +2502,7 @@ const _handleTaskCharges = async ({ job, jobTypeTask, item, customer, params, is
          * Get the timeSpentToDeduct based on the difference task's time,
          * the wrong endTime and the new endTime from params
          */
-        const timeSpentToDeduct = moment(jobTypeTask.endTime).diff(moment(params.endTime), 'minutes');
+        const timeSpentToDeduct = moment(taskJobType.endTime).diff(moment(params.endTime), 'minutes');
 
         /**
          * If item isFixed, charges will not be deducted,
@@ -2511,9 +2510,9 @@ const _handleTaskCharges = async ({ job, jobTypeTask, item, customer, params, is
          */
         charges = item.isFixed ? tierCharge : charges - (tierCharge * (timeSpentToDeduct / 60));
 
-        jobTypeTask.timeSpent -= timeSpentToDeduct;
-        jobTypeTask.endTime = new Date(params.endTime);
-        jobTypeTask.charges = Math.round(charges * 100) / 100;
+        taskJobType.timeSpent -= timeSpentToDeduct;
+        taskJobType.endTime = new Date(params.endTime);
+        taskJobType.charges = Math.round(charges * 100) / 100;
         job.timeSpent -= timeSpentToDeduct;
         const endTime: any[] = [];
         job.tasks.forEach(task => {

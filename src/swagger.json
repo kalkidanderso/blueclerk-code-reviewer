@@ -10437,6 +10437,58 @@
           }
         ]
       }
+    },
+    "/script/updateJob": {
+      "post": {
+        "tags": [
+          "Script"
+        ],
+        "summary": "To update all jobs to new tasks and move old task to tasks backup",
+        "description": "**WARNING: Only do this when you know what you are doing.** This will update all jobs to move old tasks into tasks.jobtypes and move image to images.\n",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/script/updateServiceTicketImages": {
+      "post": {
+        "tags": [
+          "Script"
+        ],
+        "summary": "To update all service ticket to have images",
+        "description": "**WARNING: Only do this when you know what you are doing.** This will update all service tickets have only single image to multiple images.\n",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
     }
   },
   "components": {

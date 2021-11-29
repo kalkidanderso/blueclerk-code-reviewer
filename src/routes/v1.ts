@@ -1870,6 +1870,20 @@ export default function (sio: any) {
         scriptController.syncItemTier
     )
 
+    router.post(
+        '/script/updateJob',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        scriptController.syncJobTask
+    )
+
+    router.post(
+        '/script/updateServiceTicketImages',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        scriptController.updateServiceTicketImage
+    )
+
     return router
 
 }
