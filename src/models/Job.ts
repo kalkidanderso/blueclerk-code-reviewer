@@ -18,15 +18,17 @@ export interface IJob extends Document {
     jobSite: Schema.Types.ObjectId | any
     customerContactId: Schema.Types.ObjectId | any
     customerPO: string
+    image: string
     images: {
         _id?: Schema.Types.ObjectId
-        imageUrl: string
-        uploadedBy: Schema.Types.ObjectId | IUser
+        imageUrl?: string
+        uploadedBy?: Schema.Types.ObjectId | IUser
         createdAt?: Date
         updatedAt?: Date
     }[]
     type: Schema.Types.ObjectId | any // TODO: To be deprecated
     tasks: ITask[]
+    tasksBackup: ITaskJobType[] // TODO: Temporary, to be removed
     company: Schema.Types.ObjectId | any
     equipmentId: string
     description: string
@@ -88,6 +90,7 @@ export interface TaskEntry {
 
 export interface ITaskJobType extends Document {
     jobType?: Schema.Types.ObjectId | IJobType
+    isSelfFinished?: boolean
     status?: number
     charges?: number
     startTime?: Date
@@ -161,10 +164,7 @@ const JobSchema = new Schema({
     customerPO: String,
     images: [
         {
-            imageUrl: {
-                type: String,
-                required: true
-            },
+            imageUrl: String,
             uploadedBy: {
                 type: Schema.Types.ObjectId,
                 ref: 'User'
@@ -177,6 +177,51 @@ const JobSchema = new Schema({
         ref: 'JobType',
         // required: true
     },
+    tasksBackup: [{
+        _id: false,
+        jobType: {
+            type: Schema.Types.ObjectId,
+            ref: 'JobType',
+            // required: true
+        },
+        isSelfFinished: {
+            type: Boolean,
+            default: false
+        },
+        status: {
+            type: Number,
+            default: 0
+        },
+        charges: {
+            type: Number,
+            default: 0
+        },
+        startTime: Date,
+        tempStartTime: Date,
+        endTime: Date,
+        timeSpent: {
+            type: Number,
+            default: 0
+        },
+        pausedCount: {
+            type: Number,
+            default: 0
+        },
+        timeUpdatedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        timeUpdatedAt: Date,
+        // completeOnTime: Boolean,
+        equipmentScanned: {
+            type: Boolean,
+            default: false
+        },
+        noOfEquipmentScanned: {
+            type: Number,
+            default: 0
+        }
+    }],
     tasks: [{
         _id: false,
         // employee type 0 for company employee
@@ -201,6 +246,10 @@ const JobSchema = new Schema({
                 type: Schema.Types.ObjectId,
                 ref: 'JobType',
                 // required: true
+            },
+            isSelfFinished: {
+                type: Boolean,
+                default: false
             },
             status: {
                 type: Number,

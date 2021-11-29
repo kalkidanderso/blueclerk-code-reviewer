@@ -7,6 +7,8 @@ import { Customer } from '../models/Customer';
 import { IPriceTier } from '../models/PriceTier';
 
 import { _addItemTier } from '../controllers/company';
+import { Job } from '../models/Job';
+import { ServiceTicket } from '../models/ServiceTicket';
 
 /**
  * To sync and update all companies and customers to have Item Price Tier,
@@ -70,9 +72,115 @@ export const syncItemTier = async (req: Request, res: Response) => {
     }
 
     return res.json({
-        status: Status.OK,
+        status: Status.Success,
         message: 'Companies and customers successfully updated.',
         updatedCompanies, updatedCustomers, createdItemTiers
+    });
+
+}
+
+export const migrateJobTask = async (req: Request, res: Response) => {
+
+    /**
+     * New job with new task structure doesn't have employeeType,
+     * so we only find job that have employeeType
+     */
+    const jobs = await Job.find({ employeeType: { $exists: true } });
+
+    if (!jobs?.length) {
+        return res.json({ status: Status.OK, message: 'No jobs to be migrated' });
+    }
+
+    for (const job of jobs) {
+        const taskEntry: any = {
+            technician: job.technician,
+            employeeType: job.employeeType,
+            contractor: job.contractor,
+            // jobTypes: job.tasks
+        }
+
+        if (job.tasks) {
+            // Backup old tasks to tasksBackup
+            job.tasksBackup = job.tasks;
+
+            taskEntry.jobTypes = job.tasks;
+        }
+
+        if (job.type) {
+            taskEntry.jobTypes = taskEntry.jobTypes ?? [];
+
+            const taskJobType = {
+                status: job.status,
+                charges: job.charges,
+                timeSpent: job.timeSpent,
+                equipment_scanned: job.equipment_scanned,
+                no_of_equipment_scanned: job.no_of_equipment_scanned,
+                jobType: job.type,
+            }
+
+            taskEntry.jobTypes.push(taskJobType);
+        }
+
+            // Remove old task in tasks object
+            // await Job.updateMany({
+            //     _id: job._id
+            // }, { $pull: { tasks: { $exists: true } } });
+
+            // Convert old task to new tasks
+            // job.tasks.push(taskEntry);
+        // job.tasks = taskEntry;
+        // }
+
+        // Handle job image
+        // if (job.image) {
+        //     job.images.push({ imageUrl: job.image, uploadedBy: job.createdBy });
+        // }
+
+        job.save();
+    }
+
+    return res.json({
+        status: Status.Success,
+        message: 'Job task successfully migrated.',
+        jobs
+    });
+
+}
+
+export const migrateTicketAndJobImage = async (req: Request, res: Response) => {
+
+    const serviceTickets = await ServiceTicket.find({ image: { $exists: true } });
+    const jobs = await Job.find({ image: { $exists: true } });
+
+    if (!serviceTickets && !jobs)
+        return res.json({ status: Status.OK, message: 'No service tickets and jobs to be migrated' });
+
+    for (const serviceTicket of serviceTickets) {
+        // if (serviceTicket.image) {
+        serviceTicket.images = serviceTicket.images ?? [];
+        serviceTicket.images.push({
+            imageUrl: serviceTicket.image,
+            uploadedBy: serviceTicket.createdBy
+        });
+        // }
+
+        serviceTicket.save();
+    }
+
+    for (const job of jobs) {
+        job.images = job.images ?? [];
+        job.images.push({
+            imageUrl: job.image,
+            uploadedBy: job.createdBy
+        });
+
+        job.save();
+    }
+
+    return res.json({
+        status: Status.Success,
+        message: 'Service Ticket and Job image successfully migrated.',
+        serviceTickets, jobs
     });
 
 }

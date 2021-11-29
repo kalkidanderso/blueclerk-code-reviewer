@@ -6402,8 +6402,43 @@ paths:
       tags:
         - Script
       summary: To update all companies and customers to have Item Price Tier
-      description: |
-        **WARNING: Only do this when you know what you are doing.** This will update all companies and customers those don't have Item Price Tier. Will create 1 new Item Tier for the company to be the default tier and update all customers of that company to use the default tier.
+      description: |-
+        **WARNING: Only do this when you know what you are doing.**
+        This will update all companies and customers those don't have Item Price Tier. Will create 1 new Item Tier for the company to be the default tier and update all customers of that company to use the default tier.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /script/migrateJobTask:
+    post:
+      tags:
+        - Script
+      summary: To migrate all old jobs to have new tasks structure and backup old task to tasks backup
+      description: |-
+        **WARNING: Only do this when you know what you are doing.**
+        To migrate all old jobs to have new tasks structure and backup old task to tasks backup.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /script/migrateTicketAndJobImage:
+    post:
+      tags:
+        - Script
+      summary: To migrate all Service Ticket and Job old image to images (in array format)
+      description: |-
+        **WARNING: Only do this when you know what you are doing.**
+        To migrate all Service Ticket and Job old image to images (in array format).
       responses:
         '200':
           description: Success
@@ -7478,7 +7513,9 @@ components:
           description: Id of customer
         customerPO:
           type: string
-          description: Customer PO/Sales Order
+          description: |+
+            Customer PO/Sales Order#
+
         customerContactId:
           type: string
           description: Customer Contact Id
