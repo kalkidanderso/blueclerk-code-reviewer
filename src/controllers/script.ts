@@ -127,11 +127,11 @@ export const migrateJobTask = async (req: Request, res: Response) => {
         if (job.tasks) {
             // Deep copy the old tasks to remove the reference object
             const oldTasks: ITaskJobType[] = JSON.parse(JSON.stringify(job.tasks));
+            const taskJobType = [];
             // Backup old tasks to tasksBackup
             job.tasksBackup = job.tasks;
 
             for (const oldTask of oldTasks) {
-                const taskJobType = [];
                 const isSelfFinished = oldTask.status == JobStatus.FINISHED ? true : false;
 
                 taskJobType.push({
