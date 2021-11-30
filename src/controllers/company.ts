@@ -1157,9 +1157,14 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
                 return contract.contractor
             })
 
-            Job.find({ technician: { $in: contractors } }).sort({ endtime : 1 , startTime : 1 , dateTime : 1 })
+            Job.find({ 'tasks.technician': { $in: contractors } }).sort({ endtime : 1 , startTime : 1 , dateTime : 1 })
+                // TODO: To be deprecated
                 .populate({
                     path: 'technician',
+                    select: 'profile.displayName'
+                })
+                .populate({
+                    path: 'tasks.technician',
                     select: 'profile.displayName'
                 })
                 .populate({

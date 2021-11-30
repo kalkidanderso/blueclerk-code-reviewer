@@ -1,14 +1,15 @@
 import { Request, Response } from 'express';
 
-import { Status } from '../common/constants';
+import { JobStatus, Status } from '../common/constants';
 
 import { Company } from '../models/Company';
 import { Customer } from '../models/Customer';
 import { IPriceTier } from '../models/PriceTier';
 
 import { _addItemTier } from '../controllers/company';
-import { Job } from '../models/Job';
+import { Job, ITaskJobType } from '../models/Job';
 import { ServiceTicket } from '../models/ServiceTicket';
+import { JobType } from '../models/JobType';
 
 /**
  * To sync and update all companies and customers to have Item Price Tier,
@@ -79,63 +80,70 @@ export const syncItemTier = async (req: Request, res: Response) => {
 
 }
 
+/**
+ * To migrate the old job's type and old format tasks,
+ * to the new multiple technicians tasks format
+ */
 export const migrateJobTask = async (req: Request, res: Response) => {
 
     /**
      * New job with new task structure doesn't have employeeType,
      * so we only find job that have employeeType
      */
-    const jobs = await Job.find({ employeeType: { $exists: true } });
+    const jobs = await Job.find({ employeeType: { $ne: null } });
 
     if (!jobs?.length) {
         return res.json({ status: Status.OK, message: 'No jobs to be migrated' });
     }
 
     for (const job of jobs) {
+        // Construct the new taskEntry object
         const taskEntry: any = {
             technician: job.technician,
             employeeType: job.employeeType,
             contractor: job.contractor,
-            // jobTypes: job.tasks
         }
 
+        // If job has type, it means this is a very old job
+        if (job.type) {
+            const jobType = await JobType.findById(job.type);
+            const taskJobType = [];
+            const isSelfFinished = job.status == JobStatus.FINISHED ? true : false;
+
+            taskJobType.push({
+                jobType: jobType?._id,
+                status: job.status,
+                isSelfFinished,
+                charges: job.charges,
+                timeSpent: job.timeSpent,
+                equipmentScanned: job.equipment_scanned,
+                noOfEquipmentScanned: job.no_of_equipment_scanned,
+            })
+
+            taskEntry.jobTypes = taskJobType;
+        }
+
+        // Convert the old tasks to the new multiple technicians format
         if (job.tasks) {
+            // Deep copy the old tasks to remove the reference object
+            const oldTasks: ITaskJobType[] = JSON.parse(JSON.stringify(job.tasks));
             // Backup old tasks to tasksBackup
             job.tasksBackup = job.tasks;
 
-            taskEntry.jobTypes = job.tasks;
-        }
+            for (const oldTask of oldTasks) {
+                const taskJobType = [];
+                const isSelfFinished = oldTask.status == JobStatus.FINISHED ? true : false;
 
-        if (job.type) {
-            taskEntry.jobTypes = taskEntry.jobTypes ?? [];
+                taskJobType.push({
+                    isSelfFinished,
+                    ...oldTask
+                })
 
-            const taskJobType = {
-                status: job.status,
-                charges: job.charges,
-                timeSpent: job.timeSpent,
-                equipment_scanned: job.equipment_scanned,
-                no_of_equipment_scanned: job.no_of_equipment_scanned,
-                jobType: job.type,
+                taskEntry.jobTypes = taskJobType;
             }
-
-            taskEntry.jobTypes.push(taskJobType);
         }
 
-            // Remove old task in tasks object
-            // await Job.updateMany({
-            //     _id: job._id
-            // }, { $pull: { tasks: { $exists: true } } });
-
-            // Convert old task to new tasks
-            // job.tasks.push(taskEntry);
-        // job.tasks = taskEntry;
-        // }
-
-        // Handle job image
-        // if (job.image) {
-        //     job.images.push({ imageUrl: job.image, uploadedBy: job.createdBy });
-        // }
-
+        job.tasks = taskEntry;
         job.save();
     }
 
@@ -147,22 +155,27 @@ export const migrateJobTask = async (req: Request, res: Response) => {
 
 }
 
+/**
+ * To migrate the old `image` (single string) param to new `images` (array),
+ * for Service Ticket and Job
+ */
 export const migrateTicketAndJobImage = async (req: Request, res: Response) => {
 
-    const serviceTickets = await ServiceTicket.find({ image: { $exists: true } });
-    const jobs = await Job.find({ image: { $exists: true } });
+    // Retrieve all serviceTickets and jobs that have `image` property
+    const serviceTickets = await ServiceTicket.find({ image: { $ne: null } });
+    const jobs = await Job.find({ image: { $ne: null } });
 
-    if (!serviceTickets && !jobs)
+    if (!serviceTickets && !jobs) {
         return res.json({ status: Status.OK, message: 'No service tickets and jobs to be migrated' });
+    }
 
     for (const serviceTicket of serviceTickets) {
-        // if (serviceTicket.image) {
         serviceTicket.images = serviceTicket.images ?? [];
         serviceTicket.images.push({
             imageUrl: serviceTicket.image,
-            uploadedBy: serviceTicket.createdBy
+            uploadedBy: serviceTicket.createdBy,
+            createdAt: serviceTicket.createdAt
         });
-        // }
 
         serviceTicket.save();
     }
@@ -171,7 +184,8 @@ export const migrateTicketAndJobImage = async (req: Request, res: Response) => {
         job.images = job.images ?? [];
         job.images.push({
             imageUrl: job.image,
-            uploadedBy: job.createdBy
+            uploadedBy: job.createdBy,
+            createdAt: job.createdAt
         });
 
         job.save();

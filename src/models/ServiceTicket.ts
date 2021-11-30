@@ -11,8 +11,8 @@ export interface IServiceTicket extends Document {
     note: string
     customerPO: string,
     customerContactId: Schema.Types.ObjectId | any
-    image: string,
-    images: {
+    image?: string,
+    images?: {
         _id?: Schema.Types.ObjectId
         imageUrl?: string
         uploadedBy?: Schema.Types.ObjectId | IUser
@@ -60,6 +60,7 @@ const ServiceTicketSchema = new Schema({
         required: false
     },
     customerPO : String,
+    image: String,
     images: [
         { 
             imageUrl: {

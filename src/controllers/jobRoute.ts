@@ -49,9 +49,14 @@ export const getAllJobRoutes = async (req: Request, res: Response) => {
             select: '-__v -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
             populate: [
                 { path: 'customer', select: 'profile vendorId address location' },
+                // TODO: To be deprecated
                 { path: 'contractor', select: 'info address contact' },
+                // TODO: To be deprecated
                 { path: 'technician', select: 'profile contact' },
+                { path: 'tasks.contractor', select: 'info address contact' },
+                { path: 'tasks.technician', select: 'profile contact' },
                 { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'type', select: 'title description sku' },
                 { path: 'ticket', select: '-__v -track' },
                 { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
@@ -99,6 +104,7 @@ export const getJobRoute = async (req: Request, res: Response) => {
             populate: [
                 { path: 'customer', select: 'profile vendorId address location' },
                 { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'type', select: 'title description sku' },
                 { path: 'ticket', select: '-__v -track' },
                 { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
