@@ -9,6 +9,7 @@ import { IPriceTier } from '../models/PriceTier';
 import { _addItemTier } from '../controllers/company';
 import { Job } from '../models/Job';
 import { ServiceTicket } from '../models/ServiceTicket';
+import { JobType } from '../models/JobType';
 
 /**
  * To sync and update all companies and customers to have Item Price Tier,
@@ -86,6 +87,7 @@ export const migrateJobTask = async (req: Request, res: Response) => {
      * so we only find job that have employeeType
      */
     const jobs = await Job.find({ employeeType: { $exists: true } });
+    const taskJobType = [];
 
     if (!jobs?.length) {
         return res.json({ status: Status.OK, message: 'No jobs to be migrated' });
@@ -102,40 +104,30 @@ export const migrateJobTask = async (req: Request, res: Response) => {
         if (job.tasks) {
             // Backup old tasks to tasksBackup
             job.tasksBackup = job.tasks;
-
+            // Move old task to task jobType
             taskEntry.jobTypes = job.tasks;
+            // Remove old task in tasks object
+            await Job.updateMany({
+                _id: job._id
+            }, { $pull: { tasks: { $exists: true } } });
         }
 
         if (job.type) {
-            taskEntry.jobTypes = taskEntry.jobTypes ?? [];
-
-            const taskJobType = {
+            // taskEntry.jobTypes = taskEntry.jobTypes ?? [];
+            const jobType = await JobType.findById(job.type);
+            taskJobType.push({
+                jobType: jobType._id,
                 status: job.status,
                 charges: job.charges,
                 timeSpent: job.timeSpent,
-                equipment_scanned: job.equipment_scanned,
-                no_of_equipment_scanned: job.no_of_equipment_scanned,
-                jobType: job.type,
-            }
+                equipmentScanned: job.equipment_scanned,
+                noOfEquipmentScanned: job.no_of_equipment_scanned,
+            })
 
-            taskEntry.jobTypes.push(taskJobType);
+            taskEntry.jobTypes = taskJobType;
         }
 
-            // Remove old task in tasks object
-            // await Job.updateMany({
-            //     _id: job._id
-            // }, { $pull: { tasks: { $exists: true } } });
-
-            // Convert old task to new tasks
-            // job.tasks.push(taskEntry);
-        // job.tasks = taskEntry;
-        // }
-
-        // Handle job image
-        // if (job.image) {
-        //     job.images.push({ imageUrl: job.image, uploadedBy: job.createdBy });
-        // }
-
+        job.tasks = taskEntry;
         job.save();
     }
 

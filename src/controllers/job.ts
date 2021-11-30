@@ -81,14 +81,14 @@ export const createJob = (req: Request, res: Response) => {
                         $or: [
                             {
                                 company: company._id,
-                                technician: params.technicianId,
+                                tasks: { technician: params.technicianId },
                                 scheduleDate: new Date(params.scheduleDate),
                                 scheduledStartTime: { $lte: newStartTime },
                                 scheduledEndTime: { $gte: newStartTime }
                             },
                             {
                                 company: company._id,
-                                technician: params.technicianId,
+                                task: { technician: params.technicianId },
                                 scheduleDate: new Date(params.scheduleDate),
                                 scheduledStartTime: { $lte: newEndTime },
                                 scheduledEndTime: { $gte: newEndTime }
@@ -141,7 +141,7 @@ export const createSubJob = async (req: Request, res: Response) => {
     }
 
     // Search and check if Parent Job existed
-    const parentJob: IJob = await Job.findOne({ _id: params.parentJobId, contractor: companyId, status: JobStatus.PENDING });
+    const parentJob: IJob = await Job.findOne({ _id: params.parentJobId, 'tasks.contractor': companyId, status: JobStatus.PENDING });
     if (!parentJob) {
         return res.json({ status: Status.Error, message: 'Parent Job not found' });
     }
@@ -185,7 +185,8 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
 
     const tasks = await _handleMutltipleTechniciansTasks({ req, parentJob, paramTasks, serviceTicket });
 
-    let track = [];
+    let track: any = [];
+    let trackedServiceTicket: { user: any; action: string; date: Date; }[] = [];
     let action = '|Created A Job|';
     track.push({
         user: user._id,
@@ -267,7 +268,13 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
             return next(req, res, Messages.GenericError, null, null)
         }
 
-        serviceTicket.updateOne({ jobCreated: true }, async (serviceTicketError: any, raw: any) => {
+        trackedServiceTicket.push({
+            user: user._id,
+            action: `|Job created by ${user.profile.displayName} at ${momentTz(job.createdAt).tz('America/Chicago').format('MM/DD/YYYY HH:mm:ss A')}|`,
+            date: new Date()
+        });
+
+        serviceTicket.updateOne({ jobCreated: true, track: trackedServiceTicket }, async (serviceTicketError: any, raw: any) => {
             if (serviceTicketError) {
                 return next(req, res, Messages.GenericError, null, null)
             }
@@ -850,7 +857,9 @@ export const getJobs = (req: Request, res: Response) => {
                     select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
                     populate: [
                         { path: 'customer', select: 'profile vendorId address location' },
+                        // TODO: To be deprecated
                         { path: 'tasks.jobType', select: 'title description sku' },
+                        { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                         { path: 'type', select: 'title description sku' },
                         { path: 'ticket', select: '-__v -track' },
                         { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
@@ -944,7 +953,7 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
 
 
 const createJobReport = async (jobId: any, companyId: any, customerName: string | null, technicianName: string | null, date: any, contractor?: any) => {
-    const job = await Job.findOne({ _id: jobId, $or: [{ contractor: companyId }, { company: companyId }], status: JobStatus.FINISHED }).select('_id').exec();
+    const job = await Job.findOne({ _id: jobId, $or: [{ contractor: companyId }, { 'tasks.contractor': companyId }, { company: companyId }], status: JobStatus.FINISHED }).select('_id').exec();
     if (job) {
         const scans = await Scan.find({ job: job }, 'comment timeOfScan').select('_id').exec();
         const purchaseOrders = await PurchaseOrder.find({ job: job }).select('_id').exec();
@@ -1082,7 +1091,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
         return res.json({ status: Status.Error, message: 'Note is required when you reschedule or make the job incomplete' });
     }
 
-    Job.findOne({ _id: params.jobId, $or: [{ contractor: companyId }, { company: companyId }] })
+    Job.findOne({ _id: params.jobId, $or: [{ company: companyId }, { 'tasks.contractor': companyId }, { contractor: companyId }, { company: companyId }] })
         // .select('_id customer ticket technician scheduleDate company comment track')
         .populate({
             path: 'customer',
@@ -1373,7 +1382,7 @@ export const startJob = (req: Request, res: Response) => {
     }
 
     Job.findOne(
-        { _id: params.jobId, $or: [{ contractor: companyId }, { company: companyId }] },
+        { _id: params.jobId, $or: [{ contractor: companyId }, { 'tasks.contractor': companyId }, { company: companyId }] },
         async (err: any, job: IJob) => {
 
             if (err) {
@@ -1586,10 +1595,12 @@ export const updateJobTask = async (req: Request, res: Response) => {
         _id: params.jobId,
         $or: [{ company: companyId }, { 'tasks.contractor': companyId }, { contractor: companyId }]
     })
+        // TODO: To be deprecated
         .populate({ path: 'tasks.jobType', select: 'title' })
         .populate({ path: 'tasks.jobTypes.jobType', select: 'title' })
         .populate({ path: 'customer', select: 'profile.displayName itemTier' })
-        .populate({ path: 'tasks.jobTypes.technician', select: 'profile.displayName' })
+        .populate({ path: 'tasks.technician', select: 'profile.displayName' })
+        // TODO: To be deprecated
         .populate({ path: 'technician', select: 'profile.displayName' })
         .populate({ path: 'ticket.customer', select: 'profile.displayName' })
 
@@ -1761,7 +1772,7 @@ export const editJob = async (req: Request, res: Response) => {
     }
 
     Job.findOne(
-        { _id: params.jobId, $or: [{ contractor: companyId }, { company: companyId }] },
+        { _id: params.jobId, $or: [{ contractor: companyId }, { 'tasks.contractor': companyId }, { company: companyId }] },
         async (err: any, job: IJob) => {
 
             if (err) {
@@ -2326,7 +2337,9 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
                     select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
                     populate: [
                         { path: 'customer', select: 'profile vendorId address location' },
+                        // TODO: To be deprecated
                         { path: 'tasks.jobType', select: 'title description sku' },
+                        { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                         { path: 'type', select: 'title description sku' },
                         { path: 'ticket', select: '-__v -track' },
                         { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
