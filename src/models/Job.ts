@@ -18,8 +18,8 @@ export interface IJob extends Document {
     jobSite: Schema.Types.ObjectId | any
     customerContactId: Schema.Types.ObjectId | any
     customerPO: string
-    image: string
-    images: {
+    image?: string
+    images?: {
         _id?: Schema.Types.ObjectId
         imageUrl?: string
         uploadedBy?: Schema.Types.ObjectId | IUser
@@ -162,9 +162,13 @@ const JobSchema = new Schema({
         ref: 'Contact'
     },
     customerPO: String,
+    image: String,
     images: [
         {
-            imageUrl: String,
+            imageUrl: {
+                type: String,
+                required: true
+            },
             uploadedBy: {
                 type: Schema.Types.ObjectId,
                 ref: 'User'

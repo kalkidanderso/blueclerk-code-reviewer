@@ -88,7 +88,7 @@ export const createJob = (req: Request, res: Response) => {
                             },
                             {
                                 company: company._id,
-                                task: { technician: params.technicianId },
+                                tasks: { technician: params.technicianId },
                                 scheduleDate: new Date(params.scheduleDate),
                                 scheduledStartTime: { $lte: newEndTime },
                                 scheduledEndTime: { $gte: newEndTime }
