@@ -969,7 +969,8 @@ const createJobReport = async (jobId: any, companyId: any, customerName: string 
             emailHistory: []
         });
         if (contractor) {
-            jobReport.contractor = contractor;
+            // jobReport.contractor = contractor;
+            jobReport.contractor = null;
         }
         return jobReport.save().then((jobReport: IJobReport) => jobReport);
     }
@@ -1098,6 +1099,10 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             select: 'profile.displayName itemTier'
         })
         .populate({
+            path: 'technician',
+            select: 'profile.displayName'
+        })
+        .populate({
             path: 'tasks.technician',
             select: 'profile.displayName'
         })
@@ -1146,6 +1151,10 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     })
                     .populate({
                         path: 'technician',
+                        select: 'profile.displayName'
+                    })
+                    .populate({
+                        path: 'tasks.technician',
                         select: 'profile.displayName'
                     })
                     .populate({
@@ -1321,22 +1330,24 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 }
 
                 let customerName = job.customer ?
-                    job.customer.profile.displayName :
-                    (job.ticket ? (job.ticket.customer ? job.ticket.customer.profile.displayName : null) : null);
-                let technicianName = job.technician ? job.technician.profile.displayName : null;
-                let technicianNameLinkedJob = linkedJob && linkedJob.technician ? linkedJob.technician.profile.displayName : null;
+                    job.customer.profile?.displayName :
+                    (job.ticket ? (job.ticket.customer ? job.ticket.customer?.profile?.displayName : null) : null);
+                // let technicianName = job.technician ? job.technician?.profile?.displayName : null;
+                // let technicianNameLinkedJob = linkedJob && linkedJob.technician ? linkedJob.technician.profile.displayName : null;
                 let date = job.scheduleDate;
-                if (job.contractor) {
-                    await createJobReport(job._id, job.company, customerName, technicianName, date, job.contractor);
-                } else {
-                    await createJobReport(job._id, job.company, customerName, technicianName, date, companyId);
-                }
+                // if (job.contractor) {
+                // await createJobReport(job._id, job.company, customerName, technicianName, date, job.contractor);
+                // } else {
+                // await createJobReport(job._id, job.company, customerName, technicianName, date, companyId);
+                await createJobReport(job._id, job.company, customerName, null, date, companyId);
+                // }
                 if (linkedJob) {
-                    if (linkedJob.contractor) {
-                        await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, linkedJob.contractor);
-                    } else {
-                        await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, companyId);
-                    }
+                    //     if (linkedJob.contractor) {
+                    //         await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, linkedJob.contractor);
+                    //     } else {
+                    //         await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, companyId);
+                    await createJobReport(linkedJob._id, linkedJob.company, customerName, null, date, companyId);
+                    //     }
                 }
 
                 // Send notification when a job is RESCHEDULED
@@ -1616,8 +1627,8 @@ export const updateJobTask = async (req: Request, res: Response) => {
     let jobStatus = job.status;
 
     // Find the job type in tasks object to be started
-    const task = job.tasks.find(task => task.technician.toString() === params.technicianId);
-    const taskJobType = task.jobTypes.find((task: any) => task.jobType._id.toString() === params.jobTypeId);
+    const task = job.tasks.find(task => task?.technician?._id.toString() === params.technicianId);
+    const taskJobType = task?.jobTypes.find((task: any) => task?.jobType?._id.toString() === params.jobTypeId);
 
     if (!task)
         return res.json({ status: Status.Error, message: Messages.TaskNotFound });
