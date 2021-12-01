@@ -28,7 +28,7 @@ export interface IQBPayment {
     Id?: string
     TxnDate?: string
     CustomerRef: {
-        value: string
+        value?: string
         name?: string
     }
     Line: {
@@ -64,6 +64,15 @@ export interface IQBPayment {
     MetaData?: {
         CreateTime?: string
         LastUpdatedTime?: string
+    },
+    SyncToken?: string
+    CurrencyRef?: {
+        value?: string
+        name?: string
+    }
+    LinkedTxn?: {
+        TxnId?: string
+        TxnType?: string
     }
 }
 

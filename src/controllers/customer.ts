@@ -20,6 +20,7 @@ import { PurchaseOrder } from '../models/PurchaseOrder'
 import { Estimate } from '../models/Estimate'
 import { Tag } from '../models/Tag'
 import { _updateQBInvoice, _transferQBInvoices } from './quickbook.invoice'
+import { _transferQBPayments, _updateQBPayment } from './quickbook.payment'
 
 /**
  * To reset Customer quickbookId,
@@ -42,7 +43,7 @@ export const createCustomer = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
     var companyId = req.companyId;
     let companyTier: { tier: any };
-    if(req.otherCompanyId != undefined) {
+    if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
 
@@ -59,15 +60,15 @@ export const createCustomer = async (req: Request, res: Response) => {
         })
 
         if (!companyTier) {
-            return res.json({ status: Status.Error, message: 'itemTierId is either not found on the Company or itemTier is not active'})
+            return res.json({ status: Status.Error, message: 'itemTierId is either not found on the Company or itemTier is not active' })
         }
     }
 
-    var data: any =  {
+    var data: any = {
         info: {
             email: params.email,
         },
-        profile:{
+        profile: {
             firstName: params.name,
             lastName: params.name,
             displayName: params.name,
@@ -102,75 +103,75 @@ export const createCustomer = async (req: Request, res: Response) => {
     }
     const customer = new Customer(data)
 
-    CompanyCustomer.find({company: companyId},
-        (err: any, companyCustomers: ICompanyCustomer[])=>{
+    CompanyCustomer.find({ company: companyId },
+        (err: any, companyCustomers: ICompanyCustomer[]) => {
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            const customerIds = companyCustomers.length !== 0 ? companyCustomers.map((obj: any)=>{
+            const customerIds = companyCustomers.length !== 0 ? companyCustomers.map((obj: any) => {
                 return obj.customer
             }) : []
 
-            User.find({_id : {$in: customerIds}},
+            User.find({ _id: { $in: customerIds } },
                 'info.email',
-                (err: any, users: IUser[]) =>{
+                (err: any, users: IUser[]) => {
 
-                if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                }
-                if (users.length === 0 || (users.findIndex((element: any) => element.info.email === customer.info.email) < 0)) {
-                    customer.save((err: any) => {
-
-                        if (err) {
-                            return res.json({'status': Status.Error, 'message': Messages.GenericError, 'error' : err})
-                        }
-
-                        // create company customer here
-                        const companyCustomer = new CompanyCustomer({
-                            company: companyId,
-                            customer: customer._id,
-                            createdAt: Date.now()
-                        })
-
-                        companyCustomer.save((err: any) => {
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+                    if (users.length === 0 || (users.findIndex((element: any) => element.info.email === customer.info.email) < 0)) {
+                        customer.save((err: any) => {
 
                             if (err) {
-                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
                             }
 
-                            if (company.qbAuthorized) {
-                                // Create QB Customer
-                                _createQBCustomer(req, res, company, customer, async (err: any, errMsg: any, qbCustomer: IQBCustomer) => {
-                                    if (err) {
-                                        return res.json({ status: err, message: errMsg });
-                                    }
+                            // create company customer here
+                            const companyCustomer = new CompanyCustomer({
+                                company: companyId,
+                                customer: customer._id,
+                                createdAt: Date.now()
+                            })
 
-                                    if (qbCustomer) {
-                                        // Create new Customer in QuickBooks
-                                        customer.quickbookId = qbCustomer.Id;
-                                        await customer.save();
+                            companyCustomer.save((err: any) => {
 
-                                        // If company's customers already synced, update the synced date
-                                        if (company.qbSync?.customersSynced) {
-                                            company.qbSync.customersSyncedAt = new Date();
-                                            await company.save();
+                                if (err) {
+                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                }
+
+                                if (company.qbAuthorized) {
+                                    // Create QB Customer
+                                    _createQBCustomer(req, res, company, customer, async (err: any, errMsg: any, qbCustomer: IQBCustomer) => {
+                                        if (err) {
+                                            return res.json({ status: err, message: errMsg });
                                         }
-                                    }
 
-                                    return res.json({ status: Status.Success, message: 'Customer created successfully.', customer, quickbookCustomer: qbCustomer });
-                                })
-                            } else {
-                                return res.json({ status: Status.Success, message: 'Customer created successfully.', customer });
-                            }
+                                        if (qbCustomer) {
+                                            // Create new Customer in QuickBooks
+                                            customer.quickbookId = qbCustomer.Id;
+                                            await customer.save();
 
+                                            // If company's customers already synced, update the synced date
+                                            if (company.qbSync?.customersSynced) {
+                                                company.qbSync.customersSyncedAt = new Date();
+                                                await company.save();
+                                            }
+                                        }
+
+                                        return res.json({ status: Status.Success, message: 'Customer created successfully.', customer, quickbookCustomer: qbCustomer });
+                                    })
+                                } else {
+                                    return res.json({ status: Status.Success, message: 'Customer created successfully.', customer });
+                                }
+
+                            })
                         })
-                    })
-                } else {
-                    return res.json({'status': Status.Error, 'message': 'This email is already registered so please try with other email again'})
-                }
+                    } else {
+                        return res.json({ 'status': Status.Error, 'message': 'This email is already registered so please try with other email again' })
+                    }
 
-            })
+                })
 
         })
 
@@ -445,7 +446,7 @@ export const updateCustomPrices = async (req: Request, res: Response) => {
         parsedCustomPrices.sort((a: any, b: any) => (a.quantity > b.quantity) ? 1 : ((b.quantity > a.quantity) ? -1 : 0));
         // Check if quantity is in sequence
         for (let i = 0; i < parsedCustomPrices.length; i++) {
-            if (parsedCustomPrices[i].quantity !== i+1) {
+            if (parsedCustomPrices[i].quantity !== i + 1) {
                 isValid = false
                 break;
             }
@@ -476,20 +477,20 @@ export const customerDetail = (req: Request, res: Response) => {
         companyId = req.otherCompanyId
     }
 
-    CompanyCustomer.findOne({ 'customer': params.customerId, company: companyId})
-    .populate({
-        path: 'customer',
-        populate: [{ path: 'jobLocations', populate: {path: 'jobSites'}}, { path: 'equipments'}, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
-    })
-    .exec().then((companyCustomer: ICompanyCustomer)=>{
-        const customer: any = companyCustomer.customer;
-        if (!companyCustomer || customer.permissions.role != Role.CUSTOMER) {
-            return res.json({'status': Status.Error, 'message': 'No customer found'})
-        }
-        return res.json({'status': Status.Success, 'customer': customer})
-    }).catch((err) => {
-        return res.json({ 'status': Status.Error, 'message': err.message });
-    });
+    CompanyCustomer.findOne({ 'customer': params.customerId, company: companyId })
+        .populate({
+            path: 'customer',
+            populate: [{ path: 'jobLocations', populate: { path: 'jobSites' } }, { path: 'equipments' }, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
+        })
+        .exec().then((companyCustomer: ICompanyCustomer) => {
+            const customer: any = companyCustomer.customer;
+            if (!companyCustomer || customer.permissions.role != Role.CUSTOMER) {
+                return res.json({ 'status': Status.Error, 'message': 'No customer found' })
+            }
+            return res.json({ 'status': Status.Success, 'customer': customer })
+        }).catch((err) => {
+            return res.json({ 'status': Status.Error, 'message': err.message });
+        });
 }
 
 export const searchDuplicatedCustomers = async (req: Request, res: Response) => {
@@ -565,93 +566,102 @@ export const mergeCustomers = async (req: Request, res: Response) => {
 
             // TODO: Refactor to separate function
             // Update customer on job location
-            JobLocation.updateMany(
-                { _id: { $in: jobLocations }, customerId: { $in: unusedCustomerIds } },
-                { $set: { customerId: params.customerId } }
-            ).exec();
+            // JobLocation.updateMany(
+            //     { _id: { $in: jobLocations }, customerId: { $in: unusedCustomerIds } },
+            //     { $set: { customerId: params.customerId } }
+            // ).exec();
 
-            CustomerEquipment.updateMany(
-                { _id: { $in: customerEquipments }, customer: { $in: unusedCustomerIds } },
-                { $set: { customer: params.customerId } }
-            ).exec();
+            // CustomerEquipment.updateMany(
+            //     { _id: { $in: customerEquipments }, customer: { $in: unusedCustomerIds } },
+            //     { $set: { customer: params.customerId } }
+            // ).exec();
 
-            // Update customer on service ticket
-            ServiceTicket.updateMany(
-                { company: companyId, customer: { $in: unusedCustomerIds } },
-                { $set: { customer: params.customerId } }
-            ).exec();
+            // // Update customer on service ticket
+            // ServiceTicket.updateMany(
+            //     { company: companyId, customer: { $in: unusedCustomerIds } },
+            //     { $set: { customer: params.customerId } }
+            // ).exec();
 
-            // Update customer on job
-            Job.updateMany(
-                { company: companyId, customer: { $in: unusedCustomerIds } },
-                { $set: { customer: params.customerId } }
-            ).exec();
+            // // Update customer on job
+            // Job.updateMany(
+            //     { company: companyId, customer: { $in: unusedCustomerIds } },
+            //     { $set: { customer: params.customerId } }
+            // ).exec();
 
-            // Update customer on job site
-            JobSite.updateMany(
-                { customerId: { $in: unusedCustomerIds } },
-                { $set: { customerId: params.customerId } }
-            ).exec();
+            // // Update customer on job site
+            // JobSite.updateMany(
+            //     { customerId: { $in: unusedCustomerIds } },
+            //     { $set: { customerId: params.customerId } }
+            // ).exec();
 
-            // Update customer on payment
-            Payment.updateMany(
-                { customer: { $in: unusedCustomerIds }, company: companyId },
-                { $set: { customer: params.customerId } }
-            ).exec();
+            // // Update customer on payment
+            // Payment.updateMany(
+            //     { customer: { $in: unusedCustomerIds }, company: companyId },
+            //     { $set: { customer: params.customerId } }
+            // ).exec();
 
-            // Update customer on purchase order
-            PurchaseOrder.updateMany(
-                { customer: { $in: unusedCustomerIds }, company: companyId },
-                { $set: { customer: params.customerId } }
-            ).exec();
+            // // Update customer on purchase order
+            // PurchaseOrder.updateMany(
+            //     { customer: { $in: unusedCustomerIds }, company: companyId },
+            //     { $set: { customer: params.customerId } }
+            // ).exec();
 
-            // Update customer on estimate
-            Estimate.updateMany(
-                { customer: { $in: unusedCustomerIds }, company: companyId },
-                { $set: { customer: params.customerId } }
-            ).exec();
+            // // Update customer on estimate
+            // Estimate.updateMany(
+            //     { customer: { $in: unusedCustomerIds }, company: companyId },
+            //     { $set: { customer: params.customerId } }
+            // ).exec();
 
-            // Update customer tag
-            Tag.updateMany(
-                { customer: { $in: unusedCustomerIds }, company: companyId },
-                { $set: { customer: params.customerId } }
-            ).exec();
+            // // Update customer tag
+            // Tag.updateMany(
+            //     { customer: { $in: unusedCustomerIds }, company: companyId },
+            //     { $set: { customer: params.customerId } }
+            // ).exec();
 
-            // Update customer invoice
-            Invoice.updateMany(
-                { customer: { $in: unusedCustomerIds }, company: companyId },
-                { $set: { customer: params.customerId } }
-            ).exec()
+            // // Update customer invoice
+            // Invoice.updateMany(
+            //     { customer: { $in: unusedCustomerIds }, company: companyId },
+            //     { $set: { customer: params.customerId } }
+            // ).exec()
 
             if (company?.qbAuthorized && customer.quickbookId) {
                 // Update qb invoice and inactivate unused customer
-                _transferQBInvoices(req, res, company, unusedCustomers, customer, async (err, errMsg) => {
+
+                // TODO: updateQBPayment
+                await _transferQBPayments(req, res, company, unusedCustomers, customer, async (err, errMsg) => {
                     if (err) {
-                        return res.json({ status: err, message: errMsg });
+                        // return res.json({ status: err, message: errMsg });
+                        throw new Error(errMsg)
                     }
 
-                    // TODO: updateQBPayment
 
-                    _inactivateQBCustomers(company, unusedCustomers, async (err, errMsg) => {
+                    await _transferQBInvoices(req, res, company, unusedCustomers, customer, async (err, errMsg) => {
                         if (err) {
                             return res.json({ status: err, message: errMsg });
                         }
-
-                        _updateQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
+                        _inactivateQBCustomers(company, unusedCustomers, async (err, errMsg) => {
                             if (err) {
-                                return res.json({ status: err, message: errMsg });
+                                // return res.json({ status: err, message: errMsg });
+                                throw new Error(errMsg)
                             }
 
-                            // Remove unused customer (Disable for development)
-                            // Customer.deleteMany({_id: {$in: unusedCustomerIds}}).exec();
-                            await Customer.updateMany(
-                                { _id: { $in: unusedCustomerIds }, company: companyId },
-                                { $set: { isActive: false } }
-                            ).exec()
+                            _updateQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
+                                if (err) {
+                                    // return res.json({ status: err, message: errMsg });
+                                    throw new Error(errMsg)
+                                }
 
-                            return res.json({ status: Status.Success, customer });
+                                // Remove unused customer (Disable for development)
+                                // Customer.deleteMany({_id: {$in: unusedCustomerIds}}).exec();
+                                await Customer.updateMany(
+                                    { _id: { $in: unusedCustomerIds }, company: companyId },
+                                    { $set: { isActive: false } }
+                                ).exec()
+
+                            });
                         });
                     });
+                    return res.json({ status: Status.Success, customer });
                 });
             } else {
                 return res.json({ status: Status.Success, customer });
