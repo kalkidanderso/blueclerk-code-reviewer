@@ -1616,8 +1616,8 @@ export const updateJobTask = async (req: Request, res: Response) => {
     let jobStatus = job.status;
 
     // Find the job type in tasks object to be started
-    const task = job.tasks.find(task => task.technician.toString() === params.technicianId);
-    const taskJobType = task.jobTypes.find((task: any) => task.jobType._id.toString() === params.jobTypeId);
+    const task = job.tasks.find(task => task?.technician?._id.toString() === params.technicianId);
+    const taskJobType = task?.jobTypes.find((task: any) => task?.jobType?._id.toString() === params.jobTypeId);
 
     if (!task)
         return res.json({ status: Status.Error, message: Messages.TaskNotFound });
