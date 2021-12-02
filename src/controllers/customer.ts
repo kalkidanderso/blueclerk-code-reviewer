@@ -564,81 +564,25 @@ export const mergeCustomers = async (req: Request, res: Response) => {
 
         await Customer.find({ _id: { $in: unusedCustomerIds } }).exec(async (err: any, unusedCustomers: ICustomer[]) => {
 
-            // TODO: Refactor to separate function
             // Update customer on job location
-            // JobLocation.updateMany(
-            //     { _id: { $in: jobLocations }, customerId: { $in: unusedCustomerIds } },
-            //     { $set: { customerId: params.customerId } }
-            // ).exec();
-
-            // CustomerEquipment.updateMany(
-            //     { _id: { $in: customerEquipments }, customer: { $in: unusedCustomerIds } },
-            //     { $set: { customer: params.customerId } }
-            // ).exec();
-
-            // // Update customer on service ticket
-            // ServiceTicket.updateMany(
-            //     { company: companyId, customer: { $in: unusedCustomerIds } },
-            //     { $set: { customer: params.customerId } }
-            // ).exec();
-
-            // // Update customer on job
-            // Job.updateMany(
-            //     { company: companyId, customer: { $in: unusedCustomerIds } },
-            //     { $set: { customer: params.customerId } }
-            // ).exec();
-
-            // // Update customer on job site
-            // JobSite.updateMany(
-            //     { customerId: { $in: unusedCustomerIds } },
-            //     { $set: { customerId: params.customerId } }
-            // ).exec();
-
-            // // Update customer on payment
-            // Payment.updateMany(
-            //     { customer: { $in: unusedCustomerIds }, company: companyId },
-            //     { $set: { customer: params.customerId } }
-            // ).exec();
-
-            // // Update customer on purchase order
-            // PurchaseOrder.updateMany(
-            //     { customer: { $in: unusedCustomerIds }, company: companyId },
-            //     { $set: { customer: params.customerId } }
-            // ).exec();
-
-            // // Update customer on estimate
-            // Estimate.updateMany(
-            //     { customer: { $in: unusedCustomerIds }, company: companyId },
-            //     { $set: { customer: params.customerId } }
-            // ).exec();
-
-            // // Update customer tag
-            // Tag.updateMany(
-            //     { customer: { $in: unusedCustomerIds }, company: companyId },
-            //     { $set: { customer: params.customerId } }
-            // ).exec();
-
-            // // Update customer invoice
-            // Invoice.updateMany(
-            //     { customer: { $in: unusedCustomerIds }, company: companyId },
-            //     { $set: { customer: params.customerId } }
-            // ).exec()
+            await _moveCustomer({ req, res, customerId: params.customerId, companyId, unusedCustomerIds, jobLocations, customerEquipments });
 
             if (company?.qbAuthorized && customer.quickbookId) {
-                // Update qb invoice and inactivate unused customer
 
-                // TODO: updateQBPayment
+                // Update Qb payment and linked invoices
                 await _transferQBPayments(req, res, company, unusedCustomers, customer, async (err, errMsg) => {
                     if (err) {
                         // return res.json({ status: err, message: errMsg });
                         throw new Error(errMsg)
                     }
 
-
+                    // Update qb invoice and inactivate unused customer
                     await _transferQBInvoices(req, res, company, unusedCustomers, customer, async (err, errMsg) => {
                         if (err) {
-                            return res.json({ status: err, message: errMsg });
+                            // return res.json({ status: err, message: errMsg });
+                            throw new Error(errMsg);
                         }
+
                         _inactivateQBCustomers(company, unusedCustomers, async (err, errMsg) => {
                             if (err) {
                                 // return res.json({ status: err, message: errMsg });
@@ -657,16 +601,96 @@ export const mergeCustomers = async (req: Request, res: Response) => {
                                     { _id: { $in: unusedCustomerIds }, company: companyId },
                                     { $set: { isActive: false } }
                                 ).exec()
-
                             });
                         });
                     });
-                    return res.json({ status: Status.Success, customer });
                 });
-            } else {
-                return res.json({ status: Status.Success, customer });
+                // return res.json({ status: Status.Success, customer });
             }
+            // else {
+            return res.json({ status: Status.Success, customer });
+            // }
         });
     });
 
+}
+
+export const _moveCustomer = async ({
+    req,
+    res,
+    customerId,
+    companyId,
+    unusedCustomerIds,
+    jobLocations,
+    customerEquipments
+}: {
+    req: Request
+    res: Response
+    customerId: string
+    companyId: string
+    unusedCustomerIds: string[]
+    jobLocations: string[]
+    customerEquipments: string[]
+}) => {
+    // Update customer on job location when job location is provided
+    JobLocation.updateMany(
+        { _id: { $in: jobLocations }, customerId: { $in: unusedCustomerIds } },
+        { $set: { customerId: customerId } }
+    ).exec();
+
+    // Update customer on job location when job location is provided
+    CustomerEquipment.updateMany(
+        { _id: { $in: customerEquipments }, customer: { $in: unusedCustomerIds } },
+        { $set: { customer: customerId } }
+    ).exec();
+
+    // Update customer on service ticket
+    ServiceTicket.updateMany(
+        { company: companyId, customer: { $in: unusedCustomerIds } },
+        { $set: { customer: customerId } }
+    ).exec();
+
+    // Update customer on job
+    Job.updateMany(
+        { company: companyId, customer: { $in: unusedCustomerIds } },
+        { $set: { customer: customerId } }
+    ).exec();
+
+    // Update customer on job site
+    JobSite.updateMany(
+        { customerId: { $in: unusedCustomerIds } },
+        { $set: { customerId: customerId } }
+    ).exec();
+
+    // Update customer on payment
+    Payment.updateMany(
+        { customer: { $in: unusedCustomerIds }, company: companyId },
+        { $set: { customer: customerId } }
+    ).exec();
+
+    // Update customer on purchase order
+    PurchaseOrder.updateMany(
+        { customer: { $in: unusedCustomerIds }, company: companyId },
+        { $set: { customer: customerId } }
+    ).exec();
+
+    // Update customer on estimate
+    Estimate.updateMany(
+        { customer: { $in: unusedCustomerIds }, company: companyId },
+        { $set: { customer: customerId } }
+    ).exec();
+
+    // Update customer tag
+    Tag.updateMany(
+        { customer: { $in: unusedCustomerIds }, company: companyId },
+        { $set: { customer: customerId } }
+    ).exec();
+
+    // Update customer invoice
+    Invoice.updateMany(
+        { customer: { $in: unusedCustomerIds }, company: companyId },
+        { $set: { customer: customerId } }
+    ).exec();
+
+    return;
 }

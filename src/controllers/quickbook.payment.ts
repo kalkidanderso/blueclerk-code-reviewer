@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import moment from 'moment';
+import * as _ from 'lodash';
 import { Status, Messages, PaymentTypes } from '../common/constants';
 
 import { ICustomer, Customer, IQBCustomer } from '../models/Customer';
@@ -419,7 +420,8 @@ export const _transferQBPayments = async (req: Request, res: Response, company: 
     // Always refresh the token first because token valid only for 60 minutes
     _refreshToken(req, res, company, async (err, errMsg, company) => {
         if (err === 0) {
-            return res.json({ status: Status.Error, message: errMsg });
+            // return res.json({ status: Status.Error, message: errMsg });
+            throw new Error(errMsg);
         }
 
         if (err === 400) {
@@ -429,7 +431,8 @@ export const _transferQBPayments = async (req: Request, res: Response, company: 
                 qbRefreshToken: undefined
             });
 
-            return next(Status.QBUnauthorized, Messages.QBUnAuthorized);
+            // return next(Status.QBUnauthorized, Messages.QBUnAuthorized);
+            throw new Error(Messages.QBUnAuthorized);
         }
 
         // Initiate node-quickbooks object with the refreshed company token
@@ -458,44 +461,53 @@ export const _transferQBPayments = async (req: Request, res: Response, company: 
                                 if (qbPayments?.length) {
                                     for (const qbPayment of qbPayments) {
                                         if (qbPayment && unusedQBCustomer?.Active) {
+                                            // Handle payment deposit transaction
+                                            if (qbPayment?.LinkedTxn?.length) {
+                                                // Remove deposited transaction if payment has been deposited for now
+                                                // for (const linkedTxn of qbPayment.LinkedTxn) {
+                                                //     // Delete deposited transaction for now
+                                                //     qbo.deleteDeposit(linkedTxn.TxnId, async (err: any, qbDepo: any) => { });
+                                                // }
+                                            }
+
+                                            // Handle linked transaction invoice in payment
+                                            if (qbPayment?.Line.length) {
+                                                for (const paymentLine of qbPayment?.Line) {
+                                                    for (const linkedTxn of paymentLine.LinkedTxn) {
+                                                        if (linkedTxn.TxnType === IQBPaymentTxnTypes.INVOICE) {
+                                                            qbo.getInvoice(linkedTxn.TxnId, async (err: any, qbInvoice: IQBInvoice) => {
+                                                                if (qbInvoice) {
+                                                                    qbInvoice.CustomerRef = qbInvoice?.CustomerRef ?? {};
+                                                                    qbInvoice.CustomerRef.value = currentCustomer?.quickbookId;
+                                                                    qbInvoice.CustomerRef.name = currentCustomer?.profile?.displayName;
+                                                                    qbInvoice.BillEmail = qbInvoice.BillEmail ?? {};
+                                                                    qbInvoice.BillEmail.Address = currentCustomer?.info?.email;
+                                                                }
+
+                                                                qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => { })
+                                                            });
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            // End of handle linked transaction invoice in payment
+
                                             // This item is required
                                             qbPayment.Id;
                                             // This item is required
                                             qbPayment.SyncToken;
                                             // This item is required
                                             qbPayment.Line = qbPayment.Line;
-                                            qbPayment.CustomerRef = qbPayment.CustomerRef ?? {};
+                                            qbPayment.CustomerRef = qbPayment?.CustomerRef ?? {};
                                             qbPayment.CustomerRef.value = currentCustomer?.quickbookId;
                                             qbPayment.CustomerRef.name = currentCustomer?.profile?.displayName;
                                             qbPayment.TotalAmt = qbPayment.TotalAmt;
-                                            qbPayment.CurrencyRef = qbPayment.CustomerRef;
+                                            qbPayment.CurrencyRef = qbPayment.CurrencyRef;
                                             qbPayment.PaymentRefNum = qbPayment.PaymentRefNum;
                                             qbPayment.PaymentMethodRef = qbPayment.PaymentMethodRef;
                                             qbPayment.TxnDate = qbPayment.TxnDate;
                                             qbPayment.PrivateNote = qbPayment.PrivateNote;
 
-                                            // TODO: Fix 'Deposited Transaction cannot be changed' issue
-                                            // Update payment
-                                            qbPayment.Line.forEach(line => console.log('line', line.LinkedTxn));
-                                            if (qbPayment.Line.length) {
-                                                // Handle linked transaction invoice in payment
-                                                for (const paymentLine of qbPayment.Line) {
-                                                    for (const linkedTxn of paymentLine.LinkedTxn) {
-                                                        if (linkedTxn.TxnType === 'Invoice') {
-                                                            qbo.getInvoice(linkedTxn.TxnId, async (err: any, qbInvoice: IQBInvoice) => {
-                                                                console.log('invoice in payment', qbInvoice);
-                                                                qbInvoice.CustomerRef = qbInvoice?.CustomerRef ?? {};
-                                                                qbInvoice.CustomerRef.value = currentCustomer?.quickbookId;
-                                                                qbInvoice.CustomerRef.name = currentCustomer?.profile?.displayName;
-                                                                qbInvoice.BillEmail = qbInvoice.BillEmail ?? {};
-                                                                qbInvoice.BillEmail.Address = currentCustomer?.info?.email;
-                                                                qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {})
-                                                            });
-                                                        }
-                                                    }
-                                                }
-                                                // End of handle linked transaction invoice in payment
-                                            }
                                             // Update payment in QB 
                                             qbo.updatePayment(qbPayment, async (err: any, qbPayment: IQBPayment) => {
                                                 console.log('updatedPayment', qbPayment);
@@ -504,6 +516,14 @@ export const _transferQBPayments = async (req: Request, res: Response, company: 
                                                 console.log('== err.fault:', err?.fault);
                                                 console.log('== err.fault?.error[0]?.detail:', err?.fault?.error[0]?.detail);
                                                 console.log('== err.fault?.error[0]?.message:', err?.fault?.error[0]?.message);
+                                                return next(
+                                                    Status.Error,
+                                                    err?.Fault?.Error[0]?.Detail
+                                                    || err?.Fault?.Error[0]?.Message
+                                                    || err?.fault?.error[0]?.detail
+                                                    || err?.fault?.error[0]?.message
+                                                    || Messages.GenericError
+                                                );
                                             })
                                         }
                                     }
@@ -515,35 +535,6 @@ export const _transferQBPayments = async (req: Request, res: Response, company: 
 
                 return next(null, null)
             })
-            // Get the QB Payment object based on payment quickbookId
-            // qbo.getPayment(payment.quickbookId, async (err: any, qbPayment: IQBPayment) => {
-
-            //     // Set the new value from the updated payment object
-            //     qbPayment.Line[0].Amount = payment.amountPaid;
-            //     qbPayment.TotalAmt = payment.amountPaid;
-            //     qbPayment.PaymentRefNum = payment.referenceNumber;
-            //     qbPayment.PaymentMethodRef.value = payment.paymentType ? await _getPaymentMethod(qbo, payment) : null;
-            //     qbPayment.TxnDate = moment(payment.paidAt).format('YYYY-MM-DD');
-            //     qbPayment.PrivateNote = payment.note;
-
-            //     // Update QB Payment
-            //     qbo.updatePayment(qbPayment, async (err: any, qbPayment: IQBPayment) => {
-            //         if (err) {
-            //             return next(
-            //                 Status.Error,
-            //                 err.Fault?.Error[0]?.Detail
-            //                 || err.Fault?.Error[0]?.Message
-            //                 || err.fault?.error[0]?.detail
-            //                 || err.fault?.error[0]?.message
-            //                 || Messages.GenericError,
-            //                 null
-            //             );
-            //         }
-
-            //         return next(null, null, qbPayment);
-            //     });
-            // });
-            // });
         })
     })
 }

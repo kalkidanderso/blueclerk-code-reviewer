@@ -73,7 +73,7 @@ export interface IQBPayment {
     LinkedTxn?: {
         TxnId?: string
         TxnType?: string
-    }
+    }[]
 }
 
 export interface IQBPaymentMethod {
