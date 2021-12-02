@@ -316,13 +316,22 @@ export const createInvoice = (req: Request, res: Response) => {
                 // Convert jobTypes to ObjectId in array
                 const jobTypeIds = [];
                 job.tasks.forEach(task => {
-                    jobTypeIds.push(task.jobTypes)
+                    task.jobTypes.forEach(taskJobType => {
+                        jobTypeIds.push(taskJobType.jobType)
+                    })
                 })
                 // const jobTypeIds = job.tasks.map(task => task.jobType);
                 // Fallback for old job who still using one job type
                 if (!jobTypeIds.length) jobTypeIds.push(job.type);
                 // Search all jobTypes' items
-                const items = Item.find({ jobType: { $in: jobTypeIds }});
+                // const items = Item.find({ jobType: { $in: jobTypeIds }});
+                const items:any[] = []
+                jobTypeIds.forEach(async (jobTypeId) => {
+                    const item = await Item.findOne({ jobType: jobTypeId })
+                    items.push(item);
+                });
+
+                // const items = jobTypeIds.map(jobTypeId => Item.findOne({ jobType: jobTypeId }))
                 return Promise.all([result[0], result[1], items])
             })
             .then((result: any) => {
@@ -992,7 +1001,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             total += subTotal;
         }
 
-    } else if (jobTypeitems.length > 0) {
+    } else if (jobTypeitems.length >= 0) {
 
         // Iterate all jobTypes' items and add all to invoice's items
         for (const jobTypeitem of jobTypeitems) {
