@@ -316,7 +316,9 @@ export const createInvoice = (req: Request, res: Response) => {
                 // Convert jobTypes to ObjectId in array
                 const jobTypeIds = [];
                 job.tasks.forEach(task => {
-                    jobTypeIds.push(task.jobTypes)
+                    task.jobTypes.forEach(taskJobType => {
+                        jobTypeIds.push(taskJobType.jobType)
+                    })
                 })
                 // const jobTypeIds = job.tasks.map(task => task.jobType);
                 // Fallback for old job who still using one job type
