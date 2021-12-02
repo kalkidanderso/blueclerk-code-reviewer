@@ -1490,22 +1490,8 @@ export const startJobTask = async (req: Request, res: Response) => {
     if (job.status === JobStatus.CANCELED)
         return res.json({ status: Status.Error, message: `${Messages.JobCannotBeStarted} canceled.` });
 
-    // Check if there is a started task, cannot process to start another task
-    // const startedTask = job.tasks.find(task => task.status === JobStatus.STARTED);
-    // Find the technician on tasks
+    // Retrieve the tasks of the technician
     const tasks = job.tasks.find(task => task.technician.toString() === params.technicianId);
-    tasks?.jobTypes.forEach((jobTypes: any) => {
-        if (jobTypes?.status === JobStatus.STARTED) {
-            startedJobTypes.push(jobTypes.jobType)
-        }
-    });
-
-    if (startedJobTypes.length) {
-        let startedJobTypeTasks
-        startedJobTypes.forEach(jobType => startedJobTypeTasks = jobType.title);
-        return res.json({ status: Status.Error, message: `You can't start this task, you already have a started task: ${startedJobTypeTasks}.` });
-    }
-
     // Find jobType to start
     const taskJobType = tasks.jobTypes.find(jobType => {
         newJobType = <IJobType>jobType.jobType;
@@ -1521,6 +1507,13 @@ export const startJobTask = async (req: Request, res: Response) => {
 
         if (taskJobType.status === JobStatus.FINISHED)
             return res.json({ status: Status.Error, message: `${Messages.TaskCannotBeStarted} finished` });
+
+        // Check if technician has s a started task, cannot process to start another task
+        const startedTask = tasks?.jobTypes?.find(jobType => jobType.status === JobStatus.STARTED);
+        if (startedTask) {
+            const startedTaskJobType = <IJobType>startedTask.jobType;
+            return res.json({ status: Status.Error, message: `You can't start this task, you already have a started task: ${startedTaskJobType?.title}.` });
+        }
 
         // Update the task start time and status
         let actionStatus: string;
@@ -1686,10 +1679,16 @@ export const updateJobTask = async (req: Request, res: Response) => {
         job.completeOnTime = !job.scheduledEndTime ? true : job.scheduledEndTime >= job.endTime;
         jobStatus = JobStatus.FINISHED;
         action += `|Finishing the job|`;
-    } else if (allTaskStatus.includes(5) && !allTaskStatus.includes(0)) {
-        // No more PENDING tasks, but have at least one PAUSED task
-        jobStatus = JobStatus.PAUSED;
     }
+    /**
+     * Kris' remark (Dec 2nd, 2021):
+     * Commented this out for now since Job's status is shared between techs,
+     * to avoid confusion when this case occured
+     */
+    // else if (allTaskStatus.includes(5) && !allTaskStatus.includes(0)) {
+    //     // No more PENDING tasks, but have at least one PAUSED task
+    //     jobStatus = JobStatus.PAUSED;
+    // }
 
     // Log a track history
     const history = {
