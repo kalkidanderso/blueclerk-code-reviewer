@@ -498,6 +498,10 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             path: 'technician',
             select: 'profile.displayName auth.email emailPreferences'
         })
+        .populate({ 
+            path: 'tasks.technician', 
+            select: 'profile auth.email contact' 
+        })
         .populate({
             path: 'contractor',
             select: 'info.companyName info.companyEmail type'
@@ -516,6 +520,10 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
         })
         .populate({
             path: 'tasks.jobType',
+            select: 'title description sku'
+        })
+        .populate({
+            path: 'tasks.jobTypes.jobType',
             select: 'title description sku'
         })
         .populate({
@@ -1013,11 +1021,15 @@ export const getJobReportDetails = (req: Request, res: Response) => {
             path: 'job',
             populate: [
                 { path: 'ticket', select: 'ticketId note scheduleDateTime image customerPO customerContactId' },
+                // TODO: To be deprecated
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.technician', select: 'profile auth.email contact' },
                 { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
                 { path: 'customerContactId', select: '-id -__v' },
                 { path: 'type', select: 'title description sku' },
+                // TODO: To be deprecated
                 { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'tasks.timeUpdatedBy', select: 'profile.displayName' },
                 { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
                 { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
@@ -2206,11 +2218,14 @@ export const sendJobReport = (req: Request, res: Response) => {
             path: 'job',
             populate: [
                 { path: 'ticket', select: 'ticketId note scheduleDateTime' },
+                // TODO: To be deprecated
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.technician', select: 'profile auth.email contact' },
                 { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
                 { path: 'customerContactId', select: '-id -__v' },
                 { path: 'type', select: 'title description sku' },
                 { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'tasks.timeUpdatedBy', select: 'profile.displayName' },
                 { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
                 { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },

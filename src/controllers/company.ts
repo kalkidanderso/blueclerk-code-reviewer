@@ -1175,6 +1175,10 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
                     path: 'type',
                     select: 'title description sku'
                 })
+                .populate({
+                    path: 'tasks.jobTypes.jobType',
+                    select: 'title description sku'
+                })
                 .exec((err: any, jobs: IJob[]) => {
 
                     if (!jobs.length) {

@@ -54,7 +54,7 @@ export const getAllJobRoutes = async (req: Request, res: Response) => {
                 // TODO: To be deprecated
                 { path: 'technician', select: 'profile contact' },
                 { path: 'tasks.contractor', select: 'info address contact' },
-                { path: 'tasks.technician', select: 'profile contact' },
+                { path: 'tasks.technician', select: 'profile contact auth.email' },
                 { path: 'tasks.jobType', select: 'title description sku' },
                 { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'type', select: 'title description sku' },
@@ -201,6 +201,7 @@ export const createJobRoute = async (req: Request, res: Response) => {
             populate: [
                 { path: 'customer', select: 'profile vendorId address location' },
                 { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'type', select: 'title description sku' },
                 { path: 'ticket', select: '-__v -track' },
                 { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
