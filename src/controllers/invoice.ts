@@ -50,7 +50,15 @@ export const getInvoicesByCustomerId = (req: Request, res: Response) => {
     Invoice.find({'company': req.companyId, customer: params.customerId})
         .populate({
             path: 'job',
-            populate: [{ path: 'type', select: 'title description sku' },{ path: 'customer', select: 'info.email auth.email profile.displayName contactName' }, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' }],
+            populate: [{ 
+                path: 'type', select: 'title description sku' 
+            }, { 
+                path: 'customer', select: 'info.email auth.email profile.displayName contactName' 
+            }, { 
+                path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' 
+            }, { 
+                path: 'tasks.technician', select: 'profile auth.email contact' 
+            }],
         })
         .populate({
             path: 'items.item',
