@@ -6286,8 +6286,7 @@
                 "type": "object",
                 "required": [
                   "customerId",
-                  "employeeType",
-                  "jobTypes",
+                  "tasks",
                   "scheduleDate",
                   "ticketId"
                 ],
@@ -6312,17 +6311,9 @@
                     "type": "string",
                     "description": "Id of a equipment for single scan"
                   },
-                  "employeeType": {
-                    "type": "number",
-                    "description": "0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor"
-                  },
-                  "technicianId": {
+                  "tasks": {
                     "type": "string",
-                    "description": "Required when employeeType = 0. Id of a technician selected from the list received by /getEmployeesForJob api"
-                  },
-                  "contractorId": {
-                    "type": "string",
-                    "description": "Required when employeeType = 1. Id of a contractor selected from the list received by /getCompanyContracts api"
+                    "description": "Json string of the technicians e.g [{\"employeeType\":\"0\",\"contractorId\":\"\",\"technicianId\":\"6156b2af9d728306909553ef\",\"jobTypes\":[{\"jobTypeId\": \"617a6362558d3631b4d80c1e\"},{\"jobTypeId\": \"617a6362558d3631b4d80c21\"}]},{\"employeeType\":\"1\",\"contractorId\":\"61554237278b8615ac410493\",\"technicianId\":\"\",\"jobTypes\":[{\"jobTypeId\": \"615417d264da190a5c3f757e\"}, {\"jobTypeId\": \"617a6362558d3631b4d80c1e\"}]}]"
                   },
                   "customerId": {
                     "type": "string",
@@ -6335,10 +6326,6 @@
                   "jobSiteId": {
                     "type": "string",
                     "description": "Id of job site"
-                  },
-                  "jobTypes": {
-                    "type": "string",
-                    "description": "Json string of the jobTypes e.g [{\"jobTypeId\": \"608ae3aeffe3cf17946a08b1\"},{\"jobTypeId\": \"60b90cf138045631806b8e6e\"}]. Id of a job type from the list received by /getJobTypes api"
                   },
                   "description": {
                     "type": "string",
@@ -6833,12 +6820,17 @@
                 "type": "object",
                 "required": [
                   "jobId",
-                  "jobTypeId"
+                  "jobTypeId",
+                  "technicianId"
                 ],
                 "properties": {
                   "jobId": {
                     "type": "string",
                     "description": "Id of job to start"
+                  },
+                  "technicianId": {
+                    "type": "string",
+                    "description": "Id of technician to start"
                   },
                   "jobTypeId": {
                     "type": "string",
@@ -6886,6 +6878,7 @@
                 "type": "object",
                 "required": [
                   "jobId",
+                  "technicianId",
                   "jobTypeId",
                   "status"
                 ],
@@ -6893,6 +6886,10 @@
                   "jobId": {
                     "type": "string",
                     "description": "Id of job to start"
+                  },
+                  "technicianId": {
+                    "type": "string",
+                    "description": "Id of technician to update status"
                   },
                   "jobTypeId": {
                     "type": "string",
@@ -7034,18 +7031,6 @@
                     "type": "string",
                     "description": "Description of the job"
                   },
-                  "employeeType": {
-                    "type": "number",
-                    "description": "0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor"
-                  },
-                  "technicianId": {
-                    "type": "string",
-                    "description": "Required when employeeType = 0. Id of assignee (employee to whom the job is assigned)"
-                  },
-                  "contractorId": {
-                    "type": "string",
-                    "description": "Required when employeeType = 1. Id of contractor (whom the job is assigned)"
-                  },
                   "scheduleDate": {
                     "type": "string",
                     "description": "date of job. e.g. 2021-08-15"
@@ -7066,9 +7051,9 @@
                     "type": "string",
                     "description": "Id of job site"
                   },
-                  "jobTypes": {
+                  "tasks": {
                     "type": "string",
-                    "description": "Json string of the jobTypes e.g [{\"jobTypeId\": \"608ae3aeffe3cf17946a08b1\"},{\"jobTypeId\": \"60b90cf138045631806b8e6e\"}]. Id of a job type from the list received by /getJobTypes api"
+                    "description": "Json string of the technicians e.g [{\"employeeType\":\"0\",\"contractorId\":\"\",\"technicianId\":\"6156b2af9d728306909553ef\",\"jobTypes\":[{\"jobTypeId\": \"617a6362558d3631b4d80c1e\"},{\"jobTypeId\": \"617a6362558d3631b4d80c21\"}]},{\"employeeType\":\"1\",\"contractorId\":\"61554237278b8615ac410493\",\"technicianId\":\"\",\"jobTypes\":[{\"jobTypeId\": \"615417d264da190a5c3f757e\"}, {\"jobTypeId\": \"617a6362558d3631b4d80c1e\"}]}]"
                   },
                   "startTime": {
                     "type": "string",
@@ -10433,7 +10418,59 @@
           "Script"
         ],
         "summary": "To update all companies and customers to have Item Price Tier",
-        "description": "**WARNING: Only do this when you know what you are doing.** This will update all companies and customers those don't have Item Price Tier. Will create 1 new Item Tier for the company to be the default tier and update all customers of that company to use the default tier.\n",
+        "description": "**WARNING: Only do this when you know what you are doing.**\nThis will update all companies and customers those don't have Item Price Tier. Will create 1 new Item Tier for the company to be the default tier and update all customers of that company to use the default tier.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/script/migrateJobTask": {
+      "post": {
+        "tags": [
+          "Script"
+        ],
+        "summary": "To migrate all old jobs to have new tasks structure and backup old task to tasks backup",
+        "description": "**WARNING: Only do this when you know what you are doing.**\nTo migrate all old jobs to have new tasks structure and backup old task to tasks backup.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/script/migrateTicketAndJobImage": {
+      "post": {
+        "tags": [
+          "Script"
+        ],
+        "summary": "To migrate all Service Ticket and Job old image to images (in array format)",
+        "description": "**WARNING: Only do this when you know what you are doing.**\nTo migrate all Service Ticket and Job old image to images (in array format).",
         "responses": {
           "200": {
             "description": "Success",

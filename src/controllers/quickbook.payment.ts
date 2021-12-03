@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import moment from 'moment';
 import { Status, Messages, PaymentTypes } from '../common/constants';
 
-import { ICustomer, Customer } from '../models/Customer';
+import { ICustomer, IQBCustomer, Customer } from '../models/Customer';
 import { ICompany, Company } from '../models/Company'
 import { IInvoice, Invoice } from '../models/Invoice';
 import { IJob } from '../models/Job';
@@ -129,6 +129,7 @@ export const _updateQBPayment = async (req: Request, res: Response, company: ICo
             qbPayment.Line[0].Amount = payment.amountPaid;
             qbPayment.TotalAmt = payment.amountPaid;
             qbPayment.PaymentRefNum = payment.referenceNumber;
+            qbPayment.PaymentMethodRef = qbPayment.PaymentMethodRef ?? { value: null };
             qbPayment.PaymentMethodRef.value = payment.paymentType ? await _getPaymentMethod(qbo, payment) : null;
             qbPayment.TxnDate = moment(payment.paidAt).format('YYYY-MM-DD');
             qbPayment.PrivateNote = payment.note;
@@ -290,72 +291,83 @@ export const createBCPayment = async (req: Request, res: Response, company: ICom
                 );
             }
 
-            // Get BC Customer by QB Payment's Customer quickbookId
-            let customer = await Customer.findOne({ quickbookId: qbPayment.CustomerRef?.value });
+            // Get QB Customer to know if it is a Customer or Job
+            qbo.getCustomer(qbPayment.CustomerRef?.value, async (err: any, qbCustomer: IQBCustomer) => {
+                let customer: ICustomer;
+                if (!qbCustomer.Job) {
+                    // Get BC Customer by QB Payment's Customer quickbookId
+                    customer = await Customer.findOne({ quickbookId: qbCustomer.Id, company: company._id });
+                  } else {
+                    /**
+                     * Invoice was recorded to Customer Job Location in QB,
+                     * Get the Customer ID from the Job Location
+                     */
+                    const jobLocation = await JobLocation.findOne({ quickbookId: qbCustomer.Id, companyId: company._id });
+                    if (jobLocation) {
+                        customer = await Customer.findById(jobLocation.customerId);
+                    }
+                }
 
-            /**
-             * Invoice was recorded to Customer Job Location in QB,
-             * Get the Customer ID from the Job Location
-             */
-            if (!customer) {
-                const jobLocation = await JobLocation.findOne({ quickbookId: qbPayment.CustomerRef?.value });
-                customer = await Customer.findById(jobLocation?.customerId);
-            }
+                // No customer found, return directly
+                if (!customer) {
+                    return next(null, null, []);
+                }
 
-            // Get QB Payment Method by QB Payment's Payment Method ID
-            qbo.getPaymentMethod(qbPayment.PaymentMethodRef?.value, async (err: any, qbPaymentMethod: { Name: string }) => {
+                // Get QB Payment Method by QB Payment's Payment Method ID
+                qbo.getPaymentMethod(qbPayment.PaymentMethodRef?.value, async (err: any, qbPaymentMethod: { Name: string }) => {
 
-                // Iterate all invoice lines on the payment
-                for (const line of qbPayment.Line) {
-                    // Get BC Invoice by QB line's Invoice quickbookId
-                    const invoice = await Invoice.findOne({ quickbookId: line.LinkedTxn[0]?.TxnId, company });
+                    // Iterate all invoice lines on the payment
+                    for (const line of qbPayment.Line) {
+                        // Get BC Invoice by QB line's Invoice quickbookId
+                        const invoice = await Invoice.findOne({ quickbookId: line.LinkedTxn[0]?.TxnId, company });
 
-                    const existPayment = await Payment.findOne({
-                        company,
-                        customer,
-                        invoice,
-                        amountPaid: line.Amount,
-                        referenceNumber: qbPayment.PaymentRefNum,
-                    });
-
-                    // BC Invoice found, proceed the payment for the invoice
-                    if (invoice && !existPayment) {
-                        paymentEntries.push(new Payment({
+                        const existPayment = await Payment.findOne({
+                            company,
                             customer,
                             invoice,
                             amountPaid: line.Amount,
                             referenceNumber: qbPayment.PaymentRefNum,
-                            paymentType: qbPaymentMethod?.Name,
-                            paidAt: qbPayment.TxnDate ? new Date(qbPayment.TxnDate) : Date.now(),
-                            company,
-                            quickbookRefNum: Buffer.from(qbPayment.MetaData?.CreateTime).toString('base64'),
-                            quickbookId: qbPayment.Id,
-                            createdBy: company.admin,
-                            createdAt: Date.now()
-                        }));
-                    }
-                }
+                        });
 
-                // No payment to create, return directly
-                if (!paymentEntries.length || paymentEntries.length <= 0) {
-                    return next(null, null, []);
-                }
-
-                if (paymentEntries.length > 0) {
-                    // Create all payment entries on one shot
-                    await Payment.create(paymentEntries, async (err, payments) => {
-
-                        if (payments.length > 0) {
-                            // Iterate all created payments and calculate invoices
-                            for (const payment of payments) {
-                                // Handle invoice balance due, underpayment, and overpayment
-                                await _calculateInvoiceBalance(<IInvoice>payment.invoice, <ICustomer>payment.customer, payment.amountPaid);
-                            }
+                        // BC Invoice found, proceed the payment for the invoice
+                        if (invoice && !existPayment) {
+                            paymentEntries.push(new Payment({
+                                customer,
+                                invoice,
+                                amountPaid: line.Amount,
+                                referenceNumber: qbPayment.PaymentRefNum,
+                                paymentType: qbPaymentMethod?.Name,
+                                paidAt: qbPayment.TxnDate ? new Date(qbPayment.TxnDate) : Date.now(),
+                                company,
+                                quickbookRefNum: Buffer.from(qbPayment.MetaData?.CreateTime).toString('base64'),
+                                quickbookId: qbPayment.Id,
+                                createdBy: company.admin,
+                                createdAt: Date.now()
+                            }));
                         }
+                    }
 
-                        return next(null, null, payments);
-                    });
-                }
+                    // No payment to create, return directly
+                    if (!paymentEntries.length || paymentEntries.length <= 0) {
+                        return next(null, null, []);
+                    }
+
+                    if (paymentEntries.length > 0) {
+                        // Create all payment entries on one shot
+                        await Payment.create(paymentEntries, async (err, payments) => {
+
+                            if (payments.length > 0) {
+                                // Iterate all created payments and calculate invoices
+                                for (const payment of payments) {
+                                    // Handle invoice balance due, underpayment, and overpayment
+                                    await _calculateInvoiceBalance(<IInvoice>payment.invoice, <ICustomer>payment.customer, payment.amountPaid);
+                                }
+                            }
+
+                            return next(null, null, payments);
+                        });
+                    }
+                })
             })
         })
     })

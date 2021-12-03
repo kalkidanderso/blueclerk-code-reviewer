@@ -11,10 +11,11 @@ export interface IServiceTicket extends Document {
     note: string
     customerPO: string,
     customerContactId: Schema.Types.ObjectId | any
-    images: {
+    image?: string,
+    images?: {
         _id?: Schema.Types.ObjectId
-        imageUrl: string
-        uploadedBy: Schema.Types.ObjectId | IUser
+        imageUrl?: string
+        uploadedBy?: Schema.Types.ObjectId | IUser
         createdAt?: Date
         updatedAt?: Date
     }[]
@@ -59,11 +60,12 @@ const ServiceTicketSchema = new Schema({
         required: false
     },
     customerPO : String,
+    image: String,
     images: [
         { 
             imageUrl: {
                 type: String,
-                required: true 
+                required: true
             },
             uploadedBy: {
                 type: Schema.Types.ObjectId,
