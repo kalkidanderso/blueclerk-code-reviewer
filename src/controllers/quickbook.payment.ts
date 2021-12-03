@@ -516,14 +516,14 @@ export const _transferQBPayments = async (req: Request, res: Response, company: 
                                                 console.log('== err.fault:', err?.fault);
                                                 console.log('== err.fault?.error[0]?.detail:', err?.fault?.error[0]?.detail);
                                                 console.log('== err.fault?.error[0]?.message:', err?.fault?.error[0]?.message);
-                                                return next(
-                                                    Status.Error,
-                                                    err?.Fault?.Error[0]?.Detail
-                                                    || err?.Fault?.Error[0]?.Message
-                                                    || err?.fault?.error[0]?.detail
-                                                    || err?.fault?.error[0]?.message
-                                                    || Messages.GenericError
-                                                );
+                                                // return next(
+                                                //     Status.Error,
+                                                //     err?.Fault?.Error[0]?.Detail
+                                                //     || err?.Fault?.Error[0]?.Message
+                                                //     || err?.fault?.error[0]?.detail
+                                                //     || err?.fault?.error[0]?.message
+                                                //     || Messages.GenericError
+                                                // );
                                             })
                                         }
                                     }
