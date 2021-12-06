@@ -498,9 +498,9 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             path: 'technician',
             select: 'profile.displayName auth.email emailPreferences'
         })
-        .populate({ 
-            path: 'tasks.technician', 
-            select: 'profile auth.email contact' 
+        .populate({
+            path: 'tasks.technician',
+            select: 'profile auth.email contact'
         })
         .populate({
             path: 'contractor',
@@ -1761,265 +1761,268 @@ export const updateJobTask = async (req: Request, res: Response) => {
 
 export const editJob = async (req: Request, res: Response) => {
 
-    const params = req.body;
-    const imagesUrl: string[] = [];
-    let paramTasks = params.tasks ?? [];
+    try {
+        const params = req.body;
+        const imagesUrl: string[] = [];
+        let paramTasks = params.tasks ?? [];
 
-    // To handle any over-stringified strings
-    if (!Array.isArray(paramTasks)) {
-        paramTasks = JSON.parse(params.tasks);
-    }
+        // To handle any over-stringified strings
+        if (!Array.isArray(paramTasks)) {
+            paramTasks = JSON.parse(params.tasks);
+        }
 
-    if (req.files) {
-        const paramsImageFile = JSON.parse(JSON.stringify(req.files));
+        if (req.files) {
+            const paramsImageFile = JSON.parse(JSON.stringify(req.files));
 
-        // Push image location from req.files to imagesUrl
-        // paramsImageFile.forEach((image:any) => imagesUrl.push(image.location));
-        paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
-        paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
-    }
+            // Push image location from req.files to imagesUrl
+            // paramsImageFile.forEach((image:any) => imagesUrl.push(image.location));
+            paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
+            paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
+        }
 
-    var companyId = req.companyId;
-    const user = <IUser>req.user;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
+        var companyId = req.companyId;
+        const user = <IUser>req.user;
+        if (req.otherCompanyId != undefined) {
+            companyId = req.otherCompanyId
+        }
 
-    if (params.employeeType == 0 && !params.technicianId) {
-        return res.json({ status: Status.Error, message: 'technicianId must be provided when employeeType is employee' });
-    }
+        if (params.employeeType == 0 && !params.technicianId) {
+            return res.json({ status: Status.Error, message: 'technicianId must be provided when employeeType is employee' });
+        }
 
-    if (params.employeeType == 1 && !params.contractorId) {
-        return res.json({ status: Status.Error, message: 'contractorId must be provided when employeeType is contractor' });
-    }
+        if (params.employeeType == 1 && !params.contractorId) {
+            return res.json({ status: Status.Error, message: 'contractorId must be provided when employeeType is contractor' });
+        }
 
-    Job.findOne(
-        { _id: params.jobId, $or: [{ contractor: companyId }, { 'tasks.contractor': companyId }, { company: companyId }] },
-        async (err: any, job: IJob) => {
+        Job.findOne(
+            { _id: params.jobId, $or: [{ contractor: companyId }, { 'tasks.contractor': companyId }, { company: companyId }] },
+            async (err: any, job: IJob) => {
 
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            }
-
-            if (job == undefined) {
-                return res.json({ 'status': Status.Error, 'message': "Invalid job id" })
-            }
-
-            let linkedJob: IJob;
-            let isParentJob = true;
-            if (job.parentJob) {
-                // linkedJob = parent job
-                linkedJob = await Job.findOne({ _id: job.parentJob, status: { $nin: [JobStatus.CANCELED] } });
-                isParentJob = false;
-            } else {
-                // linkedJob = sub job
-                linkedJob = await Job.findOne({ parentJob: job._id, status: { $nin: [JobStatus.CANCELED] } });
-            }
-
-            let action = '';
-            let track = job.track ? job.track : [];
-            let trackLinkedJob = linkedJob && linkedJob.track || [];
-            let isJobTypesUpdated = false;
-            const jobTypes: ITaskJobType[] = [];
-            const invalidJobTypes: string[] = [];
-
-            // Get service ticket
-            const serviceTicket = await ServiceTicket.findById(job.ticket);
-            const oldScheduleDate = job.scheduleDate;
-            const oldTechnicians: string[] = job.tasks.map(task => task.technician.toString());
-
-            // Proceed tasks when params.tasks is available and check the job status
-            if (params.tasks) {
-                if (![JobStatus.PENDING, JobStatus.RESCHEDULED, JobStatus.INCOMPLETE].includes(job.status)) {
-                    return res.json({ 'status': Status.Error, 'message': 'Cannot update for a non PENDING/RESCHEDULED/INCOMPLETE job' });
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
 
-                // Handle param technician
-                const tasks = await _handleMutltipleTechniciansTasks({ req, parentJob: job, paramTasks, serviceTicket });
-                job.tasks = tasks;
-                action += `|Updated Tasks|`;
-            }
-
-            job.scheduleDate = params.scheduleDate;
-            job.description = params.description;
-            if (linkedJob) {
-                linkedJob.scheduleDate = params.scheduleDate;
-                linkedJob.description = params.description;
-            }
-
-            let newStartTime: any = null
-            let newEndTime: any = null
-            let date;
-
-            if (params.scheduledStartTime) {
-                date = new Date(params.scheduleDate)
-                newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
-                if (newStartTime != job.scheduledStartTime) {
-                    action += '|Updated ScheduledStartTime|';
-                }
-                job.scheduledStartTime = newStartTime
-                if (linkedJob) { linkedJob.scheduledStartTime = newStartTime; }
-            }
-
-            if (params.scheduledEndTime) {
-                date = new Date(params.scheduleDate)
-                newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
-                if (newEndTime != job.scheduledEndTime) {
-                    action += '|Updated ScheduledEndTime|';
-                }
-                job.scheduledEndTime = newEndTime
-                if (linkedJob) { linkedJob.scheduledEndTime = newEndTime; }
-            }
-
-            if (params.equipmentId != undefined && params.equipmentId !== '""') {
-                if (params.equipmentId != job.equipmentId) {
-                    action += '|Updated EquipmentId|';
-                }
-                job.equipmentId = params.equipmentId
-                if (linkedJob) { linkedJob.equipmentId = params.equipmentId; }
-            }
-
-            if (params.jobLocationId) {
-                if (params.jobLocationId != job.jobLocation) {
-                    action += '|Updated JobLocationId|';
-                }
-                job.jobLocation = params.jobLocationId
-                if (linkedJob) { linkedJob.jobLocation = params.jobLocationId; }
-            }
-
-            if (params.jobSiteId) {
-                if (params.jobSiteId != job.jobSite) {
-                    action += '|Updated JobSiteId|';
-                }
-                job.jobSite = params.jobSiteId
-                if (linkedJob) { linkedJob.jobSite = params.jobSiteId; }
-            }
-
-            if (params.customerContactId) {
-                if (params.customerContactId !== job.customerContactId) {
-                    action += '|Updated Contact Associated|';
-                }
-                job.customerContactId = params.customerContactId;
-                if (linkedJob) { linkedJob.customerContactId = params.customerContactId; }
-            }
-
-            if (params.customerPO) {
-                if (params.customerPO !== job.customerPO) {
-                    action += '|Updated Customer PO|';
-                }
-                job.customerPO = params.customerPO;
-                if (linkedJob) { linkedJob.customerPO = params.customerPO; }
-            }
-
-            if (imagesUrl?.length) {
-                if (JSON.stringify(imagesUrl) !== JSON.stringify(job.images)) {
-                    action += '|Updated image|';
+                if (job == undefined) {
+                    return res.json({ 'status': Status.Error, 'message': "Invalid job id" })
                 }
 
-                imagesUrl.forEach(imageUrl => {
-                    job.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() });
-                    if (linkedJob) { linkedJob.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }) }
-                });
-            }
+                let linkedJob: IJob;
+                let isParentJob = true;
+                if (job.parentJob) {
+                    // linkedJob = parent job
+                    linkedJob = await Job.findOne({ _id: job.parentJob, status: { $nin: [JobStatus.CANCELED] } });
+                    isParentJob = false;
+                } else {
+                    // linkedJob = sub job
+                    linkedJob = await Job.findOne({ parentJob: job._id, status: { $nin: [JobStatus.CANCELED] } });
+                }
 
-            if (job.status == JobStatus.RESCHEDULED) {
-                job.status = JobStatus.PENDING;
-                if (linkedJob) { linkedJob.status = JobStatus.PENDING; }
-                action += '|Job rescheduled|';
-            }
+                let action = '';
+                let track = job.track ? job.track : [];
+                let trackLinkedJob = linkedJob && linkedJob.track || [];
+                let isJobTypesUpdated = false;
+                const jobTypes: ITaskJobType[] = [];
+                const invalidJobTypes: string[] = [];
 
-            if (action !== '') {
-                track.push({
-                    user: user._id,
-                    action,
-                    date: new Date()
-                });
-            }
+                // Get service ticket
+                const serviceTicket = await ServiceTicket.findById(job.ticket);
+                const oldScheduleDate = job.scheduleDate;
+                const oldTechnicians: string[] = job.tasks.map(task => task.technician.toString());
 
-            job.track = track;
-            if (linkedJob) { linkedJob.track = trackLinkedJob; }
-            if (job.ticket) {
-                ServiceTicket.findOne({ _id: new ObjectId(job.ticket) }).then((t) => {
-                    if (t) {
-                        if (!t.jobLocation && params.jobLocation) {
-                            t.jobLocation = params.jobLocation;
+                // Proceed tasks when params.tasks is available and check the job status
+                if (params.tasks) {
+                    if (![JobStatus.PENDING, JobStatus.RESCHEDULED, JobStatus.INCOMPLETE].includes(job.status)) {
+                        return res.json({ 'status': Status.Error, 'message': 'Cannot update for a non PENDING/RESCHEDULED/INCOMPLETE job' });
+                    }
+
+                    // Handle param technician
+                    const tasks = await _handleMutltipleTechniciansTasks({ req, parentJob: job, paramTasks, serviceTicket });
+                    job.tasks = tasks;
+                    action += `|Updated Tasks|`;
+                }
+
+                job.scheduleDate = params.scheduleDate;
+                job.description = params.description;
+                if (linkedJob) {
+                    linkedJob.scheduleDate = params.scheduleDate;
+                    linkedJob.description = params.description;
+                }
+
+                let newStartTime: any = null
+                let newEndTime: any = null
+                let date;
+
+                if (params.scheduledStartTime) {
+                    date = new Date(params.scheduleDate)
+                    newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
+                    if (newStartTime != job.scheduledStartTime) {
+                        action += '|Updated ScheduledStartTime|';
+                    }
+                    job.scheduledStartTime = newStartTime
+                    if (linkedJob) { linkedJob.scheduledStartTime = newStartTime; }
+                }
+
+                if (params.scheduledEndTime) {
+                    date = new Date(params.scheduleDate)
+                    newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
+                    if (newEndTime != job.scheduledEndTime) {
+                        action += '|Updated ScheduledEndTime|';
+                    }
+                    job.scheduledEndTime = newEndTime
+                    if (linkedJob) { linkedJob.scheduledEndTime = newEndTime; }
+                }
+
+                if (params.equipmentId != undefined && params.equipmentId !== '""') {
+                    if (params.equipmentId != job.equipmentId) {
+                        action += '|Updated EquipmentId|';
+                    }
+                    job.equipmentId = params.equipmentId
+                    if (linkedJob) { linkedJob.equipmentId = params.equipmentId; }
+                }
+
+                if (params.jobLocationId) {
+                    if (params.jobLocationId != job.jobLocation) {
+                        action += '|Updated JobLocationId|';
+                    }
+                    job.jobLocation = params.jobLocationId
+                    if (linkedJob) { linkedJob.jobLocation = params.jobLocationId; }
+                }
+
+                if (params.jobSiteId) {
+                    if (params.jobSiteId != job.jobSite) {
+                        action += '|Updated JobSiteId|';
+                    }
+                    job.jobSite = params.jobSiteId
+                    if (linkedJob) { linkedJob.jobSite = params.jobSiteId; }
+                }
+
+                if (params.customerContactId) {
+                    if (params.customerContactId !== job.customerContactId) {
+                        action += '|Updated Contact Associated|';
+                    }
+                    job.customerContactId = params.customerContactId;
+                    if (linkedJob) { linkedJob.customerContactId = params.customerContactId; }
+                }
+
+                if (params.customerPO) {
+                    if (params.customerPO !== job.customerPO) {
+                        action += '|Updated Customer PO|';
+                    }
+                    job.customerPO = params.customerPO;
+                    if (linkedJob) { linkedJob.customerPO = params.customerPO; }
+                }
+
+                if (imagesUrl?.length) {
+                    if (JSON.stringify(imagesUrl) !== JSON.stringify(job.images)) {
+                        action += '|Updated image|';
+                    }
+
+                    imagesUrl.forEach(imageUrl => {
+                        job.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() });
+                        if (linkedJob) { linkedJob.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }) }
+                    });
+                }
+
+                if (job.status == JobStatus.RESCHEDULED) {
+                    job.status = JobStatus.PENDING;
+                    if (linkedJob) { linkedJob.status = JobStatus.PENDING; }
+                    action += '|Job rescheduled|';
+                }
+
+                if (action !== '') {
+                    track.push({
+                        user: user._id,
+                        action,
+                        date: new Date()
+                    });
+                }
+
+                job.track = track;
+                if (linkedJob) { linkedJob.track = trackLinkedJob; }
+                if (job.ticket) {
+                    ServiceTicket.findOne({ _id: new ObjectId(job.ticket) }).then((t) => {
+                        if (t) {
+                            if (!t.jobLocation && params.jobLocation) {
+                                t.jobLocation = params.jobLocation;
+                            }
+                            if (!t.jobSite && params.jobSite) {
+                                t.jobSite = params.jobSite;
+                            }
+                            t.save().then(() => { }).catch((err) => {
+                                return res.json({ 'status': Status.Error, 'message': err.message });
+                            })
                         }
-                        if (!t.jobSite && params.jobSite) {
-                            t.jobSite = params.jobSite;
-                        }
-                        t.save().then(() => { }).catch((err) => {
-                            return res.json({ 'status': Status.Error, 'message': err.message });
-                        })
-                    }
-                }).catch((err) => {
-                    return res.json({ 'status': Status.Error, 'message': err.message });
-                });
-            }
+                    }).catch((err) => {
+                        return res.json({ 'status': Status.Error, 'message': err.message });
+                    });
+                }
 
-            job.updateOne(
-                job,
-                async (err: any, raw: any) => {
+                job.updateOne(
+                    job,
+                    async (err: any, raw: any) => {
 
-                    if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                    }
-
-                    // Get the updated technicians and handle
-                    const newTechnicians = job?.tasks.map(task => task.technician.toString());
-                    const removedTechnicians: string[] = _.difference(oldTechnicians, newTechnicians);
-                    const addedTechnicians: string[] = _.difference(newTechnicians, oldTechnicians);
-
-                    /**
-                     * Check if there are update to scheduleDate or technicians,
-                     * and update the Job Route for the technician if exist
-                     */
-                    if (
-                        !moment(oldScheduleDate).isSame(moment(job.scheduleDate), 'day')
-                        || removedTechnicians.length || addedTechnicians.length
-                    ) {
-                        removedTechnicians.forEach(async (oldTechnician) => {
-                            await _addOrRemoveJobRoutes(oldTechnician, new Date(oldScheduleDate), 'REMOVE', job._id);
-                        });
-
-                        addedTechnicians.forEach(async (newTechnician) => {
-                            await _addOrRemoveJobRoutes(newTechnician, new Date(job.scheduleDate), 'ADD', job._id);
-                        });
-                    }
-
-                    if (!linkedJob) {
-                        return res.json({ status: Status.Success, message: 'Job edited successfully.', invalidJobTypes, job });
-                    }
-
-                    linkedJob.updateOne(linkedJob, async (err: any, raw: any) => {
                         if (err) {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
 
-                        // Update service ticket related to this job is jobTypes updated
-                        if (isJobTypesUpdated) {
-                            const serviceTicket = await ServiceTicket.findById(job.ticket);
-                            if (serviceTicket) {
-                                // Update service ticket's track
-                                const ticketTrack = serviceTicket.track;
-                                ticketTrack.push({
-                                    user: user._id,
-                                    action: '|Updated JobTypes|',
-                                    date: new Date()
-                                })
-                                // Save the service ticket
-                                await serviceTicket.updateOne({
-                                    tasks: jobTypes,
-                                    track: ticketTrack
-                                })
-                            }
+                        // Get the updated technicians and handle
+                        const newTechnicians = job?.tasks.map(task => task.technician.toString());
+                        const removedTechnicians: string[] = _.difference(oldTechnicians, newTechnicians);
+                        const addedTechnicians: string[] = _.difference(newTechnicians, oldTechnicians);
+
+                        /**
+                         * Check if there are update to scheduleDate or technicians,
+                         * and update the Job Route for the technician if exist
+                         */
+                        if (
+                            !moment(oldScheduleDate).isSame(moment(job.scheduleDate), 'day')
+                            || removedTechnicians.length || addedTechnicians.length
+                        ) {
+                            removedTechnicians.forEach(async (oldTechnician) => {
+                                await _addOrRemoveJobRoutes(oldTechnician, new Date(oldScheduleDate), 'REMOVE', job._id);
+                            });
+
+                            addedTechnicians.forEach(async (newTechnician) => {
+                                await _addOrRemoveJobRoutes(newTechnician, new Date(job.scheduleDate), 'ADD', job._id);
+                            });
                         }
 
-                        return res.json({ status: Status.Success, message: 'Job edited successfully.', invalidJobTypes, job });
-                    });
-                }
-            )
-        }
-    )
+                        if (!linkedJob) {
+                            return res.json({ status: Status.Success, message: 'Job edited successfully.', invalidJobTypes, job });
+                        }
+
+                        linkedJob.updateOne(linkedJob, async (err: any, raw: any) => {
+                            if (err) {
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            }
+
+                            // Update service ticket related to this job is jobTypes updated
+                            if (isJobTypesUpdated) {
+                                const serviceTicket = await ServiceTicket.findById(job.ticket);
+                                if (serviceTicket) {
+                                    // Update service ticket's track
+                                    const ticketTrack = serviceTicket.track;
+                                    ticketTrack.push({
+                                        user: user._id,
+                                        action: '|Updated JobTypes|',
+                                        date: new Date()
+                                    })
+                                    // Save the service ticket
+                                    await serviceTicket.updateOne({
+                                        tasks: jobTypes,
+                                        track: ticketTrack
+                                    })
+                                }
+                            }
+
+                            return res.json({ status: Status.Success, message: 'Job edited successfully.', invalidJobTypes, job });
+                        });
+                    }
+                )
+            });
+    } catch (err) {
+        return res.json({ 'status': Status.Error, 'message': err.message })
+    }
 }
 
 export const getJobDetails = (req: Request, res: Response) => {
