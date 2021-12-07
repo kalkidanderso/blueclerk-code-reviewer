@@ -74,7 +74,10 @@ export const Validations = {
 
   updateProfile: [check('firstName').exists(), check('lastName').exists()],
 
-  changePassword: [check('currentPassword').exists(), check('newPassword').exists()],
+  changePassword: [
+    check('currentPassword').exists().withMessage(Messages.Required),
+    check('newPassword').exists().withMessage(Messages.Required)
+  ],
 
   getContractorDetail: [check('contractorId').exists()],
 
@@ -148,14 +151,14 @@ export const Validations = {
     check('scheduleDate').exists().withMessage(Messages.Required),
     check('customerId').exists().withMessage(Messages.Required),
     check('customerId').isMongoId().withMessage(Messages.WrongId),
-    check('jobTypes').exists().withMessage(Messages.Required),
+    // check('jobTypes').exists().withMessage(Messages.Required),
     check('ticketId').exists().withMessage(Messages.Required),
     check('ticketId').isMongoId().withMessage(Messages.WrongId),
-    check('employeeType').exists().withMessage(Messages.Required),
-    check('employeeType').isNumeric(),
+    // check('employeeType').exists().withMessage(Messages.Required),
+    // check('employeeType').isNumeric(),
     check('equipmentId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
+    // check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
+    // check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
     check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
     check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
     check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId)
@@ -424,6 +427,16 @@ export const Validations = {
     check('type').exists().withMessage(Messages.Required),
     check('referenceNumber').exists().withMessage(Messages.Required),
     check('referenceNumber').isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  // Image
+  deleteImage: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['ServiceTicket', 'Job']).withMessage('Only supported for ServiceTicket & Job for now'),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('imageId').exists().withMessage(Messages.Required),
+    check('imageId').isMongoId().withMessage(Messages.WrongId)
   ],
 
   // Notification

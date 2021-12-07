@@ -311,8 +311,7 @@ export default function (sio: any) {
     router.post(
         '/forgotPassword',
         validate(Validations.forgotPassword),
-        userController.fogotPassword)
-
+        userController.forgotPassword)
 
 
     router.post(
@@ -674,7 +673,8 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Job_Edit),
-        uploadImageInS3.array('images'),
+        // uploadImageInS3.array('images'),
+        uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
         validate(Validations.editJob),
         jobController.editJob
     )
@@ -759,7 +759,6 @@ export default function (sio: any) {
     router.post(
         '/uploadImage',
         passport.authenticate('jwt', { session: false }),
-        // getCompanyId(),
         checkUserPermissions(Permissions.Image_Upload),
         imageController.uploadImage
     )
@@ -767,7 +766,9 @@ export default function (sio: any) {
     router.delete(
         '/deleteImage',
         passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
         checkUserPermissions(Permissions.Image_Upload),
+        validate(Validations.deleteImage),
         imageController.deleteImage
     )
 
@@ -1893,6 +1894,18 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         scriptController.syncItemTier
+    )
+
+    router.post(
+        '/script/migrateJobTask',
+        passport.authenticate('jwt', { session: false }),
+        scriptController.migrateJobTask
+    )
+
+    router.post(
+        '/script/migrateTicketAndJobImage',
+        passport.authenticate('jwt', { session: false }),
+        scriptController.migrateTicketAndJobImage
     )
 
     return router

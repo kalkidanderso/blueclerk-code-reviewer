@@ -413,6 +413,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                       "createdAt" : 1
                     }
                 },
+                { $sort: { _id: -1 } },
                 {
                   $group: {
                     _id: null,
@@ -596,9 +597,13 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                                 job.customerContactId = customerContactId;
                                 job.customerPO = customerPO;
                                 job.track = jobTrack;
-                                if (isJobTypesUpdated) {
-                                    job.tasks = <ITask[]>jobTypes;
-                                }
+                                // Kris remark (Nov 19th, 2021):
+                                // To update job new task when task in Service Ticket updated?
+                                // if (isJobTypesUpdated) {
+                                //     job.tasks.forEach(task => {
+                                //         task.jobTypes = <ITask[]>jobTypes;
+                                //     });
+                                // }
                                 // Save the job
                                 job.save();
                             }

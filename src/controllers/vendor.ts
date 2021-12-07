@@ -153,8 +153,9 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                 return res.json({ 'status': Status.Error, 'message': 'Invalid vendor.' })
             }
 
-            // TODO: Check for company credit card
-            if (!company.stripeId) {
+            // Check if company still in 30 days free period or not
+            // if (moment(company.trialEndDate).isBefore(moment()) && !company.stripeId) {
+            if (!company.paid && new Date() > company.chargeDate && !company.stripeId) {
                 return res.json({ status: Status.Error, message: 'Cannot add vendor right now, please update the company billing method first. (Go to menu: Admin > Billing > Billing Methods)' });
             }
 
@@ -192,58 +193,64 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                         // Send email to contractor for contract started
                         sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName, companyEmail: req.company.info.companyEmail })
 
-                        // Get the pro-rated charge
-                        const { amount, tax } = await _getProRatedAmount();
-
-                        // Create a pending invoice items to Stripe
-                        const invoiceItem = await createStripeInvoiceItem(company.stripeId, amount + tax, contractor.info?.companyName);
-
-                        // Find existing company invoice
-                        let companyInvoice = await CompanyInvoice.findOne({
-                            company: company._id,
-                            isDraft: true
-                        });
-
-                        // No company invoice, create new
-                        if (!companyInvoice) {
-                            companyInvoice = new CompanyInvoice({
-                                technicians: 0,
-                                managers: 0,
-                                officeAdmins: 0,
-                                admins: 0,
-                                contractors: 0,
-                                charges: 0,
-                                tax: 0,
-                                total: 0,
-                                isDraft: true,
-                                company: company._id
-                            })
-                            await companyInvoice.save();
-                        }
-
-                        // Update company invoice data
-                        companyInvoice.contractors += 1;
-                        companyInvoice.charges += amount;
-                        companyInvoice.tax += tax;
-                        companyInvoice.total += invoiceItem.amount / 100;
-                        await companyInvoice.save();
-
-                        // Add the company invoice
-                        company.companyInvoices = company.companyInvoices ?? [];
-                        const existCompanyInvoice = company.companyInvoices.find(
-                            inv => inv.toString() === companyInvoice._id.toString()
-                        );
-                        if (!existCompanyInvoice) {
-                            company.companyInvoices.push(companyInvoice);
-                            await company.save();
-                        }
-
                         /**
                          * Kris' remark (Sept 16th, 2021):
                          * Disable contract start email to company for now,
                          * Based on [BLUECLERK-352] Fix Vendor Stuff
                          */
                         // sendContractStartEmailToCompany({ to: req.company.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName })
+
+                        if (
+                            (company.paid
+                            && new Date() < company.chargeDate)
+                            || company.stripeId
+                        ) {
+                            // Get the pro-rated charge
+                            const { amount, tax } = await _getProRatedAmount();
+
+                            // Create a pending invoice items to Stripe
+                            const invoiceItem = await createStripeInvoiceItem(company.stripeId, amount + tax, contractor.info?.companyName);
+
+                            // Find existing company invoice
+                            let companyInvoice = await CompanyInvoice.findOne({
+                                company: company._id,
+                                isDraft: true
+                            });
+
+                            // No company invoice, create new
+                            if (!companyInvoice) {
+                                companyInvoice = new CompanyInvoice({
+                                    technicians: 0,
+                                    managers: 0,
+                                    officeAdmins: 0,
+                                    admins: 0,
+                                    contractors: 0,
+                                    charges: 0,
+                                    tax: 0,
+                                    total: 0,
+                                    isDraft: true,
+                                    company: company._id
+                                })
+                                await companyInvoice.save();
+                            }
+
+                            // Update company invoice data
+                            companyInvoice.contractors += 1;
+                            companyInvoice.charges += amount;
+                            companyInvoice.tax += tax;
+                            companyInvoice.total += invoiceItem.amount / 100;
+                            await companyInvoice.save();
+
+                            // Add the company invoice
+                            company.companyInvoices = company.companyInvoices ?? [];
+                            const existCompanyInvoice = company.companyInvoices.find(
+                                inv => inv.toString() === companyInvoice._id.toString()
+                            );
+                            if (!existCompanyInvoice) {
+                                company.companyInvoices.push(companyInvoice);
+                                await company.save();
+                            }
+                        }
 
                         // Construct notification entry to be saved
                         let notificationEntry: INotificationContract = new NotificationContract({
@@ -283,8 +290,9 @@ export const inviteContractor = (req: Request, res: Response) => {
     const user = <IUser>req.user
     const company = <ICompany>req.company;
 
-    if (!company.paid && new Date() > company.chargeDate) {
-        return res.json({ status: Status.Error, message: 'You can\'t invite contractors, please contact blueclerk for details.' });
+    // if (moment(company.trialEndDate).isBefore(moment()) && !company.stripeId) {
+    if (!company.paid && new Date() > company.chargeDate && !company.stripeId) {
+        return res.json({ status: Status.Error, message: 'Cannot invite vendor right now, please update the company billing method first. (Go to menu: Admin > Billing > Billing Methods)' });
     }
 
     Company.findOne({ 'info.companyEmail': params.email },

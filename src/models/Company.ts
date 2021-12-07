@@ -33,6 +33,7 @@ export interface ICompany extends Document{
     type: number
     plan: number
     chargeDate: Date
+    trialEndDate?: Date
     maxTechnicians: number
     maxManagers: number
     maxOfficeAdmins: number
@@ -157,6 +158,7 @@ const CompanySchema = new Schema({
       default: 0
     },
     chargeDate: Date, // signup + 30 days
+    trialEndDate: Date, // signup + 30 days
     maxTechnicians: {
         type: Number,
         default: 0
@@ -290,7 +292,7 @@ const CompanySchema = new Schema({
         ref: 'PaymentTerm'
     },
     companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
-})
+}, { timestamps: { createdAt: true, updatedAt: true } })
 
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)
 export const Company = mongoose.model<ICompany>('Company', CompanySchema)

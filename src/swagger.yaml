@@ -163,6 +163,9 @@ paths:
                 isci:
                   type: boolean
                   description: Abbreviation of 'isContractInvitation', boolean value to trigger BE to create notification and vendor contract after the sign up
+                cid:
+                  type: string
+                  description: Abbreviation of 'companyId', company that hiring/inviting the contractor
         required: true
       responses:
         '200':
@@ -2103,10 +2106,13 @@ paths:
               properties:
                 jobLocationId:
                   type: string
+                  description: Job location ID
                 customerId:
                   type: string
+                  description: Customer ID
                 jobSiteId:
                   type: string
+                  description: Job Site ID
                 nfcTag:
                   type: string
                 images:
@@ -2411,6 +2417,14 @@ paths:
           in: query
           schema:
             type: string
+        - name: isActive
+          in: query
+          description: If not provided will return only ACTIVE job locations
+          schema:
+            enum:
+              - ALL
+              - 'true'
+              - 'false'
       responses:
         '200':
           description: Success
@@ -3611,13 +3625,24 @@ paths:
             schema:
               type: object
               required:
-                - customerId
+                - source
               properties:
+                source:
+                  type: string
+                  description: Source from BlueClerk app or WP plugin
+                  enum:
+                    - blueclerk
+                    - web
                 customerId:
                   type: string
-                  description: Id of a customer selected from the list received by /getCustomers api
+                  description: Id of a customer selected from the list received by /getCustomers api (Required for platform users)
                 note:
                   type: string
+                customerContactId:
+                  type: string
+                customerPO:
+                  type: string
+                  description: Customer PO/Sales Order#
                 technicianId:
                   type: string
                   description: Id of a technician / admin
@@ -3943,8 +3968,7 @@ paths:
               type: object
               required:
                 - customerId
-                - employeeType
-                - jobTypes
+                - tasks
                 - scheduleDate
                 - ticketId
               properties:
@@ -3963,15 +3987,9 @@ paths:
                 equipmentId:
                   type: string
                   description: Id of a equipment for single scan
-                employeeType:
-                  type: number
-                  description: 0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor
-                technicianId:
+                tasks:
                   type: string
-                  description: Required when employeeType = 0. Id of a technician selected from the list received by /getEmployeesForJob api
-                contractorId:
-                  type: string
-                  description: Required when employeeType = 1. Id of a contractor selected from the list received by /getCompanyContracts api
+                  description: 'Json string of the technicians e.g [{"employeeType":"0","contractorId":"","technicianId":"6156b2af9d728306909553ef","jobTypes":[{"jobTypeId": "617a6362558d3631b4d80c1e"},{"jobTypeId": "617a6362558d3631b4d80c21"}]},{"employeeType":"1","contractorId":"61554237278b8615ac410493","technicianId":"","jobTypes":[{"jobTypeId": "615417d264da190a5c3f757e"}, {"jobTypeId": "617a6362558d3631b4d80c1e"}]}]'
                 customerId:
                   type: string
                   description: Id of a customer selected from the list received by /getCustomers api
@@ -3981,9 +3999,6 @@ paths:
                 jobSiteId:
                   type: string
                   description: Id of job site
-                jobTypes:
-                  type: string
-                  description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]. Id of a job type from the list received by /getJobTypes api'
                 description:
                   type: string
                   description: Description of the job
@@ -4292,10 +4307,14 @@ paths:
               required:
                 - jobId
                 - jobTypeId
+                - technicianId
               properties:
                 jobId:
                   type: string
                   description: Id of job to start
+                technicianId:
+                  type: string
+                  description: Id of technician to start
                 jobTypeId:
                   type: string
                   description: Id of task/job type to start
@@ -4324,12 +4343,16 @@ paths:
               type: object
               required:
                 - jobId
+                - technicianId
                 - jobTypeId
                 - status
               properties:
                 jobId:
                   type: string
                   description: Id of job to start
+                technicianId:
+                  type: string
+                  description: Id of technician to update status
                 jobTypeId:
                   type: string
                   description: Id of task/job type to start
@@ -4421,15 +4444,6 @@ paths:
                 description:
                   type: string
                   description: Description of the job
-                employeeType:
-                  type: number
-                  description: 0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor
-                technicianId:
-                  type: string
-                  description: Required when employeeType = 0. Id of assignee (employee to whom the job is assigned)
-                contractorId:
-                  type: string
-                  description: Required when employeeType = 1. Id of contractor (whom the job is assigned)
                 scheduleDate:
                   type: string
                   description: date of job. e.g. 2021-08-15
@@ -4445,9 +4459,9 @@ paths:
                 jobSiteId:
                   type: string
                   description: Id of job site
-                jobTypes:
+                tasks:
                   type: string
-                  description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]. Id of a job type from the list received by /getJobTypes api'
+                  description: 'Json string of the technicians e.g [{"employeeType":"0","contractorId":"","technicianId":"6156b2af9d728306909553ef","jobTypes":[{"jobTypeId": "617a6362558d3631b4d80c1e"},{"jobTypeId": "617a6362558d3631b4d80c21"}]},{"employeeType":"1","contractorId":"61554237278b8615ac410493","technicianId":"","jobTypes":[{"jobTypeId": "615417d264da190a5c3f757e"}, {"jobTypeId": "617a6362558d3631b4d80c1e"}]}]'
                 startTime:
                   type: string
                   description: Job start time if you want to change it
@@ -4555,7 +4569,7 @@ paths:
       parameters:
         - name: scheduleDate
           in: query
-          description: Filter job routes by schedule date, if not provided will search all job routes for today
+          description: 'Filter job routes by schedule date, if not provided will search all job routes for today. Example: "2021-10-30".'
           schema:
             type: string
       responses:
@@ -4575,7 +4589,7 @@ paths:
       parameters:
         - name: scheduleDate
           in: query
-          description: Schedule date of job routing
+          description: 'Schedule date of job routing. Example: "2021-10-30".'
           required: true
           schema:
             type: string
@@ -5455,15 +5469,16 @@ paths:
               properties:
                 type:
                   type: string
+                  description: To delete image from ServiceTicket or Job
                   enum:
-                    - Job
                     - ServiceTicket
+                    - Job
                 id:
                   type: string
-                  description: Id of job or service ticket
+                  description: Id of Job or Service Ticket
                 imageId:
                   type: string
-                  description: Id of image in job or service ticket
+                  description: Id of image in Job or Service Ticket
         required: true
       responses:
         '200':
@@ -6515,8 +6530,43 @@ paths:
       tags:
         - Script
       summary: To update all companies and customers to have Item Price Tier
-      description: |
-        **WARNING: Only do this when you know what you are doing.** This will update all companies and customers those don't have Item Price Tier. Will create 1 new Item Tier for the company to be the default tier and update all customers of that company to use the default tier.
+      description: |-
+        **WARNING: Only do this when you know what you are doing.**
+        This will update all companies and customers those don't have Item Price Tier. Will create 1 new Item Tier for the company to be the default tier and update all customers of that company to use the default tier.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /script/migrateJobTask:
+    post:
+      tags:
+        - Script
+      summary: To migrate all old jobs to have new tasks structure and backup old task to tasks backup
+      description: |-
+        **WARNING: Only do this when you know what you are doing.**
+        To migrate all old jobs to have new tasks structure and backup old task to tasks backup.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /script/migrateTicketAndJobImage:
+    post:
+      tags:
+        - Script
+      summary: To migrate all Service Ticket and Job old image to images (in array format)
+      description: |-
+        **WARNING: Only do this when you know what you are doing.**
+        To migrate all Service Ticket and Job old image to images (in array format).
       responses:
         '200':
           description: Success

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Schema } from 'mongoose';
 import { ObjectId } from 'mongodb';
 import moment from 'moment';
 
@@ -20,30 +21,54 @@ export const getAllJobRoutes = async (req: Request, res: Response) => {
     const startOfDay = moment(params.scheduleDate).startOf('day').utc();
     const endOfDay = moment(params.scheduleDate).endOf('day').utc();
 
-    const jobRoutes = await JobRoute.find({
-        $and: [
-            { company },
-            { scheduleDate: { $gte: startOfDay } },
-            { scheduleDate: { $lte: endOfDay } }
-        ]
-    })
-        .populate({
+    // Using aggregate to find Job Route with jobs for contractor
+    const jobRoutes = await JobRoute.aggregate([
+        {
+            $lookup: {
+                from: 'jobs',
+                localField: 'routes.job',
+                foreignField: '_id',
+                as: 'jobs'
+            }
+        },
+        {
+            $match: {
+                $and: [
+                    { $or: [ { company }, { 'jobs.company': company._id } ] },
+                    { scheduleDate: { $gte: new Date(startOfDay.toISOString()) } },
+                    { scheduleDate: { $lte: new Date(endOfDay.toISOString()) } }
+                ]
+            }
+        },
+        { $project: { jobs: 0 } }
+    ])
+
+    await JobRoute.populate(jobRoutes, [
+        {
             path: 'routes.job',
-            select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
+            select: '-__v -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
             populate: [
                 { path: 'customer', select: 'profile vendorId address location' },
+                // TODO: To be deprecated
+                { path: 'contractor', select: 'info address contact' },
+                // TODO: To be deprecated
+                { path: 'technician', select: 'profile contact' },
+                { path: 'tasks.contractor', select: 'info address contact' },
+                { path: 'tasks.technician', select: 'profile contact auth.email' },
                 { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'type', select: 'title description sku' },
                 { path: 'ticket', select: '-__v -track' },
                 { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
                 { path: 'jobSite', select: '-__v -locationId -customerId' }
             ]
-        })
-        .populate({ path: 'technician', select: 'profile' })
-        .populate({ path: 'createdBy', select: 'profile' })
-        .populate({ path: 'updatedBy', select: 'profile' });
+        },
+        { path: 'technician', select: 'profile contact' },
+        { path: 'createdBy', select: 'profile' },
+        { path: 'updatedBy', select: 'profile' }
+    ]);
 
-    return res.json({ status: Status.Success, jobRoutes });
+    return res.json({ status: Status.Success, jobRoutes: jobRoutes });
 
 }
 
@@ -57,21 +82,29 @@ export const getJobRoute = async (req: Request, res: Response) => {
     const technician = <IUser>req.technician;
     const contractor = <ICompany>req.contractor;
 
+    // Initialize startOfDay and endOfDay in UTC format
+    const startOfDay = moment(params.scheduleDate).startOf('day').utc();
+    const endOfDay = moment(params.scheduleDate).endOf('day').utc();
+
     const query = {
         company: company._id,
-        scheduleDate: params.scheduleDate,
+        $and: [
+            { scheduleDate: { $gte: startOfDay } },
+            { scheduleDate: { $lte: endOfDay } }
+        ],
         employeeType: params.employeeType,
         technician: technician?._id,
         contractor: contractor?._id
     };
 
-    const jobRoute = await JobRoute.findOne(query)
+    const jobRoute = await JobRoute.findOne(query).sort({ _id: -1 })
         .populate({
             path: 'routes.job',
             select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
             populate: [
                 { path: 'customer', select: 'profile vendorId address location' },
                 { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'type', select: 'title description sku' },
                 { path: 'ticket', select: '-__v -track' },
                 { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
@@ -168,6 +201,7 @@ export const createJobRoute = async (req: Request, res: Response) => {
             populate: [
                 { path: 'customer', select: 'profile vendorId address location' },
                 { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'type', select: 'title description sku' },
                 { path: 'ticket', select: '-__v -track' },
                 { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
@@ -250,5 +284,61 @@ export const updateJobRoute = async (req: Request, res: Response) => {
     await jobRoute.save();
 
     return res.json({ status: Status.Success, message: 'Job route updated successfully.', jobRoute, invalidJobIds });
+
+}
+
+/**
+ *
+ * To add / remove a new created or updated job to existing job route,
+ * if on that scheduleDate existed a job route for the technician
+ */
+export const _addOrRemoveJobRoutes = async (technicianId: string, scheduleDate: Date, action: string, jobId: Schema.Types.ObjectId) => {
+
+    const startOfDay = moment(scheduleDate).startOf('day').utc();
+    const endOfDay = moment(scheduleDate).endOf('day').utc();
+
+    const query = {
+        $and: [
+            { scheduleDate: { $gte: startOfDay } },
+            { scheduleDate: { $lte: endOfDay } }
+        ],
+        technician: technicianId
+    }
+
+    // Retrieve the job route for the technician if exist
+    const jobRoute = await JobRoute.findOne(query).sort({ _id: -1 });
+
+    if (!jobRoute) {
+        return;
+    }
+
+    switch (action) {
+        case 'ADD':
+            // Add the job to the job routes
+            jobRoute.routes.push({
+                order: jobRoute.routes.length + 1,
+                job: jobId
+            });
+            break;
+
+        case 'REMOVE':
+            // Remove the job from job routes
+            const routes = jobRoute.routes.filter(route => route.job.toString() !== jobId.toString());
+
+            // Reorder the order of the route
+            let i = 0;
+            for (const route of routes) {
+                route.order = (i += 1);
+            }
+
+            jobRoute.routes = routes;
+            break;
+
+        default:
+            break;
+    }
+
+    await jobRoute.save();
+    return;
 
 }

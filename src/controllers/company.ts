@@ -284,7 +284,8 @@ export const getCompanyContracts = (req: Request, res: Response) => {
     })
     .populate({
         path: 'contractor',
-        select: 'info.companyName info.companyEmail type'
+        select: 'info.companyName info.companyEmail type',
+        populate: [{ path: 'admin', select: 'profile auth.email contact' }]
     })
     .exec((err: any, contracts: IContract[]) => {
 
@@ -353,7 +354,13 @@ export const getSyncInfo = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'No company found.' })
             }
 
-            return res.json({'status': Status.Success, 'customersSyncedAt' : company.customersSyncedAt, 'customersSynced' : company.customersSynced, 'qbAuthorized' : company.qbAuthorized});
+            return res.json({
+                status: Status.Success,
+                qbAuthorized: company.qbAuthorized,
+                qbCompanyName: company.qbCompanyName,
+                qbCompanyEmail: company.qbCompanyEmail,
+                qbSync: company.qbSync
+            });
         }
     )
 }
@@ -1150,9 +1157,14 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
                 return contract.contractor
             })
 
-            Job.find({ technician: { $in: contractors } }).sort({ endtime : 1 , startTime : 1 , dateTime : 1 })
+            Job.find({ 'tasks.technician': { $in: contractors } }).sort({ endtime : 1 , startTime : 1 , dateTime : 1 })
+                // TODO: To be deprecated
                 .populate({
                     path: 'technician',
+                    select: 'profile.displayName'
+                })
+                .populate({
+                    path: 'tasks.technician',
                     select: 'profile.displayName'
                 })
                 .populate({
@@ -1161,6 +1173,10 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
                 })
                 .populate({
                     path: 'type',
+                    select: 'title description sku'
+                })
+                .populate({
+                    path: 'tasks.jobTypes.jobType',
                     select: 'title description sku'
                 })
                 .exec((err: any, jobs: IJob[]) => {

@@ -28,10 +28,16 @@ export const deleteImage = async (req: Request, res: Response) => {
         case 'ServiceTicket':
             const serviceTicket = await ServiceTicket.findOne({ _id: params.id });
             if (!serviceTicket) {
-                return res.json({ status: Status.NotFound, messages: 'Service ticket not found' });
+                return res.json({ status: Status.Error, messages: 'Service ticket not found' });
             }
 
-            const deleteTicketImage = await ServiceTicket.findByIdAndUpdate(params.id,
+            // Check if the image exist on the Service Ticket
+            const serviceTicketImage = serviceTicket.images?.find(image => image._id?.toString() === params.imageId);
+            if (!serviceTicketImage) {
+                return res.json({ status: Status.Error, message: 'Image not found on the Service Ticket' });
+            }
+
+            await ServiceTicket.findByIdAndUpdate(params.id,
                 {
                     $push: {
                         track: {
@@ -46,22 +52,21 @@ export const deleteImage = async (req: Request, res: Response) => {
                 }
             );
 
-            // Find image availability on ticket service
-            const ticketImages = deleteTicketImage.images.find(image => image._id.toString() === params.imageId);
-
-            if (!ticketImages) {
-                return res.json({ status: Status.Error, Messages: 'Delete image failed' });
-            }
-
             return res.json({ status: Status.Success, message: 'Image deleted successfully' });
 
         case 'Job':
             const job = await Job.findOne({ _id: params.id });
             if (!job) {
-                return res.json({ status: Status.NotFound, messages: 'Job not found' });
+                return res.json({ status: Status.Error, messages: 'Job not found' });
             }
 
-            const deleteJobImage = await Job.findByIdAndUpdate(params.id,
+            // Check if the image exist on the Job
+            const jobImage = job.images?.find(image => image._id?.toString() === params.imageId);
+            if (!jobImage) {
+                return res.json({ status: Status.Error, message: 'Image not found on the Job' });
+            }
+
+            await Job.findByIdAndUpdate(params.id,
                 {
                     $push: {
                         track: {
@@ -75,15 +80,9 @@ export const deleteImage = async (req: Request, res: Response) => {
                     }
                 });
 
-            // Find image availability on job
-            const jobImages = deleteJobImage.images.find(image => image._id.toString() === params.imageId);
-            if (!jobImages) {
-                return res.json({ status: Status.Error, messages: 'Image delete failed ' });
-            }
-
             return res.json({ status: Status.Success, message: 'Image deleted successfully' });
 
         default:
-            return res.json({ status: Status.Error, messages: 'Type not selected'})
+            return res.json({ status: Status.Error, messages: 'Only supported for ServiceTicket & Job for now' });
     }
 }

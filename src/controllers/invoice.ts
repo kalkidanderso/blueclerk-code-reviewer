@@ -13,7 +13,7 @@ import { Customer, ICustomer } from '../models/Customer';
 import { IItem, Item } from '../models/Item';
 import { IPriceTier } from '../models/PriceTier';
 import { IServiceTicket } from '../models/ServiceTicket';
-import { IJob, Job } from '../models/Job';
+import { IJob, ITaskJobType, Job } from '../models/Job';
 import { IJobReport, JobReport } from '../models/JobReport';
 import { IPurchaseOrder, PurchaseOrder } from '../models/PurchaseOrder';
 import { Estimate, IEstimate } from '../models/Estimate';
@@ -26,7 +26,7 @@ import { EmailDefault } from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer } from '../services/aws';
 import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice } from '../controllers/quickbook.invoice';
-import { transformPlaceholders, getPlaceholderValues } from './emailDefault';
+import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from './emailDefault';
 
 /**
  * To reset Invoice quickbookId,
@@ -50,7 +50,15 @@ export const getInvoicesByCustomerId = (req: Request, res: Response) => {
     Invoice.find({'company': req.companyId, customer: params.customerId})
         .populate({
             path: 'job',
-            populate: [{ path: 'type', select: 'title description sku' },{ path: 'customer', select: 'info.email auth.email profile.displayName contactName' }, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' }],
+            populate: [{ 
+                path: 'type', select: 'title description sku' 
+            }, { 
+                path: 'customer', select: 'info.email auth.email profile.displayName contactName' 
+            }, { 
+                path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' 
+            }, { 
+                path: 'tasks.technician', select: 'profile auth.email contact' 
+            }],
         })
         .populate({
             path: 'items.item',
@@ -314,11 +322,24 @@ export const createInvoice = (req: Request, res: Response) => {
                 const job = <IJob>result[0]
 
                 // Convert jobTypes to ObjectId in array
-                const jobTypeIds = job.tasks.map(task => task.jobType);
+                const jobTypeIds = [];
+                job.tasks.forEach(task => {
+                    task.jobTypes.forEach(taskJobType => {
+                        jobTypeIds.push(taskJobType.jobType)
+                    })
+                })
+                // const jobTypeIds = job.tasks.map(task => task.jobType);
                 // Fallback for old job who still using one job type
                 if (!jobTypeIds.length) jobTypeIds.push(job.type);
                 // Search all jobTypes' items
-                const items = Item.find({ jobType: { $in: jobTypeIds }});
+                // const items = Item.find({ jobType: { $in: jobTypeIds }});
+                const items:any[] = []
+                jobTypeIds.forEach(async (jobTypeId) => {
+                    const item = await Item.findOne({ jobType: jobTypeId })
+                    items.push(item);
+                });
+
+                // const items = jobTypeIds.map(jobTypeId => Item.findOne({ jobType: jobTypeId }))
                 return Promise.all([result[0], result[1], items])
             })
             .then((result: any) => {
@@ -988,13 +1009,17 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             total += subTotal;
         }
 
-    } else if (jobTypeitems.length > 0) {
+    } else if (jobTypeitems.length >= 0) {
 
         // Iterate all jobTypes' items and add all to invoice's items
         for (const jobTypeitem of jobTypeitems) {
 
             // Find the job task related to find its timeSpent
-            const task = job.tasks.find(task => task.jobType.toString() === jobTypeitem.jobType.toString());
+            let jobTypes: ITaskJobType
+            const task = job.tasks.find(task => {
+                jobTypes = <ITaskJobType>task.jobTypes.find(jobType => jobType.jobType.toString() === jobTypeitem.jobType.toString())
+                return jobTypes;
+            });
             let itemTier;
 
             if (customerObj.itemTier) {
@@ -1013,7 +1038,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             // Set price to 0 if customer uses customPrice
             let price = customerObj.isCustomPrice ? 0 : itemTier?.charge || jobTypeitem.charges;
             // If item is hourly, take the task's timeSpent (minutes) for the quantity
-            let quantity = jobTypeitem.isFixed ? 1 : (task?.timeSpent / 60) || 1;
+            let quantity = jobTypeitem.isFixed ? 1 : (jobTypes?.timeSpent / 60) || 1;
             let itemTax =  0
             let itemTaxAmount: number = 0
             let subTotal = price * quantity
@@ -1036,7 +1061,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
 
             invoiceItems.push(obj)
 
-            timeSpent += task?.timeSpent || 0;
+            timeSpent += jobTypes?.timeSpent || 0;
             subTotalBeforeTax += subTotal;
             total += subTotal;
         }
@@ -1186,7 +1211,14 @@ export const updateInvoice = (req: Request, res: Response) => {
                 return res.json({'status': Status.Success, 'message': "Invalid invoice id."})
             }
 
-            if (params.isDraft && invoice.status !== InvoiceStatus.UNPAID) {
+            // Handle the stringify boolean value
+            const isDraft = params.isDraft === undefined || params.isDraft === null
+            ? invoice.isDraft
+            : params.isDraft === 'false' || params.isDraft === '0'
+                ? false
+                : !!params.isDraft;
+
+            if (isDraft && invoice.status !== InvoiceStatus.UNPAID) {
                 return res.json({ status: Status.Error, message: 'Cannot update a PAID/PARTIALLY PAID invoce to become draft.' });
             }
 
@@ -1213,7 +1245,7 @@ export const updateInvoice = (req: Request, res: Response) => {
              * Priority order: 1) User params 2) Customer default term 3) Company default term,
              * otherwise leave paymentTerm to be blank
              */
-            paymentTerm = paymentTerm || <IPaymentTerm>customerObj?.paymentTerm || <IPaymentTerm>company?.paymentTerm;
+            // paymentTerm = paymentTerm || <IPaymentTerm>customerObj?.paymentTerm || <IPaymentTerm>company?.paymentTerm;
 
             if(invoice.invoiceType == 0) {
 
@@ -1252,8 +1284,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                         let taxAmount: number = 0;
                         let subTotalBeforeTax: number = 0;
                         let total: number = 0;
-                        let balanceDue = invoice.balanceDue;
-                        let paymentApplied = invoice.paymentApplied;
+                        let balanceDue = invoice.balanceDue ?? invoice.total;
+                        let paymentApplied = invoice.paymentApplied ?? 0;
                         let paid = invoice.paid;
                         let status = invoice.status;
                         const oldTotal = invoice.total;
@@ -1420,7 +1452,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                             paymentApplied: Math.round(paymentApplied * 100) / 100,
                             status, paid,
                             charges, issuedDate, dueDate, note: params.note,
-                            isDraft: params.isDraft ?? invoice.isDraft,
+                            isDraft,
                             paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                             customerPO: params.customerPO,
                             customerContactId: customerContact,
@@ -1440,7 +1472,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                             })
                     })
                     .catch((error: any) => {
-                        console.log('== error:', error);
                         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
                     })
             } else {
@@ -1461,8 +1492,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                 let taxAmount: number = 0;
                 let subTotalBeforeTax: number = 0;
                 let total: number = 0;
-                let balanceDue = invoice.balanceDue;
-                let paymentApplied = invoice.paymentApplied;
+                let balanceDue = invoice.balanceDue ?? invoice.total;
+                let paymentApplied = invoice.paymentApplied ?? 0;
                 let paid = invoice.paid;
                 let status = invoice.status;
                 const oldTotal = invoice.total;
@@ -1608,7 +1639,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                     paymentApplied: Math.round(paymentApplied * 100) / 100,
                     status, paid,
                     issuedDate, dueDate, note: params.note,
-                    isDraft: params.isDraft ?? invoice.isDraft,
+                    isDraft,
                     paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                     customerPO: params.customerPO,
                     customerContactId: customerContact,
@@ -1637,10 +1668,10 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
             path: 'job',
             populate: [
                 { path: 'type', select: 'title description sku' },
-                { path: 'tasks.jobType', select: 'title description sku'},
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku'},
                 { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
-                { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
-                { path: 'contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
+                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
                 { path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId' }},
                 { path: 'jobLocation', select: 'name location address' },
                 { path: 'jobSite', select: 'name location address' }
@@ -1789,6 +1820,11 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     // Retrieve company email default
     const emailDefault = await EmailDefault.findOne({ company });
 
+    // Create email default if company doesn't have one yet
+    if (!emailDefault) {
+        await _createCompanyDefaultEmail(company);
+    }
+
     /**
      * Transfrom the email default placeholder symbol to fit Javascript Template Literal,
      * '{{' become '${' & '}}' become '}'
@@ -1878,10 +1914,16 @@ export const getInvoices = (req: Request, res: Response) => {
             path: 'job',
             populate: [
                 { path: 'type', select: 'title description sku' },
+                // TODO: To be deprecated
                 { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
+                // TODO: To be deprecated
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                // TODO: To be deprecated
                 { path: 'contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
+                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
                 { path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId' }},
                 { path: 'jobLocation', select: 'name location address' },
                 { path: 'jobSite', select: 'name location address' }
@@ -1999,6 +2041,8 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 
                 return next(invoice, qbInvoice);
             })
+        } else {
+            return next(invoice, null);
         }
 
     } else if (!oldIsDraft && invoice.isDraft) {
@@ -2018,7 +2062,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
             jobReport.save();
         }
 
-        if (company.qbAuthorized) {
+        if (company.qbAuthorized && invoice.quickbookId) {
             // Delete Invoice in QuickBooks
             _deleteQBInvoice(req, res, company, invoice, (err, errMsg, status) => {
                 if (status === 'Deleted') {
@@ -2034,6 +2078,8 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 
                 return next(invoice, null);
             })
+        } else {
+            return next(invoice, null);
         }
 
     } else if (!oldIsDraft && !invoice.isDraft) {
@@ -2046,7 +2092,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         // Save customer credit
         customer.save()
 
-        if (company.qbAuthorized) {
+        if (company.qbAuthorized && invoice.quickbookId) {
             // Update Invoice in QuickBooks
             _updateQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                 if (qbInvoice) {
@@ -2059,6 +2105,8 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 
                 return next(invoice, qbInvoice);
             })
+        } else {
+            return next(invoice, null);
         }
 
     } else {
