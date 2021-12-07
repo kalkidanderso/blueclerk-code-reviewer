@@ -859,23 +859,39 @@ export const sendScheduledJobEmailToAssignee = function(jobs: IJob[], to: string
                 <hr>`;
         jobs = await Job.find({_id: {$in: jobs}, status: {$in : [0,1]}})
         .populate({
+          // TODO: To be deprecated
           path:'technician',
           select:'profile.displayName auth.email emailPreferences'
         })
+        // TODO: To be deprecated
         .populate({
           path: 'contractor',
+          select: 'info.companyName info.companyEmail type'
+        })
+        .populate({
+          path:'tasks.technician',
+          select:'profile.displayName auth.email emailPreferences'
+        })
+        .populate({
+          path: 'tasks.contractor',
           select: 'info.companyName info.companyEmail type'
         })
         .populate({
           path:'customer',
           select:'profile.displayName info.email emailPreferences'
         })
+        // TODO: To be deprecated
         .populate({
           path:'type',
           select:'title description sku'
         })
         .populate({
           path: 'tasks.jobType',
+          select: 'title description sku'
+        })
+        // TODO: To be deprecated
+        .populate({
+          path: 'tasks.jobTypes.jobType',
           select: 'title description sku'
         })
         .populate('jobSite')
@@ -893,10 +909,17 @@ export const sendScheduledJobEmailToAssignee = function(jobs: IJob[], to: string
       let contact: IContact = ticket.customerContactId;
       var type: any = job.type && job.type.title
       // let jobTypes: string[] = job.jobTypes.map(jts => {
-      let jobTypes: string[] = job.tasks.map(task => {
-          const jt = <IJobType>task.jobType;
+      let jobTypes: string[]
+      job.tasks.forEach(task => {
+        jobTypes = task.jobTypes.map(jobType => {
+          const jt = <IJobType>jobType.jobType;
           return jt.title
+        });
       });
+      // let jobTypes: string[] = job.tasks.map(task => {
+      //     const jt = <IJobType>task.jobType;
+      //     return jt.title
+      // });
       const jobTitles = jobTypes.length > 0 ? jobTypes.join(', ') : type;
       let coordinates = [];
       let contactDetails: any = {};

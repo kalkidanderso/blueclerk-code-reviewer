@@ -13,7 +13,7 @@ import { Customer, ICustomer } from '../models/Customer';
 import { IItem, Item } from '../models/Item';
 import { IPriceTier } from '../models/PriceTier';
 import { IServiceTicket } from '../models/ServiceTicket';
-import { IJob, Job } from '../models/Job';
+import { IJob, ITaskJobType, Job } from '../models/Job';
 import { IJobReport, JobReport } from '../models/JobReport';
 import { IPurchaseOrder, PurchaseOrder } from '../models/PurchaseOrder';
 import { Estimate, IEstimate } from '../models/Estimate';
@@ -50,7 +50,15 @@ export const getInvoicesByCustomerId = (req: Request, res: Response) => {
     Invoice.find({'company': req.companyId, customer: params.customerId})
         .populate({
             path: 'job',
-            populate: [{ path: 'type', select: 'title description sku' },{ path: 'customer', select: 'info.email auth.email profile.displayName contactName' }, { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' }],
+            populate: [{ 
+                path: 'type', select: 'title description sku' 
+            }, { 
+                path: 'customer', select: 'info.email auth.email profile.displayName contactName' 
+            }, { 
+                path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' 
+            }, { 
+                path: 'tasks.technician', select: 'profile auth.email contact' 
+            }],
         })
         .populate({
             path: 'items.item',
@@ -314,11 +322,24 @@ export const createInvoice = (req: Request, res: Response) => {
                 const job = <IJob>result[0]
 
                 // Convert jobTypes to ObjectId in array
-                const jobTypeIds = job.tasks.map(task => task.jobType);
+                const jobTypeIds = [];
+                job.tasks.forEach(task => {
+                    task.jobTypes.forEach(taskJobType => {
+                        jobTypeIds.push(taskJobType.jobType)
+                    })
+                })
+                // const jobTypeIds = job.tasks.map(task => task.jobType);
                 // Fallback for old job who still using one job type
                 if (!jobTypeIds.length) jobTypeIds.push(job.type);
                 // Search all jobTypes' items
-                const items = Item.find({ jobType: { $in: jobTypeIds }});
+                // const items = Item.find({ jobType: { $in: jobTypeIds }});
+                const items:any[] = []
+                jobTypeIds.forEach(async (jobTypeId) => {
+                    const item = await Item.findOne({ jobType: jobTypeId })
+                    items.push(item);
+                });
+
+                // const items = jobTypeIds.map(jobTypeId => Item.findOne({ jobType: jobTypeId }))
                 return Promise.all([result[0], result[1], items])
             })
             .then((result: any) => {
@@ -988,13 +1009,17 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             total += subTotal;
         }
 
-    } else if (jobTypeitems.length > 0) {
+    } else if (jobTypeitems.length >= 0) {
 
         // Iterate all jobTypes' items and add all to invoice's items
         for (const jobTypeitem of jobTypeitems) {
 
             // Find the job task related to find its timeSpent
-            const task = job.tasks.find(task => task.jobType.toString() === jobTypeitem.jobType.toString());
+            let jobTypes: ITaskJobType
+            const task = job.tasks.find(task => {
+                jobTypes = <ITaskJobType>task.jobTypes.find(jobType => jobType.jobType.toString() === jobTypeitem.jobType.toString())
+                return jobTypes;
+            });
             let itemTier;
 
             if (customerObj.itemTier) {
@@ -1013,7 +1038,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             // Set price to 0 if customer uses customPrice
             let price = customerObj.isCustomPrice ? 0 : itemTier?.charge || jobTypeitem.charges;
             // If item is hourly, take the task's timeSpent (minutes) for the quantity
-            let quantity = jobTypeitem.isFixed ? 1 : (task?.timeSpent / 60) || 1;
+            let quantity = jobTypeitem.isFixed ? 1 : (jobTypes?.timeSpent / 60) || 1;
             let itemTax =  0
             let itemTaxAmount: number = 0
             let subTotal = price * quantity
@@ -1036,7 +1061,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
 
             invoiceItems.push(obj)
 
-            timeSpent += task?.timeSpent || 0;
+            timeSpent += jobTypes?.timeSpent || 0;
             subTotalBeforeTax += subTotal;
             total += subTotal;
         }
@@ -1643,10 +1668,10 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
             path: 'job',
             populate: [
                 { path: 'type', select: 'title description sku' },
-                { path: 'tasks.jobType', select: 'title description sku'},
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku'},
                 { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
-                { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
-                { path: 'contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
+                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
                 { path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId' }},
                 { path: 'jobLocation', select: 'name location address' },
                 { path: 'jobSite', select: 'name location address' }
@@ -1889,10 +1914,16 @@ export const getInvoices = (req: Request, res: Response) => {
             path: 'job',
             populate: [
                 { path: 'type', select: 'title description sku' },
+                // TODO: To be deprecated
                 { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
+                // TODO: To be deprecated
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                // TODO: To be deprecated
                 { path: 'contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
+                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }},
                 { path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId' }},
                 { path: 'jobLocation', select: 'name location address' },
                 { path: 'jobSite', select: 'name location address' }
