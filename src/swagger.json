@@ -5953,6 +5953,37 @@
         ]
       }
     },
+    "/getOpenServiceTicketsStream": {
+      "get": {
+        "tags": [
+          "Service Ticket"
+        ],
+        "summary": "To get all open service tickets of a company and return the result progressively via socket.io",
+        "description": "All service tickets will be send progressively via socket.io, **make sure FE connects using the right company's token and listen to event: 'all_open_service_tickets'**.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getServiceTicketDetail": {
       "post": {
         "tags": [
