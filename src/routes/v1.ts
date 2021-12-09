@@ -563,6 +563,15 @@ export default function (sio: any) {
         jobTypeController.filterItems
     )
 
+    router.post(
+        '/mergeItems',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Item),
+        validate(Validations.mergeItems),
+        jobTypeController.mergeItems
+    )
+
     //Job
     router.post(
         '/createJob',

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { Status, Messages} from '../common/constants'
+import { Status, Messages } from '../common/constants'
 
 import { IUser } from '../models/User';
 import { ICompany, Company } from '../models/Company'
@@ -231,4 +231,152 @@ export const syncQBItems = async (req: Request, res: Response) => {
         })
     })
 
+}
+
+export const _transferQBItems = async (req: Request, res: Response, company: ICompany, unusedItems: IItem[], currentItem: IItem, next: (error: number, errorMessage: string) => void) => {
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            // return next(Status.QBUnauthorized, Messages.QBUnAuthorized);
+            return res.json({ status: Status.Error, message: Messages.QBUnAuthorized });
+        }
+
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        console.log('currentItem', currentItem);
+        qbo.getItem(currentItem.quickbookId, async (err: any, currentQBItem: IQBItem) => {
+            console.log('currentQBItem', currentQBItem);
+            // Make sure the merged base item Active
+            currentQBItem.Active = true;
+
+            qbo.updateItem(currentQBItem, async (err: any, qbItem: IQBItem) => {
+
+                if (currentQBItem) {
+                    for (const unusedItem of unusedItems) {
+                        qbo.getItem(unusedItem.quickbookId, async (err: any, unusedQBItem: IQBItem) => {
+
+                            if (unusedQBItem?.Active) {
+                                unusedQBItem.Description = currentItem.description;
+                                unusedQBItem.FullyQualifiedName = currentItem.name;
+                                unusedQBItem.Name = currentItem.name;
+                                unusedQBItem.Taxable = currentItem.tax === 0 ? false : !false;
+                                unusedQBItem.Sku = currentItem.sku;
+
+                                qbo.updateItem(unusedQBItem, async (err: any, qbItem: IQBItem) => {
+                                    console.log('updatedItem', qbItem);
+                                    console.log('== err.Fault:', err?.Fault);
+                                    console.log('== err.Fault?.Error[0]?.Message:', err?.Fault?.Error[0]?.Message);
+                                    console.log('== err.fault:', err?.fault);
+                                    console.log('== err.fault?.error[0]?.detail:', err?.fault?.error[0]?.detail);
+                                    console.log('== err.fault?.error[0]?.message:', err?.fault?.error[0]?.message);
+                                })
+                            }
+                        });
+                    }
+                }
+
+                return next(null, null)
+            })
+
+        })
+    })
+}
+
+export const _updateQBItem = async (req: Request, res: Response, company: ICompany, item: IItem, next: (error: number, errorMessage: string) => void) => {
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+            return res.json({ status: Status.QBUnauthorized, message: Messages.QBUnAuthorized });
+        }
+
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.getItem(item.quickbookId, async (err: any, qbItem: IQBItem) => {
+
+            qbItem.Description = item.description;
+            qbItem.FullyQualifiedName = item.name;
+            qbItem.Name = item.name;
+            qbItem.Taxable = item.tax === 0 ? false : !false;
+            qbItem.Sku = item.sku;
+
+            qbo.updateItem(qbItem, async (err: any, updatedQbItem: IQBItem) => {
+                if (err || !updatedQbItem) {
+                    throw new Error(
+                        err.Fault?.Error[0]?.Detail
+                        || err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError
+                    );
+                    // return res.json({
+                    //     status: Status.Error,
+                    //     message:
+                    //     err.Fault?.Error[0]?.Detail
+                    //     || err.Fault?.Error[0]?.Message
+                    //     || err.fault?.error[0]?.detail
+                    //     || err.fault?.error[0]?.message
+                    //     || Messages.GenericError,
+                    // });
+                }
+
+                return next(null, null);
+            })
+        });
+    });
+}
+
+export const _inactiveQBItems = async (company: ICompany, items: IItem[]) => {
+    const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+    for (const item of items) {
+        if (item?.quickbookId) {
+            qbo.getItem(item.quickbookId, async (err: any, qbItem: IQBItem) => {
+                if (qbItem) {
+                    qbItem.Active = false
+
+                    qbo.updateItem(qbItem, async (err: any, updatedQBItem: IQBItem) => {
+                        if (err || !updatedQBItem) {
+                            throw new Error(
+                                err.Fault?.Error[0]?.Detail
+                                || err.Fault?.Error[0]?.Message
+                                || err.fault?.error[0]?.detail
+                                || err.fault?.error[0]?.message
+                                || Messages.GenericError
+                            );
+                        }
+                        // if (err || !updatedQBItem) {
+                        //     return (
+                        //         Status.Error,
+                        //         err.Fault?.Error[0]?.Detail
+                        //         || err.Fault?.Error[0]?.Message
+                        //         || err.fault?.error[0]?.detail
+                        //         || err.fault?.error[0]?.message
+                        //         || Messages.GenericError
+                        //     )
+                        // }
+                    })
+                }
+            })
+        }
+    }
+
+    return;
 }

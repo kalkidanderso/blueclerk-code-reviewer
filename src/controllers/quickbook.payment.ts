@@ -299,7 +299,7 @@ export const createBCPayment = async (req: Request, res: Response, company: ICom
                 if (!qbCustomer.Job) {
                     // Get BC Customer by QB Payment's Customer quickbookId
                     customer = await Customer.findOne({ quickbookId: qbCustomer.Id, company: company._id });
-                  } else {
+                } else {
                     /**
                      * Invoice was recorded to Customer Job Location in QB,
                      * Get the Customer ID from the Job Location
@@ -468,7 +468,6 @@ export const _transferQBPayments = async (req: Request, res: Response, company: 
                                 { field: 'CustomerRef', value: unusedCustomer?.quickbookId }
                             ], async (err: any, data: any) => {
                                 const qbPayments: IQBPayment[] = data?.QueryResponse?.Payment
-                                console.log('qbPayments', qbPayments);
 
                                 if (qbPayments?.length) {
                                     for (const qbPayment of qbPayments) {
@@ -549,4 +548,43 @@ export const _transferQBPayments = async (req: Request, res: Response, company: 
             })
         })
     })
+}
+
+export const _getPayment = async (req: Request, res: Response, company: ICompany, unusedCustomer: ICustomer): Promise<IQBPayment[]> => {
+    return new Promise((resolve, reject) => {
+        _refreshToken(req, res, company, async (err, errMsg, company) => {
+            if (err === 0) {
+                return res.json({ status: Status.Error, message: errMsg });
+            }
+
+            if (err === 400) {
+                await Company.findByIdAndUpdate(req.company._id, {
+                    qbAuthorized: false,
+                    qbAccessToken: undefined,
+                    qbRefreshToken: undefined
+                });
+
+                return (Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+            }
+            // Initiate node-quickbooks object with the refreshed company token
+            const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+            qbo.findPayments([
+                { field: 'CustomerRef', value: unusedCustomer?.quickbookId }
+            ], async (err: any, data: any) => {
+                if (err) {
+                    reject(
+                        new Error(
+                            err.Fault?.Error[0]?.Message
+                            || err.fault?.error[0]?.detail
+                            || err.fault?.error[0]?.message
+                            || Messages.GenericError
+                        ));
+                }
+
+                resolve(<IQBPayment[]>data?.QueryResponse?.Payment);
+            });
+        });
+    });
+
 }

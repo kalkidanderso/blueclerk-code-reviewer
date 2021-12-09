@@ -355,6 +355,11 @@ export const Validations = {
 
   updateItem: [check('itemId').exists(), check('charges').exists(), check('isFixed').exists(), check('tax').exists()],
 
+  mergeItems: [
+    check('itemId').exists().withMessage(Messages.Required),
+    check('itemId').isMongoId().withMessage(Messages.WrongId),
+    check('unusedItemIds').exists().withMessage(Messages.Required)
+  ],
   // Payment Term
 
   setCompanyDefaultPaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],

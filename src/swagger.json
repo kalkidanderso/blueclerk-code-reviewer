@@ -3150,17 +3150,14 @@
                   "jobLocations": {
                     "type": "string"
                   },
-                  "quickbookId": {
-                    "type": "integer"
-                  },
                   "balance": {
-                    "type":"integer"
+                    "type": "integer"
                   },
                   "credit": {
                     "type": "integer"
                   },
                   "isCustomPrice": {
-                    "type":"boolean"
+                    "type": "boolean"
                   },
                   "contacts": {
                     "type": "string"
@@ -4730,6 +4727,86 @@
                       "$ref": "#/components/schemas/GeneralAPIResponse"
                     },
                     "item": {
+                      "$ref": "#/components/schemas/Item"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/mergeItems": {
+      "post": {
+        "tags": [
+          "Items"
+        ],
+        "summary": "To get detail of a customer.",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "itemId",
+                  "unusedItemIds"
+                ],
+                "properties": {
+                  "itemId": {
+                    "type": "string"
+                  },
+                  "unusedItemIds": {
+                    "type": "string",
+                    "description": "format: [\"6179104d040ff5218f9ca97a\", \"6179104d040ff5218f9ca97a\"]"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "isActive": {
+                    "type": "booelan"
+                  },
+                  "isFixed": {
+                    "type": "boolean"
+                  },
+                  "charges": {
+                    "type": "integer"
+                  },
+                  "tiers": {
+                    "type": "string",
+                    "description": "format: [{\"tierId\":\"617a6a0aecc9a034ec74b3eb\",\"charge\":10}]"
+                  },
+                  "tax": {
+                    "type": "integer"
+                  },
+                  "sku": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    },
+                    "customer": {
                       "$ref": "#/components/schemas/Item"
                     }
                   }

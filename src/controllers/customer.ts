@@ -20,7 +20,7 @@ import { PurchaseOrder } from '../models/PurchaseOrder'
 import { Estimate } from '../models/Estimate'
 import { Tag } from '../models/Tag'
 import { _updateQBInvoice, _transferQBInvoices } from './quickbook.invoice'
-import { _transferQBPayments, _updateQBPayment } from './quickbook.payment'
+import { _getPayment, _transferQBPayments, _updateQBPayment } from './quickbook.payment'
 
 /**
  * To reset Customer quickbookId,
@@ -526,6 +526,28 @@ export const mergeCustomers = async (req: Request, res: Response) => {
     const jobLocations: string[] = params.jobLocations?.length ? JSON.parse(params.jobLocations) : [];
     const customerEquipments: string[] = params.equipments?.length ? JSON.parse(params.equipments) : [];
     const contacts: string[] = params.contact?.length ? JSON.parse(params.contacts) : [];
+    const userPaymentDeposited: any[] = []
+
+    // Get deposited customer
+    for (const unusedCustomerId of unusedCustomerIds) {
+        const unusedCustomer = await Customer.findOne({ _id: unusedCustomerId }).exec();
+        const getDepositedPayments = await _getPayment(req, res, company, unusedCustomer);
+        if (getDepositedPayments) {
+            getDepositedPayments.forEach(getDepositedPayment => {
+                if (getDepositedPayment?.LinkedTxn) {
+                    const paymentLinked = getDepositedPayment?.LinkedTxn.find(linkedPayment => linkedPayment.TxnType === 'Deposit')
+                    if (paymentLinked) {
+                        userPaymentDeposited.push(getDepositedPayment?.CustomerRef?.name);
+                    }
+                }
+            });
+        }
+    }
+
+    // Return error when unused user have deposited payment
+    if (userPaymentDeposited.length) {
+        return res.json({ status: Status.Error, message: `${[...new Set(userPaymentDeposited)].toString()} have a deposited payment` })
+    }
 
     Customer.findById(params.customerId).exec(async (err: any, customer: ICustomer) => {
         if (err || !customer) {
@@ -546,7 +568,7 @@ export const mergeCustomers = async (req: Request, res: Response) => {
             'contact.fax': params.fax ?? customer?.contact?.fax,
             jobLocations: params.jobLocations?.length ? jobLocations : customer?.jobLocations,
             equipments: params.equipments?.length ? customerEquipments : customer?.equipments,
-            quickbookId: params.quickbookId ?? customer?.quickbookId,
+            // quickbookId: params.quickbookId ?? customer?.quickbookId,
             isCustomPrice: params.isCustomPrice ?? customer?.isCustomPrice,
             contactName: params.contactName ?? customer?.contactName,
             vendorId: params.vendorId ?? customer?.vendorId,
@@ -554,6 +576,17 @@ export const mergeCustomers = async (req: Request, res: Response) => {
             isActive: true,
             inactiveAt: null,
             inactiveBy: null,
+        }
+
+        if (!customer.quickbookId) {
+            await _createQBCustomer(req, res, company, customer, async (err: any, errMsg: any, qbCustomer: IQBCustomer) => {
+                if (err) {
+                    return res.json({ status: err, message: errMsg });
+                }
+
+                // Create new Customer in QuickBooks
+                mergeEntry.quickbookId = qbCustomer.Id;
+            })
         }
 
         // Save the updated data to customer
@@ -605,11 +638,9 @@ export const mergeCustomers = async (req: Request, res: Response) => {
                         });
                     });
                 });
-                // return res.json({ status: Status.Success, customer });
             }
-            // else {
+
             return res.json({ status: Status.Success, customer });
-            // }
         });
     });
 

@@ -4,11 +4,11 @@ import { Status, Messages } from '../common/constants';
 
 import { IContact } from '../common/contact';
 import { ICompany, Company } from '../models/Company'
-import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
+import { ICustomer, IQBCustomer } from '../models/Customer'
 import { IJobLocation } from '../models/JobLocation';
 import { IServiceTicket } from '../models/ServiceTicket';
 import { IJob } from '../models/Job';
-import { IItem } from '../models/Item';
+import { IItem, IQBItem } from '../models/Item';
 import { IPaymentTerm } from '../models/PaymentTerm';
 import { IInvoice, IQBInvoice, IQBInvoiceLine, LineDetailTypes, Invoice } from '../models/Invoice';
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
@@ -323,6 +323,7 @@ export const _transferQBInvoices = async (req: Request, res: Response, company: 
                             ], async (err: any, data: any) => {
                                 const qbInvoices: IQBInvoice[] = data?.QueryResponse?.Invoice;
 
+                                console.log('qbInvoices', qbInvoices);
                                 if (qbInvoices?.length) {
                                     // Iterate all QB Invoices
                                     for (const qbInvoice of qbInvoices) {
@@ -642,3 +643,94 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
 //     })
 
 // }
+
+/**
+ * Generic function to tranfers ownership of QuickBooks Invoices,
+ * this used by Customer Controller after merging duplicated customers
+ */
+export const _transferQBInvoiceItem = async (
+    req: Request,
+    res: Response,
+    company: ICompany,
+    unusedItems: IItem[],
+    currentItem: IItem,
+    invoice: IInvoice,
+    next: (error: number, errorMessage: string) => void
+) => {
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return res.json({ status: Status.QBUnauthorized, message: Messages.QBUnAuthorized });
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        // Get old QB Customer
+        qbo.getItem(currentItem.quickbookId, async (err: any, currentQBItem: IQBItem) => {
+
+            // Make sure the merged base item Active
+
+            currentQBItem.Active = true;
+
+            qbo.updateItem(currentQBItem, async (err: any, qbItem: IQBItem) => {
+
+                if (qbItem) {
+                    // Iterate all unused customers
+                    for (const unusedItem of unusedItems) {
+                        qbo.getItem(unusedItem.quickbookId, async (err: any, unusedQBItem: IQBItem) => {
+                            // Find the invoices of the unused customer
+                            if (unusedQBItem?.Active) {
+                                qbo.getInvoice(invoice.quickbookId, async (err: any, qbInvoice: IQBInvoice) => {
+                                    if (qbInvoice) {
+                                        qbInvoice.Line.forEach(qbInvoiceLine => {
+                                            if (qbInvoiceLine.DetailType === LineDetailTypes.SalesItemLineDetail && qbInvoiceLine?.SalesItemLineDetail?.ItemRef?.value === unusedItem.quickbookId) {
+                                                qbInvoiceLine.SalesItemLineDetail.ItemRef.value = currentQBItem.Id;
+                                                qbInvoiceLine.SalesItemLineDetail.ItemRef.name = currentQBItem.Name;
+                                            }
+                                        });
+
+                                        qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
+                                            if (err) {
+                                                throw new Error(
+                                                    err.Fault?.Error[0]?.Detail
+                                                    || err.Fault?.Error[0]?.Message
+                                                    || err.fault?.error[0]?.detail
+                                                    || err.fault?.error[0]?.message
+                                                    || Messages.GenericError
+                                                )
+                                                // return next(
+                                                //     Status.Error,
+                                                //     err.Fault?.Error[0]?.Detail
+                                                //     || err.Fault?.Error[0]?.Message
+                                                //     || err.fault?.error[0]?.detail
+                                                //     || err.fault?.error[0]?.message
+                                                //     || Messages.GenericError
+                                                // );
+                                            }
+                                        });
+
+                                        // return next(null, null);
+                                    }
+                                })
+                            }
+                        });
+                    }
+                }
+
+                return next(null, null);
+            })
+        });
+    })
+}
