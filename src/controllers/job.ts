@@ -993,7 +993,14 @@ export const getAllJobReports = (req: Request, res: Response) => {
     JobReport.find({ $or: [{ contractor: companyId }, { company: companyId }] })
         .populate({
             path: 'job',
-            select: '_id jobId customer technician',
+            populate: [
+                { path: 'tasks.technician', select: 'profile auth.email contact' },
+                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
+                { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
+                { path: 'customerContactId', select: '-id -__v' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+                { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
+            ]
         })
         .populate({
             path: 'invoice',
@@ -1344,21 +1351,31 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 let customerName = job.customer ?
                     job.customer.profile?.displayName :
                     (job.ticket ? (job.ticket.customer ? job.ticket.customer?.profile?.displayName : null) : null);
-                // let technicianName = job.technician ? job.technician?.profile?.displayName : null;
-                // let technicianNameLinkedJob = linkedJob && linkedJob.technician ? linkedJob.technician.profile.displayName : null;
+
+                let technicianName = null;
+                let technicianNameLinkedJob = null;
+
+                if (tasks.length > 1) {
+                    technicianName = 'Multiple Techs';
+                    technicianNameLinkedJob = 'Multiple Techs';
+                } else {
+                    technicianName = tasks[0].technician.profile.displayName;
+                    technicianNameLinkedJob = tasks[0].technician.profile.displayName;
+                }
+
                 let date = job.scheduleDate;
                 // if (job.contractor) {
                 // await createJobReport(job._id, job.company, customerName, technicianName, date, job.contractor);
                 // } else {
                 // await createJobReport(job._id, job.company, customerName, technicianName, date, companyId);
-                await createJobReport(job._id, job.company, customerName, null, date, companyId);
+                await createJobReport(job._id, job.company, customerName, technicianName, date, companyId);
                 // }
                 if (linkedJob) {
                     //     if (linkedJob.contractor) {
                     //         await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, linkedJob.contractor);
                     //     } else {
                     //         await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, companyId);
-                    await createJobReport(linkedJob._id, linkedJob.company, customerName, null, date, companyId);
+                    await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, companyId);
                     //     }
                 }
 
