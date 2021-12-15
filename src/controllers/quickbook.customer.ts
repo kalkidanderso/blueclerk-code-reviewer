@@ -1048,14 +1048,19 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                             quickbookId: qbCustJob.Id
                         });
 
-                        if (qbCustJob.BillAddr?.Lat && qbCustJob.BillAddr?.Long) {
-                            jobLocationEntry.location = {
-                                coordinates: [
-                                    Number(qbCustJob.BillAddr?.Long),
-                                    Number(qbCustJob.BillAddr?.Lat)
-                                ]
-                            }
-                        }
+                        /**
+                         * Kris' remark (Sept 23rd, 2021):
+                         * Disable this one for know,
+                         * since we can't save lat long on QB Online
+                         */
+                        // if (qbCustJob.BillAddr?.Lat && qbCustJob.BillAddr?.Long) {
+                        //     jobLocationEntry.location = {
+                        //         coordinates: [
+                        //             Number(qbCustJob.BillAddr?.Long),
+                        //             Number(qbCustJob.BillAddr?.Lat)
+                        //         ]
+                        //     }
+                        // }
 
                         jobLocationToCreate.push(jobLocationEntry);
                         // Save the new Job Location from QB Customer Job Level 1
