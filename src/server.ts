@@ -12,19 +12,19 @@ import routesV1 from './routes/v1'
 import swaggerUi from 'swagger-ui-express'
 import * as swaggerDocument from './swagger.json'
 // const CronJob = require('cron').CronJob;
-import {CronJob} from 'cron'
+import { CronJob } from 'cron'
 import request from 'request';
 import socketioJwt from 'socketio-jwt';
 
 //Environment config
 import moment from 'moment-timezone';
-import {EmailSchedule, IEmailSchedule} from './models/EmailSchedule';
-import {IUser, User} from './models/User';
+import { EmailSchedule, IEmailSchedule } from './models/EmailSchedule';
+import { IUser, User } from './models/User';
 import { ICompanyAdmin } from './models/CompanyAdmin'
-import {IJob, Job} from './models/Job';
-import {sendJobEmailToAssignee, sendScheduledJobEmailToAssignee} from './services/aws';
-import {Company} from './models/Company';
-import {Customer} from './models/Customer';
+import { Job } from './models/Job';
+import { sendScheduledJobEmailToAssignee } from './services/aws';
+import { Company } from './models/Company';
+import { Customer } from './models/Customer';
 import { Status, Messages, JobStatus } from './common/constants';
 const timeout = require('connect-timeout');
 
@@ -37,7 +37,7 @@ mongoose.set('useCreateIndex', true)
 mongoose.connect(
   // `mongodb://localhost:27017/${DB_NAME}`,
   `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`,
-  {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false},
+  { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false },
   (err: MongoError) => {
 
     if (err) return console.log(`Database connection error: ${err}`)
@@ -53,20 +53,20 @@ app.use(timeout('1200s'));
 
 app.use(haltOnTimeout);
 
-function haltOnTimeout (req: any, res: any, next: any) {
-    if (!req.timedout) {
-        next()
-    } else {
-        res.json({'Status' : Status.TimeOut, 'message': 'TimeOut! Request took too long'});
-    }
+function haltOnTimeout(req: any, res: any, next: any) {
+  if (!req.timedout) {
+    next()
+  } else {
+    res.json({ 'Status': Status.TimeOut, 'message': 'TimeOut! Request took too long' });
+  }
 }
 
 
 app.set('port', process.env.PORT || 3000)
 app.use(compression())
 app.use(cookieParser())
-app.use(bodyParser.json({limit:'50mb'}));
-app.use(bodyParser.urlencoded({extended:true, limit:'50mb', parameterLimit: 10000000}));
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '50mb', parameterLimit: 10000000 }));
 // To allow requests from all origins using the wildcard
 app.use(cors({ origin: '*', credentials: true }));
 // To enable pre-flight across-the-board
@@ -84,9 +84,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const httpServer = require('http').createServer(app);
 const sio = require("socket.io")(httpServer, {
-    cors:true,
-    origins:["https://blueclerk-frontend-react.deploy.blueclerk.com", 'http://testing.blueclerk.com', 'https://app.blueclerk.com'],
-    transport : ['websocket']
+  cors: true,
+  origins: ["https://blueclerk-frontend-react.deploy.blueclerk.com", 'http://testing.blueclerk.com', 'https://app.blueclerk.com'],
+  transport: ['websocket']
 
 });
 
@@ -97,12 +97,12 @@ sio.use(socketioJwt.authorize({
   auth_header_required: true
 }));
 
-sio.on("connection", (socket:any) => {
+sio.on("connection", (socket: any) => {
   console.log("Connected!");
 
   // Find if the user exists and retrieve his/her company ID
   User.findOne(
-    {_id: socket.decoded_token.id},
+    { _id: socket.decoded_token.id },
     (err: any, user: ICompanyAdmin) => {
       if (err || !user) {
         // emit the error
@@ -118,24 +118,24 @@ sio.on("connection", (socket:any) => {
     console.log('Message received from FE!');
   });
 });
-sio.on('disconnect', (socket:any) => {
+sio.on('disconnect', (socket: any) => {
   console.log('Disconnected at ', new Date());
 })
 app.use('/api/v1', routesV1(sio))
-new CronJob('0 0 1 * *', function() {
+new CronJob('0 0 1 * *', function () {
   // console.log('You will see this message every second');
 
-    request('http://localhost:'+app.get('port')+'/api/v1/chargeSubscription', function (response: any) {
-      console.log(response);
+  request('http://localhost:' + app.get('port') + '/api/v1/chargeSubscription', function (response: any) {
+    console.log(response);
 
-    });
+  });
 
 }, null, true, 'America/Chicago');
 
-new CronJob('59 23 4 * *', function() {
-    request('http://localhost:'+app.get('port')+'/api/v1/downgradeCompanies', function (response: any) {
-      console.log(response);
-    });
+new CronJob('59 23 4 * *', function () {
+  request('http://localhost:' + app.get('port') + '/api/v1/downgradeCompanies', function (response: any) {
+    console.log(response);
+  });
 }, null, true, 'America/Chicago');
 
 // Cron Job to finalize all draft company invoices at the end of each day
@@ -149,8 +149,8 @@ new CronJob('59 23 * * *', () => {
 new CronJob('59 23 * * *', async () => {
   try {
     await Job.updateMany(
-      { status: { $in: [JobStatus.STARTED, JobStatus.PAUSED] } },
-      { $set: { status: JobStatus.INCOMPLETE } }
+      { 'tasks.status': { $in: [JobStatus.PENDING, JobStatus.STARTED, JobStatus.PAUSED] } },
+      { $set: { 'tasks.$.status': JobStatus.INCOMPLETE, status: JobStatus.INCOMPLETE } }
     ).exec();
   } catch (err) {
     console.log('== Handle incomplete jobs err:', err);
@@ -161,65 +161,65 @@ new CronJob('59 23 * * *', async () => {
  * This is for email scheduling
  */
 try {
-    let emailQueue: any[] = [];
-    new CronJob('* * * * *', async function() {
-        await EmailSchedule.find({pulled: false, _id: {$nin: emailQueue}}).populate('user').populate('jobs').exec()
-            .then(async (schedules: IEmailSchedule[]) => {
-            if (schedules.length) {
-                for (let emailSchedule of schedules) {
-                    //Check if emailSchedule is already in emailQueue
-                    if (emailQueue.filter((e) => JSON.stringify(e) == JSON.stringify(emailSchedule._id)).length == 0) {
-                        // Get User Schedule time
-                        let user: any = emailSchedule.user;
-                        // either company contractor or employee/admin
-                        let userScheduleTime = user.emailPreferences;
-                        let to: string;
-                        let assigneeName: string;
-                        switch (emailSchedule.type) {
-                            case 1: {
-                                let contractor = await Company.findOne({admin: emailSchedule.user});
-                                to = contractor.info.companyEmail;
-                                assigneeName = contractor.info.companyName;
-                                break;
-                            }
-                            case 2: {
-                                let customer = await Customer.findOne({_id: emailSchedule.user});
-                                to = customer.info.email;
-                                assigneeName = customer.contactName;
-                                break;
-                            }
-                            default: {
-                                let employee = await User.findOne({_id: emailSchedule.user});
-                                to = employee.auth.email;
-                                assigneeName = user.profile.displayName;
-                                break;
-                            }
-                        }
-                        let sendDate;
-                        let timeZone = userScheduleTime ? userScheduleTime.timeZone : 'America/Chicago';
-                        if (userScheduleTime) {
-                            let hours = userScheduleTime.time ? userScheduleTime.time.getHours() : 21;
-                            let minutes = userScheduleTime.time ? userScheduleTime.time.getMinutes() : 0;
-                            sendDate = moment().tz(timeZone).hours(hours).minutes(minutes).seconds(58);
-                        } else {
-                            sendDate = moment().tz(timeZone).hours(21).minutes(0).seconds(58);
-                        }
-                        emailQueue.push(emailSchedule._id);
-                        if (!emailSchedule.pulled && moment().tz(timeZone).diff(sendDate) < 0) {
-                            new CronJob(sendDate, async function() {
-                                let doc:any = await EmailSchedule.findOne({_id: emailSchedule._id});
-                                sendScheduledJobEmailToAssignee(doc.jobs, to, assigneeName, emailSchedule);
-                                emailQueue = emailQueue.filter((e) => JSON.stringify(e) !== JSON.stringify(emailSchedule._id));
-                            }, null, true);
-                        }
-                    }
+  let emailQueue: any[] = [];
+  new CronJob('* * * * *', async function () {
+    await EmailSchedule.find({ pulled: false, _id: { $nin: emailQueue } }).populate('user').populate('jobs').exec()
+      .then(async (schedules: IEmailSchedule[]) => {
+        if (schedules.length) {
+          for (let emailSchedule of schedules) {
+            //Check if emailSchedule is already in emailQueue
+            if (emailQueue.filter((e) => JSON.stringify(e) == JSON.stringify(emailSchedule._id)).length == 0) {
+              // Get User Schedule time
+              let user: any = emailSchedule.user;
+              // either company contractor or employee/admin
+              let userScheduleTime = user.emailPreferences;
+              let to: string;
+              let assigneeName: string;
+              switch (emailSchedule.type) {
+                case 1: {
+                  let contractor = await Company.findOne({ admin: emailSchedule.user });
+                  to = contractor.info.companyEmail;
+                  assigneeName = contractor.info.companyName;
+                  break;
                 }
+                case 2: {
+                  let customer = await Customer.findOne({ _id: emailSchedule.user });
+                  to = customer.info.email;
+                  assigneeName = customer.contactName;
+                  break;
+                }
+                default: {
+                  let employee = await User.findOne({ _id: emailSchedule.user });
+                  to = employee.auth.email;
+                  assigneeName = user.profile.displayName;
+                  break;
+                }
+              }
+              let sendDate;
+              let timeZone = userScheduleTime ? userScheduleTime.timeZone : 'America/Chicago';
+              if (userScheduleTime) {
+                let hours = userScheduleTime.time ? userScheduleTime.time.getHours() : 21;
+                let minutes = userScheduleTime.time ? userScheduleTime.time.getMinutes() : 0;
+                sendDate = moment().tz(timeZone).hours(hours).minutes(minutes).seconds(58);
+              } else {
+                sendDate = moment().tz(timeZone).hours(21).minutes(0).seconds(58);
+              }
+              emailQueue.push(emailSchedule._id);
+              if (!emailSchedule.pulled && moment().tz(timeZone).diff(sendDate) < 0) {
+                new CronJob(sendDate, async function () {
+                  let doc: any = await EmailSchedule.findOne({ _id: emailSchedule._id });
+                  sendScheduledJobEmailToAssignee(doc.jobs, to, assigneeName, emailSchedule);
+                  emailQueue = emailQueue.filter((e) => JSON.stringify(e) !== JSON.stringify(emailSchedule._id));
+                }, null, true);
+              }
             }
-        });
-    }, null, true);
+          }
+        }
+      });
+  }, null, true);
 
 } catch (err) {
-    console.log({error: err.message});
+  console.log({ error: err.message });
 
 }
 

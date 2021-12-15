@@ -75,6 +75,7 @@ export interface IJob extends Document {
 // }
 
 export interface ITask extends Document {
+    status: number
     employeeType?: boolean
     technician?: Schema.Types.ObjectId | any
     contractor?: Schema.Types.ObjectId
@@ -82,6 +83,7 @@ export interface ITask extends Document {
 }
 
 export interface TaskEntry {
+    status: number
     employeeType: string
     technicianId: string
     contractorId: string
@@ -230,6 +232,10 @@ const JobSchema = new Schema({
         _id: false,
         // employee type 0 for company employee
         // employee type 1 for external employee
+        status: {
+            type: Number,
+            default: 0
+        },
         employeeType: {
             type: Boolean,
             default: false

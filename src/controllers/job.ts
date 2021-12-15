@@ -498,9 +498,9 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             path: 'technician',
             select: 'profile.displayName auth.email emailPreferences'
         })
-        .populate({ 
-            path: 'tasks.technician', 
-            select: 'profile auth.email contact' 
+        .populate({
+            path: 'tasks.technician',
+            select: 'profile auth.email contact'
         })
         .populate({
             path: 'contractor',
@@ -1181,7 +1181,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             let newcharges: number = 0
             if (item != null && item.charges > 0) {
 
-                if (params.status == 2 && !item.isFixed) {
+                if (params.status == 2 && !item?.isFixed) {
                     let starting: any = new Date(job.startTime)
                     let ending: any = Date.now()
 
@@ -1190,7 +1190,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     timeSpent = ((Math.ceil(diffMs / interval) * interval) / 60000) / 60
                     newcharges = item.charges * timeSpent
 
-                } else if (params.status == 2 && item.isFixed) {
+                } else if (params.status == 2 && item?.isFixed) {
                     newcharges = item.charges
                 }
 
@@ -1284,40 +1284,89 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             data.track = track;
             dataLinked.track = trackLinked;
 
-            // To pause any started tasks when job PAUSED, CANCELED, or RESCHEDULED
-            switch (Number(params.status)) {
-                case JobStatus.FINISHED:
-                    for (const task of tasks) {
-                        const pendingStartedTasks: ITaskJobType[] = task.jobTypes.filter(taskJobType =>
-                            [JobStatus.PENDING, JobStatus.STARTED, JobStatus.PAUSED].includes(Number(taskJobType.status))
-                        );
+            const allTaskJobTypeStatus: Number[] = [];
+            for (const jobTask of job.tasks) {
+                for (const jobType of jobTask.jobTypes) {
+                    allTaskJobTypeStatus.push(jobType.status);
+                }
+            }
 
-                        for (const task of pendingStartedTasks) {
-                            await _updateTask({ job, taskJobType: task, user, params, status: JobStatus.FINISHED });
-                        };
+            switch (Number(params.status)) {
+                case JobStatus.PENDING:
+                    tasks.forEach(task => task.status = JobStatus.PENDING);
+                    data.tasks = tasks;
+                    break;
+
+                case JobStatus.STARTED:
+                    const pendingPausedTasks: ITaskJobType[] = tasks.filter(task =>
+                        [JobStatus.PENDING, JobStatus.PAUSED].includes(Number(task.status))
+                    );
+
+                    for (const task of pendingPausedTasks) {
+                        await _updateTask({ job, taskJobType: task, user, params, status: JobStatus.STARTED });
+                    };
+                    data.tasks = tasks;
+                    break;
+
+                case JobStatus.FINISHED:
+                    const pendingStartedTasks: ITaskJobType[] = tasks.filter(task =>
+                        [JobStatus.PENDING, JobStatus.STARTED, JobStatus.PAUSED].includes(Number(task.status))
+                    );
+
+                    for (const task of pendingStartedTasks) {
+                        await _updateTask({ job, taskJobType: task, user, params, status: JobStatus.FINISHED });
                     };
 
                     data.tasks = tasks;
                     break;
 
                 case JobStatus.PAUSED:
-                case JobStatus.CANCELED:
-                case JobStatus.RESCHEDULED:
-                case JobStatus.INCOMPLETE:
-                    // // Search any started tasks on this job
-                    // const startedTasks: ITask[] = tasks.filter((task: ITask) => task.status === JobStatus.STARTED);
-                    // // Iterate all started tasks and update the status to PAUSED
-                    // for (const task of startedTasks) {
-                    //     await _updateTask({ job, jobTypeTask: jobType, user, params, status: JobStatus.PAUSED });
-                    // }
+                    const startedTasks: ITaskJobType[] = tasks.filter(taskJobType =>
+                        ![JobStatus.FINISHED, JobStatus.RESCHEDULED, JobStatus.CANCELED].includes(Number(taskJobType.status))
+                    );
 
-                    // Search any started tasks on this job
-                    const startedTasks: ITask[] = tasks.filter((task: ITask) => task.jobTypes.filter((jobType: ITaskJobType) => jobType.status === JobStatus.STARTED));
-                    // Iterate all started tasks and update the status to PAUSED
-                    for (const newtask of startedTasks) {
-                        for (const jobTypes of newtask.jobTypes) {
-                            await _updateTask({ job, taskJobType: jobTypes, user, params, status: JobStatus.PAUSED });
-                        }
+                    for (const task of startedTasks) {
+                        await _updateTask({ job, taskJobType: task, user, params, status: JobStatus.PAUSED });
+                    };
+
+                    data.tasks = tasks;
+                    break;
+
+                case JobStatus.CANCELED:
+                    const finishedTasks: ITaskJobType[] = tasks.filter(task =>
+                        ![JobStatus.FINISHED].includes(Number(task.status))
+                    )
+
+                    for (const task of finishedTasks) {
+                        await _updateTask({ job, taskJobType: task, user, params, status: JobStatus.CANCELED });
+                    }
+
+                    data.tasks = tasks;
+                    break;
+
+                case JobStatus.RESCHEDULED:
+                    // TODO: Check technician jobtype status. if started, pause it
+                    // TODO: create API update job technician status
+                    const unfinishedStartedTasks = tasks.filter(task =>
+                        ![JobStatus.FINISHED].includes(task.status)
+                    );
+
+                    for (const unfinishedStartedTask of unfinishedStartedTasks) {
+                        await _updateTask({ job, taskJobType: unfinishedStartedTask, user, params, status: JobStatus.RESCHEDULED });
+                    };
+
+                    data.tasks = tasks;
+                    break;
+
+                case JobStatus.INCOMPLETE:
+                    // Search any started tasks on this job and update the status to PAUSED or STARTED
+                    const pendingStartedPausedTasks = tasks.filter(task =>
+                        [JobStatus.PENDING, JobStatus.STARTED, JobStatus.PAUSED].includes(Number(task.status))
+                    );
+
+                    // Iterate all started tasks
+                    for (const pendingStartedTask of pendingStartedPausedTasks) {
+                        await _updateTask({ job, taskJobType: pendingStartedTask, user, params, status: JobStatus.PAUSED });
                     }
 
                     data.tasks = tasks;
@@ -1329,6 +1378,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                         for (const task of linkedStartedTasks) {
                             await _updateTask({ job: linkedJob, taskJobType: jobType, user, params, status: JobStatus.PAUSED });
                         }
+
                         dataLinked.tasks = tasksLinked;
                     }
                     break;
@@ -1538,6 +1588,7 @@ export const startJobTask = async (req: Request, res: Response) => {
             actionStatus = 'Started';
         }
         // Update the task status
+        tasks.status = JobStatus.STARTED;
         taskJobType.status = JobStatus.STARTED;
         taskJobType.timeUpdatedBy = user;
         taskJobType.timeUpdatedAt = new Date();
@@ -1635,6 +1686,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
     const task = job.tasks.find(task => task?.technician?._id.toString() === params.technicianId);
     const taskJobType = task?.jobTypes.find((task: any) => task?.jobType?._id.toString() === params.jobTypeId);
 
+    let taskStatus = task.status;
     if (!task)
         return res.json({ status: Status.Error, message: Messages.TaskNotFound });
 
@@ -1673,34 +1725,52 @@ export const updateJobTask = async (req: Request, res: Response) => {
     action = `|${statusAction} the Job's task: ${jobType.title}|`;
     // To update Job's status based on cummulative of tasks status
     // const allTaskStatus = task.jobTypes.map(newTask => newTask.status);
-    const allTaskStatus: Number[] = [];
-    for (const technician of job.tasks) {
-        for (const task of technician.jobTypes) {
-            allTaskStatus.push(task.status);
+    const allTaskJobTypeStatus: Number[] = [];
+    const allTechnicianStatus: Number[] = []
+    for (const jobTask of job.tasks) {
+        for (const jobType of jobTask.jobTypes) {
+            allTaskJobTypeStatus.push(jobType.status);
         }
+    }
+
+    for (const taskJobType of task.jobTypes) {
+        allTechnicianStatus.push(taskJobType.status);
     }
 
     if (taskJobType.status === JobStatus.FINISHED) {
         taskJobType.isSelfFinished = true;
     }
 
-    if (allTaskStatus.every(status => status === 2)) {
-        // All new tasks status are FINISHED, Job is FINISHED
+    if (allTechnicianStatus.every(status => status === JobStatus.FINISHED)) {
+        // All new job type task are FINISHED, Job is FINISHED
+        taskStatus = JobStatus.FINISHED;
+        action += `|Finishing the technician|`;
+    }
+
+    /**
+     * Kris' remark (Dec 2nd, 2021):
+     * Commented this out for now since Job's status is shared between techs,
+     * to avoid confusion when this case occured
+     */
+    else if (allTechnicianStatus.includes(5) && !allTechnicianStatus.includes(0)) {
+        // No more PENDING tasks, but have at least one PAUSED task
+        taskStatus = JobStatus.PAUSED;
+    }
+
+    if (allTaskJobTypeStatus.every(status => status === 2)) {
+        // All new technician status are FINISHED, Job is FINISHED
         job.endTime = new Date();
         job.timeSpent = moment().diff(moment(job.startTime), 'minutes');
         job.completeOnTime = !job.scheduledEndTime ? true : job.scheduledEndTime >= job.endTime;
         jobStatus = JobStatus.FINISHED;
         action += `|Finishing the job|`;
     }
-    /**
-     * Kris' remark (Dec 2nd, 2021):
-     * Commented this out for now since Job's status is shared between techs,
-     * to avoid confusion when this case occured
-     */
-    // else if (allTaskStatus.includes(5) && !allTaskStatus.includes(0)) {
-    //     // No more PENDING tasks, but have at least one PAUSED task
-    //     jobStatus = JobStatus.PAUSED;
-    // }
+
+    else if (allTaskJobTypeStatus.every(status => status === JobStatus.PAUSED)) {
+        // All new technician status are PAUSED, Job is PAUSED
+        jobStatus = JobStatus.PAUSED;
+        action += `|Paused the job|`;
+    }
 
     // Log a track history
     const history = {
@@ -1712,6 +1782,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
     job.timeUpdatedBy = user._id;
     job.timeUpdatedAt = new Date();
     job.status = jobStatus;
+    task.status = taskStatus;
     job.track.push(history);
 
     try {
@@ -2474,6 +2545,113 @@ export const updateJobTime = (req: Request, res: Response) => {
         })
 }
 
+export const updateJobTechnicianStatus = (req: Request, res: Response) => {
+    const params = req.body;
+    let companyId = req.companyId;
+
+    const user = <IUser>req.user;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId;
+    }
+
+    Job.findOne({ _id: params.jobId, $or: [{ company: companyId }, { 'tasks.contractor': companyId }, { contractor: companyId }, { company: companyId }] })
+        .populate({
+            path: 'customer',
+            select: 'profile.displayName itemTier'
+        })
+        .populate({
+            path: 'technician',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'tasks.technician',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'ticket',
+            select: 'customer',
+            populate: { path: 'customer', select: 'profile.displayName' }
+        })
+        .exec(async (err: any, job: IJob) => {
+            if (err) {
+                return res.json({ status: Status.Error, message: err.message });
+            }
+
+            let action = '';
+            let jobStatus = job.status;
+            const taskJobTypeStatus: Number[] = [];
+            const allTechnicianStatus: JobStatus[] = [];
+            const task = job.tasks.find(task => task?.technician?._id.toString() === params.technicianId);
+
+            for (const taskJobType of task.jobTypes) {
+                taskJobTypeStatus.push(taskJobType.status)
+            }
+
+            for (const task of job.tasks) {
+                allTechnicianStatus.push(task.status);
+            }
+
+            switch (Number(params.status)) {
+                case JobStatus.RESCHEDULED:
+                    // PAUSED the STARTED jobtype task
+                    if (taskJobTypeStatus.includes(1)) {
+                        task.jobTypes.forEach(jobTypeTask => {
+                            jobTypeTask.status = JobStatus.PAUSED;
+                            jobTypeTask.pausedCount = Number(params.status) === JobStatus.PAUSED ? jobTypeTask.pausedCount + 1 : jobTypeTask.pausedCount;
+                        });
+
+                        action += `|Rescheduling the technician|`;
+                    }
+
+                    task.status = JobStatus.RESCHEDULED;
+                    const updatedTechnicianStatus = job.tasks.map(taskTechnician => taskTechnician.status);
+
+                    // All technician status are RESCHEDULED, the job will be RESCHEDULED
+                    if (updatedTechnicianStatus.every(status => status === JobStatus.RESCHEDULED)) {
+                        jobStatus = JobStatus.RESCHEDULED;
+                        action += `|Rescheduling the job|`;
+                    }
+
+                    break;
+
+                case JobStatus.CANCELED:
+                    // Cannot CANCELED technician with FINISHED status
+                    if ([JobStatus.FINISHED].includes(task.status)) {
+                        return res.json({ status: Status.Error, message: 'Cannot CANCELED technician with FINISHED or PAUSED status' });
+                    }
+
+                    task.status = JobStatus.CANCELED;
+                    action += `|Canceled the technician|`;
+
+                    const canceledTechnicianStatus = job.tasks.map(taskTechnician => taskTechnician.status);
+                    // All technician status are CANCELED, the job will be CANCELED
+                    if (canceledTechnicianStatus.every(status => status === JobStatus.CANCELED)) {
+                        jobStatus = JobStatus.CANCELED;
+                        action += `|Canceled the job|`;
+                    };
+
+                    break;
+            }
+
+            const history = {
+                user: user._id,
+                action,
+                note: params.note,
+                date: new Date()
+            };
+
+            job.status = jobStatus;
+            job.track.push(history);
+
+            try {
+                await job.save()
+            } catch (err) {
+                return res.json({ status: Status.Error, message: err.message });
+            }
+
+            return res.json({ status: Status.Success, message: `Job Task updated successfully.`, job, updatedTask: task });
+        });
+}
 // PRIVATE METHODS
 
 /**
@@ -2512,9 +2690,9 @@ const _updateTask = async ({ job, taskJobType, user, params, status }: { job: IJ
 const _handleTaskCharges = async ({ job, taskJobType, item, customer, params, isDeduct }: { job: IJob, taskJobType: ITaskJobType, item: IItem, customer: ICustomer, params: any, isDeduct?: boolean }) => {
 
     // Find the item tier based on customer assigned item tier
-    const tier = item.tiers?.find(t => t.tier?.toString() === customer.itemTier?.toString());
+    const tier = item?.tiers?.find(t => t.tier?.toString() === customer.itemTier?.toString());
     // Find the tier charge and use tier number 1 and item's charges as the fallback
-    const tierCharge = tier?.charge || item.tiers[0]?.charge || item?.charges;
+    const tierCharge = tier?.charge || item?.tiers[0]?.charge || item?.charges;
     let charges = taskJobType.charges || 0;
 
     if (!isDeduct) {
@@ -2528,7 +2706,7 @@ const _handleTaskCharges = async ({ job, taskJobType, item, customer, params, is
          * If item isFixed, charges will not sum up over and over,
          * if item hourly, charges will be sum up each time it is paused/finished
          */
-        charges = item.isFixed ? tierCharge : charges + (tierCharge * (timeSpent / 60));
+        charges = item?.isFixed ? tierCharge : charges + (tierCharge * (timeSpent / 60));
 
         taskJobType.timeSpent += timeSpent;
         taskJobType.endTime = Number(params.status) === JobStatus.FINISHED ? new Date() : undefined;
@@ -2546,7 +2724,7 @@ const _handleTaskCharges = async ({ job, taskJobType, item, customer, params, is
          * If item isFixed, charges will not be deducted,
          * if item hourly, charges will be deducted
          */
-        charges = item.isFixed ? tierCharge : charges - (tierCharge * (timeSpentToDeduct / 60));
+        charges = item?.isFixed ? tierCharge : charges - (tierCharge * (timeSpentToDeduct / 60));
 
         taskJobType.timeSpent -= timeSpentToDeduct;
         taskJobType.endTime = new Date(params.endTime);
@@ -2591,10 +2769,22 @@ const _handleMutltipleTechniciansTasks = async ({
         }
 
         if (paramTask.contractorId && !paramTask.technicianId) {
+            // Check duplicated contractorId from param task
+            const uniqueContractor = new Set(paramTasks.map(task => task.contractorId));
+            if (uniqueContractor.size < paramTasks.length) {
+                throw new Error("Cannot use same contractor in the same job");
+            }
+
             taskContractor = await Company.findOne({ _id: paramTask.contractorId });
         }
 
         if (paramTask.technicianId && !paramTask.contractorId) {
+            // Check duplicated technicianId from param task
+            const uniqueTechnician = new Set(paramTasks.map(task => task.technicianId));
+            if (uniqueTechnician.size < paramTasks.length) {
+                throw new Error("Cannot use same technician in the same job");
+            }
+
             const technician = await User.findOne({ _id: paramTask.technicianId });
             taskTechnician = technician?._id;
         }

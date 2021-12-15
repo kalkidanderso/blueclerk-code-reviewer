@@ -102,6 +102,7 @@ export const migrateJobTask = async (req: Request, res: Response) => {
             technician: job.technician,
             employeeType: job.employeeType,
             contractor: job.contractor,
+            status: job.status
         }
 
         // If job has type, it means this is a very old job
