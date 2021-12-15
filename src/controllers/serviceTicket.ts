@@ -465,7 +465,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
         company: company._id,
         jobCreated: false,
         status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] }
-    })
+    }).sort({ _id: -1 })
         .populate({ path: 'company', select: 'info address contact' })
         .populate({ path: 'customer', select: 'info profile address contact' })
         .populate({ path: 'customerContactId', select: '-__v' })
