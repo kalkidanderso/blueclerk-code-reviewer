@@ -4694,7 +4694,7 @@
         ]
       }
     },
-    "/filterItems": {
+    "/searchDuplicatedItems": {
       "post": {
         "tags": [
           "Items"

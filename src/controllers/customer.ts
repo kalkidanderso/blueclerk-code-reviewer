@@ -526,7 +526,7 @@ export const mergeCustomers = async (req: Request, res: Response) => {
     const jobLocations: string[] = params.jobLocations?.length ? JSON.parse(params.jobLocations) : [];
     const customerEquipments: string[] = params.equipments?.length ? JSON.parse(params.equipments) : [];
     const contacts: string[] = params.contact?.length ? JSON.parse(params.contacts) : [];
-    const userPaymentDeposited: any[] = []
+    const customerPaymentDeposited: any[] = []
 
     // Get deposited customer
     for (const unusedCustomerId of unusedCustomerIds) {
@@ -537,7 +537,7 @@ export const mergeCustomers = async (req: Request, res: Response) => {
                 if (getDepositedPayment?.LinkedTxn) {
                     const paymentLinked = getDepositedPayment?.LinkedTxn.find(linkedPayment => linkedPayment.TxnType === 'Deposit')
                     if (paymentLinked) {
-                        userPaymentDeposited.push(getDepositedPayment?.CustomerRef?.name);
+                        customerPaymentDeposited.push(getDepositedPayment?.CustomerRef?.name);
                     }
                 }
             });
@@ -545,8 +545,8 @@ export const mergeCustomers = async (req: Request, res: Response) => {
     }
 
     // Return error when unused user have deposited payment
-    if (userPaymentDeposited.length) {
-        return res.json({ status: Status.Error, message: `${[...new Set(userPaymentDeposited)].toString()} have a deposited payment` })
+    if (customerPaymentDeposited.length) {
+        return res.json({ status: Status.Error, message: `You cannot merge this customer(s): ${[...new Set(customerPaymentDeposited)].toString()}. Because they already have a deposited payments on Quickbooks. Either remove the Bank Deposit of those customers or merge the other customers instead.` })
     }
 
     Customer.findById(params.customerId).exec(async (err: any, customer: ICustomer) => {
@@ -646,7 +646,7 @@ export const mergeCustomers = async (req: Request, res: Response) => {
 
 }
 
-export const _moveCustomer = async ({
+const _moveCustomer = async ({
     req,
     res,
     customerId,

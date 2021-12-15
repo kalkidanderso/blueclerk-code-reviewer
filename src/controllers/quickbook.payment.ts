@@ -210,7 +210,6 @@ export const syncQBPayments = async (req: Request, res: Response) => {
                  * one unique reference number
                  */
                 for (const qbPayment of qbPayments) {
-                    console.log('qbPayment', qbPayment)
                     if (
                         !moment(payment.paidAt).utc().isSame(new Date(qbPayment.TxnDate), 'day')
                         || (payment.referenceNumber
@@ -488,7 +487,7 @@ export const _transferQBPayments = async (req: Request, res: Response, company: 
                                                         if (linkedTxn.TxnType === IQBPaymentTxnTypes.INVOICE) {
                                                             qbo.getInvoice(linkedTxn.TxnId, async (err: any, qbInvoice: IQBInvoice) => {
                                                                 if (qbInvoice) {
-                                                                    qbInvoice.CustomerRef = qbInvoice?.CustomerRef ?? {};
+                                                                    // qbInvoice.CustomerRef = qbInvoice?.CustomerRef ?? {};
                                                                     qbInvoice.CustomerRef.value = currentCustomer?.quickbookId;
                                                                     qbInvoice.CustomerRef.name = currentCustomer?.profile?.displayName;
                                                                     qbInvoice.BillEmail = qbInvoice.BillEmail ?? {};
@@ -509,7 +508,7 @@ export const _transferQBPayments = async (req: Request, res: Response, company: 
                                             qbPayment.SyncToken;
                                             // This item is required
                                             qbPayment.Line = qbPayment.Line;
-                                            qbPayment.CustomerRef = qbPayment?.CustomerRef ?? {};
+                                            // qbPayment.CustomerRef = qbPayment?.CustomerRef ?? {};
                                             qbPayment.CustomerRef.value = currentCustomer?.quickbookId;
                                             qbPayment.CustomerRef.name = currentCustomer?.profile?.displayName;
                                             qbPayment.TotalAmt = qbPayment.TotalAmt;
@@ -521,20 +520,13 @@ export const _transferQBPayments = async (req: Request, res: Response, company: 
 
                                             // Update payment in QB 
                                             qbo.updatePayment(qbPayment, async (err: any, qbPayment: IQBPayment) => {
-                                                console.log('updatedPayment', qbPayment);
-                                                console.log('== err.Fault:', err?.Fault);
-                                                console.log('== err.Fault?.Error[0]?.Message:', err?.Fault?.Error[0]?.Message);
-                                                console.log('== err.fault:', err?.fault);
-                                                console.log('== err.fault?.error[0]?.detail:', err?.fault?.error[0]?.detail);
-                                                console.log('== err.fault?.error[0]?.message:', err?.fault?.error[0]?.message);
-                                                // return next(
-                                                //     Status.Error,
-                                                //     err?.Fault?.Error[0]?.Detail
-                                                //     || err?.Fault?.Error[0]?.Message
-                                                //     || err?.fault?.error[0]?.detail
-                                                //     || err?.fault?.error[0]?.message
-                                                //     || Messages.GenericError
-                                                // );
+                                                throw new Error(
+                                                    err?.Fault?.Error[0]?.Detail
+                                                    || err?.Fault?.Error[0]?.Message
+                                                    || err?.fault?.error[0]?.detail
+                                                    || err?.fault?.error[0]?.message
+                                                    || Messages.GenericError
+                                                );
                                             })
                                         }
                                     }

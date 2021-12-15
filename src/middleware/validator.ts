@@ -355,6 +355,8 @@ export const Validations = {
 
   updateItem: [check('itemId').exists(), check('charges').exists(), check('isFixed').exists(), check('tax').exists()],
 
+  searchDuplicatedItems: [check('keyword').exists()],
+
   mergeItems: [
     check('itemId').exists().withMessage(Messages.Required),
     check('itemId').isMongoId().withMessage(Messages.WrongId),

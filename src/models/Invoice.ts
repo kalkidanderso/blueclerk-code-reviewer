@@ -85,7 +85,7 @@ export interface IQBInvoice {
     }
     CustomerRef: {
         name?: string
-        value?: string
+        value: string
     }
     BillEmail?: {
         Address?: string

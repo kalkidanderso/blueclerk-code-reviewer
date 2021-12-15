@@ -2847,7 +2847,7 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
-  /filterItems:
+  /searchDuplicatedItems:
     post:
       tags:
         - Items

@@ -323,14 +323,13 @@ export const _transferQBInvoices = async (req: Request, res: Response, company: 
                             ], async (err: any, data: any) => {
                                 const qbInvoices: IQBInvoice[] = data?.QueryResponse?.Invoice;
 
-                                console.log('qbInvoices', qbInvoices);
                                 if (qbInvoices?.length) {
                                     // Iterate all QB Invoices
                                     for (const qbInvoice of qbInvoices) {
                                         if (qbInvoice && unusedQBCustomer?.Active) {
 
                                             // Move invoice to the new customer
-                                            qbInvoice.CustomerRef = qbInvoice.CustomerRef ?? {};
+                                            // qbInvoice.CustomerRef = qbInvoice.CustomerRef ?? {};
                                             qbInvoice.CustomerRef.value = currentCustomer?.quickbookId;
                                             qbInvoice.CustomerRef.name = currentCustomer?.profile?.displayName;
                                             qbInvoice.BillEmail = qbInvoice.BillEmail ?? {};
@@ -710,14 +709,6 @@ export const _transferQBInvoiceItem = async (
                                                     || err.fault?.error[0]?.message
                                                     || Messages.GenericError
                                                 )
-                                                // return next(
-                                                //     Status.Error,
-                                                //     err.Fault?.Error[0]?.Detail
-                                                //     || err.Fault?.Error[0]?.Message
-                                                //     || err.fault?.error[0]?.detail
-                                                //     || err.fault?.error[0]?.message
-                                                //     || Messages.GenericError
-                                                // );
                                             }
                                         });
 

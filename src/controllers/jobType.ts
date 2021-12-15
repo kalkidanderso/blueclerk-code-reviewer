@@ -543,7 +543,7 @@ export const _handleJobTypesJson = (customerId: string, paramJobTypes: string, j
     })
 }
 
-export const filterItems = async (req: Request, res: Response) => {
+export const searchDuplicatedItems = async (req: Request, res: Response) => {
     const params = req.body;
     const companyId = req.companyId;
 
