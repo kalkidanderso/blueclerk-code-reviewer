@@ -1118,6 +1118,16 @@ export default function (sio: any) {
         serviceTicketController.getOpenServiceTickets
     )
 
+    router.get(
+        '/getOpenServiceTicketsStream',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Service_Tickets),
+        (req, res) => {
+            serviceTicketController.getOpenServiceTicketsStream(req, res, sio)
+        }
+    )
+
     router.post(
         '/createServiceTicket',
         passport.authenticate('jwt', { session: false }),

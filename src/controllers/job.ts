@@ -183,7 +183,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
     }
     const customer = params.customerId || parentJob && parentJob.customer;
 
-    const tasks = await _handleMutltipleTechniciansTasks({ req, parentJob, paramTasks, serviceTicket });
+    const tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob, paramTasks, serviceTicket });
 
     let track: any = [];
     let trackedServiceTicket: { user: any; action: string; date: Date; }[] = [];
@@ -1906,7 +1906,7 @@ export const editJob = async (req: Request, res: Response) => {
                 }
 
                 // Handle param technician
-                const tasks = await _handleMutltipleTechniciansTasks({ req, parentJob: job, paramTasks, serviceTicket });
+                const tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob: job, paramTasks, serviceTicket });
                 job.tasks = tasks;
                 action += `|Updated Tasks|`;
             }
@@ -2090,7 +2090,7 @@ export const editJob = async (req: Request, res: Response) => {
                 }
             )
         }
-    )
+    );
 }
 
 export const getJobDetails = (req: Request, res: Response) => {
@@ -2742,15 +2742,17 @@ const _handleTaskCharges = async ({ job, taskJobType, item, customer, params, is
 
 const _handleMutltipleTechniciansTasks = async ({
     req,
+    res,
     parentJob,
     paramTasks,
     serviceTicket
 }: {
     req: Request,
+    res: Response,
     parentJob: IJob,
     paramTasks: TaskEntry[],
     serviceTicket: IServiceTicket
-}): Promise<ITask[]> => {
+}): Promise<ITask[] | any> => {
 
     const params = req.body;
     const invalidJobType: any[] = []
@@ -2765,7 +2767,7 @@ const _handleMutltipleTechniciansTasks = async ({
         let taskTechnician: any
 
         if (!paramTask.contractorId && !paramTask.technicianId) {
-            throw new Error("contractorId or technicianId must be provided");
+            return res.json({ status: Status.Error, message: "contractorId or technicianId must be provided" });
         }
 
         if (paramTask.contractorId && !paramTask.technicianId) {
@@ -2800,7 +2802,7 @@ const _handleMutltipleTechniciansTasks = async ({
         }
 
         if (!taskContractor && !taskTechnician) {
-            throw new Error("Contractor/Technician not found!")
+            return res.json({ status: Status.Error, message: "Contractor/Technician not found!" })
         }
 
         const taskEntry: any = {
@@ -2810,10 +2812,14 @@ const _handleMutltipleTechniciansTasks = async ({
         };
 
         //=== HANDLE params jobTypes
-        ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(customer, JSON.stringify(paramTask.jobTypes), jobTypes));
-        invalidJobType.push(...invalidJobTypes);
-        taskEntry.jobTypes = jobTypes;
-        tasks.push(taskEntry);
+        try {
+            ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(customer, JSON.stringify(paramTask.jobTypes), jobTypes));
+            invalidJobType.push(...invalidJobTypes);
+            taskEntry.jobTypes = jobTypes;
+            tasks.push(taskEntry);
+        } catch (error) {
+            return res.json({ 'status': Status.Error, 'message': error.message });
+        }
         //=== END HANDLE params jobTypes
     }
 
