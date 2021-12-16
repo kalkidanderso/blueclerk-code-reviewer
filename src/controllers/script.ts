@@ -10,6 +10,7 @@ import { _addItemTier } from '../controllers/company';
 import { Job, ITaskJobType } from '../models/Job';
 import { ServiceTicket } from '../models/ServiceTicket';
 import { JobType } from '../models/JobType';
+import { job } from 'cron';
 
 /**
  * To sync and update all companies and customers to have Item Price Tier,
@@ -198,4 +199,44 @@ export const migrateTicketAndJobImage = async (req: Request, res: Response) => {
         serviceTickets, jobs
     });
 
+}
+
+export const migrateTechnicianStatus = async (req: Request, res: Response) => {
+    const jobs = await Job.find({ 'tasks.jobTypes': { $exists: true } });
+
+    if (!jobs.length) {
+        return res.json({ status: Status.OK, message: 'No jobs to be migrated' });
+    }
+
+    for (const job of jobs) {
+        for (const task of job.tasks) {
+            const allTaskJobTypeStatus = task.jobTypes.map(jobType => jobType.status);
+            // Add status to technician from job type status
+            for (const jobTypeStatus of allTaskJobTypeStatus) {
+                if ([JobStatus.STARTED, JobStatus.PENDING, JobStatus.PAUSED].includes(jobTypeStatus)) {
+                    task.status = jobTypeStatus
+                }
+
+                if (allTaskJobTypeStatus.every(status => status === jobTypeStatus)) {
+                    task.status = jobTypeStatus
+                }
+            }
+        }
+
+        // Get all technician status and update the job status
+        const allTechnicianStatus = job.tasks.map(task => task.status);
+        for (const technicianStatus of allTechnicianStatus) {
+            if (allTechnicianStatus.every(status => status === technicianStatus)) {
+                job.status = technicianStatus;
+            }
+        }
+
+        job.save()
+    }
+
+    return res.json({
+        status: Status.Success,
+        message: 'Technician status successfully migrated.',
+        jobs
+    });
 }

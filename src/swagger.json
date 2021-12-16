@@ -7454,7 +7454,7 @@
                     "type": "string",
                     "description": "Id of the job technician to edit"
                   },
-                  "status" : {
+                  "status": {
                     "type": "number",
                     "description": "status of purchase order 0 => pending, 1 => approved by customer, 2 => cancelled by customer"
                   },
@@ -10884,6 +10884,32 @@
         ],
         "summary": "To migrate all Service Ticket and Job old image to images (in array format)",
         "description": "**WARNING: Only do this when you know what you are doing.**\nTo migrate all Service Ticket and Job old image to images (in array format).",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/script/migrateTechnicianStatus": {
+      "post": {
+        "tags": [
+          "Script"
+        ],
+        "summary": "To migrate all Job to every tasks to have a status",
+        "description": "**WARNING: - Only do this when you know what you are doing. Run migrateJobTask first before run this script.**\nTo migrate all job tasks(in array format).",
         "responses": {
           "200": {
             "description": "Success",

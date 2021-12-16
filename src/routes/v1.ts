@@ -1936,6 +1936,12 @@ export default function (sio: any) {
         scriptController.migrateTicketAndJobImage
     )
 
+    router.post(
+        '/script/migrateTechnicianStatus',
+        passport.authenticate('jwt', { session: false }),
+        scriptController.migrateTechnicianStatus
+    )
+
     return router
 
 }
