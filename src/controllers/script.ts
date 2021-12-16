@@ -223,14 +223,6 @@ export const migrateTechnicianStatus = async (req: Request, res: Response) => {
             }
         }
 
-        // Get all technician status and update the job status
-        const allTechnicianStatus = job.tasks.map(task => task.status);
-        for (const technicianStatus of allTechnicianStatus) {
-            if (allTechnicianStatus.every(status => status === technicianStatus)) {
-                job.status = technicianStatus;
-            }
-        }
-
         job.save()
     }
 
