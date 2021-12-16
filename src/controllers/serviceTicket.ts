@@ -442,6 +442,52 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
             });
 }
 
+export const getOpenServiceTicketsStream = async (req: Request, res: Response, sio: any) => {
+
+    const company = <ICompany>req.company;
+
+    // Initialize started count & total of the service tickets
+    let count = 1;
+    const totalServiceTickets = await ServiceTicket.find({
+        company: company._id,
+        jobCreated: false,
+        status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] }
+    }).countDocuments();
+
+    // Return the HTTP request directly to avoid timed-out issue
+    res.json({ status: Status.OK, total: totalServiceTickets, message: `All open service tickets will be returned to Socket.io, make sure to listen to event 'all_open_service_tickets'` });
+
+    /**
+     * Retrieve all open service tickets with all populated info,
+     * and return it as a stream via socket.io
+     */
+    const serviceTicketCursor = ServiceTicket.find({
+        company: company._id,
+        jobCreated: false,
+        status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] }
+    }).sort({ _id: -1 })
+        .populate({ path: 'company', select: 'info address contact' })
+        .populate({ path: 'customer', select: 'info profile address contact' })
+        .populate({ path: 'customerContactId', select: '-__v' })
+        .populate({ path: 'jobLocation', select: 'name address location' })
+        .populate({ path: 'jobSite', select: 'name address location' })
+        .populate({ path: 'tasks.jobType', select: 'title description sku' })
+        .cursor();
+
+    // Iterate all the cursor and send it to company's room socket.io
+    for (let serviceTicket = await serviceTicketCursor.next(); serviceTicket != null; serviceTicket = await serviceTicketCursor.next()) {
+        // Send the service ticket via socket.io
+        await sio.to(company._id.toString()).emit(SocketEvents.ALL_OPEN_SERVICE_TICKETS, {
+            serviceTicket,
+            count: count++,
+            total: totalServiceTickets
+        });
+    }
+
+    return;
+
+}
+
 
 export const updateServiceTicket = (req: Request, res: Response) => {
     const user = <IUser>req.user

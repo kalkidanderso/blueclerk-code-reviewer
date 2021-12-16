@@ -183,7 +183,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
     }
     const customer = params.customerId || parentJob && parentJob.customer;
 
-    const tasks = await _handleMutltipleTechniciansTasks({ req, parentJob, paramTasks, serviceTicket });
+    const tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob, paramTasks, serviceTicket });
 
     let track: any = [];
     let trackedServiceTicket: { user: any; action: string; date: Date; }[] = [];
@@ -498,9 +498,9 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             path: 'technician',
             select: 'profile.displayName auth.email emailPreferences'
         })
-        .populate({ 
-            path: 'tasks.technician', 
-            select: 'profile auth.email contact' 
+        .populate({
+            path: 'tasks.technician',
+            select: 'profile auth.email contact'
         })
         .populate({
             path: 'contractor',
@@ -993,7 +993,14 @@ export const getAllJobReports = (req: Request, res: Response) => {
     JobReport.find({ $or: [{ contractor: companyId }, { company: companyId }] })
         .populate({
             path: 'job',
-            select: '_id jobId customer technician',
+            populate: [
+                { path: 'tasks.technician', select: 'profile auth.email contact' },
+                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
+                { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
+                { path: 'customerContactId', select: '-id -__v' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+                { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
+            ]
         })
         .populate({
             path: 'invoice',
@@ -1344,21 +1351,31 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 let customerName = job.customer ?
                     job.customer.profile?.displayName :
                     (job.ticket ? (job.ticket.customer ? job.ticket.customer?.profile?.displayName : null) : null);
-                // let technicianName = job.technician ? job.technician?.profile?.displayName : null;
-                // let technicianNameLinkedJob = linkedJob && linkedJob.technician ? linkedJob.technician.profile.displayName : null;
+
+                let technicianName = null;
+                let technicianNameLinkedJob = null;
+
+                if (tasks.length > 1) {
+                    technicianName = 'Multiple Techs';
+                    technicianNameLinkedJob = 'Multiple Techs';
+                } else {
+                    technicianName = tasks[0].technician.profile.displayName;
+                    technicianNameLinkedJob = tasks[0].technician.profile.displayName;
+                }
+
                 let date = job.scheduleDate;
                 // if (job.contractor) {
                 // await createJobReport(job._id, job.company, customerName, technicianName, date, job.contractor);
                 // } else {
                 // await createJobReport(job._id, job.company, customerName, technicianName, date, companyId);
-                await createJobReport(job._id, job.company, customerName, null, date, companyId);
+                await createJobReport(job._id, job.company, customerName, technicianName, date, companyId);
                 // }
                 if (linkedJob) {
                     //     if (linkedJob.contractor) {
                     //         await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, linkedJob.contractor);
                     //     } else {
                     //         await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, companyId);
-                    await createJobReport(linkedJob._id, linkedJob.company, customerName, null, date, companyId);
+                    await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, companyId);
                     //     }
                 }
 
@@ -1835,7 +1852,7 @@ export const editJob = async (req: Request, res: Response) => {
                 }
 
                 // Handle param technician
-                const tasks = await _handleMutltipleTechniciansTasks({ req, parentJob: job, paramTasks, serviceTicket });
+                const tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob: job, paramTasks, serviceTicket });
                 job.tasks = tasks;
                 action += `|Updated Tasks|`;
             }
@@ -2019,7 +2036,7 @@ export const editJob = async (req: Request, res: Response) => {
                 }
             )
         }
-    )
+    );
 }
 
 export const getJobDetails = (req: Request, res: Response) => {
@@ -2564,15 +2581,17 @@ const _handleTaskCharges = async ({ job, taskJobType, item, customer, params, is
 
 const _handleMutltipleTechniciansTasks = async ({
     req,
+    res,
     parentJob,
     paramTasks,
     serviceTicket
 }: {
     req: Request,
+    res: Response,
     parentJob: IJob,
     paramTasks: TaskEntry[],
     serviceTicket: IServiceTicket
-}): Promise<ITask[]> => {
+}): Promise<ITask[] | any> => {
 
     const params = req.body;
     const invalidJobType: any[] = []
@@ -2587,7 +2606,7 @@ const _handleMutltipleTechniciansTasks = async ({
         let taskTechnician: any
 
         if (!paramTask.contractorId && !paramTask.technicianId) {
-            throw new Error("contractorId or technicianId must be provided");
+            return res.json({ status: Status.Error, message: "contractorId or technicianId must be provided" });
         }
 
         if (paramTask.contractorId && !paramTask.technicianId) {
@@ -2610,7 +2629,7 @@ const _handleMutltipleTechniciansTasks = async ({
         }
 
         if (!taskContractor && !taskTechnician) {
-            throw new Error("Contractor/Technician not found!")
+            return res.json({ status: Status.Error, message: "Contractor/Technician not found!" })
         }
 
         const taskEntry: any = {
@@ -2620,10 +2639,14 @@ const _handleMutltipleTechniciansTasks = async ({
         };
 
         //=== HANDLE params jobTypes
-        ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(customer, JSON.stringify(paramTask.jobTypes), jobTypes));
-        invalidJobType.push(...invalidJobTypes);
-        taskEntry.jobTypes = jobTypes;
-        tasks.push(taskEntry);
+        try {
+            ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(customer, JSON.stringify(paramTask.jobTypes), jobTypes));
+            invalidJobType.push(...invalidJobTypes);
+            taskEntry.jobTypes = jobTypes;
+            tasks.push(taskEntry);
+        } catch (error) {
+            return res.json({ 'status': Status.Error, 'message': error.message });
+        }
         //=== END HANDLE params jobTypes
     }
 
