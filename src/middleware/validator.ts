@@ -124,7 +124,8 @@ export const Validations = {
   mergeCustomers: [
     check('customerId').exists().withMessage(Messages.Required),
     check('customerId').isMongoId().withMessage(Messages.WrongId),
-    check('unusedCustomerIds').exists().withMessage(Messages.Required)
+    check('unusedCustomerIds').exists().withMessage(Messages.Required),
+    check('email').optional().isEmail().withMessage('Invalid email format')
   ],
 
       //Customer Equipment
@@ -360,7 +361,8 @@ export const Validations = {
   mergeItems: [
     check('itemId').exists().withMessage(Messages.Required),
     check('itemId').isMongoId().withMessage(Messages.WrongId),
-    check('unusedItemIds').exists().withMessage(Messages.Required)
+    check('unusedItemIds').exists().withMessage(Messages.Required),
+    check('unusedItemIds').isArray().withMessage('Must in array format'),
   ],
   // Payment Term
 

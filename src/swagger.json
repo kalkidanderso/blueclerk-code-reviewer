@@ -3145,10 +3145,12 @@
                     "type": "string"
                   },
                   "equipments": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "format: [\"617658f41f4688324cb93aa0\", \"617658f41f4688324cb93aa1\"]"
                   },
                   "jobLocations": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "format: [\"615aa9caa36144102d21bc30\", \"615aa9caa36144102d21bc32\"]"
                   },
                   "balance": {
                     "type": "integer"
@@ -3160,7 +3162,8 @@
                     "type": "boolean"
                   },
                   "contacts": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "format: [\"6179104d040ff5218f9ca97a\", \"6179104d040ff5218f9ca97a\"]"
                   },
                   "phone": {
                     "type": "number"

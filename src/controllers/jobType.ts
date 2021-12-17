@@ -550,7 +550,8 @@ export const searchDuplicatedItems = async (req: Request, res: Response) => {
     const items = await Item.find({
         company: companyId,
         name: {
-            $regex: params.keyword
+            $regex: params.keyword,
+            $options: 'i'
         }
     });
 
