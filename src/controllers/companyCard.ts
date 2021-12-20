@@ -1,7 +1,7 @@
-import {Request, Response} from 'express'
+import { Request, Response } from 'express'
 import { Status, Messages } from '../common/constants'
 import { CompanyCard, ICompanyCard } from '../models/CompanyCard'
-import {createCustomer, detachCustomerSource, addCustomerSource, createCard, checkCardExist} from '../services/stripe'
+import { createCustomer, detachCustomerSource, addCustomerSource, createCard, checkCardExist, _getCustomerCard } from '../services/stripe'
 import { ICompany } from '../models/Company'
 import { ObjectId } from 'mongodb'
 
@@ -18,31 +18,22 @@ export const createCompanyCard = async (req: Request, res: Response) => {
         const token = await createCard(params.cardNumber, params.exp, params.cvc, params.name, params.address, params.city, params.status, params.zipcode);
         createCustomer(company.info.companyEmail, 'company ' + company.info.companyName, token.id, (status: any, customer: any) => {
             if (status == 1) {
-                company.updateOne({stripeId: customer.id})
-                    .exec((err: any) => {
-                        if (err) {
-                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                        }
+                company.updateOne({ stripeId: customer.id }).exec(async (err: any) => {
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
 
-                        // adding card
-                        addCustomerSource(customer.id, token.id, async (status: any, source: any, message: any) => {
-                            if (status == 1) {
-                                await addCompanyCard(token, source, res, company, params.nickName ? params.nickName : null);
-                            } else {
-                                return res.json({status: Status.Error, message: message})
-                            }
-                        })
-
-                    })
+                    const customerCard = await _getCustomerCard(customer.id, customer.default_source);
+                    await addCompanyCard(token, customerCard, res, company, params.nickName ? params.nickName : null);
+                });
 
             } else {
-                return res.json({status: Status.Error, message: status})
+                return res.json({ status: Status.Error, message: status })
             }
-
-        })
+        });
 
     } catch (err) {
-        return res.json({'status': Status.Error, 'message': err.message});
+        return res.json({ 'status': Status.Error, 'message': err.message });
     }
 
 
