@@ -562,7 +562,8 @@ export const mergeCustomers = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: `You cannot merge this customer(s): ${[...new Set(qbCustomerPayments)].toString()}. Because they already have a payments on Quickbooks. Either remove the payments of those customers or merge the other customers instead.` })
     }
 
-    const creditBalance = await _sumCustomerCreditBalance(unusedCustomerIds);
+    const { credit: mergedCredit, balance: mergedBalance } = await _sumMergedCreditBalance(unusedCustomerIds);
+
     Customer.findById(params.customerId).exec(async (err: any, customer: ICustomer) => {
         if (err || !customer) {
             return res.json({ status: Status.NotFound, message: 'Customer not found' })
@@ -588,8 +589,8 @@ export const mergeCustomers = async (req: Request, res: Response) => {
             vendorId: params.vendorId ?? customer?.vendorId,
             contacts: params.contacts?.length ? contactIds : customer?.contacts,
             isActive: true,
-            credit: creditBalance.credit ?? customer.credit,
-            balance: creditBalance.balance ?? customer.balance,
+            credit: (customer.credit ?? 0) + mergedCredit,
+            balance: (customer.balance ?? 0) + mergedBalance,
             inactiveAt: null,
             inactiveBy: null,
         }
@@ -735,14 +736,17 @@ const _moveCustomer = async ({
     return;
 }
 
-const _sumCustomerCreditBalance = async (unusedCustomerIds: string[]): Promise<{ balance: number, credit: number }> => {
+const _sumMergedCreditBalance = async (unusedCustomerIds: string[]): Promise<{ credit: number, balance: number }> => {
+
+    let credit = 0;
     let balance = 0;
-    let credit = 0
+
     const unusedCustomers = await Customer.find({ _id: { $in: unusedCustomerIds } }).exec();
     for (const unusedCustomer of unusedCustomers) {
         balance += unusedCustomer.balance;
         credit += unusedCustomer.credit;
     }
 
-    return { balance, credit };
+    return { credit, balance };
+
 }

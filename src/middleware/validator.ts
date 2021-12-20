@@ -125,7 +125,7 @@ export const Validations = {
     check('customerId').exists().withMessage(Messages.Required),
     check('customerId').isMongoId().withMessage(Messages.WrongId),
     check('unusedCustomerIds').exists().withMessage(Messages.Required),
-    check('email').optional().isEmail().withMessage('Invalid email format')
+    check('email').optional().isEmail().withMessage(Messages.InvalidEmail)
   ],
 
       //Customer Equipment
@@ -364,6 +364,7 @@ export const Validations = {
     check('unusedItemIds').exists().withMessage(Messages.Required),
     check('unusedItemIds').isArray().withMessage('Must in array format'),
   ],
+
   // Payment Term
 
   setCompanyDefaultPaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
