@@ -2612,7 +2612,10 @@
                   },
                   "type": {
                     "type": "string",
-                    "enum": [ "Customer", "JobLocation" ]
+                    "enum": [
+                      "Customer",
+                      "JobLocation"
+                    ]
                   },
                   "referenceNumber": {
                     "type": "string"
@@ -3022,6 +3025,161 @@
                       "items": {
                         "$ref": "#/components/schemas/Customer"
                       }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/searchDuplicatedCustomers": {
+      "post": {
+        "tags": [
+          "Customer"
+        ],
+        "summary": "To find any possible duplicated customers by the keyword.",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "keyword"
+                ],
+                "properties": {
+                  "keyword": {
+                    "name": "string",
+                    "description": "Keyword to search possible duplicated customers"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    },
+                    "customer": {
+                      "$ref": "#/components/schemas/Customer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/mergeCustomers": {
+      "post": {
+        "tags": [
+          "Customer"
+        ],
+        "summary": "To merge duplicated customers.",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "customerId",
+                  "unusedCustomerIds"
+                ],
+                "properties": {
+                  "customerId": {
+                    "type": "string"
+                  },
+                  "unusedCustomerIds": {
+                    "type": "string",
+                    "description": "format: [\"6179104d040ff5218f9ca97a\", \"6179104d040ff5218f9ca97a\"]"
+                  },
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "displayName": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "imageUrl": {
+                    "type": "string"
+                  },
+                  "street": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "zipcode": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": "string"
+                  },
+                  "equipments": {
+                    "type": "string",
+                    "description": "format: [\"617658f41f4688324cb93aa0\", \"617658f41f4688324cb93aa1\"]"
+                  },
+                  "jobLocations": {
+                    "type": "string",
+                    "description": "format: [\"615aa9caa36144102d21bc30\", \"615aa9caa36144102d21bc32\"]"
+                  },
+                  "isCustomPrice": {
+                    "type": "boolean"
+                  },
+                  "contacts": {
+                    "type": "string",
+                    "description": "format: [\"6179104d040ff5218f9ca97a\", \"6179104d040ff5218f9ca97a\"]"
+                  },
+                  "phone": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    },
+                    "customer": {
+                      "$ref": "#/components/schemas/Customer"
                     }
                   }
                 }
@@ -4521,6 +4679,137 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/searchDuplicatedItems": {
+      "post": {
+        "tags": [
+          "Items"
+        ],
+        "summary": "To find any possible duplicated items by the keyword.",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "keyword"
+                ],
+                "properties": {
+                  "keyword": {
+                    "name": "string",
+                    "description": "Keyword to search possible duplicated items"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    },
+                    "item": {
+                      "$ref": "#/components/schemas/Item"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/mergeItems": {
+      "post": {
+        "tags": [
+          "Items"
+        ],
+        "summary": "To merge duplicated items.",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "itemId",
+                  "unusedItemIds"
+                ],
+                "properties": {
+                  "itemId": {
+                    "type": "string"
+                  },
+                  "unusedItemIds": {
+                    "type": "string",
+                    "description": "format: [\"6179104d040ff5218f9ca97a\", \"6179104d040ff5218f9ca97a\"]"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "isActive": {
+                    "type": "booelan"
+                  },
+                  "isFixed": {
+                    "type": "boolean"
+                  },
+                  "charges": {
+                    "type": "integer"
+                  },
+                  "tiers": {
+                    "type": "string",
+                    "description": "format: [{\"tierId\":\"617a6a0aecc9a034ec74b3eb\",\"charge\":10}]"
+                  },
+                  "tax": {
+                    "type": "integer"
+                  },
+                  "sku": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    },
+                    "customer": {
+                      "$ref": "#/components/schemas/Item"
+                    }
+                  }
                 }
               }
             }
@@ -10830,6 +11119,81 @@
           "createdBy": {
             "type": "string",
             "description": "Id of the company who created it, or null if the global admin created it."
+          }
+        }
+      },
+      "MergeCustomer": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "unusedCustomerIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "info": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            }
+          },
+          "address": {
+            "type": "object",
+            "properties": {
+              "street": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "zipCode": {
+                "type": "string"
+              }
+            }
+          },
+          "contact": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              }
+            }
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "company": {
+            "type": "string",
+            "description": "Id of company who created this customer"
+          },
+          "contactName": {
+            "type": "string"
+          },
+          "balance": {
+            "type": "number",
+            "description": "how much customer owe to the company"
+          },
+          "vendorId": {
+            "type": "string",
+            "description": "VendorId"
+          },
+          "quickbookId": {
+            "type": "string",
+            "description": "ID of associated customer in QuickBooks"
           }
         }
       },
