@@ -19,7 +19,7 @@ import { Contact } from '../models/Contact'
 import { PurchaseOrder } from '../models/PurchaseOrder'
 import { Estimate } from '../models/Estimate'
 import { Tag } from '../models/Tag'
-import { _updateQBInvoice, _transferQBInvoices } from './quickbook.invoice'
+import { _updateQBInvoice, _transferQBInvoicePayment } from './quickbook.invoice'
 import { _getPayment, _transferQBPayments, _updateQBPayment } from './quickbook.payment'
 import { IContact } from 'src/common/contact'
 
@@ -563,7 +563,6 @@ export const mergeCustomers = async (req: Request, res: Response) => {
     }
 
     const creditBalance = await _sumCustomerCreditBalance(unusedCustomerIds);
-    console.log('balance', creditBalance)
     Customer.findById(params.customerId).exec(async (err: any, customer: ICustomer) => {
         if (err || !customer) {
             return res.json({ status: Status.NotFound, message: 'Customer not found' })
@@ -619,20 +618,14 @@ export const mergeCustomers = async (req: Request, res: Response) => {
 
             if (company?.qbAuthorized && customer.quickbookId) {
 
-                // Update Qb payment and linked invoices
-                // await _transferQBPayments(req, res, company, unusedCustomers, customer, async (err, errMsg) => {
-                //     if (err) {
-                //         // return res.json({ status: err, message: errMsg });
-                //         throw new Error(errMsg)
-                //     }
-
-                // Update qb invoice and inactivate unused customer
-                await _transferQBInvoices(req, res, company, unusedCustomers, customer, async (err, errMsg) => {
+                // Update qb payment and invoice
+                await _transferQBInvoicePayment(req, res, company, unusedCustomers, customer, async (err, errMsg) => {
                     if (err) {
                         // return res.json({ status: err, message: errMsg });
                         throw new Error(errMsg);
                     }
 
+                    // Inactive unused customer
                     _inactivateQBCustomers(company, unusedCustomers, async (err, errMsg) => {
                         if (err) {
                             // return res.json({ status: err, message: errMsg });
@@ -654,7 +647,6 @@ export const mergeCustomers = async (req: Request, res: Response) => {
                         });
                     });
                 });
-                // });
             }
 
             return res.json({ status: Status.Success, customer });
