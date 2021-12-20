@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import moment from 'moment';
+import * as _ from 'lodash';
 import { Status, Messages, PaymentTypes } from '../common/constants';
 
 import { ICustomer, IQBCustomer, Customer } from '../models/Customer';
 import { ICompany, Company } from '../models/Company'
-import { IInvoice, Invoice } from '../models/Invoice';
+import { IInvoice, Invoice, IQBInvoice } from '../models/Invoice';
 import { IJob } from '../models/Job';
 import { IJobLocation, JobLocation } from '../models/JobLocation';
 import { IPayment, IQBPayment, IQBPaymentMethod, IQBPaymentTxnTypes, Payment } from '../models/Payment';
@@ -30,7 +31,7 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
             populate: [{ path: 'job', populate: [{ path: 'jobLocation' }] }]
         })
         .execPopulate();
-    
+
     // Customer of the payment
     const customer = <ICustomer>payment.customer;
     const invoice = <IInvoice>payment.invoice;
@@ -160,7 +161,7 @@ export const _updateQBPayment = async (req: Request, res: Response, company: ICo
 */
 export const syncQBPayments = async (req: Request, res: Response) => {
 
-    const updatedPayments: { _id: string, referenceNumber: string, quickbookRefNum: string}[] = [];
+    const updatedPayments: { _id: string, referenceNumber: string, quickbookRefNum: string }[] = [];
 
     // Always refresh the token first because token valid only for 60 minutes
     _refreshToken(req, res, req.company, async (err, errMsg, company) => {
@@ -170,7 +171,7 @@ export const syncQBPayments = async (req: Request, res: Response) => {
         /**
          * Retrieve all payments of this company from Database,
          * that doesn't have quickbookId 
-         */ 
+         */
         const payments = await Payment.find({
             company: company._id,
             quickbookId: null
@@ -211,7 +212,7 @@ export const syncQBPayments = async (req: Request, res: Response) => {
                 for (const qbPayment of qbPayments) {
                     if (
                         !moment(payment.paidAt).utc().isSame(new Date(qbPayment.TxnDate), 'day')
-                        ||  (payment.referenceNumber
+                        || (payment.referenceNumber
                             && payment.referenceNumber !== qbPayment.PaymentRefNum)
                         || (payment.quickbookRefNum
                             && Buffer.from(payment.quickbookRefNum, 'base64').toString() !== qbPayment.MetaData?.CreateTime)
@@ -227,7 +228,7 @@ export const syncQBPayments = async (req: Request, res: Response) => {
                         }
 
                         for (const line of qbPLine?.LineEx?.any) {
-                            if (line?.value?.Name === 'txnReferenceNumber' && line?.value?.Value === invoice?.invoiceId ) {
+                            if (line?.value?.Name === 'txnReferenceNumber' && line?.value?.Value === invoice?.invoiceId) {
                                 existQBPayment = qbPayment;
                                 break;
                             }
@@ -297,7 +298,7 @@ export const createBCPayment = async (req: Request, res: Response, company: ICom
                 if (!qbCustomer.Job) {
                     // Get BC Customer by QB Payment's Customer quickbookId
                     customer = await Customer.findOne({ quickbookId: qbCustomer.Id, company: company._id });
-                  } else {
+                } else {
                     /**
                      * Invoice was recorded to Customer Job Location in QB,
                      * Get the Customer ID from the Job Location
@@ -422,5 +423,126 @@ const _getPaymentMethod = (qbo: any, payment: IPayment): Promise<string> => {
             })
         });
     })
+
+}
+
+export const _transferQBPayments = async (req: Request, res: Response, company: ICompany, unusedCustomers: ICustomer[], currentCustomer: ICustomer) => {
+
+    // Initiate node-quickbooks object with the refreshed company token
+    const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+    // Get old QB Customer
+    qbo.getCustomer(currentCustomer.quickbookId, async (err: any, currentQBCustomer: IQBCustomer) => {
+
+        // Make sure the merged base customer Active
+        currentQBCustomer.Active = true;
+
+        qbo.updateCustomer(currentQBCustomer, async (err: any, qbCustomer: IQBCustomer) => {
+
+            if (qbCustomer) {
+                // Iterate all unused customers
+                for (const unusedCustomer of unusedCustomers) {
+                    qbo.getCustomer(unusedCustomer.quickbookId, async (err: any, unusedQBCustomer: IQBCustomer) => {
+
+                        // Find the payments of unused customer
+                        qbo.findPayments([
+                            { field: 'CustomerRef', value: unusedCustomer?.quickbookId }
+                        ], async (err: any, data: any) => {
+                            const qbPayments: IQBPayment[] = data?.QueryResponse?.Payment
+
+                            if (qbPayments?.length) {
+                                for (const qbPayment of qbPayments) {
+                                    if (qbPayment && unusedQBCustomer?.Active) {
+                                        // Handle linked transaction invoice in payment
+                                        if (qbPayment?.Line.length) {
+                                            for (const paymentLine of qbPayment?.Line) {
+                                                for (const linkedTxn of paymentLine.LinkedTxn) {
+                                                    if (linkedTxn.TxnType === IQBPaymentTxnTypes.INVOICE) {
+                                                        qbo.getInvoice(linkedTxn.TxnId, async (err: any, qbInvoice: IQBInvoice) => {
+                                                            if (qbInvoice) {
+                                                                // qbInvoice.CustomerRef = qbInvoice?.CustomerRef ?? {};
+                                                                qbInvoice.CustomerRef.value = currentCustomer?.quickbookId;
+                                                                qbInvoice.CustomerRef.name = currentCustomer?.profile?.displayName;
+                                                                qbInvoice.BillEmail = qbInvoice.BillEmail ?? {};
+                                                                qbInvoice.BillEmail.Address = currentCustomer?.info?.email;
+                                                            }
+
+                                                            qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => { })
+                                                        });
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        // End of handle linked transaction invoice in payment
+
+                                        // This item is required
+                                        qbPayment.Id;
+                                        // This item is required
+                                        qbPayment.SyncToken;
+                                        // This item is required
+                                        qbPayment.Line = qbPayment.Line;
+                                        // qbPayment.CustomerRef = qbPayment?.CustomerRef ?? {};
+                                        qbPayment.CustomerRef.value = currentCustomer?.quickbookId;
+                                        qbPayment.CustomerRef.name = currentCustomer?.profile?.displayName;
+                                        qbPayment.TotalAmt = qbPayment.TotalAmt;
+                                        qbPayment.CurrencyRef = qbPayment.CurrencyRef;
+                                        qbPayment.PaymentRefNum = qbPayment.PaymentRefNum;
+                                        qbPayment.PaymentMethodRef = qbPayment.PaymentMethodRef;
+                                        qbPayment.TxnDate = qbPayment.TxnDate;
+                                        qbPayment.PrivateNote = qbPayment.PrivateNote;
+                                        // Update payment in QB 
+                                        qbo.updatePayment(qbPayment, async (err: any, qbPayment: IQBPayment) => {
+
+                                        })
+                                    }
+                                }
+                            }
+                        })
+                    })
+                }
+            }
+
+            return;
+        })
+    })
+    // })
+}
+
+export const _getPayment = async (req: Request, res: Response, company: ICompany, unusedCustomer: ICustomer): Promise<IQBPayment[]> => {
+    return new Promise((resolve, reject) => {
+        _refreshToken(req, res, company, async (err, errMsg, company) => {
+            if (err === 0) {
+                return res.json({ status: Status.Error, message: errMsg });
+            }
+
+            if (err === 400) {
+                await Company.findByIdAndUpdate(req.company._id, {
+                    qbAuthorized: false,
+                    qbAccessToken: undefined,
+                    qbRefreshToken: undefined
+                });
+
+                return (Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+            }
+            // Initiate node-quickbooks object with the refreshed company token
+            const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+            qbo.findPayments([
+                { field: 'CustomerRef', value: unusedCustomer?.quickbookId }
+            ], async (err: any, data: any) => {
+                if (err) {
+                    reject(
+                        new Error(
+                            err.Fault?.Error[0]?.Message
+                            || err.fault?.error[0]?.detail
+                            || err.fault?.error[0]?.message
+                            || Messages.GenericError
+                        ));
+                }
+
+                resolve(<IQBPayment[]>data?.QueryResponse?.Payment);
+            });
+        });
+    });
 
 }
