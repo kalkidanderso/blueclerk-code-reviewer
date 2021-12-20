@@ -284,7 +284,7 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
  * Generic function to tranfers ownership of QuickBooks Invoices,
  * this used by Customer Controller after merging duplicated customers
  */
-export const _transferQBInvoicePayment = async (req: Request, res: Response, company: ICompany, unusedCustomers: ICustomer[], currentCustomer: ICustomer, next: (error: number, errorMessage: string) => void) => {
+export const _transferQBInvoices = async (req: Request, res: Response, company: ICompany, unusedCustomers: ICustomer[], currentCustomer: ICustomer, next: (error: number, errorMessage: string) => void) => {
 
     // Always refresh the token first because token valid only for 60 minutes
     _refreshToken(req, res, company, async (err, errMsg, company) => {
@@ -337,8 +337,7 @@ export const _transferQBInvoicePayment = async (req: Request, res: Response, com
                                             qbInvoice.BillEmail.Address = currentCustomer?.info?.email;
 
                                             qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
-                                                // merge user payment in quickbook
-                                                await _transferQBPayments(req, res, company, unusedCustomer, currentCustomer);
+                                                
                                             });
                                         }
                                     }

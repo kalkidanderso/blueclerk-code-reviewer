@@ -19,7 +19,7 @@ import { Contact } from '../models/Contact'
 import { PurchaseOrder } from '../models/PurchaseOrder'
 import { Estimate } from '../models/Estimate'
 import { Tag } from '../models/Tag'
-import { _updateQBInvoice, _transferQBInvoicePayment } from './quickbook.invoice'
+import { _updateQBInvoice, _transferQBInvoices } from './quickbook.invoice'
 import { _getPayment, _transferQBPayments, _updateQBPayment } from './quickbook.payment'
 import { IContact } from 'src/common/contact'
 
@@ -619,12 +619,15 @@ export const mergeCustomers = async (req: Request, res: Response) => {
 
             if (company?.qbAuthorized && customer.quickbookId) {
 
-                // Update qb payment and invoice
-                await _transferQBInvoicePayment(req, res, company, unusedCustomers, customer, async (err, errMsg) => {
+                // Update qb invoice
+                await _transferQBInvoices(req, res, company, unusedCustomers, customer, async (err, errMsg) => {
                     if (err) {
                         // return res.json({ status: err, message: errMsg });
                         throw new Error(errMsg);
                     }
+
+                    // Update qb payment
+                    await _transferQBPayments(req, res, company, unusedCustomers, customer);
 
                     // Inactive unused customer
                     _inactivateQBCustomers(company, unusedCustomers, async (err, errMsg) => {

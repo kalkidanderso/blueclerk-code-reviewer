@@ -426,7 +426,7 @@ const _getPaymentMethod = (qbo: any, payment: IPayment): Promise<string> => {
 
 }
 
-export const _transferQBPayments = async (req: Request, res: Response, company: ICompany, unusedCustomer: ICustomer, currentCustomer: ICustomer) => {
+export const _transferQBPayments = async (req: Request, res: Response, company: ICompany, unusedCustomers: ICustomer[], currentCustomer: ICustomer) => {
 
     // Initiate node-quickbooks object with the refreshed company token
     const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
@@ -441,65 +441,65 @@ export const _transferQBPayments = async (req: Request, res: Response, company: 
 
             if (qbCustomer) {
                 // Iterate all unused customers
-                // for (const unusedCustomer of unusedCustomers) {
-                qbo.getCustomer(unusedCustomer.quickbookId, async (err: any, unusedQBCustomer: IQBCustomer) => {
+                for (const unusedCustomer of unusedCustomers) {
+                    qbo.getCustomer(unusedCustomer.quickbookId, async (err: any, unusedQBCustomer: IQBCustomer) => {
 
-                    // Find the payments of unused customer
-                    qbo.findPayments([
-                        { field: 'CustomerRef', value: unusedCustomer?.quickbookId }
-                    ], async (err: any, data: any) => {
-                        const qbPayments: IQBPayment[] = data?.QueryResponse?.Payment
+                        // Find the payments of unused customer
+                        qbo.findPayments([
+                            { field: 'CustomerRef', value: unusedCustomer?.quickbookId }
+                        ], async (err: any, data: any) => {
+                            const qbPayments: IQBPayment[] = data?.QueryResponse?.Payment
 
-                        if (qbPayments?.length) {
-                            for (const qbPayment of qbPayments) {
-                                if (qbPayment && unusedQBCustomer?.Active) {
-                                    // Handle linked transaction invoice in payment
-                                    if (qbPayment?.Line.length) {
-                                        for (const paymentLine of qbPayment?.Line) {
-                                            for (const linkedTxn of paymentLine.LinkedTxn) {
-                                                if (linkedTxn.TxnType === IQBPaymentTxnTypes.INVOICE) {
-                                                    qbo.getInvoice(linkedTxn.TxnId, async (err: any, qbInvoice: IQBInvoice) => {
-                                                        if (qbInvoice) {
-                                                            // qbInvoice.CustomerRef = qbInvoice?.CustomerRef ?? {};
-                                                            qbInvoice.CustomerRef.value = currentCustomer?.quickbookId;
-                                                            qbInvoice.CustomerRef.name = currentCustomer?.profile?.displayName;
-                                                            qbInvoice.BillEmail = qbInvoice.BillEmail ?? {};
-                                                            qbInvoice.BillEmail.Address = currentCustomer?.info?.email;
-                                                        }
+                            if (qbPayments?.length) {
+                                for (const qbPayment of qbPayments) {
+                                    if (qbPayment && unusedQBCustomer?.Active) {
+                                        // Handle linked transaction invoice in payment
+                                        if (qbPayment?.Line.length) {
+                                            for (const paymentLine of qbPayment?.Line) {
+                                                for (const linkedTxn of paymentLine.LinkedTxn) {
+                                                    if (linkedTxn.TxnType === IQBPaymentTxnTypes.INVOICE) {
+                                                        qbo.getInvoice(linkedTxn.TxnId, async (err: any, qbInvoice: IQBInvoice) => {
+                                                            if (qbInvoice) {
+                                                                // qbInvoice.CustomerRef = qbInvoice?.CustomerRef ?? {};
+                                                                qbInvoice.CustomerRef.value = currentCustomer?.quickbookId;
+                                                                qbInvoice.CustomerRef.name = currentCustomer?.profile?.displayName;
+                                                                qbInvoice.BillEmail = qbInvoice.BillEmail ?? {};
+                                                                qbInvoice.BillEmail.Address = currentCustomer?.info?.email;
+                                                            }
 
-                                                        qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => { })
-                                                    });
+                                                            qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => { })
+                                                        });
+                                                    }
                                                 }
                                             }
                                         }
+                                        // End of handle linked transaction invoice in payment
+
+                                        // This item is required
+                                        qbPayment.Id;
+                                        // This item is required
+                                        qbPayment.SyncToken;
+                                        // This item is required
+                                        qbPayment.Line = qbPayment.Line;
+                                        // qbPayment.CustomerRef = qbPayment?.CustomerRef ?? {};
+                                        qbPayment.CustomerRef.value = currentCustomer?.quickbookId;
+                                        qbPayment.CustomerRef.name = currentCustomer?.profile?.displayName;
+                                        qbPayment.TotalAmt = qbPayment.TotalAmt;
+                                        qbPayment.CurrencyRef = qbPayment.CurrencyRef;
+                                        qbPayment.PaymentRefNum = qbPayment.PaymentRefNum;
+                                        qbPayment.PaymentMethodRef = qbPayment.PaymentMethodRef;
+                                        qbPayment.TxnDate = qbPayment.TxnDate;
+                                        qbPayment.PrivateNote = qbPayment.PrivateNote;
+                                        // Update payment in QB 
+                                        qbo.updatePayment(qbPayment, async (err: any, qbPayment: IQBPayment) => {
+
+                                        })
                                     }
-                                    // End of handle linked transaction invoice in payment
-
-                                    // This item is required
-                                    qbPayment.Id;
-                                    // This item is required
-                                    qbPayment.SyncToken;
-                                    // This item is required
-                                    qbPayment.Line = qbPayment.Line;
-                                    // qbPayment.CustomerRef = qbPayment?.CustomerRef ?? {};
-                                    qbPayment.CustomerRef.value = currentCustomer?.quickbookId;
-                                    qbPayment.CustomerRef.name = currentCustomer?.profile?.displayName;
-                                    qbPayment.TotalAmt = qbPayment.TotalAmt;
-                                    qbPayment.CurrencyRef = qbPayment.CurrencyRef;
-                                    qbPayment.PaymentRefNum = qbPayment.PaymentRefNum;
-                                    qbPayment.PaymentMethodRef = qbPayment.PaymentMethodRef;
-                                    qbPayment.TxnDate = qbPayment.TxnDate;
-                                    qbPayment.PrivateNote = qbPayment.PrivateNote;
-                                    // Update payment in QB 
-                                    qbo.updatePayment(qbPayment, async (err: any, qbPayment: IQBPayment) => {
-
-                                    })
                                 }
                             }
-                        }
+                        })
                     })
-                })
-                // }
+                }
             }
 
             return;
