@@ -643,17 +643,7 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
 //     })
 
 // }
-export const _getQbInvoices = async ({
-    req,
-    res,
-    company,
-    customer
-}: {
-    req: Request,
-    res: Response,
-    company: ICompany,
-    customer: ICustomer
-}): Promise<IQBInvoice[]> => {
+export const _getQBInvoices = async (req: Request, res: Response, company: ICompany, customer: ICustomer): Promise<IQBInvoice[]> => {
     return new Promise((resolve, reject) => {
         // Always refresh the token first because token valid only for 60 minutes
         _refreshToken(req, res, company, async (err, errMsg, company) => {

@@ -19,8 +19,8 @@ import { IPriceTier } from '../models/PriceTier'
 import { Invoice } from '../models/Invoice'
 import { Payment } from '../models/Payment'
 import { _createQBCustomer, _updateQBCustomer, _inactivateQBCustomers } from '../controllers/quickbook.customer'
-import { _updateQBInvoice, _transferQBInvoices, _getQbInvoices } from '../controllers/quickbook.invoice'
-import { _getPayment, _transferQBPayments, _updateQBPayment } from '../controllers/quickbook.payment'
+import { _getQBInvoices, _updateQBInvoice, _transferQBInvoices } from '../controllers/quickbook.invoice'
+import { _getQBPayments, _updateQBPayment, _transferQBPayments } from '../controllers/quickbook.payment'
 
 /**
  * To reset Customer quickbookId,
@@ -499,7 +499,7 @@ export const searchDuplicatedCustomers = async (req: Request, res: Response) => 
     const companyId = req.companyId;
     const company = <ICompany>req.company;
 
-    const customers: any = await Customer.find({
+    const customers: ICustomer[] = await Customer.find({
         company: companyId,
         $or: [
             { 'profile.firstName': { $regex: params.keyword, $options: 'i' } },
@@ -514,13 +514,20 @@ export const searchDuplicatedCustomers = async (req: Request, res: Response) => 
     }
 
 
-    const customerPaymentInvoice = []
+    const customerWithInvoicesPayments = []
     for (const customer of customers) {
-        const paymentInvoice = await searchPossibleDuplicatedCustomers(req, res, customer, company);
-        customerPaymentInvoice.push({ customer, paymentInvoice });
+        const { invoice, quickbookInvoice, payment, quickbookPayment } = await _getCustomerInvoicesPayments(req, res, customer, company);
+
+        customerWithInvoicesPayments.push({
+            customer,
+            invoice,
+            quickbookInvoice,
+            payment,
+            quickbookPayment
+        });
     }
 
-    return res.json({ status: Status.Success, customerPaymentInvoice });
+    return res.json({ status: Status.Success, customers: customerWithInvoicesPayments });
 
 }
 
@@ -548,7 +555,7 @@ export const mergeCustomers = async (req: Request, res: Response) => {
     // Get deposited customer
     for (const unusedCustomerId of unusedCustomerIds) {
         const unusedCustomer = await Customer.findOne({ _id: unusedCustomerId }).exec();
-        const qbPayments = await _getPayment(req, res, company, unusedCustomer);
+        const qbPayments = await _getQBPayments(req, res, company, unusedCustomer);
         if (qbPayments) {
 
             qbPayments.forEach(qbPayment => {
@@ -666,20 +673,21 @@ export const mergeCustomers = async (req: Request, res: Response) => {
 
 }
 
-export const searchPossibleDuplicatedCustomers = async (req: Request, res: Response, customer: ICustomer, company: ICompany) => {
+export const _getCustomerInvoicesPayments = async (req: Request, res: Response, customer: ICustomer, company: ICompany) => {
 
+    const invoice = await Invoice.find({ customer: customer._id, isDraft: false }).countDocuments();
     const payment = await Payment.find({ customer: customer._id }).countDocuments();
-    const invoice = await Invoice.find({ customer: customer._id }).countDocuments();
 
-    const qbPayment = await _getPayment(req, res, company, customer);
-    const qbInvoice = await _getQbInvoices({ req, res, company, customer });
+    const qbInvoice = await _getQBInvoices(req, res, company, customer);
+    const qbPayment = await _getQBPayments(req, res, company, customer);
 
-    return ({
-        quickbookInvoice: qbInvoice?.length ?? 0,
+    return {
         invoice: invoice ?? 0,
+        quickbookInvoice: qbInvoice?.length ?? 0,
+        payment: payment ?? 0,
         quickbookPayment: qbPayment?.length ?? 0,
-        payment: payment ?? 0
-    })
+    };
+
 }
 
 const _moveCustomer = async ({

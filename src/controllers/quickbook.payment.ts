@@ -508,7 +508,7 @@ export const _transferQBPayments = async (req: Request, res: Response, company: 
     // })
 }
 
-export const _getPayment = async (req: Request, res: Response, company: ICompany, customer: ICustomer): Promise<IQBPayment[]> => {
+export const _getQBPayments = async (req: Request, res: Response, company: ICompany, customer: ICustomer): Promise<IQBPayment[]> => {
     return new Promise((resolve, reject) => {
         _refreshToken(req, res, company, async (err, errMsg, company) => {
             if (err === 0) {
