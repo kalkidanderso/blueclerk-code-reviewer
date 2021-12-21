@@ -508,7 +508,7 @@ export const _transferQBPayments = async (req: Request, res: Response, company: 
     // })
 }
 
-export const _getPayment = async (req: Request, res: Response, company: ICompany, unusedCustomer: ICustomer): Promise<IQBPayment[]> => {
+export const _getQBPayments = async (req: Request, res: Response, company: ICompany, customer: ICustomer): Promise<IQBPayment[]> => {
     return new Promise((resolve, reject) => {
         _refreshToken(req, res, company, async (err, errMsg, company) => {
             if (err === 0) {
@@ -528,7 +528,7 @@ export const _getPayment = async (req: Request, res: Response, company: ICompany
             const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
             qbo.findPayments([
-                { field: 'CustomerRef', value: unusedCustomer?.quickbookId }
+                { field: 'CustomerRef', value: customer?.quickbookId }
             ], async (err: any, data: any) => {
                 if (err) {
                     reject(
