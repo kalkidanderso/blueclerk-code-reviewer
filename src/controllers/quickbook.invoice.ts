@@ -643,6 +643,53 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
 //     })
 
 // }
+export const _getQbInvoices = async ({
+    req,
+    res,
+    company,
+    customer
+}: {
+    req: Request,
+    res: Response,
+    company: ICompany,
+    customer: ICustomer
+}): Promise<IQBInvoice[]> => {
+    return new Promise((resolve, reject) => {
+        // Always refresh the token first because token valid only for 60 minutes
+        _refreshToken(req, res, company, async (err, errMsg, company) => {
+            if (err === 0) {
+                res.json({ status: Status.Error, message: errMsg });
+            }
+
+            if (err === 400) {
+                Company.findByIdAndUpdate(req.company._id, {
+                    qbAuthorized: false,
+                    qbAccessToken: undefined,
+                    qbRefreshToken: undefined
+                });
+
+                res.json({ status: Status.QBUnauthorized, message: Messages.QBUnAuthorized });
+            }
+
+            const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+            qbo.findInvoices([
+                { field: 'CustomerRef', value: customer?.quickbookId },
+            ], async (err: any, data: any) => {
+                if (err) {
+                    reject(
+                        new Error(
+                            err.Fault?.Error[0]?.Message
+                            || err.fault?.error[0]?.detail
+                            || err.fault?.error[0]?.message
+                            || Messages.GenericError
+                        ));
+                }
+
+                resolve(<IQBInvoice[]>data?.QueryResponse?.Invoice);
+            });
+        });
+    });
+}
 
 /**
  * Generic function to tranfers ownership of QuickBooks Invoices,

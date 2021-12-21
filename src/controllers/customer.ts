@@ -19,7 +19,7 @@ import { IPriceTier } from '../models/PriceTier'
 import { Invoice } from '../models/Invoice'
 import { Payment } from '../models/Payment'
 import { _createQBCustomer, _updateQBCustomer, _inactivateQBCustomers } from '../controllers/quickbook.customer'
-import { _updateQBInvoice, _transferQBInvoices } from '../controllers/quickbook.invoice'
+import { _updateQBInvoice, _transferQBInvoices, _getQbInvoices } from '../controllers/quickbook.invoice'
 import { _getPayment, _transferQBPayments, _updateQBPayment } from '../controllers/quickbook.payment'
 
 /**
@@ -497,8 +497,9 @@ export const searchDuplicatedCustomers = async (req: Request, res: Response) => 
 
     const params = req.body;
     const companyId = req.companyId;
+    const company = <ICompany>req.company;
 
-    const customers = await Customer.find({
+    const customers: any = await Customer.find({
         company: companyId,
         $or: [
             { 'profile.firstName': { $regex: params.keyword, $options: 'i' } },
@@ -512,7 +513,14 @@ export const searchDuplicatedCustomers = async (req: Request, res: Response) => 
         return res.json({ 'status': Status.NotFound, messages: `Customers with keyword "${params.keyword}" not found.` });
     }
 
-    return res.json({ status: Status.Success, customers });
+
+    const customerPaymentInvoice = []
+    for (const customer of customers) {
+        const paymentInvoice = await searchPossibleDuplicatedCustomers(req, res, customer, company);
+        customerPaymentInvoice.push({ customer, paymentInvoice });
+    }
+
+    return res.json({ status: Status.Success, customerPaymentInvoice });
 
 }
 
@@ -629,13 +637,13 @@ export const mergeCustomers = async (req: Request, res: Response) => {
                     await _transferQBPayments(req, res, company, unusedCustomers, customer);
 
                     // Inactive unused customer
-                    _inactivateQBCustomers(company, unusedCustomers, async (err, errMsg) => {
+                    await _inactivateQBCustomers(req, res, company, unusedCustomers, async (err, errMsg) => {
                         if (err) {
                             // return res.json({ status: err, message: errMsg });
                             throw new Error(errMsg)
                         }
 
-                        _updateQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
+                        await _updateQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
                             if (err) {
                                 // return res.json({ status: err, message: errMsg });
                                 throw new Error(errMsg)
@@ -658,6 +666,22 @@ export const mergeCustomers = async (req: Request, res: Response) => {
 
 }
 
+export const searchPossibleDuplicatedCustomers = async (req: Request, res: Response, customer: ICustomer, company: ICompany) => {
+
+    const payment = await Payment.find({ customer: customer._id }).countDocuments();
+    const invoice = await Invoice.find({ customer: customer._id }).countDocuments();
+
+    const qbPayment = await _getPayment(req, res, company, customer);
+    const qbInvoice = await _getQbInvoices({ req, res, company, customer });
+
+    return ({
+        quickbookInvoice: qbInvoice?.length ?? 0,
+        invoice: invoice ?? 0,
+        quickbookPayment: qbPayment?.length ?? 0,
+        payment: payment ?? 0
+    })
+}
+
 const _moveCustomer = async ({
     req,
     res,
@@ -675,6 +699,10 @@ const _moveCustomer = async ({
     jobLocations: string[]
     customerEquipments: string[]
 }) => {
+
+    // Update unused customer balance and credit
+    Customer.updateMany({ _id: { $in: unusedCustomerIds } }, { $set: { balance: 0, credit: 0 } });
+
     // Update customer on job location when job location is provided
     JobLocation.updateMany(
         { _id: { $in: jobLocations }, customerId: { $in: unusedCustomerIds } },
