@@ -1,4 +1,4 @@
-import { Request, response, Response } from 'express'
+import { Request, Response } from 'express'
 import { Status, Messages, Role, NotificationTypes } from '../common/constants'
 
 import { IContact } from '../common/contact';
