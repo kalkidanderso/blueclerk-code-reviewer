@@ -510,13 +510,27 @@ export const searchDuplicatedCustomers = async (req: Request, res: Response) => 
     });
 
     if (!customers.length) {
-        return res.json({ 'status': Status.NotFound, messages: `Customers with keyword "${params.keyword}" not found.` });
+        return res.json({ 'status': Status.Success, message: `Customers with keyword "${params.keyword}" not found.` });
     }
-
 
     const customerWithInvoicesPayments = []
     for (const customer of customers) {
         const { invoice, quickbookInvoice, payment, quickbookPayment } = await _getCustomerInvoicesPayments(req, res, customer, company);
+
+        await customer
+            .populate({ path: 'equipments', select: '-__v' })
+            .populate({ path: 'itemTier', select: '-__v -createdAt -updatedAt' })
+            .populate({ path: 'paymentTerm', select: '-__v -createdAt -updatedAt' })
+            .populate({ path: 'contacts', select: '-__v' })
+            .populate({
+                path: 'jobLocations',
+                select: '-__v -customerId -createdAt -updatedAt',
+                populate: [
+                    { path: 'contacts', select: '-__v' },
+                    { path: 'jobSites', select: '-__v -locationId -customerId' }
+                ]
+            })
+            .execPopulate();
 
         customerWithInvoicesPayments.push({
             customer,

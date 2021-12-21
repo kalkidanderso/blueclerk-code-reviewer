@@ -560,7 +560,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Items),
-        validate(Validations.updateItem),
+        validate(Validations.searchDuplicatedItems),
         jobTypeController.searchDuplicatedItems
     )
 
