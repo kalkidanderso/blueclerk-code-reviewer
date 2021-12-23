@@ -367,7 +367,7 @@ export default function (sio: any) {
         equipmentBrandController.getEquipmentBrands
     )
 
-    //Customers
+    // Customers
     router.post(
         '/createCustomer',
         passport.authenticate('jwt', { session: false }),
@@ -411,6 +411,24 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Customer_Update),
         validate(Validations.updateCustomPrices),
         customerController.updateCustomPrices
+    )
+
+    router.post(
+        '/searchDuplicatedCustomers',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Customer_Get_All),
+        validate(Validations.searchDuplicatedCustomers),
+        customerController.searchDuplicatedCustomers
+    )
+
+    router.post(
+        '/mergeCustomers',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Customer_Update),
+        validate(Validations.mergeCustomers),
+        customerController.mergeCustomers
     )
 
     //Customer equipments
@@ -535,6 +553,24 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Update_Item),
         jobTypeController.updateItems
+    )
+
+    router.post(
+        '/searchDuplicatedItems',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Items),
+        validate(Validations.searchDuplicatedItems),
+        jobTypeController.searchDuplicatedItems
+    )
+
+    router.post(
+        '/mergeItems',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Item),
+        validate(Validations.mergeItems),
+        jobTypeController.mergeItems
     )
 
     //Job

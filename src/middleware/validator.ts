@@ -119,6 +119,15 @@ export const Validations = {
 
   getCustomerDetail: [check('customerId').exists()],
 
+  searchDuplicatedCustomers: [check('keyword').exists().withMessage(Messages.Required)],
+
+  mergeCustomers: [
+    check('customerId').exists().withMessage(Messages.Required),
+    check('customerId').isMongoId().withMessage(Messages.WrongId),
+    check('unusedCustomerIds').exists().withMessage(Messages.Required),
+    check('email').optional().isEmail().withMessage(Messages.InvalidEmail)
+  ],
+
       //Customer Equipment
 
   createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists()],
@@ -346,6 +355,15 @@ export const Validations = {
   cancelEstimate: [check('estimateId').exists()],
 
   updateItem: [check('itemId').exists(), check('charges').exists(), check('isFixed').exists(), check('tax').exists()],
+
+  searchDuplicatedItems: [check('keyword').exists().withMessage(Messages.Required)],
+
+  mergeItems: [
+    check('itemId').exists().withMessage(Messages.Required),
+    check('itemId').isMongoId().withMessage(Messages.WrongId),
+    check('unusedItemIds').exists().withMessage(Messages.Required),
+    check('unusedItemIds').isArray().withMessage('Must in array format'),
+  ],
 
   // Payment Term
 

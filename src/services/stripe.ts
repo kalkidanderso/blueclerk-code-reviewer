@@ -528,3 +528,14 @@ export const payStripeInvoice = async (stripeInvId: string): Promise<any> => {
     return paidInvoice;
 
 }
+
+export const _getCustomerCard = async (stripeCustomer: string, stripeCardId: string): Promise<any> => {
+
+    const { STRIPE_SK_SECRET } = process.env;
+    const stripe = require("stripe")(STRIPE_SK_SECRET);
+
+    return await stripe.customers.retrieveSource(
+        stripeCustomer,
+        stripeCardId
+    );
+}

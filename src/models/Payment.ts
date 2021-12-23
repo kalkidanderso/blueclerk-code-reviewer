@@ -64,7 +64,16 @@ export interface IQBPayment {
     MetaData?: {
         CreateTime?: string
         LastUpdatedTime?: string
+    },
+    SyncToken?: string
+    CurrencyRef?: {
+        value?: string
+        name?: string
     }
+    LinkedTxn?: {
+        TxnId?: string
+        TxnType?: string
+    }[]
 }
 
 export interface IQBPaymentMethod {

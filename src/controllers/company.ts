@@ -322,9 +322,6 @@ export const getContractorDetail = (req: Request, res: Response) => {
 
 export const getCustomWorkNumber = (req: Request, res: Response) => {
 
-
-
-
     Company.findById(req.companyId,
         (err: any, company: ICompany) => {
 

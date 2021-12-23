@@ -1,4 +1,4 @@
-import {Request, Response} from 'express'
+import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb'
 import { Status, Role, Messages } from '../common/constants'
 
@@ -7,7 +7,13 @@ import { IUser } from '../models/User'
 import { Customer } from '../models/Customer';
 import { ICompany } from '../models/Company'
 import { Item, IItem, IQBItem } from '../models/Item'
-import { _createQBItem } from '../controllers/quickbook.item';
+import { _createQBItem, _inactiveQBItems, _transferQBItems, _updateQBItem } from '../controllers/quickbook.item';
+import { IInvoice, Invoice } from '../models/Invoice'
+import { _transferQBInvoiceItem } from './quickbook.invoice'
+import { Job } from '../models/Job'
+import { ServiceTicket } from '../models/ServiceTicket'
+import { JobCharges } from '../models/JobCharges'
+import { PriceTier } from '../models/PriceTier'
 
 /**
  * To reset Job Type & Item quickbookId,
@@ -40,25 +46,25 @@ export const createJobType = (req: Request, res: Response) => {
         userId = user._id
     }
 
-    if (user.permissions.role != Role.GLOBAL_ADMIN){
+    if (user.permissions.role != Role.GLOBAL_ADMIN) {
         userId = req.companyId
     }
 
-    if(user.permissions.role == Role.GLOBAL_ADMIN) {
-        if(params.industryId == undefined || params.industryId == null) {
-            return res.json({ status: Status.Error, message: "Industry Id is required"})
-        }else{
+    if (user.permissions.role == Role.GLOBAL_ADMIN) {
+        if (params.industryId == undefined || params.industryId == null) {
+            return res.json({ status: Status.Error, message: "Industry Id is required" })
+        } else {
             industryId = params.industryId
         }
     }
     if (industryId != null && industryId != undefined) {
-        JobType.findOne({title: params.title, industry: industryId, createdBy: null}, (err: any, previousJobType: IJobType) =>{
+        JobType.findOne({ title: params.title, industry: industryId, createdBy: null }, (err: any, previousJobType: IJobType) => {
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            if(previousJobType != undefined || previousJobType != null) {
-                return res.json({'status': Status.Error, 'message': "Job Type already created for this industry"})
+            if (previousJobType != undefined || previousJobType != null) {
+                return res.json({ 'status': Status.Error, 'message': "Job Type already created for this industry" })
             }
 
             const jobType = new JobType({
@@ -66,13 +72,13 @@ export const createJobType = (req: Request, res: Response) => {
                 description: params.description,
                 sku: params.sku,
                 industry: industryId,
-                createdBy:  userId
+                createdBy: userId
             })
 
             jobType.save((err: any) => {
 
                 if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
                 _createItem(req, res, jobType, null, (item, qbItem) => {
 
@@ -82,15 +88,15 @@ export const createJobType = (req: Request, res: Response) => {
 
             })
         })
-    }else{
+    } else {
         var regex = new RegExp(["^", params.title, "$"].join(""), "i");
-        JobType.findOne({title: regex, createdBy: req.companyId}, (err: any, previousJobType: IJobType) =>{
+        JobType.findOne({ title: regex, createdBy: req.companyId }, (err: any, previousJobType: IJobType) => {
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            if(previousJobType != undefined || previousJobType != null) {
-                return res.json({'status': Status.Error, 'message': "Job Type already created"})
+            if (previousJobType != undefined || previousJobType != null) {
+                return res.json({ 'status': Status.Error, 'message': "Job Type already created" })
             }
 
             const jobType = new JobType({
@@ -98,13 +104,13 @@ export const createJobType = (req: Request, res: Response) => {
                 description: params.description,
                 sku: params.sku,
                 industry: industryId,
-                createdBy:  userId
+                createdBy: userId
             })
 
             jobType.save((err: any) => {
 
                 if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
 
                 _createItem(req, res, jobType, req.company, (item, qbItem) => {
@@ -122,7 +128,7 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
     let companyId = company._id;
     const itemTiers = [];
 
-    if(req.otherCompanyId != undefined) {
+    if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
 
@@ -144,7 +150,7 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
 
     item.save((err: any) => {
         if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
         if (company.qbAuthorized) {
@@ -179,32 +185,32 @@ export const getJobTypes = (req: Request, res: Response) => {
 
     const user = <IUser>req.user
     var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
+    if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-    if(user.permissions.role == Role.GLOBAL_ADMIN) {
+    if (user.permissions.role == Role.GLOBAL_ADMIN) {
         JobType.find({},
-            (err: any, types: IJobType[])=>{
+            (err: any, types: IJobType[]) => {
 
                 if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
 
-                return res.json({'status': Status.Success, 'types': types})
+                return res.json({ 'status': Status.Success, 'types': types })
 
             }
         )
 
-    }else{
+    } else {
         JobType.find(
-            { $or: [ {createdBy: null, industry: req.company.info.industry, isActive: true}, {createdBy: req.companyId, isActive: true} ]},
-            (err: any, types: IJobType[])=>{
+            { $or: [{ createdBy: null, industry: req.company.info.industry, isActive: true }, { createdBy: req.companyId, isActive: true }] },
+            (err: any, types: IJobType[]) => {
 
                 if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
 
-                return res.json({'status': Status.Success, 'types': types})
+                return res.json({ 'status': Status.Success, 'types': types })
 
             }
         )
@@ -215,17 +221,17 @@ export const editJobType = (req: Request, res: Response) => {
 
     const params = req.body
 
-    JobType.findOne({_id: params.jobTypeId}, async (err: any, jobType: IJobType) =>{
+    JobType.findOne({ _id: params.jobTypeId }, async (err: any, jobType: IJobType) => {
         if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        if(!jobType) {
-            return res.json({'status': Status.Error, 'message': "Invalid job Type id"})
+        if (!jobType) {
+            return res.json({ 'status': Status.Error, 'message': "Invalid job Type id" })
         }
 
-        if(!jobType.isActive) {
-            return res.json({'status': Status.Error, 'message': "Job type is inactive, activate to edit."})
+        if (!jobType.isActive) {
+            return res.json({ 'status': Status.Error, 'message': "Job type is inactive, activate to edit." })
         }
 
         jobType.title = params.title;
@@ -244,22 +250,22 @@ const _updateItem = (req: Request, res: Response, jobType: IJobType, next: (req:
 
     var companyId = req.companyId;
 
-    if(req.otherCompanyId != undefined) {
+    if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
-    Item.findOne({jobType: jobType._id}, (err: any, item: IItem) => {
+    Item.findOne({ jobType: jobType._id }, (err: any, item: IItem) => {
         if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        if(item) {
+        if (item) {
             item.updateOne({
                 name: jobType.title,
                 description: jobType.description,
                 sku: jobType.sku
             }, (err: any, raw: any) => {
                 if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
 
                 next(req, res)
@@ -278,7 +284,7 @@ const _updateItem = (req: Request, res: Response, jobType: IJobType, next: (req:
 
             item.save((err: any) => {
                 if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
                 next(req, res)
                 return
@@ -291,23 +297,23 @@ export const changeJobTypeStatus = (req: Request, res: Response) => {
 
     const params = req.body
 
-    JobType.findOne({_id: params.jobTypeId}, (err: any, jobType: IJobType) =>{
+    JobType.findOne({ _id: params.jobTypeId }, (err: any, jobType: IJobType) => {
         if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        if(jobType == undefined || jobType == null) {
-            return res.json({'status': Status.Error, 'message': "Invalid job Type id"})
+        if (jobType == undefined || jobType == null) {
+            return res.json({ 'status': Status.Error, 'message': "Invalid job Type id" })
         }
 
-        jobType.updateOne({isActive: params.status},(err: any, raw: any) => {
+        jobType.updateOne({ isActive: params.status }, (err: any, raw: any) => {
 
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
             _updateItemStatus(req, res, jobType, params.status, (req: Request, res: Response) => {
-                return res.json({'status': Status.Success, 'message': 'Job type status update successfully.'})
+                return res.json({ 'status': Status.Success, 'message': 'Job type status update successfully.' })
             })
 
         })
@@ -316,22 +322,22 @@ export const changeJobTypeStatus = (req: Request, res: Response) => {
 
 const _updateItemStatus = (req: Request, res: Response, jobType: IJobType, itemStatus: boolean, next: (req: Request, res: Response) => void) => {
 
-    Item.findOne({jobType: jobType._id}, (err: any, item: IItem) => {
+    Item.findOne({ jobType: jobType._id }, (err: any, item: IItem) => {
         if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        if(item != undefined && item != null) {
-            item.updateOne({isActive: itemStatus}, (err: any, raw: any) => {
+        if (item != undefined && item != null) {
+            item.updateOne({ isActive: itemStatus }, (err: any, raw: any) => {
                 if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
 
                 next(req, res)
                 return
             })
         } else {
-            return res.json({'status': Status.Error, 'message': 'Item for this job type not found'})
+            return res.json({ 'status': Status.Error, 'message': 'Item for this job type not found' })
         }
     })
 }
@@ -344,38 +350,38 @@ export const getAllItems = (req: Request, res: Response) => {
         .exec((err: any, items: IItem[]) => {
 
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            return res.json({'status': Status.Success, 'items': items})
+            return res.json({ 'status': Status.Success, 'items': items })
 
         }
-    )
+        )
 }
 
 export const updateItem = (req: Request, res: Response) => {
 
     const params = req.body
-    Item.findOne({_id: params.itemId},
-        (err: any, item: IItem)=>{
+    Item.findOne({ _id: params.itemId },
+        (err: any, item: IItem) => {
 
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
             if (item == null || item == undefined) {
-                return res.json({'status': Status.Error, 'message': 'Invalid item id'})
+                return res.json({ 'status': Status.Error, 'message': 'Invalid item id' })
             }
 
-            item.updateOne({charges: params.charges, tax: params.tax, isFixed: params.isFixed},
-            (err: any, raw: any) => {
-                if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                }
+            item.updateOne({ charges: params.charges, tax: params.tax, isFixed: params.isFixed },
+                (err: any, raw: any) => {
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
 
-                return res.json({'status': Status.Success, 'message': 'Item updated successfully'})
+                    return res.json({ 'status': Status.Success, 'message': 'Item updated successfully' })
 
-            })
+                })
 
         }
     )
@@ -462,7 +468,7 @@ export const _handleJobTypesJson = (customerId: string, paramJobTypes: string, j
 
     return new Promise(async (resolve, reject) => {
 
-        let parsedJobTypes: {jobTypeId:string}[];
+        let parsedJobTypes: { jobTypeId: string }[];
         let isFixed: boolean;
         const newJobTypes: IJobTypes[] = [];
         const invalidJobTypes: string[] = [];
@@ -534,5 +540,169 @@ export const _handleJobTypesJson = (customerId: string, paramJobTypes: string, j
 
         resolve({ jobTypes, invalidJobTypes });
 
+    })
+}
+
+export const searchDuplicatedItems = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const companyId = req.companyId;
+
+    const items: IItem[] = await Item.find({
+        company: companyId,
+        name: {
+            $regex: params.keyword,
+            $options: 'i'
+        }
+    })
+        .populate({ path: 'tiers.tier', select: '-__v -createdAt -updatedAt' })
+        .populate({ path: 'jobType', select: '-__v -createdAt -updatedAt' });
+
+    if (!items.length) {
+        return res.json({ 'status': Status.Success, message: `Items with keyword "${params.keyword}" not found.` });
+    }
+
+    return res.json({ status: Status.Success, items });
+
+}
+
+export const mergeItems = async (req: Request, res: Response) => {
+    const params = req.body;
+    const errorWrongIds = [];
+    const tierObject: any[] = [];
+    const company = <ICompany>req.company;
+    const unusedIds = params.unusedItemIds?.length ? JSON.parse(params.unusedItemIds) : [];
+    // To save param items from JSON format
+    let tiers = [];
+
+    if (params.tiers) {
+        try {
+            tiers = JSON.parse(params.tiers);
+
+            // To handle any over-stringified strings
+            if (!Array.isArray(tiers)) {
+                tiers = JSON.parse(tiers);
+            }
+        } catch (err) {
+            return res.json({ status: Status.Error, message: 'Items json is invalid' });
+        }
+    }
+
+    // Iterate all item from param items
+    for (const tier of tiers) {
+        /**
+         * Check if itemId is a valid Mongo ObjectId,
+         * collect the troubled itemId, go to next item
+         */
+        if (!ObjectId.isValid(tier.tierId)) {
+            errorWrongIds.push({ itemId: tier.tierId, message: Messages.WrongId });
+            continue;
+        }
+
+        const priceTier = await PriceTier.findOne({ _id: tier.tierId }).exec();
+
+        if (!priceTier) {
+            return res.json({ status: Status.NotFound, message: 'Price tier not foind' });
+        }
+
+        tierObject.push({ tier: tier.tierId, charge: tier.charge });
+    }
+
+    Item.findById(params.itemId).exec(async (err: any, item: IItem) => {
+        if (err || !item) {
+            return res.json({ status: Status.NotFound, message: 'Item Not Found' })
+        }
+
+        const isActive = params.isActive === undefined || params.isActive === null
+            ? false
+            : params.isActive === 'false'
+                ? false
+                : !!params.isActive
+
+        const isFixed = params.isFixed === undefined || params.isFixed === null
+            ? false
+            : params.isFixed === 'false'
+                ? false
+                : !!params.isFixed
+
+        const mergeItemEntry: any = {
+            isFixed: isFixed ?? item.isFixed,
+            charges: params.charges ?? item.charges,
+            tax: params.tax ?? item.tax,
+            sku: params.sku ?? item.sku,
+            isActive: isActive ?? item.isActive,
+            name: params.name ?? item.name,
+            description: params.description ?? item.description,
+            tiers: tierObject ?? item.tiers
+        }
+
+        // Handle item without quickbookId
+        if (!item.quickbookId) {
+            // create item on QB
+            await _createQBItem(req, res, company, item, async (err: any, errMsg: any, qbItem: IQBItem) => {
+                if (err) {
+                    return res.json({ status: err, message: errMsg });
+                }
+
+                mergeItemEntry.quickbookId = qbItem.Id;
+            })
+        }
+
+        // Merge item only
+        await item.updateOne(mergeItemEntry).exec();
+
+        // Refresh the updated item data from database
+        item = await Item.findById(item._id);
+
+        await Item.find({ _id: { $in: unusedIds } }).exec(async (err: any, unusedItems: IItem[]) => {
+            if (company?.qbAuthorized && item.quickbookId) {
+
+                await Invoice.find({ 'items.item': { $in: unusedItems }, quickbookId: { $ne: null } }).exec(async (err: any, unusedInvoiceItems: IInvoice[]) => {
+                    for (const unusedInvoiceItem of unusedInvoiceItems) {
+                        // Update item on invoice in quickbook
+                        await _transferQBInvoiceItem(req, res, company, unusedItems, item, unusedInvoiceItem, async (err, errMsg) => {
+                            // Merge update item in quickbook
+                            await _updateQBItem(req, res, company, item, async (err, errMsg) => {
+                                // Inactive unused item in quickbook
+                                await _inactiveQBItems(company, unusedItems);
+                            });
+                        });
+                    }
+                });
+
+                // Update invoice item
+                await Invoice.updateMany({ 'items.item': { $in: unusedItems } }, {
+                    $set: {
+                        'items.$.item': item._id,
+                        'items.$.name': item.name,
+                        'items.$.description': item.description,
+                    }
+                }).exec();
+
+                // Handle job type
+                for (const unusedItem of unusedItems) {
+                    if (unusedItem.jobType) {
+                        await JobType.findOne({ _id: unusedItem.jobType }).exec(async (err: any, unusedJobType: IJobType) => {
+
+                            // update all job
+                            await Job.updateMany({ 'tasks.jobTypes.jobType': unusedJobType._id }, {
+                                $set: { 'tasks.$[].jobTypes.$.jobType': item.jobType }
+                            }).exec();
+
+                            // update all service ticket
+                            await ServiceTicket.updateMany({ 'tasks.jobType': unusedItem.jobType }, { $set: { 'tasks.$.jobType': item.jobType } }).exec();
+                            // update job
+                            await JobCharges.updateMany({ jobType: unusedItem.jobType }, { $set: { jobType: item.jobType } }).exec();
+                            // await JobType.deleteMany({_id: unusedJobType}).exec()
+                        })
+                    }
+                }
+
+                // await Item.deleteMany({ _id: { $in: unusedIds } }).exec();
+                await Item.updateMany({ _id: { $in: unusedIds } }, { $set: { isActive: false } }).exec();
+            }
+
+            return res.json({ status: Status.Success, item });
+        });
     })
 }
