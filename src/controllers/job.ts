@@ -22,7 +22,7 @@ import { Item, IItem } from '../models/Item'
 import { ICustomer } from '../models/Customer';
 import { CompanyCustomer } from '../models/CompanyCustomer';
 import { INotificationJob, NotificationJob } from '../models/NotificationMetadata'
-import { IJobType, IJobTypes, JobType } from '../models/JobType';
+import { IJobType, JobType } from '../models/JobType';
 import { JobRoute } from '../models/JobRoute';
 import { _handleJobTypesJson } from '../controllers/jobType';
 import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
@@ -1292,32 +1292,15 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             }
 
             switch (Number(params.status)) {
-                case JobStatus.PENDING:
-                    tasks.forEach(task => task.status = JobStatus.PENDING);
-                    data.tasks = tasks;
-                    break;
-
-                case JobStatus.STARTED:
-                    const pendingPausedTasks: ITaskJobType[] = tasks.filter(task =>
-                        [JobStatus.PENDING, JobStatus.PAUSED].includes(Number(task.status))
-                    );
-
-                    for (const task of pendingPausedTasks) {
-                        await _updateTask({ job, taskJobType: task, user, params, status: JobStatus.STARTED });
-                    };
-                    data.tasks = tasks;
-                    break;
-
                 case JobStatus.FINISHED:
-                    const pendingStartedTasks: ITaskJobType[] = tasks.filter(task =>
-                        [JobStatus.PENDING, JobStatus.STARTED, JobStatus.PAUSED].includes(Number(task.status))
+                    const startedPausedTasks: ITaskJobType[] = tasks.filter(task =>
+                        [JobStatus.STARTED, JobStatus.PAUSED].includes(Number(task.status))
                     );
 
-                    for (const task of pendingStartedTasks) {
-                        await _updateTask({ job, taskJobType: task, user, params, status: JobStatus.FINISHED });
+                    for (const task of startedPausedTasks) {
+                        task.status = JobStatus.FINISHED;
                     };
 
-                    data.tasks = tasks;
                     break;
 
                 case JobStatus.PAUSED:
@@ -1326,36 +1309,31 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     );
 
                     for (const task of startedTasks) {
-                        await _updateTask({ job, taskJobType: task, user, params, status: JobStatus.PAUSED });
+                        task.status = JobStatus.PAUSED;
                     };
 
-                    data.tasks = tasks;
                     break;
 
                 case JobStatus.CANCELED:
-                    const finishedTasks: ITaskJobType[] = tasks.filter(task =>
+                    const notFinishedTasks: ITaskJobType[] = tasks.filter(task =>
                         ![JobStatus.FINISHED].includes(Number(task.status))
                     )
 
-                    for (const task of finishedTasks) {
-                        await _updateTask({ job, taskJobType: task, user, params, status: JobStatus.CANCELED });
+                    for (const task of notFinishedTasks) {
+                        task.status = JobStatus.CANCELED
                     }
 
-                    data.tasks = tasks;
                     break;
 
                 case JobStatus.RESCHEDULED:
-                    // TODO: Check technician jobtype status. if started, pause it
-                    // TODO: create API update job technician status
-                    const unfinishedStartedTasks = tasks.filter(task =>
-                        ![JobStatus.FINISHED].includes(task.status)
+                    const pendingPausedTasks = tasks.filter(task =>
+                        [JobStatus.PENDING, JobStatus.PAUSED].includes(task.status)
                     );
 
-                    for (const unfinishedStartedTask of unfinishedStartedTasks) {
-                        await _updateTask({ job, taskJobType: unfinishedStartedTask, user, params, status: JobStatus.RESCHEDULED });
+                    for (const task of pendingPausedTasks) {
+                        task.status = JobStatus.RESCHEDULED;
                     };
 
-                    data.tasks = tasks;
                     break;
 
                 case JobStatus.INCOMPLETE:
@@ -1365,51 +1343,38 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     );
 
                     // Iterate all started tasks
-                    for (const pendingStartedTask of pendingStartedPausedTasks) {
-                        await _updateTask({ job, taskJobType: pendingStartedTask, user, params, status: JobStatus.PAUSED });
+                    for (const task of pendingStartedPausedTasks) {
+                        task.status = JobStatus.INCOMPLETE;
                     }
 
-                    data.tasks = tasks;
+                    // if (linkedJob) {
+                    //     // Search any started tasks on this parent/sub job
+                    //     const linkedStartedTasks: ITask[] = tasksLinked.filter((task: ITask) => task.jobTypes.filter(jobType => jobType.status === JobStatus.STARTED));
+                    //     // Iterate all started tasks and update the status to PAUSED
+                    //     for (const task of linkedStartedTasks) {
+                    //         await _updateTask({ job: linkedJob, taskJobType: jobType, user, params, status: JobStatus.PAUSED });
+                    //     }
 
-                    if (linkedJob) {
-                        // Search any started tasks on this parent/sub job
-                        const linkedStartedTasks: ITask[] = tasksLinked.filter((task: ITask) => task.jobTypes.filter(jobType => jobType.status === JobStatus.STARTED));
-                        // Iterate all started tasks and update the status to PAUSED
-                        for (const task of linkedStartedTasks) {
-                            await _updateTask({ job: linkedJob, taskJobType: jobType, user, params, status: JobStatus.PAUSED });
-                        }
-
-                        dataLinked.tasks = tasksLinked;
-                    }
+                    //     dataLinked.tasks = tasksLinked;
+                    // }
                     break;
             }
 
             try {
+                data.tasks = tasks;
                 await job.updateOne(data);
                 const updatedJob = await Job.findById(job.id);
                 if (linkedJob) {
                     await linkedJob.updateOne(dataLinked);
                 }
 
+                let date = job.scheduleDate;
                 let customerName = job.customer ?
                     job.customer.profile?.displayName :
                     (job.ticket ? (job.ticket.customer ? job.ticket.customer?.profile?.displayName : null) : null);
-                // let technicianName = job.technician ? job.technician?.profile?.displayName : null;
-                // let technicianNameLinkedJob = linkedJob && linkedJob.technician ? linkedJob.technician.profile.displayName : null;
-                let date = job.scheduleDate;
-                // if (job.contractor) {
-                // await createJobReport(job._id, job.company, customerName, technicianName, date, job.contractor);
-                // } else {
-                // await createJobReport(job._id, job.company, customerName, technicianName, date, companyId);
                 await createJobReport(job._id, job.company, customerName, null, date, companyId);
-                // }
                 if (linkedJob) {
-                    //     if (linkedJob.contractor) {
-                    //         await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, linkedJob.contractor);
-                    //     } else {
-                    //         await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, companyId);
                     await createJobReport(linkedJob._id, linkedJob.company, customerName, null, date, companyId);
-                    //     }
                 }
 
                 // Send notification when a job is RESCHEDULED
@@ -1443,6 +1408,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
         }).catch((err) => {
             return res.json({ 'status': Status.Error, 'message': err.message });
         })
+
 }
 
 export const startJob = (req: Request, res: Response) => {
@@ -1752,10 +1718,10 @@ export const updateJobTask = async (req: Request, res: Response) => {
      * Commented this out for now since Job's status is shared between techs,
      * to avoid confusion when this case occured
      */
-    else if (allTechnicianStatus.includes(5) && !allTechnicianStatus.includes(0)) {
-        // No more PENDING tasks, but have at least one PAUSED task
-        taskStatus = JobStatus.PAUSED;
-    }
+    // else if (allTechnicianStatus.includes(5) && !allTechnicianStatus.includes(0)) {
+    //     // No more PENDING tasks, but have at least one PAUSED task
+    //     taskStatus = JobStatus.PAUSED;
+    // }
 
     if (allTaskJobTypeStatus.every(status => status === 2)) {
         // All new technician status are FINISHED, Job is FINISHED
@@ -1765,12 +1731,11 @@ export const updateJobTask = async (req: Request, res: Response) => {
         jobStatus = JobStatus.FINISHED;
         action += `|Finishing the job|`;
     }
-
-    else if (allTaskJobTypeStatus.every(status => status === JobStatus.PAUSED)) {
-        // All new technician status are PAUSED, Job is PAUSED
-        jobStatus = JobStatus.PAUSED;
-        action += `|Paused the job|`;
-    }
+    // else if (allTaskJobTypeStatus.every(status => status === JobStatus.PAUSED)) {
+    //     // All new technician status are PAUSED, Job is PAUSED
+    //     jobStatus = JobStatus.PAUSED;
+    //     action += `|Paused the job|`;
+    // }
 
     // Log a track history
     const history = {
@@ -2545,16 +2510,20 @@ export const updateJobTime = (req: Request, res: Response) => {
         })
 }
 
-export const updateJobTechnicianStatus = (req: Request, res: Response) => {
+export const updateJobTechnicianStatus = async (req: Request, res: Response) => {
+
     const params = req.body;
-    let companyId = req.companyId;
-
     const user = <IUser>req.user;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId;
-    }
+    const companyId = req.companyId;
 
-    Job.findOne({ _id: params.jobId, $or: [{ company: companyId }, { 'tasks.contractor': companyId }, { contractor: companyId }, { company: companyId }] })
+    const job = await Job.findOne({
+        _id: params.jobId,
+        $or: [
+            { company: companyId },
+            { 'tasks.contractor': companyId },
+            { contractor: companyId }
+        ]
+    })
         .populate({
             path: 'customer',
             select: 'profile.displayName itemTier'
@@ -2571,87 +2540,110 @@ export const updateJobTechnicianStatus = (req: Request, res: Response) => {
             path: 'ticket',
             select: 'customer',
             populate: { path: 'customer', select: 'profile.displayName' }
-        })
-        .exec(async (err: any, job: IJob) => {
-            if (err) {
-                return res.json({ status: Status.Error, message: err.message });
+        });
+
+    let action = '';
+    let allTechnicianStatus: JobStatus[] = [];
+    const task = job.tasks.find(task => task?.technician?._id.toString() === params.technicianId);
+    const technician = <IUser>task.technician;
+
+    switch (Number(params.status)) {
+        case JobStatus.FINISHED:
+            // Cannot FINISHED technician task with FINISHED status
+            if (task.status === JobStatus.FINISHED) {
+                return res.json({ status: Status.Error, message: `You can't finish this technician task, it is already finished` });
             }
 
-            let action = '';
-            let jobStatus = job.status;
-            const taskJobTypeStatus: Number[] = [];
-            const allTechnicianStatus: JobStatus[] = [];
-            const task = job.tasks.find(task => task?.technician?._id.toString() === params.technicianId);
+            // Update technician task status and add Job's history track
+            task.status = JobStatus.FINISHED;
+            action += `|Technician: ${technician?.profile?.displayName} finishing his/her task|`;
 
-            for (const taskJobType of task.jobTypes) {
-                taskJobTypeStatus.push(taskJobType.status)
-            }
-
-            for (const task of job.tasks) {
-                allTechnicianStatus.push(task.status);
-            }
-
-            switch (Number(params.status)) {
-                case JobStatus.RESCHEDULED:
-                    // PAUSED the STARTED jobtype task
-                    if (taskJobTypeStatus.includes(1)) {
-                        task.jobTypes.forEach(jobTypeTask => {
-                            jobTypeTask.status = JobStatus.PAUSED;
-                            jobTypeTask.pausedCount = Number(params.status) === JobStatus.PAUSED ? jobTypeTask.pausedCount + 1 : jobTypeTask.pausedCount;
-                        });
-
-                        action += `|Rescheduling the technician|`;
-                    }
-
-                    task.status = JobStatus.RESCHEDULED;
-                    const updatedTechnicianStatus = job.tasks.map(taskTechnician => taskTechnician.status);
-
-                    // All technician status are RESCHEDULED, the job will be RESCHEDULED
-                    if (updatedTechnicianStatus.every(status => status === JobStatus.RESCHEDULED)) {
-                        jobStatus = JobStatus.RESCHEDULED;
-                        action += `|Rescheduling the job|`;
-                    }
-
-                    break;
-
-                case JobStatus.CANCELED:
-                    // Cannot CANCELED technician with FINISHED status
-                    if ([JobStatus.FINISHED].includes(task.status)) {
-                        return res.json({ status: Status.Error, message: 'Cannot CANCELED technician with FINISHED or PAUSED status' });
-                    }
-
-                    task.status = JobStatus.CANCELED;
-                    action += `|Canceled the technician|`;
-
-                    const canceledTechnicianStatus = job.tasks.map(taskTechnician => taskTechnician.status);
-                    // All technician status are CANCELED, the job will be CANCELED
-                    if (canceledTechnicianStatus.every(status => status === JobStatus.CANCELED)) {
-                        jobStatus = JobStatus.CANCELED;
-                        action += `|Canceled the job|`;
-                    };
-
-                    break;
-            }
-
-            const history = {
-                user: user._id,
-                action,
-                note: params.note,
-                date: new Date()
+            // FINISHED all STARTED and PAUSED task jobTypes
+            const startedPausedTaskJobTypes: ITaskJobType[] = task.jobTypes.filter(taskJobType =>
+                [JobStatus.STARTED, JobStatus.PAUSED].includes(Number(taskJobType.status))
+            );
+            for (const taskJobType of startedPausedTaskJobTypes) {
+                await _updateTask({ job, taskJobType, user, params, status: params.status });
             };
 
-            job.status = jobStatus;
-            job.track.push(history);
-
-            try {
-                await job.save()
-            } catch (err) {
-                return res.json({ status: Status.Error, message: err.message });
+            // Check if all technician statuses are FINISHED as well and update job's status
+            allTechnicianStatus = job.tasks.map(task => task.status);
+            if (allTechnicianStatus.every(status => status === JobStatus.FINISHED)) {
+                job.status = JobStatus.FINISHED;
             }
 
-            return res.json({ status: Status.Success, message: `Job Task updated successfully.`, job, updatedTask: task });
-        });
+            break;
+
+        case JobStatus.CANCELED:
+            // Cannot CANCELED technician task with FINISHED status
+            if (task.status === JobStatus.FINISHED) {
+                return res.json({ status: Status.Error, message: `You can't cancel this technician task, it is already finished` });
+            }
+
+            // Update technician task status and add Job's history track
+            task.status = JobStatus.CANCELED;
+            action += `|Technician: ${technician?.profile?.displayName} canceling his/her task|`;
+
+            /**
+             * Check if there no more PENDING, STARTED, or PAUSED technician statuses,
+             * if it does, update job's status to CANCELED as well
+             */
+            allTechnicianStatus = job.tasks.map(task => task.status);
+            if (
+                !allTechnicianStatus.includes(JobStatus.PENDING)
+                && !allTechnicianStatus.includes(JobStatus.STARTED)
+                && !allTechnicianStatus.includes(JobStatus.PAUSED)
+            ) {
+                job.status = JobStatus.CANCELED;
+            }
+            break;
+
+        case JobStatus.RESCHEDULED:
+            // Cannot RESCHEDULED technician task with FINISHED status
+            if (task.status === JobStatus.FINISHED) {
+                return res.json({ status: Status.Error, message: `You can't rechedule this technician task, it is already finished` });
+            }
+
+            // Update technician task status and add Job's history track
+            task.status = JobStatus.RESCHEDULED;
+            action += `|Technician: ${technician?.profile?.displayName} rescheduling his/her task|`;
+
+            // PAUSED all STARTED task jobTypes
+            const startedTaskJobTypes = task.jobTypes.filter(taskJobType => taskJobType.status === JobStatus.STARTED);
+            for (const taskJobType of startedTaskJobTypes) {
+                await _updateTask({ job, taskJobType, user, params, status: params.status });
+            }
+
+            /**
+             * Check if there no more PENDING, STARTED, or PAUSED technician statuses,
+             * if it does, update job's status to RESCHEDULED as well
+             */
+            allTechnicianStatus = job.tasks.map(task => task.status);
+            if (
+                !allTechnicianStatus.includes(JobStatus.PENDING)
+                && !allTechnicianStatus.includes(JobStatus.STARTED)
+                && !allTechnicianStatus.includes(JobStatus.PAUSED)
+            ) {
+                job.status = JobStatus.RESCHEDULED;
+            }
+            break;
+
+        default:
+            return res.json({ status: Status.Error, message: `Only status: FINISHED (2), CANCELED (3), and RESCHEDULED (4) that supported by this API` });
+    }
+
+    job.track.push({ user: user._id, action, note: params.note, date: new Date() });
+
+    try {
+        await job.save();
+    } catch (err) {
+        return res.json({ status: Status.Error, message: err.message });
+    }
+
+    return res.json({ status: Status.Success, message: `Technician task status updated successfully.`, job, technicianTask: task });
+
 }
+
 // PRIVATE METHODS
 
 /**
@@ -2672,9 +2664,9 @@ const _updateTask = async ({ job, taskJobType, user, params, status }: { job: IJ
         customer = <ICustomer>job.customer;
         await _handleTaskCharges({ job, taskJobType, item, customer, params });
 
-        taskJobType.status = status || params.status;
+        taskJobType.status = status ?? params.status;
         taskJobType.tempStartTime = null;
-        taskJobType.pausedCount = Number(params.status) === JobStatus.PAUSED ? taskJobType.pausedCount + 1 : taskJobType.pausedCount;
+        taskJobType.pausedCount = Number(status ?? params.status) === JobStatus.PAUSED ? taskJobType.pausedCount + 1 : taskJobType.pausedCount;
         taskJobType.timeUpdatedBy = user;
         taskJobType.timeUpdatedAt = new Date();
     }
