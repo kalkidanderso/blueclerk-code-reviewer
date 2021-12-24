@@ -1,5 +1,5 @@
 import express from 'express'
-import {validate, Validations} from '../middleware/validator'
+import { validate, Validations } from '../middleware/validator'
 import passport from 'passport'
 import {
     checkPermissions,
@@ -687,6 +687,15 @@ export default function (sio: any) {
         uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
         validate(Validations.editJob),
         jobController.editJob
+    )
+
+    router.post(
+        '/updateJobTechnicianStatus',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Edit),
+        validate(Validations.updateJobTechnicianStatus),
+        jobController.updateJobTechnicianStatus
     )
 
     router.post(
@@ -1926,6 +1935,12 @@ export default function (sio: any) {
         '/script/migrateTicketAndJobImage',
         passport.authenticate('jwt', { session: false }),
         scriptController.migrateTicketAndJobImage
+    )
+
+    router.post(
+        '/script/migrateTechnicianStatus',
+        passport.authenticate('jwt', { session: false }),
+        scriptController.migrateTechnicianStatus
     )
 
     return router

@@ -102,6 +102,7 @@ export const migrateJobTask = async (req: Request, res: Response) => {
             technician: job.technician,
             employeeType: job.employeeType,
             contractor: job.contractor,
+            status: job.status
         }
 
         // If job has type, it means this is a very old job
@@ -197,4 +198,36 @@ export const migrateTicketAndJobImage = async (req: Request, res: Response) => {
         serviceTickets, jobs
     });
 
+}
+
+export const migrateTechnicianStatus = async (req: Request, res: Response) => {
+    const jobs = await Job.find({ 'tasks.jobTypes': { $exists: true } });
+
+    if (!jobs.length) {
+        return res.json({ status: Status.OK, message: 'No jobs to be migrated' });
+    }
+
+    for (const job of jobs) {
+        for (const task of job.tasks) {
+            const allTaskJobTypeStatus = task.jobTypes.map(jobType => jobType.status);
+            // Add status to technician from job type status
+            for (const jobTypeStatus of allTaskJobTypeStatus) {
+                if ([JobStatus.STARTED, JobStatus.PENDING, JobStatus.PAUSED].includes(jobTypeStatus)) {
+                    task.status = jobTypeStatus
+                }
+
+                if (allTaskJobTypeStatus.every(status => status === jobTypeStatus)) {
+                    task.status = jobTypeStatus
+                }
+            }
+        }
+
+        job.save()
+    }
+
+    return res.json({
+        status: Status.Success,
+        message: 'Technician status successfully migrated.',
+        jobs
+    });
 }
