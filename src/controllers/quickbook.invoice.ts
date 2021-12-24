@@ -13,6 +13,7 @@ import { IPaymentTerm } from '../models/PaymentTerm';
 import { IInvoice, IQBInvoice, IQBInvoiceLine, LineDetailTypes, Invoice } from '../models/Invoice';
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
 import { _updateQBCustomer } from '../controllers/quickbook.customer';
+import { _transferQBPayments } from './quickbook.payment';
 
 // ===================================
 // =======[ QUICKBOOK INVOICE ]=======
@@ -323,21 +324,20 @@ export const _transferQBInvoices = async (req: Request, res: Response, company: 
                             ], async (err: any, data: any) => {
                                 const qbInvoices: IQBInvoice[] = data?.QueryResponse?.Invoice;
 
-                                console.log('qbInvoices', qbInvoices);
                                 if (qbInvoices?.length) {
                                     // Iterate all QB Invoices
                                     for (const qbInvoice of qbInvoices) {
                                         if (qbInvoice && unusedQBCustomer?.Active) {
 
                                             // Move invoice to the new customer
-                                            qbInvoice.CustomerRef = qbInvoice.CustomerRef ?? {};
+                                            // qbInvoice.CustomerRef = qbInvoice.CustomerRef ?? {};
                                             qbInvoice.CustomerRef.value = currentCustomer?.quickbookId;
                                             qbInvoice.CustomerRef.name = currentCustomer?.profile?.displayName;
                                             qbInvoice.BillEmail = qbInvoice.BillEmail ?? {};
                                             qbInvoice.BillEmail.Address = currentCustomer?.info?.email;
 
                                             qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
-                                                // return next(null, null);
+                                                
                                             });
                                         }
                                     }
@@ -643,6 +643,43 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
 //     })
 
 // }
+export const _getQBInvoices = async (req: Request, res: Response, company: ICompany, customer: ICustomer): Promise<IQBInvoice[]> => {
+    return new Promise((resolve, reject) => {
+        // Always refresh the token first because token valid only for 60 minutes
+        _refreshToken(req, res, company, async (err, errMsg, company) => {
+            if (err === 0) {
+                res.json({ status: Status.Error, message: errMsg });
+            }
+
+            if (err === 400) {
+                Company.findByIdAndUpdate(req.company._id, {
+                    qbAuthorized: false,
+                    qbAccessToken: undefined,
+                    qbRefreshToken: undefined
+                });
+
+                res.json({ status: Status.QBUnauthorized, message: Messages.QBUnAuthorized });
+            }
+
+            const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+            qbo.findInvoices([
+                { field: 'CustomerRef', value: customer?.quickbookId },
+            ], async (err: any, data: any) => {
+                if (err) {
+                    reject(
+                        new Error(
+                            err.Fault?.Error[0]?.Message
+                            || err.fault?.error[0]?.detail
+                            || err.fault?.error[0]?.message
+                            || Messages.GenericError
+                        ));
+                }
+
+                resolve(<IQBInvoice[]>data?.QueryResponse?.Invoice);
+            });
+        });
+    });
+}
 
 /**
  * Generic function to tranfers ownership of QuickBooks Invoices,
@@ -710,14 +747,6 @@ export const _transferQBInvoiceItem = async (
                                                     || err.fault?.error[0]?.message
                                                     || Messages.GenericError
                                                 )
-                                                // return next(
-                                                //     Status.Error,
-                                                //     err.Fault?.Error[0]?.Detail
-                                                //     || err.Fault?.Error[0]?.Message
-                                                //     || err.fault?.error[0]?.detail
-                                                //     || err.fault?.error[0]?.message
-                                                //     || Messages.GenericError
-                                                // );
                                             }
                                         });
 

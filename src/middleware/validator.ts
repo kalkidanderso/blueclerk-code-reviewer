@@ -124,7 +124,8 @@ export const Validations = {
   mergeCustomers: [
     check('customerId').exists().withMessage(Messages.Required),
     check('customerId').isMongoId().withMessage(Messages.WrongId),
-    check('unusedCustomerIds').exists().withMessage(Messages.Required)
+    check('unusedCustomerIds').exists().withMessage(Messages.Required),
+    check('email').optional().isEmail().withMessage(Messages.InvalidEmail)
   ],
 
       //Customer Equipment
@@ -363,11 +364,15 @@ export const Validations = {
 
   updateItem: [check('itemId').exists(), check('charges').exists(), check('isFixed').exists(), check('tax').exists()],
 
+  searchDuplicatedItems: [check('keyword').exists().withMessage(Messages.Required)],
+
   mergeItems: [
     check('itemId').exists().withMessage(Messages.Required),
     check('itemId').isMongoId().withMessage(Messages.WrongId),
-    check('unusedItemIds').exists().withMessage(Messages.Required)
+    check('unusedItemIds').exists().withMessage(Messages.Required),
+    check('unusedItemIds').isArray().withMessage('Must in array format'),
   ],
+
   // Payment Term
 
   setCompanyDefaultPaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],

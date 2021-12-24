@@ -2,25 +2,25 @@ import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb'
 import { Status, Messages, Role } from '../common/constants'
 
-import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
 import { Company, ICompany } from '../models/Company'
-import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
-import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket'
 import { User, IUser } from '../models/User'
-import { IPriceTier } from '../models/PriceTier'
-import { _createQBCustomer, _updateQBCustomer, _inactivateQBCustomers } from '../controllers/quickbook.customer'
-import { Job } from '../models/Job'
+import { Contact } from '../models/Contact'
+import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
+import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
+import { Estimate } from '../models/Estimate'
+import { PurchaseOrder } from '../models/PurchaseOrder'
+import { Tag } from '../models/Tag'
+import { CustomerEquipment } from '../models/CustomerEquipment'
 import { JobLocation } from '../models/JobLocation'
 import { JobSite } from '../models/JobSite'
-import { IInvoice, Invoice } from '../models/Invoice'
+import { ServiceTicket } from '../models/ServiceTicket'
+import { Job } from '../models/Job'
+import { IPriceTier } from '../models/PriceTier'
+import { Invoice } from '../models/Invoice'
 import { Payment } from '../models/Payment'
-import { CustomerEquipment } from '../models/CustomerEquipment'
-import { Contact } from '../models/Contact'
-import { PurchaseOrder } from '../models/PurchaseOrder'
-import { Estimate } from '../models/Estimate'
-import { Tag } from '../models/Tag'
-import { _updateQBInvoice, _transferQBInvoices } from './quickbook.invoice'
-import { _getPayment, _transferQBPayments, _updateQBPayment } from './quickbook.payment'
+import { _createQBCustomer, _updateQBCustomer, _inactivateQBCustomers } from '../controllers/quickbook.customer'
+import { _getQBInvoices, _updateQBInvoice, _transferQBInvoices } from '../controllers/quickbook.invoice'
+import { _getQBPayments, _updateQBPayment, _transferQBPayments } from '../controllers/quickbook.payment'
 
 /**
  * To reset Customer quickbookId,
@@ -497,22 +497,51 @@ export const searchDuplicatedCustomers = async (req: Request, res: Response) => 
 
     const params = req.body;
     const companyId = req.companyId;
+    const company = <ICompany>req.company;
 
-    const customers = await Customer.find({
+    const customers: ICustomer[] = await Customer.find({
         company: companyId,
         $or: [
-            { 'profile.firstName': { $regex: params.keyword } },
-            { 'profile.lastName': { $regex: params.keyword } },
-            { 'profile.displayName': { $regex: params.keyword } },
-            { 'info.email': { $regex: params.keyword } }
+            { 'profile.firstName': { $regex: params.keyword, $options: 'i' } },
+            { 'profile.lastName': { $regex: params.keyword, $options: 'i' } },
+            { 'profile.displayName': { $regex: params.keyword, $options: 'i' } },
+            { 'info.email': { $regex: params.keyword, $options: 'i' } }
         ]
     });
 
     if (!customers.length) {
-        return res.json({ 'status': Status.NotFound, messages: `Customers with keyword "${params.keyword}" not found.` });
+        return res.json({ 'status': Status.Success, message: `Customers with keyword "${params.keyword}" not found.` });
     }
 
-    return res.json({ status: Status.Success, customers });
+    const customerWithInvoicesPayments = []
+    for (const customer of customers) {
+        const { invoice, quickbookInvoice, payment, quickbookPayment } = await _getCustomerInvoicesPayments(req, res, customer, company);
+
+        await customer
+            .populate({ path: 'equipments', select: '-__v' })
+            .populate({ path: 'itemTier', select: '-__v -createdAt -updatedAt' })
+            .populate({ path: 'paymentTerm', select: '-__v -createdAt -updatedAt' })
+            .populate({ path: 'contacts', select: '-__v' })
+            .populate({
+                path: 'jobLocations',
+                select: '-__v -customerId -createdAt -updatedAt',
+                populate: [
+                    { path: 'contacts', select: '-__v' },
+                    { path: 'jobSites', select: '-__v -locationId -customerId' }
+                ]
+            })
+            .execPopulate();
+
+        customerWithInvoicesPayments.push({
+            customer,
+            invoice,
+            quickbookInvoice,
+            payment,
+            quickbookPayment
+        });
+    }
+
+    return res.json({ status: Status.Success, customers: customerWithInvoicesPayments });
 
 }
 
@@ -523,31 +552,45 @@ export const mergeCustomers = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
 
     const unusedCustomerIds = params.unusedCustomerIds?.length ? JSON.parse(params.unusedCustomerIds) : [];
-    const jobLocations: string[] = params.jobLocations?.length ? JSON.parse(params.jobLocations) : [];
-    const customerEquipments: string[] = params.equipments?.length ? JSON.parse(params.equipments) : [];
-    const contacts: string[] = params.contact?.length ? JSON.parse(params.contacts) : [];
-    const userPaymentDeposited: any[] = []
+    const jobLocationParams: string[] = params.jobLocations?.length ? JSON.parse(params.jobLocations) : [];
+    const customerEquipmentParams: string[] = params.equipments?.length ? JSON.parse(params.equipments) : [];
+    const contactsParams: string[] = params.contacts?.length ? JSON.parse(params.contacts) : [];
+
+    const contacts = await Contact.find({ _id: { $in: contactsParams } }).exec();
+    const customerEquipments = await CustomerEquipment.find({ _id: { $in: customerEquipmentParams }, customer: { $in: unusedCustomerIds } }).exec();
+    const jobLocations = await JobLocation.find({ _id: { $in: jobLocationParams }, customerId: { $in: unusedCustomerIds } }).exec();
+
+    const contactIds = contacts.map(contact => contact.id);
+    const customerEquipmentIds = customerEquipments.map(customerEquipment => customerEquipment.id);
+    const jobLocationIds = jobLocations.map(jobLocation => jobLocation.id);
+
+    const qbCustomerPayments: string[] = []
 
     // Get deposited customer
     for (const unusedCustomerId of unusedCustomerIds) {
         const unusedCustomer = await Customer.findOne({ _id: unusedCustomerId }).exec();
-        const getDepositedPayments = await _getPayment(req, res, company, unusedCustomer);
-        if (getDepositedPayments) {
-            getDepositedPayments.forEach(getDepositedPayment => {
-                if (getDepositedPayment?.LinkedTxn) {
-                    const paymentLinked = getDepositedPayment?.LinkedTxn.find(linkedPayment => linkedPayment.TxnType === 'Deposit')
-                    if (paymentLinked) {
-                        userPaymentDeposited.push(getDepositedPayment?.CustomerRef?.name);
-                    }
-                }
+        const qbPayments = await _getQBPayments(req, res, company, unusedCustomer);
+        if (qbPayments) {
+
+            qbPayments.forEach(qbPayment => {
+                qbCustomerPayments.push(qbPayment?.CustomerRef?.name);
+                // if (qbPayment?.LinkedTxn) {
+                //     const depositedPayment = qbPayment?.LinkedTxn.find(linkedPayment => linkedPayment.TxnType === 'Deposit')
+                //     if (depositedPayment) {
+                //         customerPaymentDeposited.push(qbPayment?.CustomerRef?.name);
+                //     }
+                // }
             });
         }
+
     }
 
     // Return error when unused user have deposited payment
-    if (userPaymentDeposited.length) {
-        return res.json({ status: Status.Error, message: `${[...new Set(userPaymentDeposited)].toString()} have a deposited payment` })
+    if (qbCustomerPayments.length) {
+        return res.json({ status: Status.Error, message: `You cannot merge this customer(s): ${[...new Set(qbCustomerPayments)].toString()}. Because they already have a payments on Quickbooks. Either remove the payments of those customers or merge the other customers instead.` })
     }
+
+    const { credit: mergedCredit, balance: mergedBalance } = await _sumMergedCreditBalance(unusedCustomerIds);
 
     Customer.findById(params.customerId).exec(async (err: any, customer: ICustomer) => {
         if (err || !customer) {
@@ -566,14 +609,16 @@ export const mergeCustomers = async (req: Request, res: Response) => {
             'address.zipCode': params.zipCode ?? customer?.address?.zipCode,
             'contact.phone': params.phone ?? customer?.contact?.phone,
             'contact.fax': params.fax ?? customer?.contact?.fax,
-            jobLocations: params.jobLocations?.length ? jobLocations : customer?.jobLocations,
-            equipments: params.equipments?.length ? customerEquipments : customer?.equipments,
+            jobLocations: params.jobLocations?.length ? jobLocationIds : customer?.jobLocations,
+            equipments: params.equipments?.length ? customerEquipmentIds : customer?.equipments,
             // quickbookId: params.quickbookId ?? customer?.quickbookId,
             isCustomPrice: params.isCustomPrice ?? customer?.isCustomPrice,
             contactName: params.contactName ?? customer?.contactName,
             vendorId: params.vendorId ?? customer?.vendorId,
-            contacts: params.contact?.length ? contacts : customer?.contacts,
+            contacts: params.contacts?.length ? contactIds : customer?.contacts,
             isActive: true,
+            credit: (customer.credit ?? 0) + mergedCredit,
+            balance: (customer.balance ?? 0) + mergedBalance,
             inactiveAt: null,
             inactiveBy: null,
         }
@@ -598,43 +643,39 @@ export const mergeCustomers = async (req: Request, res: Response) => {
         await Customer.find({ _id: { $in: unusedCustomerIds } }).exec(async (err: any, unusedCustomers: ICustomer[]) => {
 
             // Update customer on job location
-            await _moveCustomer({ req, res, customerId: params.customerId, companyId, unusedCustomerIds, jobLocations, customerEquipments });
+            await _moveCustomer({ req, res, customerId: params.customerId, companyId, unusedCustomerIds, jobLocations: jobLocationIds, customerEquipments: customerEquipmentIds });
 
             if (company?.qbAuthorized && customer.quickbookId) {
 
-                // Update Qb payment and linked invoices
-                await _transferQBPayments(req, res, company, unusedCustomers, customer, async (err, errMsg) => {
+                // Update qb invoice
+                await _transferQBInvoices(req, res, company, unusedCustomers, customer, async (err, errMsg) => {
                     if (err) {
                         // return res.json({ status: err, message: errMsg });
-                        throw new Error(errMsg)
+                        throw new Error(errMsg);
                     }
 
-                    // Update qb invoice and inactivate unused customer
-                    await _transferQBInvoices(req, res, company, unusedCustomers, customer, async (err, errMsg) => {
+                    // Update qb payment
+                    await _transferQBPayments(req, res, company, unusedCustomers, customer);
+
+                    // Inactive unused customer
+                    await _inactivateQBCustomers(req, res, company, unusedCustomers, async (err, errMsg) => {
                         if (err) {
                             // return res.json({ status: err, message: errMsg });
-                            throw new Error(errMsg);
+                            throw new Error(errMsg)
                         }
 
-                        _inactivateQBCustomers(company, unusedCustomers, async (err, errMsg) => {
+                        await _updateQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
                             if (err) {
                                 // return res.json({ status: err, message: errMsg });
                                 throw new Error(errMsg)
                             }
 
-                            _updateQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
-                                if (err) {
-                                    // return res.json({ status: err, message: errMsg });
-                                    throw new Error(errMsg)
-                                }
-
-                                // Remove unused customer (Disable for development)
-                                // Customer.deleteMany({_id: {$in: unusedCustomerIds}}).exec();
-                                await Customer.updateMany(
-                                    { _id: { $in: unusedCustomerIds }, company: companyId },
-                                    { $set: { isActive: false } }
-                                ).exec()
-                            });
+                            // Remove unused customer (Disable for development)
+                            // Customer.deleteMany({_id: {$in: unusedCustomerIds}}).exec();
+                            await Customer.updateMany(
+                                { _id: { $in: unusedCustomerIds }, company: companyId },
+                                { $set: { isActive: false } }
+                            ).exec()
                         });
                     });
                 });
@@ -646,7 +687,24 @@ export const mergeCustomers = async (req: Request, res: Response) => {
 
 }
 
-export const _moveCustomer = async ({
+export const _getCustomerInvoicesPayments = async (req: Request, res: Response, customer: ICustomer, company: ICompany) => {
+
+    const invoice = await Invoice.find({ customer: customer._id, isDraft: false }).countDocuments();
+    const payment = await Payment.find({ customer: customer._id }).countDocuments();
+
+    const qbInvoice = await _getQBInvoices(req, res, company, customer);
+    const qbPayment = await _getQBPayments(req, res, company, customer);
+
+    return {
+        invoice: invoice ?? 0,
+        quickbookInvoice: qbInvoice?.length ?? 0,
+        payment: payment ?? 0,
+        quickbookPayment: qbPayment?.length ?? 0,
+    };
+
+}
+
+const _moveCustomer = async ({
     req,
     res,
     customerId,
@@ -663,6 +721,10 @@ export const _moveCustomer = async ({
     jobLocations: string[]
     customerEquipments: string[]
 }) => {
+
+    // Update unused customer balance and credit
+    Customer.updateMany({ _id: { $in: unusedCustomerIds } }, { $set: { balance: 0, credit: 0 } });
+
     // Update customer on job location when job location is provided
     JobLocation.updateMany(
         { _id: { $in: jobLocations }, customerId: { $in: unusedCustomerIds } },
@@ -724,4 +786,19 @@ export const _moveCustomer = async ({
     ).exec();
 
     return;
+}
+
+const _sumMergedCreditBalance = async (unusedCustomerIds: string[]): Promise<{ credit: number, balance: number }> => {
+
+    let credit = 0;
+    let balance = 0;
+
+    const unusedCustomers = await Customer.find({ _id: { $in: unusedCustomerIds } }).exec();
+    for (const unusedCustomer of unusedCustomers) {
+        balance += unusedCustomer.balance;
+        credit += unusedCustomer.credit;
+    }
+
+    return { credit, balance };
+
 }

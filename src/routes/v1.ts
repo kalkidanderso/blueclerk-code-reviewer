@@ -556,11 +556,12 @@ export default function (sio: any) {
     )
 
     router.post(
-        '/filterItems',
+        '/searchDuplicatedItems',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Items),
-        jobTypeController.filterItems
+        validate(Validations.searchDuplicatedItems),
+        jobTypeController.searchDuplicatedItems
     )
 
     router.post(

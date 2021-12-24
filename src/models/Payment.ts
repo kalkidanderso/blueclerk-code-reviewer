@@ -28,7 +28,7 @@ export interface IQBPayment {
     Id?: string
     TxnDate?: string
     CustomerRef: {
-        value?: string
+        value: string
         name?: string
     }
     Line: {

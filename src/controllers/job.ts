@@ -993,7 +993,14 @@ export const getAllJobReports = (req: Request, res: Response) => {
     JobReport.find({ $or: [{ contractor: companyId }, { company: companyId }] })
         .populate({
             path: 'job',
-            select: '_id jobId customer technician',
+            populate: [
+                { path: 'tasks.technician', select: 'profile auth.email contact' },
+                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
+                { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
+                { path: 'customerContactId', select: '-id -__v' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+                { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
+            ]
         })
         .populate({
             path: 'invoice',
@@ -1369,12 +1376,23 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 }
 
                 let date = job.scheduleDate;
+                let technicianName = null;
+                let technicianNameLinkedJob = null;
                 let customerName = job.customer ?
                     job.customer.profile?.displayName :
                     (job.ticket ? (job.ticket.customer ? job.ticket.customer?.profile?.displayName : null) : null);
-                await createJobReport(job._id, job.company, customerName, null, date, companyId);
+
+                if (tasks.length > 1) {
+                    technicianName = 'Multiple Techs';
+                    technicianNameLinkedJob = 'Multiple Techs';
+                } else {
+                    technicianName = tasks[0].technician.profile.displayName;
+                    technicianNameLinkedJob = tasks[0].technician.profile.displayName;
+                }
+
+                await createJobReport(job._id, job.company, customerName, technicianName, date, companyId);
                 if (linkedJob) {
-                    await createJobReport(linkedJob._id, linkedJob.company, customerName, null, date, companyId);
+                    await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, companyId);
                 }
 
                 // Send notification when a job is RESCHEDULED

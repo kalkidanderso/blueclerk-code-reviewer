@@ -543,26 +543,27 @@ export const _handleJobTypesJson = (customerId: string, paramJobTypes: string, j
     })
 }
 
-export const filterItems = async (req: Request, res: Response) => {
+export const searchDuplicatedItems = async (req: Request, res: Response) => {
+
     const params = req.body;
     const companyId = req.companyId;
 
-    const items = await Item.find({
+    const items: IItem[] = await Item.find({
         company: companyId,
         name: {
-            $regex: params.keyword
+            $regex: params.keyword,
+            $options: 'i'
         }
-    });
+    })
+        .populate({ path: 'tiers.tier', select: '-__v -createdAt -updatedAt' })
+        .populate({ path: 'jobType', select: '-__v -createdAt -updatedAt' });
 
     if (!items.length) {
-        return res.json({ 'status': Status.NotFound, messages: `Items with keyword ${params.keyword} not found` });
+        return res.json({ 'status': Status.Success, message: `Items with keyword "${params.keyword}" not found.` });
     }
 
-    items.forEach(item => console.log(item))
-    return res.json({
-        'status': Status.Success,
-        'item': items
-    });
+    return res.json({ status: Status.Success, items });
+
 }
 
 export const mergeItems = async (req: Request, res: Response) => {

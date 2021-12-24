@@ -253,9 +253,7 @@ export const _transferQBItems = async (req: Request, res: Response, company: ICo
 
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
-        console.log('currentItem', currentItem);
         qbo.getItem(currentItem.quickbookId, async (err: any, currentQBItem: IQBItem) => {
-            console.log('currentQBItem', currentQBItem);
             // Make sure the merged base item Active
             currentQBItem.Active = true;
 
@@ -273,12 +271,15 @@ export const _transferQBItems = async (req: Request, res: Response, company: ICo
                                 unusedQBItem.Sku = currentItem.sku;
 
                                 qbo.updateItem(unusedQBItem, async (err: any, qbItem: IQBItem) => {
-                                    console.log('updatedItem', qbItem);
-                                    console.log('== err.Fault:', err?.Fault);
-                                    console.log('== err.Fault?.Error[0]?.Message:', err?.Fault?.Error[0]?.Message);
-                                    console.log('== err.fault:', err?.fault);
-                                    console.log('== err.fault?.error[0]?.detail:', err?.fault?.error[0]?.detail);
-                                    console.log('== err.fault?.error[0]?.message:', err?.fault?.error[0]?.message);
+                                    if (err) {
+                                        throw new Error(
+                                            err.Fault?.Error[0]?.Detail
+                                            || err.Fault?.Error[0]?.Message
+                                            || err.fault?.error[0]?.detail
+                                            || err.fault?.error[0]?.message
+                                            || Messages.GenericError
+                                        )
+                                    }
                                 })
                             }
                         });
@@ -326,15 +327,6 @@ export const _updateQBItem = async (req: Request, res: Response, company: ICompa
                         || err.fault?.error[0]?.message
                         || Messages.GenericError
                     );
-                    // return res.json({
-                    //     status: Status.Error,
-                    //     message:
-                    //     err.Fault?.Error[0]?.Detail
-                    //     || err.Fault?.Error[0]?.Message
-                    //     || err.fault?.error[0]?.detail
-                    //     || err.fault?.error[0]?.message
-                    //     || Messages.GenericError,
-                    // });
                 }
 
                 return next(null, null);
@@ -362,16 +354,6 @@ export const _inactiveQBItems = async (company: ICompany, items: IItem[]) => {
                                 || Messages.GenericError
                             );
                         }
-                        // if (err || !updatedQBItem) {
-                        //     return (
-                        //         Status.Error,
-                        //         err.Fault?.Error[0]?.Detail
-                        //         || err.Fault?.Error[0]?.Message
-                        //         || err.fault?.error[0]?.detail
-                        //         || err.fault?.error[0]?.message
-                        //         || Messages.GenericError
-                        //     )
-                        // }
                     })
                 }
             })

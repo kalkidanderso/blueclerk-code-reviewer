@@ -1839,7 +1839,7 @@ paths:
     post:
       tags:
         - Customer
-      summary: To any possible duplicated customers by the keyword.
+      summary: To find any possible duplicated customers by the keyword.
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -1869,7 +1869,7 @@ paths:
     post:
       tags:
         - Customer
-      summary: To get detail of a customer.
+      summary: To merge duplicated customers.
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -1907,16 +1907,15 @@ paths:
                   type: string
                 equipments:
                   type: string
+                  description: 'format: ["617658f41f4688324cb93aa0", "617658f41f4688324cb93aa1"]'
                 jobLocations:
                   type: string
-                balance:
-                  type: integer
-                credit:
-                  type: integer
+                  description: 'format: ["615aa9caa36144102d21bc30", "615aa9caa36144102d21bc32"]'
                 isCustomPrice:
                   type: boolean
                 contacts:
                   type: string
+                  description: 'format: ["6179104d040ff5218f9ca97a", "6179104d040ff5218f9ca97a"]'
                 phone:
                   type: number
       responses:
@@ -2847,20 +2846,22 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
-  /filterItems:
+  /searchDuplicatedItems:
     post:
       tags:
         - Items
-      summary: To search item by name.
+      summary: To find any possible duplicated items by the keyword.
       requestBody:
         content:
           application/x-www-form-urlencoded:
             schema:
               type: object
+              required:
+                - keyword
               properties:
                 keyword:
                   name: string
-                  description: Id of company if contractor is hitting for other company
+                  description: Keyword to search possible duplicated items
       responses:
         '200':
           description: Success
@@ -2879,7 +2880,7 @@ paths:
     post:
       tags:
         - Items
-      summary: To get detail of a customer.
+      summary: To merge duplicated items.
       requestBody:
         content:
           application/x-www-form-urlencoded:

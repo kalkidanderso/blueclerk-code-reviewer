@@ -54,26 +54,26 @@ const _getCustomers = (req: Request, res: Response, company: ICompany, next: (re
         company.qbRefreshToken
     );
 
-    qbo.findCustomers( [{field: 'fetchAll', value: true} ], 
-        function(qbError: any, customers: any) {
+    qbo.findCustomers([{ field: 'fetchAll', value: true }],
+        function (qbError: any, customers: any) {
 
             var errorMessage: string
             if (qbError != null && Object.keys(qbError).length != 0) {
 
-                if(qbError.hasOwnProperty("fault")){
+                if (qbError.hasOwnProperty("fault")) {
 
-                    if(qbError.fault.error[0].message.length != 0 && qbError.fault.error[0].message.split('; ')[2].replace('statusCode=','') == 401) {
+                    if (qbError.fault.error[0].message.length != 0 && qbError.fault.error[0].message.split('; ')[2].replace('statusCode=', '') == 401) {
 
-                        _refreshToken(req, res, company, (error: number, newErrorMessage: string, newCompany: ICompany) => { 
+                        _refreshToken(req, res, company, (error: number, newErrorMessage: string, newCompany: ICompany) => {
 
-                            if(error == 0) {
-                                next(req,res, error, newErrorMessage, [])
-                                return 
+                            if (error == 0) {
+                                next(req, res, error, newErrorMessage, [])
+                                return
                             }
 
-                            if(error == 400) {
-                                next(req,res, error, newErrorMessage, [])
-                                return 
+                            if (error == 400) {
+                                next(req, res, error, newErrorMessage, [])
+                                return
                             }
 
                             qbo = new QuickBooks(QB_CLIENT_ID,
@@ -88,55 +88,55 @@ const _getCustomers = (req: Request, res: Response, company: ICompany, next: (re
                                 newCompany.qbRefreshToken
                             );
 
-                            qbo.findCustomers( [{field: 'fetchAll', value: true} ], 
-                                function(qbErrorNew: any, customers2: any) {
+                            qbo.findCustomers([{ field: 'fetchAll', value: true }],
+                                function (qbErrorNew: any, customers2: any) {
                                     if (qbErrorNew != null && Object.keys(qbErrorNew).length != 0) {
 
-                                        if(qbErrorNew.hasOwnProperty("fault")){
-                                            if(qbErrorNew.fault.error[0].detail.length != 0) {
+                                        if (qbErrorNew.hasOwnProperty("fault")) {
+                                            if (qbErrorNew.fault.error[0].detail.length != 0) {
                                                 errorMessage = qbErrorNew.fault.error[0].message
 
-                                            }else{
+                                            } else {
                                                 errorMessage = qbErrorNew.fault.error[0].detail
                                             }
 
-                                            next(req,res, 0, errorMessage, [])
-                                            return 
+                                            next(req, res, 0, errorMessage, [])
+                                            return
 
-                                        } else if(qbErrorNew.hasOwnProperty("Fault")){
+                                        } else if (qbErrorNew.hasOwnProperty("Fault")) {
                                             errorMessage = qbErrorNew.Fault.Error[0].Message
-                                            next(req,res, 0, errorMessage, [])
-                                            return 
+                                            next(req, res, 0, errorMessage, [])
+                                            return
                                         }
 
-                                    }else{
-                                        next(req,res, 1, '', customers2)
+                                    } else {
+                                        next(req, res, 1, '', customers2)
                                         return
                                     }
                                 }
                             )
                         })
 
-                    }else if(qbError.fault.error[0].detail.length != 0) {
+                    } else if (qbError.fault.error[0].detail.length != 0) {
                         errorMessage = qbError.fault.error[0].message
-                        next(req,res, 0, errorMessage, [])
-                        return 
+                        next(req, res, 0, errorMessage, [])
+                        return
 
-                    }else{
+                    } else {
                         errorMessage = qbError.fault.error[0].detail
-                        next(req,res, 0, errorMessage, [])
-                        return 
+                        next(req, res, 0, errorMessage, [])
+                        return
                     }
 
-                } else if(qbError.hasOwnProperty("Fault")){
+                } else if (qbError.hasOwnProperty("Fault")) {
                     errorMessage = qbError.Fault.Error[0].Message
-                    next(req,res, 0, errorMessage, [])
-                    return 
+                    next(req, res, 0, errorMessage, [])
+                    return
 
                 }
 
-            }else{
-                next(req,res, 1, '', customers)
+            } else {
+                next(req, res, 1, '', customers)
                 return
             }
         }
@@ -227,11 +227,11 @@ const _getCustomers = (req: Request, res: Response, company: ICompany, next: (re
 //               if(newCustomers.length == 0) {
 //                   return res.json({'status': Status.Success, 'message': "Nothing to sync"})
 //               }
-              
+
 //               Customer.collection.insert(newCustomers, function (err: any, insertedCustomers: any) {
 //                   if (err){ 
 //                       return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                  
+
 //                   } else {
 //                       var newCompanyCustomers: any = []
 //                       insertedCustomers.ops.map((cust: any) => {
@@ -265,7 +265,7 @@ const _getCustomers = (req: Request, res: Response, company: ICompany, next: (re
 
 //       })
 //   })
-  
+
 // }
 
 /**
@@ -333,9 +333,9 @@ export const _createQBCustomer = async (req: Request, res: Response, company: IC
                 return next(
                     Status.Error,
                     err.Fault?.Error[0]?.Message
-                        || err.fault?.error[0]?.detail
-                        || err.fault?.error[0]?.message
-                        || Messages.GenericError,
+                    || err.fault?.error[0]?.detail
+                    || err.fault?.error[0]?.message
+                    || Messages.GenericError,
                     null
                 );
             }
@@ -397,29 +397,24 @@ export const _updateQBCustomer = async (req: Request, res: Response, company: IC
 
             qbCustomer.BillAddr = qbCustomer.BillAddr ?? {};
             qbCustomer.BillAddr.Line1 = customer?.address?.street,
-            qbCustomer.BillAddr.Line2 = customer?.address?.unit,
-            qbCustomer.BillAddr.City = customer?.address?.city,
-            qbCustomer.BillAddr.CountrySubDivisionCode = customer?.address?.state,
-            qbCustomer.BillAddr.PostalCode = customer?.address?.zipCode,
-            qbCustomer.BillAddr.Long = customer?.location?.coordinates[0]?.toString(),
-            qbCustomer.BillAddr.Lat = customer?.location?.coordinates[1]?.toString(),
+                qbCustomer.BillAddr.Line2 = customer?.address?.unit,
+                qbCustomer.BillAddr.City = customer?.address?.city,
+                qbCustomer.BillAddr.CountrySubDivisionCode = customer?.address?.state,
+                qbCustomer.BillAddr.PostalCode = customer?.address?.zipCode,
+                qbCustomer.BillAddr.Long = customer?.location?.coordinates[0]?.toString(),
+                qbCustomer.BillAddr.Lat = customer?.location?.coordinates[1]?.toString(),
 
-            qbCustomer.ShipAddr = qbCustomer.ShipAddr ?? {};
+                qbCustomer.ShipAddr = qbCustomer.ShipAddr ?? {};
             qbCustomer.ShipAddr.Line1 = customer?.address?.street;
             qbCustomer.ShipAddr.Line2 = customer?.address?.unit,
-            qbCustomer.ShipAddr.City = customer?.address?.city;
+                qbCustomer.ShipAddr.City = customer?.address?.city;
             qbCustomer.ShipAddr.CountrySubDivisionCode = customer?.address?.state;
             qbCustomer.ShipAddr.PostalCode = customer?.address?.zipCode;
             qbCustomer.ShipAddr.Long = customer?.location?.coordinates[0]?.toString();
             qbCustomer.ShipAddr.Lat = customer?.location?.coordinates[1]?.toString();
-            
+
             qbo.updateCustomer(qbCustomer, async (err: any, qbCustomer: IQBCustomer) => {
                 if (err) {
-                console.log('== err.Fault:', err.Fault);
-                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
-                console.log('== err.fault:', err.fault);
-                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
-                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
                     return next(
                         Status.Error,
                         err.Fault?.Error[0]?.Detail
@@ -442,7 +437,7 @@ export const _updateQBCustomer = async (req: Request, res: Response, company: IC
  * Generic function to inactivate/disable Customers in QB,
  * this used by Customer Controller after merging duplicated customers
  */
- export const _inactivateQBCustomers = async (company: ICompany, customers: ICustomer[], next: (error: number, errorMessage: string) => void) => {
+export const _inactivateQBCustomers = async (req: Request, res: Response, company: ICompany, customers: ICustomer[], next: (error: number, errorMessage: string) => void) => {
 
     // Get the QB Invoice object based on invoice quickbookId
     const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
@@ -492,7 +487,7 @@ const _processJobLocations = async (req: Request, res: Response, company: ICompa
         if (!jobLocation.quickbookId) {
 
             // Find if job exist on QB
-            const qbCustomerJob = qbCustomers.find(qbCustomer => qbCustomer.Job 
+            const qbCustomerJob = qbCustomers.find(qbCustomer => qbCustomer.Job
                 && qbCustomer.ParentRef.value === customer.quickbookId
                 && qbCustomer.DisplayName === jobLocation.name);
 
@@ -523,7 +518,7 @@ export const _createQBCustomerJob = async (req: Request, res: Response, company:
     // Populate the job location to have customer object
     await jobLocation
         .populate({ path: 'customerId' })
-        .populate({ path: 'contacts '})
+        .populate({ path: 'contacts ' })
         .execPopulate();
 
     // Customer of the job location
@@ -589,9 +584,9 @@ export const _createQBCustomerJob = async (req: Request, res: Response, company:
                 return next(
                     Status.Error,
                     err.Fault?.Error[0]?.Message
-                        || err.fault?.error[0]?.detail
-                        || err.fault?.error[0]?.message
-                        || Messages.GenericError,
+                    || err.fault?.error[0]?.detail
+                    || err.fault?.error[0]?.message
+                    || Messages.GenericError,
                     null
                 )
             }
@@ -611,7 +606,7 @@ export const _updateQBCustomerJob = async (req: Request, res: Response, company:
     // Populate the job location to have customer object
     await jobLocation
         .populate({ path: 'customerId' })
-        .populate({ path: 'contacts '})
+        .populate({ path: 'contacts ' })
         .execPopulate();
 
     // Customer of the job location
@@ -677,7 +672,7 @@ export const createQBCustomer = async (req: Request, res: Response) => {
 
     const params = req.body
     var companyId = req.companyId;
-    if(req.otherCompanyId != undefined) {
+    if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
 
@@ -690,16 +685,16 @@ export const createQBCustomer = async (req: Request, res: Response) => {
     const customer = await Customer.findById(params.customerId);
 
     Company.findById(companyId, (err: any, company: ICompany) => {
-        if(err) {
-            return res.json({'status': Status.Error, 'message': 'No company found.' })
+        if (err) {
+            return res.json({ 'status': Status.Error, 'message': 'No company found.' })
         }
 
-        if(!company.qbAuthorized) {
-            return res.json({'status': Status.QBUnauthorized, 'message': Messages.QBUnAuthorized })
+        if (!company.qbAuthorized) {
+            return res.json({ 'status': Status.QBUnauthorized, 'message': Messages.QBUnAuthorized })
         }
 
-        if(company.qbAccessToken == undefined || company.qbAccessToken == null || company.qbRefreshToken == undefined || company.qbRefreshToken == null || company.realmId == undefined || company.realmId == null) {
-            return res.json({'status': Status.QBUnauthorized, 'message': Messages.QBUnAuthorized })
+        if (company.qbAccessToken == undefined || company.qbAccessToken == null || company.qbRefreshToken == undefined || company.qbRefreshToken == null || company.realmId == undefined || company.realmId == null) {
+            return res.json({ 'status': Status.QBUnauthorized, 'message': Messages.QBUnAuthorized })
         }
 
         const { QB_ENVIRONMENT, QB_CLIENT_ID, QB_CLIENT_SECRET, QB_REDIRECT_URI } = process.env;
@@ -743,31 +738,31 @@ export const createQBCustomer = async (req: Request, res: Response) => {
 
             if (err != null && Object.keys(err).length != 0) {
 
-                if(err.hasOwnProperty("fault")){
+                if (err.hasOwnProperty("fault")) {
 
-                    if(err.fault.error[0].message.length != 0 && err.fault.error[0].message.split('; ')[2].replace('statusCode=','') == 401) {
+                    if (err.fault.error[0].message.length != 0 && err.fault.error[0].message.split('; ')[2].replace('statusCode=', '') == 401) {
 
-                        _refreshToken(req, res, company, (error: number, newErrorMessage: string, newCompany: ICompany) => { 
+                        _refreshToken(req, res, company, (error: number, newErrorMessage: string, newCompany: ICompany) => {
 
-                            if(error == 0) {
+                            if (error == 0) {
 
-                                return res.json({'status': Status.Error, 'message': newErrorMessage})
+                                return res.json({ 'status': Status.Error, 'message': newErrorMessage })
                             }
 
-                            if(error == 400){
+                            if (error == 400) {
 
                                 company.updateOne({
                                     qbAuthorized: false,
                                     qbAccessToken: undefined,
                                     qbRefreshToken: undefined,
                                 },
-                                (err: any, raw: any) => {
-                                    if(err) {
-                                        return res.json({'status': Status.Error, 'message': Messages.GenericError })
-                                    }
+                                    (err: any, raw: any) => {
+                                        if (err) {
+                                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                        }
 
-                                    return res.json({'status': Status.QBUnauthorized, 'message': "Quickbooks Authorization failed."})
-                                })
+                                        return res.json({ 'status': Status.QBUnauthorized, 'message': "Quickbooks Authorization failed." })
+                                    })
                             }
 
                             qbo = new QuickBooks(QB_CLIENT_ID,
@@ -781,19 +776,19 @@ export const createQBCustomer = async (req: Request, res: Response) => {
                                 '2.0', //oAuth version
                                 newCompany.qbRefreshToken
                             );
-                            qbo.createCustomer(customer, async (newError: any, qbCustomer: IQBCustomer) => { 
+                            qbo.createCustomer(customer, async (newError: any, qbCustomer: IQBCustomer) => {
                                 if (newError != null && Object.keys(newError).length != 0) {
 
-                                    if(newError.hasOwnProperty("fault")){
-                                        if(newError.fault.error[0].detail.length == 0) {
-                                            return res.json({'status': Status.Error, 'message': newError.fault.error[0].message})
+                                    if (newError.hasOwnProperty("fault")) {
+                                        if (newError.fault.error[0].detail.length == 0) {
+                                            return res.json({ 'status': Status.Error, 'message': newError.fault.error[0].message })
 
-                                        }else{
-                                            return res.json({'status': Status.Error, 'message': newError.fault.error[0].detail})
+                                        } else {
+                                            return res.json({ 'status': Status.Error, 'message': newError.fault.error[0].detail })
                                         }
 
-                                    } else if(newError.hasOwnProperty("Fault")){
-                                        return res.json({'status': Status.Error, 'message': newError.Fault.Error[0].Message})
+                                    } else if (newError.hasOwnProperty("Fault")) {
+                                        return res.json({ 'status': Status.Error, 'message': newError.Fault.Error[0].Message })
                                     }
 
                                 } else {
@@ -828,16 +823,16 @@ export const createQBCustomer = async (req: Request, res: Response) => {
                         })
 
 
-                    }else if(err.fault.error[0].detail.length != 0) {
-                        return res.json({'status': Status.Error, 'message': err.fault.error[0].message})
+                    } else if (err.fault.error[0].detail.length != 0) {
+                        return res.json({ 'status': Status.Error, 'message': err.fault.error[0].message })
 
-                    }else{
-                        return res.json({'status': Status.Error, 'message': err.fault.error[0].detail})
+                    } else {
+                        return res.json({ 'status': Status.Error, 'message': err.fault.error[0].detail })
 
                     }
 
-                } else if(err.hasOwnProperty("Fault")){
-                    return res.json({'status': Status.Error, 'message': err.Fault.Error[0].Message})
+                } else if (err.hasOwnProperty("Fault")) {
+                    return res.json({ 'status': Status.Error, 'message': err.Fault.Error[0].Message })
                 }
 
             } else {
@@ -958,7 +953,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                     const customer = customers.find(customer => {
                         if (
                             (customer.info?.email?.toLowerCase() === qbCustomer.PrimaryEmailAddr?.Address?.toLowerCase()
-                            && customer.profile?.displayName.toLowerCase() === qbCustomer.DisplayName.toLowerCase())
+                                && customer.profile?.displayName.toLowerCase() === qbCustomer.DisplayName.toLowerCase())
                             || customer.quickbookId === qbCustomer.Id
                         ) {
                             return customer;
@@ -1095,14 +1090,19 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                             quickbookId: qbCustJob.Id
                         });
 
-                        if (qbCustJob.BillAddr?.Lat && qbCustJob.BillAddr?.Long) {
-                            jobLocationEntry.location = {
-                                coordinates: [
-                                    Number(qbCustJob.BillAddr?.Long),
-                                    Number(qbCustJob.BillAddr?.Lat)
-                                ]
-                            }
-                        }
+                        /**
+                         * Kris' remark (Sept 23rd, 2021):
+                         * Disable this one for know,
+                         * since we can't save lat long on QB Online
+                         */
+                        // if (qbCustJob.BillAddr?.Lat && qbCustJob.BillAddr?.Long) {
+                        //     jobLocationEntry.location = {
+                        //         coordinates: [
+                        //             Number(qbCustJob.BillAddr?.Long),
+                        //             Number(qbCustJob.BillAddr?.Lat)
+                        //         ]
+                        //     }
+                        // }
 
                         jobLocationToCreate.push(jobLocationEntry);
                         // Save the new Job Location from QB Customer Job Level 1
