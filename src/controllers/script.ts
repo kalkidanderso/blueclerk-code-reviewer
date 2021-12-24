@@ -10,7 +10,6 @@ import { _addItemTier } from '../controllers/company';
 import { Job, ITaskJobType } from '../models/Job';
 import { ServiceTicket } from '../models/ServiceTicket';
 import { JobType } from '../models/JobType';
-import { job } from 'cron';
 
 /**
  * To sync and update all companies and customers to have Item Price Tier,

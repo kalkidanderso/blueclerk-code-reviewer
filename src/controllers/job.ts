@@ -1728,18 +1728,8 @@ export const updateJobTask = async (req: Request, res: Response) => {
     if (allTechnicianStatus.every(status => status === JobStatus.FINISHED)) {
         // All new job type task are FINISHED, Job is FINISHED
         taskStatus = JobStatus.FINISHED;
-        action += `|Finishing the technician|`;
+        action += `|Finishing the technician task|`;
     }
-
-    /**
-     * Kris' remark (Dec 2nd, 2021):
-     * Commented this out for now since Job's status is shared between techs,
-     * to avoid confusion when this case occured
-     */
-    // else if (allTechnicianStatus.includes(5) && !allTechnicianStatus.includes(0)) {
-    //     // No more PENDING tasks, but have at least one PAUSED task
-    //     taskStatus = JobStatus.PAUSED;
-    // }
 
     if (allTaskJobTypeStatus.every(status => status === 2)) {
         // All new technician status are FINISHED, Job is FINISHED
@@ -1749,11 +1739,6 @@ export const updateJobTask = async (req: Request, res: Response) => {
         jobStatus = JobStatus.FINISHED;
         action += `|Finishing the job|`;
     }
-    // else if (allTaskJobTypeStatus.every(status => status === JobStatus.PAUSED)) {
-    //     // All new technician status are PAUSED, Job is PAUSED
-    //     jobStatus = JobStatus.PAUSED;
-    //     action += `|Paused the job|`;
-    // }
 
     // Log a track history
     const history = {
