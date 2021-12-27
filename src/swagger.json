@@ -7428,6 +7428,65 @@
         ]
       }
     },
+    "/updateJobTechnicianStatus": {
+      "post": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "To edit job to change assignee and date time of job",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "jobId",
+                  "technicianId",
+                  "status",
+                  "note"
+                ],
+                "properties": {
+                  "jobId": {
+                    "type": "string",
+                    "description": "Id of job to edit"
+                  },
+                  "technicianId": {
+                    "type": "string",
+                    "description": "Id of the job technician to edit"
+                  },
+                  "status": {
+                    "type": "number",
+                    "description": "status of purchase order 0 => pending, 1 => approved by customer, 2 => cancelled by customer"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true,
+          "allowEmptyValue": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/updateJobTime": {
       "post": {
         "tags": [
@@ -9643,17 +9702,51 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "ending",
-                  "token"
+                  "cardNumber",
+                  "exp",
+                  "cvc",
+                  "name",
+                  "address",
+                  "city",
+                  "state",
+                  "zipcode"
                 ],
                 "properties": {
-                  "token": {
+                  "cardNumber": {
                     "type": "string",
-                    "description": "token fetched by mobile from stripe"
+                    "description": "Credit / Debit card number"
                   },
-                  "ending": {
+                  "exp": {
                     "type": "string",
-                    "description": "last 4 digits of company card"
+                    "description": "Card expiration date, example: 25/22, format:  mm/yy"
+                  },
+                  "cvc": {
+                    "type": "string",
+                    "description": "Card Verification Code, 3-4 digits"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Name on card"
+                  },
+                  "address": {
+                    "type": "string",
+                    "description": "Billing address line 1"
+                  },
+                  "city": {
+                    "type": "string",
+                    "description": "Billing city"
+                  },
+                  "state": {
+                    "type": "string",
+                    "description": "Billing state"
+                  },
+                  "zipcode": {
+                    "type": "string",
+                    "description": "Billing zipcode"
+                  },
+                  "nickName": {
+                    "type": "string",
+                    "description": "Billing method nickName"
                   }
                 }
               }
@@ -10791,6 +10884,32 @@
         ],
         "summary": "To migrate all Service Ticket and Job old image to images (in array format)",
         "description": "**WARNING: Only do this when you know what you are doing.**\nTo migrate all Service Ticket and Job old image to images (in array format).",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/script/migrateTechnicianStatus": {
+      "post": {
+        "tags": [
+          "Script"
+        ],
+        "summary": "To migrate all Job to every tasks to have a status",
+        "description": "**WARNING: - Only do this when you know what you are doing. Run migrateJobTask first before run this script.**\nTo migrate all job tasks(in array format).",
         "responses": {
           "200": {
             "description": "Success",

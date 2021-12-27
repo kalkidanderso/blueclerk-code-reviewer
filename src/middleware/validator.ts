@@ -216,6 +216,14 @@ export const Validations = {
 
   updateJobTime: [check('jobId').exists().withMessage(Messages.Required), check('jobId').isMongoId().withMessage(Messages.WrongId)],
 
+  updateJobTechnicianStatus: [
+    check('jobId').exists().withMessage(Messages.Required),
+    check('jobId').isMongoId().withMessage(Messages.WrongId),
+    check('technicianId').exists().withMessage(Messages.Required),
+    check('technicianId').isMongoId().withMessage(Messages.WrongId),
+    check('note').exists().withMessage(Messages.Required)
+  ],
+
   technicianJobs: [check('employeeId').exists().withMessage(Messages.Required), check('employeeId').isMongoId().withMessage(Messages.WrongId)],
 
   // Job Route
