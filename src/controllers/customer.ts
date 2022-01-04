@@ -21,6 +21,7 @@ import { Payment } from '../models/Payment'
 import { _createQBCustomer, _updateQBCustomer, _inactivateQBCustomers } from '../controllers/quickbook.customer'
 import { _getQBInvoices, _updateQBInvoice, _transferQBInvoices } from '../controllers/quickbook.invoice'
 import { _getQBPayments, _updateQBPayment, _transferQBPayments } from '../controllers/quickbook.payment'
+import { _refreshToken } from './quickbook'
 
 /**
  * To reset Customer quickbookId,
@@ -513,36 +514,51 @@ export const searchDuplicatedCustomers = async (req: Request, res: Response) => 
         return res.json({ 'status': Status.Success, message: `Customers with keyword "${params.keyword}" not found.` });
     }
 
-    const customerWithInvoicesPayments = []
-    for (const customer of customers) {
-        const { invoice, quickbookInvoice, payment, quickbookPayment } = await _getCustomerInvoicesPayments(req, res, customer, company);
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            res.json({ status: Status.Error, message: errMsg });
+        }
 
-        await customer
-            .populate({ path: 'equipments', select: '-__v' })
-            .populate({ path: 'itemTier', select: '-__v -createdAt -updatedAt' })
-            .populate({ path: 'paymentTerm', select: '-__v -createdAt -updatedAt' })
-            .populate({ path: 'contacts', select: '-__v' })
-            .populate({
-                path: 'jobLocations',
-                select: '-__v -customerId -createdAt -updatedAt',
-                populate: [
-                    { path: 'contacts', select: '-__v' },
-                    { path: 'jobSites', select: '-__v -locationId -customerId' }
-                ]
-            })
-            .execPopulate();
+        if (err === 400) {
+            Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
 
-        customerWithInvoicesPayments.push({
-            customer,
-            invoice,
-            quickbookInvoice,
-            payment,
-            quickbookPayment
-        });
-    }
+            res.json({ status: Status.QBUnauthorized, message: Messages.QBUnAuthorized });
+        }
 
-    return res.json({ status: Status.Success, customers: customerWithInvoicesPayments });
+        const customerWithInvoicesPayments = [];
+        for (const customer of customers) {
+            const { invoice, quickbookInvoice, payment, quickbookPayment } = await _getCustomerInvoicesPayments(req, res, customer, company);
 
+            await customer
+                .populate({ path: 'equipments', select: '-__v' })
+                .populate({ path: 'itemTier', select: '-__v -createdAt -updatedAt' })
+                .populate({ path: 'paymentTerm', select: '-__v -createdAt -updatedAt' })
+                .populate({ path: 'contacts', select: '-__v' })
+                .populate({
+                    path: 'jobLocations',
+                    select: '-__v -customerId -createdAt -updatedAt',
+                    populate: [
+                        { path: 'contacts', select: '-__v' },
+                        { path: 'jobSites', select: '-__v -locationId -customerId' }
+                    ]
+                })
+                .execPopulate();
+
+            customerWithInvoicesPayments.push({
+                customer,
+                invoice,
+                quickbookInvoice,
+                payment,
+                quickbookPayment
+            });
+        }
+
+        return res.json({ status: Status.Success, customers: customerWithInvoicesPayments });
+    })
 }
 
 export const mergeCustomers = async (req: Request, res: Response) => {
@@ -566,24 +582,41 @@ export const mergeCustomers = async (req: Request, res: Response) => {
 
     const qbCustomerPayments: string[] = []
 
-    // Get deposited customer
-    for (const unusedCustomerId of unusedCustomerIds) {
-        const unusedCustomer = await Customer.findOne({ _id: unusedCustomerId }).exec();
-        const qbPayments = await _getQBPayments(req, res, company, unusedCustomer);
-        if (qbPayments) {
 
-            qbPayments.forEach(qbPayment => {
-                qbCustomerPayments.push(qbPayment?.CustomerRef?.name);
-                // if (qbPayment?.LinkedTxn) {
-                //     const depositedPayment = qbPayment?.LinkedTxn.find(linkedPayment => linkedPayment.TxnType === 'Deposit')
-                //     if (depositedPayment) {
-                //         customerPaymentDeposited.push(qbPayment?.CustomerRef?.name);
-                //     }
-                // }
-            });
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            res.json({ status: Status.Error, message: errMsg });
         }
 
-    }
+        if (err === 400) {
+            Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            res.json({ status: Status.QBUnauthorized, message: Messages.QBUnAuthorized });
+        }
+
+        // Get deposited customer
+        for (const unusedCustomerId of unusedCustomerIds) {
+            const unusedCustomer = await Customer.findOne({ _id: unusedCustomerId }).exec();
+            const qbPayments = await _getQBPayments(req, res, company, unusedCustomer);
+            if (qbPayments) {
+
+                qbPayments.forEach(qbPayment => {
+                    qbCustomerPayments.push(qbPayment?.CustomerRef?.name);
+                    // if (qbPayment?.LinkedTxn) {
+                    //     const depositedPayment = qbPayment?.LinkedTxn.find(linkedPayment => linkedPayment.TxnType === 'Deposit')
+                    //     if (depositedPayment) {
+                    //         customerPaymentDeposited.push(qbPayment?.CustomerRef?.name);
+                    //     }
+                    // }
+                });
+            }
+
+        }
+    })
 
     // Return error when unused user have deposited payment
     if (qbCustomerPayments.length) {
