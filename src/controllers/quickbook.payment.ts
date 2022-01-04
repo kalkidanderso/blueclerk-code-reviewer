@@ -510,38 +510,23 @@ export const _transferQBPayments = async (req: Request, res: Response, company: 
 
 export const _getQBPayments = async (req: Request, res: Response, company: ICompany, customer: ICustomer): Promise<IQBPayment[]> => {
     return new Promise((resolve, reject) => {
-        _refreshToken(req, res, company, async (err, errMsg, company) => {
-            if (err === 0) {
-                return res.json({ status: Status.Error, message: errMsg });
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.findPayments([
+            { field: 'CustomerRef', value: customer?.quickbookId }
+        ], async (err: any, data: any) => {
+            if (err) {
+                reject(
+                    new Error(
+                        err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError
+                    ));
             }
 
-            if (err === 400) {
-                await Company.findByIdAndUpdate(req.company._id, {
-                    qbAuthorized: false,
-                    qbAccessToken: undefined,
-                    qbRefreshToken: undefined
-                });
-
-                return (Status.QBUnauthorized, Messages.QBUnAuthorized, null);
-            }
-            // Initiate node-quickbooks object with the refreshed company token
-            const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
-
-            qbo.findPayments([
-                { field: 'CustomerRef', value: customer?.quickbookId }
-            ], async (err: any, data: any) => {
-                if (err) {
-                    reject(
-                        new Error(
-                            err.Fault?.Error[0]?.Message
-                            || err.fault?.error[0]?.detail
-                            || err.fault?.error[0]?.message
-                            || Messages.GenericError
-                        ));
-                }
-
-                resolve(<IQBPayment[]>data?.QueryResponse?.Payment);
-            });
+            resolve(<IQBPayment[]>data?.QueryResponse?.Payment);
         });
     });
 
