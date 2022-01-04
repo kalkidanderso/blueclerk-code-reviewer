@@ -77,6 +77,9 @@ export const _refreshToken = (req: Request, res: Response, company: ICompany, ne
         })
     })
     .catch(function (err: any) {
+        console.log('== error', err);
+        console.log('The error message is :', err.originalMessage);
+        console.log('Intuit error :', err.intuit_tid);
         return next(err.authResponse?.response?.status || Status.Error, 'Unable to refresh the token', null);
     });
 
