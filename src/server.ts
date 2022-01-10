@@ -146,16 +146,16 @@ new CronJob('59 23 * * *', () => {
 }, null, true, 'America/Chicago');
 
 // Cron Job to handle and update all incomplete job at the end of each day
-new CronJob('59 23 * * *', async () => {
-  try {
-    await Job.updateMany(
-      { 'tasks.status': { $in: [JobStatus.PENDING, JobStatus.STARTED, JobStatus.PAUSED] } },
-      { $set: { 'tasks.$.status': JobStatus.INCOMPLETE, status: JobStatus.INCOMPLETE } }
-    ).exec();
-  } catch (err) {
-    console.log('== Handle incomplete jobs err:', err);
-  };
-}, null, true, 'America/Chicago');
+// new CronJob('59 23 * * *', async () => {
+//   try {
+//     await Job.updateMany(
+//       { 'tasks.status': { $in: [JobStatus.STARTED, JobStatus.PAUSED] } },
+//       { $set: { 'tasks.$.status': JobStatus.INCOMPLETE, status: JobStatus.INCOMPLETE } }
+//     ).exec();
+//   } catch (err) {
+//     console.log('== Handle incomplete jobs err:', err);
+//   };
+// }, null, true, 'America/Chicago');
 
 /**
  * This is for email scheduling

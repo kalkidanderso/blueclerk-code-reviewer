@@ -2324,8 +2324,11 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
     endDate.setHours(23, 59, 59, 59)
     const startOfDay = moment().startOf('day').utc();
     const endOfDay = moment().endOf('day').utc();
+    const scheduleDate = moment(params.scheduleDate).format('YYYY-MM-DD');
+    const scheduleDateQuery = params.scheduleDate ? new Date(scheduleDate) : { $gte: date, $lte: endDate }
 
-    Job.find({ $or: [{ "tasks.technician": params.employeeId }, { technician: params.employeeId }], scheduleDate: { $gte: date, $lte: endDate } })
+    // Job.find({ $or: [{ "tasks.technician": params.employeeId }, { technician: params.employeeId }], scheduleDate: { $gte: date, $lte: endDate } })
+    Job.find({ $or: [{ "tasks.technician": params.employeeId }, { technician: params.employeeId }], scheduleDate: scheduleDateQuery})
         .populate({
             path: 'ticket',
         })
@@ -2391,10 +2394,12 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
+            const scheduleDateQuery = params.scheduleDate ? new Date(scheduleDate) : { $gte: startOfDay, $lte: endOfDay }
             // Retrieve today's jobRoute by the technician
             const jobRoutes = await JobRoute.findOne({
                 technician: params.employeeId,
-                scheduleDate: { $gte: startOfDay, $lte: endOfDay }
+                // scheduleDate: { $gte: startOfDay, $lte: endOfDay }
+                scheduleDate: scheduleDateQuery
             })
                 .populate({
                     path: 'routes.job',
