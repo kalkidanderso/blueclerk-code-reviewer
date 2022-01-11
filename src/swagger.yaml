@@ -4279,6 +4279,9 @@ paths:
                 employeeId:
                   type: string
                   description: Id of technician fetched from getEmployeesForJob
+                scheduleDate:
+                  type: string
+                  description: date of job. e.g. 2022-01-10
         required: true
       responses:
         '200':
