@@ -285,7 +285,7 @@ export const sendInvoiceEmailToCustomer = async function(options: any) {
   // Replace \n to <br /> in HTML
   message = message.replace(/\\n/gi, '<br />');
 
-  const SENDER = `${company_name} <${APP_EMAIL_NOREPLY ?? sender_email ?? company_email}>`;
+  const SENDER = `"${company_name}" <${APP_EMAIL_NOREPLY ?? sender_email ?? company_email}>`;
   const RECIPIENT = customer_email;
   const SUBJECT = eval('`' + subject + '`');
   const BODY_HTML = `<div style=\"font-family:roboto; padding:10px; background-color: #EAECF3; text-align:center;\">
