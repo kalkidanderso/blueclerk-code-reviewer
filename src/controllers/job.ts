@@ -2398,7 +2398,6 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
             // Retrieve today's jobRoute by the technician
             const jobRoutes = await JobRoute.findOne({
                 technician: params.employeeId,
-                // scheduleDate: { $gte: startOfDay, $lte: endOfDay }
                 scheduleDate: scheduleDateQuery
             })
                 .populate({
