@@ -221,7 +221,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
 
     const job = new Job({
         parentJob: parentJob?._id,
-        scheduleDate: params.scheduleDate ?? parentJob?.scheduleDate,
+        scheduleDate: params.scheduleDate ? moment(params.scheduleDate).format("YYYY-MM-DD") :  parentJob?.scheduleDate,
         jobId: jobId,
         ticket: params.ticketId ?? parentJob?.ticket,
         // technician: technicianId,
