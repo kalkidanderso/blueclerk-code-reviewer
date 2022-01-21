@@ -95,6 +95,10 @@
       "description": "For company item pricing tiers"
     },
     {
+      "name": "Discount Item",
+      "description": "For customer custom discount pricing"
+    },
+    {
       "name": "Job Charges",
       "description": "For job charges"
     },
@@ -4556,6 +4560,55 @@
         ]
       }
     },
+    "/createItem": {
+      "post": {
+        "tags": [
+          "Items"
+        ],
+        "summary": "To create an item that not a job type",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "sku": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getItems": {
       "post": {
         "tags": [
@@ -4904,6 +4957,55 @@
                       "0",
                       "1"
                     ]
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createDiscountItem": {
+      "post": {
+        "tags": [
+          "Discount Item"
+        ],
+        "summary": "To create a discount item that not a job type",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "charges": {
+                    "type": "integer"
                   }
                 }
               }

@@ -345,7 +345,14 @@ const _updateItemStatus = (req: Request, res: Response, jobType: IJobType, itemS
 export const getAllItems = (req: Request, res: Response) => {
 
     Item.find(
-        { $or: [{ company: null, isActive: true }, { company: req.companyId, isActive: true }] })
+        {
+            $or: [
+                { company: null, isActive: true },
+                { company: req.companyId, isActive: true }
+            ],
+            isActive: true,
+            isDiscountItem: { $ne: true }
+        })
         .populate({ path: 'tiers.tier', select: '-companyId -__v' })
         .exec((err: any, items: IItem[]) => {
 

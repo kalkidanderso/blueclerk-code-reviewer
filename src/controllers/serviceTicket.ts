@@ -59,9 +59,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             }
 
             // let dueDate = params.dueDate ? new Date(params.dueDate) : null
-            console.log('== params.dueDate:', params.dueDate);
             let dueDate = params.dueDate ? moment.parseZone(params.dueDate).format("YYYY-MM-DD") : null;
-            console.log('== dueDate:', dueDate);
             let serviceTicket = new ServiceTicket({
                 createdAt: Date.now(),
                 dueDate: dueDate,

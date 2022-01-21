@@ -15,6 +15,8 @@ export interface IItem extends Document {
         updatedBy?: Schema.Types.ObjectId
         updatedAt?: Date
     }[]
+    isDiscountItem: boolean
+    isJobType: boolean
     jobType?: Schema.Types.ObjectId
     company?: Schema.Types.ObjectId
     isActive: boolean
@@ -92,6 +94,14 @@ const ItemSchema = new Schema({
         },
         updatedAt: Date
     }],
+    isDiscountItem: {
+        type: Boolean,
+        default: false
+    },
+    isJobType: {
+        type: Boolean,
+        default: true
+    },
     jobType: {
         type: Schema.Types.ObjectId,
         ref: 'JobType',
