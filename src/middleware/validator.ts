@@ -140,12 +140,20 @@ export const Validations = {
 
   getCustomerEquipmentJobs: [check('nfcTag').exists()],
 
-  //Job Type
+  // Job Type
   createJobType: [check('title').exists()],
 
   editJobType: [check('jobTypeId').exists(), check('title').exists()],
 
   changeJobTypeStatus: [check('jobTypeId').exists(), check('status').exists()],
+
+  // Item
+  createItem: [check('title').exists().withMessage(Messages.Required)],
+
+  createDiscountItem: [
+    check('title').exists().withMessage(Messages.Required),
+    check('charges').exists().withMessage(Messages.Required),
+  ],
 
   //Job
   createJob: [

@@ -1080,6 +1080,42 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         total = customPrice?.price || 0;
     }
 
+    /**
+     * Check if invoice coming from Job and customer has Discount Prices,
+     * add the discount price based on the quantity of the invoice item
+     */
+    if (jobTypeitems?.length > 0 && customerObj.discountPrices?.length > 0) {
+        // Sort the customer discount prices and filter any null prices
+        let discountPrices = customerObj.discountPrices?.sort((a, b) => { return a.quantity - b.quantity });
+        discountPrices = discountPrices.filter(disc => disc.discountItem);
+
+        // Get the max quantity that should be discounted
+        const maxDiscountQty = discountPrices[discountPrices.length - 1]?.quantity;
+        const totalItemDiscounted = jobTypeitems.length > maxDiscountQty ? maxDiscountQty : jobTypeitems.length;
+
+        // Find the discount item based on how many item that gonna be discounted
+        const customerDiscount = customerObj.discountPrices?.find(disc => disc.quantity === totalItemDiscounted);
+        const discountItem = await Item.findById(customerDiscount?.discountItem);
+
+        if (discountItem) {
+            const obj = {
+                quantity: 1,
+                price: Math.round((discountItem.charges ?? 0) * 100) / 100,
+                isFixed: discountItem.isFixed,
+                tax: 0,
+                taxAmount: 0,
+                subTotal: Math.round((discountItem.charges ?? 0) * 100) / 100,
+                item: discountItem._id,
+                name: discountItem.name,
+                description: discountItem.description
+            };
+
+            invoiceItems.push(obj);
+            subTotalBeforeTax += (discountItem.charges ?? 0);
+            total += (discountItem.charges ?? 0);
+        }
+    }
+
     if (params.charges) {
         charges = parseFloat(params.charges);
         total += charges;
