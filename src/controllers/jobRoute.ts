@@ -18,8 +18,16 @@ export const getAllJobRoutes = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
 
     // Initialize startOfDay and endOfDay in UTC format
-    const startOfDay = moment(params.scheduleDate).startOf('day').utc();
-    const endOfDay = moment(params.scheduleDate).endOf('day').utc();
+    const startOfDay = moment(params.scheduleDate).startOf('day').utc().format();
+    const endOfDay = moment(params.scheduleDate).endOf('day').utc().format();
+    const scheduleDate = moment(params.scheduleDate).format('YYYY-MM-DD');
+    const scheduleDateQuery = params.scheduleDate
+        ? {
+            $or: [
+                { scheduleDate: new Date(scheduleDate) },
+                { scheduleDate: { $gte: new Date(startOfDay), $lte: new Date(endOfDay) } }]
+        }
+        : { scheduleDate: { $gte: new Date(startOfDay), $lte: new Date(endOfDay) } };
 
     // Using aggregate to find Job Route with jobs for contractor
     const jobRoutes = await JobRoute.aggregate([
@@ -35,8 +43,7 @@ export const getAllJobRoutes = async (req: Request, res: Response) => {
             $match: {
                 $and: [
                     { $or: [ { company }, { 'jobs.company': company._id } ] },
-                    { scheduleDate: { $gte: new Date(startOfDay.toISOString()) } },
-                    { scheduleDate: { $lte: new Date(endOfDay.toISOString()) } }
+                    scheduleDateQuery,
                 ]
             }
         },
@@ -83,15 +90,20 @@ export const getJobRoute = async (req: Request, res: Response) => {
     const contractor = <ICompany>req.contractor;
 
     // Initialize startOfDay and endOfDay in UTC format
-    const startOfDay = moment(params.scheduleDate).startOf('day').utc();
-    const endOfDay = moment(params.scheduleDate).endOf('day').utc();
+    const startOfDay = moment(params.scheduleDate).startOf('day').utc().format();
+    const endOfDay = moment(params.scheduleDate).endOf('day').utc().format();
+    const scheduleDate = moment(params.scheduleDate).format('YYYY-MM-DD');
+    const scheduleDateQuery = params.scheduleDate
+        ? {
+            '$or': [
+                { scheduleDate: new Date(scheduleDate) },
+                { scheduleDate: { $gte: new Date(startOfDay), $lte: new Date(endOfDay) } }]
+        }
+        : { scheduleDate: { $gte: new Date(startOfDay), $lte: new Date(endOfDay) } };
 
     const query = {
         company: company._id,
-        $and: [
-            { scheduleDate: { $gte: startOfDay } },
-            { scheduleDate: { $lte: endOfDay } }
-        ],
+        ...scheduleDateQuery,
         employeeType: params.employeeType,
         technician: technician?._id,
         contractor: contractor?._id
@@ -185,7 +197,7 @@ export const createJobRoute = async (req: Request, res: Response) => {
     // Save the new routes for the technician/contractor
     const jobRoute = new JobRoute({
         company: company._id,
-        scheduleDate: new Date(params.scheduleDate),
+        scheduleDate: moment(params.scheduleDate).format("YYYY-MM-DD"),
         employeeType: params.employeeType ?? 0,
         technician: technician?._id,
         contractor: contractor?._id,
@@ -294,15 +306,20 @@ export const updateJobRoute = async (req: Request, res: Response) => {
  */
 export const _addOrRemoveJobRoutes = async (technicianId: string, scheduleDate: Date, action: string, jobId: Schema.Types.ObjectId) => {
 
-    const startOfDay = moment(scheduleDate).startOf('day').utc();
-    const endOfDay = moment(scheduleDate).endOf('day').utc();
+    const startOfDay = moment(scheduleDate).startOf('day').utc().format();
+    const endOfDay = moment(scheduleDate).endOf('day').utc().format();
+    const scheduleDateStr = moment(scheduleDate).format('YYYY-MM-DD');
+    const scheduleDateQuery = {
+        '$or':
+            [
+                { scheduleDate: new Date(scheduleDateStr) },
+                { scheduleDate: { $gte: new Date(startOfDay), $lte: new Date(endOfDay) } }
+            ]
+    };
 
     const query = {
-        $and: [
-            { scheduleDate: { $gte: startOfDay } },
-            { scheduleDate: { $lte: endOfDay } }
-        ],
-        technician: technicianId
+        technician: technicianId,
+        ...scheduleDateQuery
     }
 
     // Retrieve the job route for the technician if exist

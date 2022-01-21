@@ -58,7 +58,8 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 ticketId = `Ticket ${company.prefix}-${company.currentJobId + 1}`;
             }
 
-            let dueDate = params.dueDate ? new Date(params.dueDate) : null
+            // let dueDate = params.dueDate ? new Date(params.dueDate) : null
+            let dueDate = params.dueDate ? moment.parseZone(params.dueDate).format("YYYY-MM-DD") : null;
             let serviceTicket = new ServiceTicket({
                 createdAt: Date.now(),
                 dueDate: dueDate,
@@ -194,7 +195,8 @@ export const _createServiceTicket = async (req: Request, res: Response, next: (e
         if (company.prefix) {
             ticketId = `Ticket ${company.prefix}-${company.currentJobId + 1}`;
         }
-        const dueDate = params.dueDate ? new Date(params.dueDate) : null;
+        // const dueDate = params.dueDate ? new Date(params.dueDate) : null;
+        const dueDate = params.dueDate ? moment(params.dueDate).format("YYYY-MM-DD") : null;
         let note: string = params.note ? `${params.note} ` : '';
         if (typeof params.warranty === typeof Boolean) {
             note += note ? ' || ' : '';
@@ -324,11 +326,18 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
 
             if (params.dueDate) {
                 // Retrieve the dueDate using Moment in UTC format
-                const startOfDay = moment(params.dueDate).startOf('day').utc().toISOString();
-                const endOfDay = moment(params.dueDate).endOf('day').utc().toISOString();
+                const startOfDay = moment(params.dueDate).startOf('day').utc().format();
+                const endOfDay = moment(params.dueDate).endOf('day').utc().format();
+                const dueDate = moment(params.dueDate).format('YYYY-MM-DD');
 
                 // Convert back the date to ISODate using new Date()
-                criteria.dueDate = { '$gte': new Date(startOfDay), '$lte': new Date(endOfDay) };
+                // criteria.dueDate = { '$gte': new Date(startOfDay), '$lte': new Date(endOfDay) };
+                const dueDateQuery = {
+                    '$or': [
+                        { dueDate: new Date(dueDate) },
+                        { dueDate: { $gte: new Date(startOfDay), $lte: new Date(endOfDay) } }]
+                };
+                Object.assign(criteria, dueDateQuery);
             }
 
             if (params.ticketId) {
@@ -536,7 +545,8 @@ export const updateServiceTicket = (req: Request, res: Response) => {
 
                     let dueDate: any = serviceTicket.dueDate
                     if(params.dueDate) {
-                        dueDate = new Date(params.dueDate)
+                        // dueDate = new Date(params.dueDate)
+                        dueDate = moment(params.dueDate).format("YYYY-MM-DD");
                     }
                     data.imagesUrl.forEach((imageUrl: string) => {
                         serviceTicket.images ? serviceTicket.images.push({ imageUrl, uploadedBy: user.id ,createdAt: new Date() })

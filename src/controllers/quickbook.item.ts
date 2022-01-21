@@ -63,6 +63,7 @@ export const _createQBItem = async (req: Request, res: Response, company: ICompa
             Description: item.description,
             Sku: item.sku,
             Type: QBItemTypes.SERVICE,
+            UnitPrice: item.charges,
             Active: item.isActive,
             SalesTaxIncluded: false,
             IncomeAccountRef: { name: 'Sales of Product Income', value: '79' },
@@ -182,13 +183,33 @@ export const syncQBItems = async (req: Request, res: Response) => {
                     // Job Type not found, create it
                     if (!jobType) {
                         // Collect all Job Types in array first
-                        jobTypesToCreate.push(new JobType({
+                        const jobType = new JobType({
                             title: qbItem.Name,
                             description: qbItem.Description,
                             sku: qbItem.Sku,
                             createdBy: company._id,
                             quickbookId: qbItem.Id
-                        }));
+                        });
+                        jobTypesToCreate.push(jobType);
+                        // jobTypesToCreate.push(new JobType({
+                        //     title: qbItem.Name,
+                        //     description: qbItem.Description,
+                        //     sku: qbItem.Sku,
+                        //     createdBy: company._id,
+                        //     quickbookId: qbItem.Id
+                        // }));
+
+                        // Collect all Items in array first
+                        itemsToCreate.push(new Item({
+                            name: jobType.title,
+                            description: jobType.description,
+                            sku: jobType.sku,
+                            charges: qbItem.UnitPrice,
+                            tiers: [...company.itemTier?.list],
+                            company: company._id,
+                            jobType: jobType._id,
+                            quickbookId: jobType.quickbookId,
+                        }))
                     }
                 }
             }
@@ -198,19 +219,19 @@ export const syncQBItems = async (req: Request, res: Response) => {
                 // Create all Job Types in array at once
                 const jobTypesCreated = await JobType.create(jobTypesToCreate);
 
-                // Iterate all created Job Types
-                for (const jobType of jobTypesCreated) {
-                    // Collect all Items in array first
-                    itemsToCreate.push(new Item({
-                        name: jobType.title,
-                        description: jobType.description,
-                        sku: jobType.sku,
-                        tiers: [...company.itemTier?.list],
-                        company: company._id,
-                        jobType: jobType._id,
-                        quickbookId: jobType.quickbookId,
-                    }))
-                }
+                // // Iterate all created Job Types
+                // for (const jobType of jobTypesCreated) {
+                //     // Collect all Items in array first
+                //     itemsToCreate.push(new Item({
+                //         name: jobType.title,
+                //         description: jobType.description,
+                //         sku: jobType.sku,
+                //         tiers: [...company.itemTier?.list],
+                //         company: company._id,
+                //         jobType: jobType._id,
+                //         quickbookId: jobType.quickbookId,
+                //     }))
+                // }
 
                 // Create all Items in array at once
                 const itemsCreated = await Item.create(itemsToCreate);

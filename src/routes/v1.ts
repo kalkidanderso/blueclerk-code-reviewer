@@ -16,6 +16,7 @@ import { Role, Permissions } from '../common/constants'
 import * as userController from '../controllers/user'
 import * as vendorController from '../controllers/vendor'
 import * as jobTypeController from '../controllers/jobType'
+import * as itemController from '../controllers/item'
 import * as equipmentTypeController from '../controllers/equipmentType'
 import * as equipmentBrandController from '../controllers/equipmentBrand'
 import * as customerController from '../controllers/customer'
@@ -494,7 +495,9 @@ export default function (sio: any) {
         validate(Validations.getCustomerEquipmentJobs),
         customerEquipmentController.checkTagAssociation
     )
-    //Job types
+
+    // Job Type
+
     router.post(
         '/createJobType',
         passport.authenticate('jwt', { session: false }),
@@ -573,7 +576,30 @@ export default function (sio: any) {
         jobTypeController.mergeItems
     )
 
-    //Job
+    // Item
+
+    router.post(
+        '/createItem',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Type_Create),
+        validate(Validations.createItem),
+        itemController.createItem
+    )
+
+    // Discount Item
+
+    router.post(
+        '/createDiscountItem',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Type_Create),
+        validate(Validations.createDiscountItem),
+        itemController.createDiscountItem
+    )
+
+    // Job
+
     router.post(
         '/createJob',
         passport.authenticate('jwt', { session: false }),

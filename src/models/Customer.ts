@@ -1,7 +1,8 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import { User, IUser} from './User'
 import { IContact } from '../common/contact'
-import { IPriceTier } from './PriceTier'
+import { IItem } from '../models/Item'
+import { IPriceTier } from '../models/PriceTier'
 import { IJobLocation } from '../models/JobLocation'
 import { IPaymentTerm } from '../models/PaymentTerm'
 
@@ -23,6 +24,10 @@ export interface ICustomer extends IUser {
     customPrices?: {
         quantity: number,
         price: number
+    }[]
+    discountPrices?: {
+        quantity: number,
+        discountItem: Schema.Types.ObjectId | IItem
     }[]
     paymentTerm?: Schema.Types.ObjectId | IPaymentTerm
     vendorId?: string,
@@ -108,18 +113,29 @@ const CustomerSchema = new Schema({
     },
     isCustomPrice: {
         type: Boolean,
-        default: false
+        // default: false
     },
     customPrices: [{
         _id: false,
         quantity: {
             type: Number,
-            required: true
+            // required: true
         },
         price: {
             type: Number,
-            default: 0,
+            // default: 0,
+            // required: true
+        }
+    }],
+    discountPrices: [{
+        _id: false,
+        quantity: {
+            type: Number,
             required: true
+        },
+        discountItem: {
+            type: Schema.Types.ObjectId,
+            ref: 'Item'
         }
     }],
     paymentTerm: {
