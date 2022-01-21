@@ -270,7 +270,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
 
         trackedServiceTicket.push({
             user: user._id,
-            action: `|Job created by ${user.profile.displayName} at ${momentTz(job.createdAt).tz('America/Chicago').format('MM/DD/YYYY HH:mm:ss A')}|`,
+            action: `|Job created by ${user.profile.displayName}|`,
             date: new Date()
         });
 
