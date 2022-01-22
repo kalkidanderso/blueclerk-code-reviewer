@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import moment from 'moment';
-
+import fs from 'fs';
+import pdfmake from 'pdfmake';
+import * as http from 'http';
+import * as https from 'https';
 import { InvoiceStatus, Messages, Status } from '../common/constants';
 import { IContact } from '../common/contact';
 import { Contact } from '../models/Contact';
@@ -1908,6 +1911,10 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     const customer = <ICustomer>invoice.customer;
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
 
+    if (!req.file?.path) {
+        await _invoiceEmailTemplate(req, res,invoice, company);
+    }
+
     // Retrieve company email default
     const emailDefault = await EmailDefault.findOne({ company });
 
@@ -1924,8 +1931,8 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         invoice_number: invoice.invoiceId,
         invoice_amount: invoice.total,
         invoice_due_date: moment(invoice.dueDate).format('MMMM DD, YYYY'),
-        invoice_pdf: req.file?.path,
-        invoice_pdf_name: req.file?.originalname,
+        invoice_pdf: req.file?.path ?? `invoicePdf/${invoice.invoiceId}.pdf`,
+        invoice_pdf_name: req.file?.originalname ?? `${invoice.invoiceId}.pdf`,
         term_name: paymentTerm?.name,
         term_due_days: paymentTerm?.dueDays
     });
@@ -2154,4 +2161,533 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         return next(invoice, null);
     }
 
+}
+
+export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice: IInvoice, company: ICompany) => {
+
+    // const pdfMake = require('pdfmake');
+    const { INVOICE_TEMPLATE_FONTS, INVOICE_TEMPLATE_PDF, INVOICE_TEMPLATE_IMAGES } = process.env;
+    // await downloadFileToPath(req, res, 'https://asamco.com/wp-content/uploads/2021/02/company-icon-vector-isolated-white-background-company-transparent-sign-company-icon-vector-isolated-white-background-company-134078740.jpg',INVOICE_TEMPLATE_IMAGES);
+    const customer = await Customer.findById(invoice.customer);
+    const companyImage = {
+        image: company.info.logoUrl,
+        width: 100,
+        height: 75,
+        fontSize: 8,
+        bold: true,
+        rowSpan: 4,
+    }
+
+    const fonts = {
+        Roboto: {
+            normal: `${INVOICE_TEMPLATE_FONTS}/Roboto-Regular.ttf`,
+            bold: `${INVOICE_TEMPLATE_FONTS}/Roboto-Medium.ttf`,
+            italics: `${INVOICE_TEMPLATE_FONTS}/Roboto-Italic.ttf`,
+            bolditalics: `${INVOICE_TEMPLATE_FONTS}/Roboto-MediumItalic.ttf`
+        }
+    };
+
+    const printer = new pdfmake(fonts);
+    const paymentTerm = await PaymentTerm.findOne({
+        company: company._id,
+        isActive: true
+    });
+
+    const customerContact = await Customer.findById(invoice.customerContactId ?? invoice.customer);
+    const table: any = {
+        headerRows: 1,
+        widths: [20, 200, 30, 30, 30, 30, 40, 100, 50],
+        body: [
+            [
+                { text: '', fillColor: "eaecf3" },
+                {
+                    text: 'SERVICE/PRODUCT',
+                    style: "smallFont",
+                    fillColor: '#eaecf3',
+                    lineColor: '#ffffff',
+
+                },
+                {
+                    text: 'QUANTITY',
+                    style: 'smallFont',
+                    fillColor: '#eaecf3'
+                },
+                {
+                    text: 'PRICE',
+                    style: "smallFont",
+                    fillColor: '#eaecf3'
+                },
+                {
+                    text: "UNIT",
+                    style: "smallFont",
+                    fillColor: "#eaecf3",
+                    alignment: "center",
+                },
+                {
+                    text: "TAX",
+                    style: "smallFont",
+                    fillColor: "#eaecf3",
+                    alignment: "center",
+                },
+                {
+                    text: "TAX AMOUNT",
+                    style: "smallFont",
+                    fillColor: "#eaecf3",
+                    alignment: "center",
+                },
+                {
+                    text: "AMOUNT",
+                    style: "smallFont",
+                    fillColor: "#eaecf3",
+                    alignment: "center",
+                },
+                { fillColor: "#eaecf3", text: "" },
+            ],
+            // [{ fillColor: '#eaecf3', colSpan: 6, text: 'SUBTOTAL + TAX', style: "defaultFont" }, {}, {}, {}, {}, {}, { fillColor: "#d0d3dc", text: 'TOTAL', style: "defaultFont" }],
+            // [{ fillColor: '#eaecf3', colSpan: 6, text: '$450.00 + 0.00', fontSize: 20 }, {}, {}, {}, {}, {}, { fillColor: "#d0d3dc", text: '$328.56', fontSize: 20 }]
+        ],
+
+    }
+
+    // Insert item to table template
+    const bodyTable: any = [];
+    invoice.items.forEach(item => {
+        const itemName = { style: 'defaultFont', text: `${item.name} \n ${item.description}` };
+        const itemQuantity = { style: 'defaultFont', text: item.quantity };
+        const itemPrice = { style: 'defaultFont', text: item.price };
+        const itemUnit = { style: 'defaultFont', text: item.isFixed ? 'Fixed' : 'Not Fixed' };
+        const itemTax = { style: 'defaultFont', text: item.tax === 0 ? 'N/A' : item.tax };
+        const itemTaxAmount = { style: 'defaultFont', text: item.taxAmount };
+        const itemSubTotal = { style: 'defaultFont', text: item.subTotal };
+        bodyTable.push([{}, itemName, itemQuantity, itemPrice, itemUnit, itemTax, itemTaxAmount, itemSubTotal, {}]);
+    });
+
+    for (let i = 0; i < bodyTable.length; i++) {
+        table.body.push(bodyTable[i]);
+    }
+
+    table.body.push([
+        { fillColor: "white", text: "", rowSpan: 3 },
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        { fillColor: "white", text: "", rowSpan: 3 },
+    ], [
+        { text: "", rowSpan: 2 },
+        {
+            fillColor: "#eaecf3",
+            colSpan: 6,
+            text: "SUBTOTAL + TAX",
+            style: "defaultFont",
+            alignment: "center",
+        },
+        {},
+        {},
+        {},
+        {},
+        {},
+        { fillColor: "#d0d3dc", text: "TOTAL", style: "defaultFont" },
+        {},
+    ], [
+        {},
+        {
+            fillColor: "#eaecf3",
+            colSpan: 6,
+            text: `$ ${invoice.subTotal} + $ ${invoice.taxAmount}`,
+            fontSize: 20,
+            alignment: "center",
+        },
+        {},
+        {},
+        {},
+        {},
+        {},
+        { fillColor: "#d0d3dc", text: `${invoice.total}`, fontSize: 20 },
+        {},
+    ]);
+
+    let jobPO = {};
+    if (invoice.customerPO) {
+        jobPO = {
+            text: "JOB PO/ SALES ORDER",
+            style: "smallFont",
+            alignment: "right",
+        }, { text: `${invoice.customerPO ?? ''}`, style: "defaultFont" }
+    }
+
+    const docDefinition: any = {
+        pageSize: "A4",
+        pageMargins: [0, 0, 50, 0],
+        content: [
+            {
+                //   layout: 'lightHorizontalLines', // optional
+                table: {
+                    // headers are automatically repeated if the table spans over multiple pages
+                    // you can declare how many rows should be treated as headers
+                    headerRows: 2,
+                    widths: [20, 120, 100, 80, 257],
+                    body: [
+                        [{}, {}, {}, {}, {}],
+                        [{}, {}, {}, {}, {}],
+                        [{}, {}, {}, {}, {}],
+                        [
+                            {},
+                            companyImage.image ? companyImage : {},
+                            // {
+                            //     fillColor: "#EAECF3",
+                            //     image: "snow",
+                            //     width: 120,
+                            //     height: 70,
+                            //     fontSize: 8,
+                            //     bold: true,
+                            //     rowSpan: 4,
+                            // },
+                            // {},
+                            {
+                                text: `${company.info.companyName}`,
+                                fontSize: 8,
+                                alignment: "left",
+                                bold: true,
+                            },
+                            {},
+                            {},
+                        ],
+                        [{}, {}, {}, { text: "Vendor Number:", style: "smallFont" }, {}],
+                        [
+                            {},
+                            {},
+                            {
+                                text: `${company.contact.phone ?? ''} \n${company.info.companyEmail ?? ''}\n${company.address.street ?? ''}\n${company.address.state ?? ''}, ${company.address.zipCode ?? ''}`,
+                                style: "defaultFont",
+                            },
+                            { text: "12345", style: "defaultFont" },
+                            {},
+                        ],
+                        [{}, {}, {}, {}, {}],
+                    ],
+                },
+                layout: {
+                    fillColor: function (rowIndex: any, node: any, columnIndex: any) {
+                        return "#EAECF3";
+                    },
+                    vLineColor: function (i: any, node: any) {
+                        return "#EAECF3";
+                    },
+                    hLineColor: function (i: any, node: any) {
+                        return "#EAECF3";
+                    },
+                },
+            },
+            {
+                //   layout: 'lightHorizontalLines', // optional
+                table: {
+                    // headers are automatically repeated if the table spans over multiple pages
+                    // you can declare how many rows should be treated as headers
+                    headerRows: 2,
+                    widths: [20, 110, 80, 10, 10, 80, 50, 65, 45, 40],
+                    body: [
+                        [
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {
+                                text: "INVOICE",
+                                fontSize: 15,
+                                bold: true,
+                                rowSpan: 4,
+                                colSpan: 2,
+                                alignment: "right",
+                            },
+                            {},
+                            { text: "", rowSpan: 13 },
+                        ],
+                        [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}],
+                        [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}],
+                        [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}],
+                        [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}],
+                        [
+                            {},
+                            {
+                                //   border: [false, false, false, false],
+                                text: "BILL TO",
+                                style: "smallFont",
+                            },
+                            {},
+                            {},
+                            {},
+                            {
+                                text: "INVOICE #:",
+                                style: "smallFont",
+                                alignment: "right",
+                            },
+                            {
+                                text: `${invoice.invoiceId}`,
+                                style: "defaultFont",
+                            },
+                            {
+                                text: "INVOICE DATE:",
+                                style: "smallFont",
+                                alignment: "right",
+                            },
+                            {
+                                text: `${moment(invoice.createdAt).format('YYYY-MM-DD')}`,
+                                style: "defaultFont",
+                                alignment: "right",
+                            },
+                            {},
+                        ],
+                        [
+                            {},
+                            { text: `${customer.profile.displayName}`, fontSize: 8, bold: true },
+                            {},
+                            {},
+                            {},
+                            {
+                                text: "JOB PO/ SALES ORDER",
+                                style: "smallFont",
+                                alignment: "right",
+                            },
+                            { text: `${invoice.customerPO ?? 'N/A'}`, style: "defaultFont" },
+                            { text: "DUE DATE:", style: "smallFont", alignment: "right" },
+                            { text: moment(invoice.dueDate).format('YYYY-MM-DD') ?? '', style: "defaultFont", alignment: "right" },
+                            {},
+                        ],
+                        [
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            { text: "TERMS:", style: "smallFont", alignment: "right" },
+                            {
+                                text: "Due on receipt:",
+                                style: "defaultFont",
+                                alignment: "right",
+                            },
+                            {},
+                        ],
+                        [
+                            {},
+                            {
+                                text: `${customer.contact.phone ?? ''} \n ${customer.address.street ?? ''} \n ${!customer.address.state ? '' : customer.address.state + ',' + customer.address.zipCode}`,
+                                style: "defaultFont",
+                                alignment: "left",
+                                rowSpan: 2,
+                            },
+                            { text: "SERVICE ADDRESS", style: "smallFont", alignment: "left" },
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                        ],
+                        [
+                            {},
+                            {},
+                            {
+                                text: `${customer.address.street ?? ''} \n ${!customer.address.state ? '' : customer.address.state + ',' + customer.address.zipCode}`,
+                                style: "defaultFont",
+                            },
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                        ],
+                        [
+                            {},
+                            { text: "CONTACT DETAILS", style: "smallFont" },
+                            {},
+                            {
+                                text: "\nTotal",
+                                fontSize: 5,
+                                rowSpan: 3,
+                                colSpan: 4,
+                                fillColor: "#D0D3DC",
+                            },
+                            {},
+                            {},
+                            {},
+                            {
+                                text: `\n$ ${invoice.total}`,
+                                fontSize: 24,
+                                rowSpan: 3,
+                                colSpan: 2,
+                                fillColor: "#D0D3DC",
+                            },
+                            {},
+                            {},
+                        ],
+                        [
+                            {},
+                            { text: `${customerContact.profile.displayName ?? ''}`, fontSize: 6, bold: true },
+                            { text: `${customerContact.contact.phone ?? ''}\n ${customerContact.info.email}`, fontSize: 6, bold: true },
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                        ],
+                        [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}],
+                    ],
+                },
+                layout: {
+                    fillColor: function (rowIndex: any, node: any, columnIndex: any) {
+                        return "#EAECF3";
+                    },
+                    vLineColor: function (i: any, node: any) {
+                        return "#EAECF3";
+                    },
+                    hLineColor: function (i: any, node: any) {
+                        return "#EAECF3";
+                    },
+                },
+            },
+
+            {
+                table,
+                layout: {
+                    hLineWidth: function (i: number, node: { table: { body: string | any[]; }; }) {
+                        return i === 0 || i === node.table.body.length ? 0 : 1;
+                    },
+                    vLineWidth: function (i: number, node: { table: { widths: string | any[]; }; }) {
+                        return i === 0 || i === node.table.widths.length ? 0 : 1;
+                    },
+                    vLineColor: function (i: number, node: { table: { widths: string | any[]; }; }) {
+                        return i === 0 || i === node.table.widths.length ? "black" : "white";
+                    },
+                    hLineColor: function (i: number, node: { table: { body: string | any[]; }; }) {
+                        return i === 0 || i === node.table.body.length
+                            ? "#d0d3dc"
+                            : "#eeeeee";
+                    },
+                },
+            },
+        ],
+        styles: {
+            header: {
+                fontSize: 18,
+                bold: true,
+            },
+            bigger: {
+                fontSize: 15,
+                italics: true,
+            },
+            subheader: {
+                fontSize: 15,
+                bold: true,
+            },
+            quote: {
+                italics: true,
+            },
+            smallFont: {
+                bold: false,
+                fontSize: 5,
+                lineHeight: 1.2,
+            },
+            defaultFont: {
+                bold: false,
+                fontSize: 6,
+                weight: 100,
+                lineHeight: 1.2,
+            },
+            tableFont: {
+                bold: false,
+                fontSize: 16,
+                weight: 100,
+                lineHeight: 1.2,
+            },
+            tableExample: {
+                margin: [0, 2, 0, 15],
+            },
+            tableHeader: {
+                bold: true,
+                fontSize: 13,
+                color: "black",
+            },
+        },
+        defaultStyle: {
+            columnGap: 10,
+            font: "Roboto",
+        },
+        images: {
+            mySuperImage: "data:image/jpeg;base64,...content...",
+
+            // in browser is supported loading images via url (https or http protocol) (minimal version: 0.1.67)
+            snow: "https://picsum.photos/seed/picsum/200/300",
+        },
+    };
+
+    return new Promise((resolve: any) => {
+        const pdfDoc = printer.createPdfKitDocument(docDefinition);
+        const writeStream = fs.createWriteStream(`${INVOICE_TEMPLATE_PDF}/${invoice.invoiceId}.pdf`)
+        pdfDoc.pipe(writeStream);
+        pdfDoc.end();
+        writeStream.on('finish', resolve)
+    })
+}
+
+export const downloadFileToPath = async (
+    req: Request,
+    res: Response,
+    sourceUrl: string,
+    absoluteTargetPath: string,
+) => {
+    const file = fs.createWriteStream(`${absoluteTargetPath}/`, 'image.png' );
+    return new Promise((resolve, reject) => {
+        try {
+          const protocol = sourceUrl.startsWith('https') ? https : http;
+  
+          protocol.get(sourceUrl, response => {
+            const { statusCode } = response;
+  
+            if (statusCode !== 200) {
+              file.close();
+              reject();
+              response.resume();
+              return;
+            }
+  
+            response.pipe(file);
+  
+            file.on('finish', () => {
+              file.close();
+              resolve(true);
+              return;
+            });
+  
+            file.on('error', err => {
+              file.close();
+              reject();
+              return;
+            });
+          });
+        } catch (err) {
+          file.close();
+          reject(err);
+        }
+      });
+}
+
+/**
+ * @description Checks if a file exists on specified path
+ */
+export const fileExists = async (absolutePath: string): Promise<boolean> => {
+    return fs.existsSync(absolutePath);
 }
