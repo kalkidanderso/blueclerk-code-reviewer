@@ -7,6 +7,7 @@ import * as http from 'http';
 import * as https from 'https';
 import { InvoiceStatus, Messages, Status } from '../common/constants';
 import { IContact } from '../common/contact';
+import { INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } from '../common/config';
 import { Contact } from '../models/Contact';
 import { IUser } from '../models/User';
 import { Company, ICompany } from '../models/Company';
@@ -1896,7 +1897,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
 
     // Retrieve invoice and populate customer and paymentTerm info
-    const { INVOICE_TEMPLATE_PDF } = process.env;
+    // const { INVOICE_PDF_PATH } = process.env;
     const invoice = await Invoice
         .findOne({ company, _id: params.invoiceId })
         .populate({
@@ -1914,15 +1915,13 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
     const customer = <ICustomer>invoice.customer;
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
-    const isFileExist = await fileExists(`${INVOICE_TEMPLATE_PDF}/${invoice.invoiceId}.pdf`);
-
-    if (!isFileExist) {
-        await _invoiceEmailTemplate(req, res, invoice, company);
-    }
 
     // Retrieve company email default
-    const filepath = req.file?.path ?? `${INVOICE_TEMPLATE_PDF}/${invoice.invoiceId}.pdf`;
+    const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
     const emailDefault = await EmailDefault.findOne({ company });
+
+    // Generate Invoice PDF
+    await _generateInvoicePdf(company, invoice);
 
     // Call AWS SES method
     sendInvoiceEmailToCustomer({
@@ -2169,16 +2168,14 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 
 }
 
-export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice: IInvoice, company: ICompany) => {
+export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) => {
 
-    // const pdfMake = require('pdfmake');
-    const { INVOICE_TEMPLATE_FONTS, INVOICE_TEMPLATE_PDF, INVOICE_TEMPLATE_IMAGES } = process.env;
+    // const { INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } = process.env;
     const customer = await Customer.findById(invoice.customer);
     let serviceAddress = {
         text: `${customer.address.street ?? ''} \n ${!customer.address.state ? '' : customer.address.state + ',' + customer.address.zipCode}`,
         style: "defaultFont",
     }
-
 
     if (invoice.job) {
         const job = await Job.findById(invoice.job).exec()
@@ -2192,7 +2189,7 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
             serviceAddress.text = `${jobLocation.address.street ?? ''} \n ${!jobLocation.address.state ? '' : jobLocation.address.state + ',' + jobLocation.address.zipcode}`;
         }
     }
-    // await downloadFontToPath(INVOICE_TEMPLATE_FONTS);
+    // await downloadFontToPath(INVOICE_FONT_PATH);
 
     let companyImage: any = {
         text: '',
@@ -2201,9 +2198,9 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
     }
 
     if (company.info?.logoUrl) {
-        const isFileExist = await fileExists(`${INVOICE_TEMPLATE_IMAGES}/${company.info.companyName}.jpg`);
+        const isFileExist = await fileExists(`${INVOICE_IMAGE_PATH}/${company.info.companyName}.jpg`);
         if (!isFileExist) {
-            await downloadFileToPath(company, company.info.logoUrl, INVOICE_TEMPLATE_IMAGES);
+            await downloadFileToPath(company, company.info.logoUrl, INVOICE_IMAGE_PATH);
         }
 
         companyImage = {
@@ -2215,10 +2212,10 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
 
     const fonts = {
         Roboto: {
-            normal: `${INVOICE_TEMPLATE_FONTS}/Roboto-Regular.ttf`,
-            bold: `${INVOICE_TEMPLATE_FONTS}/Roboto-Medium.ttf`,
-            italics: `${INVOICE_TEMPLATE_FONTS}/Roboto-Thin.ttf`,
-            bolditalics: `${INVOICE_TEMPLATE_FONTS}/Roboto-MediumItalic.ttf`,
+            normal: `${INVOICE_FONT_PATH}/Roboto-Regular.ttf`,
+            bold: `${INVOICE_FONT_PATH}/Roboto-Medium.ttf`,
+            italics: `${INVOICE_FONT_PATH}/Roboto-Thin.ttf`,
+            bolditalics: `${INVOICE_FONT_PATH}/Roboto-MediumItalic.ttf`,
         }
     };
 
@@ -2247,12 +2244,14 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
                 {
                     text: 'QUANTITY',
                     style: 'smallFont',
-                    fillColor: '#eaecf3'
+                    fillColor: '#eaecf3',
+                    alignment: "center"
                 },
                 {
                     text: 'PRICE',
                     style: "smallFont",
-                    fillColor: '#eaecf3'
+                    fillColor: '#eaecf3',
+                    alignment: "center"
                 },
                 {
                     text: "UNIT",
@@ -2281,7 +2280,6 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
                 { fillColor: "#eaecf3", text: "" },
             ],
         ],
-
     }
 
     // Insert item to table template
@@ -2308,17 +2306,7 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
         ]);
     });
 
-    bodyTable.push([
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
-    ])
+    bodyTable.push([{}, {}, {}, {}, {}, {}, {}, {}, {}]);
     for (let i = 0; i < bodyTable.length; i++) {
         table.body.push(bodyTable[i]);
     }
@@ -2327,6 +2315,10 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
         text: `${customer.address.street ?? ''} \n ${!customer.address.state ? '' : customer.address.state + ',' + customer.address.zipCode}`,
         style: "defaultFont",
     }
+    const companyStreet = company.address?.street ? `${company.address?.street}` : '';
+    const companyCity = company.address?.city ? `, ${company.address?.city}` : '';
+    const companyState = company.address?.state ? `, ${company.address?.state}` : '';
+    const companyZipCode = company.address?.zipCode ? `, ${company.address?.zipCode}` : '';
 
     const docDefinition: any = {
         pageSize: "A4",
@@ -2342,12 +2334,12 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
                             {},
                             companyImage,
                             [{
-                                text: `${company.info.companyName}`,
+                                text: `${company.info?.companyName}`,
                                 fontSize: 8,
                                 alignment: "left",
                                 bold: true,
                             }, {
-                                text: `\n ${company.contact.phone ?? ''} \n${company.info.companyEmail ?? ''}\n${company.address.street ?? ''}\n${company.address.state ?? ''}, ${company.address.zipCode ?? ''}`,
+                                text: `\n${company.contact?.phone ?? ''}\n${company.info?.companyEmail ?? ''}\n${companyStreet}${companyCity}${companyState}${companyZipCode}`,
                                 style: "defaultFont",
                             }],
                             [{ text: '\n\nVendor Number:', style: 'smallFont' }, { text: invoice.vendorId ?? 'No vendor found', style: 'defaultFont', bold: true }],
@@ -2359,7 +2351,6 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
                 layout: 'noBorders'
             },
             {
-                //   layout: 'lightHorizontalLines', // optional
                 table: {
                     headerRows: 2,
                     widths: [48, 110, 85, 70, 63, 50, 74, 70],
@@ -2372,18 +2363,9 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
                             {},
                             { text: 'INVOICE', fontSize: 15, bold: true, colSpan: 2, alignment: 'right' },
                             {},
-                            { text: '' }
-                        ],
-                        [
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
                             {}
                         ],
+                        [{}, {}, {}, {}, {}, {}, {}, {}],
                         [
                             {},
                             {
@@ -2421,7 +2403,7 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
                             },
                             {},
                             {
-                                text: "JOB PO/ SALES ORDER: ",
+                                text: "JOB PO/SALES ORDER: ",
                                 style: "smallFont",
                                 alignment: "right",
                             },
@@ -2437,25 +2419,15 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
                             {},
                             {},
                             { text: "TERMS:", style: "smallFont", alignment: "right" },
-                            { text: paymentTerm?.name ?? "Due on receipt", style: "defaultFont", alignment: "right" },
+                            { text: paymentTerm?.name ?? "", style: "defaultFont", alignment: "right" },
                             {}
                         ],
-                        [
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {}
-                        ],
-
+                        [{}, {}, {}, {}, {}, {}, {}, {}],
                         [
                             {},
                             { text: "CONTACT DETAILS", style: "smallFont" },
                             {},
-                            { text: "\nTotal", fontSize: 5, rowSpan: 3, colSpan: 2, fillColor: "#D0D3DC" },
+                            { text: "\nTOTAL", fontSize: 5, rowSpan: 3, colSpan: 2, fillColor: "#D0D3DC" },
                             {},
                             {
                                 text: `\n$ ${invoice.total}`,
@@ -2474,23 +2446,14 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
                             {},
                             {}
                         ],
-                        [{},
-                        {},
-                        {},
-                        {},
-                        {},
-                        {},
-                        {},
-                        {}],
+                        [{}, {}, {}, {}, {}, {}, {}, {}],
                     ],
                 },
                 fillColor: '#EAECF3',
                 layout: 'noBorders'
             },
-
             {
                 table,
-
                 layout: {
                     hLineWidth: function (i: number, node: { table: { body: string | any[]; }; }) {
                         return i === 0 || i === node.table.body.length ? 0 : 1;
@@ -2511,12 +2474,23 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
             {
                 table: {
                     headerRows: 1,
-                    widths: [48, 318, 158, 49],
+                    widths: [48, 120, 10, 175, 165, 60],
                     body: [
                         [
                             {},
                             {
-                                text: "SUBTOTAL + TAX",
+                                text: "SUBTOTAL",
+                                style: "defaultFont",
+                                fillColor: "#eaecf3",
+                                lineColor: "#ffffff",
+                                alignment: "left"
+                            },
+                            {
+                                text: "",
+                                fillColor: "#eaecf3"
+                            },
+                            {
+                                text: "TAX",
                                 style: "defaultFont",
                                 fillColor: "#eaecf3",
                                 lineColor: "#ffffff",
@@ -2528,12 +2502,29 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
                         [
                             {},
                             {
+                                text: `$${invoice.subTotal}`,
                                 fillColor: "#eaecf3",
-                                text: `$${invoice.total}`,
                                 fontSize: 20,
                                 alignment: "left"
                             },
-                            { fillColor: "#d0d3dc", text: "$328.56", fontSize: 20, alignment: "right" },
+                            {
+                                text: `+`,
+                                fillColor: "#eaecf3",
+                                fontSize: 15,
+                                alignment: "left"
+                            },
+                            {
+                                text: `$${invoice.taxAmount}`,
+                                fillColor: "#eaecf3",
+                                fontSize: 20,
+                                alignment: "left"
+                            },
+                            {
+                                text: `$${invoice.total}`,
+                                fillColor: "#d0d3dc",
+                                fontSize: 20,
+                                alignment: "right"
+                            },
                             {},
                         ]
                     ],
@@ -2591,17 +2582,28 @@ export const _invoiceEmailTemplate = async (req: Request, res: Response, invoice
             font: "Roboto",
         },
         images: {
-            companyLogo: `${INVOICE_TEMPLATE_IMAGES}/${company.info.companyName.replace(/\s+/g, '').toLowerCase()}.jpg`
+            companyLogo: `${INVOICE_IMAGE_PATH}/${company.info.companyName.replace(/\s+/g, '').toLowerCase()}.jpg`
         },
     };
 
     return new Promise((resolve) => {
+        const fullPath = `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
+        // Check if folder path exist, create if not
+        if (!fs.existsSync(INVOICE_PDF_PATH)){
+            fs.mkdirSync(INVOICE_PDF_PATH);
+        }
+        // Check if existing Invoice PDF exist, remove if any
+        if (fs.existsSync(fullPath)) {
+            fs.unlinkSync(fullPath);
+        }
+
         const pdfDoc = pdfMake.createPdfKitDocument(docDefinition);
-        const writeStream = fs.createWriteStream(`${INVOICE_TEMPLATE_PDF}/${invoice.invoiceId}.pdf`);
+        const writeStream = fs.createWriteStream(fullPath);
         pdfDoc.pipe(writeStream);
         pdfDoc.end();
         writeStream.on('finish', resolve)
     })
+
 }
 
 export const downloadFileToPath = async (
@@ -2609,8 +2611,16 @@ export const downloadFileToPath = async (
     sourceUrl: string,
     absoluteTargetPath: string,
 ) => {
-    const filename = company.info.companyName.replace(/\s+/g, '').toLowerCase()
-    const file = fs.createWriteStream(`${absoluteTargetPath}/${filename}.jpg`);
+
+    const filename = company.info.companyName.replace(/\s+/g, '').toLowerCase();
+    const fullPath = `${absoluteTargetPath}/${filename}.jpg`;
+    if (!fs.existsSync(absoluteTargetPath)){
+        fs.mkdirSync(absoluteTargetPath);
+    }
+    if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath)
+    }
+    const file = fs.createWriteStream(fullPath);
     return new Promise((resolve) => {
         const protocol = sourceUrl.startsWith('https') ? https : http;
         protocol.get(sourceUrl, (res) => {
@@ -2622,6 +2632,7 @@ export const downloadFileToPath = async (
             });
         })
     })
+
 }
 
 /**
