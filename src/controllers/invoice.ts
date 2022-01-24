@@ -1908,6 +1908,11 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
             path: 'paymentTerm',
             select: 'name dueDays'
         })
+        .populate({
+            path: 'items.item',
+            select: 'name description sku isJobType isFixed charges tax',
+            populate: [{ path: 'jobType' }]
+        })
 
     if (!invoice) {
         return res.json({ status: Status.Error, message: 'Invoice not found.' });
