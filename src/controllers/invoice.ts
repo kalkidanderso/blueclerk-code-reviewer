@@ -2285,7 +2285,8 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     // Insert item to table template
     const bodyTable: any = [];
     invoice.items.forEach(item => {
-        const itemName = [{ text: `${item.name}`, style: "defaultFontBold", alignment: "left" }, { text: `${item.description}`, style: "defaultFont", alignment: "left" }];
+        const itemPopulated = <IItem>item.item;
+        const itemName = [{ text: `${item.name ?? itemPopulated?.name ?? ''}`, style: "defaultFontBold", alignment: "left" }, { text: `${item.description ?? itemPopulated?.description ?? ''}`, style: "defaultFont", alignment: "left" }];
         const itemQuantity = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: item.quantity, style: "defaultFont", alignment: "right" }];
         const itemPrice = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: `$${item.price}`, style: "defaultFont", alignment: "right" }];
         const itemUnit = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: item.isFixed ? 'Fixed' : 'HOURLY', style: "defaultFont", alignment: "right" }];
