@@ -183,7 +183,12 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
     }
     const customer = params.customerId || parentJob && parentJob.customer;
 
-    const tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob, paramTasks, serviceTicket });
+    let tasks;
+    try {
+        tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob, paramTasks, serviceTicket });
+    } catch (error) {
+        return res.json({ status: Status.Error, message: error.message });
+    }
 
     let track: any = [];
     let trackedServiceTicket: { user: any; action: string; date: Date; }[] = [];
@@ -1874,7 +1879,12 @@ export const editJob = async (req: Request, res: Response) => {
                 }
 
                 // Handle param technician
-                const tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob: job, paramTasks, serviceTicket });
+                let tasks;
+                try {
+                    tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob: job, paramTasks, serviceTicket });
+                } catch (error) {
+                    return res.json({ status: Status.Error, message: error.message });
+                }
                 job.tasks = tasks;
                 action += `|Updated Tasks|`;
             }
@@ -2774,30 +2784,15 @@ const _handleMutltipleTechniciansTasks = async ({
         let taskTechnician: any
 
         if (!paramTask.contractorId && !paramTask.technicianId) {
-            return res.json({ status: Status.Error, message: "contractorId or technicianId must be provided" });
+            // return res.json({ status: Status.Error, message: "contractorId or technicianId must be provided" });
+            throw new Error("contractorId or technicianId must be provided");
         }
 
         if (paramTask.contractorId && !paramTask.technicianId) {
-            // Check duplicated contractorId from param task
-            const contractorIds = paramTasks.filter(task => task.contractorId && task.employeeType === '1').map(technician => technician.contractorId);
-            const isDuplicate = contractorIds.some((contractorId, i) => contractorIds.indexOf(contractorId) !== i)
-
-            if (isDuplicate) {
-                return res.json({ status: Status.Error, message: "Cannot use same contractor in the same job" });
-            }
-
             taskContractor = await Company.findOne({ _id: paramTask.contractorId });
         }
 
         if (paramTask.technicianId && !paramTask.contractorId) {
-            // Check duplicated technicianId from param task
-            const technicianIds = paramTasks.filter(task => task.technicianId && task.employeeType === '0').map(technician => technician.technicianId);
-            const isDuplicate = technicianIds.some((techId, i) => technicianIds.indexOf(techId) !== i);
-
-            if (isDuplicate) {
-                return res.json({ status: Status.Error, message: "Cannot use same technician in the same job" });
-            }
-
             const technician = await User.findOne({ _id: paramTask.technicianId });
             taskTechnician = technician?._id;
         }
@@ -2813,7 +2808,8 @@ const _handleMutltipleTechniciansTasks = async ({
         }
 
         if (!taskContractor && !taskTechnician) {
-            return res.json({ status: Status.Error, message: "Contractor/Technician not found!" })
+            // return res.json({ status: Status.Error, message: "Contractor/Technician not found!" })
+            throw new Error("Contractor/Technician not found!");
         }
 
         const taskEntry: any = {
@@ -2829,9 +2825,26 @@ const _handleMutltipleTechniciansTasks = async ({
             taskEntry.jobTypes = jobTypes;
             tasks.push(taskEntry);
         } catch (error) {
-            return res.json({ 'status': Status.Error, 'message': error.message });
+            // return res.json({ 'status': Status.Error, 'message': error.message });
+            throw new Error(error.message);
         }
         //=== END HANDLE params jobTypes
+    }
+
+    // Check duplicated contractorId from param task
+    const contractorIds = paramTasks.filter(task => task.contractorId && task.employeeType === '1').map(technician => technician.contractorId);
+    const isDuplicateContractor = contractorIds.some((contractorId, i) => contractorIds.indexOf(contractorId) !== i)
+
+    if (isDuplicateContractor) {
+        throw new Error("Cannot use same contractor in the same job");
+    }
+
+    // Check duplicated technicianId from param task
+    const technicianIds = paramTasks.filter(task => task.technicianId && task.employeeType === '0').map(technician => technician.technicianId);
+    const isDuplicateTech = technicianIds.some((techId, i) => technicianIds.indexOf(techId) !== i);
+
+    if (isDuplicateTech) {
+        throw new Error("Cannot use same technician in the same job");
     }
 
     return tasks;
