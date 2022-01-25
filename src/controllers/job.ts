@@ -2783,7 +2783,7 @@ const _handleMutltipleTechniciansTasks = async ({
             const isDuplicate = contractorIds.some((contractorId, i) => contractorIds.indexOf(contractorId) !== i)
 
             if (isDuplicate) {
-                throw new Error("Cannot use same contractor in the same job");
+                return res.json({ status: Status.Error, message: "Cannot use same contractor in the same job" });
             }
 
             taskContractor = await Company.findOne({ _id: paramTask.contractorId });
@@ -2795,7 +2795,7 @@ const _handleMutltipleTechniciansTasks = async ({
             const isDuplicate = technicianIds.some((techId, i) => technicianIds.indexOf(techId) !== i);
 
             if (isDuplicate) {
-                throw new Error("Cannot use same technician in the same job");
+                return res.json({ status: Status.Error, message: "Cannot use same technician in the same job" });
             }
 
             const technician = await User.findOne({ _id: paramTask.technicianId });
