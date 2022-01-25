@@ -15,3 +15,7 @@ export const qbConfig = {
 export const privateKey = {
     key: 'KwXkxQQuBzDnZzbt0B3CeDQurnED00kXsu30X3'
 }
+// export const INVOICE_FONT_PATH = 's3://blueclerk-files';
+export const INVOICE_FONT_PATH = 'assets/fonts';
+export const INVOICE_IMAGE_PATH = 'tmp/images';
+export const INVOICE_PDF_PATH = 'tmp/invoices';
