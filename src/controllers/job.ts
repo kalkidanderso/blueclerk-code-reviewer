@@ -221,7 +221,7 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
 
     const job = new Job({
         parentJob: parentJob?._id,
-        scheduleDate: params.scheduleDate ? moment(params.scheduleDate).format("YYYY-MM-DD") :  parentJob?.scheduleDate,
+        scheduleDate: params.scheduleDate ? moment(params.scheduleDate).format("YYYY-MM-DD") : parentJob?.scheduleDate,
         jobId: jobId,
         ticket: params.ticketId ?? parentJob?.ticket,
         // technician: technicianId,
@@ -2328,7 +2328,7 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
     const scheduleDateQuery = params.scheduleDate ? new Date(scheduleDate) : { $gte: date, $lte: endDate }
 
     // Job.find({ $or: [{ "tasks.technician": params.employeeId }, { technician: params.employeeId }], scheduleDate: { $gte: date, $lte: endDate } })
-    Job.find({ $or: [{ "tasks.technician": params.employeeId }, { technician: params.employeeId }], scheduleDate: scheduleDateQuery})
+    Job.find({ $or: [{ "tasks.technician": params.employeeId }, { technician: params.employeeId }], scheduleDate: scheduleDateQuery })
         .populate({
             path: 'ticket',
         })
@@ -2779,8 +2779,10 @@ const _handleMutltipleTechniciansTasks = async ({
 
         if (paramTask.contractorId && !paramTask.technicianId) {
             // Check duplicated contractorId from param task
-            const uniqueContractor = new Set(paramTasks.map(task => task.contractorId));
-            if (uniqueContractor.size < paramTasks.length) {
+            const contractorIds = paramTasks.filter(task => task.contractorId && task.employeeType === '1').map(technician => technician.contractorId);
+            const isDuplicate = contractorIds.some((contractorId, i) => contractorIds.indexOf(contractorId) !== i)
+
+            if (isDuplicate) {
                 throw new Error("Cannot use same contractor in the same job");
             }
 
@@ -2789,8 +2791,10 @@ const _handleMutltipleTechniciansTasks = async ({
 
         if (paramTask.technicianId && !paramTask.contractorId) {
             // Check duplicated technicianId from param task
-            const uniqueTechnician = new Set(paramTasks.map(task => task.technicianId));
-            if (uniqueTechnician.size < paramTasks.length) {
+            const technicianIds = paramTasks.filter(task => task.technicianId && task.employeeType === '0').map(technician => technician.technicianId);
+            const isDuplicate = technicianIds.some((techId, i) => technicianIds.indexOf(techId) !== i);
+
+            if (isDuplicate) {
                 throw new Error("Cannot use same technician in the same job");
             }
 
