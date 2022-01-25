@@ -31,9 +31,8 @@ import { EmailDefault } from '../models/EmailDefault';
 import { sendInvoiceEmailToCustomer } from '../services/aws';
 import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice } from '../controllers/quickbook.invoice';
 import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from './emailDefault';
-import { JobRoute } from '../models/JobRoute';
-import { JobSite } from '../models/JobSite';
-import { JobLocation } from '../models/JobLocation';
+import { IJobSite } from '../models/JobSite';
+import { IJobLocation } from '../models/JobLocation';
 
 /**
  * To reset Invoice quickbookId,
@@ -1789,58 +1788,6 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
         })
 }
 
-/**
- * Kris' Remark (Aug 30st, 2021):
- * TODO: To remove, this already been refactored below
- */
-// export const sendInvoice = (req: Request, res: Response) => {
-//     const params = req.body
-//     const company = <ICompany>req.company;
-
-//     // Check if invoiceId was a valid ObjectId
-//     if (params.invoiceId && !ObjectId.isValid(params.invoiceId)) {
-//         return res.json({ status: Status.Error, message: Messages.WrongId });
-//     }
-
-//     try {
-//         Invoice.findOne({ _id: params.invoiceId, 'company': req.companyId})
-//             .populate({
-//                 path: 'customer',
-//                 select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
-//             })
-//             .then(async (invoice: IInvoice)=>{
-//                 if (!invoice) {
-//                     return res.json({'status': Status.Error, 'message': 'Invoice not found'})
-//                 }
-
-//                 const customer = <ICustomer>invoice.customer;
-
-//                 sendInvoiceEmailToCustomer({
-//                     companyName: company.info.companyName,
-//                     companyEmail: company.info.companyEmail,
-//                     customerName: customer.profile.displayName,
-//                     customerEmail: customer.info.email,
-//                     invoiceNumber: invoice.invoiceId,
-//                     invoiceAmount: invoice.total,
-//                 });
-
-//                 // Update email history and last email sent info
-//                 const sendingDate = new Date();
-//                 invoice.emailHistory.push({
-//                     sentTo: customer.info.email,
-//                     sentAt: sendingDate
-//                 });
-//                 invoice.lastEmailSent = sendingDate;
-//                 await invoice.save();
-
-//                 return res.json({ status: Status.Success, message: 'Invoice has been sent successfully!' });
-//             })
-
-//     } catch (err) {
-//         return res.json({'status': Status.Error, 'message': err.message});
-//     }
-// }
-
 export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
 
     const params = req.query;
@@ -1901,12 +1848,25 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     const invoice = await Invoice
         .findOne({ company, _id: params.invoiceId })
         .populate({
+            path: 'job',
+            populate: [
+                { path: 'type', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+                { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
+                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
+                { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
+                { path: 'jobLocation', select: 'name location address' },
+                { path: 'jobSite', select: 'name location address' }
+            ],
+        })
+        .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+            select: 'info.email auth.email profile.displayName address contact contactName'
         })
         .populate({
             path: 'paymentTerm',
-            select: 'name dueDays'
+            select: '-company -__v'
         })
         .populate({
             path: 'items.item',
@@ -2176,45 +2136,8 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) => {
 
     // const { INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } = process.env;
-    const customer = await Customer.findById(invoice.customer);
-    let serviceAddress = {
-        text: `${customer.address.street ?? ''} \n ${!customer.address.state ? '' : customer.address.state + ',' + customer.address.zipCode}`,
-        style: "defaultFont",
-    }
 
-    if (invoice.job) {
-        const job = await Job.findById(invoice.job).exec()
-        const jobSite = await JobSite.findById(job.jobSite).exec();
-        const jobLocation = await JobLocation.findById(job.jobLocation).exec();
-        if (jobSite) {
-            serviceAddress.text = `${jobSite.address.street ?? ''} \n ${!jobSite.address.state ? '' : jobSite.address.state + ',' + jobSite.address.zipcode}`;
-        }
-
-        if (jobLocation) {
-            serviceAddress.text = `${jobLocation.address.street ?? ''} \n ${!jobLocation.address.state ? '' : jobLocation.address.state + ',' + jobLocation.address.zipcode}`;
-        }
-    }
     // await downloadFontToPath(INVOICE_FONT_PATH);
-
-    let companyImage: any = {
-        text: '',
-        fillColor: '#cccccc',
-        rowSpan: 4
-    }
-
-    if (company.info?.logoUrl) {
-        const isFileExist = await fileExists(`${INVOICE_IMAGE_PATH}/${company.info.companyName}.jpg`);
-        if (!isFileExist) {
-            await downloadFileToPath(company, company.info.logoUrl, INVOICE_IMAGE_PATH);
-        }
-
-        companyImage = {
-            image: 'companyLogo',
-            width: 67,
-            height: 52,
-        }
-    }
-
     const fonts = {
         Roboto: {
             normal: `${INVOICE_FONT_PATH}/Roboto-Regular.ttf`,
@@ -2224,15 +2147,68 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
         }
     };
 
+    // Initialize PDF Make
     const pdfMake = new pdfmake(fonts);
-    const paymentTerm = await PaymentTerm.findOne({
-        _id: invoice._id,
-        isActive: true
-    });
 
+    // Retrieve invoice populated or detailed data
+    const customer = <ICustomer>invoice.customer;
+    const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
+    const job = <IJob>invoice.job;
     const customerContact = await Customer.findById(invoice.customerContactId ?? invoice.customer);
-    let contactDetails = { text: `${!customerContact.contact.phone ? ' ' : customerContact.contact.phone + '\n'} ${customerContact.info.email ?? ''}`, fontSize: 6, bold: true };
 
+    // Construct Company Address object
+    const companyAddress = {
+        street: company.address?.street ? `${company.address?.street}` : '',
+        city: company.address?.city ? `, ${company.address?.city}` : '',
+        state: company.address?.state ? `, ${company.address?.state}` : '',
+        zipCode: company.address?.zipCode ? `, ${company.address?.zipCode}` : '',
+    }
+
+    // Construct Customer Address object
+    const customerAddress = {
+        street: customer?.address?.street ? `${customer?.address?.street}` : '',
+        city: customer?.address?.city ? `, ${customer?.address?.city}` : '',
+        state: customer?.address?.state ? `, ${customer?.address?.city}` : '',
+        zipCode: customer?.address?.zipCode ? `, ${customer?.address?.zipCode}` : '',
+    }
+
+    // Construct default Job Service Address object
+    const jobAddress = { ...customerAddress };
+
+    if (job) {
+        // Take Job Location or Job Site address if any
+        const site = <IJobSite>job.jobSite ?? <IJobLocation>job.jobLocation;
+        if (site) {
+            jobAddress.street = site.address?.street ? `${site.address?.street}` : '';
+            jobAddress.city = site.address?.city ? `, ${site.address?.city}` : '';
+            jobAddress.state = site.address?.state ? `, ${site.address?.state}` : '';
+            jobAddress.zipCode = site.address?.zipcode ? `, ${site?.address?.zipcode}` : '';
+        }
+    }
+
+    // Construct default Company Logo image
+    let companyImage: any = {
+        text: '',
+        fillColor: '#cccccc'
+    }
+
+    if (company.info?.logoUrl) {
+        // Check and download Company Logo to /tmp file
+        await downloadFileToPath(company, company.info.logoUrl, INVOICE_IMAGE_PATH);
+
+        companyImage = {
+            image: 'companyLogo',
+            width: 67,
+            height: 52,
+        }
+    }
+
+    // Construct Contact Details text
+    let contactDetails = {
+        text: `${!customerContact.contact.phone ? ' ' : customerContact.contact.phone + '\n'} ${customerContact.info.email ?? ''}`, fontSize: 6, bold: true
+    };
+
+    // Construct the header for the Invoice Items
     const table: any = {
         headerRows: 1,
         widths: [48, 200, 30, 30, 30, 30, 40, 71, 49],
@@ -2287,7 +2263,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
         ],
     }
 
-    // Insert item to table template
+    // Add Invoice's Items to table template
     const bodyTable: any = [];
     invoice.items.forEach(item => {
         const itemPopulated = <IItem>item.item;
@@ -2317,15 +2293,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
         table.body.push(bodyTable[i]);
     }
 
-    const customerAddress = {
-        text: `${customer.address.street ?? ''} \n ${!customer.address.state ? '' : customer.address.state + ',' + customer.address.zipCode}`,
-        style: "defaultFont",
-    }
-    const companyStreet = company.address?.street ? `${company.address?.street}` : '';
-    const companyCity = company.address?.city ? `, ${company.address?.city}` : '';
-    const companyState = company.address?.state ? `, ${company.address?.state}` : '';
-    const companyZipCode = company.address?.zipCode ? `, ${company.address?.zipCode}` : '';
-
+    // INITIALIZE INVOICE PDF TEMPLATE
     const docDefinition: any = {
         pageSize: "A4",
         pageMargins: [0, 0, 50, 0],
@@ -2345,7 +2313,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                                 alignment: "left",
                                 bold: true,
                             }, {
-                                text: `\n${company.contact?.phone ?? ''}\n${company.info?.companyEmail ?? ''}\n${companyStreet}${companyCity}${companyState}${companyZipCode}`,
+                                text: `\n${company.contact?.phone ?? ''}\n${company.info?.companyEmail ?? ''}\n${companyAddress.street}${companyAddress.city}${companyAddress.state}${companyAddress.zipCode}`,
                                 style: "defaultFont",
                             }],
                             [{ text: '\n\nVendor Number:', style: 'smallFont' }, { text: invoice.vendorId ?? 'No vendor found', style: 'defaultFont', bold: true }],
@@ -2420,8 +2388,14 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                         ],
                         [
                             {},
-                            [{ text: !customer?.contact?.phone ? '\n' : `\n${customer.contact.phone}`, style: "defaultFont" }, !customerAddress.text ? {} : customerAddress],
-                            [{ text: "\nSERVICE ADDRESS", style: "smallFont", alignment: "left" }, !serviceAddress.text ? {} : serviceAddress],
+                            [
+                                { text: !customer?.contact?.phone ? '\n' : `\n${customer.contact.phone}`, style: "defaultFont" },
+                                { text: `${customerAddress.street}${customerAddress.city}${customerAddress.state}${customerAddress.zipCode}`, style: "defaultFont" }
+                            ],
+                            [
+                                { text: "\nSERVICE ADDRESS", style: "smallFont", alignment: "left" },
+                                { text: `${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
+                            ],
                             {},
                             {},
                             { text: "TERMS:", style: "smallFont", alignment: "right" },
@@ -2612,6 +2586,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
 
 }
 
+// Check and download Company Logo to /tmp file
 export const downloadFileToPath = async (
     company: ICompany,
     sourceUrl: string,
