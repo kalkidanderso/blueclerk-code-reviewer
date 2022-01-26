@@ -7,7 +7,7 @@ import { IUser } from '../models/User'
 import { Customer } from '../models/Customer';
 import { ICompany } from '../models/Company'
 import { Item, IItem, IQBItem } from '../models/Item'
-import { _createQBItem, _inactiveQBItems, _transferQBItems, _updateQBItem } from '../controllers/quickbook.item';
+import { _createQBItem, _updateQBItemsStatus, _transferQBItems, _updateQBItem } from '../controllers/quickbook.item';
 import { IInvoice, Invoice } from '../models/Invoice'
 import { _transferQBInvoiceItem } from './quickbook.invoice'
 import { Job } from '../models/Job'
@@ -398,6 +398,8 @@ export const updateItem = (req: Request, res: Response) => {
 export const updateItems = async (req: Request, res: Response) => {
 
     const params = req.body;
+    const user = <IUser>req.user
+    const company = <ICompany>req.company;
     // To save any error itemIds and/or tierIds
     const errorWrongIds = [];
     // To save param items from JSON format
@@ -424,9 +426,9 @@ export const updateItems = async (req: Request, res: Response) => {
     // Iterate all item from param items
     for (const i of items) {
         // No tier object found from param items, go to next item
-        if (i.tiers.length <= 0) {
-            continue;
-        }
+        // if (i.tiers.length <= 0) {
+        //     continue;
+        // }
 
         /**
          * Check if itemId is a valid Mongo ObjectId,
@@ -439,18 +441,42 @@ export const updateItems = async (req: Request, res: Response) => {
 
         const itemObj = await Item.findById(i.itemId);
         // Iterate all tiers of item on DB
-        for (const paramTier of i.tiers) {
-            // Find the tier to be updated
-            const itemObjTier = itemObj.tiers.find(itemTier => itemTier.tier.toString() === paramTier.tierId);
+        if (i.tiers.length) {
+            for (const paramTier of i.tiers) {
+                // Find the tier to be updated
+                const itemObjTier = itemObj.tiers.find(itemTier => itemTier.tier.toString() === paramTier.tierId);
 
-            // No tier found, collect the troubled tierId, go to next tier
-            if (!itemObjTier) {
-                errorWrongIds.push({ itemId: i.itemId, tierId: paramTier.tierId, message: 'Tier not found' });
-                continue;
+                // No tier found, collect the troubled tierId, go to next tier
+                if (!itemObjTier) {
+                    errorWrongIds.push({ itemId: i.itemId, tierId: paramTier.tierId, message: 'Tier not found' });
+                    continue;
+                }
+
+                itemObjTier.charge = paramTier.charge;
+            }
+        }
+
+        // Handle item active status
+        await _updateQBItem(req, res, company, itemObj, async (err, errMsg) => {
+            if (!itemObj.isActive && i.isActive) {
+                await _updateQBItemsStatus(company, new Array(itemObj), i.isActive);
             }
 
-            itemObjTier.charge = paramTier.charge;
-        }
+            if (itemObj.isActive && !i.isActive) {
+                await _updateQBItemsStatus(company, new Array(itemObj), i.isActive);
+            }
+        });
+
+        // Handle isJobType status
+        const itemJobType = await _handleItemJobType(itemObj, i, user._id);
+
+        itemObj.name = i.name ?? itemObj.name;
+        itemObj.description = i.description ?? itemObj.description;
+        itemObj.isJobType = i.isJobType ?? itemObj.isJobType;
+        itemObj.isFixed = i.isFixed ?? itemObj.isFixed;
+        itemObj.tax = i.tax ?? itemObj.tax
+        itemObj.isActive = i.isActive ?? itemObj.isActive;
+        itemObj.jobType = itemJobType?._id;
 
         await itemObj.save((err) => {
             if (err)
@@ -671,7 +697,7 @@ export const mergeItems = async (req: Request, res: Response) => {
                             // Merge update item in quickbook
                             await _updateQBItem(req, res, company, item, async (err, errMsg) => {
                                 // Inactive unused item in quickbook
-                                await _inactiveQBItems(company, unusedItems);
+                                await _updateQBItemsStatus(company, unusedItems, false);
                             });
                         });
                     }
@@ -712,4 +738,29 @@ export const mergeItems = async (req: Request, res: Response) => {
             return res.json({ status: Status.Success, item });
         });
     })
+}
+
+const _handleItemJobType = async (oldItem: IItem, newItem: IItem, userId: string): Promise<IJobType> => {
+
+    let jobType: IJobType;
+    // From isJobType false to isJobType true
+    if (!oldItem.isJobType && newItem.isJobType) {
+        jobType = new JobType({
+            title: newItem.name ?? oldItem.name,
+            description: newItem.description ?? oldItem.description,
+            sku: newItem.sku ?? oldItem.sku,
+            createdBy: userId,
+            isActive: newItem.isActive ?? oldItem.isActive,
+            quickbookId: newItem.quickbookId ?? oldItem.quickbookId
+        });
+
+        jobType.save();
+    }
+
+    // From isJobType false to isJobType true
+    if (oldItem.isJobType && !newItem.isJobType) {
+        await JobType.deleteOne({ _id: oldItem.jobType }).exec();
+    }
+
+    return jobType;
 }

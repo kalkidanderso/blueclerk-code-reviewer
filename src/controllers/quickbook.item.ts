@@ -356,7 +356,7 @@ export const _updateQBItem = async (req: Request, res: Response, company: ICompa
     });
 }
 
-export const _inactiveQBItems = async (company: ICompany, items: IItem[]) => {
+export const _updateQBItemsStatus = async (company: ICompany, items: IItem[], isActive: boolean) => {
     const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
     for (const item of items) {
