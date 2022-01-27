@@ -2857,7 +2857,7 @@ paths:
       tags:
         - Items
       summary: To update multiple item tier's charge at once
-      description: Will update charges for multiple item tier's charge at once. When there are some troubled itemId and/or tierId, BE will return it to the response, showing that those IDs are not being updated and have some problem on it
+      description: Will update charges for multiple item tier's charge at once or even update one full item. When there are some troubled itemId and/or tierId, BE will return it to the response, showing that those IDs are not being updated and have some problem on it
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -2866,8 +2866,7 @@ paths:
               properties:
                 items:
                   type: string
-                  description: |
-                    'Json string of the items e.g [{"itemId":"60884105898eb7068283bfc4","tiers":[{"tierId":"60b7dd9643d3717e9a325c9f","charge":10},{"tierId":"60b7e0598529b3041b284628","charge":20}]},{"itemId":"60884115898eb7068283bfc6","tiers":[{"tierId":"60b7e0598529b3041b284628","charge":15},{"tierId":"60b7e0a68529b3041b284629","charge":25}]},{"itemId":"60b90c8438045631806b8e6d","tiers":[{"tierId":"60b7dd9643d3717e9a325c9f","charge":40}]}]'
+                  description: 'Json string of multiple items and only price tiers e.g [{"itemId":"60884105898eb7068283bfc4","tiers":[{"tierId":"60b7dd9643d3717e9a325c9f","charge":10},{"tierId":"60b7e0598529b3041b284628","charge":20}]},{"itemId":"60b90c8438045631806b8e6d","tiers":[{"tierId":"60b7dd9643d3717e9a325c9f","charge":40}]}]. For updating a single full item, you can do using same format but with a more complete payload e.g [{"itemId":"61eafa0a4dab7678023d4989","name":"Plastering Large","description":"Wall Plastering (Large)","isJobType":true,"isActive":true,"tax":0,"tiers":[{"tierId":"60b7dd9643d3717e9a325c9f","charge":45},{"tierId":"60b7e0598529b3041b284628","charge":50},{"tierId":"60b7e0a68529b3041b284629","charge":60},{"tierId":"60b8f99ab1dd5f232f9214a4","charge":100},{"tierId": "60b900152fe90a252dff18fe","charge":300}]}].'
       responses:
         '200':
           description: Success

@@ -1865,6 +1865,10 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
             select: 'info.email auth.email profile.displayName address contact contactName'
         })
         .populate({
+            path: 'customerContactId',
+            select: '-__v'
+        })
+        .populate({
             path: 'paymentTerm',
             select: '-company -__v'
         })
@@ -2154,7 +2158,8 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const customer = <ICustomer>invoice.customer;
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
     const job = <IJob>invoice.job;
-    const customerContact = await Customer.findById(invoice.customerContactId ?? invoice.customer);
+    // const customerContact = await Customer.findById(invoice.customerContactId ?? invoice.customer);
+    const customerContact = <IContact>invoice.customerContactId;
 
     // Construct Company Address object
     const companyAddress = {
@@ -2205,7 +2210,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
 
     // Construct Contact Details text
     let contactDetails = {
-        text: `${!customerContact.contact.phone ? ' ' : customerContact.contact.phone + '\n'} ${customerContact.info.email ?? ''}`, fontSize: 6, bold: true
+        text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 6, bold: true
     };
 
     // Construct the header for the Invoice Items
@@ -2418,7 +2423,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                         ],
                         [
                             {},
-                            { text: `${customerContact.profile.displayName ?? ''}`, fontSize: 6, bold: true },
+                            { text: `${customerContact?.name ?? ''}`, fontSize: 6, bold: true },
                             contactDetails,
                             {},
                             {},
