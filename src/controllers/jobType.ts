@@ -462,7 +462,7 @@ export const updateItems = async (req: Request, res: Response) => {
         }
 
         // Handle isJobType status
-        const itemJobType = await _handleItemJobType(itemObj, i, user._id);
+        const jobType = await _handleItemJobType(itemObj, i, user._id);
 
         itemObj.name = i.name ?? itemObj.name;
         itemObj.description = i.description;
@@ -470,12 +470,16 @@ export const updateItems = async (req: Request, res: Response) => {
         itemObj.isFixed = i.isFixed ?? itemObj.isFixed;
         itemObj.tax = i.tax ?? itemObj.tax
         itemObj.isActive = i.isActive ?? itemObj.isActive;
-        itemObj.jobType = itemJobType?._id;
+        itemObj.jobType = jobType?._id;
 
         await itemObj.save(async (err) => {
-            await _updateQBItem(req, res, company, itemObj, async (err, errMsg) => { });
-            if (err)
+            if (err) {
                 return res.json({ status: Status.Success, message: err.message, item: itemObj });
+            }
+
+            if (company.qbAuthorized && itemObj.quickbookId) {
+                await _updateQBItem(req, res, company, itemObj, async (err, errMsg) => { });
+            }
         });
     }
 
@@ -743,16 +747,16 @@ const _handleItemJobType = async (oldItem: IItem, newItem: IItem, userId: string
     if (!oldItem.isJobType && newItem.isJobType) {
         if (jobType) {
             jobType.isActive = true;
+        } else {
+            jobType = new JobType({
+                title: newItem.name ?? oldItem.name,
+                description: newItem.description ?? oldItem.description,
+                sku: newItem.sku ?? oldItem.sku,
+                createdBy: userId,
+                isActive: newItem.isActive ?? oldItem.isActive,
+                quickbookId: newItem.quickbookId ?? oldItem.quickbookId
+            });
         }
-
-        jobType = new JobType({
-            title: newItem.name ?? oldItem.name,
-            description: newItem.description ?? oldItem.description,
-            sku: newItem.sku ?? oldItem.sku,
-            createdBy: userId,
-            isActive: newItem.isActive ?? oldItem.isActive,
-            quickbookId: newItem.quickbookId ?? oldItem.quickbookId
-        });
 
         jobType.save();
     }
@@ -761,7 +765,6 @@ const _handleItemJobType = async (oldItem: IItem, newItem: IItem, userId: string
     if (oldItem.isJobType && !newItem.isJobType) {
         jobType.isActive = false;
         jobType.save();
-        jobType = null
     }
 
     return jobType;
