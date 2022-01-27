@@ -768,6 +768,14 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
             select: 'name address location'
         })
         .populate({
+            path: 'images.uploadedBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'technicianImages.uploadedBy',
+            select: 'profile.displayName'
+        })
+        .populate({
             path: 'jobSite',
             select: 'name address location'
         }).skip((currentPage - 1) * pageSize)
@@ -857,6 +865,14 @@ export const getJobs = (req: Request, res: Response) => {
         .populate({
             path: 'jobSite',
             select: 'name location address'
+        })
+        .populate({
+            path: 'images.uploadedBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'technicianImages.uploadedBy',
+            select: 'profile.displayName'
         })
         .exec(async (err: any, jobs: IJob[]) => {
 
@@ -950,6 +966,14 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
         })
         .populate({
             path: 'createdBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'images.uploadedBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'technicianImages.uploadedBy',
             select: 'profile.displayName'
         })
         .exec((err: any, jobs: IJob[]) => {
@@ -2140,6 +2164,14 @@ export const getJobDetails = (req: Request, res: Response) => {
             path: 'jobSite',
             select: 'name location address'
         })
+        .populate({
+            path: 'images.uploadedBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'technicianImages.uploadedBy',
+            select: 'profile.displayName'
+        })
         .then(async (job: any) => {
 
             if (job == undefined) {
@@ -2398,6 +2430,14 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
             path: 'createdBy',
             select: 'profile.displayName'
         })
+        .populate({
+            path: 'images.uploadedBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'technicianImages.uploadedBy',
+            select: 'profile.displayName'
+        })
         .exec(async (err: any, jobs: IJob[]) => {
 
             if (err) {
@@ -2565,6 +2605,14 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response) => 
             path: 'ticket',
             select: 'customer',
             populate: { path: 'customer', select: 'profile.displayName' }
+        })
+        .populate({
+            path: 'images.uploadedBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'technicianImages.uploadedBy',
+            select: 'profile.displayName'
         });
 
     let action = '';
@@ -2572,94 +2620,109 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response) => 
     const task = job.tasks.find(task => task?.technician?._id.toString() === params.technicianId);
     const technician = <IUser>task.technician;
 
-    switch (Number(params.status)) {
-        case JobStatus.FINISHED:
-            // Cannot FINISHED technician task with FINISHED status
-            if (task.status === JobStatus.FINISHED) {
-                return res.json({ status: Status.Error, message: `You can't finish this technician task, it is already finished` });
-            }
+    if (params.status) {
+        if (Number(params.status) === JobStatus.RESCHEDULED && !params.note) {
+            return res.json({ status: Status.Error, message: 'Note is required when you reschedule or make the job incomplete' });
+        }
 
-            // Update technician task status and add Job's history track
-            task.status = JobStatus.FINISHED;
-            action += `|Technician: ${technician?.profile?.displayName} finishing his/her task|`;
+        switch (Number(params.status)) {
+            case JobStatus.FINISHED:
+                // Cannot FINISHED technician task with FINISHED status
+                if (task.status === JobStatus.FINISHED) {
+                    return res.json({ status: Status.Error, message: `You can't finish this technician task, it is already finished` });
+                }
 
-            // FINISHED all STARTED and PAUSED task jobTypes
-            const startedPausedTaskJobTypes: ITaskJobType[] = task.jobTypes.filter(taskJobType =>
-                [JobStatus.STARTED, JobStatus.PAUSED].includes(Number(taskJobType.status))
-            );
-            for (const taskJobType of startedPausedTaskJobTypes) {
-                await _updateTask({ job, taskJobType, user, params, status: params.status });
-            };
+                // Update technician task status and add Job's history track
+                task.status = JobStatus.FINISHED;
+                action += `|Technician: ${technician?.profile?.displayName} finishing his/her task|`;
 
-            // Check if all technician statuses are FINISHED as well and update job's status
-            allTechnicianStatus = job.tasks.map(task => task.status);
-            if (allTechnicianStatus.every(status => status === JobStatus.FINISHED)) {
-                job.status = JobStatus.FINISHED;
-            }
+                // FINISHED all STARTED and PAUSED task jobTypes
+                const startedPausedTaskJobTypes: ITaskJobType[] = task.jobTypes.filter(taskJobType =>
+                    [JobStatus.STARTED, JobStatus.PAUSED].includes(Number(taskJobType.status))
+                );
+                for (const taskJobType of startedPausedTaskJobTypes) {
+                    await _updateTask({ job, taskJobType, user, params, status: params.status });
+                };
 
-            break;
+                // Check if all technician statuses are FINISHED as well and update job's status
+                allTechnicianStatus = job.tasks.map(task => task.status);
+                if (allTechnicianStatus.every(status => status === JobStatus.FINISHED)) {
+                    job.status = JobStatus.FINISHED;
+                }
 
-        case JobStatus.CANCELED:
-            // Cannot CANCELED technician task with FINISHED status
-            if (task.status === JobStatus.FINISHED) {
-                return res.json({ status: Status.Error, message: `You can't cancel this technician task, it is already finished` });
-            }
+                break;
 
-            // Update technician task status and add Job's history track
-            task.status = JobStatus.CANCELED;
-            action += `|Technician: ${technician?.profile?.displayName} canceling his/her task|`;
+            case JobStatus.CANCELED:
+                // Cannot CANCELED technician task with FINISHED status
+                if (task.status === JobStatus.FINISHED) {
+                    return res.json({ status: Status.Error, message: `You can't cancel this technician task, it is already finished` });
+                }
 
-            /**
-             * Check if there no more PENDING, STARTED, or PAUSED technician statuses,
-             * if it does, update job's status to CANCELED as well
-             */
-            allTechnicianStatus = job.tasks.map(task => task.status);
-            if (
-                !allTechnicianStatus.includes(JobStatus.PENDING)
-                && !allTechnicianStatus.includes(JobStatus.STARTED)
-                && !allTechnicianStatus.includes(JobStatus.PAUSED)
-            ) {
-                job.status = JobStatus.CANCELED;
-            }
-            break;
+                // Update technician task status and add Job's history track
+                task.status = JobStatus.CANCELED;
+                action += `|Technician: ${technician?.profile?.displayName} canceling his/her task|`;
 
-        case JobStatus.RESCHEDULED:
-            // Cannot RESCHEDULED technician task with FINISHED status
-            if (task.status === JobStatus.FINISHED) {
-                return res.json({ status: Status.Error, message: `You can't rechedule this technician task, it is already finished` });
-            }
+                /**
+                 * Check if there no more PENDING, STARTED, or PAUSED technician statuses,
+                 * if it does, update job's status to CANCELED as well
+                 */
+                allTechnicianStatus = job.tasks.map(task => task.status);
+                if (
+                    !allTechnicianStatus.includes(JobStatus.PENDING)
+                    && !allTechnicianStatus.includes(JobStatus.STARTED)
+                    && !allTechnicianStatus.includes(JobStatus.PAUSED)
+                ) {
+                    job.status = JobStatus.CANCELED;
+                }
+                break;
 
-            // Update technician task status and add Job's history track
-            task.status = JobStatus.RESCHEDULED;
-            action += `|Technician: ${technician?.profile?.displayName} rescheduling his/her task|`;
+            case JobStatus.RESCHEDULED:
+                // Cannot RESCHEDULED technician task with FINISHED status
+                if (task.status === JobStatus.FINISHED) {
+                    return res.json({ status: Status.Error, message: `You can't rechedule this technician task, it is already finished` });
+                }
 
-            // PAUSED all STARTED task jobTypes
-            const startedTaskJobTypes = task.jobTypes.filter(taskJobType => taskJobType.status === JobStatus.STARTED);
-            for (const taskJobType of startedTaskJobTypes) {
-                await _updateTask({ job, taskJobType, user, params, status: params.status });
-            }
+                // Update technician task status and add Job's history track
+                task.status = JobStatus.RESCHEDULED;
+                action += `|Technician: ${technician?.profile?.displayName} rescheduling his/her task|`;
 
-            /**
-             * Check if there no more PENDING, STARTED, or PAUSED technician statuses,
-             * if it does, update job's status to RESCHEDULED as well
-             */
-            allTechnicianStatus = job.tasks.map(task => task.status);
-            if (
-                !allTechnicianStatus.includes(JobStatus.PENDING)
-                && !allTechnicianStatus.includes(JobStatus.STARTED)
-                && !allTechnicianStatus.includes(JobStatus.PAUSED)
-            ) {
-                job.status = JobStatus.RESCHEDULED;
-            }
-            break;
+                // PAUSED all STARTED task jobTypes
+                const startedTaskJobTypes = task.jobTypes.filter(taskJobType => taskJobType.status === JobStatus.STARTED);
+                for (const taskJobType of startedTaskJobTypes) {
+                    await _updateTask({ job, taskJobType, user, params, status: params.status });
+                }
 
-        default:
-            return res.json({ status: Status.Error, message: `Only status: FINISHED (2), CANCELED (3), and RESCHEDULED (4) that supported by this API` });
+                /**
+                 * Check if there no more PENDING, STARTED, or PAUSED technician statuses,
+                 * if it does, update job's status to RESCHEDULED as well
+                 */
+                allTechnicianStatus = job.tasks.map(task => task.status);
+                if (
+                    !allTechnicianStatus.includes(JobStatus.PENDING)
+                    && !allTechnicianStatus.includes(JobStatus.STARTED)
+                    && !allTechnicianStatus.includes(JobStatus.PAUSED)
+                ) {
+                    job.status = JobStatus.RESCHEDULED;
+                }
+                break;
+
+            default:
+                return res.json({ status: Status.Error, message: `Only status: FINISHED (2), CANCELED (3), and RESCHEDULED (4) that supported by this API` });
+        }
     }
 
     job.track.push({ user: user._id, action, note: params.note, date: new Date() });
 
     try {
+        task.comment = params.comment;
+        if (req.files) {
+            const paramsImageFile = JSON.parse(JSON.stringify(req.files));
+            // Push images from req.files to technicianImages
+            paramsImageFile?.images?.forEach((image: any) =>
+                job.technicianImages.push({ imageUrl: image.location, uploadedBy: user._id, createdAt: new Date() })
+            );
+        }
+
         await job.save();
     } catch (err) {
         return res.json({ status: Status.Error, message: err.message });

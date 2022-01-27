@@ -26,6 +26,13 @@ export interface IJob extends Document {
         createdAt?: Date
         updatedAt?: Date
     }[]
+    technicianImages?: {
+        _id?: Schema.Types.ObjectId
+        imageUrl?: string
+        uploadedBy?: Schema.Types.ObjectId
+        createdAt?: Date
+        updatedAt?: Date
+    }[]
     type: Schema.Types.ObjectId | any // TODO: To be deprecated
     tasks: ITask[]
     tasksBackup: ITaskJobType[] // TODO: Temporary, to be removed
@@ -57,28 +64,12 @@ export interface IJob extends Document {
     }[]
 }
 
-// TODO: To be removed
-// export interface ITask extends Document {
-//     jobType: Schema.Types.ObjectId | IJobType
-//     status?: number
-//     charges?: number
-//     startTime?: Date
-//     tempStartTime?: Date
-//     endTime?: Date
-//     timeSpent?: number
-//     pausedCount?: number
-//     timeUpdatedBy?: Schema.Types.ObjectId | IUser
-//     timeUpdatedAt?: Date
-//     // completeOnTime?: boolean
-//     equipmentScanned?: boolean
-//     noOfEquipmentScanned?: number
-// }
-
 export interface ITask extends Document {
     status: number
     employeeType?: boolean
     technician?: Schema.Types.ObjectId | any
     contractor?: Schema.Types.ObjectId
+    comment?: string
     jobTypes?: ITaskJobType[]
 }
 
@@ -177,6 +168,17 @@ const JobSchema = new Schema({
             },
             createdAt: Date
         }],
+    technicianImages: [{
+        imageUrl: {
+            type: String,
+            required: true
+        },
+        uploadedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        createdAt: Date
+    }],
     type: {
         // TODO: To be deprecated
         type: Schema.Types.ObjectId,
@@ -250,6 +252,7 @@ const JobSchema = new Schema({
             ref: 'Company',
             required: false
         },
+        comment: String,
         jobTypes: [{
             _id: false,
             jobType: {
