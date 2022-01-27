@@ -363,7 +363,7 @@ export const _updateQBItemsStatus = async (company: ICompany, items: IItem[], is
         if (item?.quickbookId) {
             qbo.getItem(item.quickbookId, async (err: any, qbItem: IQBItem) => {
                 if (qbItem) {
-                    qbItem.Active = false
+                    qbItem.Active = isActive
 
                     qbo.updateItem(qbItem, async (err: any, updatedQBItem: IQBItem) => {
                         if (err || !updatedQBItem) {

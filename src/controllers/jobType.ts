@@ -457,28 +457,23 @@ export const updateItems = async (req: Request, res: Response) => {
         }
 
         // Handle item active status
-        await _updateQBItem(req, res, company, itemObj, async (err, errMsg) => {
-            if (!itemObj.isActive && i.isActive) {
-                await _updateQBItemsStatus(company, new Array(itemObj), i.isActive);
-            }
-
-            if (itemObj.isActive && !i.isActive) {
-                await _updateQBItemsStatus(company, new Array(itemObj), i.isActive);
-            }
-        });
+        if (itemObj.isActive !== i.isActive) {
+            await _updateQBItemsStatus(company, new Array(itemObj), i.isActive);
+        }
 
         // Handle isJobType status
         const itemJobType = await _handleItemJobType(itemObj, i, user._id);
 
         itemObj.name = i.name ?? itemObj.name;
-        itemObj.description = i.description ?? itemObj.description;
+        itemObj.description = i.description;
         itemObj.isJobType = i.isJobType ?? itemObj.isJobType;
         itemObj.isFixed = i.isFixed ?? itemObj.isFixed;
         itemObj.tax = i.tax ?? itemObj.tax
         itemObj.isActive = i.isActive ?? itemObj.isActive;
         itemObj.jobType = itemJobType?._id;
 
-        await itemObj.save((err) => {
+        await itemObj.save(async (err) => {
+            await _updateQBItem(req, res, company, itemObj, async (err, errMsg) => { });
             if (err)
                 return res.json({ status: Status.Success, message: err.message, item: itemObj });
         });
@@ -742,9 +737,14 @@ export const mergeItems = async (req: Request, res: Response) => {
 
 const _handleItemJobType = async (oldItem: IItem, newItem: IItem, userId: string): Promise<IJobType> => {
 
-    let jobType: IJobType;
+    let jobType = await JobType.findById(oldItem.jobType);
+
     // From isJobType false to isJobType true
     if (!oldItem.isJobType && newItem.isJobType) {
+        if (jobType) {
+            jobType.isActive = true;
+        }
+
         jobType = new JobType({
             title: newItem.name ?? oldItem.name,
             description: newItem.description ?? oldItem.description,
@@ -759,7 +759,9 @@ const _handleItemJobType = async (oldItem: IItem, newItem: IItem, userId: string
 
     // From isJobType false to isJobType true
     if (oldItem.isJobType && !newItem.isJobType) {
-        await JobType.deleteOne({ _id: oldItem.jobType }).exec();
+        jobType.isActive = false;
+        jobType.save();
+        jobType = null
     }
 
     return jobType;
