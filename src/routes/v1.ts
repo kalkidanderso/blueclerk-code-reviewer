@@ -1906,6 +1906,15 @@ export default function (sio: any) {
         ContactController.getContacts
     )
 
+    router.get(
+        '/getCustomerAllContacts',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.getCustomerAllContacts),
+        checkUserPermissions(Permissions.Customer_Create),
+        ContactController.getCustomerAllContacts
+    )
+
     router.delete(
         '/removeContact',
         passport.authenticate('jwt', { session: false }),

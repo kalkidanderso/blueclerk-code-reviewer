@@ -447,6 +447,11 @@ export const Validations = {
   ],
 
   // Contact
+  getCustomerAllContacts: [
+    check('customerId').exists().withMessage(Messages.Required),
+    check('customerId').isMongoId().withMessage(Messages.WrongId),
+  ],
+
   removeContact: [
     check('contactId').exists().withMessage(Messages.Required),
     check('contactId').isMongoId().withMessage(Messages.WrongId),

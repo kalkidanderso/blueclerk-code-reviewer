@@ -1884,6 +1884,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
     const customer = <ICustomer>invoice.customer;
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
+    const customerContact = <IContact>invoice.customerContactId;
 
     // Retrieve company email default
     const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
@@ -1891,6 +1892,39 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
     // Generate Invoice PDF
     await _generateInvoicePdf(company, invoice);
+
+    let paramRecipients: string[];
+    let recipientEmails: string[];
+    let copyToMyself: boolean;
+    try {
+        // Handle the stringify array of recipients value
+        if (params.recipients && !Array.isArray(params.recipients)) {
+            paramRecipients = JSON.parse(params.recipients);
+        }
+
+         // Handle the stringify boolean value
+        copyToMyself = params.copyToMyself
+            ? params.copyToMyself === 'false' || params.copyToMyself === false
+                ? false
+                : !!params.copyToMyself
+            : false;
+
+        /**
+         * Construct list of recipients if providef from FE,
+         * othwerwise using customerContact or customer
+         */
+        recipientEmails = paramRecipients?.length > 0
+            ? paramRecipients
+            : [(customerContact?.email ?? customer?.info?.email)];
+
+        // Add the user's email himself if he want to receive copy email
+        if (copyToMyself) {
+            recipientEmails.push(user.auth?.email);
+        }
+    } catch (error) {
+        console.log('== Send Invoice Error:', error);
+        return res.json({ status: Status.Error, message: Messages.GenericError });
+    }
 
     // Call AWS SES method
     sendInvoiceEmailToCustomer({
@@ -1901,7 +1935,8 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         company_email: company.info?.companyEmail,
         company_logo: company.info?.logoUrl,
         customer_name: customer.profile?.displayName,
-        customer_email: customer.info?.email,
+        customer_email: customerContact?.email ?? customer?.info?.email,
+        recipient_emails: recipientEmails,
         invoice_number: invoice.invoiceId,
         invoice_amount: invoice.total,
         invoice_due_date: moment(invoice.dueDate).format('MMMM DD, YYYY'),
