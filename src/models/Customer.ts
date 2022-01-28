@@ -31,7 +31,7 @@ export interface ICustomer extends IUser {
     }[]
     paymentTerm?: Schema.Types.ObjectId | IPaymentTerm
     vendorId?: string,
-    contacts: [Schema.Types.ObjectId],
+    contacts: [Schema.Types.ObjectId | IContact],
     contactEmail: string
     inactiveAt?: Date
     inactiveBy?: Schema.Types.ObjectId | IUser

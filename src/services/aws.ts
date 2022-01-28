@@ -269,7 +269,7 @@ export const sendInvoiceEmailToCustomer = async function(options: any) {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
 
-  let { subject, message, sender_email, company_name, company_email, company_logo, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date, invoice_pdf, invoice_pdf_name, term_name, term_due_days } = options;
+  let { subject, message, sender_email, company_name, company_email, company_logo, customer_name, customer_email, recipient_emails, invoice_number, invoice_amount, invoice_due_date, invoice_pdf, invoice_pdf_name, term_name, term_due_days } = options;
 
   AWS.config.update({
     region: AWS_REGION,
@@ -286,7 +286,7 @@ export const sendInvoiceEmailToCustomer = async function(options: any) {
   message = message.replace(/\\n/gi, '<br />');
 
   const SENDER = `"${company_name}" <${APP_EMAIL_NOREPLY ?? sender_email ?? company_email}>`;
-  const RECIPIENT = customer_email;
+  const RECIPIENT = recipient_emails;
   const SUBJECT = eval('`' + subject + '`');
   const BODY_HTML = `<div style=\"font-family:roboto; padding:10px; background-color: #EAECF3; text-align:center;\">
                       <p><img style=\"width:350px\" src=\"${company_logo}\" alt=\"${company_name}\" /></p>
@@ -326,11 +326,16 @@ export const sendInvoiceEmailToCustomer = async function(options: any) {
     rawMessage.push(`--${boundary}--`);
   }
 
-  await ses.sendRawEmail({
-    Source: SENDER,
-    Destinations: [ RECIPIENT ],
-    RawMessage: { Data: rawMessage.join("\n") }
-  }).promise();
+  try {
+    await ses.sendRawEmail({
+      Source: SENDER,
+      Destinations: RECIPIENT,
+      RawMessage: { Data: rawMessage.join("\n") }
+    }).promise();
+  } catch (error) {
+    console.log('== AWS sendInvoiceEmailToCustomer Error:', error);
+    return;
+  }
 
   return;
 
