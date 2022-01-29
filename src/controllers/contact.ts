@@ -1,9 +1,11 @@
+import * as _ from 'lodash';
 import {Request, Response} from 'express'
 import { Contact } from '../models/Contact'
 import {Messages, Status} from '../common/constants'
 import {Customer, ICustomer} from '../models/Customer'
-import {JobLocation} from '../models/JobLocation'
+import {IJobLocation, JobLocation} from '../models/JobLocation'
 import {IContact} from '../common/contact'
+import { ICompany } from '../models/Company'
 
 
 const createContact = async (name:string, email:string, phone:string) => {
@@ -111,6 +113,44 @@ export const getContacts = async (req: Request, res: Response) => {
     } catch (err) {
         return res.json({ status: Status.Error, message: 'Exception error'})
     }
+}
+
+export const getCustomerAllContacts = async (req: Request, res: Response) => {
+
+    const params = req.query;
+    const company = <ICompany>req.company;
+
+    const customer = await Customer
+        .findOne({ _id: params.customerId, company: company._id })
+        .populate({ path: 'contacts', select: '-__v' })
+
+    if (!customer) {
+        return res.json({ status: Status.Error, message: 'Customer not found' });
+    }
+
+    const contacts = [];
+
+    // Add the Customer's email for the first value
+    contacts.push({
+        name: customer.profile?.displayName,
+        email: customer.info?.email,
+        phone: customer.contact?.phone
+    });
+
+    // Push all the contacts from the Customer
+    for (const contact of <IContact[]>customer.contacts) {
+        contacts.push({
+            name: contact?.name,
+            email: contact?.email,
+            phone: contact?.phone
+        });
+    }
+
+    // Sort the list by name incasesensitive then by email
+    const sortedContacts = _.sortBy(contacts, [contact => contact.name?.toLowerCase(), 'email']);
+
+    return res.json({ status: Status.Success, contacts: sortedContacts });
+
 }
 
 export const removeContact = async (req: Request, res: Response) => {
