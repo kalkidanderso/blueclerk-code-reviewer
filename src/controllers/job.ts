@@ -2298,7 +2298,7 @@ export const sendJobReport = (req: Request, res: Response) => {
                 const jobType: any = [];
 
                 report.job.tasks.forEach((task: ITask) => {
-                    task.jobTypes.forEach((taskJobType: any) => jobType.push(taskJobType?.jobType?.title ?? 'N/A'));
+                    task.jobTypes.forEach((taskJobType: any) => jobType.push(taskJobType?.jobType?.title));
                 });
 
                 sendReportEmailToCustomer({
