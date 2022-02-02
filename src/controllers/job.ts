@@ -2295,15 +2295,29 @@ export const sendJobReport = (req: Request, res: Response) => {
         .exec()
         .then(async (report: IJobReport) => {
             if (report) {
+                const jobTypes: any = [];
+
+                report.job.tasks?.forEach((task: ITask) => {
+                    task?.jobTypes?.forEach((taskJobType: any) => {
+                        let fullJobTitle = `${taskJobType?.jobType?.title}`;
+                        fullJobTitle += taskJobType?.jobType?.description
+                            ? ` (${taskJobType?.jobType?.description})`
+                            : '';
+
+                        jobTypes.push(fullJobTitle);
+                    });
+                });
+
                 sendReportEmailToCustomer({
-                    companyName: company.info.companyName,
-                    companyEmail: company.info.companyEmail,
-                    customerName: report.job.customer.profile.displayName,
-                    customerEmail: report.job.customer.info.email,
+                    companyName: company.info?.companyName,
+                    companyEmail: company.info?.companyEmail,
+                    customerName: report.job.customer?.profile?.displayName,
+                    customerEmail: report.job.customer?.info?.email,
                     reportNumber: report.job.jobId,
-                    jobType: report.job.jobType ? report.job.jobType.title : 'N/A',
+                    jobTypes: [...new Set(jobTypes)].join(', ') ?? report.job?.jobType?.title,
                     workDate: report.job.scheduleDate,
                 });
+
                 let history = report.emailHistory ? report.emailHistory : [];
                 let sendingDate = new Date();
                 history.push({

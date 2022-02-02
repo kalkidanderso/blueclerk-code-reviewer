@@ -182,7 +182,7 @@ export const sendContractStartEmail = function(options: any) {
   return new Promise((resolve, reject) => {
     ses.sendEmail(
         {
-          Source: `${options.company}<${APP_EMAIL_NOREPLY}>`,
+          Source: `"${options.company}" <${APP_EMAIL_NOREPLY}>`,
           Destination: {
             CcAddresses: [],
             ToAddresses: [options.to],
@@ -226,7 +226,7 @@ export const sendContractStartEmail = function(options: any) {
 //   return new Promise((resolve, reject) => {
 //     ses.sendEmail(
 //         {
-//           Source: `${options.companyName}<${APP_EMAIL_NOREPLY}>`,
+//           Source: `"${options.companyName}" <${APP_EMAIL_NOREPLY}>`,
 //           Destination: {
 //             CcAddresses: [],
 //             ToAddresses: [options.customerEmail],
@@ -356,7 +356,7 @@ export const sendReportEmailToCustomer = function(options: any) {
   return new Promise((resolve, reject) => {
     ses.sendEmail(
         {
-          Source: `${options.companyName}<${APP_EMAIL_NOREPLY}>`,
+          Source: `"${options.companyName}" <${APP_EMAIL_NOREPLY}>`,
           Destination: {
             CcAddresses: [],
             ToAddresses: [options.customerEmail],
@@ -375,7 +375,7 @@ export const sendReportEmailToCustomer = function(options: any) {
               <hr>
               <p><strong>Report Number:</strong> ${options.reportNumber}</p>
               <p><strong>Company:</strong> ${options.companyName}</p>
-              <p><strong>Job Type:</strong> ${options.jobType}</p>
+              <p><strong>Job Type(s):</strong> ${options.jobTypes ?? 'N/A'}</p>
               <p><strong>Date of work:</strong> ${options.workDate}</p>
               <br />
               <img src='https://blueclerk.com/wp-content/uploads/2020/07/logo.png' alt="blueclerk" />
