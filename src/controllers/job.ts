@@ -2295,10 +2295,10 @@ export const sendJobReport = (req: Request, res: Response) => {
         .exec()
         .then(async (report: IJobReport) => {
             if (report) {
-                const jobType: any = [];
+                const jobTypes: any = [];
 
                 report.job.tasks.forEach((task: ITask) => {
-                    task.jobTypes.forEach((taskJobType: any) => jobType.push(taskJobType?.jobType?.title));
+                    task.jobTypes.forEach((taskJobType: any) => jobTypes.push(taskJobType?.jobType?.title));
                 });
 
                 sendReportEmailToCustomer({
@@ -2307,7 +2307,7 @@ export const sendJobReport = (req: Request, res: Response) => {
                     customerName: report.job.customer.profile.displayName,
                     customerEmail: report.job.customer.info.email,
                     reportNumber: report.job.jobId,
-                    jobType: report.job?.jobType?.title ?? [...new Set(jobType)].toString(),
+                    jobTypes: [...new Set(jobTypes)].toString() ?? report.job?.jobType?.title,
                     workDate: report.job.scheduleDate,
                 });
 
