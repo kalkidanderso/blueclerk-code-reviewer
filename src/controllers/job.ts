@@ -2297,17 +2297,24 @@ export const sendJobReport = (req: Request, res: Response) => {
             if (report) {
                 const jobTypes: any = [];
 
-                report.job.tasks.forEach((task: ITask) => {
-                    task.jobTypes.forEach((taskJobType: any) => jobTypes.push(taskJobType?.jobType?.title));
+                report.job.tasks?.forEach((task: ITask) => {
+                    task?.jobTypes?.forEach((taskJobType: any) => {
+                        let fullJobTitle = `${taskJobType?.jobType?.title}`;
+                        fullJobTitle += taskJobType?.jobType?.description
+                            ? ` (${taskJobType?.jobType?.description})`
+                            : '';
+
+                        jobTypes.push(fullJobTitle);
+                    });
                 });
 
                 sendReportEmailToCustomer({
-                    companyName: company.info.companyName,
-                    companyEmail: company.info.companyEmail,
-                    customerName: report.job.customer.profile.displayName,
-                    customerEmail: report.job.customer.info.email,
+                    companyName: company.info?.companyName,
+                    companyEmail: company.info?.companyEmail,
+                    customerName: report.job.customer?.profile?.displayName,
+                    customerEmail: report.job.customer?.info?.email,
                     reportNumber: report.job.jobId,
-                    jobTypes: [...new Set(jobTypes)].toString() ?? report.job?.jobType?.title,
+                    jobTypes: [...new Set(jobTypes)].join(', ') ?? report.job?.jobType?.title,
                     workDate: report.job.scheduleDate,
                 });
 
