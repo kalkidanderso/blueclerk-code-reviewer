@@ -375,7 +375,7 @@ export const sendReportEmailToCustomer = function(options: any) {
               <hr>
               <p><strong>Report Number:</strong> ${options.reportNumber}</p>
               <p><strong>Company:</strong> ${options.companyName}</p>
-              <p><strong>Job Type:</strong> ${options.jobType}</p>
+              <p><strong>Job Type:</strong> ${!options.jobType ? 'N/A' : options.jobType}</p>
               <p><strong>Date of work:</strong> ${options.workDate}</p>
               <br />
               <img src='https://blueclerk.com/wp-content/uploads/2020/07/logo.png' alt="blueclerk" />
