@@ -2417,11 +2417,11 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             },
                             {},
                             {
-                                text: "JOB PO/SALES ORDER: ",
+                                text: "CUSTOMER PO: ",
                                 style: "smallFont",
                                 alignment: "right",
                             },
-                            { text: !invoice?.purchaseOrder ? 'N/A' : invoice.purchaseOrder, style: "defaultFont" },
+                            { text: invoice.customerPO ?? 'N/A', style: "defaultFont" },
                             { text: "DUE DATE:", style: "smallFont", alignment: "right" },
                             { text: moment(invoice.dueDate).format('MMM. DD, YYYY'), style: "defaultFont", alignment: "right" },
                             {}
