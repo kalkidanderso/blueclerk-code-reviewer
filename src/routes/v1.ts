@@ -1017,7 +1017,7 @@ export default function (sio: any) {
 
     router.post(
         '/searchContractor',
-        validate(Validations.searchContractor),
+        // validate(Validations.searchContractor),
         vendorController.searchContractor
     )
 
