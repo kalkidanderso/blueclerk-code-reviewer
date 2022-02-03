@@ -2251,7 +2251,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     // Construct the header for the Invoice Items
     const table: any = {
         headerRows: 1,
-        widths: [46,200, 60, 60, 60, 72, 91],
+        widths: [44, 202, 40, 86, 40, 86, 35],
         body: [
             [
                 { text: '', fillColor: "#eaecf3", lineColor: "#ffffff" },
@@ -2296,9 +2296,9 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     invoice.items.forEach(item => {
         const itemPopulated = <IItem>item.item;
         const itemName = [{ text: `${item.name ?? itemPopulated?.name ?? ''}`, style: "defaultFontBold", alignment: "left" }, { text: `${item.description ?? itemPopulated?.description ?? ''}`, style: "defaultFont", alignment: "left" }];
-        const itemQuantity = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: item.quantity, style: "defaultFont", alignment: "right" }];
-        const itemPrice = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: `$${item.price}`, style: "defaultFont", alignment: "right" }];
-        const itemTax = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: item.tax === 0 ? 'No' : `Yes`, style: "defaultFont", alignment: "right" }];
+        const itemQuantity = [{ text: " ", style: "defaultFontBold", alignment: "center" }, { text: item.quantity, style: "defaultFont", alignment: "center" }];
+        const itemPrice = [{ text: " ", style: "defaultFontBold", alignment: "center" }, { text: `$${item.price}`, style: "defaultFont", alignment: "center" }];
+        const itemTax = [{ text: " ", style: "defaultFontBold", alignment: "center" }, { text: item.tax === 0 ? 'No' : `Yes`, style: "defaultFont", alignment: "center" }];
         const itemSubTotal = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: `$${item.subTotal}`, style: "defaultFont", alignment: "right" }];
 
         bodyTable.push([
@@ -2478,7 +2478,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             {
                 table: {
                     headerRows: 1,
-                    widths: [48, 120, 10, 175, 165, 60],
+                    widths: [48, 120, 10, 201, 137, 35],
                     body: [
                         [
                             {},
