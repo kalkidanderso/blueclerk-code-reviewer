@@ -121,6 +121,7 @@ export const searchContractor = (req: Request, res: Response) => {
 
     if (params.keyword) {
         query.push({ 'info.companyName': { $regex: params.keyword, $options: 'i' }});
+        query.push({ 'info.companyEmail': { $regex: params.keyword, $options: 'i' }});
     }
 
     if (!params.email && !params.keyword) {
