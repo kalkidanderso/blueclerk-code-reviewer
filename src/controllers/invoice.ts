@@ -1902,7 +1902,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
             paramRecipients = JSON.parse(params.recipients);
         }
 
-         // Handle the stringify boolean value
+        // Handle the stringify boolean value
         copyToMyself = params.copyToMyself
             ? params.copyToMyself === 'false' || params.copyToMyself === false
                 ? false
@@ -2251,7 +2251,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     // Construct the header for the Invoice Items
     const table: any = {
         headerRows: 1,
-        widths: [48, 200, 30, 30, 30, 30, 40, 71, 49],
+        widths: [46,200, 60, 60, 60, 72, 91],
         body: [
             [
                 { text: '', fillColor: "#eaecf3", lineColor: "#ffffff" },
@@ -2275,19 +2275,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                     alignment: "center"
                 },
                 {
-                    text: "UNIT",
-                    style: "smallFont",
-                    fillColor: "#eaecf3",
-                    alignment: "center",
-                },
-                {
                     text: "TAX",
-                    style: "smallFont",
-                    fillColor: "#eaecf3",
-                    alignment: "center",
-                },
-                {
-                    text: "TAX AMOUNT",
                     style: "smallFont",
                     fillColor: "#eaecf3",
                     alignment: "center",
@@ -2310,9 +2298,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
         const itemName = [{ text: `${item.name ?? itemPopulated?.name ?? ''}`, style: "defaultFontBold", alignment: "left" }, { text: `${item.description ?? itemPopulated?.description ?? ''}`, style: "defaultFont", alignment: "left" }];
         const itemQuantity = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: item.quantity, style: "defaultFont", alignment: "right" }];
         const itemPrice = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: `$${item.price}`, style: "defaultFont", alignment: "right" }];
-        const itemUnit = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: item.isFixed ? 'Fixed' : 'HOURLY', style: "defaultFont", alignment: "right" }];
-        const itemTax = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: item.tax === 0 ? 'N/A' : `$${item.tax}`, style: "defaultFont", alignment: "right" }];
-        const itemTaxAmount = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: `$${item.taxAmount}`, style: "defaultFont", alignment: "right" }];
+        const itemTax = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: item.tax === 0 ? 'No' : `Yes`, style: "defaultFont", alignment: "right" }];
         const itemSubTotal = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: `$${item.subTotal}`, style: "defaultFont", alignment: "right" }];
 
         bodyTable.push([
@@ -2320,15 +2306,13 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             itemName,
             itemQuantity,
             itemPrice,
-            itemUnit,
             itemTax,
-            itemTaxAmount,
             itemSubTotal,
             {}
         ]);
     });
 
-    bodyTable.push([{}, {}, {}, {}, {}, {}, {}, {}, {}]);
+    bodyTable.push([{}, {}, {}, {}, {}, {}, {}]);
     for (let i = 0; i < bodyTable.length; i++) {
         table.body.push(bodyTable[i]);
     }
