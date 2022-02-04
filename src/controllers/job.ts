@@ -9,6 +9,7 @@ import {
     sendJobEmailToAssignee,
     sendJobEmailToCustomer, sendReportEmailToCustomer
 } from '../services/aws'
+import { IContact } from '../common/contact';
 
 import { Job, IJob, ITask, ITaskJobType, TaskEntry } from '../models/Job'
 import { EmailSchedule } from '../models/EmailSchedule'
@@ -2256,12 +2257,16 @@ export const getJobReport = (req: Request, res: Response) => {
 
  */
 export const sendJobReport = (req: Request, res: Response) => {
+
     const params = req.body
+    const user = <IUser>req.user;
     let companyId = req.companyId;
     const company = <ICompany>req.company;
+
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
+
     JobReport.findOne({ _id: params.jobReportId, $or: [{ contractor: companyId }, { company: companyId }] })
         .populate({
             path: 'job',
@@ -2308,11 +2313,50 @@ export const sendJobReport = (req: Request, res: Response) => {
                     });
                 });
 
+                const customer = <ICustomer>report.job?.customer;
+                const customerContact = <IContact>report.job?.customerContactId;
+
+                let paramRecipients: string[];
+                let recipientEmails: string[];
+                let ccEmails: string[] = [];
+                let copyToMyself: boolean;
+                try {
+                    // Handle the stringify array of recipients value
+                    if (params.recipients && !Array.isArray(params.recipients)) {
+                        paramRecipients = JSON.parse(params.recipients);
+                    }
+
+                    // Handle the stringify boolean value
+                    copyToMyself = params.copyToMyself
+                        ? params.copyToMyself === 'false' || params.copyToMyself === false
+                            ? false
+                            : !!params.copyToMyself
+                        : false;
+
+                    /**
+                     * Construct list of recipients if providef from FE,
+                     * othwerwise using customerContact or customer
+                     */
+                    recipientEmails = paramRecipients?.length > 0
+                        ? paramRecipients
+                        : [(customerContact?.email ?? customer?.info?.email)];
+
+                    // Add the user's email himself if he want to receive copy email
+                    if (copyToMyself) {
+                        ccEmails.push(user.auth?.email);
+                    }
+                } catch (error) {
+                    console.log('== Send Invoice Error:', error);
+                    return res.json({ status: Status.Error, message: Messages.GenericError });
+                }
+
                 sendReportEmailToCustomer({
                     companyName: company.info?.companyName,
                     companyEmail: company.info?.companyEmail,
                     customerName: report.job.customer?.profile?.displayName,
                     customerEmail: report.job.customer?.info?.email,
+                    recipientEmails,
+                    ccEmails,
                     reportNumber: report.job.jobId,
                     jobTypes: [...new Set(jobTypes)].join(', ') ?? report.job?.jobType?.title,
                     workDate: report.job.scheduleDate,
