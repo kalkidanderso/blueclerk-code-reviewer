@@ -19,8 +19,8 @@ import { IPriceTier } from '../models/PriceTier'
 import { Invoice } from '../models/Invoice'
 import { Payment } from '../models/Payment'
 import { _createQBCustomer, _updateQBCustomer, _inactivateQBCustomers } from '../controllers/quickbook.customer'
-import { _getQBInvoices, _updateQBInvoice, _transferQBInvoices } from '../controllers/quickbook.invoice'
-import { _getQBPayments, _updateQBPayment, _transferQBPayments } from '../controllers/quickbook.payment'
+import { _getQBInvoices, _updateQBInvoice, _transferQBInvoices, _countQBInvoices } from '../controllers/quickbook.invoice'
+import { _getQBPayments, _updateQBPayment, _transferQBPayments, _countQBPayments } from '../controllers/quickbook.payment'
 import { _refreshToken } from './quickbook'
 
 /**
@@ -500,7 +500,7 @@ export const searchDuplicatedCustomers = async (req: Request, res: Response) => 
     const companyId = req.companyId;
     const company = <ICompany>req.company;
 
-    const customers: ICustomer[] = await Customer.find({
+    await Customer.find({
         company: companyId,
         $or: [
             { 'profile.firstName': { $regex: params.keyword, $options: 'i' } },
@@ -508,57 +508,27 @@ export const searchDuplicatedCustomers = async (req: Request, res: Response) => 
             { 'profile.displayName': { $regex: params.keyword, $options: 'i' } },
             { 'info.email': { $regex: params.keyword, $options: 'i' } }
         ]
-    });
-
-    if (!customers.length) {
-        return res.json({ 'status': Status.Success, message: `Customers with keyword "${params.keyword}" not found.` });
-    }
-
-    _refreshToken(req, res, company, async (err, errMsg, company) => {
-        if (err === 0) {
-            res.json({ status: Status.Error, message: errMsg });
-        }
-
-        if (err === 400) {
-            Company.findByIdAndUpdate(req.company._id, {
-                qbAuthorized: false,
-                qbAccessToken: undefined,
-                qbRefreshToken: undefined
-            });
-
-            res.json({ status: Status.QBUnauthorized, message: Messages.QBUnAuthorized });
-        }
-
-        const customerWithInvoicesPayments = [];
-        for (const customer of customers) {
-            const { invoice, quickbookInvoice, payment, quickbookPayment } = await _getCustomerInvoicesPayments(req, res, customer, company);
-
-            await customer
-                .populate({ path: 'equipments', select: '-__v' })
-                .populate({ path: 'itemTier', select: '-__v -createdAt -updatedAt' })
-                .populate({ path: 'paymentTerm', select: '-__v -createdAt -updatedAt' })
-                .populate({ path: 'contacts', select: '-__v' })
-                .populate({
-                    path: 'jobLocations',
-                    select: '-__v -customerId -createdAt -updatedAt',
-                    populate: [
-                        { path: 'contacts', select: '-__v' },
-                        { path: 'jobSites', select: '-__v -locationId -customerId' }
-                    ]
-                })
-                .execPopulate();
-
-            customerWithInvoicesPayments.push({
-                customer,
-                invoice,
-                quickbookInvoice,
-                payment,
-                quickbookPayment
-            });
-        }
-
-        return res.json({ status: Status.Success, customers: customerWithInvoicesPayments });
     })
+        .populate({ path: 'equipments', select: '-__v' })
+        .populate({ path: 'itemTier', select: '-__v -createdAt -updatedAt' })
+        .populate({ path: 'paymentTerm', select: '-__v -createdAt -updatedAt' })
+        .populate({ path: 'contacts', select: '-__v' })
+        .populate({
+            path: 'jobLocations',
+            select: '-__v -customerId -createdAt -updatedAt',
+            populate: [
+                { path: 'contacts', select: '-__v' },
+                { path: 'jobSites', select: '-__v -locationId -customerId' }
+            ]
+        })
+        .exec(async (err: any, customers: ICustomer[]) => {
+            if (err || !customers.length) {
+                return res.json({ 'status': Status.Success, message: `Customers with keyword "${params.keyword}" not found.` });
+            }
+
+            const customerWithInvoicesPayments = await _getCustomerInvoicesPayments(customers, company);
+            return res.json({ status: Status.Success, customers: customerWithInvoicesPayments });
+        });
 }
 
 export const mergeCustomers = async (req: Request, res: Response) => {
@@ -720,20 +690,28 @@ export const mergeCustomers = async (req: Request, res: Response) => {
 
 }
 
-export const _getCustomerInvoicesPayments = async (req: Request, res: Response, customer: ICustomer, company: ICompany) => {
+export const _getCustomerInvoicesPayments = async (customers: ICustomer[], company: ICompany) => {
 
-    const invoice = await Invoice.find({ customer: customer._id, isDraft: false }).countDocuments();
-    const payment = await Payment.find({ customer: customer._id }).countDocuments();
+    const customerWithInvoicesPayments = [];
+    for (const customer of customers) {
+        try {
+            const invoice = await Invoice.find({ customer: customer._id, isDraft: false }).countDocuments();
+            const payment = await Payment.find({ customer: customer._id }).countDocuments();
+            const haveQBPayment = await _countQBPayments(company, customer);
+            const haveQBInvoice = await _countQBInvoices(company, customer);
 
-    const qbInvoice = await _getQBInvoices(req, res, company, customer);
-    const qbPayment = await _getQBPayments(req, res, company, customer);
-
-    return {
-        invoice: invoice ?? 0,
-        quickbookInvoice: qbInvoice?.length ?? 0,
-        payment: payment ?? 0,
-        quickbookPayment: qbPayment?.length ?? 0,
-    };
+            customerWithInvoicesPayments.push({
+                customer,
+                invoice,
+                haveQBInvoice,
+                payment,
+                haveQBPayment
+            });
+        } catch (err) {
+            continue;
+        }
+    }
+    return customerWithInvoicesPayments;
 
 }
 

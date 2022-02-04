@@ -9,6 +9,7 @@ import {
 } from '../middleware/permissions'
 import { uploadInvoices, uploadImageInS3 } from '../middleware/multer';
 import { getCompanyId } from '../middleware/company'
+import { refreshQBToken } from '../middleware/quickbook';
 import { getTechnicianContractor } from '../middleware/job'
 
 import { Role, Permissions } from '../common/constants'
@@ -420,6 +421,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Customer_Get_All),
         validate(Validations.searchDuplicatedCustomers),
+        refreshQBToken(),
         customerController.searchDuplicatedCustomers
     )
 
