@@ -8062,6 +8062,14 @@
                   "jobReportId": {
                     "type": "string",
                     "description": "Id of the job report"
+                  },
+                  "recipients": {
+                    "type": "string",
+                    "description": "List of all recipients in array. Example: [\"zyzorafu@abyssmail.com\",\"tiboqama@boximail.com\"]"
+                  },
+                  "copyToMyself": {
+                    "type": "boolean",
+                    "description": "To send copy to user himself"
                   }
                 }
               }
@@ -8539,7 +8547,7 @@
                   },
                   "recipients": {
                     "type": "string",
-                    "description": "List of all recipients in array"
+                    "description": "List of all recipients in array. Example: [\"zyzorafu@abyssmail.com\",\"tiboqama@boximail.com\"]"
                   },
                   "subject": {
                     "type": "string",

@@ -358,8 +358,8 @@ export const sendReportEmailToCustomer = function(options: any) {
         {
           Source: `"${options.companyName}" <${APP_EMAIL_NOREPLY}>`,
           Destination: {
-            CcAddresses: [],
-            ToAddresses: [options.customerEmail],
+            CcAddresses: options.ccEmails,
+            ToAddresses: options.recipientEmails,
           },
           Message: {
             Subject: {
