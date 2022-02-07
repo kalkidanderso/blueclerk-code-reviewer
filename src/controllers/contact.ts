@@ -232,7 +232,7 @@ const _handlefindIsActiveContact = async (isActive: string | boolean, customerCo
 
         default:
             // Retrieve all contacts
-            contacts.push(customerContacts);
+            contacts.push(...customerContacts);
     }
 
     return contacts;
