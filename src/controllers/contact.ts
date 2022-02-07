@@ -12,8 +12,7 @@ const createContact = async (name: string, email: string, phone: string, isActiv
     const contact = new Contact({
         name: name,
         email: email,
-        phone: phone,
-        isActive
+        phone: phone
     })
     await contact.save()
     return contact
@@ -82,8 +81,13 @@ export const addContact = async (req: Request, res: Response) => {
 
 export const updateContact = async (req: Request, res: Response) => {
     try {
+        const contact = await Contact.findById(req.body._id);
+        if (!contact) {
+            return res.json({ status: Status.Error, message: 'Contact not found' });
+        }
+
         const isActive = req.body.isActive === undefined || req.body.isActive === null
-            ? false
+            ? contact.isActive
             : req.body.isActive === 'false'
                 ? false
                 : !!req.body.isActive
@@ -91,11 +95,8 @@ export const updateContact = async (req: Request, res: Response) => {
         const result = await Contact.findByIdAndUpdate(req.body._id, { name: req.body.name, phone: req.body.phone, email: req.body.email, isActive }, {
             new: true
         })
-        if(result) {
-            return res.json({status: Status.Success, contact: result})
-        } else {
-           return res.json({status: Status.Error, message: 'Contact not found'})
-        }
+
+        return res.json({ status: Status.Success, contact: result });
     } catch (err) {
         return res.json({status: Status.Error, message: 'Error in updating contact'})
     }
@@ -206,26 +207,34 @@ export const removeContact = async (req: Request, res: Response) => {
     }
 }
 
-const _handlefindIsActiveContact = async(isActive: string, customerContacts: IContact[] ): Promise<IContact[]> => {
-    const contacts: any[] = []
+const _handlefindIsActiveContact = async (isActive: string | boolean, customerContacts: IContact[]): Promise<IContact[]> => {
+
+    const contacts: any[] = [];
+
     switch (isActive) {
         case 'true':
+        case true:
             customerContacts?.forEach((contact: IContact) => {
                 if (contact.isActive === true) {
                     contacts.push(contact)
                 }
             });
             break;
+
         case 'false':
+        case false:
             customerContacts?.forEach((contact: IContact) => {
                 if (contact.isActive === false) {
                     contacts.push(contact)
                 }
             });
             break;
+
         default:
+            // Retrieve all contacts
             contacts.push(customerContacts);
     }
 
-    return contacts
+    return contacts;
+
 }

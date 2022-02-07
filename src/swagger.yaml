@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: BlueClerk
   description: APIs for both app and website
-  version: 1.0.0
+  version: 1.0.1
 servers:
   - url: https://blueclerk-node-api.deploy.blueclerk.com/api/v1
 tags:
@@ -1516,7 +1516,7 @@ paths:
           schema: {}
         - name: isActive
           in: query
-          description: If not provided will return only ACTIVE contacts
+          description: If not provided will return ALL contacts
           schema:
             enum:
               - ALL
@@ -2450,7 +2450,7 @@ paths:
             type: string
         - name: isActive
           in: query
-          description: If not provided will return only ACTIVE job locations
+          description: If not provided will return ALL job locations
           schema:
             enum:
               - ALL
