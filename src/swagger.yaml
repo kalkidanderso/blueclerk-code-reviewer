@@ -1514,6 +1514,14 @@ paths:
           in: query
           required: true
           schema: {}
+        - name: isActive
+          in: query
+          description: If not provided will return only ACTIVE contacts
+          schema:
+            enum:
+              - ALL
+              - 'true'
+              - 'false'
       responses:
         '200':
           description: ' Returns list of contacts for the reference number based on the type'
@@ -1566,6 +1574,11 @@ paths:
                   type: string
                 phone:
                   type: string
+                isActive:
+                  type: string
+                  enum:
+                    - 'true'
+                    - 'false'
         required: true
       responses:
         '200':

@@ -14,6 +14,9 @@ const ContactSchema = new Schema({
         type: String,
         // unique: true,
         // index: true,
+    },
+    isActive: {
+        type: Boolean
     }
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
