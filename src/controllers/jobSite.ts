@@ -23,7 +23,7 @@ export const get = (req: Request, res: Response) => {
     switch (isActive) {
         case 'true':
         case true:
-            query = {...query, isActive: true}
+            query = {...query, $or: [{ isActive: true }, { isActive: { $exists: false } }] }
             break;
 
         case 'false':
