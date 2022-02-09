@@ -3,7 +3,7 @@
   "info": {
     "title": "BlueClerk",
     "description": "APIs for both app and website",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "servers": [
     {
@@ -325,11 +325,11 @@
             "application/x-www-form-urlencoded": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "email"
-                ],
                 "properties": {
                   "email": {
+                    "type": "string"
+                  },
+                  "keyword": {
                     "type": "string"
                   }
                 }
@@ -1107,7 +1107,7 @@
         ]
       }
     },
-    "/getCurrentIvoiceNumber": {
+    "/getCurrentInvoiceNumber": {
       "post": {
         "tags": [
           "Invoice"
@@ -2516,6 +2516,18 @@
             "in": "query",
             "required": true,
             "schema": {}
+          },
+          {
+            "name": "isActive",
+            "in": "query",
+            "description": "If not provided will return ALL contacts",
+            "schema": {
+              "enum": [
+                "ALL",
+                "true",
+                "false"
+              ]
+            }
           }
         ],
         "responses": {
@@ -2601,6 +2613,13 @@
                   },
                   "phone": {
                     "type": "string"
+                  },
+                  "isActive": {
+                    "type": "string",
+                    "enum": [
+                      "true",
+                      "false"
+                    ]
                   }
                 }
               }
@@ -4013,7 +4032,7 @@
           {
             "name": "isActive",
             "in": "query",
-            "description": "If not provided will return only ACTIVE job locations",
+            "description": "If not provided will return ALL job locations",
             "schema": {
               "enum": [
                 "ALL",
@@ -4249,6 +4268,66 @@
             "Bearer": []
           }
         ]
+      },
+      "get": {
+        "tags": [
+          "Job Site"
+        ],
+        "summary": "Get Job site by locationId and customerId",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isActive",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "ALL",
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/jobSite"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
       }
     },
     "/jobSite/{id}": {
@@ -4263,7 +4342,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer"
+              "type": "string"
             }
           }
         ],
@@ -4304,14 +4383,15 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer"
+              "type": "string"
             }
           }
         ],
         "requestBody": {
           "content": {
-            "*/*": {
+            "application/json": {
               "schema": {
+                "type": "object",
                 "$ref": "#/components/schemas/jobSite"
               }
             }
@@ -4325,57 +4405,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GeneralAPIResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
-    "/jobSite?companyId={companyId}&customerId={customerId}": {
-      "get": {
-        "tags": [
-          "Job Site"
-        ],
-        "summary": "Get Job site by companyId and/or customerId",
-        "parameters": [
-          {
-            "name": "companyId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "customerId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "GeneralAPIResponse": {
-                      "$ref": "#/components/schemas/GeneralAPIResponse"
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/jobSite"
-                    }
-                  }
                 }
               }
             }
@@ -8062,6 +8091,14 @@
                   "jobReportId": {
                     "type": "string",
                     "description": "Id of the job report"
+                  },
+                  "recipients": {
+                    "type": "string",
+                    "description": "List of all recipients in array. Example: [\"zyzorafu@abyssmail.com\",\"tiboqama@boximail.com\"]"
+                  },
+                  "copyToMyself": {
+                    "type": "boolean",
+                    "description": "To send copy to user himself"
                   }
                 }
               }
@@ -8340,6 +8377,10 @@
                     "type": "string",
                     "description": "Json string of the items e.g [{\"name\": \"repair\", \"description\": \"repair description\", \"price\": 100, \"tax\": 0, \"quantity\": 2},{\"name\": \"service\", \"description\": \"repair description\", \"price\": 50, \"tax\": 0, \"quantity\": 1}]  OR [{\"item\": \"5f23240a3a68041ee95d6800\", \"price\": 1000, \"tax\": 0, \"quantity\": 2}]"
                   },
+                  "invoiceNumber": {
+                    "type": "string",
+                    "description": "Custom invoice number for this invoice only"
+                  },
                   "issuedDate": {
                     "type": "string",
                     "description": "Issued date of the invoice"
@@ -8539,7 +8580,7 @@
                   },
                   "recipients": {
                     "type": "string",
-                    "description": "List of all recipients in array"
+                    "description": "List of all recipients in array. Example: [\"zyzorafu@abyssmail.com\",\"tiboqama@boximail.com\"]"
                   },
                   "subject": {
                     "type": "string",

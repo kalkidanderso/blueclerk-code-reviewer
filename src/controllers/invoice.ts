@@ -30,7 +30,7 @@ import { EmailDefault } from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer } from '../services/aws';
 import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice } from '../controllers/quickbook.invoice';
-import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from './emailDefault';
+import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from '../controllers/emailDefault';
 import { IJobSite } from '../models/JobSite';
 import { IJobLocation } from '../models/JobLocation';
 
@@ -1289,6 +1289,12 @@ export const updateInvoice = (req: Request, res: Response) => {
              */
             // paymentTerm = paymentTerm || <IPaymentTerm>customerObj?.paymentTerm || <IPaymentTerm>company?.paymentTerm;
 
+            const invoiceId = params.invoiceNumber === undefined || params.invoiceNumber === null
+                ? invoice.invoiceId
+                : company.invoicePrefix
+                    ? `Invoice ${company.invoicePrefix}-${params.invoiceNumber}`
+                    : `Invoice ${params.invoiceNumber}`;
+
             if (invoice.invoiceType == 0) {
 
                 Job.findById(invoice.job)
@@ -1498,7 +1504,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                             paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                             customerPO: params.customerPO,
                             customerContactId: customerContact,
-                            vendorId: params.vendorId
+                            vendorId: params.vendorId,
+                            invoiceId
                         }, { omitUndefined: true },
 
                             async (err: any) => {
@@ -1685,7 +1692,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                     paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                     customerPO: params.customerPO,
                     customerContactId: customerContact,
-                    vendorId: params.vendorId
+                    vendorId: params.vendorId,
+                    invoiceId
                 }, { omitUndefined: true },
                     async (err: any) => {
                         if (err) {
@@ -1808,11 +1816,12 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     const customer = <ICustomer>invoice.customer;
 
     // Retrieve company email default
-    const emailDefault = await EmailDefault.findOne({ company });
+    let emailDefault = await EmailDefault.findOne({ company });
 
     // Create email default if company doesn't have one yet
     if (!emailDefault) {
         await _createCompanyDefaultEmail(company);
+        emailDefault = await EmailDefault.findOne({ company });
     }
 
     /**
@@ -1902,7 +1911,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
             paramRecipients = JSON.parse(params.recipients);
         }
 
-         // Handle the stringify boolean value
+        // Handle the stringify boolean value
         copyToMyself = params.copyToMyself
             ? params.copyToMyself === 'false' || params.copyToMyself === false
                 ? false
@@ -2193,7 +2202,6 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const customer = <ICustomer>invoice.customer;
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
     const job = <IJob>invoice.job;
-    // const customerContact = await Customer.findById(invoice.customerContactId ?? invoice.customer);
     const customerContact = <IContact>invoice.customerContactId;
 
     // Construct Company Address object
@@ -2213,16 +2221,20 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     }
 
     // Construct default Job Service Address object
-    const jobAddress = { ...customerAddress };
+    const jobAddress: any = { ...customerAddress };
 
     if (job) {
         // Take Job Location or Job Site address if any
         const site = <IJobSite>job.jobSite ?? <IJobLocation>job.jobLocation;
         if (site) {
-            jobAddress.street = site.address?.street ? `${site.address?.street}` : '';
-            jobAddress.city = site.address?.city ? `, ${site.address?.city}` : '';
-            jobAddress.state = site.address?.state ? `, ${site.address?.state}` : '';
-            jobAddress.zipCode = site.address?.zipcode ? `, ${site?.address?.zipcode}` : '';
+            jobAddress.name = site?.name ?? '';
+            jobAddress.street = site?.address?.street ?? '';
+            jobAddress.city = jobAddress.street && site?.address?.city ? ', ' : '';
+            jobAddress.city += site?.address?.city ?? '';
+            jobAddress.state = (jobAddress.street || jobAddress.city) && site?.address?.state ? ', ' : '';
+            jobAddress.state += site?.address?.state ?? '';
+            jobAddress.zipCode = (jobAddress.street || jobAddress.city || jobAddress.state) && site?.address?.zipcode ? ', ' : '';
+            jobAddress.zipCode += site?.address?.zipcode ?? '';
         }
     }
 
@@ -2251,7 +2263,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     // Construct the header for the Invoice Items
     const table: any = {
         headerRows: 1,
-        widths: [48, 200, 30, 30, 30, 30, 40, 71, 49],
+        widths: [44, 202, 40, 86, 40, 86, 35],
         body: [
             [
                 { text: '', fillColor: "#eaecf3", lineColor: "#ffffff" },
@@ -2275,19 +2287,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                     alignment: "center"
                 },
                 {
-                    text: "UNIT",
-                    style: "smallFont",
-                    fillColor: "#eaecf3",
-                    alignment: "center",
-                },
-                {
                     text: "TAX",
-                    style: "smallFont",
-                    fillColor: "#eaecf3",
-                    alignment: "center",
-                },
-                {
-                    text: "TAX AMOUNT",
                     style: "smallFont",
                     fillColor: "#eaecf3",
                     alignment: "center",
@@ -2308,11 +2308,9 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     invoice.items.forEach(item => {
         const itemPopulated = <IItem>item.item;
         const itemName = [{ text: `${item.name ?? itemPopulated?.name ?? ''}`, style: "defaultFontBold", alignment: "left" }, { text: `${item.description ?? itemPopulated?.description ?? ''}`, style: "defaultFont", alignment: "left" }];
-        const itemQuantity = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: item.quantity, style: "defaultFont", alignment: "right" }];
-        const itemPrice = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: `$${item.price}`, style: "defaultFont", alignment: "right" }];
-        const itemUnit = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: item.isFixed ? 'Fixed' : 'HOURLY', style: "defaultFont", alignment: "right" }];
-        const itemTax = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: item.tax === 0 ? 'N/A' : `$${item.tax}`, style: "defaultFont", alignment: "right" }];
-        const itemTaxAmount = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: `$${item.taxAmount}`, style: "defaultFont", alignment: "right" }];
+        const itemQuantity = [{ text: " ", style: "defaultFontBold", alignment: "center" }, { text: item.quantity, style: "defaultFont", alignment: "center" }];
+        const itemPrice = [{ text: " ", style: "defaultFontBold", alignment: "center" }, { text: `$${item.price}`, style: "defaultFont", alignment: "center" }];
+        const itemTax = [{ text: " ", style: "defaultFontBold", alignment: "center" }, { text: item.tax === 0 ? 'No' : `Yes`, style: "defaultFont", alignment: "center" }];
         const itemSubTotal = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: `$${item.subTotal}`, style: "defaultFont", alignment: "right" }];
 
         bodyTable.push([
@@ -2320,15 +2318,13 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             itemName,
             itemQuantity,
             itemPrice,
-            itemUnit,
             itemTax,
-            itemTaxAmount,
             itemSubTotal,
             {}
         ]);
     });
 
-    bodyTable.push([{}, {}, {}, {}, {}, {}, {}, {}, {}]);
+    bodyTable.push([{}, {}, {}, {}, {}, {}, {}]);
     for (let i = 0; i < bodyTable.length; i++) {
         table.body.push(bodyTable[i]);
     }
@@ -2434,6 +2430,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             ],
                             [
                                 { text: "\nSERVICE ADDRESS", style: "smallFont", alignment: "left" },
+                                { text: `${jobAddress.name}`, style: "defaultFontBold" },
                                 { text: `${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
                             ],
                             {},
@@ -2494,7 +2491,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             {
                 table: {
                     headerRows: 1,
-                    widths: [48, 120, 10, 175, 165, 60],
+                    widths: [48, 120, 10, 201, 137, 35],
                     body: [
                         [
                             {},

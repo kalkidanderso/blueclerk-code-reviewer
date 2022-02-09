@@ -112,10 +112,24 @@ export const createContractor = (req: Request, res: Response, sio: any) => {
 // search contractor/organization for contract
 export const searchContractor = (req: Request, res: Response) => {
 
-    const params = req.body
+    let query: any = [];
+    const params = req.body;
+
+    if (params.email) {
+        query.push({ 'info.companyEmail': { $regex: params.email, $options: 'i' } });
+    }
+
+    if (params.keyword) {
+        query.push({ 'info.companyName': { $regex: params.keyword, $options: 'i' }});
+        query.push({ 'info.companyEmail': { $regex: params.keyword, $options: 'i' }});
+    }
+
+    if (!params.email && !params.keyword) {
+        return res.json({ 'status': Status.Success, 'contractors': [] });
+    }
 
     Company.find(
-        { 'info.companyEmail': params.email },
+        { $or: query},
         'info.companyEmail info.companyName contact.phone info.logoUrl address.street address.city address.state address.zipCode',
         (err: any, contractors: ICompany[]) => {
 

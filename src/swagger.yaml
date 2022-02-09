@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: BlueClerk
   description: APIs for both app and website
-  version: 1.0.0
+  version: 1.0.1
 servers:
   - url: https://blueclerk-node-api.deploy.blueclerk.com/api/v1
 tags:
@@ -187,10 +187,10 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               type: object
-              required:
-                - email
               properties:
                 email:
+                  type: string
+                keyword:
                   type: string
         required: true
       responses:
@@ -665,7 +665,7 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
-  /getCurrentIvoiceNumber:
+  /getCurrentInvoiceNumber:
     post:
       tags:
         - Invoice
@@ -1514,6 +1514,14 @@ paths:
           in: query
           required: true
           schema: {}
+        - name: isActive
+          in: query
+          description: If not provided will return ALL contacts
+          schema:
+            enum:
+              - ALL
+              - 'true'
+              - 'false'
       responses:
         '200':
           description: ' Returns list of contacts for the reference number based on the type'
@@ -1566,6 +1574,11 @@ paths:
                   type: string
                 phone:
                   type: string
+                isActive:
+                  type: string
+                  enum:
+                    - 'true'
+                    - 'false'
         required: true
       responses:
         '200':
@@ -2437,7 +2450,7 @@ paths:
             type: string
         - name: isActive
           in: query
-          description: If not provided will return only ACTIVE job locations
+          description: If not provided will return ALL job locations
           schema:
             enum:
               - ALL
@@ -2580,6 +2593,42 @@ paths:
                 $ref: '#/components/schemas/jobSite'
       security:
         - Bearer: []
+    get:
+      tags:
+        - Job Site
+      summary: Get Job site by locationId and customerId
+      parameters:
+        - name: customerId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: locationId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: isActive
+          in: query
+          schema:
+            enum:
+              - ALL
+              - 'true'
+              - 'false'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+                  data:
+                    $ref: '#/components/schemas/jobSite'
+      security:
+        - Bearer: []
   /jobSite/{id}:
     get:
       tags:
@@ -2590,7 +2639,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         '200':
           description: Success
@@ -2614,11 +2663,12 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         content:
-          '*/*':
+          application/json:
             schema:
+              type: object
               $ref: '#/components/schemas/jobSite'
         required: false
       responses:
@@ -2628,36 +2678,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GeneralAPIResponse'
-      security:
-        - Bearer: []
-  /jobSite?companyId={companyId}&customerId={customerId}:
-    get:
-      tags:
-        - Job Site
-      summary: Get Job site by companyId and/or customerId
-      parameters:
-        - name: companyId
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: customerId
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  GeneralAPIResponse:
-                    $ref: '#/components/schemas/GeneralAPIResponse'
-                  data:
-                    $ref: '#/components/schemas/jobSite'
       security:
         - Bearer: []
   /createJobType:
@@ -4949,6 +4969,12 @@ paths:
                 jobReportId:
                   type: string
                   description: Id of the job report
+                recipients:
+                  type: string
+                  description: 'List of all recipients in array. Example: ["zyzorafu@abyssmail.com","tiboqama@boximail.com"]'
+                copyToMyself:
+                  type: boolean
+                  description: To send copy to user himself
         required: true
       responses:
         '200':
@@ -5124,6 +5150,9 @@ paths:
                 items:
                   type: string
                   description: 'Json string of the items e.g [{"name": "repair", "description": "repair description", "price": 100, "tax": 0, "quantity": 2},{"name": "service", "description": "repair description", "price": 50, "tax": 0, "quantity": 1}]  OR [{"item": "5f23240a3a68041ee95d6800", "price": 1000, "tax": 0, "quantity": 2}]'
+                invoiceNumber:
+                  type: string
+                  description: Custom invoice number for this invoice only
                 issuedDate:
                   type: string
                   description: Issued date of the invoice
@@ -5252,7 +5281,7 @@ paths:
                   description: Id of invoice
                 recipients:
                   type: string
-                  description: List of all recipients in array
+                  description: 'List of all recipients in array. Example: ["zyzorafu@abyssmail.com","tiboqama@boximail.com"]'
                 subject:
                   type: string
                   description: Subject of the email, if not provided will use company's email default
