@@ -2593,6 +2593,42 @@ paths:
                 $ref: '#/components/schemas/jobSite'
       security:
         - Bearer: []
+    get:
+      tags:
+        - Job Site
+      summary: Get Job site by locationId and customerId
+      parameters:
+        - name: customerId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: locationId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: isActive
+          in: query
+          schema:
+            enum:
+              - ALL
+              - 'true'
+              - 'false'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+                  data:
+                    $ref: '#/components/schemas/jobSite'
+      security:
+        - Bearer: []
   /jobSite/{id}:
     get:
       tags:
@@ -2603,7 +2639,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         '200':
           description: Success
@@ -2627,11 +2663,12 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         content:
-          '*/*':
+          application/json:
             schema:
+              type: object
               $ref: '#/components/schemas/jobSite'
         required: false
       responses:
@@ -2641,36 +2678,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GeneralAPIResponse'
-      security:
-        - Bearer: []
-  /jobSite?companyId={companyId}&customerId={customerId}:
-    get:
-      tags:
-        - Job Site
-      summary: Get Job site by companyId and/or customerId
-      parameters:
-        - name: companyId
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: customerId
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  GeneralAPIResponse:
-                    $ref: '#/components/schemas/GeneralAPIResponse'
-                  data:
-                    $ref: '#/components/schemas/jobSite'
       security:
         - Bearer: []
   /createJobType:
