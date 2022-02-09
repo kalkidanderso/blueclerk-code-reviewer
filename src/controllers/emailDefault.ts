@@ -57,10 +57,10 @@ export const updateCompanyEmailDefault = async (req: Request, res: Response) => 
  */
 export const transformPlaceholders = async (emailDefault: IEmailDefault): Promise<void> => {
 
-    emailDefault.subject = emailDefault.subject.replace(/{{/gi, '${').replace(/}}/gi, '}');
-    emailDefault.message = emailDefault.message.replace(/{{/gi, '${').replace(/}}/gi, '}');
+    emailDefault.subject = emailDefault?.subject?.replace(/{{/gi, '${')?.replace(/}}/gi, '}');
+    emailDefault.message = emailDefault?.message?.replace(/{{/gi, '${')?.replace(/}}/gi, '}');
 
-    emailDefault.message = emailDefault.message.replace(/\${small_company_logo}/gi, '{{small_company_logo}}');
+    emailDefault.message = emailDefault?.message?.replace(/\${small_company_logo}/gi, '{{small_company_logo}}');
 
     return;
 

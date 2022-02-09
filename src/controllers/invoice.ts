@@ -30,7 +30,7 @@ import { EmailDefault } from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer } from '../services/aws';
 import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice } from '../controllers/quickbook.invoice';
-import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from './emailDefault';
+import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from '../controllers/emailDefault';
 import { IJobSite } from '../models/JobSite';
 import { IJobLocation } from '../models/JobLocation';
 
@@ -1816,11 +1816,12 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     const customer = <ICustomer>invoice.customer;
 
     // Retrieve company email default
-    const emailDefault = await EmailDefault.findOne({ company });
+    let emailDefault = await EmailDefault.findOne({ company });
 
     // Create email default if company doesn't have one yet
     if (!emailDefault) {
         await _createCompanyDefaultEmail(company);
+        emailDefault = await EmailDefault.findOne({ company });
     }
 
     /**
@@ -2201,7 +2202,6 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const customer = <ICustomer>invoice.customer;
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
     const job = <IJob>invoice.job;
-    // const customerContact = await Customer.findById(invoice.customerContactId ?? invoice.customer);
     const customerContact = <IContact>invoice.customerContactId;
 
     // Construct Company Address object
@@ -2221,16 +2221,20 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     }
 
     // Construct default Job Service Address object
-    const jobAddress = { ...customerAddress };
+    const jobAddress: any = { ...customerAddress };
 
     if (job) {
         // Take Job Location or Job Site address if any
         const site = <IJobSite>job.jobSite ?? <IJobLocation>job.jobLocation;
         if (site) {
-            jobAddress.street = site.address?.street ? `${site.address?.street}` : '';
-            jobAddress.city = site.address?.city ? `, ${site.address?.city}` : '';
-            jobAddress.state = site.address?.state ? `, ${site.address?.state}` : '';
-            jobAddress.zipCode = site.address?.zipcode ? `, ${site?.address?.zipcode}` : '';
+            jobAddress.name = site?.name ?? '';
+            jobAddress.street = site?.address?.street ?? '';
+            jobAddress.city = jobAddress.street && site?.address?.city ? ', ' : '';
+            jobAddress.city += site?.address?.city ?? '';
+            jobAddress.state = (jobAddress.street || jobAddress.city) && site?.address?.state ? ', ' : '';
+            jobAddress.state += site?.address?.state ?? '';
+            jobAddress.zipCode = (jobAddress.street || jobAddress.city || jobAddress.state) && site?.address?.zipcode ? ', ' : '';
+            jobAddress.zipCode += site?.address?.zipcode ?? '';
         }
     }
 
@@ -2426,6 +2430,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             ],
                             [
                                 { text: "\nSERVICE ADDRESS", style: "smallFont", alignment: "left" },
+                                { text: `${jobAddress.name}`, style: "defaultFontBold" },
                                 { text: `${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
                             ],
                             {},
