@@ -7,7 +7,7 @@ import { JobLocation } from '../models/JobLocation'
 export const get = (req: Request, res: Response) => {
     const { id } = req.params
     const { query: queryParams = {} } = req
-    const { customerId, locationId } = queryParams
+    const { customerId, locationId, isActive } = queryParams
 
     let query = {}
     if (id) {
@@ -18,6 +18,22 @@ export const get = (req: Request, res: Response) => {
         query = { customerId }
     } else if (locationId) {
         query = { locationId }
+    }
+
+    switch (isActive) {
+        case 'true':
+        case true:
+            query = {...query, isActive: true}
+            break;
+
+        case 'false':
+        case false:
+            query = {...query, isActive: false}
+            break;
+
+        default:
+            // Retrieve all job sites
+            query;
     }
 
     JobSite.find(query, (err: any, jobSite: any) => {
@@ -102,6 +118,7 @@ export const update = async (req: Request, res: Response) => {
             lat,
             long
         },
+        isActive,
         address,
         locationId
     } = params
@@ -133,14 +150,22 @@ export const update = async (req: Request, res: Response) => {
     if (!jobLocation) return
     const { customerId = null } = jobLocation || {}
 
+    const jobSite = await JobSite.findById(id).exec();
+    const isJobSiteActive = isActive === undefined || isActive === null
+        ? jobSite.isActive
+        : isActive === 'false'
+            ? false
+            : !!isActive
+
     JobSite.updateOne({ _id: id }, {
-        name,
+        name: name ?? jobSite.name,
         location: {
             coordinates: [long, lat]
         },
-        address,
-        locationId,
-        customerId
+        isActive: isJobSiteActive,
+        address: address,
+        locationId: locationId,
+        customerId: customerId
     }, (err: any) => {
         if (err) {
             res.status(Status.InternalError)
