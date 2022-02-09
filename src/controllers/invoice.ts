@@ -1289,6 +1289,12 @@ export const updateInvoice = (req: Request, res: Response) => {
              */
             // paymentTerm = paymentTerm || <IPaymentTerm>customerObj?.paymentTerm || <IPaymentTerm>company?.paymentTerm;
 
+            const invoiceId = params.invoiceNumber === undefined || params.invoiceNumber === null
+                ? invoice.invoiceId
+                : company.invoicePrefix
+                    ? `Invoice ${company.invoicePrefix}-${params.invoiceNumber}`
+                    : `Invoice ${params.invoiceNumber}`;
+
             if (invoice.invoiceType == 0) {
 
                 Job.findById(invoice.job)
@@ -1498,7 +1504,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                             paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                             customerPO: params.customerPO,
                             customerContactId: customerContact,
-                            vendorId: params.vendorId
+                            vendorId: params.vendorId,
+                            invoiceId
                         }, { omitUndefined: true },
 
                             async (err: any) => {
@@ -1685,7 +1692,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                     paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                     customerPO: params.customerPO,
                     customerContactId: customerContact,
-                    vendorId: params.vendorId
+                    vendorId: params.vendorId,
+                    invoiceId
                 }, { omitUndefined: true },
                     async (err: any) => {
                         if (err) {
