@@ -695,19 +695,24 @@ export const _getCustomerInvoicesPayments = async (customers: ICustomer[], compa
     const customerWithInvoicesPayments = [];
     for (const customer of customers) {
         try {
-            const invoice = await Invoice.find({ customer: customer._id, isDraft: false }).countDocuments();
-            const payment = await Payment.find({ customer: customer._id }).countDocuments();
-            const haveQBPayment = await _countQBPayments(company, customer);
-            const haveQBInvoice = await _countQBInvoices(company, customer);
+            const bcInvoices = await Invoice.find({ customer: customer._id, isDraft: false }).countDocuments();
+            const bcPayments = await Payment.find({ customer: customer._id }).countDocuments();
+            // const hasQBInvoice = await _countQBInvoices(company, customer);
+            // const hasQBPayment = await _countQBPayments(company, customer);
+            const [hasQBInvoice, hasQBPayment] = await Promise.all([
+                _countQBInvoices(company, customer),
+                _countQBPayments(company, customer)
+            ]);
 
             customerWithInvoicesPayments.push({
                 customer,
-                invoice,
-                haveQBInvoice,
-                payment,
-                haveQBPayment
+                BCInvoice: bcInvoices,
+                hasQBInvoice,
+                BCPayment: bcPayments,
+                hasQBPayment
             });
         } catch (err) {
+            console.log('== Search Duplicated Cust Err:', err.message);
             continue;
         }
     }
