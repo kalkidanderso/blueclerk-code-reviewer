@@ -665,7 +665,7 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
-  /getCurrentIvoiceNumber:
+  /getCurrentInvoiceNumber:
     post:
       tags:
         - Invoice
@@ -5143,6 +5143,9 @@ paths:
                 items:
                   type: string
                   description: 'Json string of the items e.g [{"name": "repair", "description": "repair description", "price": 100, "tax": 0, "quantity": 2},{"name": "service", "description": "repair description", "price": 50, "tax": 0, "quantity": 1}]  OR [{"item": "5f23240a3a68041ee95d6800", "price": 1000, "tax": 0, "quantity": 2}]'
+                invoiceNumber:
+                  type: string
+                  description: Custom invoice number for this invoice only
                 issuedDate:
                   type: string
                   description: Issued date of the invoice
