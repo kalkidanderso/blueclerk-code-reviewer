@@ -7309,7 +7309,6 @@
                 "type": "object",
                 "required": [
                   "jobId",
-                  "jobTypeId",
                   "technicianId"
                 ],
                 "properties": {
@@ -7320,6 +7319,10 @@
                   "technicianId": {
                     "type": "string",
                     "description": "Id of technician to start"
+                  },
+                  "taskJobTypeId": {
+                    "type": "string",
+                    "description": "Id of job type in task"
                   },
                   "jobTypeId": {
                     "type": "string",
@@ -7368,7 +7371,6 @@
                 "required": [
                   "jobId",
                   "technicianId",
-                  "jobTypeId",
                   "status"
                 ],
                 "properties": {
@@ -7379,6 +7381,10 @@
                   "technicianId": {
                     "type": "string",
                     "description": "Id of technician to update status"
+                  },
+                  "taskJobTypeId": {
+                    "type": "string",
+                    "description": "Id of job type in task"
                   },
                   "jobTypeId": {
                     "type": "string",
@@ -11099,6 +11105,32 @@
         ],
         "summary": "To migrate all Job to every tasks to have a status",
         "description": "**WARNING: - Only do this when you know what you are doing. Run migrateJobTask first before run this script.**\nTo migrate all job tasks(in array format).",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/script/addJobTypeMongooseId": {
+      "post": {
+        "tags": [
+          "Script"
+        ],
+        "summary": "To add mongoose id/ _id in task job type",
+        "description": "**WARNING: - Only do this when you know what you are doing.** \nTo add _id in every task job type",
         "responses": {
           "200": {
             "description": "Success",

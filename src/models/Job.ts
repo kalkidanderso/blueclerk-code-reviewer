@@ -229,7 +229,6 @@ const JobSchema = new Schema({
         }
     }],
     tasks: [{
-        _id: false,
         // employee type 0 for company employee
         // employee type 1 for external employee
         status: {
@@ -251,7 +250,6 @@ const JobSchema = new Schema({
             required: false
         },
         jobTypes: [{
-            _id: false,
             jobType: {
                 type: Schema.Types.ObjectId,
                 ref: 'JobType',

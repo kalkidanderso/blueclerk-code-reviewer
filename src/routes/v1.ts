@@ -1980,6 +1980,12 @@ export default function (sio: any) {
         scriptController.migrateTechnicianStatus
     )
 
+    router.post(
+        '/script/addJobTypeMongooseId',
+        passport.authenticate('jwt', { session: false }),
+        scriptController.addJobTypeMongooseId
+    )
+
     return router
 
 }
