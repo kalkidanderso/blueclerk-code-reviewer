@@ -1549,19 +1549,19 @@ export const startJobTask = async (req: Request, res: Response) => {
     if (params.jobTypeId && !params.taskJobTypeId) {
         taskJobType = tasks?.jobTypes.find(jobType => {
             newJobType = <IJobType>jobType.jobType;
-            return newJobType._id.toString() === params.jobTypeId;
+            return newJobType._id?.toString() === params.jobTypeId;
         });
     }
 
     if (params.taskJobTypeId) {
-        taskJobType = tasks?.jobTypes.find(jobType => jobType._id.toString() === params.taskJobTypeId);
+        taskJobType = tasks?.jobTypes.find(jobType => {
+            newJobType = <IJobType>jobType.jobType;
+            return jobType._id?.toString() === params.taskJobTypeId;
+        });
     }
 
-    if (!tasks)
+    if (!tasks || !taskJobType)
         return res.json({ status: Status.Error, message: Messages.TaskNotFound });
-
-    if (!taskJobType)
-        return res.json({ status: Status.NotFound, message: 'task jobtype not found' });
 
     if (taskJobType) {
         if (taskJobType.status === JobStatus.STARTED)
@@ -1599,7 +1599,7 @@ export const startJobTask = async (req: Request, res: Response) => {
 
         history = {
             user: user._id,
-            action: `|${actionStatus} the Job's task: ${newJobType.title}|`,
+            action: `|${actionStatus} the Job's task: ${newJobType?.title}|`,
             date: new Date()
         }
     }
@@ -1687,20 +1687,18 @@ export const updateJobTask = async (req: Request, res: Response) => {
     const task = job.tasks.find(task => task?.technician?._id.toString() === params.technicianId);
 
     if (params.jobTypeId && !params.taskJobTypeId) {
-        taskJobType = task?.jobTypes.find((taskJobType: any) => taskJobType?.jobType?._id.toString() === params.jobTypeId);
+        taskJobType = task?.jobTypes.find((taskJobType: any) => taskJobType?.jobType?._id?.toString() === params.jobTypeId);
     }
 
     if (params.taskJobTypeId) {
-        taskJobType = task?.jobTypes.find(taskJobType => taskJobType?._id.toString() === params.taskJobTypeId);
+        taskJobType = task?.jobTypes.find(taskJobType => taskJobType?._id?.toString() === params.taskJobTypeId);
     }
 
     let taskStatus = task.status;
-    if (!task)
+    // Return error when jobType isn't available
+    if (!task || !taskJobType)
         return res.json({ status: Status.Error, message: Messages.TaskNotFound });
 
-    // Return error when jobType isn't available
-    if (!taskJobType)
-        return res.json({ status: Status.NotFound, message: 'task jobtype not found' });
     if (params.endTime && taskJobType.status !== JobStatus.FINISHED)
         return res.json({ status: Status.Error, message: 'Only able to update endTime for a FINISHED task.' });
     if (!params.endTime && Number(params.status) === taskJobType.status)

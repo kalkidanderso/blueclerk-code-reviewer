@@ -234,6 +234,7 @@ export const migrateTechnicianStatus = async (req: Request, res: Response) => {
 }
 
 export const addJobTypeMongooseId = async (req: Request, res: Response) => {
+
     const jobs = await Job.find({ 'tasks.jobTypes': { $exists: true } });
 
     if (!jobs.length) {
@@ -253,7 +254,8 @@ export const addJobTypeMongooseId = async (req: Request, res: Response) => {
 
     return res.json({
         status: Status.Success,
-        message: 'Technician status successfully migrated.',
+        message: 'Job Task _id successfully updated.',
         jobs
-    })
+    });
+
 }
