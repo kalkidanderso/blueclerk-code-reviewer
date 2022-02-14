@@ -2202,6 +2202,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const customer = <ICustomer>invoice.customer;
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
     const job = <IJob>invoice.job;
+    const ticket = <IServiceTicket>job?.ticket;
     const customerContact = <IContact>invoice.customerContactId;
 
     // Construct Company Address object
@@ -2442,21 +2443,38 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                         [{}, {}, {}, {}, {}, {}, {}, {}],
                         [
                             {},
-                            { text: "CONTACT DETAILS", style: "smallFont" },
+                            [
+                                { text: "CONTACT DETAILS", style: "smallFont" },
+                                { text: `${customerContact?.name ?? ''}`, fontSize: 6, bold: true },
+                                { text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 6, bold: true },
+                            ],
                             {},
-                            { text: "\nTOTAL", fontSize: 5, rowSpan: 3, colSpan: 2, fillColor: "#D0D3DC" },
+                            { text: "\nTOTAL", fontSize: 5, rowSpan: 4, colSpan: 2, fillColor: "#D0D3DC" },
                             {},
-                            {
-                                text: `\n$ ${invoice.total}`,
-                                fontSize: 16, rowSpan: 3, colSpan: 2, fillColor: "#D0D3DC", alignment: 'right'
-                            },
+                            { text: "", colSpan: 2, fillColor: "#D0D3DC" },
                             {},
                             {},
                         ],
                         [
                             {},
-                            { text: `${customerContact?.name ?? ''}`, fontSize: 6, bold: true },
-                            contactDetails,
+                            {},
+                            {},
+                            {},
+                            {},
+                            {
+                                text: `\n$${invoice.total}`,
+                                fontSize: 16, rowSpan: 3, colSpan: 2, fillColor: "#D0D3DC", alignment: 'right', lineHeight: 0.1
+                            },
+                            {},
+                            {}
+                        ],
+                        [
+                            {},
+                            [
+                                { text: "NOTE", style: "smallFont" },
+                                { text: `${ticket?.note ?? ''}`, fontSize: 6, bold: true },
+                            ],
+                            {},
                             {},
                             {},
                             {},
