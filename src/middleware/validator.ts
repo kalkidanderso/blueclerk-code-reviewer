@@ -190,15 +190,15 @@ export const Validations = {
   startJobTask: [
     check('jobId').exists().withMessage(Messages.Required),
     check('jobId').isMongoId().withMessage(Messages.WrongId),
-    check('jobTypeId').exists().withMessage(Messages.Required),
-    check('jobTypeId').isMongoId().withMessage(Messages.WrongId)
+    check('jobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('taskJobTypeId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
   updateJobTask: [
     check('jobId').exists().withMessage(Messages.Required),
     check('jobId').isMongoId().withMessage(Messages.WrongId),
-    check('jobTypeId').exists().withMessage(Messages.Required),
-    check('jobTypeId').isMongoId().withMessage(Messages.WrongId),
+    check('jobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('taskJobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
     check('status').exists().withMessage(Messages.Required),
     check('status').isIn([JobStatus.PAUSED, JobStatus.FINISHED]).withMessage('Only paused and finished are allowed')
   ],
