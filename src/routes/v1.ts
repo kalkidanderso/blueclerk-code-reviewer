@@ -722,6 +722,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Job_Edit),
+        uploadImageInS3.fields([{ name: 'images' }]),
         validate(Validations.updateJobTechnicianStatus),
         jobController.updateJobTechnicianStatus
     )
