@@ -345,6 +345,13 @@ export const Validations = {
 
   companyInvoice: [check('companyInvoiceId').exists()],
 
+  updateComission: [
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('comission').exists().withMessage(Messages.Required),
+    check('comission').isInt().withMessage('Must in number format'),
+  ],
+
   getInvoiceDetail: [check('invoiceId').exists()],
 
   createPartInventory: [check('name').exists(), check('itemCode').exists(), check('cost').exists(), check('price').exists(), check('totalQuantity').exists()],

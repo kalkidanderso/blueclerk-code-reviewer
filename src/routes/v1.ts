@@ -1598,6 +1598,15 @@ export default function (sio: any) {
         permissionController.updateAllCompaniesPermissions
     )
 
+    router.post(
+        '/updateComission',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Invoice),
+        validate(Validations.updateComission),
+        invoiceController.updateComission
+    )
+
     //Parts Inventory
 
     router.post(

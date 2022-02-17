@@ -9,7 +9,7 @@ import { InvoiceStatus, Messages, Status } from '../common/constants';
 import { IContact } from '../common/contact';
 import { INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } from '../common/config';
 import { Contact } from '../models/Contact';
-import { IUser } from '../models/User';
+import { IUser, User } from '../models/User';
 import { Company, ICompany } from '../models/Company';
 import { ICompanyAdmin } from '../models/CompanyAdmin';
 import { CompanyInvoice } from '../models/CompanyInvoice';
@@ -386,14 +386,31 @@ export const createInvoice = (req: Request, res: Response) => {
                         })
                 })
             })
-            .then((invoice: any) => {
+            .then((invoice: IInvoice) => {
 
                 return new Promise(async (resolve, reject) => {
 
                     if (!invoice.isDraft) {
                         const customer = await Customer.findById(invoice.customer);
+                        const job = await Job.findById(params.jobId);
                         customer.balance += invoice.total;
                         await customer.save();
+
+                        for (const task of job.tasks) {
+                            if (task.contractor) {
+                                const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                                const comission = invoice.total * (contractor.comission ?? 20) / 100;
+                                contractor.balance += comission;
+                                contractor.save();
+                            }
+
+                            if (task.technician && !task.contractor) {
+                                const technician = await User.findOne({ _id: task.technician }).exec();
+                                const comission = invoice.total * (technician.comission ?? 20) / 100;
+                                technician.balance += comission;
+                                technician.save();
+                            }
+                        }
                     }
 
                     resolve(invoice);
@@ -2624,7 +2641,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     return new Promise((resolve) => {
         const fullPath = `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
         // Check if folder path exist, create if not
-        if (!fs.existsSync(INVOICE_PDF_PATH)){
+        if (!fs.existsSync(INVOICE_PDF_PATH)) {
             fs.mkdirSync(INVOICE_PDF_PATH);
         }
         // Check if existing Invoice PDF exist, remove if any
@@ -2676,4 +2693,33 @@ export const downloadFileToPath = async (
  */
 export const fileExists = async (absolutePath: string): Promise<boolean> => {
     return fs.existsSync(absolutePath);
+}
+
+export const updateComission = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    switch (params.type) {
+        case 'contractor':
+            const contractor = await Company.findById(params.id).exec();
+
+            if (!contractor) {
+                return res.json({ status: Status.Error, message: 'Contractor not found' });
+            }
+            contractor.comission = params.comission;
+            contractor.save();
+            return res.json({ status: Status.Success, message: 'Comission updated successfully', contractor });
+
+        case 'employee':
+            const employee = await User.findById(params.id).exec();
+            if (!employee) {
+                return res.json({ status: Status.Error, message: 'Contractor not found' });
+            }
+
+            employee.comission = params.comission;
+            employee.save();
+            return res.json({ status: Status.Success, message: 'Employee updated successfully', employee });
+
+        default:
+            return res.json({ status: Status.Success, message: Messages.GenericError });
+    }
 }
