@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Request, Response } from 'express';
 
 import { JobStatus, Status } from '../common/constants';
@@ -230,4 +231,31 @@ export const migrateTechnicianStatus = async (req: Request, res: Response) => {
         message: 'Technician status successfully migrated.',
         jobs
     });
+}
+
+export const addJobTypeMongooseId = async (req: Request, res: Response) => {
+
+    const jobs = await Job.find({ 'tasks.jobTypes': { $exists: true } });
+
+    if (!jobs.length) {
+        return res.json({ status: Status.OK, message: 'No jobs to be migrated' });
+    }
+
+    jobs.forEach(job => {
+        job.tasks.forEach(task => {
+            task._id = new mongoose.Types.ObjectId();
+            task.jobTypes.forEach(jobType => {
+                jobType._id = new mongoose.Types.ObjectId()
+            });
+        });
+
+        job.save();
+    });
+
+    return res.json({
+        status: Status.Success,
+        message: 'Job Task _id successfully updated.',
+        jobs
+    });
+
 }

@@ -190,15 +190,15 @@ export const Validations = {
   startJobTask: [
     check('jobId').exists().withMessage(Messages.Required),
     check('jobId').isMongoId().withMessage(Messages.WrongId),
-    check('jobTypeId').exists().withMessage(Messages.Required),
-    check('jobTypeId').isMongoId().withMessage(Messages.WrongId)
+    check('jobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('taskJobTypeId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
   updateJobTask: [
     check('jobId').exists().withMessage(Messages.Required),
     check('jobId').isMongoId().withMessage(Messages.WrongId),
-    check('jobTypeId').exists().withMessage(Messages.Required),
-    check('jobTypeId').isMongoId().withMessage(Messages.WrongId),
+    check('jobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('taskJobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
     check('status').exists().withMessage(Messages.Required),
     check('status').isIn([JobStatus.PAUSED, JobStatus.FINISHED]).withMessage('Only paused and finished are allowed')
   ],
@@ -228,8 +228,7 @@ export const Validations = {
     check('jobId').exists().withMessage(Messages.Required),
     check('jobId').isMongoId().withMessage(Messages.WrongId),
     check('technicianId').exists().withMessage(Messages.Required),
-    check('technicianId').isMongoId().withMessage(Messages.WrongId),
-    check('note').exists().withMessage(Messages.Required)
+    check('technicianId').isMongoId().withMessage(Messages.WrongId)
   ],
 
   technicianJobs: [check('employeeId').exists().withMessage(Messages.Required), check('employeeId').isMongoId().withMessage(Messages.WrongId)],
@@ -463,7 +462,7 @@ export const Validations = {
   // Image
   deleteImage: [
     check('type').exists().withMessage(Messages.Required),
-    check('type').isIn(['ServiceTicket', 'Job']).withMessage('Only supported for ServiceTicket & Job for now'),
+    check('type').isIn(['ServiceTicket', 'Job', 'Technician']).withMessage('Only supported for ServiceTicket & Job for now'),
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId),
     check('imageId').exists().withMessage(Messages.Required),

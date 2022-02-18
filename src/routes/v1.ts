@@ -722,6 +722,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Job_Edit),
+        uploadImageInS3.fields([{ name: 'images' }]),
         validate(Validations.updateJobTechnicianStatus),
         jobController.updateJobTechnicianStatus
     )
@@ -1978,6 +1979,12 @@ export default function (sio: any) {
         '/script/migrateTechnicianStatus',
         passport.authenticate('jwt', { session: false }),
         scriptController.migrateTechnicianStatus
+    )
+
+    router.post(
+        '/script/addJobTypeMongooseId',
+        passport.authenticate('jwt', { session: false }),
+        scriptController.addJobTypeMongooseId
     )
 
     return router

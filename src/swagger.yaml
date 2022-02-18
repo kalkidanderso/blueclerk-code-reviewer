@@ -4474,7 +4474,6 @@ paths:
               type: object
               required:
                 - jobId
-                - jobTypeId
                 - technicianId
               properties:
                 jobId:
@@ -4483,6 +4482,9 @@ paths:
                 technicianId:
                   type: string
                   description: Id of technician to start
+                taskJobTypeId:
+                  type: string
+                  description: Id of job type in task
                 jobTypeId:
                   type: string
                   description: Id of task/job type to start
@@ -4512,7 +4514,6 @@ paths:
               required:
                 - jobId
                 - technicianId
-                - jobTypeId
                 - status
               properties:
                 jobId:
@@ -4521,6 +4522,9 @@ paths:
                 technicianId:
                   type: string
                   description: Id of technician to update status
+                taskJobTypeId:
+                  type: string
+                  description: Id of job type in task
                 jobTypeId:
                   type: string
                   description: Id of task/job type to start
@@ -4668,14 +4672,12 @@ paths:
       summary: To edit job to change assignee and date time of job
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          multipart/form-data:
             schema:
               type: object
               required:
                 - jobId
                 - technicianId
-                - status
-                - note
               properties:
                 jobId:
                   type: string
@@ -4685,9 +4687,17 @@ paths:
                   description: Id of the job technician to edit
                 status:
                   type: number
-                  description: status of purchase order 0 => pending, 1 => approved by customer, 2 => cancelled by customer
+                  description: Id of job task status as number from one of these (FINISHED => 2, CANCELED => 3, RESCHEDULED => 4).
                 note:
                   type: string
+                  description: '**Required** when status is RESCHEDULED => 4'
+                comment:
+                  type: string
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
         required: true
         allowEmptyValue: true
       responses:
@@ -5677,7 +5687,7 @@ paths:
     delete:
       tags:
         - Image
-      summary: To upload an image
+      summary: To delete an image
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -5690,16 +5700,17 @@ paths:
               properties:
                 type:
                   type: string
-                  description: To delete image from ServiceTicket or Job
+                  description: To delete image from ServiceTicket, Job, or Technician
                   enum:
                     - ServiceTicket
                     - Job
+                    - Technician
                 id:
                   type: string
-                  description: Id of Job or Service Ticket
+                  description: Id of job for Job and Technician type, or id of serviceTicket for serviceTicket type
                 imageId:
                   type: string
-                  description: Id of image in Job or Service Ticket
+                  description: Id of image in job images, technician images, or service ticket images
         required: true
       responses:
         '200':
@@ -6832,6 +6843,23 @@ paths:
       description: |-
         **WARNING: - Only do this when you know what you are doing. Run migrateJobTask first before run this script.**
         To migrate all job tasks(in array format).
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /script/addJobTypeMongooseId:
+    post:
+      tags:
+        - Script
+      summary: To add mongoose id/ _id in task job type
+      description: |-
+        **WARNING: - Only do this when you know what you are doing.** 
+        To add _id in every task job type
       responses:
         '200':
           description: Success
