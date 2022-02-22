@@ -42,6 +42,7 @@ export interface IJob extends Document {
     status: number,
     comment: string
     createdAt: Date,
+    updatedAt: Date,
     createdBy: Schema.Types.ObjectId,
     employeeType: boolean // TODO: To be deprecated
     // isFixed: boolean
@@ -322,6 +323,9 @@ const JobSchema = new Schema({
         type: String
     },
     createdAt: {
+        type: Date
+    },
+    updatedAt: {
         type: Date
     },
     createdBy: {

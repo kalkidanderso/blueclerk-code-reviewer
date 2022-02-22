@@ -1320,6 +1320,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             })
             data.track = track;
             dataLinked.track = trackLinked;
+            data.updatedAt = new Date();
 
             const allTaskJobTypeStatus: Number[] = [];
             for (const jobTask of job.tasks) {
@@ -2027,6 +2028,7 @@ export const editJob = async (req: Request, res: Response) => {
             }
 
             job.track = track;
+            job.updatedAt = new Date();
             if (linkedJob) { linkedJob.track = trackLinkedJob; }
             if (job.ticket) {
                 ServiceTicket.findOne({ _id: new ObjectId(job.ticket) }).then((t) => {
