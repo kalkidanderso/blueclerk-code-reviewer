@@ -325,9 +325,6 @@ const JobSchema = new Schema({
     createdAt: {
         type: Date
     },
-    updatedAt: {
-        type: Date
-    },
     createdBy: {
         type: Schema.Types.ObjectId,
         ref: 'User',
@@ -384,7 +381,6 @@ const JobSchema = new Schema({
         type: Boolean,
         required: false
     }
-
-})
+}, { timestamps: { updatedAt: true } })
 
 export const Job = mongoose.model<IJob>('Job', JobSchema)
