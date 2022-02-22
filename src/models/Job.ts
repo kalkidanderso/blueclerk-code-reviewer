@@ -42,6 +42,7 @@ export interface IJob extends Document {
     status: number,
     comment: string
     createdAt: Date,
+    updatedAt: Date,
     createdBy: Schema.Types.ObjectId,
     employeeType: boolean // TODO: To be deprecated
     // isFixed: boolean
@@ -380,7 +381,6 @@ const JobSchema = new Schema({
         type: Boolean,
         required: false
     }
-
-})
+}, { timestamps: { updatedAt: true } })
 
 export const Job = mongoose.model<IJob>('Job', JobSchema)
