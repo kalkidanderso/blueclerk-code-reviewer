@@ -1607,6 +1607,14 @@ export default function (sio: any) {
         invoiceController.updateComission
     )
 
+    router.post(
+        '/getInvoicesByVendor',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        invoiceController.getInvoicesByVendor
+    )
+
     //Parts Inventory
 
     router.post(
@@ -1832,6 +1840,14 @@ export default function (sio: any) {
         validate(Validations.getPaymentsByCustomer),
         checkUserPermissions(Permissions.Get_Customer_Payments),
         paymentController.getPaymentsByCustomerId
+    )
+
+    router.get(
+        '/getPaymentsByVendor',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Customer_Payments),
+        paymentController.getPaymentsByVendor
     )
 
     router.post(

@@ -406,11 +406,7 @@ export const Validations = {
   getPaymentsByCustomer: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId)],
 
   recordPayment: [
-    check('invoiceId').exists().withMessage(Messages.Required),
-    check('invoiceId').isMongoId().withMessage(Messages.WrongId),
     check('amount').exists().withMessage(Messages.Required),
-    check('customerId').exists().withMessage(Messages.Required),
-    check('customerId').isMongoId().withMessage(Messages.WrongId)
   ],
 
   updatePayment: [

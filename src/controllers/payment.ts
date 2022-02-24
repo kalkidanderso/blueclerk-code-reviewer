@@ -3,12 +3,13 @@ import { ObjectId } from 'mongodb'
 import moment from 'moment'
 
 import { Status, Messages, InvoiceStatus } from '../common/constants'
-import { ICompany } from '../models/Company'
+import { Company, ICompany } from '../models/Company'
 import { IUser } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
-import { Payment, IPayment } from '../models/Payment'
+import { Payment, IPayment, PaymentVendor, PaymentEmployee } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
 import { _createQBPayment, _updateQBPayment } from './quickbook.payment'
+import { Employee } from '../models/Employee'
 
 
 /**
@@ -85,34 +86,34 @@ export const _resetPaymentQB = (company: ICompany): void => {
 
 export const getPayments = (req: Request, res: Response) => {
 
-    Payment.find({company: req.companyId})
-    .populate({
-        path: 'company',
-        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-    })
-    .populate({
-        path: 'customer',
-        select: 'info.email auth.email profile.displayName address contact contactName vendorId'
-    })
-    .populate({
-        path: 'invoices',
-        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
-    })
-    .populate({
-        path: 'createdBy',
-        select: 'profile.displayName auth.email'
-    })
-    .then((payments: IPayment[] | null) =>{
+    Payment.find({ company: req.companyId })
+        .populate({
+            path: 'company',
+            select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+        })
+        .populate({
+            path: 'invoices',
+            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'profile.displayName auth.email'
+        })
+        .then((payments: IPayment[] | null) => {
 
-        return res.json({ 'status': Status.Success, 'payment': payments })
-    })
-    .catch((error: any) => {
-        if (error.message != undefined) {
-            return res.json({ 'status': Status.Error, 'message': error.message })
-        } else {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        }
-    })
+            return res.json({ 'status': Status.Success, 'payment': payments })
+        })
+        .catch((error: any) => {
+            if (error.message != undefined) {
+                return res.json({ 'status': Status.Error, 'message': error.message })
+            } else {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+        })
 
 }
 
@@ -120,7 +121,60 @@ export const getPaymentsByCustomerId = (req: Request, res: Response) => {
 
     const params = req.query;
 
-    Payment.find({company: req.companyId, customer: params.customerId})
+    Payment.find({ company: req.companyId, customer: params.customerId })
+        .populate({
+            path: 'company',
+            select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+        })
+        .populate({
+            path: 'invoices',
+            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'profile.displayName auth.email'
+        })
+        .then((payments: IPayment[] | null) => {
+
+            return res.json({ 'status': Status.Success, 'payment': payments })
+        })
+        .catch((error: any) => {
+            if (error.message != undefined) {
+                return res.json({ 'status': Status.Error, 'message': error.message })
+            } else {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+        })
+
+}
+
+export const getPaymentsByVendor = (req: Request, res: Response) => {
+
+    let query;
+    const params = req.query;
+
+    switch (params.type) {
+        case 'vendor':
+            if (!params.vendor) {
+                return res.json({ 'status': Status.Error, 'message': 'Vendor is required on contractor type' })
+            }
+            query = { company: req.companyId, vendor: params.vendor }
+            break;
+        case 'employee':
+            if (!params.employee) {
+                return res.json({ 'status': Status.Error, 'message': 'Employee is required on employee type' })
+            }
+            query = { company: req.companyId, employee: params.employee }
+            break;
+        default:
+            return res.json({ 'status': Status.Error, 'message': 'Type is required' })
+    }
+
+    PaymentVendor.find(query)
     .populate({
         path: 'company',
         select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -137,18 +191,17 @@ export const getPaymentsByCustomerId = (req: Request, res: Response) => {
         path: 'createdBy',
         select: 'profile.displayName auth.email'
     })
-    .then((payments: IPayment[] | null) =>{
+    .then((payments: IPayment[] | null) => {
 
         return res.json({ 'status': Status.Success, 'payment': payments })
     })
     .catch((error: any) => {
         if (error.message != undefined) {
-            return res.json({ 'status': Status.Error, 'message': error.message })
+            return res.json({ 'status': Status.Error, 'message': error.message });
         } else {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
         }
     })
-
 }
 
 /**
@@ -159,35 +212,10 @@ export const createPayment = async (req: Request, res: Response) => {
     const params = req.body;
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
-
-    // Find and check if customer existed
-    const customer = await Customer.findOne({
-        _id: params.customerId,
-        company: company._id
-    });
-
-    if (!customer) {
-        return res.json({ status: Status.Error, message: 'Customer not found.' });
-    }
-
-    // Find and check if invoice existed and belongs to the customer
-    const invoice = await Invoice.findOne({
-        _id: params.invoiceId,
-        customer: customer._id,
-        company: company._id
-    });
-
-    if (!invoice || invoice.isDraft) {
-        return res.json({ status: Status.Error, message: 'Invoice not found or does not belong to the customer.' });
-    }
-    if (invoice.status === InvoiceStatus.PAID) {
-        return res.json({ status: Status.Success, message: 'Invoice already paid off.' });
-    }
+    const payments: IPayment[] = [];
 
     // Construct payment entry
-    const payment = new Payment({
-        customer,
-        invoice,
+    const paymentEntry = {
         amountPaid: params.amount,
         referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
         paymentType: params.paymentType,
@@ -196,62 +224,140 @@ export const createPayment = async (req: Request, res: Response) => {
         company,
         createdBy: user,
         createdAt: Date.now()
-    });
+    };
 
-    try {
-        // Save the new payment
-        await payment.save();
+    switch (params.type) {
+        case 'vendor':
+            if (!params.vendorId) {
+                return res.json({ status: Status.Error, message: 'vendorId is required on vendor type' });
+            }
 
-        // Handle invoice balance due, underpayment, and overpayment
-        await _calculateInvoiceBalance(invoice, customer, parseFloat(params.amount));
+            const vendor = await Company.findById(params.vendorId).exec();
 
-        if (company.qbAuthorized) {
-            // Create new Payment in QuickBooks
-            _createQBPayment(req, res, company, payment, (err, errMsg, qbPayment) => {
-                if (err) {
-                    return res.json({ status: err, message: errMsg });
-                }
+            if (!vendor) {
+                return res.json({ status: Status.Error, message: 'Vendor not found.' });
+            }
 
-                if (qbPayment) {
-                    payment.quickbookId = qbPayment.Id;
-                    payment.save();
-
-                    // If company's payments already synced, update the synced date
-                    if (company.qbSync?.paymentsSynced) {
-                        company.qbSync.paymentsSyncedAt = new Date();
-                        company.save();
-                    }
-                }
-
-                return res.json({
-                    status: Status.Success,
-                    message: 'Payment successfully created.',
-                    payment, quickbookPayment: qbPayment,
-                    customer, invoice
-                });
+            const paymentVendor = new PaymentVendor({
+                vendor,
+                ...paymentEntry
             });
-        } else {
-            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
-        }
 
-    } catch (error) {
-        return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
+            paymentVendor.save();
+            payments.push(paymentVendor);
+
+            return res.json({ status: Status.Success, message: 'Payment successfully created.', payments });
+
+        case 'employee':
+            if (!params.employeeId) {
+                return res.json({ status: Status.Error, message: 'employeeId is required on employee type' });
+            }
+
+            const employee = await Employee.findById(params.employeeId).exec();
+
+            if (!employee) {
+                return res.json({ status: Status.Error, message: 'Employee not found.' });
+            }
+
+            const paymentEmployee = new PaymentEmployee({
+                employee,
+                ...paymentEntry
+            });
+
+            paymentEmployee.save();
+            payments.push(paymentEmployee);
+
+            return res.json({ status: Status.Success, message: 'Payment successfully created.', payments });
+
+        case 'customer':
+            // Find and check if customer existed
+            const customer = await Customer.findOne({
+                _id: params.customerId,
+                company: company._id
+            });
+
+            if (!customer) {
+                return res.json({ status: Status.Error, message: 'Customer not found.' });
+            }
+
+            // Find and check if invoice existed and belongs to the customer
+            const invoice = await Invoice.findOne({
+                _id: params.invoiceId,
+                customer: customer._id,
+                company: company._id
+            });
+
+            if (!invoice || invoice.isDraft) {
+                return res.json({ status: Status.Error, message: 'Invoice not found or does not belong to the customer.' });
+            }
+            if (invoice.status === InvoiceStatus.PAID) {
+                return res.json({ status: Status.Success, message: 'Invoice already paid off.' });
+            }
+
+            // Construct payment entry
+            const payment = new Payment({
+                customer,
+                invoice,
+                ...paymentEntry
+            });
+
+            try {
+                // Save the new payment
+                await payment.save();
+
+                // Handle invoice balance due, underpayment, and overpayment
+                await _calculateInvoiceBalance(invoice, customer, parseFloat(params.amount));
+
+                if (company.qbAuthorized) {
+                    // Create new Payment in QuickBooks
+                    _createQBPayment(req, res, company, payment, (err, errMsg, qbPayment) => {
+                        if (err) {
+                            return res.json({ status: err, message: errMsg });
+                        }
+
+                        if (qbPayment) {
+                            payment.quickbookId = qbPayment.Id;
+                            payment.save();
+
+                            // If company's payments already synced, update the synced date
+                            if (company.qbSync?.paymentsSynced) {
+                                company.qbSync.paymentsSyncedAt = new Date();
+                                company.save();
+                            }
+                        }
+
+                        return res.json({
+                            status: Status.Success,
+                            message: 'Payment successfully created.',
+                            payment, quickbookPayment: qbPayment,
+                            customer, invoice
+                        });
+                    });
+                } else {
+                    return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
+                }
+
+            } catch (error) {
+                return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
+            }
+
+        default:
+            return res.json({ status: Status.Error, message: 'Type must be selected.' });
     }
-
 }
 
 export const createPaymentMultipleInvoices = async (req: Request, res: Response) => {
 
     const params = req.body;
     const user = <IUser>req.user;
-    
+
     let invoicesPaid: any = [];
     let invoiceIds: any = [];
     const invoiceWrongIds: any = [];
 
     if (params.invoices) {
         invoicesPaid = params.invoices.split(',');
-    } 
+    }
     if (invoicesPaid.length > 0) {
         invoiceIds = invoicesPaid.map((invoiceID: string) => {
             invoiceID = invoiceID.trim();
@@ -309,14 +415,14 @@ export const createPaymentMultipleInvoices = async (req: Request, res: Response)
 
 const updateInvoice = (invoice: IInvoice) => {
     return new Promise<void>((resolve, reject) => {
-      invoice.update({paid: true},(err: any, res: any) => {
-        if (err) {
-          reject();
-        }
-        resolve();
-      });
+        invoice.update({ paid: true }, (err: any, res: any) => {
+            if (err) {
+                reject();
+            }
+            resolve();
+        });
     });
-  }
+}
 
 /**
  * Update payment for single invoice
@@ -354,7 +460,7 @@ export const updatePayment = async (req: Request, res: Response) => {
 
     if (params.amount) {
         newAmountPaid = Number(params.amount);
-        diffAmountPaid = newAmountPaid - oldAmountPaid ;
+        diffAmountPaid = newAmountPaid - oldAmountPaid;
     }
 
     payment.amountPaid = newAmountPaid ?? payment.amountPaid;
@@ -421,62 +527,62 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
     const params = req.body
     const user = <IUser>req.user
     let previousDedeuctedBalance: number = 0
-    let invoicesPaid: any =[]
-    let invoiceIds: any =[]
+    let invoicesPaid: any = []
+    let invoiceIds: any = []
     if (params.invoices != undefined) {
         invoicesPaid = params.invoices.split(',')
-    } 
+    }
 
-    if(invoicesPaid.length > 0) {
+    if (invoicesPaid.length > 0) {
         invoiceIds = invoicesPaid.map((invoiceID: string) => (
             new ObjectId(invoiceID.trim())
         ))
     }
-    
+
     Payment.findById(params.paymentId)
-    .then((payment: IPayment | null) =>{
-        
-        if(payment == undefined || payment == null){
-            throw new Error('Invalid payment Id.')
-        }else{
-            previousDedeuctedBalance = payment.amountPaid
-            return payment.updateOne({amountPaid: params.amount, referenceNumber: params.referenceNumber, paymentType: params.paymentType, paidAt: params.paidAt, invoices: invoiceIds, udpatedBy: user._id, udpatedAt: Date.now()})
-        }
-    })
-    .then((response: any) => {
-        
-        return new Promise<void>((resolve, reject) =>{
-        
-            Customer.findById(params.customerId)
-            .then((customer: ICustomer) =>{
-        
-                let newBalance = customer.balance + previousDedeuctedBalance
-                newBalance = newBalance - params.amount
-        
-                customer.updateOne({balance: newBalance})
-                .then((res: any) => {
-                    resolve()
-                })
-                .catch((err: any) => {
-                    reject(err)
-                })
-            })
-            .catch((err: any) => {
-                reject(err)
+        .then((payment: IPayment | null) => {
+
+            if (payment == undefined || payment == null) {
+                throw new Error('Invalid payment Id.')
+            } else {
+                previousDedeuctedBalance = payment.amountPaid
+                return payment.updateOne({ amountPaid: params.amount, referenceNumber: params.referenceNumber, paymentType: params.paymentType, paidAt: params.paidAt, invoices: invoiceIds, udpatedBy: user._id, udpatedAt: Date.now() })
+            }
+        })
+        .then((response: any) => {
+
+            return new Promise<void>((resolve, reject) => {
+
+                Customer.findById(params.customerId)
+                    .then((customer: ICustomer) => {
+
+                        let newBalance = customer.balance + previousDedeuctedBalance
+                        newBalance = newBalance - params.amount
+
+                        customer.updateOne({ balance: newBalance })
+                            .then((res: any) => {
+                                resolve()
+                            })
+                            .catch((err: any) => {
+                                reject(err)
+                            })
+                    })
+                    .catch((err: any) => {
+                        reject(err)
+                    })
             })
         })
-    })
-    .then((result: any) => {
-        return Invoice.updateMany({ _id: { $in: invoiceIds } }, {paid: true})
-    })
-    .then((response: any) =>{
-        return res.json({ 'status': Status.Success, 'message': "Payment update successfully." })
-    })
-    .catch((error: any) => {
-        if (error != undefined && error.message != undefined) {
-            return res.json({ 'status': Status.Error, 'message': error.message })
-        } else {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        }
-    })
+        .then((result: any) => {
+            return Invoice.updateMany({ _id: { $in: invoiceIds } }, { paid: true })
+        })
+        .then((response: any) => {
+            return res.json({ 'status': Status.Success, 'message': "Payment update successfully." })
+        })
+        .catch((error: any) => {
+            if (error != undefined && error.message != undefined) {
+                return res.json({ 'status': Status.Error, 'message': error.message })
+            } else {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+        })
 }

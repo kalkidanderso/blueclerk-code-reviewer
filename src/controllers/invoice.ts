@@ -1246,12 +1246,8 @@ export const createPOInvoice = (req: Request, res: Response) => {
 
                             return res.json({ 'status': Status.Success, 'message': "Purchase order invoice created successfully." })
                         })
-
-
                 })
             })
-
-
         });
 }
 
@@ -1325,7 +1321,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                         })
                         return Promise.all([job, POPromise])
                     })
-                    .then((result: any) => {
+                    .then(async (result: any) => {
                         let job = result[0]
                         let purchaseOrders = result[1]
 
@@ -1495,6 +1491,41 @@ export const updateInvoice = (req: Request, res: Response) => {
                         if (job.tasks?.length > 0 && customerObj.isCustomPrice) {
                             const customPrice = customerObj.customPrices?.find(cp => cp.quantity === job.tasks?.length);
                             total = customPrice?.price || 0;
+                        }
+
+                        // Update company and technician comission when charges is updated and invoice is not draft
+                        if (params.charges && !invoice.isDraft && invoice.job) {
+                            for (const task of job.tasks) {
+                                if (task.contractor) {
+                                    const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                                    if (Number(params.charges) > Number(invoice.total)) {
+                                        const comission = Number(params.charges) * (contractor.comission ?? 20) / 100;
+                                        contractor.balance += comission;
+                                    }
+
+                                    if (Number(params.charges) < invoice.total) {
+                                        const comission = Number(params.charges) * (contractor.comission ?? 20) / 100;
+                                        contractor.balance -= comission;
+                                    }
+
+                                    contractor.save();
+                                }
+
+                                if (task.technician && !task.contractor) {
+                                    const technician = await User.findOne({ _id: task.technician }).exec();
+                                    if (Number(params.charges) > invoice.total) {
+                                        const comission = Number(params.charges) * (technician.comission ?? 20) / 100;
+                                        technician.balance += comission;
+                                    }
+
+                                    if (Number(params.charges) < invoice.total) {
+                                        const comission = Number(params.charges) * (technician.comission ?? 20) / 100;
+                                        technician.balance -= comission;
+                                    }
+
+                                    technician.save();
+                                }
+                            }
                         }
 
                         if (params.charges) {
@@ -2102,6 +2133,25 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         const balance = customer.balance + invoice.total;
         Customer.findByIdAndUpdate(customer._id, { balance }).exec();
 
+        if (invoice.job) {
+            const job = await Job.findById(invoice.job).exec();
+            for (const task of job.tasks) {
+                if (task.contractor) {
+                    const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                    const comission = invoice.total * (contractor.comission ?? 20) / 100;
+                    const contractorBalance = contractor.balance + comission;
+                    Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
+                }
+
+                if (task.technician && !task.contractor) {
+                    const technician = await User.findOne({ _id: task.technician }).exec();
+                    const comission = invoice.total * (technician.comission ?? 20) / 100;
+                    const technicianBalance = technician.balance + comission;
+                    User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
+                }
+            }
+        }
+
         // Create QB Invoice
         if (company.qbAuthorized) {
             // Create new Invoice in QuickBooks
@@ -2131,6 +2181,25 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         // Deduct customer balance
         const balance = customer.balance -= invoice.total;
         Customer.findByIdAndUpdate(customer._id, { balance }).exec();
+
+        if (invoice.job) {
+            const job = await Job.findById(invoice.job).exec();
+            for (const task of job.tasks) {
+                if (task.contractor) {
+                    const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                    const comission = invoice.total * (contractor.comission ?? 20) / 100;
+                    const contractorBalance = contractor.balance -= comission;
+                    Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
+                }
+
+                if (task.technician && !task.contractor) {
+                    const technician = await User.findOne({ _id: task.technician }).exec();
+                    const comission = invoice.total * (technician.comission ?? 20) / 100;
+                    const technicianBalance = technician.balance - comission;
+                    User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
+                }
+            }
+        }
 
         // Remove Job Report invoice
         const jobReport = await JobReport.findOne({ job: invoice.job });
@@ -2722,4 +2791,74 @@ export const updateComission = async (req: Request, res: Response) => {
         default:
             return res.json({ status: Status.Success, message: Messages.GenericError });
     }
+}
+
+export const getInvoicesByVendor = async (req: Request, res: Response) => {
+
+    let jobs: IJob[], query;
+    const params = req.body;
+    const company = <ICompany>req.company;
+    const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
+    const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
+
+    if (startDate && endDate) {
+        query = { issuedDate: { $gte: startDate, $lte: endDate } }
+    }
+
+    switch (params.type) {
+        case 'vendor':
+            if (!params.vendorId) {
+                return res.json({ status: Status.Error, message: 'vendorId is required when type is vendor' });
+            }
+            jobs = await Job.find({ company, 'tasks.contractor': params.vendorId }).exec();
+            break;
+
+        case 'employee':
+            if (!params.employeeId) {
+                return res.json({ status: Status.Error, message: 'employeeId is required when type is employee' });
+            }
+            jobs = await Job.find({ company, 'tasks.technician': params.employeeId }).exec();
+            break;
+
+        default:
+            return res.json({ status: Status.Error, message: 'Type is required' });
+    }
+
+    const jobIds = jobs.map(job => job._id);
+    const invoices = await Invoice.find({ company: req.companyId, job: { $in: jobIds }, ...query })
+        .populate({
+            path: 'job',
+            populate: [{
+                path: 'type', select: 'title description sku'
+            }, {
+                path: 'customer', select: 'info.email auth.email profile.displayName contactName'
+            }, {
+                path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role'
+            }, {
+                path: 'tasks.technician', select: 'profile auth.email contact'
+            }],
+        })
+        .populate({
+            path: 'items.item',
+            select: 'name description sku itemCode note cost price',
+            populate: [{ path: 'jobType' }]
+        })
+        .populate({
+            path: 'company',
+            select: 'info.companyName info.logoUrl info.email permissions.role address.street address.city address.state address.zipCode contact.phone'
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+        })
+        .populate({
+            path: 'estimate',
+            select: 'total items note status customer company createdBy'
+        }).exec();
+
+    if (!invoices) {
+        return res.json({ status: Status.Success, invoices: '' });
+    }
+
+    return res.json({ status: Status.Success, invoices });
 }

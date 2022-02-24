@@ -5215,6 +5215,60 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
+  /getInvoicesByVendor:
+    post:
+      tags:
+        - Invoice
+      summary: To get detail of invoice
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - offset
+                - type
+              properties:
+                type:
+                  type: string
+                  description: Type of invoice
+                  enum:
+                    - vendor
+                    - employee
+                vendorId:
+                  type: string
+                  description: Id of vendor
+                employeeId:
+                  type: string
+                  description: Id of employee
+                startDate:
+                  type: string
+                endDate:
+                  type: string
+                offset:
+                  type: number
+                  description: Offset of timezone
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+                  invoice:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InvoiceDetail'
+                  scans:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ScanDetail'
+      security:
+        - Bearer: []
   /getInvoiceDetail:
     post:
       tags:
@@ -5305,6 +5359,41 @@ paths:
                   type: string
                   description: PDF file of invoice
                   format: binary
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateComission:
+    post:
+      tags:
+        - Invoice
+      summary: Update comission for contractor and employee
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - id
+                - type
+                - comission
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - contractor
+                    - employee
+                id:
+                  type: string
+                  description: id of contractor or employee
+                comission:
+                  type: number
         required: true
       responses:
         '200':
@@ -5551,6 +5640,48 @@ paths:
                       $ref: '#/components/schemas/Payment'
       security:
         - Bearer: []
+  /getPaymentsByVendor:
+    get:
+      tags:
+        - Payment
+      summary: To get payments by vendor or employee id
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - vendor
+              - employee
+        - name: vendor
+          in: query
+          required: false
+          description: id of the vendor you want to fetch payments for
+          schema:
+            type: string
+        - name: employee
+          in: query
+          required: false
+          description: id of the employee you want to fetch payments for
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+                  invoices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Payment'
+      security:
+        - Bearer: []
   /recordPayment:
     post:
       tags:
@@ -5563,9 +5694,20 @@ paths:
               type: object
               required:
                 - amount
-                - customerId
-                - invoiceId
+                - type
               properties:
+                type:
+                  type: string
+                  enum:
+                    - vendor
+                    - employee
+                    - customer
+                vendorId:
+                  type: string
+                  description: vendor id to who made the payment
+                employeeId:
+                  type: string
+                  description: employee id to who made the payment
                 customerId:
                   type: string
                   description: Pass customer id to who made the payment

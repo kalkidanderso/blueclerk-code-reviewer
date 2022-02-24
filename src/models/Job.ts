@@ -329,6 +329,9 @@ const JobSchema = new Schema({
         ref: 'User',
         required: true
     },
+    updatedAt: {
+        type: Date
+    },
     // employee type 0 for company employee
     // employee type 1 for external employee
     employeeType: {

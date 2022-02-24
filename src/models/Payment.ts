@@ -24,6 +24,22 @@ export interface IPayment extends Document {
     updatedAt: Date
 }
 
+export interface IPaymentCustomer extends IPayment {
+
+    customer: Schema.Types.ObjectId | ICustomer
+    invoice: Schema.Types.ObjectId | IInvoice
+}
+
+export interface IPaymentVendor extends IPayment {
+
+    vendor: Schema.Types.ObjectId | ICompany
+}
+
+export interface IPaymentEmployee extends IPayment {
+
+    employee: Schema.Types.ObjectId | ICustomer
+}
+
 export interface IQBPayment {
     Id?: string
     TxnDate?: string
@@ -93,18 +109,7 @@ export enum IQBPaymentTxnTypes {
 }
 
 const PaymentSchema = new Schema({
-    
-    customer: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    invoice: {
-        type: Schema.Types.ObjectId,
-        ref: 'Invoice',
-        required: true
-    },
-    // invoices: [{type: Schema.Types.ObjectId, ref: 'Invoice'}],
+
     amountPaid:{
         type : Number,
         default: 0
@@ -133,4 +138,35 @@ const PaymentSchema = new Schema({
     updatedAt: Date
 })
 
+const PaymentCustomerSchema = new Schema({
+
+    customer: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    invoice: {
+        type: Schema.Types.ObjectId,
+        ref: 'Invoice',
+    },
+})
+
+const PaymentVendorSchema = new Schema ({
+
+    vendor: {
+        type: Schema.Types.ObjectId,
+        ref: 'Company',
+    }
+});
+
+
+const PaymentEmployeeSchema = new Schema ({
+    employee: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    }
+})
+
 export const Payment = mongoose.model<IPayment>('Payment', PaymentSchema)
+export const PaymentCustomer = Payment.discriminator<IPaymentCustomer>('PaymentCustomer', PaymentCustomerSchema)
+export const PaymentVendor = Payment.discriminator<IPaymentVendor>('PaymentVendor', PaymentVendorSchema)
+export const PaymentEmployee = Payment.discriminator<IPaymentEmployee>('PaymentEmployee', PaymentEmployeeSchema)
