@@ -9328,6 +9328,31 @@
         ]
       }
     },
+    "/getPayrollDetail": {
+      "post": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "To get payroll detail",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/updatePayment": {
       "put": {
         "tags": [
@@ -11364,6 +11389,31 @@
         ],
         "summary": "To add mongoose id/ _id in task job type",
         "description": "**WARNING: - Only do this when you know what you are doing.** \nTo add _id in every task job type",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/script/addVendorBalance": {
+      "post": {
+        "tags": [
+          "Script"
+        ],
+        "summary": "To add employee and vendor balance",
         "responses": {
           "200": {
             "description": "Success",

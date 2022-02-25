@@ -10,6 +10,7 @@ import { Payment, IPayment, PaymentVendor, PaymentEmployee } from '../models/Pay
 import { Customer, ICustomer } from '../models/Customer'
 import { _createQBPayment, _updateQBPayment } from './quickbook.payment'
 import { Employee } from '../models/Employee'
+import { Contract } from '../models/Contract'
 
 
 /**
@@ -585,4 +586,16 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
         })
+}
+
+export const getPayrollDetail = async (req: Request, res: Response) => {
+
+    const company = <ICompany>req.company;
+    const contractors = await Contract.find({ company: company }).exec();
+    const contractorIds = contractors.map(contractor => contractor.contractor);
+
+    const vendors = await Company.find({ _id: { $in: [...new Set(contractorIds)] } }).exec();
+    const technicians = await Employee.find({ company }).exec();
+
+    return res.json({ status: Status.Success, vendors, technicians });
 }

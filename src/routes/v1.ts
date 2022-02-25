@@ -1868,6 +1868,14 @@ export default function (sio: any) {
         paymentController.updatePayment
     )
 
+    router.post(
+        '/getPayrollDetail',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Payments),
+        paymentController.getPayrollDetail
+    )
+
     // CODE LOCATION TAG
 
     router.post(
@@ -2010,6 +2018,13 @@ export default function (sio: any) {
         '/script/addJobTypeMongooseId',
         passport.authenticate('jwt', { session: false }),
         scriptController.addJobTypeMongooseId
+    )
+
+    router.post(
+        '/script/addVendorBalance',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        scriptController.addVendorBalance
     )
 
     return router
