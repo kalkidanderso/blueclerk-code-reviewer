@@ -9328,7 +9328,7 @@
         ]
       }
     },
-    "/getPayrollDetail": {
+    "/getPayrollBalance": {
       "post": {
         "tags": [
           "Payment"

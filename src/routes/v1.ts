@@ -1869,11 +1869,11 @@ export default function (sio: any) {
     )
 
     router.post(
-        '/getPayrollDetail',
+        '/getPayrollBalance',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Payments),
-        paymentController.getPayrollDetail
+        paymentController.getPayrollBalance
     )
 
     // CODE LOCATION TAG

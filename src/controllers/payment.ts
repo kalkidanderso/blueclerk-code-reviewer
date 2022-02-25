@@ -588,7 +588,7 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
         })
 }
 
-export const getPayrollDetail = async (req: Request, res: Response) => {
+export const getPayrollBalance = async (req: Request, res: Response) => {
 
     const company = <ICompany>req.company;
     const contractors = await Contract.find({ company: company }).exec();

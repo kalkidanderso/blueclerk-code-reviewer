@@ -5742,7 +5742,7 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
-  /getPayrollDetail:
+  /getPayrollBalance:
     post:
       tags:
         - Payment
