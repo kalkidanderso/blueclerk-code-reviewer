@@ -5,7 +5,7 @@ import fs from 'fs';
 import pdfmake from 'pdfmake';
 import * as http from 'http';
 import * as https from 'https';
-import { InvoiceStatus, Messages, Status } from '../common/constants';
+import { DefaultComission, InvoiceStatus, Messages, Status } from '../common/constants';
 import { IContact } from '../common/contact';
 import { INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } from '../common/config';
 import { Contact } from '../models/Contact';
@@ -392,23 +392,27 @@ export const createInvoice = (req: Request, res: Response) => {
 
                     if (!invoice.isDraft) {
                         const customer = await Customer.findById(invoice.customer);
-                        const job = await Job.findById(params.jobId);
+                        const job = await Job.findById(invoice.job);
                         customer.balance += invoice.total;
                         await customer.save();
 
-                        for (const task of job.tasks) {
+                        for (const task of job?.tasks) {
                             if (task.contractor) {
                                 const contractor = await Company.findOne({ _id: task.contractor }).exec();
-                                const comission = invoice.total * (contractor.comission ?? 20) / 100;
-                                contractor.balance += comission;
-                                contractor.save();
+                                const comission = invoice.total * (contractor.comission ?? DefaultComission.VENDOR_COMISSION) / 100;
+                                if (contractor) {
+                                    contractor.balance += comission;
+                                    contractor.save();
+                                }
                             }
 
                             if (task.technician && !task.contractor) {
                                 const technician = await User.findOne({ _id: task.technician }).exec();
-                                const comission = invoice.total * (technician.comission ?? 20) / 100;
-                                technician.balance += comission;
-                                technician.save();
+                                const comission = invoice.total * (technician.comission ?? DefaultComission.EMPLOYEE_COMISSION) / 100;
+                                if (technician) {
+                                    technician.balance += comission;
+                                    technician.save();
+                                }
                             }
                         }
                     }
@@ -1495,16 +1499,16 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                         // Update company and technician comission when charges is updated and invoice is not draft
                         if (params.charges && !invoice.isDraft && invoice.job) {
-                            for (const task of job.tasks) {
+                            for (const task of job?.tasks) {
                                 if (task.contractor) {
                                     const contractor = await Company.findOne({ _id: task.contractor }).exec();
-                                    if (Number(params.charges) > Number(invoice.total)) {
-                                        const comission = Number(params.charges) * (contractor.comission ?? 20) / 100;
+                                    if (contractor && Number(params.charges) > Number(invoice.total)) {
+                                        const comission = Number(params.charges) * (contractor.comission ?? DefaultComission.VENDOR_COMISSION) / 100;
                                         contractor.balance += comission;
                                     }
 
-                                    if (Number(params.charges) < invoice.total) {
-                                        const comission = Number(params.charges) * (contractor.comission ?? 20) / 100;
+                                    if (contractor && Number(params.charges) < invoice.total) {
+                                        const comission = Number(params.charges) * (contractor.comission ?? DefaultComission.EMPLOYEE_COMISSION) / 100;
                                         contractor.balance -= comission;
                                     }
 
@@ -1513,13 +1517,13 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                                 if (task.technician && !task.contractor) {
                                     const technician = await User.findOne({ _id: task.technician }).exec();
-                                    if (Number(params.charges) > invoice.total) {
-                                        const comission = Number(params.charges) * (technician.comission ?? 20) / 100;
+                                    if (technician && Number(params.charges) > invoice.total) {
+                                        const comission = Number(params.charges) * (technician.comission ?? DefaultComission.VENDOR_COMISSION) / 100;
                                         technician.balance += comission;
                                     }
 
-                                    if (Number(params.charges) < invoice.total) {
-                                        const comission = Number(params.charges) * (technician.comission ?? 20) / 100;
+                                    if (technician && Number(params.charges) < invoice.total) {
+                                        const comission = Number(params.charges) * (technician.comission ?? DefaultComission.EMPLOYEE_COMISSION) / 100;
                                         technician.balance -= comission;
                                     }
 
@@ -2184,19 +2188,23 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 
         if (invoice.job) {
             const job = await Job.findById(invoice.job).exec();
-            for (const task of job.tasks) {
+            for (const task of job?.tasks) {
                 if (task.contractor) {
                     const contractor = await Company.findOne({ _id: task.contractor }).exec();
-                    const comission = invoice.total * (contractor.comission ?? 20) / 100;
-                    const contractorBalance = contractor.balance -= comission;
-                    Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
+                    if (contractor) {
+                        const comission = invoice.total * (contractor.comission ?? DefaultComission.VENDOR_COMISSION) / 100;
+                        const contractorBalance = contractor.balance - comission;
+                        await Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
+                    }
                 }
 
                 if (task.technician && !task.contractor) {
                     const technician = await User.findOne({ _id: task.technician }).exec();
-                    const comission = invoice.total * (technician.comission ?? 20) / 100;
-                    const technicianBalance = technician.balance - comission;
-                    User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
+                    if (technician) {
+                        const comission = invoice.total * (technician.comission ?? DefaultComission.EMPLOYEE_COMISSION) / 100;
+                        const technicianBalance = technician.balance - comission;
+                        await User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
+                    }
                 }
             }
         }
