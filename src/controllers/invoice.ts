@@ -171,9 +171,9 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                 })
             } else if (typeof params.invoiceNumber !== 'undefined' && params.invoiceNumber && (typeof params.invoicePrefix === 'undefined' || !params.invoicePrefix)) {
 
-                if (company.currentInvoiceId > params.invoiceNumber) {
-                    return res.json({ 'status': Status.Success, 'message': "Invoice number can not be less then " + company.currentJobId });
-                }
+                // if (company.currentInvoiceId > params.invoiceNumber) {
+                //     return res.json({ 'status': Status.Success, 'message': "Invoice number can not be less then " + company.currentJobId });
+                // }
 
                 company.updateOne({ 'currentInvoiceId': params.invoiceNumber }, (err: any) => {
                     if (err) {
@@ -187,9 +187,9 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
 
                 if (company.invoicePrefix == params.invoicePrefix) {
 
-                    if (company.currentJobId > params.invoiceNumber) {
-                        return res.json({ 'status': Status.Success, 'message': "Invoice number can not be less then " + company.currentJobId });
-                    }
+                    // if (company.currentJobId > params.invoiceNumber) {
+                    //     return res.json({ 'status': Status.Success, 'message': "Invoice number can not be less then " + company.currentJobId });
+                    // }
 
                     company.updateOne({ 'currentInvoiceId': params.invoiceNumber }, (err: any) => {
                         if (err) {
@@ -263,12 +263,12 @@ const checkInvoicePrefixExists = (req: Request, res: Response, next: (req: Reque
 
             } else {
                 if (params.invoiceNumber != undefined && params.invoiceNumber !== null && params.invoiceNumber != '""') {
-                    if (invoicePrefix.maxInvoiceId > params.invoiceNumber) {
-                        return res.json({ 'status': Status.Error, 'message': 'Invoice number with prefix ' + params.invoicePrefix + ' is not allowed. Try no greater then ' + invoicePrefix.maxInvoiceId })
-                    } else {
-                        next(req, res, invoicePrefix)
-                        return
-                    }
+                    // if (invoicePrefix.maxInvoiceId > params.invoiceNumber) {
+                    //     return res.json({ 'status': Status.Error, 'message': 'Invoice number with prefix ' + params.invoicePrefix + ' is not allowed. Try no greater then ' + invoicePrefix.maxInvoiceId })
+                    // } else {
+                    next(req, res, invoicePrefix)
+                    //     return
+                    // }
 
                 } else if (invoicePrefix.maxInvoiceId > req.company.currentJobId) {
                     return res.json({ 'status': Status.Error, 'message': 'Current invoice number with prefix ' + params.invoicePrefix + ' is not allowed. Try no greater then ' + invoicePrefix.maxInvoiceId })
