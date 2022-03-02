@@ -45,7 +45,7 @@ export interface IUser extends Document {
         timeZone: String
     },
     balance: number,
-    comission: number,
+    commission: number,
 
     hashPassword: (password: string, next: (err?: any, hash?: string)=>void)=>void
     comparePassword: (password: string, next: (isMatch: boolean)=>void)=>void
@@ -127,7 +127,7 @@ const UserSchema = new Schema({
         type: Number,
         default: 0
     },
-    comission: {
+    commission: {
         type: Number,
         default: 20
     }

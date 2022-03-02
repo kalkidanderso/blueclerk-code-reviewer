@@ -5,6 +5,8 @@ import { IContact } from '../common/contact';
 import { IItem } from '../models/Item';
 import { IJob } from '../models/Job';
 import { IPaymentTerm } from '../models/PaymentTerm';
+import { ICompany } from './Company';
+import { IUser } from './User';
 
 export interface IInvoice extends Document {
     invoice: any[]
@@ -58,6 +60,12 @@ export interface IInvoice extends Document {
     }],
     lastEmailSent?: Date
     quickbookId?: string
+    technicians: [{
+        technician: Schema.Types.ObjectId | IUser
+        contractor: Schema.Types.ObjectId | ICompany
+        paid: boolean
+        paidAt: Date
+    }]
 }
 
 export enum LineDetailTypes {

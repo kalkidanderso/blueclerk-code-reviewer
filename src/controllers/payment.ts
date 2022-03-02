@@ -4,13 +4,14 @@ import moment from 'moment'
 
 import { Status, Messages, InvoiceStatus } from '../common/constants'
 import { Company, ICompany } from '../models/Company'
-import { IUser } from '../models/User'
+import { IUser, User } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
 import { Payment, IPayment, PaymentVendor, PaymentEmployee } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
 import { _createQBPayment, _updateQBPayment } from './quickbook.payment'
 import { Employee } from '../models/Employee'
 import { Contract } from '../models/Contract'
+import { IJob, Job } from '../models/Job'
 
 
 /**
@@ -68,6 +69,71 @@ export const _calculateInvoiceBalance = async (invoice: IInvoice, customer: ICus
 
     return;
 
+}
+
+export const _calculateContractorInvoiceBalance = async ({
+    invoices,
+    amountPaid,
+    contractor,
+    employee
+}: {
+    invoices: IInvoice[],
+    amountPaid: number,
+    contractor?: ICompany,
+    employee?: IUser
+}): Promise<void> => {
+
+    let invoiceBlance = 0
+    for (const invoice of invoices) {
+        invoice.balanceDue = invoice.balanceDue ?? invoice.total;
+
+        if (amountPaid >= invoice.balanceDue) {
+            if (contractor) {
+                contractor.balance -= invoice.balanceDue;
+            }
+
+            if (employee) {
+                employee.balance -= invoice.balanceDue;
+            }
+
+            // invoiceBlance += invoice.balanceDue;
+            invoice.paymentApplied += invoice.balanceDue;
+            invoice.balanceDue = 0;
+            invoice.status = InvoiceStatus.PAID;
+            invoice.paid = true;
+        } else {
+            if (contractor) {
+                contractor.balance -= amountPaid;
+            }
+
+            if (employee) {
+                employee.balance -= amountPaid;
+            }
+
+            invoice.paymentApplied = invoice.paymentApplied ?? 0;
+            invoice.balanceDue = invoice.balanceDue ?? invoice.total;
+            invoice.paymentApplied += amountPaid;
+            invoice.balanceDue -= amountPaid;
+            invoice.status = InvoiceStatus.PARTIALLY_PAID;
+            invoice.paid = false;
+
+            if (invoice.paymentApplied === 0) {
+                invoice.status = InvoiceStatus.UNPAID;
+            }
+        }
+
+        if (contractor) {
+            await contractor.save();
+        }
+
+        if (employee) {
+            await employee.save();
+        }
+
+        await invoice.save();
+    }
+
+    return;
 }
 
 /**
@@ -153,56 +219,89 @@ export const getPaymentsByCustomerId = (req: Request, res: Response) => {
 
 }
 
-export const getPaymentsByVendor = (req: Request, res: Response) => {
+export const getPaymentsByContractor = (req: Request, res: Response) => {
 
     let query;
     const params = req.query;
+    const company = <ICompany>req.company;
+    const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
+    const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
+
+    if (!params.id) {
+        return res.json({ 'status': Status.Error, 'message': 'Id is required on contractor type' })
+    }
+
+    if (startDate && endDate) {
+        query = { startDate: { $gte: startDate, $lte: endDate } }
+    }
 
     switch (params.type) {
         case 'vendor':
-            if (!params.vendor) {
-                return res.json({ 'status': Status.Error, 'message': 'Vendor is required on contractor type' })
-            }
-            query = { company: req.companyId, vendor: params.vendor }
+            const vendorQuery = { company, vendor: params.id, ...query }
+
+            PaymentVendor.find(vendorQuery)
+                .populate({
+                    path: 'company',
+                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                })
+                .populate({
+                    path: 'customer',
+                    select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+                })
+                .populate({
+                    path: 'invoices',
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+                })
+                .populate({
+                    path: 'createdBy',
+                    select: 'profile.displayName auth.email'
+                })
+                .then((payments: IPayment[] | null) => {
+                    return res.json({ 'status': Status.Success, 'payment': payments })
+                })
+                .catch((error: any) => {
+                    if (error.message != undefined) {
+                        return res.json({ 'status': Status.Error, 'message': error.message });
+                    } else {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+                    }
+                });
             break;
         case 'employee':
-            if (!params.employee) {
-                return res.json({ 'status': Status.Error, 'message': 'Employee is required on employee type' })
-            }
-            query = { company: req.companyId, employee: params.employee }
+            const employeeQuery = { company, employee: params.id, ...query }
+
+            PaymentEmployee.find(employeeQuery)
+                .populate({
+                    path: 'company',
+                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                })
+                .populate({
+                    path: 'customer',
+                    select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+                })
+                .populate({
+                    path: 'invoices',
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+                })
+                .populate({
+                    path: 'createdBy',
+                    select: 'profile.displayName auth.email'
+                })
+                .then((payments: IPayment[] | null) => {
+                    return res.json({ 'status': Status.Success, 'payment': payments })
+                })
+                .catch((error: any) => {
+                    if (error.message != undefined) {
+                        return res.json({ 'status': Status.Error, 'message': error.message });
+                    } else {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+                    }
+                });
             break;
         default:
             return res.json({ 'status': Status.Error, 'message': 'Type is required' })
     }
 
-    PaymentVendor.find(query)
-    .populate({
-        path: 'company',
-        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-    })
-    .populate({
-        path: 'customer',
-        select: 'info.email auth.email profile.displayName address contact contactName vendorId'
-    })
-    .populate({
-        path: 'invoices',
-        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
-    })
-    .populate({
-        path: 'createdBy',
-        select: 'profile.displayName auth.email'
-    })
-    .then((payments: IPayment[] | null) => {
-
-        return res.json({ 'status': Status.Success, 'payment': payments })
-    })
-    .catch((error: any) => {
-        if (error.message != undefined) {
-            return res.json({ 'status': Status.Error, 'message': error.message });
-        } else {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
-        }
-    })
 }
 
 /**
@@ -233,19 +332,19 @@ export const createPayment = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'vendorId is required on vendor type' });
             }
 
-            const vendor = await Company.findById(params.vendorId).exec();
+            const contractor = await Company.findById(params.vendorId).exec();
 
-            if (!vendor) {
+            if (!contractor) {
                 return res.json({ status: Status.Error, message: 'Vendor not found.' });
             }
 
-            const paymentVendor = new PaymentVendor({
-                vendor,
+            const paymentContractor = new PaymentVendor({
+                contractor,
                 ...paymentEntry
             });
 
-            paymentVendor.save();
-            payments.push(paymentVendor);
+            paymentContractor.save();
+            payments.push(paymentContractor);
 
             return res.json({ status: Status.Success, message: 'Payment successfully created.', payments });
 
@@ -342,6 +441,117 @@ export const createPayment = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
             }
 
+        default:
+            return res.json({ status: Status.Error, message: 'Type must be selected.' });
+    }
+}
+
+export const createPaymentContractor = async (req: Request, res: Response) => {
+
+    let payment;
+    const params = req.body;
+    const company = <ICompany>req.company;
+    const user = <IUser>req.user;
+    const invoiceIds = params.invoiceIds?.length ? JSON.parse(params.invoiceIds) : [];
+    if (!params.id && !params.startDate && !params.endDate) {
+        return res.json({ statstus: Status.Error, message: 'One of Id or Start date and end date are provided' });
+    }
+    const startDate = moment(params.startDate).startOf('day').utc().format();
+    const endDate = moment(params.endDate).endOf('day').utc().format();
+
+    // Check is vendor is in the job or not
+    const paymentEntry = {
+        amountPaid: params.amount,
+        referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
+        paymentType: params.paymentType,
+        paidAt: params.paidAt ? moment(params.paidAt).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+        note: params.note,
+        company,
+        createdBy: user,
+        createdAt: Date.now()
+    };
+
+    switch (params.type) {
+        case 'vendor':
+            const contractor = await Company.findById(params.id).exec();
+            if (!contractor) {
+                return res.json({ status: Status.NotFound, messages: 'Contractor Not Found' });
+            }
+
+            const contractorJobs = await Job.find({ 'tasks.contractor': contractor._id }).exec();
+            if (!contractorJobs?.length) {
+                return res.json({ status: Status.Error, message: 'Contractor is not in any job' });
+            }
+
+            const contractorJobIds = contractorJobs.map(job => job._id);
+            const contractorInvoices = await Invoice.find({
+                job: { $in: contractorJobIds },
+                $or: [{ _id: { $in: invoiceIds } }, { issuedDate: { $gte: startDate, $lte: endDate } }]
+            }).exec();
+
+            if (!contractorInvoices?.length) {
+                return res.json({ status: Status.Error, message: 'No invoice found' });
+            }
+
+            const contractorInvoiceIds = contractorInvoices.map(invoice => invoice._id);
+            const paymentVendor = new PaymentVendor({
+                contractor,
+                invoices: contractorInvoiceIds,
+                startDate: params.startDate ? moment(params.startDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+                endDate: params.endDate ? moment(params.endDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+                ...paymentEntry
+            });
+
+            paymentVendor.save();
+            for (const job of contractorJobs) {
+                const task = job.tasks.find(task => task?.contractor.toString() === contractor._id.toString());
+                task.paid = true;
+                task.paidAt = paymentVendor.paidAt;
+
+                job.save();
+            }
+
+            return res.json({ status: Status.Success, message: 'Payment successfully created.', paymentVendor });
+
+        case 'employee':
+            const employee = await User.findById(params.id).exec();
+            if (!employee) {
+                return res.json({ status: Status.NotFound, messages: 'Employee Not Found' });
+            }
+
+            const employeeJobs = await Job.find({ 'tasks.technician': employee._id }).exec();
+            if (!employeeJobs?.length) {
+                return res.json({ status: Status.Error, message: 'Employee is not in any job' });
+            }
+
+            const employeeJobIds = employeeJobs.map(job => job._id);
+            const employeeInvoices = await Invoice.find({
+                job: { $in: employeeJobIds },
+                $or: [{ _id: { $in: invoiceIds } }, { issuedDate: { $gte: startDate, $lte: endDate } }]
+            }).exec();
+
+            if (!employeeInvoices.length) {
+                return res.json({ status: Status.Error, message: 'No invoice found' });
+            }
+
+            const employeeInvoiceIds = employeeInvoices.map(invoice => invoice._id);
+            const paymentEmployee = new PaymentEmployee({
+                employee,
+                invoices: employeeInvoiceIds,
+                startDate: params.startDate ? moment(params.startDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+                endDate: params.endDate ? moment(params.endDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+                ...paymentEntry
+            });
+
+            paymentEmployee.save();
+            for (const job of employeeJobs) {
+                const task = job?.tasks.find(task => task?.technician.toString() === employee._id.toString());
+                task.paid = true;
+                task.paidAt = paymentEmployee.paidAt;
+                job.save();
+            }
+
+            return res.json({ status: Status.Success, message: 'Payment successfully created.', paymentEmployee });
         default:
             return res.json({ status: Status.Error, message: 'Type must be selected.' });
     }
@@ -591,11 +801,11 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
 export const getPayrollBalance = async (req: Request, res: Response) => {
 
     const company = <ICompany>req.company;
-    const contractors = await Contract.find({ company: company }).exec();
-    const contractorIds = contractors.map(contractor => contractor.contractor);
+    const contracts = await Contract.find({ company: company }).exec();
+    const contractorIds = contracts.map(contracts => contracts.contractor);
 
-    const vendors = await Company.find({ _id: { $in: [...new Set(contractorIds)] } }).exec();
+    const contractors = await Company.find({ _id: { $in: [...new Set(contractorIds)] } }).exec();
     const technicians = await Employee.find({ company }).exec();
 
-    return res.json({ status: Status.Success, vendors, technicians });
+    return res.json({ status: Status.Success, contractors, technicians });
 }

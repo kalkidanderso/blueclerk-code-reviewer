@@ -97,7 +97,7 @@ export interface ICompany extends Document{
     paymentTerm?: Schema.Types.ObjectId | IPaymentTerm
     companyInvoices: ICompanyInvoice[];
     balance: number;
-    comission: number;
+    commission: number;
 }
 
 export interface IQBCompany {
@@ -297,7 +297,7 @@ const CompanySchema = new Schema({
         type: Number,
         default: 0
     },
-    comission: {
+    commission: {
         type: Number,
         default: 20
     },

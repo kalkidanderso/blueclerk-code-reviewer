@@ -22,6 +22,7 @@ export interface IPayment extends Document {
     createdAt: Date
     updatedBy: Schema.Types.ObjectId | IUser
     updatedAt: Date
+    dueDate: Date
 }
 
 export interface IPaymentCustomer extends IPayment {
@@ -32,12 +33,18 @@ export interface IPaymentCustomer extends IPayment {
 
 export interface IPaymentVendor extends IPayment {
 
-    vendor: Schema.Types.ObjectId | ICompany
+    contractor: Schema.Types.ObjectId | ICompany
+    invoices: [Schema.Types.ObjectId | IInvoice]
+    startDate: Date
+    endDate: Date
 }
 
 export interface IPaymentEmployee extends IPayment {
 
     employee: Schema.Types.ObjectId | ICustomer
+    invoices: [Schema.Types.ObjectId | IInvoice]
+    startDate: Date
+    endDate: Date
 }
 
 export interface IQBPayment {
@@ -110,8 +117,8 @@ export enum IQBPaymentTxnTypes {
 
 const PaymentSchema = new Schema({
 
-    amountPaid:{
-        type : Number,
+    amountPaid: {
+        type: Number,
         default: 0
     },
     referenceNumber: String,
@@ -150,20 +157,32 @@ const PaymentCustomerSchema = new Schema({
     },
 })
 
-const PaymentVendorSchema = new Schema ({
+const PaymentVendorSchema = new Schema({
 
     vendor: {
         type: Schema.Types.ObjectId,
         ref: 'Company',
-    }
+    },
+    invoices: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Invoice'
+    }],
+    startDate: Date,
+    endDate: Date
 });
 
 
-const PaymentEmployeeSchema = new Schema ({
+const PaymentEmployeeSchema = new Schema({
     employee: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-    }
+    },
+    invoices: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Invoice'
+    }],
+    startDate: Date,
+    endDate: Date
 })
 
 export const Payment = mongoose.model<IPayment>('Payment', PaymentSchema)

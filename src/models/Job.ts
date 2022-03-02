@@ -71,6 +71,8 @@ export interface ITask extends Document {
     contractor?: Schema.Types.ObjectId
     comment?: string
     jobTypes?: ITaskJobType[]
+    paid: boolean
+    paidAt: Date
 }
 
 export interface TaskEntry {
@@ -295,7 +297,12 @@ const JobSchema = new Schema({
                 type: Number,
                 default: 0
             }
-        }]
+        }],
+        paid: {
+            type: Boolean,
+            default: false
+        },
+        paidAt: Date
     }],
     company: {
         type: Schema.Types.ObjectId,

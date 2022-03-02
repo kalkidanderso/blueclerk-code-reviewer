@@ -1598,21 +1598,21 @@ export default function (sio: any) {
         permissionController.updateAllCompaniesPermissions
     )
 
-    router.post(
-        '/updateComission',
+    router.put(
+        '/updateCommission',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Update_Invoice),
-        validate(Validations.updateComission),
-        invoiceController.updateComission
+        validate(Validations.updateCommission),
+        invoiceController.updateCommission
     )
 
-    router.post(
-        '/getInvoicesByVendor',
+    router.get(
+        '/getInvoicesByContractor',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Invoices),
-        invoiceController.getInvoicesByVendor
+        invoiceController.getInvoicesByContractor
     )
 
     //Parts Inventory
@@ -1843,11 +1843,11 @@ export default function (sio: any) {
     )
 
     router.get(
-        '/getPaymentsByVendor',
+        '/getPaymentsByContractor',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Customer_Payments),
-        paymentController.getPaymentsByVendor
+        paymentController.getPaymentsByContractor
     )
 
     router.post(
@@ -1859,6 +1859,15 @@ export default function (sio: any) {
         paymentController.createPayment
     )
 
+    router.post(
+        '/recordPaymentContractor',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.recordPaymentContractor),
+        checkUserPermissions(Permissions.Get_Customer_Payments),
+        paymentController.createPaymentContractor
+    )
+
     router.put(
         '/updatePayment',
         passport.authenticate('jwt', { session: false }),
@@ -1868,7 +1877,7 @@ export default function (sio: any) {
         paymentController.updatePayment
     )
 
-    router.post(
+    router.get(
         '/getPayrollBalance',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),

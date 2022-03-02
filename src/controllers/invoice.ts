@@ -5,7 +5,7 @@ import fs from 'fs';
 import pdfmake from 'pdfmake';
 import * as http from 'http';
 import * as https from 'https';
-import { DefaultComission, InvoiceStatus, Messages, Status } from '../common/constants';
+import { DefaultCommission, InvoiceStatus, Messages, Status } from '../common/constants';
 import { IContact } from '../common/contact';
 import { INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } from '../common/config';
 import { Contact } from '../models/Contact';
@@ -399,18 +399,18 @@ export const createInvoice = (req: Request, res: Response) => {
                         for (const task of job?.tasks) {
                             if (task.contractor) {
                                 const contractor = await Company.findOne({ _id: task.contractor }).exec();
-                                const comission = invoice.total * (contractor.comission ?? DefaultComission.VENDOR_COMISSION) / 100;
+                                const commission = invoice.total * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
                                 if (contractor) {
-                                    contractor.balance += comission;
+                                    contractor.balance += commission;
                                     contractor.save();
                                 }
                             }
 
                             if (task.technician && !task.contractor) {
                                 const technician = await User.findOne({ _id: task.technician }).exec();
-                                const comission = invoice.total * (technician.comission ?? DefaultComission.EMPLOYEE_COMISSION) / 100;
+                                const commission = invoice.total * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
                                 if (technician) {
-                                    technician.balance += comission;
+                                    technician.balance += commission;
                                     technician.save();
                                 }
                             }
@@ -1497,37 +1497,41 @@ export const updateInvoice = (req: Request, res: Response) => {
                             total = customPrice?.price || 0;
                         }
 
-                        // Update company and technician comission when charges is updated and invoice is not draft
+                        // Update company and technician commission when charges is updated and invoice is not draft
                         if (params.charges && !invoice.isDraft && invoice.job) {
                             for (const task of job?.tasks) {
                                 if (task.contractor) {
                                     const contractor = await Company.findOne({ _id: task.contractor }).exec();
-                                    if (contractor && Number(params.charges) > Number(invoice.total)) {
-                                        const comission = Number(params.charges) * (contractor.comission ?? DefaultComission.VENDOR_COMISSION) / 100;
-                                        contractor.balance += comission;
-                                    }
+                                    if (contractor) {
+                                        if (Number(params.charges) > Number(invoice.total)) {
+                                            const commission = Number(params.charges) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                            contractor.balance += commission;
+                                        }
 
-                                    if (contractor && Number(params.charges) < invoice.total) {
-                                        const comission = Number(params.charges) * (contractor.comission ?? DefaultComission.EMPLOYEE_COMISSION) / 100;
-                                        contractor.balance -= comission;
-                                    }
+                                        if (Number(params.charges) < invoice.total) {
+                                            const commission = Number(params.charges) * (contractor.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                            contractor.balance -= commission;
+                                        }
 
-                                    contractor.save();
+                                        contractor.save();
+                                    }
                                 }
 
                                 if (task.technician && !task.contractor) {
                                     const technician = await User.findOne({ _id: task.technician }).exec();
-                                    if (technician && Number(params.charges) > invoice.total) {
-                                        const comission = Number(params.charges) * (technician.comission ?? DefaultComission.VENDOR_COMISSION) / 100;
-                                        technician.balance += comission;
-                                    }
+                                    if (technician) {
+                                        if (Number(params.charges) > invoice.total) {
+                                            const commission = Number(params.charges) * (technician.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                            technician.balance += commission;
+                                        }
 
-                                    if (technician && Number(params.charges) < invoice.total) {
-                                        const comission = Number(params.charges) * (technician.comission ?? DefaultComission.EMPLOYEE_COMISSION) / 100;
-                                        technician.balance -= comission;
-                                    }
+                                        if (Number(params.charges) < invoice.total) {
+                                            const commission = Number(params.charges) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                            technician.balance -= commission;
+                                        }
 
-                                    technician.save();
+                                        technician.save();
+                                    }
                                 }
                             }
                         }
@@ -2142,15 +2146,15 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
             for (const task of job.tasks) {
                 if (task.contractor) {
                     const contractor = await Company.findOne({ _id: task.contractor }).exec();
-                    const comission = invoice.total * (contractor.comission ?? 20) / 100;
-                    const contractorBalance = contractor.balance + comission;
+                    const commission = invoice.total * (contractor.commission ?? 20) / 100;
+                    const contractorBalance = contractor.balance + commission;
                     Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
                 }
 
                 if (task.technician && !task.contractor) {
                     const technician = await User.findOne({ _id: task.technician }).exec();
-                    const comission = invoice.total * (technician.comission ?? 20) / 100;
-                    const technicianBalance = technician.balance + comission;
+                    const commission = invoice.total * (technician.commission ?? 20) / 100;
+                    const technicianBalance = technician.balance + commission;
                     User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
                 }
             }
@@ -2192,8 +2196,8 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                 if (task.contractor) {
                     const contractor = await Company.findOne({ _id: task.contractor }).exec();
                     if (contractor) {
-                        const comission = invoice.total * (contractor.comission ?? DefaultComission.VENDOR_COMISSION) / 100;
-                        const contractorBalance = contractor.balance - comission;
+                        const commission = invoice.total * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                        const contractorBalance = contractor.balance - commission;
                         await Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
                     }
                 }
@@ -2201,8 +2205,8 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                 if (task.technician && !task.contractor) {
                     const technician = await User.findOne({ _id: task.technician }).exec();
                     if (technician) {
-                        const comission = invoice.total * (technician.comission ?? DefaultComission.EMPLOYEE_COMISSION) / 100;
-                        const technicianBalance = technician.balance - comission;
+                        const commission = invoice.total * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                        const technicianBalance = technician.balance - commission;
                         await User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
                     }
                 }
@@ -2744,7 +2748,7 @@ export const downloadFileToPath = async (
 
     const filename = company.info.companyName.replace(/\s+/g, '').toLowerCase();
     const fullPath = `${absoluteTargetPath}/${filename}.jpg`;
-    if (!fs.existsSync(absoluteTargetPath)){
+    if (!fs.existsSync(absoluteTargetPath)) {
         fs.mkdirSync(absoluteTargetPath);
     }
     if (fs.existsSync(fullPath)) {
@@ -2772,7 +2776,7 @@ export const fileExists = async (absolutePath: string): Promise<boolean> => {
     return fs.existsSync(absolutePath);
 }
 
-export const updateComission = async (req: Request, res: Response) => {
+export const updateCommission = async (req: Request, res: Response) => {
 
     const params = req.body;
     switch (params.type) {
@@ -2782,9 +2786,9 @@ export const updateComission = async (req: Request, res: Response) => {
             if (!contractor) {
                 return res.json({ status: Status.Error, message: 'Contractor not found' });
             }
-            contractor.comission = params.comission;
+            contractor.commission = params.commission;
             contractor.save();
-            return res.json({ status: Status.Success, message: 'Comission updated successfully', contractor });
+            return res.json({ status: Status.Success, message: 'Commission updated successfully', contractor });
 
         case 'employee':
             const employee = await User.findById(params.id).exec();
@@ -2792,7 +2796,7 @@ export const updateComission = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'Contractor not found' });
             }
 
-            employee.comission = params.comission;
+            employee.commission = params.commission;
             employee.save();
             return res.json({ status: Status.Success, message: 'Employee updated successfully', employee });
 
@@ -2801,10 +2805,10 @@ export const updateComission = async (req: Request, res: Response) => {
     }
 }
 
-export const getInvoicesByVendor = async (req: Request, res: Response) => {
+export const getInvoicesByContractor = async (req: Request, res: Response) => {
 
-    let jobs: IJob[], query;
-    const params = req.body;
+    let jobQuery, query;
+    const params = req.query;
     const company = <ICompany>req.company;
     const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
     const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
@@ -2813,25 +2817,24 @@ export const getInvoicesByVendor = async (req: Request, res: Response) => {
         query = { issuedDate: { $gte: startDate, $lte: endDate } }
     }
 
+    if (!params.id) {
+        return res.json({ status: Status.Error, message: 'Id is required when type is vendor' });
+    }
+
     switch (params.type) {
         case 'vendor':
-            if (!params.vendorId) {
-                return res.json({ status: Status.Error, message: 'vendorId is required when type is vendor' });
-            }
-            jobs = await Job.find({ company, 'tasks.contractor': params.vendorId }).exec();
+            jobQuery = { company, 'tasks.contractor': params.vendorId }
             break;
 
         case 'employee':
-            if (!params.employeeId) {
-                return res.json({ status: Status.Error, message: 'employeeId is required when type is employee' });
-            }
-            jobs = await Job.find({ company, 'tasks.technician': params.employeeId }).exec();
+            jobQuery = { company, 'tasks.technician': params.employeeId };
             break;
 
         default:
             return res.json({ status: Status.Error, message: 'Type is required' });
     }
 
+    const jobs = await Job.find(jobQuery).exec();
     const jobIds = jobs.map(job => job._id);
     const invoices = await Invoice.find({ company: req.companyId, job: { $in: jobIds }, ...query })
         .populate({

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { Request, Response } from 'express';
 
-import { DefaultComission, JobStatus, Status } from '../common/constants';
+import { DefaultCommission, JobStatus, Status } from '../common/constants';
 
 import { Company, ICompany } from '../models/Company';
 import { Customer } from '../models/Customer';
@@ -288,8 +288,8 @@ export const addVendorBalance = async (req: Request, res: Response) => {
 
     for (const vendor of vendors) {
         for (const invoice of invoices) {
-            const comission = invoice.total * (DefaultComission.VENDOR_COMISSION / 100);
-            vendor.balance += comission;
+            const commission = invoice.total * (DefaultCommission.VENDOR_COMMISSION / 100);
+            vendor.balance += commission;
         }
 
         vendor.save();
@@ -297,8 +297,8 @@ export const addVendorBalance = async (req: Request, res: Response) => {
 
     for (const technician of technicians) {
         for (const invoice of invoices) {
-            const comission = invoice.total * (DefaultComission.EMPLOYEE_COMISSION / 100);
-            technician.balance += comission;
+            const commission = invoice.total * (DefaultCommission.EMPLOYEE_COMMISSION / 100);
+            technician.balance += commission;
         }
 
         technician.save();

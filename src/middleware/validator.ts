@@ -345,11 +345,11 @@ export const Validations = {
 
   companyInvoice: [check('companyInvoiceId').exists()],
 
-  updateComission: [
+  updateCommission: [
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId),
-    check('comission').exists().withMessage(Messages.Required),
-    check('comission').isInt().withMessage('Must in number format'),
+    check('commission').exists().withMessage(Messages.Required),
+    check('commission').isInt().withMessage('Must in number format'),
   ],
 
   getInvoiceDetail: [check('invoiceId').exists()],
@@ -414,6 +414,14 @@ export const Validations = {
     check('paymentId').isMongoId().withMessage(Messages.WrongId),
     check('customerId').exists().withMessage(Messages.Required),
     check('customerId').isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  recordPaymentContractor: [
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type is only vendor or employee'),
+    check('amount').exists().withMessage(Messages.Required),
   ],
 
   // Code Location
