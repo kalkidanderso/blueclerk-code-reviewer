@@ -475,12 +475,12 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
         case 'vendor':
             const contractor = await Company.findById(params.id).exec();
             if (!contractor) {
-                return res.json({ status: Status.NotFound, messages: 'Contractor Not Found' });
+                return res.json({ status: Status.Error, messages: 'Vendor not found' });
             }
 
             const contractorJobs = await Job.find({ 'tasks.contractor': contractor._id }).exec();
             if (!contractorJobs?.length) {
-                return res.json({ status: Status.Error, message: 'Contractor is not in any job' });
+                return res.json({ status: Status.Error, message: 'Vendor is not in any jobs of invoices' });
             }
 
             const contractorJobIds = contractorJobs.map(job => job._id);
@@ -504,24 +504,24 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
 
             paymentVendor.save();
             for (const job of contractorJobs) {
-                const task = job.tasks.find(task => task?.contractor.toString() === contractor._id.toString());
+                const task = job.tasks.find(task => task?.contractor?.toString() === contractor._id?.toString());
                 task.paid = true;
                 task.paidAt = paymentVendor.paidAt;
 
                 job.save();
             }
 
-            return res.json({ status: Status.Success, message: 'Payment successfully created.', paymentVendor });
+            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment: paymentVendor });
 
         case 'employee':
             const employee = await User.findById(params.id).exec();
             if (!employee) {
-                return res.json({ status: Status.NotFound, messages: 'Employee Not Found' });
+                return res.json({ status: Status.Error, messages: 'Employee not found' });
             }
 
             const employeeJobs = await Job.find({ 'tasks.technician': employee._id }).exec();
             if (!employeeJobs?.length) {
-                return res.json({ status: Status.Error, message: 'Employee is not in any job' });
+                return res.json({ status: Status.Error, message: 'Employee is not in any jobs of invoices' });
             }
 
             const employeeJobIds = employeeJobs.map(job => job._id);
@@ -545,16 +545,18 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
 
             paymentEmployee.save();
             for (const job of employeeJobs) {
-                const task = job?.tasks.find(task => task?.technician.toString() === employee._id.toString());
+                const task = job?.tasks.find(task => task?.technician?.toString() === employee._id?.toString());
                 task.paid = true;
                 task.paidAt = paymentEmployee.paidAt;
                 job.save();
             }
 
-            return res.json({ status: Status.Success, message: 'Payment successfully created.', paymentEmployee });
+            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment: paymentEmployee });
+
         default:
-            return res.json({ status: Status.Error, message: 'Type must be selected.' });
+            return res.json({ status: Status.Error, message: 'Type not supported. Available Type to be used: vendor or employee.' });
     }
+
 }
 
 export const createPaymentMultipleInvoices = async (req: Request, res: Response) => {

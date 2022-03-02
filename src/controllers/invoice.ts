@@ -2780,11 +2780,11 @@ export const updateCommission = async (req: Request, res: Response) => {
 
     const params = req.body;
     switch (params.type) {
-        case 'contractor':
+        case 'vendor':
             const contractor = await Company.findById(params.id).exec();
 
             if (!contractor) {
-                return res.json({ status: Status.Error, message: 'Contractor not found' });
+                return res.json({ status: Status.Error, message: 'Vendor not found' });
             }
             contractor.commission = params.commission;
             contractor.save();
@@ -2793,15 +2793,15 @@ export const updateCommission = async (req: Request, res: Response) => {
         case 'employee':
             const employee = await User.findById(params.id).exec();
             if (!employee) {
-                return res.json({ status: Status.Error, message: 'Contractor not found' });
+                return res.json({ status: Status.Error, message: 'Employee not found' });
             }
 
             employee.commission = params.commission;
             employee.save();
-            return res.json({ status: Status.Success, message: 'Employee updated successfully', employee });
+            return res.json({ status: Status.Success, message: 'Commission updated successfully', employee });
 
         default:
-            return res.json({ status: Status.Success, message: Messages.GenericError });
+            return res.json({ status: Status.Success, message: 'Type not supported. Available Type to be used: vendor or employee.' });
     }
 }
 

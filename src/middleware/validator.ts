@@ -346,6 +346,7 @@ export const Validations = {
   companyInvoice: [check('companyInvoiceId').exists()],
 
   updateCommission: [
+    check('type').exists().withMessage(Messages.Required),
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId),
     check('commission').exists().withMessage(Messages.Required),

@@ -760,6 +760,62 @@
         ]
       }
     },
+    "/updateCommission": {
+      "put": {
+        "tags": [
+          "Vendor"
+        ],
+        "summary": "Update commission for vendor and employee",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "id",
+                  "commission"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "vendor",
+                      "employee"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "description": "Id of vendor or employee"
+                  },
+                  "commission": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/changeContractorPermission": {
       "post": {
         "tags": [
@@ -8710,62 +8766,6 @@
                     "type": "string",
                     "description": "PDF file of invoice",
                     "format": "binary"
-                  }
-                }
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GeneralAPIResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
-    "/updateCommission": {
-      "put": {
-        "tags": [
-          "Invoice"
-        ],
-        "summary": "Update commission for contractor and employee",
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "id",
-                  "type",
-                  "commission"
-                ],
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "contractor",
-                      "employee"
-                    ]
-                  },
-                  "id": {
-                    "type": "string",
-                    "description": "id of contractor or employee"
-                  },
-                  "commission": {
-                    "type": "number"
                   }
                 }
               }

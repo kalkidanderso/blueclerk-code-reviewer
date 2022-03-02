@@ -444,6 +444,41 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
+  /updateCommission:
+    put:
+      tags:
+        - Vendor
+      summary: Update commission for vendor and employee
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - type
+                - id
+                - commission
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - vendor
+                    - employee
+                id:
+                  type: string
+                  description: Id of vendor or employee
+                commission:
+                  type: number
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /changeContractorPermission:
     post:
       tags:
@@ -5215,40 +5250,46 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
-  /getInvoicesByVendor:
-    post:
+  /getInvoicesByContractor:
+    get:
       tags:
         - Invoice
       summary: To get detail of invoice
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required:
-                - offset
-                - type
-              properties:
-                type:
-                  type: string
-                  description: Type of invoice
-                  enum:
-                    - vendor
-                    - employee
-                vendorId:
-                  type: string
-                  description: Id of vendor
-                employeeId:
-                  type: string
-                  description: Id of employee
-                startDate:
-                  type: string
-                endDate:
-                  type: string
-                offset:
-                  type: number
-                  description: Offset of timezone
-        required: true
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - vendor
+              - employee
+        - name: id
+          in: query
+          description: Id of Vendor or Employee
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         '200':
           description: Success
@@ -5359,41 +5400,6 @@ paths:
                   type: string
                   description: PDF file of invoice
                   format: binary
-        required: true
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GeneralAPIResponse'
-      security:
-        - Bearer: []
-  /updateComission:
-    post:
-      tags:
-        - Invoice
-      summary: Update comission for contractor and employee
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required:
-                - id
-                - type
-                - comission
-              properties:
-                type:
-                  type: string
-                  enum:
-                    - contractor
-                    - employee
-                id:
-                  type: string
-                  description: id of contractor or employee
-                comission:
-                  type: number
         required: true
       responses:
         '200':
@@ -5640,7 +5646,7 @@ paths:
                       $ref: '#/components/schemas/Payment'
       security:
         - Bearer: []
-  /getPaymentsByVendor:
+  /getPaymentsByContractor:
     get:
       tags:
         - Payment
@@ -5654,16 +5660,30 @@ paths:
             enum:
               - vendor
               - employee
-        - name: vendor
+        - name: id
           in: query
-          required: false
-          description: id of the vendor you want to fetch payments for
+          description: Id of Vendor or Employee
+          required: true
           schema:
             type: string
-        - name: employee
+        - name: name
           in: query
           required: false
-          description: id of the employee you want to fetch payments for
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
           schema:
             type: string
       responses:
@@ -5742,8 +5762,66 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
-  /getPayrollBalance:
+  /recordPaymentContractor:
     post:
+      tags:
+        - Payment
+      summary: To record the payment for invoice made by the customer
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - amount
+                - type
+                - id
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - vendor
+                    - employee
+                id:
+                  type: string
+                  description: Id of vendor or employee
+                invoiceIds:
+                  type: string
+                amount:
+                  type: number
+                  description: Amount how much customer has paid
+                startDate:
+                  type: string
+                endDate:
+                  type: string
+                dueDate:
+                  type: string
+                paymentType:
+                  type: string
+                  description: Method name how customer has paid
+                  enum:
+                    - ACH
+                    - Bank Wire
+                    - Credit Card/Debit Card
+                    - Check
+                    - Cash
+                paidAt:
+                  type: string
+                  description: Date when the customer has made the payment
+                notes:
+                  type: string
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getPayrollBalance:
+    get:
       tags:
         - Payment
       summary: To get payroll detail
