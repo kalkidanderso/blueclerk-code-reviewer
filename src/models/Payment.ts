@@ -159,7 +159,7 @@ const PaymentCustomerSchema = new Schema({
 
 const PaymentVendorSchema = new Schema({
 
-    vendor: {
+    contractor: {
         type: Schema.Types.ObjectId,
         ref: 'Company',
     },

@@ -465,7 +465,7 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
         referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
         paymentType: params.paymentType,
         paidAt: params.paidAt ? moment(params.paidAt).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
-        note: params.note,
+        note: params.notes,
         company,
         createdBy: user,
         createdAt: Date.now()
