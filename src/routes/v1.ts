@@ -1109,7 +1109,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_All_Contracts),
-        paymentController.getContractors
+        vendorController.getContractors
     )
 
     router.post(

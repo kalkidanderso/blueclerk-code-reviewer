@@ -873,6 +873,33 @@ export const upgradeToCompany = (req: Request, res: Response) => {
     )
 }
 
+export const getContractors = async (req: Request, res: Response) => {
+
+    const company = <ICompany>req.company;
+    const contracts = await Contract.find({ company: company }).exec();
+    const contractorIds = contracts.map(contracts => contracts.contractor);
+
+    const contractors = await Company.find({ _id: { $in: [...new Set(contractorIds)] } }).exec();
+    const technicians = await Employee.find({ company }).exec();
+
+    return res.json({ status: Status.Success, contractors, technicians });
+
+}
+
+// export const getContractors = async (req: Request, res: Response) => {
+
+//     const company = <ICompany>req.company;
+//     const paymentVendor = await PaymentVendor.find({ company: company, __t: 'PaymentVendor' }).exec();
+//     const paymentEmployee = await PaymentEmployee.find({ company: company, __t: 'PaymentEmployee' }).exec();
+
+//     const contractorIds = paymentVendor.map(vendor => vendor.contractor);
+//     const employeeIds = paymentEmployee.map(employee => employee.employee)
+//     const contractors = await Company.find({ _id: { $in: [...new Set(contractorIds)] } }).exec();
+//     const technicians = await User.find({ _id: { $in: [...new Set(employeeIds)] } }).exec();
+
+//     return res.json({ status: Status.Success, contractors, technicians });
+// }
+
 // PRIVATE METHOD
 
 export const _getProRatedAmount = async (): Promise<{ amount: number, tax: number }> => {

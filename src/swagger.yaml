@@ -324,11 +324,28 @@ paths:
                       $ref: '#/components/schemas/Contract'
       security:
         - Bearer: []
+  /getContractors:
+    get:
+      tags:
+        - Vendor
+      summary: To get all vendors and employees
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /getContractorDetail:
     post:
       tags:
         - Vendor
-      summary: To get detail of a contractor.
+      summary: To get detail of a vendor.
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -339,7 +356,7 @@ paths:
               properties:
                 contractorId:
                   type: string
-                  description: Id of contractor for getting detail
+                  description: Id of vendor for getting detail
         required: true
       responses:
         '200':
@@ -5713,21 +5730,9 @@ paths:
             schema:
               type: object
               required:
-                - amount
-                - type
+                - customerId
+                - invoiceId
               properties:
-                type:
-                  type: string
-                  enum:
-                    - vendor
-                    - employee
-                    - customer
-                vendorId:
-                  type: string
-                  description: vendor id to who made the payment
-                employeeId:
-                  type: string
-                  description: employee id to who made the payment
                 customerId:
                   type: string
                   description: Pass customer id to who made the payment
