@@ -5,11 +5,11 @@ import fs from 'fs';
 import pdfmake from 'pdfmake';
 import * as http from 'http';
 import * as https from 'https';
-import { InvoiceStatus, Messages, Status } from '../common/constants';
+import { DefaultCommission, InvoiceStatus, Messages, Status } from '../common/constants';
 import { IContact } from '../common/contact';
 import { INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } from '../common/config';
 import { Contact } from '../models/Contact';
-import { IUser } from '../models/User';
+import { IUser, User } from '../models/User';
 import { Company, ICompany } from '../models/Company';
 import { ICompanyAdmin } from '../models/CompanyAdmin';
 import { CompanyInvoice } from '../models/CompanyInvoice';
@@ -386,14 +386,35 @@ export const createInvoice = (req: Request, res: Response) => {
                         })
                 })
             })
-            .then((invoice: any) => {
+            .then((invoice: IInvoice) => {
 
                 return new Promise(async (resolve, reject) => {
 
                     if (!invoice.isDraft) {
                         const customer = await Customer.findById(invoice.customer);
+                        const job = await Job.findById(invoice.job);
                         customer.balance += invoice.total;
                         await customer.save();
+
+                        for (const task of job?.tasks) {
+                            if (task.contractor) {
+                                const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                                const commission = invoice.total * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                if (contractor) {
+                                    contractor.balance += commission;
+                                    contractor.save();
+                                }
+                            }
+
+                            if (task.technician && !task.contractor) {
+                                const technician = await User.findOne({ _id: task.technician }).exec();
+                                const commission = invoice.total * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                if (technician) {
+                                    technician.balance += commission;
+                                    technician.save();
+                                }
+                            }
+                        }
                     }
 
                     resolve(invoice);
@@ -1229,12 +1250,8 @@ export const createPOInvoice = (req: Request, res: Response) => {
 
                             return res.json({ 'status': Status.Success, 'message': "Purchase order invoice created successfully." })
                         })
-
-
                 })
             })
-
-
         });
 }
 
@@ -1270,6 +1287,7 @@ export const updateInvoice = (req: Request, res: Response) => {
             await company.populate({ path: 'paymentTerm' }).execPopulate();
             // Save the invoice old isDraft before it is replaced
             const oldIsDraft = invoice.isDraft;
+            const oldTotalInvoice = invoice.total
 
             // Retrieve payment term for this invoice
             let paymentTerm: IPaymentTerm;
@@ -1308,7 +1326,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                         })
                         return Promise.all([job, POPromise])
                     })
-                    .then((result: any) => {
+                    .then(async (result: any) => {
                         let job = result[0]
                         let purchaseOrders = result[1]
 
@@ -1478,6 +1496,45 @@ export const updateInvoice = (req: Request, res: Response) => {
                         if (job.tasks?.length > 0 && customerObj.isCustomPrice) {
                             const customPrice = customerObj.customPrices?.find(cp => cp.quantity === job.tasks?.length);
                             total = customPrice?.price || 0;
+                        }
+
+                        // Update company and technician commission when charges is updated and invoice is not draft
+                        if (!invoice.isDraft && invoice.job) {
+                            for (const task of job?.tasks) {
+                                if (task.contractor) {
+                                    const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                                    if (contractor) {
+                                        if (Number(total) > Number(oldTotalInvoice)) {
+                                            const commission = Number(total) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                            contractor.balance += commission;
+                                        }
+
+                                        if (Number(total) < Number(oldTotalInvoice)) {
+                                            const commission = Number(total) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                            contractor.balance -= commission;
+                                        }
+
+                                        contractor.save();
+                                    }
+                                }
+
+                                if (task.technician && !task.contractor) {
+                                    const technician = await User.findOne({ _id: task.technician }).exec();
+                                    if (technician) {
+                                        if (Number(total) > Number(oldTotalInvoice)) {
+                                            const commission = Number(total) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                            technician.balance += commission;
+                                        }
+
+                                        if (Number(total) < Number(oldTotalInvoice)) {
+                                            const commission = Number(total) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                            technician.balance -= commission;
+                                        }
+
+                                        technician.save();
+                                    }
+                                }
+                            }
                         }
 
                         if (params.charges) {
@@ -2085,6 +2142,25 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         const balance = customer.balance + invoice.total;
         Customer.findByIdAndUpdate(customer._id, { balance }).exec();
 
+        if (invoice.job) {
+            const job = await Job.findById(invoice.job).exec();
+            for (const task of job.tasks) {
+                if (task.contractor) {
+                    const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                    const commission = invoice.total * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                    const contractorBalance = contractor.balance + commission;
+                    await Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
+                }
+
+                if (task.technician && !task.contractor) {
+                    const technician = await User.findOne({ _id: task.technician }).exec();
+                    const commission = invoice.total * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                    const technicianBalance = technician.balance + commission;
+                    await User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
+                }
+            }
+        }
+
         // Create QB Invoice
         if (company.qbAuthorized) {
             // Create new Invoice in QuickBooks
@@ -2114,6 +2190,29 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         // Deduct customer balance
         const balance = customer.balance -= invoice.total;
         Customer.findByIdAndUpdate(customer._id, { balance }).exec();
+
+        if (invoice.job) {
+            const job = await Job.findById(invoice.job).exec();
+            for (const task of job?.tasks) {
+                if (task.contractor) {
+                    const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                    if (contractor) {
+                        const commission = invoice.total * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                        const contractorBalance = contractor.balance - commission;
+                        await Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
+                    }
+                }
+
+                if (task.technician && !task.contractor) {
+                    const technician = await User.findOne({ _id: task.technician }).exec();
+                    if (technician) {
+                        const commission = invoice.total * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                        const technicianBalance = technician.balance - commission;
+                        await User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
+                    }
+                }
+            }
+        }
 
         // Remove Job Report invoice
         const jobReport = await JobReport.findOne({ job: invoice.job });
@@ -2624,7 +2723,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     return new Promise((resolve) => {
         const fullPath = `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
         // Check if folder path exist, create if not
-        if (!fs.existsSync(INVOICE_PDF_PATH)){
+        if (!fs.existsSync(INVOICE_PDF_PATH)) {
             fs.mkdirSync(INVOICE_PDF_PATH);
         }
         // Check if existing Invoice PDF exist, remove if any
@@ -2650,7 +2749,7 @@ export const downloadFileToPath = async (
 
     const filename = company.info.companyName.replace(/\s+/g, '').toLowerCase();
     const fullPath = `${absoluteTargetPath}/${filename}.jpg`;
-    if (!fs.existsSync(absoluteTargetPath)){
+    if (!fs.existsSync(absoluteTargetPath)) {
         fs.mkdirSync(absoluteTargetPath);
     }
     if (fs.existsSync(fullPath)) {
@@ -2676,4 +2775,111 @@ export const downloadFileToPath = async (
  */
 export const fileExists = async (absolutePath: string): Promise<boolean> => {
     return fs.existsSync(absolutePath);
+}
+
+export const updateCommission = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    switch (params.type) {
+        case 'vendor':
+            const contractor = await Company.findById(params.id).exec();
+
+            if (!contractor) {
+                return res.json({ status: Status.Error, message: 'Vendor not found' });
+            }
+            contractor.commission = params.commission;
+            contractor.save();
+            return res.json({ status: Status.Success, message: 'Commission updated successfully', contractor });
+
+        case 'employee':
+            const employee = await User.findById(params.id).exec();
+            if (!employee) {
+                return res.json({ status: Status.Error, message: 'Employee not found' });
+            }
+
+            employee.commission = params.commission;
+            employee.save();
+            return res.json({ status: Status.Success, message: 'Commission updated successfully', employee });
+
+        default:
+            return res.json({ status: Status.Success, message: 'Type not supported. Available Type to be used: vendor or employee.' });
+    }
+}
+
+export const getInvoicesByContractor = async (req: Request, res: Response) => {
+
+    let jobQuery, query: any;
+    const params = req.query;
+    const company = <ICompany>req.company;
+    const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
+    const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
+
+    if (startDate && endDate) {
+        query = { issuedDate: { $gte: startDate, $lte: endDate } }
+    }
+
+    if (params.name) {
+        // find to note or vendorId
+        query.$or = [
+            { note: { $regex: params.name, $options: 'i' } },
+            { vendorId: { $regex: params.name, $options: 'i' } },
+            { invoiceId: { $regex: params.name, $options: 'i' } },
+        ]
+    }
+
+    if (!params.id) {
+        return res.json({ status: Status.Error, message: 'Id is required when type is vendor' });
+    }
+
+    switch (params.type) {
+        case 'vendor':
+            jobQuery = { company, 'tasks.contractor': params.id }
+            break;
+
+        case 'employee':
+            jobQuery = { company, 'tasks.technician': params.id };
+            break;
+
+        default:
+            return res.json({ status: Status.Error, message: 'Type is required' });
+    }
+
+    const jobs = await Job.find(jobQuery).exec();
+    const jobIds = jobs.map(job => job._id);
+    const invoices = await Invoice.find({ company: req.companyId, job: { $in: jobIds }, ...query })
+        .populate({
+            path: 'job',
+            populate: [{
+                path: 'type', select: 'title description sku'
+            }, {
+                path: 'customer', select: 'info.email auth.email profile.displayName contactName'
+            }, {
+                path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role'
+            }, {
+                path: 'tasks.technician', select: 'profile auth.email contact'
+            }],
+        })
+        .populate({
+            path: 'items.item',
+            select: 'name description sku itemCode note cost price',
+            populate: [{ path: 'jobType' }]
+        })
+        .populate({
+            path: 'company',
+            select: 'info.companyName info.logoUrl info.email permissions.role address.street address.city address.state address.zipCode contact.phone'
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+        })
+        .populate({
+            path: 'estimate',
+            select: 'total items note status customer company createdBy'
+        }).exec();
+
+    if (!invoices) {
+        return res.json({ status: Status.Success, invoices: '' });
+    }
+
+    return res.json({ status: Status.Success, invoices });
 }

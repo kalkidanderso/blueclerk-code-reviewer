@@ -1104,6 +1104,13 @@ export default function (sio: any) {
         vendorController.upgradeToCompany
     )
 
+    router.get(
+        '/getContractors',
+        passport.authenticate('jwt', { session: false }),
+        checkUserPermissions(Permissions.Get_All_Contracts),
+        vendorController.getContractors
+    )
+
     router.post(
         '/checkAndGet',
         validate(Validations.socialLogin),
@@ -1598,6 +1605,23 @@ export default function (sio: any) {
         permissionController.updateAllCompaniesPermissions
     )
 
+    router.put(
+        '/updateCommission',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Invoice),
+        validate(Validations.updateCommission),
+        invoiceController.updateCommission
+    )
+
+    router.get(
+        '/getInvoicesByContractor',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        invoiceController.getInvoicesByContractor
+    )
+
     //Parts Inventory
 
     router.post(
@@ -1825,6 +1849,14 @@ export default function (sio: any) {
         paymentController.getPaymentsByCustomerId
     )
 
+    router.get(
+        '/getPaymentsByContractor',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Customer_Payments),
+        paymentController.getPaymentsByContractor
+    )
+
     router.post(
         '/recordPayment',
         passport.authenticate('jwt', { session: false }),
@@ -1834,6 +1866,15 @@ export default function (sio: any) {
         paymentController.createPayment
     )
 
+    router.post(
+        '/recordPaymentContractor',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.recordPaymentContractor),
+        checkUserPermissions(Permissions.Get_Customer_Payments),
+        paymentController.createPaymentContractor
+    )
+
     router.put(
         '/updatePayment',
         passport.authenticate('jwt', { session: false }),
@@ -1841,6 +1882,14 @@ export default function (sio: any) {
         validate(Validations.updatePayment),
         checkUserPermissions(Permissions.Update_Payment),
         paymentController.updatePayment
+    )
+
+    router.get(
+        '/getPayrollBalance',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Payments),
+        paymentController.getPayrollBalance
     )
 
     // CODE LOCATION TAG
@@ -1985,6 +2034,13 @@ export default function (sio: any) {
         '/script/addJobTypeMongooseId',
         passport.authenticate('jwt', { session: false }),
         scriptController.addJobTypeMongooseId
+    )
+
+    router.post(
+        '/script/addVendorBalance',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        scriptController.addVendorBalance
     )
 
     return router

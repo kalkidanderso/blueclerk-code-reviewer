@@ -444,6 +444,41 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
+  /updateCommission:
+    put:
+      tags:
+        - Vendor
+      summary: Update commission for vendor and employee
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - type
+                - id
+                - commission
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - vendor
+                    - employee
+                id:
+                  type: string
+                  description: Id of vendor or employee
+                commission:
+                  type: number
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /changeContractorPermission:
     post:
       tags:
@@ -5215,6 +5250,66 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
+  /getInvoicesByContractor:
+    get:
+      tags:
+        - Invoice
+      summary: To get detail of invoice
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - vendor
+              - employee
+        - name: id
+          in: query
+          description: Id of Vendor or Employee
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+                  invoice:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InvoiceDetail'
+                  scans:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ScanDetail'
+      security:
+        - Bearer: []
   /getInvoiceDetail:
     post:
       tags:
@@ -5551,6 +5646,62 @@ paths:
                       $ref: '#/components/schemas/Payment'
       security:
         - Bearer: []
+  /getPaymentsByContractor:
+    get:
+      tags:
+        - Payment
+      summary: To get payments by vendor or employee id
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - vendor
+              - employee
+        - name: id
+          in: query
+          description: Id of Vendor or Employee
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+                  invoices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Payment'
+      security:
+        - Bearer: []
   /recordPayment:
     post:
       tags:
@@ -5563,9 +5714,20 @@ paths:
               type: object
               required:
                 - amount
-                - customerId
-                - invoiceId
+                - type
               properties:
+                type:
+                  type: string
+                  enum:
+                    - vendor
+                    - employee
+                    - customer
+                vendorId:
+                  type: string
+                  description: vendor id to who made the payment
+                employeeId:
+                  type: string
+                  description: employee id to who made the payment
                 customerId:
                   type: string
                   description: Pass customer id to who made the payment
@@ -5591,6 +5753,78 @@ paths:
                   type: string
                   description: Date when the customer has made the payment
         required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /recordPaymentContractor:
+    post:
+      tags:
+        - Payment
+      summary: To record the payment for invoice made by the customer
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - amount
+                - type
+                - id
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - vendor
+                    - employee
+                id:
+                  type: string
+                  description: Id of vendor or employee
+                invoiceIds:
+                  type: string
+                amount:
+                  type: number
+                  description: Amount how much customer has paid
+                startDate:
+                  type: string
+                endDate:
+                  type: string
+                dueDate:
+                  type: string
+                paymentType:
+                  type: string
+                  description: Method name how customer has paid
+                  enum:
+                    - ACH
+                    - Bank Wire
+                    - Credit Card/Debit Card
+                    - Check
+                    - Cash
+                paidAt:
+                  type: string
+                  description: Date when the customer has made the payment
+                notes:
+                  type: string
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getPayrollBalance:
+    get:
+      tags:
+        - Payment
+      summary: To get payroll detail
       responses:
         '200':
           description: Success
@@ -6860,6 +7094,20 @@ paths:
       description: |-
         **WARNING: - Only do this when you know what you are doing.** 
         To add _id in every task job type
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /script/addVendorBalance:
+    post:
+      tags:
+        - Script
+      summary: To add employee and vendor balance
       responses:
         '200':
           description: Success

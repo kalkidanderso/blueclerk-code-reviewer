@@ -171,6 +171,11 @@ export enum QBEntityOperations {
     VOID = 'Void'
 }
 
+export enum DefaultCommission {
+    VENDOR_COMMISSION = 20,
+    EMPLOYEE_COMMISSION = 20,
+}
+
 export const enum Permissions {
     None,
     Permission_Get_All,
