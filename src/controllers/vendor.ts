@@ -15,6 +15,7 @@ import { Contract, IContract } from '../models/Contract';
 import { NotificationContract, INotificationContract } from '../models/NotificationContract';
 import { _createHubSpotContact, _upgradeHubSpotContact, checkCompanyEmailExists, login } from '../controllers/user';
 import { _handleNotification } from './notification';
+import { Employee } from '../models/Employee';
 
 // new contractor signup
 export const createContractor = (req: Request, res: Response, sio: any) => {
@@ -870,6 +871,18 @@ export const upgradeToCompany = (req: Request, res: Response) => {
 
         }
     )
+}
+
+export const getContractors = async(req: Request, res: Response) => {
+
+    const company = <ICompany>req.company;
+    const contracts = await Contract.find({ company: company }).exec();
+    const contractorIds = contracts.map(contracts => contracts.contractor);
+
+    const contractors = await Company.find({ _id: { $in: [...new Set(contractorIds)] } }).exec();
+    const technicians = await Employee.find({ company }).exec();
+
+    return res.json({ status: Status.Success, contractors, technicians });
 }
 
 // PRIVATE METHOD

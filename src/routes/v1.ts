@@ -1104,6 +1104,13 @@ export default function (sio: any) {
         vendorController.upgradeToCompany
     )
 
+    router.get(
+        '/getContractors',
+        passport.authenticate('jwt', { session: false }),
+        checkUserPermissions(Permissions.Get_All_Contracts),
+        vendorController.getContractors
+    )
+
     router.post(
         '/checkAndGet',
         validate(Validations.socialLogin),

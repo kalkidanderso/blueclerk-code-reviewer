@@ -6,7 +6,7 @@ import { Status, Messages, InvoiceStatus, DefaultCommission } from '../common/co
 import { Company, ICompany } from '../models/Company'
 import { IUser, User } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
-import { Payment, IPayment, PaymentVendor, PaymentEmployee } from '../models/Payment'
+import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
 import { _createQBPayment, _updateQBPayment } from './quickbook.payment'
 import { Employee } from '../models/Employee'
@@ -202,6 +202,7 @@ export const getPaymentsByContractor = (req: Request, res: Response) => {
                     }
                 });
             break;
+
         case 'employee':
             const employeeQuery = { company, employee: params.id, ...query }
 
@@ -247,10 +248,35 @@ export const createPayment = async (req: Request, res: Response) => {
     const params = req.body;
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
-    const payments: IPayment[] = [];
+
+    // Find and check if customer existed
+    const customer = await Customer.findOne({
+        _id: params.customerId,
+        company: company._id
+    });
+
+    if (!customer) {
+        return res.json({ status: Status.Error, message: 'Customer not found.' });
+    }
+
+    // Find and check if invoice existed and belongs to the customer
+    const invoice = await Invoice.findOne({
+        _id: params.invoiceId,
+        customer: customer._id,
+        company: company._id
+    });
+
+    if (!invoice || invoice.isDraft) {
+        return res.json({ status: Status.Error, message: 'Invoice not found or does not belong to the customer.' });
+    }
+    if (invoice.status === InvoiceStatus.PAID) {
+        return res.json({ status: Status.Success, message: 'Invoice already paid off.' });
+    }
 
     // Construct payment entry
-    const paymentEntry = {
+    const payment = new PaymentCustomer({
+        customer,
+        invoice,
         amountPaid: params.amount,
         referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
         paymentType: params.paymentType,
@@ -259,125 +285,46 @@ export const createPayment = async (req: Request, res: Response) => {
         company,
         createdBy: user,
         createdAt: Date.now()
-    };
+    });
 
-    switch (params.type) {
-        case 'vendor':
-            if (!params.vendorId) {
-                return res.json({ status: Status.Error, message: 'vendorId is required on vendor type' });
-            }
+    try {
+        // Save the new payment
+        await payment.save();
 
-            const contractor = await Company.findById(params.vendorId).exec();
+        // Handle invoice balance due, underpayment, and overpayment
+        await _calculateInvoiceBalance(invoice, customer, parseFloat(params.amount));
 
-            if (!contractor) {
-                return res.json({ status: Status.Error, message: 'Vendor not found.' });
-            }
-
-            const paymentContractor = new PaymentVendor({
-                contractor,
-                ...paymentEntry
-            });
-
-            paymentContractor.save();
-            payments.push(paymentContractor);
-
-            return res.json({ status: Status.Success, message: 'Payment successfully created.', payments });
-
-        case 'employee':
-            if (!params.employeeId) {
-                return res.json({ status: Status.Error, message: 'employeeId is required on employee type' });
-            }
-
-            const employee = await Employee.findById(params.employeeId).exec();
-
-            if (!employee) {
-                return res.json({ status: Status.Error, message: 'Employee not found.' });
-            }
-
-            const paymentEmployee = new PaymentEmployee({
-                employee,
-                ...paymentEntry
-            });
-
-            paymentEmployee.save();
-            payments.push(paymentEmployee);
-
-            return res.json({ status: Status.Success, message: 'Payment successfully created.', payments });
-
-        case 'customer':
-            // Find and check if customer existed
-            const customer = await Customer.findOne({
-                _id: params.customerId,
-                company: company._id
-            });
-
-            if (!customer) {
-                return res.json({ status: Status.Error, message: 'Customer not found.' });
-            }
-
-            // Find and check if invoice existed and belongs to the customer
-            const invoice = await Invoice.findOne({
-                _id: params.invoiceId,
-                customer: customer._id,
-                company: company._id
-            });
-
-            if (!invoice || invoice.isDraft) {
-                return res.json({ status: Status.Error, message: 'Invoice not found or does not belong to the customer.' });
-            }
-            if (invoice.status === InvoiceStatus.PAID) {
-                return res.json({ status: Status.Success, message: 'Invoice already paid off.' });
-            }
-
-            // Construct payment entry
-            const payment = new Payment({
-                customer,
-                invoice,
-                ...paymentEntry
-            });
-
-            try {
-                // Save the new payment
-                await payment.save();
-
-                // Handle invoice balance due, underpayment, and overpayment
-                await _calculateInvoiceBalance(invoice, customer, parseFloat(params.amount));
-
-                if (company.qbAuthorized) {
-                    // Create new Payment in QuickBooks
-                    _createQBPayment(req, res, company, payment, (err, errMsg, qbPayment) => {
-                        if (err) {
-                            return res.json({ status: err, message: errMsg });
-                        }
-
-                        if (qbPayment) {
-                            payment.quickbookId = qbPayment.Id;
-                            payment.save();
-
-                            // If company's payments already synced, update the synced date
-                            if (company.qbSync?.paymentsSynced) {
-                                company.qbSync.paymentsSyncedAt = new Date();
-                                company.save();
-                            }
-                        }
-
-                        return res.json({
-                            status: Status.Success,
-                            message: 'Payment successfully created.',
-                            payment, quickbookPayment: qbPayment,
-                            customer, invoice
-                        });
-                    });
-                } else {
-                    return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
+        if (company.qbAuthorized) {
+            // Create new Payment in QuickBooks
+            _createQBPayment(req, res, company, payment, (err, errMsg, qbPayment) => {
+                if (err) {
+                    return res.json({ status: err, message: errMsg });
                 }
 
-            } catch (error) {
-                return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
-            }
+                if (qbPayment) {
+                    payment.quickbookId = qbPayment.Id;
+                    payment.save();
 
-        default:
-            return res.json({ status: Status.Error, message: 'Type must be selected.' });
+                    // If company's payments already synced, update the synced date
+                    if (company.qbSync?.paymentsSynced) {
+                        company.qbSync.paymentsSyncedAt = new Date();
+                        company.save();
+                    }
+                }
+
+                return res.json({
+                    status: Status.Success,
+                    message: 'Payment successfully created.',
+                    payment, quickbookPayment: qbPayment,
+                    customer, invoice
+                });
+            });
+        } else {
+            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
+        }
+
+    } catch (error) {
+        return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
     }
 }
 
@@ -392,12 +339,12 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
         return res.json({ statstus: Status.Error, message: 'One of Id or Start date and end date are provided' });
     }
 
-    const query:any = {$or: [{_id: {$in: invoiceIds}}]};
+    const query: any = { $or: [{ _id: { $in: invoiceIds } }] };
     const startDate = moment(params.startDate).startOf('day').utc().format();
     const endDate = moment(params.endDate).endOf('day').utc().format();
 
     if (params.startDate && params.endDate) {
-        query.$or.push({issuedDate: { $gte: startDate, $lte: endDate }})
+        query.$or.push({ issuedDate: { $gte: startDate, $lte: endDate } })
     }
 
     // Check is vendor is in the job or not

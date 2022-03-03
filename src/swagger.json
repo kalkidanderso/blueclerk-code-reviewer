@@ -9288,26 +9288,10 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "amount",
-                  "type"
+                  "customerId",
+                  "invoiceId"
                 ],
                 "properties": {
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "vendor",
-                      "employee",
-                      "customer"
-                    ]
-                  },
-                  "vendorId": {
-                    "type": "string",
-                    "description": "vendor id to who made the payment"
-                  },
-                  "employeeId": {
-                    "type": "string",
-                    "description": "employee id to who made the payment"
-                  },
                   "customerId": {
                     "type": "string",
                     "description": "Pass customer id to who made the payment"

@@ -1287,6 +1287,7 @@ export const updateInvoice = (req: Request, res: Response) => {
             await company.populate({ path: 'paymentTerm' }).execPopulate();
             // Save the invoice old isDraft before it is replaced
             const oldIsDraft = invoice.isDraft;
+            const oldTotalInvoice = invoice.total
 
             // Retrieve payment term for this invoice
             let paymentTerm: IPaymentTerm;
@@ -1498,18 +1499,18 @@ export const updateInvoice = (req: Request, res: Response) => {
                         }
 
                         // Update company and technician commission when charges is updated and invoice is not draft
-                        if (params.charges && !invoice.isDraft && invoice.job) {
+                        if (!invoice.isDraft && invoice.job) {
                             for (const task of job?.tasks) {
                                 if (task.contractor) {
                                     const contractor = await Company.findOne({ _id: task.contractor }).exec();
                                     if (contractor) {
-                                        if (Number(params.charges) > Number(invoice.total)) {
-                                            const commission = Number(params.charges) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                        if (Number(total) > Number(oldTotalInvoice)) {
+                                            const commission = Number(total) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
                                             contractor.balance += commission;
                                         }
 
-                                        if (Number(params.charges) < invoice.total) {
-                                            const commission = Number(params.charges) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                        if (Number(total) < Number(oldTotalInvoice)) {
+                                            const commission = Number(total) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
                                             contractor.balance -= commission;
                                         }
 
@@ -1520,13 +1521,13 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 if (task.technician && !task.contractor) {
                                     const technician = await User.findOne({ _id: task.technician }).exec();
                                     if (technician) {
-                                        if (Number(params.charges) > invoice.total) {
-                                            const commission = Number(params.charges) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                        if (Number(total) > Number(oldTotalInvoice)) {
+                                            const commission = Number(total) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
                                             technician.balance += commission;
                                         }
 
-                                        if (Number(params.charges) < invoice.total) {
-                                            const commission = Number(params.charges) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                        if (Number(total) < Number(oldTotalInvoice)) {
+                                            const commission = Number(total) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
                                             technician.balance -= commission;
                                         }
 
