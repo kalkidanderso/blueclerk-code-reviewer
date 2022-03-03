@@ -1107,8 +1107,9 @@ export default function (sio: any) {
     router.get(
         '/getContractors',
         passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
         checkUserPermissions(Permissions.Get_All_Contracts),
-        vendorController.getContractors
+        paymentController.getContractors
     )
 
     router.post(

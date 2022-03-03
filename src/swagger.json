@@ -9138,6 +9138,42 @@
         ]
       }
     },
+    "/getContractors": {
+      "get": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "To get all vendors and employees",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    },
+                    "invoices": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Payment"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getPaymentsByCustomerId": {
       "get": {
         "tags": [
