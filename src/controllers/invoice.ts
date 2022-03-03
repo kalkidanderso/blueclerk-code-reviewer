@@ -1509,7 +1509,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                                         }
 
                                         if (Number(params.charges) < invoice.total) {
-                                            const commission = Number(params.charges) * (contractor.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                            const commission = Number(params.charges) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
                                             contractor.balance -= commission;
                                         }
 
@@ -1521,7 +1521,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                                     const technician = await User.findOne({ _id: task.technician }).exec();
                                     if (technician) {
                                         if (Number(params.charges) > invoice.total) {
-                                            const commission = Number(params.charges) * (technician.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                            const commission = Number(params.charges) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
                                             technician.balance += commission;
                                         }
 
@@ -2146,16 +2146,16 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
             for (const task of job.tasks) {
                 if (task.contractor) {
                     const contractor = await Company.findOne({ _id: task.contractor }).exec();
-                    const commission = invoice.total * (contractor.commission ?? 20) / 100;
+                    const commission = invoice.total * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
                     const contractorBalance = contractor.balance + commission;
-                    Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
+                    await Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
                 }
 
                 if (task.technician && !task.contractor) {
                     const technician = await User.findOne({ _id: task.technician }).exec();
-                    const commission = invoice.total * (technician.commission ?? 20) / 100;
+                    const commission = invoice.total * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
                     const technicianBalance = technician.balance + commission;
-                    User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
+                    await User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
                 }
             }
         }
@@ -2807,7 +2807,7 @@ export const updateCommission = async (req: Request, res: Response) => {
 
 export const getInvoicesByContractor = async (req: Request, res: Response) => {
 
-    let jobQuery, query;
+    let jobQuery, query: any;
     const params = req.query;
     const company = <ICompany>req.company;
     const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
@@ -2817,17 +2817,26 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
         query = { issuedDate: { $gte: startDate, $lte: endDate } }
     }
 
+    if (params.name) {
+        // find to note or vendorId
+        query.$or = [
+            { note: { $regex: params.name, $options: 'i' } },
+            { vendorId: { $regex: params.name, $options: 'i' } },
+            { invoiceId: { $regex: params.name, $options: 'i' } },
+        ]
+    }
+
     if (!params.id) {
         return res.json({ status: Status.Error, message: 'Id is required when type is vendor' });
     }
 
     switch (params.type) {
         case 'vendor':
-            jobQuery = { company, 'tasks.contractor': params.vendorId }
+            jobQuery = { company, 'tasks.contractor': params.id }
             break;
 
         case 'employee':
-            jobQuery = { company, 'tasks.technician': params.employeeId };
+            jobQuery = { company, 'tasks.technician': params.id };
             break;
 
         default:

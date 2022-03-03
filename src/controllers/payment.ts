@@ -2,7 +2,7 @@ import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb'
 import moment from 'moment'
 
-import { Status, Messages, InvoiceStatus } from '../common/constants'
+import { Status, Messages, InvoiceStatus, DefaultCommission } from '../common/constants'
 import { Company, ICompany } from '../models/Company'
 import { IUser, User } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
@@ -71,71 +71,6 @@ export const _calculateInvoiceBalance = async (invoice: IInvoice, customer: ICus
 
 }
 
-export const _calculateContractorInvoiceBalance = async ({
-    invoices,
-    amountPaid,
-    contractor,
-    employee
-}: {
-    invoices: IInvoice[],
-    amountPaid: number,
-    contractor?: ICompany,
-    employee?: IUser
-}): Promise<void> => {
-
-    let invoiceBlance = 0
-    for (const invoice of invoices) {
-        invoice.balanceDue = invoice.balanceDue ?? invoice.total;
-
-        if (amountPaid >= invoice.balanceDue) {
-            if (contractor) {
-                contractor.balance -= invoice.balanceDue;
-            }
-
-            if (employee) {
-                employee.balance -= invoice.balanceDue;
-            }
-
-            // invoiceBlance += invoice.balanceDue;
-            invoice.paymentApplied += invoice.balanceDue;
-            invoice.balanceDue = 0;
-            invoice.status = InvoiceStatus.PAID;
-            invoice.paid = true;
-        } else {
-            if (contractor) {
-                contractor.balance -= amountPaid;
-            }
-
-            if (employee) {
-                employee.balance -= amountPaid;
-            }
-
-            invoice.paymentApplied = invoice.paymentApplied ?? 0;
-            invoice.balanceDue = invoice.balanceDue ?? invoice.total;
-            invoice.paymentApplied += amountPaid;
-            invoice.balanceDue -= amountPaid;
-            invoice.status = InvoiceStatus.PARTIALLY_PAID;
-            invoice.paid = false;
-
-            if (invoice.paymentApplied === 0) {
-                invoice.status = InvoiceStatus.UNPAID;
-            }
-        }
-
-        if (contractor) {
-            await contractor.save();
-        }
-
-        if (employee) {
-            await employee.save();
-        }
-
-        await invoice.save();
-    }
-
-    return;
-}
-
 /**
  * To reset Payment quickbookId,
  * used when /disconnectQB API called
@@ -153,7 +88,7 @@ export const _resetPaymentQB = (company: ICompany): void => {
 
 export const getPayments = (req: Request, res: Response) => {
 
-    Payment.find({ company: req.companyId })
+    Payment.find({ company: req.companyId, __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] } })
         .populate({
             path: 'company',
             select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -453,11 +388,17 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
     const invoiceIds = params.invoiceIds?.length ? JSON.parse(params.invoiceIds) : [];
-    if (!params.id && !params.startDate && !params.endDate) {
+    if (!params.invoiceIds && !params.startDate && !params.endDate) {
         return res.json({ statstus: Status.Error, message: 'One of Id or Start date and end date are provided' });
     }
+
+    const query:any = {$or: [{_id: {$in: invoiceIds}}]};
     const startDate = moment(params.startDate).startOf('day').utc().format();
     const endDate = moment(params.endDate).endOf('day').utc().format();
+
+    if (params.startDate && params.endDate) {
+        query.$or.push({issuedDate: { $gte: startDate, $lte: endDate }})
+    }
 
     // Check is vendor is in the job or not
     const paymentEntry = {
@@ -486,14 +427,20 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
             const contractorJobIds = contractorJobs.map(job => job._id);
             const contractorInvoices = await Invoice.find({
                 job: { $in: contractorJobIds },
-                $or: [{ _id: { $in: invoiceIds } }, { issuedDate: { $gte: startDate, $lte: endDate } }]
+                ...query
             }).exec();
 
             if (!contractorInvoices?.length) {
                 return res.json({ status: Status.Error, message: 'No invoice found' });
             }
 
-            const contractorInvoiceIds = contractorInvoices.map(invoice => invoice._id);
+            let invoiceTotal: number = 0;
+            const contractorInvoiceIds = [];
+            for (const invoice of contractorInvoices) {
+                invoiceTotal += invoice.total;
+                contractorInvoiceIds.push(invoice._id);
+            }
+
             const paymentVendor = new PaymentVendor({
                 contractor,
                 invoices: contractorInvoiceIds,
@@ -510,6 +457,11 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
 
                 job.save();
             }
+
+            const contractorCommission = invoiceTotal * (contractor?.commission ?? DefaultCommission.VENDOR_COMMISSION / 100);
+            const contractorBalance = contractor.balance - contractorCommission
+            contractor.balance = contractorBalance < 0 ? 0 : contractorBalance;
+            contractor.save();
 
             return res.json({ status: Status.Success, message: 'Payment successfully created.', payment: paymentVendor });
 
@@ -534,7 +486,13 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'No invoice found' });
             }
 
-            const employeeInvoiceIds = employeeInvoices.map(invoice => invoice._id);
+            const employeeInvoiceIds = [];
+            let totalInvoice = 0;
+            for (const invoice of employeeInvoices) {
+                totalInvoice += invoice.total;
+                employeeInvoiceIds.push(invoice._id);
+            }
+
             const paymentEmployee = new PaymentEmployee({
                 employee,
                 invoices: employeeInvoiceIds,
@@ -550,6 +508,11 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                 task.paidAt = paymentEmployee.paidAt;
                 job.save();
             }
+
+            const employeeCommission = totalInvoice * (employee.commission ?? DefaultCommission.EMPLOYEE_COMMISSION / 100);
+            const employeeBalance = employee.balance - employeeCommission
+            employee.balance = employeeBalance < 0 ? 0 : employeeBalance;
+            employee.save();
 
             return res.json({ status: Status.Success, message: 'Payment successfully created.', payment: paymentEmployee });
 
