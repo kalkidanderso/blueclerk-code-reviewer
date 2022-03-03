@@ -563,12 +563,42 @@
         ]
       }
     },
+    "/getContractors": {
+      "get": {
+        "tags": [
+          "Vendor"
+        ],
+        "summary": "To get all vendors and employees",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getContractorDetail": {
       "post": {
         "tags": [
           "Vendor"
         ],
-        "summary": "To get detail of a contractor.",
+        "summary": "To get detail of a vendor.",
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
@@ -580,7 +610,7 @@
                 "properties": {
                   "contractorId": {
                     "type": "string",
-                    "description": "Id of contractor for getting detail"
+                    "description": "Id of vendor for getting detail"
                   }
                 }
               }
