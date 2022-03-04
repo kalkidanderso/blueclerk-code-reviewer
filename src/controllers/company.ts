@@ -15,6 +15,7 @@ import { ICustomer, Customer } from '../models/Customer'
 import {CompanyCustomer} from '../models/CompanyCustomer';
 import { IItem, Item } from '../models/Item'
 import { IPriceTier, PriceTier } from '../models/PriceTier'
+import { PaymentEmployee, PaymentVendor } from '../models/Payment'
 
 const Hubspot = require('hubspot')
 
@@ -302,22 +303,64 @@ export const getCompanyContracts = (req: Request, res: Response) => {
     )
 }
 
-export const getContractorDetail = (req: Request, res: Response) => {
+export const getContractorDetail = async(req: Request, res: Response) => {
 
-    Company.findById(req.body.contractorId,
-        (err: any, company: ICompany) => {
-
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+    const params = req.body;
+    switch (params.type) {
+        case 'vendor':
+            if (!params.contractorId) {
+                return res.json({ 'status': Status.Error, 'message': 'ContractorId is required when type is vendor' });
             }
 
-            if(company == undefined ) {
-                return res.json({ 'status': Status.Error, 'message': 'No company found.' })
+            const paymentVendor = await PaymentVendor.find({ contractor: params.contractorId })
+                .populate({
+                    path: 'contractor',
+                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                })
+                .populate({
+                    path: 'invoices',
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+                }).exec();
+
+            return res.json({ status: Status.Success, paymentVendor });
+
+         case 'employee':
+            if (!params.employeeId) {
+                return res.json({ status: Status.Error, message: 'employeeId is required when type is employee' });
             }
 
-            return res.json({status: Status.Success, 'details' : company});
-        }
-    )
+            const paymentEmployee = await PaymentEmployee.find({ employee: params.employeeId })
+                .populate({
+                    path: 'employee',
+                    select: 'profile.displayName auth.email'
+                })
+                .populate({
+                    path: 'invoices',
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+                }).exec();
+
+            return res.json({ status: Status.Success, paymentEmployee });
+
+        default:
+            if (!params.contractorId) {
+                return res.json({ status: Status.Error, messages: 'contractorId must be provided when type is not selected'})
+            }
+
+            Company.findById(params.contractorId,
+                (err: any, company: ICompany) => {
+
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+
+                    if(company == undefined ) {
+                        return res.json({ 'status': Status.Error, 'message': 'No company found.' })
+                    }
+
+                    return res.json({status: Status.Success, 'details' : company});
+                }
+            )
+    }
 }
 
 export const getCustomWorkNumber = (req: Request, res: Response) => {

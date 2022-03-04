@@ -79,7 +79,7 @@ export const Validations = {
     check('newPassword').exists().withMessage(Messages.Required)
   ],
 
-  getContractorDetail: [check('contractorId').exists()],
+  getContractorDetail: [check('contractorId').isMongoId().withMessage(Messages.WrongId), check('employeeId').isMongoId().withMessage(Messages.WrongId)],
 
   updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('phone').exists()],
 
