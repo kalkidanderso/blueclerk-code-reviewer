@@ -27,6 +27,7 @@ import { IJobType, JobType } from '../models/JobType';
 import { JobRoute } from '../models/JobRoute';
 import { _handleJobTypesJson } from '../controllers/jobType';
 import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
+import { _handleNotification } from '../controllers/notification';
 
 export const createJob = (req: Request, res: Response) => {
 
@@ -2649,7 +2650,7 @@ export const updateJobTime = (req: Request, res: Response) => {
         })
 }
 
-export const updateJobTechnicianStatus = async (req: Request, res: Response) => {
+export const updateJobTechnicianStatus = async (req: Request, res: Response, sio: any) => {
 
     const params = req.body;
     const user = <IUser>req.user;
@@ -2801,6 +2802,14 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response) => 
     } catch (err) {
         return res.json({ status: Status.Error, message: err.message });
     }
+
+    await _handleNotification({
+        sio, companyId,
+        notificationType: NotificationTypes.JOB_RESCHEDULED,
+        messageTitle: 'Job Task rescheduled',
+        messageBody: `Technician: ${technician?.profile?.displayName} rescheduling his/her task on Job: ${job.jobId}`,
+        metadataId: job._id
+    })
 
     return res.json({ status: Status.Success, message: `Technician task status updated successfully.`, job, technicianTask: task });
 

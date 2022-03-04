@@ -724,7 +724,9 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Job_Edit),
         uploadImageInS3.fields([{ name: 'images' }]),
         validate(Validations.updateJobTechnicianStatus),
-        jobController.updateJobTechnicianStatus
+        (req, res) => {
+            jobController.updateJobTechnicianStatus(req, res, sio)
+        }
     )
 
     router.post(
