@@ -351,12 +351,19 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               type: object
-              required:
-                - contractorId
+              required: []
               properties:
+                type:
+                  type: string
+                  enum:
+                    - vendor
+                    - employee
                 contractorId:
                   type: string
-                  description: Id of vendor for getting detail
+                  description: Id of contractor for getting detail
+                employeeId:
+                  type: string
+                  description: Id of employee for getting detail
         required: true
       responses:
         '200':
@@ -5830,6 +5837,22 @@ paths:
       tags:
         - Payment
       summary: To get payroll detail
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
       responses:
         '200':
           description: Success

@@ -405,7 +405,7 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                 job.save();
             }
 
-            const contractorCommission = invoiceTotal * (contractor?.commission ?? DefaultCommission.VENDOR_COMMISSION / 100);
+            const contractorCommission = invoiceTotal * (contractor?.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
             const contractorBalance = contractor.balance - contractorCommission
             contractor.balance = contractorBalance < 0 ? 0 : contractorBalance;
             contractor.save();
@@ -456,7 +456,7 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                 job.save();
             }
 
-            const employeeCommission = totalInvoice * (employee.commission ?? DefaultCommission.EMPLOYEE_COMMISSION / 100);
+            const employeeCommission = totalInvoice * (employee.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
             const employeeBalance = employee.balance - employeeCommission
             employee.balance = employeeBalance < 0 ? 0 : employeeBalance;
             employee.save();
@@ -712,12 +712,74 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
 
 export const getPayrollBalance = async (req: Request, res: Response) => {
 
+    const params = req.query;
     const company = <ICompany>req.company;
-    const contracts = await Contract.find({ company: company }).exec();
-    const contractorIds = contracts.map(contracts => contracts.contractor);
+    const vendors: any = [];
+    const employees: any = [];
+    let query;
 
-    const contractors = await Company.find({ _id: { $in: [...new Set(contractorIds)] } }).exec();
-    const technicians = await Employee.find({ company }).exec();
+    // Check when startDate and endDate is provided, offset must be required
+    if (params.startDate && params.endDate) {
+        if (!params.offset) {
+            return res.json({ status: Status.Error, meesages: 'Offset is required. when startDate and endDate provided' });
+        }
 
-    return res.json({ status: Status.Success, contractors, technicians });
+        const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
+        const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
+        query = { issuedDate: { $gte: startDate, $lte: endDate } }
+    }
+
+    // get job with unpaid technician or contractor
+    const invoices: any = await Invoice.find({ company: company._id, ...query }).exec();
+    const jobIds = invoices.map((invoice: IInvoice) => invoice.job);
+    const jobs = await Job.find({ _id: { $in: jobIds }, 'tasks.$[].paid': { $ne: true } }).exec();
+
+    for (const job of jobs) {
+        const invoice = invoices.find((invoice: IInvoice) => invoice.job?.toString() === job._id?.toString());
+        if (job.tasks) {
+            for (const task of job.tasks) {
+                if (task.contractor && !task.paid) {
+                    const contractor = await Company.findById(task.contractor).exec();
+                    const contractorEntry = vendors.find((v: any) => v.contractor._id?.toString() === task.contractor?.toString());
+                    const commissionAmount = invoice.total * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100
+                    if (contractorEntry) {
+                        contractorEntry.commissionTotal += commissionAmount;
+                        contractorEntry?.invoiceIds?.push(invoice._id);
+                    } else {
+                        vendors.push({
+                            contractor,
+                            commissionTotal: commissionAmount,
+                            invoiceIds: [invoice._id],
+                        });
+                    }
+                }
+
+                if (task.technician && !task.contractor && !task.paid) {
+                    const technician = await User.findById(task.technician).exec();
+                    const technicianEntry = employees.find((t: any) => t.employee._id?.toString() === task.technician?.toString());
+                    const technicianAmount = invoice.total * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100
+                    if (technicianEntry) {
+                        technicianEntry.commissionTotal += technicianAmount;
+                        technicianEntry.invoiceIds.push(invoice._id);
+                    } else {
+                        employees.push({
+                            employee: technician,
+                            commissionTotal: technicianAmount,
+                            invoiceIds: [invoice._id],
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    return res.json({
+        status: Status.Success,
+        startDate: params.startDate,
+        endDate: params.endDate,
+        offset: params.offset,
+        vendors,
+        employees
+    });
+
 }
