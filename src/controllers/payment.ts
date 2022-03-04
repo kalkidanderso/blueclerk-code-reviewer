@@ -1,7 +1,6 @@
 import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb'
 import moment from 'moment'
-import * as _ from 'lodash';
 
 import { Status, Messages, InvoiceStatus, DefaultCommission } from '../common/constants'
 import { Company, ICompany } from '../models/Company'
@@ -13,7 +12,6 @@ import { _createQBPayment, _updateQBPayment } from './quickbook.payment'
 import { Employee } from '../models/Employee'
 import { Contract } from '../models/Contract'
 import { IJob, Job } from '../models/Job'
-import { job } from 'cron';
 
 
 /**
@@ -714,11 +712,11 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
 
 export const getPayrollBalance = async (req: Request, res: Response) => {
 
-    let query;
-    const vendors: any = [];
-    const employee: any = [];
     const params = req.query;
     const company = <ICompany>req.company;
+    const vendors: any = [];
+    const employees: any = [];
+    let query;
 
     // Check when startDate and endDate is provided, offset must be required
     if (params.startDate && params.endDate) {
@@ -742,14 +740,14 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
             for (const task of job.tasks) {
                 if (task.contractor && !task.paid) {
                     const contractor = await Company.findById(task.contractor).exec();
-                    const contractorEntry = vendors.find((vendor: any) => vendor._id.toString() === task.contractor.toString());
+                    const contractorEntry = vendors.find((v: any) => v.contractor._id?.toString() === task.contractor?.toString());
                     const commissionAmount = invoice.total * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100
                     if (contractorEntry) {
-                        contractorEntry.total += commissionAmount;
+                        contractorEntry.commissionTotal += commissionAmount;
                         contractorEntry?.invoiceIds?.push(invoice._id);
                     } else {
                         vendors.push({
-                            ...contractor.toObject(),
+                            contractor,
                             commissionTotal: commissionAmount,
                             invoiceIds: [invoice._id],
                         });
@@ -758,14 +756,14 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
 
                 if (task.technician && !task.contractor && !task.paid) {
                     const technician = await User.findById(task.technician).exec();
-                    const technicianEntry = employee.find((technician: any) => technician._id.toString() === task.technician.toString());
+                    const technicianEntry = employees.find((t: any) => t.employee._id?.toString() === task.technician?.toString());
                     const technicianAmount = invoice.total * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100
                     if (technicianEntry) {
-                        technicianEntry.total += technicianAmount;
+                        technicianEntry.commissionTotal += technicianAmount;
                         technicianEntry.invoiceIds.push(invoice._id);
                     } else {
-                        employee.push({
-                            ...technician.toObject(),
+                        employees.push({
+                            employee: technician,
                             commissionTotal: technicianAmount,
                             invoiceIds: [invoice._id],
                         });
@@ -780,7 +778,8 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
         startDate: params.startDate,
         endDate: params.endDate,
         offset: params.offset,
-        vendor: vendors,
-        employee: employee
+        vendors,
+        employees
     });
+
 }
