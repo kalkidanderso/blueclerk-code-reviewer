@@ -1,6 +1,6 @@
-import {Request, Response, NextFunction} from 'express'
-import {check, validationResult, ValidationChain, body} from 'express-validator'
-import {Status, Messages, JobStatus} from '../common/constants'
+import { Request, Response, NextFunction } from 'express'
+import { check, validationResult, ValidationChain, body } from 'express-validator'
+import { Status, Messages, JobStatus } from '../common/constants'
 
 
 let uniq = (a: any) => {
@@ -11,22 +11,22 @@ let uniq = (a: any) => {
 
 export const validate = (validations: ValidationChain[]) => {
 
-    return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
 
-      await Promise.all(validations.map(validation => validation.run(req)))
+    await Promise.all(validations.map(validation => validation.run(req)))
 
-      const errors:any = validationResult(req)
-      if (errors.isEmpty()) {
-        return next()
-      }
-      let errorMessages = errors.errors.reduce((acc: string, v: any) => {
-        return acc + 'parameter ' + v.param + ': '+ v.msg + '\n';
-      }, '').split('\n').filter((e: string) => e!== "");
-
-      errorMessages = uniq(errorMessages);
-      return res.json({'status': Status.Error, 'message': errorMessages})
-
+    const errors: any = validationResult(req)
+    if (errors.isEmpty()) {
+      return next()
     }
+    let errorMessages = errors.errors.reduce((acc: string, v: any) => {
+      return acc + 'parameter ' + v.param + ': ' + v.msg + '\n';
+    }, '').split('\n').filter((e: string) => e !== "");
+
+    errorMessages = uniq(errorMessages);
+    return res.json({ 'status': Status.Error, 'message': errorMessages })
+
+  }
 
 }
 
@@ -79,7 +79,10 @@ export const Validations = {
     check('newPassword').exists().withMessage(Messages.Required)
   ],
 
-  getContractorDetail: [check('contractorId').exists()],
+  getContractorDetail: [
+    check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('employeeId').optional().isMongoId().withMessage(Messages.WrongId)
+  ],
 
   updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('phone').exists()],
 
@@ -128,7 +131,7 @@ export const Validations = {
     check('email').optional().isEmail().withMessage(Messages.InvalidEmail)
   ],
 
-      //Customer Equipment
+  //Customer Equipment
 
   createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists()],
 
@@ -262,7 +265,7 @@ export const Validations = {
   memberGeneric: [check('groupId').exists(), check('memberId').exists()],
 
   //Company Equipemnt
-  createCompanyEquipment: [check('imageUrl').exists(), check('model').exists(), check('serialNumber').exists(), check('typeId').exists(),check('brandId').exists()],
+  createCompanyEquipment: [check('imageUrl').exists(), check('model').exists(), check('serialNumber').exists(), check('typeId').exists(), check('brandId').exists()],
 
   //Company Equipemnt History
   createCompanyEquipmentHistory: [check('action').exists(), check('dateTime').exists()],
@@ -271,18 +274,18 @@ export const Validations = {
   createEquipmentInventory: [check('dateTime').exists()],
 
   // Tags
-  placeOrder: [check('noOfTags').exists(), check('total').exists(), check('tax').exists(), check('cardId').exists(),  check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(),],
+  placeOrder: [check('noOfTags').exists(), check('total').exists(), check('tax').exists(), check('cardId').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(),],
 
   // Company Cards
-  addCompanyCard: [ check('cardNumber').exists(),check('exp').exists(),check('cvc').exists(), check('name').exists(), check('address').exists(), check('city').exists(), check('state').exists(),check('zipcode').exists()],
+  addCompanyCard: [check('cardNumber').exists(), check('exp').exists(), check('cvc').exists(), check('name').exists(), check('address').exists(), check('city').exists(), check('state').exists(), check('zipcode').exists()],
 
-  removeCompanyCard: [ check('cardId').exists()],
+  removeCompanyCard: [check('cardId').exists()],
 
-  subscribe: [ check('cardId').exists(), check('planId').exists()],
+  subscribe: [check('cardId').exists(), check('planId').exists()],
 
-  buySubscriptions: [ check('noOfOfficeAdmins').exists(),check('noOfTechnicians').exists(),check('noOfManagers').exists()],
+  buySubscriptions: [check('noOfOfficeAdmins').exists(), check('noOfTechnicians').exists(), check('noOfManagers').exists()],
 
-  removeSubscription: [ check('employeeId').exists(),],
+  removeSubscription: [check('employeeId').exists(),],
 
   updateDefaultPermissions: [check('onPermissions').exists(), check('offPermissions').exists(), check('role').exists()],
 
@@ -345,6 +348,14 @@ export const Validations = {
 
   companyInvoice: [check('companyInvoiceId').exists()],
 
+  updateCommission: [
+    check('type').exists().withMessage(Messages.Required),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('commission').exists().withMessage(Messages.Required),
+    check('commission').isInt().withMessage('Must in number format'),
+  ],
+
   getInvoiceDetail: [check('invoiceId').exists()],
 
   createPartInventory: [check('name').exists(), check('itemCode').exists(), check('cost').exists(), check('price').exists(), check('totalQuantity').exists()],
@@ -404,6 +415,7 @@ export const Validations = {
     check('amount').exists().withMessage(Messages.Required),
     check('customerId').exists().withMessage(Messages.Required),
     check('customerId').isMongoId().withMessage(Messages.WrongId)
+
   ],
 
   updatePayment: [
@@ -411,6 +423,14 @@ export const Validations = {
     check('paymentId').isMongoId().withMessage(Messages.WrongId),
     check('customerId').exists().withMessage(Messages.Required),
     check('customerId').isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  recordPaymentContractor: [
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type is only vendor or employee'),
+    check('amount').exists().withMessage(Messages.Required),
   ],
 
   // Code Location

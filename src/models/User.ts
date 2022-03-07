@@ -44,6 +44,8 @@ export interface IUser extends Document {
         time: Date,
         timeZone: String
     },
+    balance: number,
+    commission: number,
 
     hashPassword: (password: string, next: (err?: any, hash?: string)=>void)=>void
     comparePassword: (password: string, next: (isMatch: boolean)=>void)=>void
@@ -120,8 +122,15 @@ const UserSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Contact',
         required: false
-    }]
-
+    }],
+    balance: {
+        type: Number,
+        default: 0
+    },
+    commission: {
+        type: Number,
+        default: 20
+    }
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
 UserSchema.pre('save', async function(next) {
