@@ -1904,6 +1904,14 @@ export default function (sio: any) {
         paymentController.getPayrollBalance
     )
 
+    router.get(
+        '/getPayrollReport',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Payments),
+        paymentController.getPayrollReport
+    )
+
     // CODE LOCATION TAG
 
     router.post(

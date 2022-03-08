@@ -5828,36 +5828,6 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
-  /getPayrollBalance:
-    get:
-      tags:
-        - Payment
-      summary: To get payroll detail
-      parameters:
-        - name: startDate
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: endDate
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GeneralAPIResponse'
-      security:
-        - Bearer: []
   /updatePayment:
     put:
       tags:
@@ -5957,6 +5927,78 @@ paths:
                 note:
                   type: string
         required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getPayrollBalance:
+    get:
+      tags:
+        - Payment
+      summary: To get payroll detail
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getPayrollReport:
+    get:
+      tags:
+        - Payment
+      summary: To get payroll report
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum:
+              - vendor
+              - employee
+        - name: id
+          in: query
+          description: Id of Vendor or Employee
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
       responses:
         '200':
           description: Success
