@@ -9437,7 +9437,7 @@
                     "type": "string",
                     "description": "Date when the customer has made the payment"
                   },
-                  "notes": {
+                  "note": {
                     "type": "string"
                   }
                 }

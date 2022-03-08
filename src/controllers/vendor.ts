@@ -868,65 +868,26 @@ export const upgradeToCompany = (req: Request, res: Response) => {
                 } else {
                     return res.json({ status: Status.Error, message: message })
                 }
-
             })
-
         }
     )
 }
 
 export const getContractors = async (req: Request, res: Response) => {
 
-    const vendors: ICompany[] = [];
-    const employee: IUser[] = [];
     const company = <ICompany>req.company;
-    const contracts = await Contract.find({ company }).exec();
+    const contracts = await Contract.find({ company: company }).exec();
     const contractorIds = contracts.map(contracts => contracts.contractor);
+
     const contractors = await Company.find({ _id: { $in: [...new Set(contractorIds)] } })
         .populate({
             path: 'admin',
             select: 'profile.displayName contact.phone auth.email'
         }).exec();
-
-    for (const contractor of contractors) {
-        const contractorJobs = await Job.find({ company: company, 'tasks.contractor': contractor._id }).exec();
-        const contractorJobIds = contractorJobs.map(contractorJob => contractorJob._id);
-        const contractorInvoices = await Invoice.find({ company: company, isDraft: false, job: { $in: contractorJobIds } }).exec();
-        if (!contractorInvoices.length) {
-            contractor.commission = null;
-        }
-
-        vendors.push(contractor);
-    }
-    
     const technicians = await Employee.find({ company }).exec();
-    for (const technician of technicians) {
-        const technicianJobs = await Job.find({ company: company, 'tasks.technician': technician._id }).exec();
-        const technicianJobIds = technicianJobs.map(technicianJob => technicianJob._id);
-        const technicianInvoices = await Invoice.find({ company: company, isDraft: false, job: { $in: technicianJobIds } }).exec();
-        if (!technicianInvoices.length) {
-            technician.commission = null;
-        }
 
-        employee.push(technician);
-    }
-
-    return res.json({ status: Status.Success, contractors: vendors, technicians: employee });
+    return res.json({ status: Status.Success, contractors, technicians });
 }
-
-// export const getContractors = async (req: Request, res: Response) => {
-
-//     const company = <ICompany>req.company;
-//     const paymentVendor = await PaymentVendor.find({ company: company, __t: 'PaymentVendor' }).exec();
-//     const paymentEmployee = await PaymentEmployee.find({ company: company, __t: 'PaymentEmployee' }).exec();
-
-//     const contractorIds = paymentVendor.map(vendor => vendor.contractor);
-//     const employeeIds = paymentEmployee.map(employee => employee.employee)
-//     const contractors = await Company.find({ _id: { $in: [...new Set(contractorIds)] } }).exec();
-//     const technicians = await User.find({ _id: { $in: [...new Set(employeeIds)] } }).exec();
-
-//     return res.json({ status: Status.Success, contractors, technicians });
-// }
 
 // PRIVATE METHOD
 

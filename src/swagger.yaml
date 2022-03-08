@@ -481,7 +481,6 @@ paths:
               required:
                 - type
                 - id
-                - commission
               properties:
                 type:
                   type: string
@@ -5678,7 +5677,7 @@ paths:
       parameters:
         - name: type
           in: query
-          required: true
+          required: false
           schema:
             type: string
             enum:
@@ -5687,11 +5686,6 @@ paths:
         - name: id
           in: query
           description: Id of Vendor or Employee
-          required: true
-          schema:
-            type: string
-        - name: name
-          in: query
           required: false
           schema:
             type: string
@@ -5720,7 +5714,7 @@ paths:
                 properties:
                   GeneralAPIResponse:
                     $ref: '#/components/schemas/GeneralAPIResponse'
-                  invoices:
+                  payments:
                     type: array
                     items:
                       $ref: '#/components/schemas/Payment'
@@ -5820,7 +5814,7 @@ paths:
                 paidAt:
                   type: string
                   description: Date when the customer has made the payment
-                notes:
+                note:
                   type: string
         required: true
       responses:

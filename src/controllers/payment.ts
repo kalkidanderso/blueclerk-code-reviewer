@@ -6,7 +6,7 @@ import { Status, Messages, InvoiceStatus, DefaultCommission } from '../common/co
 import { Company, ICompany } from '../models/Company'
 import { IUser, User } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
-import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer } from '../models/Payment'
+import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer, IPaymentVendor, IPaymentEmployee } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
 import { _createQBPayment, _updateQBPayment } from './quickbook.payment'
 import { Employee } from '../models/Employee'
@@ -154,7 +154,7 @@ export const getPaymentsByCustomerId = (req: Request, res: Response) => {
 
 }
 
-export const getPaymentsByContractor = (req: Request, res: Response) => {
+export const getPaymentsByContractor = async (req: Request, res: Response) => {
 
     let query;
     const params = req.query;
@@ -169,7 +169,7 @@ export const getPaymentsByContractor = (req: Request, res: Response) => {
     switch (params.type) {
         case 'vendor':
             const vendorQuery = { company: company._id, contractor: params.id, ...query }
-            PaymentVendor.find(vendorQuery)
+            const contractorPayments = await PaymentVendor.find(vendorQuery)
                 .populate({
                     path: 'company',
                     select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -180,27 +180,21 @@ export const getPaymentsByContractor = (req: Request, res: Response) => {
                 })
                 .populate({
                     path: 'invoices',
-                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total note'
                 })
                 .populate({
                     path: 'createdBy',
                     select: 'profile.displayName auth.email'
                 })
-                .then((payments: IPayment[] | null) => {
-                    return res.json({ 'status': Status.Success, 'payment': payments })
-                })
                 .catch((error: any) => {
-                    if (error.message != undefined) {
-                        return res.json({ 'status': Status.Error, 'message': error.message });
-                    } else {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
-                    }
+                    return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                 });
-            break;
+
+            return res.json({ status: Status.Success, payments: contractorPayments, payment: contractorPayments });
 
         case 'employee':
-            const employeeQuery = { company, employee: params.id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query }
-            PaymentEmployee.find(employeeQuery)
+            const employeeQuery = { company, employee: params.id, ...query }
+            const employeePayments = await PaymentEmployee.find(employeeQuery)
                 .populate({
                     path: 'company',
                     select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -211,53 +205,41 @@ export const getPaymentsByContractor = (req: Request, res: Response) => {
                 })
                 .populate({
                     path: 'invoices',
-                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total note'
                 })
                 .populate({
                     path: 'createdBy',
                     select: 'profile.displayName auth.email'
                 })
-                .then((payments: IPayment[] | null) => {
-                    return res.json({ 'status': Status.Success, 'payment': payments })
-                })
                 .catch((error: any) => {
-                    if (error.message != undefined) {
-                        return res.json({ 'status': Status.Error, 'message': error.message });
-                    } else {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
-                    }
+                    return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                 });
-            break;
-        default:
-            Payment.find({ company: company._id, ...query })
-                .populate({
-                    path: 'company',
-                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-                })
-                .populate({
-                    path: 'customer',
-                    select: 'info.email auth.email profile.displayName address contact contactName vendorId'
-                })
-                .populate({
-                    path: 'invoices',
-                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
-                })
-                .populate({
-                    path: 'createdBy',
-                    select: 'profile.displayName auth.email'
-                })
-                .then((payments: IPayment[] | null) => {
-                    return res.json({ 'status': Status.Success, 'payment': payments })
-                })
-                .catch((error: any) => {
-                    if (error.message != undefined) {
-                        return res.json({ 'status': Status.Error, 'message': error.message });
-                    } else {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
-                    }
-                });
-    }
 
+            return res.json({ status: Status.Success, payments: employeePayments, payment: employeePayments });
+        default:
+            const payments = Payment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query })
+                .populate({
+                    path: 'company',
+                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                })
+                .populate({
+                    path: 'customer',
+                    select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+                })
+                .populate({
+                    path: 'invoice',
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total note'
+                })
+                .populate({
+                    path: 'createdBy',
+                    select: 'profile.displayName auth.email'
+                })
+                .catch((error: any) => {
+                    return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+                });
+
+            return res.json({ status: Status.Success, payments, payment: payments });
+    }
 }
 
 /**
@@ -376,7 +358,7 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
         referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
         paymentType: params.paymentType,
         paidAt: params.paidAt ? moment(params.paidAt).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
-        note: params.notes,
+        note: params.note,
         company,
         createdBy: user,
         createdAt: Date.now()
