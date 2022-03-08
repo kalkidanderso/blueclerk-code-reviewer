@@ -645,6 +645,52 @@ export const updatePayment = async (req: Request, res: Response) => {
 
 }
 
+export const updatePaymentContractor = async (req: Request, res: Response) => {
+
+    let payment: IPayment;
+    const params = req.body;
+    const company = <ICompany>req.company;
+    const user = <IUser>req.user;
+
+    switch (params.type) {
+        case 'vendor':
+            payment = await PaymentVendor.findOne({
+                _id: params.paymentId,
+                company: company._id
+            }).populate({ path: 'invoices' });
+
+            if (!payment) {
+                return res.json({ status: Status.Error, message: 'Payment not found or does not belong to the contractor.' });
+            }
+
+            break;
+        case 'employee':
+            payment = await PaymentEmployee.findOne({
+                _id: params.paymentId,
+                company: company._id
+            }).populate({ path: 'invoices' });
+
+            if (!payment) {
+                return res.json({ status: Status.Error, message: 'Payment not found or does not belong to the employee.' });
+            }
+
+            break;
+        default:
+            return res.json({ status: Status.Error, messages: 'Invalid type' });
+    }
+
+    payment.amountPaid = params.amount ? Number(params.amount) : payment.amountPaid;
+    payment.referenceNumber = params.referenceNumber;
+    payment.paymentType = params.paymentType ?? payment.paymentType;
+    payment.paidAt = params.paidAt ? new Date(moment(params.paidAt).format('YYYY-MM-DD')) : payment.paidAt;
+    payment.note = params.note;
+    payment.updatedBy = user;
+    payment.updatedAt = new Date();
+    payment.save();
+
+    return res.json({ status: Status.Success, payment });
+}
+
 export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
 
     const params = req.body

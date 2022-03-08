@@ -423,6 +423,11 @@ export const Validations = {
     check('customerId').isMongoId().withMessage(Messages.WrongId),
   ],
 
+  updatePaymentContractor: [
+    check('paymentId').exists().withMessage(Messages.Required),
+    check('paymentId').isMongoId().withMessage(Messages.WrongId),
+  ],
+
   recordPaymentContractor: [
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId),
