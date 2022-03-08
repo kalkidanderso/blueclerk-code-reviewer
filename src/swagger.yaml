@@ -5920,7 +5920,9 @@ paths:
               type: object
               required:
                 - type
+                - id
                 - paymentId
+                - amount
               properties:
                 type:
                   type: string
@@ -5928,6 +5930,9 @@ paths:
                   enum:
                     - vendor
                     - employee
+                id:
+                  type: string
+                  description: Id of vendor or employee
                 paymentId:
                   type: string
                   description: Id of payment to edit
