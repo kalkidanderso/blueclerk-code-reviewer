@@ -162,18 +162,13 @@ export const getPaymentsByContractor = (req: Request, res: Response) => {
     const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
     const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
 
-    if (!params.id) {
-        return res.json({ 'status': Status.Error, 'message': 'Id is required on contractor type' })
-    }
-
-    if (startDate && endDate) {
-        query = { startDate: { $gte: startDate, $lte: endDate } }
+    if (params.startDate && params.endDate) {
+        query = { paidAt: { $gte: startDate, $lte: endDate } }
     }
 
     switch (params.type) {
         case 'vendor':
-            const vendorQuery = { company, vendor: params.id, ...query }
-
+            const vendorQuery = { company: company._id, contractor: params.id, ...query }
             PaymentVendor.find(vendorQuery)
                 .populate({
                     path: 'company',
@@ -204,8 +199,7 @@ export const getPaymentsByContractor = (req: Request, res: Response) => {
             break;
 
         case 'employee':
-            const employeeQuery = { company, employee: params.id, ...query }
-
+            const employeeQuery = { company, employee: params.id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query }
             PaymentEmployee.find(employeeQuery)
                 .populate({
                     path: 'company',
@@ -235,7 +229,33 @@ export const getPaymentsByContractor = (req: Request, res: Response) => {
                 });
             break;
         default:
-            return res.json({ 'status': Status.Error, 'message': 'Type is required' })
+            Payment.find({ company: company._id, ...query })
+                .populate({
+                    path: 'company',
+                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                })
+                .populate({
+                    path: 'customer',
+                    select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+                })
+                .populate({
+                    path: 'invoices',
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+                })
+                .populate({
+                    path: 'createdBy',
+                    select: 'profile.displayName auth.email'
+                })
+                .then((payments: IPayment[] | null) => {
+                    return res.json({ 'status': Status.Success, 'payment': payments })
+                })
+                .catch((error: any) => {
+                    if (error.message != undefined) {
+                        return res.json({ 'status': Status.Error, 'message': error.message });
+                    } else {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+                    }
+                });
     }
 
 }
@@ -330,7 +350,7 @@ export const createPayment = async (req: Request, res: Response) => {
 
 export const createPaymentContractor = async (req: Request, res: Response) => {
 
-    let payment;
+    let query;
     const params = req.body;
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
@@ -339,12 +359,15 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
         return res.json({ statstus: Status.Error, message: 'One of Id or Start date and end date are provided' });
     }
 
-    const query: any = { $or: [{ _id: { $in: invoiceIds } }] };
     const startDate = moment(params.startDate).startOf('day').utc().format();
     const endDate = moment(params.endDate).endOf('day').utc().format();
 
-    if (params.startDate && params.endDate) {
-        query.$or.push({ issuedDate: { $gte: startDate, $lte: endDate } })
+    if (invoiceIds.length) {
+        query = { _id: { $in: invoiceIds } }
+    } else if (params.startDate && params.endDate) {
+        query = { $or: [{ issuedDate: { $gte: startDate, $lte: endDate } }] }
+    } else {
+        return res.json({ statstus: Status.Error, message: 'Either invoiceIds or startDate endDate is required' });
     }
 
     // Check is vendor is in the job or not
@@ -366,19 +389,16 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, messages: 'Vendor not found' });
             }
 
-            const contractorJobs = await Job.find({ 'tasks.contractor': contractor._id }).exec();
-            if (!contractorJobs?.length) {
-                return res.json({ status: Status.Error, message: 'Vendor is not in any jobs of invoices' });
-            }
-
-            const contractorJobIds = contractorJobs.map(job => job._id);
-            const contractorInvoices = await Invoice.find({
-                job: { $in: contractorJobIds },
-                ...query
-            }).exec();
-
+            const contractorInvoices = await Invoice.find({ ...query, isDraft: false }).exec();
             if (!contractorInvoices?.length) {
                 return res.json({ status: Status.Error, message: 'No invoice found' });
+            }
+
+            const jobIds = contractorInvoices.map(contractorInvoice => contractorInvoice.job);
+            const contractorJobs = await Job.find({ _id: { $in: jobIds } }).exec();
+
+            if (!contractorJobs?.length) {
+                return res.json({ status: Status.Error, message: 'Vendor is not in any jobs of invoices' });
             }
 
             let invoiceTotal: number = 0;
@@ -418,19 +438,15 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, messages: 'Employee not found' });
             }
 
-            const employeeJobs = await Job.find({ 'tasks.technician': employee._id }).exec();
-            if (!employeeJobs?.length) {
-                return res.json({ status: Status.Error, message: 'Employee is not in any jobs of invoices' });
-            }
-
-            const employeeJobIds = employeeJobs.map(job => job._id);
-            const employeeInvoices = await Invoice.find({
-                job: { $in: employeeJobIds },
-                $or: [{ _id: { $in: invoiceIds } }, { issuedDate: { $gte: startDate, $lte: endDate } }]
-            }).exec();
-
+            const employeeInvoices = await Invoice.find({ ...query, isDraft: false }).exec();
             if (!employeeInvoices.length) {
                 return res.json({ status: Status.Error, message: 'No invoice found' });
+            }
+
+            const employeeJobIds = employeeInvoices.map(employeeInvoice => employeeInvoice.job);
+            const employeeJobs = await Job.find({ _id: { $in: employeeJobIds } }).exec();
+            if (!employeeJobs?.length) {
+                return res.json({ status: Status.Error, message: 'Employee is not in any jobs of invoices' });
             }
 
             const employeeInvoiceIds = [];
@@ -730,7 +746,7 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
     }
 
     // get job with unpaid technician or contractor
-    const invoices: any = await Invoice.find({ company: company._id, ...query }).exec();
+    const invoices: any = await Invoice.find({ company: company._id, isDraft: false, ...query }).exec();
     const jobIds = invoices.map((invoice: IInvoice) => invoice.job);
     const jobs = await Job.find({ _id: { $in: jobIds }, 'tasks.$[].paid': { $ne: true } }).exec();
 

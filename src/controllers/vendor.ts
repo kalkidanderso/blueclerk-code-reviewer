@@ -16,6 +16,8 @@ import { NotificationContract, INotificationContract } from '../models/Notificat
 import { _createHubSpotContact, _upgradeHubSpotContact, checkCompanyEmailExists, login } from '../controllers/user';
 import { _handleNotification } from './notification';
 import { Employee } from '../models/Employee';
+import { Job } from '../models/Job';
+import { Invoice } from '../models/Invoice';
 
 // new contractor signup
 export const createContractor = (req: Request, res: Response, sio: any) => {
@@ -875,19 +877,41 @@ export const upgradeToCompany = (req: Request, res: Response) => {
 
 export const getContractors = async (req: Request, res: Response) => {
 
+    const vendors: ICompany[] = [];
+    const employee: IUser[] = [];
     const company = <ICompany>req.company;
-    const contracts = await Contract.find({ company: company }).exec();
+    const contracts = await Contract.find({ company }).exec();
     const contractorIds = contracts.map(contracts => contracts.contractor);
-
     const contractors = await Company.find({ _id: { $in: [...new Set(contractorIds)] } })
         .populate({
             path: 'admin',
             select: 'profile.displayName contact.phone auth.email'
         }).exec();
+
+    for (const contractor of contractors) {
+        const contractorJobs = await Job.find({ company: company, 'tasks.contractor': contractor._id }).exec();
+        const contractorJobIds = contractorJobs.map(contractorJob => contractorJob._id);
+        const contractorInvoices = await Invoice.find({ company: company, isDraft: false, job: { $in: contractorJobIds } }).exec();
+        if (!contractorInvoices.length) {
+            contractor.commission = null;
+        }
+
+        vendors.push(contractor);
+    }
+    
     const technicians = await Employee.find({ company }).exec();
+    for (const technician of technicians) {
+        const technicianJobs = await Job.find({ company: company, 'tasks.technician': technician._id }).exec();
+        const technicianJobIds = technicianJobs.map(technicianJob => technicianJob._id);
+        const technicianInvoices = await Invoice.find({ company: company, isDraft: false, job: { $in: technicianJobIds } }).exec();
+        if (!technicianInvoices.length) {
+            technician.commission = null;
+        }
 
-    return res.json({ status: Status.Success, contractors, technicians });
+        employee.push(technician);
+    }
 
+    return res.json({ status: Status.Success, contractors: vendors, technicians: employee });
 }
 
 // export const getContractors = async (req: Request, res: Response) => {
