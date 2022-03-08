@@ -9605,7 +9605,9 @@
                 "type": "object",
                 "required": [
                   "type",
-                  "paymentId"
+                  "id",
+                  "paymentId",
+                  "amount"
                 ],
                 "properties": {
                   "type": {
@@ -9615,6 +9617,10 @@
                       "vendor",
                       "employee"
                     ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "description": "Id of vendor or employee"
                   },
                   "paymentId": {
                     "type": "string",

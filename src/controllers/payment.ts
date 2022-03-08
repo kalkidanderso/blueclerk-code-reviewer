@@ -647,40 +647,52 @@ export const updatePayment = async (req: Request, res: Response) => {
 
 export const updatePaymentContractor = async (req: Request, res: Response) => {
 
-    let payment: IPayment;
     const params = req.body;
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
+    let payment: IPayment;
 
     switch (params.type) {
         case 'vendor':
+            const contractor = await Company.findById(params.id);
+            if (!contractor) {
+                return res.json({ status: Status.Error, message: 'Vendor not found.' });
+            }
+
             payment = await PaymentVendor.findOne({
                 _id: params.paymentId,
+                contractor: contractor._id,
                 company: company._id
             }).populate({ path: 'invoices' });
 
             if (!payment) {
                 return res.json({ status: Status.Error, message: 'Payment not found or does not belong to the contractor.' });
             }
-
             break;
+
         case 'employee':
+            const employee = await User.findById(params.id);
+            if (!employee) {
+                return res.json({ status: Status.Error, message: 'Employee not found.' });
+            }
+
             payment = await PaymentEmployee.findOne({
                 _id: params.paymentId,
+                employee: employee._id,
                 company: company._id
             }).populate({ path: 'invoices' });
 
             if (!payment) {
                 return res.json({ status: Status.Error, message: 'Payment not found or does not belong to the employee.' });
             }
-
             break;
+
         default:
-            return res.json({ status: Status.Error, messages: 'Invalid type' });
+            return res.json({ status: Status.Error, messages: 'Type not supported. Available Type to be used: vendor or employee.' });
     }
 
     payment.amountPaid = params.amount ? Number(params.amount) : payment.amountPaid;
-    payment.referenceNumber = params.referenceNumber;
+    payment.referenceNumber = params.referenceNumber ?? payment.referenceNumber;
     payment.paymentType = params.paymentType ?? payment.paymentType;
     payment.paidAt = params.paidAt ? new Date(moment(params.paidAt).format('YYYY-MM-DD')) : payment.paidAt;
     payment.note = params.note;
@@ -689,6 +701,7 @@ export const updatePaymentContractor = async (req: Request, res: Response) => {
     payment.save();
 
     return res.json({ status: Status.Success, payment });
+
 }
 
 export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
