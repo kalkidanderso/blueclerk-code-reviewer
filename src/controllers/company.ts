@@ -320,8 +320,20 @@ export const getContractorDetail = async(req: Request, res: Response) => {
 
             const paymentVendor = await PaymentVendor.find({ contractor: params.contractorId })
                 .populate({
+                    path: 'company',
+                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                })
+                .populate({
+                    path: 'customer',
+                    select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+                })
+                .populate({
                     path: 'invoices',
-                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total note'
+                })
+                .populate({
+                    path: 'createdBy',
+                    select: 'profile.displayName auth.email'
                 }).exec();
 
             return res.json({ status: Status.Success, details: contractor, payments: paymentVendor });
@@ -339,8 +351,20 @@ export const getContractorDetail = async(req: Request, res: Response) => {
 
             const paymentEmployee = await PaymentEmployee.find({ employee: params.employeeId })
                 .populate({
+                    path: 'company',
+                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                })
+                .populate({
+                    path: 'customer',
+                    select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+                })
+                .populate({
                     path: 'invoices',
-                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total note'
+                })
+                .populate({
+                    path: 'createdBy',
+                    select: 'profile.displayName auth.email'
                 }).exec();
 
             return res.json({ status: Status.Success, details: employee, payments: paymentEmployee });

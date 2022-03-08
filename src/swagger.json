@@ -812,8 +812,7 @@
                 "type": "object",
                 "required": [
                   "type",
-                  "id",
-                  "commission"
+                  "id"
                 ],
                 "properties": {
                   "type": {
@@ -828,7 +827,8 @@
                     "description": "Id of vendor or employee"
                   },
                   "commission": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Send a blank value to make the commission null on database"
                   }
                 }
               }
@@ -9234,7 +9234,7 @@
           {
             "name": "type",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string",
               "enum": [
@@ -9247,14 +9247,6 @@
             "name": "id",
             "in": "query",
             "description": "Id of Vendor or Employee",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "name",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string"
@@ -9296,7 +9288,7 @@
                     "GeneralAPIResponse": {
                       "$ref": "#/components/schemas/GeneralAPIResponse"
                     },
-                    "invoices": {
+                    "payments": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/Payment"
@@ -9416,7 +9408,8 @@
                     "description": "Id of vendor or employee"
                   },
                   "invoiceIds": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Id of invoices to be paid. Example: [\"621f9865b084345f2c60904b\",\"61e9b92963a18c3e74b37922\"]"
                   },
                   "amount": {
                     "type": "number",
@@ -9446,7 +9439,7 @@
                     "type": "string",
                     "description": "Date when the customer has made the payment"
                   },
-                  "notes": {
+                  "note": {
                     "type": "string"
                   }
                 }

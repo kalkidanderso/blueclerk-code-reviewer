@@ -299,7 +299,7 @@ const CompanySchema = new Schema({
     },
     commission: {
         type: Number,
-        default: 20
+        default: null
     },
     companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
 }, { timestamps: { createdAt: true, updatedAt: true } })

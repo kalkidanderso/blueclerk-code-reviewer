@@ -16,6 +16,8 @@ import { NotificationContract, INotificationContract } from '../models/Notificat
 import { _createHubSpotContact, _upgradeHubSpotContact, checkCompanyEmailExists, login } from '../controllers/user';
 import { _handleNotification } from './notification';
 import { Employee } from '../models/Employee';
+import { Job } from '../models/Job';
+import { Invoice } from '../models/Invoice';
 
 // new contractor signup
 export const createContractor = (req: Request, res: Response, sio: any) => {
@@ -866,9 +868,7 @@ export const upgradeToCompany = (req: Request, res: Response) => {
                 } else {
                     return res.json({ status: Status.Error, message: message })
                 }
-
             })
-
         }
     )
 }
@@ -887,22 +887,7 @@ export const getContractors = async (req: Request, res: Response) => {
     const technicians = await Employee.find({ company }).exec();
 
     return res.json({ status: Status.Success, contractors, technicians });
-
 }
-
-// export const getContractors = async (req: Request, res: Response) => {
-
-//     const company = <ICompany>req.company;
-//     const paymentVendor = await PaymentVendor.find({ company: company, __t: 'PaymentVendor' }).exec();
-//     const paymentEmployee = await PaymentEmployee.find({ company: company, __t: 'PaymentEmployee' }).exec();
-
-//     const contractorIds = paymentVendor.map(vendor => vendor.contractor);
-//     const employeeIds = paymentEmployee.map(employee => employee.employee)
-//     const contractors = await Company.find({ _id: { $in: [...new Set(contractorIds)] } }).exec();
-//     const technicians = await User.find({ _id: { $in: [...new Set(employeeIds)] } }).exec();
-
-//     return res.json({ status: Status.Success, contractors, technicians });
-// }
 
 // PRIVATE METHOD
 

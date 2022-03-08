@@ -2788,7 +2788,7 @@ export const updateCommission = async (req: Request, res: Response) => {
             if (!contractor) {
                 return res.json({ status: Status.Error, message: 'Vendor not found' });
             }
-            contractor.commission = params.commission;
+            contractor.commission = params.commission ?? null;
             contractor.save();
             return res.json({ status: Status.Success, message: 'Commission updated successfully', contractor });
 
@@ -2798,7 +2798,7 @@ export const updateCommission = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'Employee not found' });
             }
 
-            employee.commission = params.commission;
+            employee.commission = params.commission ?? null;
             employee.save();
             return res.json({ status: Status.Success, message: 'Commission updated successfully', employee });
 

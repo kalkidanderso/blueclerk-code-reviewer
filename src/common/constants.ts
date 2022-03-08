@@ -172,8 +172,8 @@ export enum QBEntityOperations {
 }
 
 export enum DefaultCommission {
-    VENDOR_COMMISSION = 20,
-    EMPLOYEE_COMMISSION = 20,
+    VENDOR_COMMISSION = 0,
+    EMPLOYEE_COMMISSION = 0,
 }
 
 export const enum Permissions {
