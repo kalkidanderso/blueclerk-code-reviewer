@@ -216,8 +216,9 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                 });
 
             return res.json({ status: Status.Success, payments: employeePayments, payment: employeePayments });
+
         default:
-            const payments = Payment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query })
+            const payments = await Payment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query })
                 .populate({
                     path: 'company',
                     select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -227,7 +228,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                     select: 'info.email auth.email profile.displayName address contact contactName vendorId'
                 })
                 .populate({
-                    path: 'invoice',
+                    path: 'invoices',
                     select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total note'
                 })
                 .populate({
@@ -240,6 +241,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
 
             return res.json({ status: Status.Success, payments, payment: payments });
     }
+
 }
 
 /**

@@ -492,6 +492,7 @@ paths:
                   description: Id of vendor or employee
                 commission:
                   type: number
+                  description: Send a blank value to make the commission null on database
         required: true
       responses:
         '200':
@@ -5793,6 +5794,7 @@ paths:
                   description: Id of vendor or employee
                 invoiceIds:
                   type: string
+                  description: 'Id of invoices to be paid. Example: ["621f9865b084345f2c60904b","61e9b92963a18c3e74b37922"]'
                 amount:
                   type: number
                   description: Amount how much customer has paid

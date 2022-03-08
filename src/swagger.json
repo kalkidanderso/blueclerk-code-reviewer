@@ -827,7 +827,8 @@
                     "description": "Id of vendor or employee"
                   },
                   "commission": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Send a blank value to make the commission null on database"
                   }
                 }
               }
@@ -9407,7 +9408,8 @@
                     "description": "Id of vendor or employee"
                   },
                   "invoiceIds": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Id of invoices to be paid. Example: [\"621f9865b084345f2c60904b\",\"61e9b92963a18c3e74b37922\"]"
                   },
                   "amount": {
                     "type": "number",

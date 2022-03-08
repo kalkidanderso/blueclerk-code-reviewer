@@ -352,8 +352,6 @@ export const Validations = {
     check('type').exists().withMessage(Messages.Required),
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId),
-    check('commission').exists().withMessage(Messages.Required),
-    check('commission').isInt().withMessage('Must in number format'),
   ],
 
   getInvoiceDetail: [check('invoiceId').exists()],
