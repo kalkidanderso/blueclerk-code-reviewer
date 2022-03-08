@@ -13,6 +13,7 @@ import { ServiceTicket } from '../models/ServiceTicket';
 import { JobType } from '../models/JobType';
 import { Invoice } from '../models/Invoice';
 import { User } from '../models/User';
+import { Payment, PaymentCustomer } from '../models/Payment';
 
 /**
  * To sync and update all companies and customers to have Item Price Tier,
@@ -305,4 +306,16 @@ export const addVendorBalance = async (req: Request, res: Response) => {
     }
 
     return res.json({ status: Status.Success, message: 'Vendor and Technician balance successfully updated.' });
+}
+
+export const addPaymentType = async (req: Request, res: Response) => {
+
+    const payments = await Payment.find({ company: { $ne: null }, __t: { $nin: ['PaymentVendor', 'PaymentEmployee'] } }).exec();
+    if (payments.length) {
+        for (const payment of payments) {
+            await new PaymentCustomer(payment).save();
+        }
+    }
+
+    return res.json({ status: Status.Success, message: 'Payment type successfully added.' });
 }
