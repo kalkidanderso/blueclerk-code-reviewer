@@ -324,8 +324,9 @@ export const getContractorDetail = async(req: Request, res: Response) => {
                     select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
                 })
                 .populate({
-                    path: 'customer',
-                    select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+                    path: 'contractor',
+                    select: 'info address contact',
+                    populate: [{ path: 'admin', select: 'profile auth.email contact'}]
                 })
                 .populate({
                     path: 'invoices',
@@ -355,8 +356,8 @@ export const getContractorDetail = async(req: Request, res: Response) => {
                     select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
                 })
                 .populate({
-                    path: 'customer',
-                    select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+                    path: 'employee',
+                    select: 'profile auth.email address contact'
                 })
                 .populate({
                     path: 'invoices',
