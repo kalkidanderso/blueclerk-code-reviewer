@@ -396,22 +396,25 @@ export const createInvoice = (req: Request, res: Response) => {
                         customer.balance += invoice.total;
                         await customer.save();
 
-                        for (const task of job?.tasks) {
-                            if (task.contractor) {
-                                const contractor = await Company.findOne({ _id: task.contractor }).exec();
-                                const commission = invoice.total * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
-                                if (contractor) {
-                                    contractor.balance += commission;
-                                    contractor.save();
+                        if (job.tasks) {
+                            const totalTechnician = job.tasks.length;
+                            for (const task of job?.tasks) {
+                                if (task.contractor) {
+                                    const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                                    const commission = Math.round(invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                    if (contractor) {
+                                        contractor.balance += commission;
+                                        contractor.save();
+                                    }
                                 }
-                            }
 
-                            if (task.technician && !task.contractor) {
-                                const technician = await User.findOne({ _id: task.technician }).exec();
-                                const commission = invoice.total * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
-                                if (technician) {
-                                    technician.balance += commission;
-                                    technician.save();
+                                if (task.technician && !task.contractor) {
+                                    const technician = await User.findOne({ _id: task.technician }).exec();
+                                    const commission = Math.round(invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                    if (technician) {
+                                        technician.balance += commission;
+                                        technician.save();
+                                    }
                                 }
                             }
                         }
@@ -1500,32 +1503,36 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                         // Update company and technician commission when charges is updated and invoice is not draft
                         if (!invoice.isDraft && invoice.job) {
-                            for (const task of job?.tasks) {
-                                if (task.contractor) {
-                                    const contractor = await Company.findOne({ _id: task.contractor }).exec();
-                                    if (contractor) {
-                                        if (Number(total) !== Number(oldTotalInvoice)) {
-                                            const oldCommission = oldTotal * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
-                                            const commission = total * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100
-                                            contractor.balance -= oldCommission;
-                                            contractor.balance += commission;
-                                        }
 
-                                        contractor.save();
+                            if (job.tasks) {
+                                const totalTechnician = job.tasks.length;
+                                for (const task of job?.tasks) {
+                                    if (task.contractor) {
+                                        const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                                        if (contractor) {
+                                            if (Number(total) !== Number(oldTotalInvoice)) {
+                                                const oldCommission = Math.round(oldTotal / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                                const commission = Math.round(total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                                contractor.balance -= oldCommission;
+                                                contractor.balance += commission;
+                                            }
+
+                                            contractor.save();
+                                        }
                                     }
-                                }
 
-                                if (task.technician && !task.contractor) {
-                                    const technician = await User.findOne({ _id: task.technician }).exec();
-                                    if (technician) {
-                                        if (Number(total) !== Number(oldTotalInvoice)) {
-                                            const oldCommission = oldTotal * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
-                                            const commission = total * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100
-                                            technician.balance -= oldCommission;
-                                            technician.balance += commission;
+                                    if (task.technician && !task.contractor) {
+                                        const technician = await User.findOne({ _id: task.technician }).exec();
+                                        if (technician) {
+                                            if (Number(total) !== Number(oldTotalInvoice)) {
+                                                const oldCommission = Math.round(oldTotal / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                                const commission = Math.round(total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                                technician.balance -= oldCommission;
+                                                technician.balance += commission;
+                                            }
+
+                                            technician.save();
                                         }
-
-                                        technician.save();
                                     }
                                 }
                             }
@@ -2138,19 +2145,22 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 
         if (invoice.job) {
             const job = await Job.findById(invoice.job).exec();
-            for (const task of job.tasks) {
-                if (task.contractor) {
-                    const contractor = await Company.findOne({ _id: task.contractor }).exec();
-                    const commission = invoice.total * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
-                    const contractorBalance = contractor.balance + commission;
-                    await Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
-                }
+            if (job.tasks) {
+                const totalTechnician = job.tasks.length;
+                for (const task of job.tasks) {
+                    if (task.contractor) {
+                        const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                        const commission = Math.round(invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                        const contractorBalance = contractor.balance + commission;
+                        await Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
+                    }
 
-                if (task.technician && !task.contractor) {
-                    const technician = await User.findOne({ _id: task.technician }).exec();
-                    const commission = invoice.total * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
-                    const technicianBalance = technician.balance + commission;
-                    await User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
+                    if (task.technician && !task.contractor) {
+                        const technician = await User.findOne({ _id: task.technician }).exec();
+                        const commission = Math.round(invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                        const technicianBalance = technician.balance + commission;
+                        await User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
+                    }
                 }
             }
         }
@@ -2194,22 +2204,25 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 
         if (invoice.job) {
             const job = await Job.findById(invoice.job).exec();
-            for (const task of job?.tasks) {
-                if (task.contractor) {
-                    const contractor = await Company.findOne({ _id: task.contractor }).exec();
-                    if (contractor) {
-                        const commission = invoice.total * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
-                        const contractorBalance = contractor.balance - commission;
-                        await Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
+            if (job.tasks) {
+                const totalTechnician = job.tasks.length;
+                for (const task of job?.tasks) {
+                    if (task.contractor) {
+                        const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                        if (contractor) {
+                            const commission = Math.round(invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                            const contractorBalance = contractor.balance - commission;
+                            await Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
+                        }
                     }
-                }
 
-                if (task.technician && !task.contractor) {
-                    const technician = await User.findOne({ _id: task.technician }).exec();
-                    if (technician) {
-                        const commission = invoice.total * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
-                        const technicianBalance = technician.balance - commission;
-                        await User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
+                    if (task.technician && !task.contractor) {
+                        const technician = await User.findOne({ _id: task.technician }).exec();
+                        if (technician) {
+                            const commission = Math.round(invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                            const technicianBalance = technician.balance - commission;
+                            await User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
+                        }
                     }
                 }
             }
