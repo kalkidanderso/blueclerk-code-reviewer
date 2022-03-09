@@ -812,14 +812,14 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
                 if (task.contractor && !task.paid) {
                     const contractor = await Company.findById(task.contractor).exec();
                     const contractorEntry = vendors.find((v: any) => v.contractor._id?.toString() === task.contractor?.toString());
-                    const commissionAmount = Math.round(invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100
+                    const commissionAmount = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100
                     if (contractorEntry) {
-                        contractorEntry.commissionTotal += commissionAmount;
+                        contractorEntry.commissionTotal += Number(commissionAmount.toFixed(2));
                         contractorEntry?.invoiceIds?.push(invoice._id);
                     } else {
                         vendors.push({
                             contractor,
-                            commissionTotal: commissionAmount,
+                            commissionTotal: Number(commissionAmount.toFixed(2)),
                             invoiceIds: [invoice._id],
                         });
                     }
@@ -828,14 +828,14 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
                 if (task.technician && !task.contractor && !task.paid) {
                     const technician = await User.findById(task.technician).exec();
                     const technicianEntry = employees.find((t: any) => t.employee._id?.toString() === task.technician?.toString());
-                    const technicianAmount = Math.round(invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100
+                    const technicianAmount = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100
                     if (technicianEntry) {
-                        technicianEntry.commissionTotal += technicianAmount;
+                        technicianEntry.commissionTotal += Number(technicianAmount.toFixed(2));
                         technicianEntry.invoiceIds.push(invoice._id);
                     } else {
                         employees.push({
                             employee: technician,
-                            commissionTotal: technicianAmount,
+                            commissionTotal: Number(technicianAmount.toFixed(2)),
                             invoiceIds: [invoice._id],
                         });
                     }
@@ -941,23 +941,23 @@ export const getPayrollReport = async (req: Request, res: Response) => {
             for (const task of job.tasks) {
                 if (params.type !== 'employee' && task.contractor && !task.paid) {
                     const contractor = await Company.findById(task.contractor).exec();
-                    const commissionAmount = Math.round(invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100
+                    const commissionAmount = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100
 
                     vendors.push({
                         invoice,
                         contractor,
-                        commissionAmount: commissionAmount,
+                        commissionAmount: Number(commissionAmount.toFixed(2)),
                     });
                 }
 
                 if (params.type !== 'vendor' && task.technician && !task.contractor && !task.paid) {
                     const technician = await User.findById(task.technician).exec();
-                    const technicianAmount = Math.round(invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100
+                    const technicianAmount = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100
 
                     employees.push({
                         invoice,
                         employee: technician,
-                        commissionAmount: technicianAmount,
+                        commissionAmount: Number(technicianAmount.toFixed(2)),
                     });
                 }
             }
