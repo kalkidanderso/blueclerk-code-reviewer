@@ -5,7 +5,7 @@ import fs from 'fs';
 import pdfmake from 'pdfmake';
 import * as http from 'http';
 import * as https from 'https';
-import { DefaultCommission, InvoiceStatus, Messages, Status } from '../common/constants';
+import { ContractorPermissions, DefaultCommission, InvoiceStatus, Messages, Status } from '../common/constants';
 import { IContact } from '../common/contact';
 import { INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } from '../common/config';
 import { Contact } from '../models/Contact';
@@ -33,6 +33,7 @@ import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice } from '../control
 import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from '../controllers/emailDefault';
 import { IJobSite } from '../models/JobSite';
 import { IJobLocation } from '../models/JobLocation';
+import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission';
 
 /**
  * To reset Invoice quickbookId,
@@ -395,6 +396,7 @@ export const createInvoice = (req: Request, res: Response) => {
                         const job = await Job.findById(invoice.job);
                         customer.balance += invoice.total;
                         await customer.save();
+                        const invoiceCommissionEntry = [];
 
                         if (job.tasks) {
                             const totalTechnician = job.tasks.length;
@@ -402,22 +404,53 @@ export const createInvoice = (req: Request, res: Response) => {
                                 if (task.contractor) {
                                     const contractor = await Company.findOne({ _id: task.contractor }).exec();
                                     const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                    const contractorEntry = {
+                                        contractor: contractor._id,
+                                        technician: contractor.admin,
+                                        commission: contractor.commission,
+                                        commissionAmount: Number(commission.toFixed(2))
+                                    }
+
                                     if (contractor) {
                                         contractor.balance += Number(commission.toFixed(2));
                                         contractor.save();
                                     }
+
+                                    invoiceCommissionEntry.push(contractorEntry);
                                 }
 
                                 if (task.technician && !task.contractor) {
                                     const technician = await User.findOne({ _id: task.technician }).exec();
                                     const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                    const invoiceTechnicianEntry: any = {
+                                        technician: technician._id,
+                                        commission: technician.commission,
+                                        commissionAmount: Number(commission.toFixed(2))
+                                    }
+
                                     if (technician) {
                                         technician.balance += Number(commission.toFixed(2));
                                         technician.save();
                                     }
+
+                                    invoiceCommissionEntry.push(invoiceTechnicianEntry);
                                 }
                             }
                         }
+
+                        let invoiceCommission: any = await InvoiceCommission.findOne({ invoice: invoice._id }).exec();
+                        if (!invoiceCommission) {
+                            invoiceCommission = await new InvoiceCommission({
+                                invoice: invoice._id,
+                                technicians: invoiceCommissionEntry
+                            }).save();
+
+                        } else {
+                            invoiceCommission.technicians.push(...invoiceCommissionEntry);
+                            invoiceCommission.save();
+                        }
+
+                        invoice.commission = invoiceCommission._id
                     }
 
                     resolve(invoice);
