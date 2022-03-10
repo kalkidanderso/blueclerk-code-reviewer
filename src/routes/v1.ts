@@ -2070,6 +2070,13 @@ export default function (sio: any) {
         scriptController.addPaymentType
     )
 
+    router.post(
+        '/script/addInvoiceCommission',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        scriptController.addInvoiceCommission
+    )
+
     return router
 
 }

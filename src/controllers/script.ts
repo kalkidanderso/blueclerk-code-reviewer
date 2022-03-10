@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { Request, Response } from 'express';
 
-import { DefaultCommission, JobStatus, Status } from '../common/constants';
+import { DefaultCommission, JobStatus, Messages, Status } from '../common/constants';
 
 import { Company, ICompany } from '../models/Company';
 import { Customer } from '../models/Customer';
@@ -14,6 +14,7 @@ import { JobType } from '../models/JobType';
 import { Invoice } from '../models/Invoice';
 import { User } from '../models/User';
 import { Payment, PaymentCustomer } from '../models/Payment';
+import { InvoiceCommission } from '../models/InvoiceCommission';
 
 /**
  * To sync and update all companies and customers to have Item Price Tier,
@@ -318,4 +319,60 @@ export const addPaymentType = async (req: Request, res: Response) => {
     }
 
     return res.json({ status: Status.Success, message: 'Payment type successfully added.' });
+}
+
+export const addInvoiceCommission = async (req: Request, res: Response) => {
+
+    const invoices = await Invoice.find({ isDraft: false }).exec();
+    if (!invoices.length) {
+        res.status(Status.NotFound)
+        res.send('No Invoice Founded')
+    } else {
+        res.status(Status.OK)
+        res.send('Invoice commission has been added successfully')
+    }
+
+    for (const invoice of invoices) {
+        if (invoice.job) {
+            const job = await Job.findById(invoice.job);
+            if (job.tasks) {
+                const totalTechnician = job.tasks.length
+                const invoice = await Invoice.findOne({ job: job._id }).exec()
+                const invoiceCommissionEntry = [];
+                for (const task of job.tasks) {
+                    if (task.contractor) {
+                        const contractor = await Company.findById(task.contractor).exec();
+                        const contractorCommissionAmount = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                        invoiceCommissionEntry.push({
+                            contractor: contractor._id,
+                            technician: contractor.admin,
+                            commission: contractor.commission,
+                            commissionAmount: Number(contractorCommissionAmount.toFixed(2)),
+                            paid: invoice.paid,
+                        })
+                    }
+
+                    if (task.technician && !task.contractor) {
+                        const technician = await User.findById(task.technician).exec();
+                        const technicianCommissionAmount = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                        invoiceCommissionEntry.push({
+                            technician: technician._id,
+                            commission: technician.commission,
+                            commissionAmount: Number(technicianCommissionAmount.toFixed(2)),
+                            paid: invoice.paid,
+                        })
+                    }
+
+                }
+
+                
+                const invoiceCommission = await new InvoiceCommission({ invoice: invoice._id, technicians: invoiceCommissionEntry }).save();
+                invoice.commission = invoiceCommission._id;
+                invoice.save();
+            }
+        }
+    }
+
+    console.log('finish');
+    return
 }

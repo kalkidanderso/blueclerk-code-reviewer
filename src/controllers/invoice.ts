@@ -1536,35 +1536,40 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                         // Update company and technician commission when charges is updated and invoice is not draft
                         if (!invoice.isDraft && invoice.job) {
+                            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
 
-                            if (job.tasks) {
-                                const totalTechnician = job.tasks.length;
-                                for (const task of job?.tasks) {
-                                    if (task.contractor) {
-                                        const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                            if (invoiceCommission.technicians) {
+                                const totalTechnician = invoiceCommission.technicians.length;
+                                for (const invoiceCommissionTechnician of invoiceCommission.technicians) {
+                                    if (invoiceCommissionTechnician.contractor) {
+                                        const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
                                         if (contractor) {
                                             if (Number(total) !== Number(oldTotalInvoice)) {
                                                 const oldCommission = (oldTotal / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
                                                 const commission = (total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
                                                 contractor.balance -= Number(oldCommission.toFixed(2));
                                                 contractor.balance += Number(commission.toFixed(2));
+                                                invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2));
                                             }
 
                                             contractor.save();
+                                            invoiceCommission.save();
                                         }
                                     }
 
-                                    if (task.technician && !task.contractor) {
-                                        const technician = await User.findOne({ _id: task.technician }).exec();
+                                    if (invoiceCommissionTechnician.technician && !invoiceCommissionTechnician.contractor) {
+                                        const technician = await User.findOne({ _id: invoiceCommissionTechnician.technician }).exec();
                                         if (technician) {
                                             if (Number(total) !== Number(oldTotalInvoice)) {
                                                 const oldCommission = (oldTotal / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
                                                 const commission = (total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                                invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2));
                                                 technician.balance -= Number(oldCommission.toFixed(2));
                                                 technician.balance += Number(commission.toFixed(2));
                                             }
 
                                             technician.save();
+                                            invoiceCommission.save();
                                         }
                                     }
                                 }
@@ -2176,25 +2181,79 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         const balance = customer.balance + invoice.total;
         Customer.findByIdAndUpdate(customer._id, { balance }).exec();
 
+        const techniciansEntry = []
         if (invoice.job) {
-            const job = await Job.findById(invoice.job).exec();
-            if (job.tasks) {
-                const totalTechnician = job.tasks.length;
-                for (const task of job.tasks) {
-                    if (task.contractor) {
-                        const contractor = await Company.findOne({ _id: task.contractor }).exec();
-                        const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
-                        const contractorBalance = contractor.balance + Number(commission.toFixed(2));
-                        await Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
-                    }
+            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id })
+            if (invoiceCommission) {
+                if (invoiceCommission?.technicians) {
+                    const totalTechnician = invoiceCommission.technicians.length;
+                    for (const invoiceCommissionTechnician of invoiceCommission.technicians) {
+                        if (invoiceCommissionTechnician.contractor) {
+                            const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
+                            const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                            const contractorBalance = contractor.balance + Number(commission.toFixed(2));
+                            await Company.findByIdAndUpdate(invoiceCommissionTechnician.contractor, { balance: contractorBalance }).exec();
+                            await InvoiceCommission.findByIdAndUpdate(invoiceCommissionTechnician.contractor, { commissionAmount: Number(commission.toFixed(2)) }).exec();
+                        }
 
-                    if (task.technician && !task.contractor) {
-                        const technician = await User.findOne({ _id: task.technician }).exec();
-                        const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
-                        const technicianBalance = technician.balance + Number(commission.toFixed(2));
-                        await User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
+                        if (invoiceCommissionTechnician.technician && !invoiceCommissionTechnician.contractor) {
+                            const technician = await User.findOne({ _id: invoiceCommissionTechnician.technician }).exec();
+                            const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                            const technicianBalance = technician.balance + Number(commission.toFixed(2));
+                            await User.findByIdAndUpdate(invoiceCommissionTechnician.technician, { balance: technicianBalance }).exec();
+                            await InvoiceCommission.findByIdAndUpdate(invoiceCommissionTechnician.technician, { commissionAmount: Number(commission.toFixed(2)) }).exec();
+                        }
                     }
                 }
+            } else {
+                // Add new invoice commission when invoice haven't invoice commission
+                const job = await Job.findById(invoice.job);
+                if (job.tasks) {
+                    const totalTechnician = job.tasks.length;
+                    for (const task of job?.tasks) {
+                        if (task.contractor) {
+                            const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                            const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                            const contractorEntry = {
+                                contractor: contractor._id,
+                                technician: contractor.admin,
+                                commission: contractor.commission,
+                                commissionAmount: Number(commission.toFixed(2))
+                            }
+
+                            if (contractor) {
+                                contractor.balance += Number(commission.toFixed(2));
+                                contractor.save();
+                            }
+
+                            techniciansEntry.push(contractorEntry);
+                        }
+
+                        if (task.technician && !task.contractor) {
+                            const technician = await User.findOne({ _id: task.technician }).exec();
+                            const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                            const invoiceTechnicianEntry: any = {
+                                technician: technician._id,
+                                commission: technician.commission,
+                                commissionAmount: Number(commission.toFixed(2))
+                            }
+
+                            if (technician) {
+                                technician.balance += Number(commission.toFixed(2));
+                                technician.save();
+                            }
+
+                            techniciansEntry.push(invoiceTechnicianEntry);
+                        }
+                    }
+                }
+
+                const commissionInvoice = await new InvoiceCommission({
+                    invoice: invoice._id,
+                    technicians: techniciansEntry
+                }).save();
+
+                invoice.commission = commissionInvoice._id;
             }
         }
 
@@ -2235,26 +2294,26 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         const balance = customer.balance -= invoice.total;
         Customer.findByIdAndUpdate(customer._id, { balance }).exec();
 
-        if (invoice.job) {
-            const job = await Job.findById(invoice.job).exec();
-            if (job.tasks) {
-                const totalTechnician = job.tasks.length;
-                for (const task of job?.tasks) {
-                    if (task.contractor) {
-                        const contractor = await Company.findOne({ _id: task.contractor }).exec();
+        if (invoice.job && invoice.commission) {
+            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id })
+            if (invoiceCommission.technicians) {
+                const totalTechnician = invoiceCommission.technicians.length;
+                for (const invoiceCommissionTechnician of invoiceCommission?.technicians) {
+                    if (invoiceCommissionTechnician.contractor) {
+                        const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
                         if (contractor) {
                             const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
                             const contractorBalance = contractor.balance - Number(commission.toFixed(2));
-                            await Company.findByIdAndUpdate(task.contractor, { balance: contractorBalance }).exec();
+                            await Company.findByIdAndUpdate(invoiceCommissionTechnician.contractor, { balance: contractorBalance }).exec();
                         }
                     }
 
-                    if (task.technician && !task.contractor) {
-                        const technician = await User.findOne({ _id: task.technician }).exec();
+                    if (invoiceCommissionTechnician.technician && !invoiceCommissionTechnician.contractor) {
+                        const technician = await User.findOne({ _id: invoiceCommissionTechnician.technician }).exec();
                         if (technician) {
                             const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
                             const technicianBalance = technician.balance - Number(commission.toFixed(2));
-                            await User.findByIdAndUpdate(task.technician, { balance: technicianBalance }).exec();
+                            await User.findByIdAndUpdate(invoiceCommissionTechnician.technician, { balance: technicianBalance }).exec();
                         }
                     }
                 }

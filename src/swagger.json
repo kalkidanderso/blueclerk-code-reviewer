@@ -11778,6 +11778,31 @@
           }
         ]
       }
+    },
+    "/script/addInvoiceCommission": {
+      "post": {
+        "tags": [
+          "Script"
+        ],
+        "summary": "To add invoice commission",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
