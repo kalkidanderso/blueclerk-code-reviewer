@@ -402,55 +402,56 @@ export const createInvoice = (req: Request, res: Response) => {
                             const totalTechnician = job.tasks.length;
                             for (const task of job?.tasks) {
                                 if (task.contractor) {
-                                    const contractor = await Company.findOne({ _id: task.contractor }).exec();
-                                    const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
-                                    const contractorEntry = {
-                                        contractor: contractor._id,
-                                        technician: contractor.admin,
-                                        commission: contractor.commission,
-                                        commissionAmount: Number(commission.toFixed(2))
-                                    }
+                                    const contractor = await Company.findOne({ _id: task.contractor });
 
                                     if (contractor) {
+                                        const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                        const contractorCommissionEntry = {
+                                            contractor: contractor._id,
+                                            technician: contractor.admin,
+                                            commission: contractor.commission,
+                                            commissionAmount: Number(commission.toFixed(2))
+                                        }
+
                                         contractor.balance += Number(commission.toFixed(2));
                                         contractor.save();
-                                    }
 
-                                    invoiceCommissionEntry.push(contractorEntry);
+                                        invoiceCommissionEntry.push(contractorCommissionEntry);
+                                    }
                                 }
 
                                 if (task.technician && !task.contractor) {
-                                    const technician = await User.findOne({ _id: task.technician }).exec();
-                                    const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
-                                    const invoiceTechnicianEntry: any = {
-                                        technician: technician._id,
-                                        commission: technician.commission,
-                                        commissionAmount: Number(commission.toFixed(2))
-                                    }
+                                    const technician = await User.findOne({ _id: task.technician });
 
                                     if (technician) {
+                                        const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                        const technicianCommissionEntry = {
+                                            technician: technician._id,
+                                            commission: technician.commission,
+                                            commissionAmount: Number(commission.toFixed(2))
+                                        }
+
                                         technician.balance += Number(commission.toFixed(2));
                                         technician.save();
-                                    }
 
-                                    invoiceCommissionEntry.push(invoiceTechnicianEntry);
+                                        invoiceCommissionEntry.push(technicianCommissionEntry);
+                                    }
                                 }
                             }
                         }
 
-                        let invoiceCommission: any = await InvoiceCommission.findOne({ invoice: invoice._id }).exec();
+                        let invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
                         if (!invoiceCommission) {
                             invoiceCommission = await new InvoiceCommission({
                                 invoice: invoice._id,
                                 technicians: invoiceCommissionEntry
                             }).save();
-
                         } else {
-                            invoiceCommission.technicians.push(...invoiceCommissionEntry);
+                            invoiceCommission.technicians = invoiceCommissionEntry;
                             invoiceCommission.save();
                         }
 
-                        invoice.commission = invoiceCommission._id
+                        invoice.commission = invoiceCommission._id;
                     }
 
                     resolve(invoice);

@@ -5,14 +5,16 @@ import { IUser } from './User';
 
 export interface IInvoiceCommission extends Document {
     invoice: Schema.Types.ObjectId | IInvoice
-    technicians: [{
-        technician: Schema.Types.ObjectId | IUser
-        contractor?: Schema.Types.ObjectId | ICompany
-        commission: number
-        commissionAmount: number
-        paid?: boolean
-        paidAt?: Date
-    }]
+    technicians: IInvoiceCommissionTechnician[]
+}
+
+export interface IInvoiceCommissionTechnician {
+    technician: Schema.Types.ObjectId | IUser
+    contractor?: Schema.Types.ObjectId | ICompany
+    commission: number
+    commissionAmount: number
+    paid?: boolean
+    paidAt?: Date
 }
 
 const InvoiceCommissionSchema = new Schema({
