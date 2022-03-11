@@ -812,8 +812,7 @@
                 "type": "object",
                 "required": [
                   "type",
-                  "id",
-                  "commission"
+                  "id"
                 ],
                 "properties": {
                   "type": {
@@ -828,7 +827,8 @@
                     "description": "Id of vendor or employee"
                   },
                   "commission": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Send a blank value to make the commission null on database"
                   }
                 }
               }
@@ -9234,7 +9234,7 @@
           {
             "name": "type",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string",
               "enum": [
@@ -9247,14 +9247,6 @@
             "name": "id",
             "in": "query",
             "description": "Id of Vendor or Employee",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "name",
-            "in": "query",
             "required": false,
             "schema": {
               "type": "string"
@@ -9296,7 +9288,7 @@
                     "GeneralAPIResponse": {
                       "$ref": "#/components/schemas/GeneralAPIResponse"
                     },
-                    "invoices": {
+                    "payments": {
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/Payment"
@@ -9416,7 +9408,8 @@
                     "description": "Id of vendor or employee"
                   },
                   "invoiceIds": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Id of invoices to be paid. Example: [\"621f9865b084345f2c60904b\",\"61e9b92963a18c3e74b37922\"]"
                   },
                   "amount": {
                     "type": "number",
@@ -9446,7 +9439,166 @@
                     "type": "string",
                     "description": "Date when the customer has made the payment"
                   },
-                  "notes": {
+                  "note": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updatePayment": {
+      "put": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "To update payment record",
+        "description": "To update payment record",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "customerId",
+                  "paymentId"
+                ],
+                "properties": {
+                  "customerId": {
+                    "type": "string",
+                    "description": "Pass customer id to who made the payment"
+                  },
+                  "paymentId": {
+                    "type": "string",
+                    "description": "Id of payment to edit"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "description": "Amount how much customer has paid"
+                  },
+                  "referenceNumber": {
+                    "type": "string",
+                    "description": "Reference number of the payment made by client"
+                  },
+                  "paymentType": {
+                    "type": "string",
+                    "description": "Method name how customer has paid",
+                    "enum": [
+                      "ACH",
+                      "Bank Wire",
+                      "Credit Card/Debit Card",
+                      "Check",
+                      "Cash"
+                    ]
+                  },
+                  "paidAt": {
+                    "type": "string",
+                    "description": "Date when the customer has made the payment"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updatePaymentContractor": {
+      "put": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "To update payment contractor record",
+        "description": "To update payment contractor record",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "id",
+                  "paymentId",
+                  "amount"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "type of payment",
+                    "enum": [
+                      "vendor",
+                      "employee"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "description": "Id of vendor or employee"
+                  },
+                  "paymentId": {
+                    "type": "string",
+                    "description": "Id of payment to edit"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "description": "Amount how much vendor/employee has paid"
+                  },
+                  "referenceNumber": {
+                    "type": "string",
+                    "description": "Reference number of the payment made by client"
+                  },
+                  "paymentType": {
+                    "type": "string",
+                    "description": "Method name how vendor/employee has paid",
+                    "enum": [
+                      "ACH",
+                      "Bank Wire",
+                      "Credit Card/Debit Card",
+                      "Check",
+                      "Cash"
+                    ]
+                  },
+                  "paidAt": {
+                    "type": "string",
+                    "description": "Date when the vendor/employee has made the payment"
+                  },
+                  "note": {
                     "type": "string"
                   }
                 }
@@ -9525,60 +9677,57 @@
         ]
       }
     },
-    "/updatePayment": {
-      "put": {
+    "/getPayrollReport": {
+      "get": {
         "tags": [
           "Payment"
         ],
-        "summary": "To update payment record",
-        "description": "To update payment record",
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "customerId",
-                  "paymentId"
-                ],
-                "properties": {
-                  "customerId": {
-                    "type": "string",
-                    "description": "Pass customer id to who made the payment"
-                  },
-                  "paymentId": {
-                    "type": "string",
-                    "description": "Id of payment to edit"
-                  },
-                  "amount": {
-                    "type": "number",
-                    "description": "Amount how much customer has paid"
-                  },
-                  "referenceNumber": {
-                    "type": "string",
-                    "description": "Reference number of the payment made by client"
-                  },
-                  "paymentType": {
-                    "type": "string",
-                    "description": "Method name how customer has paid",
-                    "enum": [
-                      "ACH",
-                      "Bank Wire",
-                      "Credit Card/Debit Card",
-                      "Check",
-                      "Cash"
-                    ]
-                  },
-                  "paidAt": {
-                    "type": "string",
-                    "description": "Date when the customer has made the payment"
-                  }
-                }
-              }
+        "summary": "To get payroll report",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "vendor",
+                "employee"
+              ]
             }
           },
-          "required": true
-        },
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Id of Vendor or Employee",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -11586,6 +11735,55 @@
           "Script"
         ],
         "summary": "To add employee and vendor balance",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/script/addPaymentType": {
+      "post": {
+        "tags": [
+          "Script"
+        ],
+        "summary": "To add payment type",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/script/updatePaidTechnicians": {
+      "post": {
+        "tags": [
+          "Script"
+        ],
         "responses": {
           "200": {
             "description": "Success",

@@ -1887,12 +1887,29 @@ export default function (sio: any) {
         paymentController.updatePayment
     )
 
+    router.put(
+        '/updatePaymentContractor',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.updatePaymentContractor),
+        checkUserPermissions(Permissions.Update_Payment),
+        paymentController.updatePaymentContractor
+    )
+
     router.get(
         '/getPayrollBalance',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Payments),
         paymentController.getPayrollBalance
+    )
+
+    router.get(
+        '/getPayrollReport',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Payments),
+        paymentController.getPayrollReport
     )
 
     // CODE LOCATION TAG
@@ -2044,6 +2061,20 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         scriptController.addVendorBalance
+    )
+
+    router.post(
+        '/script/addPaymentType',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        scriptController.addPaymentType
+    )
+
+    router.post(
+        '/script/updatePaidTechnicians',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        scriptController.updatePaidTechnicians
     )
 
     return router

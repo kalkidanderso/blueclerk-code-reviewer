@@ -9,7 +9,9 @@ import { IInvoice } from '../models/Invoice';
 export interface IPayment extends Document {
     customer: Schema.Types.ObjectId | ICustomer
     invoice: Schema.Types.ObjectId | IInvoice
-    // invoices: [Schema.Types.ObjectId]
+    invoices: [Schema.Types.ObjectId | IInvoice]
+    contractor: Schema.Types.ObjectId | ICompany
+    employee: Schema.Types.ObjectId | ICustomer
     amountPaid: number
     referenceNumber: string
     paymentType?: PaymentTypes | string
@@ -150,10 +152,12 @@ const PaymentCustomerSchema = new Schema({
     customer: {
         type: Schema.Types.ObjectId,
         ref: 'User',
+        required: true
     },
     invoice: {
         type: Schema.Types.ObjectId,
         ref: 'Invoice',
+        required: true
     },
 })
 

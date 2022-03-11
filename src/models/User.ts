@@ -129,7 +129,7 @@ const UserSchema = new Schema({
     },
     commission: {
         type: Number,
-        default: 20
+        default: null
     }
 }, { timestamps: { createdAt: true, updatedAt: true } })
 

@@ -695,7 +695,7 @@ export const _getCustomerInvoicesPayments = async (customers: ICustomer[], compa
     const customerWithInvoicesPayments = [];
     for (const customer of customers) {
         try {
-            const bcInvoices = await Invoice.find({ customer: customer._id, isDraft: false }).countDocuments();
+            const bcInvoices = await Invoice.find({ customer: customer._id, isDraft: { $ne: true } }).countDocuments();
             const bcPayments = await Payment.find({ customer: customer._id }).countDocuments();
             // const hasQBInvoice = await _countQBInvoices(company, customer);
             // const hasQBPayment = await _countQBPayments(company, customer);

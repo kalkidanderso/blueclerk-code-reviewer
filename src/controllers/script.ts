@@ -13,6 +13,7 @@ import { ServiceTicket } from '../models/ServiceTicket';
 import { JobType } from '../models/JobType';
 import { Invoice } from '../models/Invoice';
 import { User } from '../models/User';
+import { Payment, PaymentCustomer } from '../models/Payment';
 
 /**
  * To sync and update all companies and customers to have Item Price Tier,
@@ -305,4 +306,53 @@ export const addVendorBalance = async (req: Request, res: Response) => {
     }
 
     return res.json({ status: Status.Success, message: 'Vendor and Technician balance successfully updated.' });
+}
+
+export const addPaymentType = async (req: Request, res: Response) => {
+
+    const payments = await Payment.find({ company: { $ne: null }, __t: { $nin: ['PaymentVendor', 'PaymentEmployee'] } }).exec();
+    if (payments.length) {
+        for (const payment of payments) {
+            await new PaymentCustomer(payment).save();
+        }
+    }
+
+    return res.json({ status: Status.Success, message: 'Payment type successfully added.' });
+}
+
+export const updatePaidTechnicians = async (req: Request, res: Response) => {
+
+    const payments = await Payment.find({ __t: { $in: ['PaymentVendor', 'PaymentEmployee'] } }).exec();
+    await Job.updateMany({ 'tasks.paid': true }, { $set: { 'tasks.$[].paid': false, 'tasks.$[].paidAt': null } }).exec()
+
+    if (!payments.length) {
+        return res.json({ status: Status.NotFound, messages: 'Payment not found' });
+    } else {
+        res.json({ status: Status.Success, messages: 'Payment technician has been updated successfully' });
+    }
+
+    for (const payment of payments) {
+        for (const paymentInvoice of payment.invoices) {
+            const invoice = await Invoice.findById(paymentInvoice).exec();
+            if (invoice) {
+                const job = await Job.findById( invoice.job ).exec();
+                const contractor = job?.tasks.find(task => task?.contractor?.toString() === payment?.contractor?.toString());
+                const technician = job?.tasks.find(task => task?.technician?.toString() === payment?.employee?.toString());
+
+                if (contractor) {
+                    contractor.paid = true;
+                    contractor.paidAt = payment.paidAt;
+                }
+
+                if (technician) {
+                    technician.paid = true;
+                    technician.paidAt = payment.paidAt;
+                }
+
+                await job.save()
+            }
+        }
+    }
+
+    return
 }

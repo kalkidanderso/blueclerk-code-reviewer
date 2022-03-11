@@ -352,8 +352,6 @@ export const Validations = {
     check('type').exists().withMessage(Messages.Required),
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId),
-    check('commission').exists().withMessage(Messages.Required),
-    check('commission').isInt().withMessage('Must in number format'),
   ],
 
   getInvoiceDetail: [check('invoiceId').exists()],
@@ -426,10 +424,20 @@ export const Validations = {
   ],
 
   recordPaymentContractor: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId),
+    check('amount').exists().withMessage(Messages.Required),
+  ],
+
+  updatePaymentContractor: [
     check('type').exists().withMessage(Messages.Required),
-    check('type').isIn(['vendor', 'employee']).withMessage('Type is only vendor or employee'),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('paymentId').exists().withMessage(Messages.Required),
+    check('paymentId').isMongoId().withMessage(Messages.WrongId),
     check('amount').exists().withMessage(Messages.Required),
   ],
 

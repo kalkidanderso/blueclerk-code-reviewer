@@ -2788,7 +2788,7 @@ export const updateCommission = async (req: Request, res: Response) => {
             if (!contractor) {
                 return res.json({ status: Status.Error, message: 'Vendor not found' });
             }
-            contractor.commission = params.commission;
+            contractor.commission = params.commission ?? null;
             contractor.save();
             return res.json({ status: Status.Success, message: 'Commission updated successfully', contractor });
 
@@ -2798,7 +2798,7 @@ export const updateCommission = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'Employee not found' });
             }
 
-            employee.commission = params.commission;
+            employee.commission = params.commission ?? null;
             employee.save();
             return res.json({ status: Status.Success, message: 'Commission updated successfully', employee });
 
@@ -2815,7 +2815,7 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
     const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
     const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
 
-    if (startDate && endDate) {
+    if (params.startDate && params.endDate) {
         query = { issuedDate: { $gte: startDate, $lte: endDate } }
     }
 
@@ -2883,4 +2883,5 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
     }
 
     return res.json({ status: Status.Success, invoices });
+
 }
