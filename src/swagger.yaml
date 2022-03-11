@@ -7256,6 +7256,19 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
+  /script/updatePaidTechnicians:
+    post:
+      tags:
+        - Script
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
 components:
   schemas:
     ContactSchemaResponse:
