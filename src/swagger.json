@@ -9244,6 +9244,19 @@
             }
           },
           {
+            "name": "isActive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ALL",
+                "active",
+                "void"
+              ]
+            }
+          },
+          {
             "name": "id",
             "in": "query",
             "description": "Id of Vendor or Employee",
@@ -9600,6 +9613,60 @@
                   },
                   "note": {
                     "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/voidPaymentContractor": {
+      "post": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "To void payment contractor",
+        "description": "To void payment contractor",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "paymentId"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "type of payment (PaymentVendor or PaymentEmployee)",
+                    "enum": [
+                      "vendor",
+                      "employee"
+                    ]
+                  },
+                  "paymentId": {
+                    "type": "string",
+                    "description": "Id of payment to void"
                   }
                 }
               }
@@ -11760,6 +11827,31 @@
           "Script"
         ],
         "summary": "To add payment type",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/script/addInvoiceCommission": {
+      "post": {
+        "tags": [
+          "Script"
+        ],
+        "summary": "To add invoice commission",
         "responses": {
           "200": {
             "description": "Success",

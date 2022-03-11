@@ -7,6 +7,7 @@ import { IJob } from '../models/Job';
 import { IPaymentTerm } from '../models/PaymentTerm';
 import { ICompany } from './Company';
 import { IUser } from './User';
+import { IInvoiceCommission } from './InvoiceCommission';
 
 export interface IInvoice extends Document {
     invoice: any[]
@@ -60,12 +61,7 @@ export interface IInvoice extends Document {
     }],
     lastEmailSent?: Date
     quickbookId?: string
-    technicians: [{
-        technician: Schema.Types.ObjectId | IUser
-        contractor: Schema.Types.ObjectId | ICompany
-        paid: boolean
-        paidAt: Date
-    }]
+    commission?: Schema.Types.ObjectId | IInvoiceCommission
 }
 
 export enum LineDetailTypes {
@@ -128,7 +124,7 @@ export interface IQBInvoiceLine {
         UnitPrice?: number
         DiscountRate?: number
         DiscountAmt?: number
-        TaxInclusiveAmt? :number
+        TaxInclusiveAmt?: number
     }
 }
 
@@ -146,17 +142,17 @@ const InvoiceSchema = new Schema({
         ref: 'Job',
         required: false
     },
-    purchaseOrder :{
+    purchaseOrder: {
         type: Schema.Types.ObjectId,
         ref: 'PurchaseOrder',
         required: false
     },
-    estimate :{
+    estimate: {
         type: Schema.Types.ObjectId,
         ref: 'Estimate',
         required: false
     },
-    jobPurchaseOrders :[{
+    jobPurchaseOrders: [{
         type: Schema.Types.ObjectId,
         ref: 'PurchaseOrder',
         required: false
@@ -195,7 +191,7 @@ const InvoiceSchema = new Schema({
         ref: 'Company',
         required: true
     },
-    charges:{
+    charges: {
         type: Number,
         default: 0
     },
@@ -292,7 +288,7 @@ const InvoiceSchema = new Schema({
         default: 0
     },
     balanceDue: Number,
-    paid:{
+    paid: {
         type: Boolean,
         default: false
     },
@@ -311,7 +307,12 @@ const InvoiceSchema = new Schema({
     lastEmailSent: {
         type: Date
     },
-    quickbookId: String
+    quickbookId: String,
+    commission: {
+        type: Schema.Types.ObjectId,
+        ref: 'InvoiceCommission',
+        required: false
+    }
 })
 
 export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema)

@@ -25,6 +25,7 @@ export interface IPayment extends Document {
     updatedBy: Schema.Types.ObjectId | IUser
     updatedAt: Date
     dueDate: Date
+    isVoid: boolean
 }
 
 export interface IPaymentCustomer extends IPayment {
@@ -144,7 +145,11 @@ const PaymentSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User',
     },
-    updatedAt: Date
+    updatedAt: Date,
+    isVoid: {
+        type: Boolean,
+        default: false
+    }
 })
 
 const PaymentCustomerSchema = new Schema({
