@@ -2086,6 +2086,13 @@ export default function (sio: any) {
         scriptController.addInvoiceCommission
     )
 
+    router.post(
+        '/script/updatePaidTechnicians',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        scriptController.updatePaidTechnicians
+    )
+
     return router
 
 }
