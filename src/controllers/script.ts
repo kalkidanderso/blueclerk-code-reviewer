@@ -266,44 +266,31 @@ export const addJobTypeMongooseId = async (req: Request, res: Response) => {
 
 export const addVendorBalance = async (req: Request, res: Response) => {
 
-    const vendorIds: any = [];
-    const technicianIds: any = [];
-    const company = <ICompany>req.company
+    const company = <ICompany>req.company;
     const jobs = await Job.find({ company, 'tasks.technician': { $exists: true } }).exec();
-    const jobIds = jobs.map(job => job._id);
-    const invoices = await Invoice.find({ job: { $in: jobIds } }).exec();
 
-    jobs.forEach(job => {
-        job.tasks.forEach(task => {
-            if (task.contractor && task.technician) {
-                vendorIds.push(task.contractor)
+    for (const job of jobs) {
+        const invoice = await Invoice.findOne({ job: job._id });
+        if (job.tasks) {
+            const totalTechnician = job.tasks.length;
+            for (const task of job.tasks) {
+                const contractor = await Company.findById(task.contractor);
+                const technician = await User.findById(task.technician);
+                if (invoice) {
+                    if (contractor) {
+                        const contractorCommission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                        contractor.balance = Number(contractorCommission.toFixed(2));
+                        await contractor.save();
+                    }
+
+                    if (technician) {
+                        const technicianCommission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                        technician.balance = Number(technicianCommission.toFixed(2));
+                        await technician.save();
+                    }
+                }
             }
-
-            if (task.technician && !task.contractor) {
-                technicianIds.push(task.technician)
-            }
-        });
-    });
-
-    const vendors = await Company.find({ _id: { $in: vendorIds } });
-    const technicians = await User.find({ _id: { $in: technicianIds } });
-
-    for (const vendor of vendors) {
-        for (const invoice of invoices) {
-            const commission = invoice.total * (DefaultCommission.VENDOR_COMMISSION / 100);
-            vendor.balance += commission;
         }
-
-        vendor.save();
-    }
-
-    for (const technician of technicians) {
-        for (const invoice of invoices) {
-            const commission = invoice.total * (DefaultCommission.EMPLOYEE_COMMISSION / 100);
-            technician.balance += commission;
-        }
-
-        technician.save();
     }
 
     return res.json({ status: Status.Success, message: 'Vendor and Technician balance successfully updated.' });
@@ -365,7 +352,6 @@ export const addInvoiceCommission = async (req: Request, res: Response) => {
 
                 }
 
-                
                 const invoiceCommission = await new InvoiceCommission({ invoice: invoice._id, technicians: invoiceCommissionEntry }).save();
                 invoice.commission = invoiceCommission._id;
                 invoice.save();
