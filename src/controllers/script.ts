@@ -326,7 +326,7 @@ export const updatePaidTechnicians = async (req: Request, res: Response) => {
     await Job.updateMany({ 'tasks.paid': true }, { $set: { 'tasks.$[].paid': false, 'tasks.$[].paidAt': null } }).exec()
 
     if (!payments.length) {
-        res.json({ status: Status.NotFound, messages: 'Payment not found' });
+        return res.json({ status: Status.NotFound, messages: 'Payment not found' });
     } else {
         res.json({ status: Status.Success, messages: 'Payment technician has been updated successfully' });
     }
