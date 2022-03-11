@@ -323,23 +323,21 @@ export const addPaymentType = async (req: Request, res: Response) => {
 export const updatePaidTechnicians = async (req: Request, res: Response) => {
 
     const payments = await Payment.find({ __t: { $in: ['PaymentVendor', 'PaymentEmployee'] } }).exec();
-    await Job.updateMany({ 'tasks.paid': true }, { $set: { 'tasks.$[].paid': false } }).exec()
+    await Job.updateMany({ 'tasks.paid': true }, { $set: { 'tasks.$[].paid': false, 'tasks.$[].paidAt': null } }).exec()
 
     if (!payments.length) {
-        res.status(Status.NotFound)
-        res.send('No payment Founded')
+        res.json({ status: Status.NotFound, messages: 'Payment not found' });
     } else {
-        res.status(Status.OK)
-        res.send('payment technician has been updated successfully')
+        res.json({ status: Status.Success, messages: 'Payment technician has been updated successfully' });
     }
 
     for (const payment of payments) {
         for (const paymentInvoice of payment.invoices) {
             const invoice = await Invoice.findById(paymentInvoice).exec();
             if (invoice) {
-                const job = await Job.findById({ _id: invoice.job }).exec();
-                const contractor = job.tasks.find(task => task?.contractor?.toString() === payment?.contractor?.toString());
-                const technician = job.tasks.find(task => task?.technician?.toString() === payment?.employee?.toString());
+                const job = await Job.findById( invoice.job ).exec();
+                const contractor = job?.tasks.find(task => task?.contractor?.toString() === payment?.contractor?.toString());
+                const technician = job?.tasks.find(task => task?.technician?.toString() === payment?.employee?.toString());
 
                 if (contractor) {
                     contractor.paid = true;
