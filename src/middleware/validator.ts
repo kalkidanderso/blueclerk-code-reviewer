@@ -441,6 +441,13 @@ export const Validations = {
     check('amount').exists().withMessage(Messages.Required),
   ],
 
+  voidPaymentContractor: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('paymentId').exists().withMessage(Messages.Required),
+    check('paymentId').isMongoId().withMessage(Messages.WrongId),
+  ],
+
   // Code Location
 
   codeLocationTag: [check('nfcTag').exists(), check('customerId').exists()],

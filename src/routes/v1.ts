@@ -1896,6 +1896,15 @@ export default function (sio: any) {
         paymentController.updatePaymentContractor
     )
 
+    router.post(
+        '/voidPaymentContractor',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.voidPaymentContractor),
+        checkUserPermissions(Permissions.Update_Payment),
+        paymentController.voidPaymentContractor
+    )
+
     router.get(
         '/getPayrollBalance',
         passport.authenticate('jwt', { session: false }),
@@ -2068,6 +2077,13 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         scriptController.addPaymentType
+    )
+
+    router.post(
+        '/script/addInvoiceCommission',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        scriptController.addInvoiceCommission
     )
 
     router.post(
