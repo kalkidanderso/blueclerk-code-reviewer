@@ -2899,8 +2899,8 @@ export const updateCommission = async (req: Request, res: Response) => {
             if (contractorInvoiceCommissions.length) {
                 for (const invoiceCommission of contractorInvoiceCommissions) {
                     const invoice = <IInvoice>invoiceCommission.invoice;
-                    const totalTechnician = invoiceCommission?.technicians.length;
-                    const contractorCommission = invoiceCommission?.technicians.find(technician => technician?.contractor.toString() === contractor._id.toString());
+                    const totalTechnician = invoiceCommission?.technicians?.length;
+                    const contractorCommission = invoiceCommission?.technicians?.find(technician => technician?.contractor?.toString() === contractor._id?.toString());
                     if (!contractorCommission) {
                         continue;
                     }
@@ -2932,8 +2932,8 @@ export const updateCommission = async (req: Request, res: Response) => {
             if (employeeInvoiceCommissions.length) {
                 for (const invoiceCommission of employeeInvoiceCommissions) {
                     const invoice = <IInvoice>invoiceCommission.invoice;
-                    const totalTechnician = invoiceCommission?.technicians.length;
-                    const employeeCommission = invoiceCommission.technicians.find(technician => technician?.technician.toString() === employee._id.toString());
+                    const totalTechnician = invoiceCommission?.technicians?.length;
+                    const employeeCommission = invoiceCommission.technicians?.find(technician => technician?.technician?.toString() === employee._id?.toString());
                     if (!employeeCommission) {
                         continue;
                     }
@@ -2958,6 +2958,7 @@ export const updateCommission = async (req: Request, res: Response) => {
         default:
             return res.json({ status: Status.Success, message: 'Type not supported. Available Type to be used: vendor or employee.' });
     }
+
 }
 
 export const getInvoicesByContractor = async (req: Request, res: Response) => {
