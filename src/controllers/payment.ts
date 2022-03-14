@@ -801,6 +801,7 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
     const invoices: any = await Invoice.find({
         company: company._id,
         isDraft: { $ne: true },
+        job: { $ne: null },
         ...query
     }).populate({ path: 'commission' });
 
@@ -808,7 +809,7 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
     for (const invoice of invoices) {
         const invoiceCommission = <IInvoiceCommission>invoice.commission;
 
-        if (invoiceCommission.technicians) {
+        if (invoiceCommission?.technicians) {
             for (const technicianCommission of invoiceCommission.technicians) {
                 if (technicianCommission.contractor && !technicianCommission.paid) {
                     const contractor = await Company.findById(technicianCommission.contractor).exec();
