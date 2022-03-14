@@ -2887,15 +2887,39 @@ export const fileExists = async (absolutePath: string): Promise<boolean> => {
 export const updateCommission = async (req: Request, res: Response) => {
 
     const params = req.body;
+    let commissionBalance = 0;
     switch (params.type) {
         case 'vendor':
             const contractor = await Company.findById(params.id).exec();
-
             if (!contractor) {
                 return res.json({ status: Status.Error, message: 'Vendor not found' });
             }
-            contractor.commission = params.commission ?? null;
-            contractor.save();
+
+            const contractorInvoiceCommissions = await InvoiceCommission.find({ 'technicians.contractor': contractor._id }).populate('invoice').exec();
+            if (contractorInvoiceCommissions.length) {
+                for (const invoiceCommission of contractorInvoiceCommissions) {
+                    const invoice = <IInvoice>invoiceCommission.invoice;
+                    const totalTechnician = invoiceCommission?.technicians?.length;
+                    const contractorCommission = invoiceCommission?.technicians?.find(technician => technician?.contractor?.toString() === contractor._id?.toString());
+                    if (!contractorCommission) {
+                        continue;
+                    }
+
+                    if (!contractorCommission.paid) {
+                        contractorCommission.commission = params.commission ?? null;
+                        const commissionAmount = (invoice.total / totalTechnician) * (params.commission ?? 0) / 100;
+                        contractorCommission.commissionAmount = Number(commissionAmount.toFixed(2));
+                    }
+
+                    commissionBalance += contractorCommission.commissionAmount;
+                    invoiceCommission.save()
+                }
+
+                contractor.commission = params.commission ?? null;
+                contractor.balance = commissionBalance;
+                contractor.save();
+            }
+
             return res.json({ status: Status.Success, message: 'Commission updated successfully', contractor });
 
         case 'employee':
@@ -2904,13 +2928,37 @@ export const updateCommission = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'Employee not found' });
             }
 
-            employee.commission = params.commission ?? null;
-            employee.save();
+            const employeeInvoiceCommissions = await InvoiceCommission.find({ 'technicians.technician': employee._id }).populate('invoice').exec();
+            if (employeeInvoiceCommissions.length) {
+                for (const invoiceCommission of employeeInvoiceCommissions) {
+                    const invoice = <IInvoice>invoiceCommission.invoice;
+                    const totalTechnician = invoiceCommission?.technicians?.length;
+                    const employeeCommission = invoiceCommission.technicians?.find(technician => technician?.technician?.toString() === employee._id?.toString());
+                    if (!employeeCommission) {
+                        continue;
+                    }
+
+                    if (!employeeCommission.paid) {
+                        employeeCommission.commission = params.commission ?? null;
+                        const commissionAmount = (invoice.total / totalTechnician) * (params.commission ?? 0) / 100;
+                        employeeCommission.commissionAmount = Number(commissionAmount.toFixed(2));
+                    }
+
+                    commissionBalance += employeeCommission.commissionAmount;
+                    invoiceCommission.save();
+                }
+
+                employee.commission = params.commission ?? null;
+                employee.balance = commissionBalance;
+                employee.save();
+            }
+
             return res.json({ status: Status.Success, message: 'Commission updated successfully', employee });
 
         default:
             return res.json({ status: Status.Success, message: 'Type not supported. Available Type to be used: vendor or employee.' });
     }
+
 }
 
 export const getInvoicesByContractor = async (req: Request, res: Response) => {
