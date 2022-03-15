@@ -11,7 +11,7 @@ import { _resetInvoiceQB } from '../controllers/invoice';
 import { _resetPaymentQB } from '../controllers/payment';
 import { updateBCCustomer } from '../controllers/quickbook.customer';
 import { createBCPayment } from '../controllers/quickbook.payment';
-import { NotificationServiceTicket } from '../models/NotificationServiceTicket';
+import { NotificationServiceTicket } from '../models/NotificationDiscriminator';
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");
@@ -234,17 +234,17 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
     const eventEntities = eventNotification?.dataChangeEvent?.entities;
 
     // For testing purpose to know if Webhook received on staging and production
-    const notification = new NotificationServiceTicket({
-        company: '60884254898eb7068283bfcd',
-        notificationType: NotificationTypes.SERVICE_TICKET_CREATED,
-        message: {
-            title: 'Quickbook Webhook Received',
-            body: `${JSON.stringify(eventNotification)} | ${JSON.stringify(eventEntities)}}`
-        },
-        metadata: '60884254898eb7068283bfce'
-    });
+    // const notification = new NotificationServiceTicket({
+    //     company: '60884254898eb7068283bfcd',
+    //     notificationType: NotificationTypes.SERVICE_TICKET_CREATED,
+    //     message: {
+    //         title: 'Quickbook Webhook Received',
+    //         body: `${JSON.stringify(eventNotification)} | ${JSON.stringify(eventEntities)}}`
+    //     },
+    //     metadata: '60884254898eb7068283bfce'
+    // });
 
-    await notification.save();
+    // await notification.save();
 
     console.log('== Quickbook Webhook received ==');
     console.log('== eventNotification:', eventNotification);

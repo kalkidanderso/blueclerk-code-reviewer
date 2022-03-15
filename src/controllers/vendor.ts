@@ -12,7 +12,7 @@ import { CompanyCustomer } from '../models/CompanyCustomer';
 import { CompanyCard } from '../models/CompanyCard';
 import { CompanyInvoice, ICompanyInvoice } from '../models/CompanyInvoice';
 import { Contract, IContract } from '../models/Contract';
-import { NotificationContract, INotificationContract } from '../models/NotificationContract';
+import { NotificationContract, INotificationContract } from '../models/NotificationDiscriminator';
 import { _createHubSpotContact, _upgradeHubSpotContact, checkCompanyEmailExists, login } from '../controllers/user';
 import { _handleNotification } from './notification';
 import { Employee } from '../models/Employee';

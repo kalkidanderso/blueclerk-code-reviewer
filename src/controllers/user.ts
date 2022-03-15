@@ -12,7 +12,7 @@ import { Employee, IEmployee } from '../models/Employee';
 import { Contract } from '../models/Contract';
 import { CompanyAdmin, ICompanyAdmin } from '../models/CompanyAdmin';
 import { IIndustry, Industry } from '../models/Industry';
-import { NotificationContract, INotificationContract } from '../models/NotificationContract';
+import { NotificationContract, INotificationContract } from '../models/NotificationDiscriminator';
 import { CompanyInvoice } from '../models/CompanyInvoice';
 import { _getProRatedAmount } from '../controllers/vendor';
 

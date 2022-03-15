@@ -9,7 +9,7 @@ import {parseFieldsAndUploadImageInS3, updateFieldsAndUploadImageInS3} from '../
 import { ObjectId } from 'mongodb'
 import {Contact} from '../models/Contact';
 import { Item } from '../models/Item'
-import { NotificationServiceTicket, INotificationServiceTicket } from '../models/NotificationServiceTicket';
+import { NotificationServiceTicket, INotificationServiceTicket } from '../models/NotificationDiscriminator';
 import { IJobTypes } from '../models/JobType'
 import { ITask, Job } from '../models/Job';
 import { _handleJobTypesJson } from '../controllers/jobType';
