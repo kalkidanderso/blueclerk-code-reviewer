@@ -12,7 +12,7 @@ import { CompanyCustomer } from '../models/CompanyCustomer';
 import { CompanyCard } from '../models/CompanyCard';
 import { CompanyInvoice, ICompanyInvoice } from '../models/CompanyInvoice';
 import { Contract, IContract } from '../models/Contract';
-import { NotificationContract, INotificationContract } from '../models/NotificationContract';
+import { NotificationContract, INotificationContract } from '../models/NotificationDiscriminator';
 import { _createHubSpotContact, _upgradeHubSpotContact, checkCompanyEmailExists, login } from '../controllers/user';
 import { _handleNotification } from './notification';
 import { Employee } from '../models/Employee';
@@ -320,11 +320,17 @@ export const inviteContractor = (req: Request, res: Response) => {
             }
 
             if (contractor) {
-                return res.json({ status: Status.Error, message: 'Email already taken.' });
+                return res.json({ status: Status.Error, message: 'Vendor already added' });
             }
 
-            // TODO: Create contract without customer
-            const contract = new Contract({
+            // Check if contract exist
+            let contract = await Contract.findOne({ company: company._id, contractorEmail: params.email });
+            if (contract) {
+                return res.json({ status: Status.Error, mesage: 'Vendor already invited', contract });
+            }
+
+            // Create contract without customer
+            contract = new Contract({
                 company: company._id,
                 contractorEmail: params.email,
                 status: ContractStatus.ACCOUNT_NOT_CREATED,
@@ -887,6 +893,25 @@ export const getContractors = async (req: Request, res: Response) => {
     const technicians = await Employee.find({ company }).exec();
 
     return res.json({ status: Status.Success, contractors, technicians });
+}
+
+export const remindContractor = async (req: Request, res: Response) => {
+
+    const params = req.body;
+
+    const contract = await Contract.findById(params.contractId).populate('company', 'info')
+    if (!contract) {
+        return res.json({ status: Status.Error, message: 'Contract not found' });
+    }
+    if (contract.status !== ContractStatus.ACCOUNT_NOT_CREATED) {
+        return res.json({ status: Status.Error, message: 'Vendor already added' });
+    }
+
+    // ToDo email email with signup link
+    sendInvitationToContractor({ to: contract.contractorEmail, company: contract.company.info?.companyName, companyId: contract.company._id });
+
+    return res.json({ status: Status.Success, message: 'Contract invitation resent', contract });
+
 }
 
 // PRIVATE METHOD

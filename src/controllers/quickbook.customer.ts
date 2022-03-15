@@ -9,7 +9,7 @@ import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
 import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
-import { NotificationServiceTicket } from '../models/NotificationServiceTicket';
+import { NotificationServiceTicket } from '../models/NotificationDiscriminator';
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");
@@ -1128,17 +1128,17 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
         console.log('== error:', error);
 
         // For testing purpose to know if Webhook received on staging and production
-        const notification = new NotificationServiceTicket({
-            company: '60884254898eb7068283bfcd',
-            notificationType: NotificationTypes.CONTRACT_REJECTED,
-            message: {
-                title: 'Error on Sync QB Customer',
-                body: `${error}`
-            },
-            metadata: '60884254898eb7068283bfce'
-        });
+        // const notification = new NotificationServiceTicket({
+        //     company: '60884254898eb7068283bfcd',
+        //     notificationType: NotificationTypes.CONTRACT_REJECTED,
+        //     message: {
+        //         title: 'Error on Sync QB Customer',
+        //         body: `${error}`
+        //     },
+        //     metadata: '60884254898eb7068283bfce'
+        // });
 
-        await notification.save();
+        // await notification.save();
     }
 
 }

@@ -528,7 +528,7 @@ export const _handleJobTypesJson = (customerId: string, paramJobTypes: string, j
              * then check if the total job types cannot exceed the max quantity
              */
             const customer = await Customer.findById(customerId);
-            if (customer.isCustomPrice && parsedJobTypes.length > customer.customPrices.length) {
+            if (customer?.isCustomPrice && parsedJobTypes.length > customer?.customPrices.length) {
                 reject({ message: `Customer's custom price maximum quantity is ${customer.customPrices.length}. Total job types cannot exceed that maximum quantity.` });
             }
 

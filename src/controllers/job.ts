@@ -22,7 +22,7 @@ import { IJobReport, JobReport } from '../models/JobReport'
 import { Item, IItem } from '../models/Item'
 import { ICustomer } from '../models/Customer';
 import { CompanyCustomer } from '../models/CompanyCustomer';
-import { INotificationJob, NotificationJob } from '../models/NotificationMetadata'
+import { INotificationJob, NotificationJob } from '../models/NotificationDiscriminator'
 import { IJobType, JobType } from '../models/JobType';
 import { JobRoute } from '../models/JobRoute';
 import { _handleJobTypesJson } from '../controllers/jobType';
