@@ -128,7 +128,7 @@ export const Validations = {
     check('email').optional().isEmail().withMessage(Messages.InvalidEmail)
   ],
 
-      //Customer Equipment
+  //Customer Equipment
 
   createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists()],
 
@@ -149,6 +149,11 @@ export const Validations = {
 
   // Item
   createItem: [check('title').exists().withMessage(Messages.Required)],
+
+  // Discount Item
+  getDiscountItems: [
+    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
 
   createDiscountItem: [
     check('title').exists().withMessage(Messages.Required),
