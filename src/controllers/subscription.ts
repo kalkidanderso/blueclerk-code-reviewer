@@ -11,7 +11,7 @@ import { ICompany, Company } from '../models/Company';
 import { Contract } from '../models/Contract';
 import { Employee } from '../models/Employee';
 import {CompanyInvoice, ICompanyInvoice} from '../models/CompanyInvoice';
-import { INotificationContract, NotificationContract } from '../models/NotificationContract';
+import { INotificationContract, NotificationContract } from '../models/NotificationDiscriminator';
 
 export const addCompanySubscriptions = (req: Request, res: Response) => {
 

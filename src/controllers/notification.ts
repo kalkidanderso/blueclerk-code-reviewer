@@ -3,9 +3,7 @@ import { Messages, NotificationTypes, SocketEvents, Status } from '../common/con
 
 import { IUser } from '../models/User';
 import { Notification, INotification, INotificationQuery } from '../models/Notification';
-import { NotificationServiceTicket, INotificationServiceTicket } from '../models/NotificationServiceTicket';
-import { NotificationContract } from '../models/NotificationContract';
-import { NotificationJob } from '../models/NotificationMetadata';
+import { NotificationContract, NotificationServiceTicket, NotificationJob } from '../models/NotificationDiscriminator';
 
 /**
  * Construct and get query for notification,
@@ -42,26 +40,8 @@ const _getNotificationQuery = (
  */
 export const _handleNotification = async ({ sio, companyId, notificationType, messageTitle, messageBody, metadataId }: { sio: any, companyId: string, notificationType: NotificationTypes, messageTitle: string, messageBody: string, metadataId: string }) => {
 
-    // TODO: Refactor model discriminator calling to this dynamic one
-    // ref: https://stackoverflow.com/a/34656123/1272973
-    // const notificationModels = {
-    //     NotificationServiceTicket,
-    //     NotificationContract,
-    //     NotificationJob
-    // }
-
-    // const notificationA = new notificationModels['NotificationContract']({
-    //     company: companyId,
-    //     notificationType,
-    //     message: {
-    //         title: messageTitle,
-    //         body: messageBody
-    //     },
-    //     metadata: metadataId
-    // })
-
-    // Construct notification entry to be saved
-    const notification: INotificationServiceTicket = new NotificationServiceTicket({
+    let notification: INotification;
+    const notificationEntry = {
         company: companyId,
         notificationType,
         message: {
@@ -69,7 +49,33 @@ export const _handleNotification = async ({ sio, companyId, notificationType, me
             body: messageBody
         },
         metadata: metadataId
-    });
+    }
+
+    /**
+     * Create the notification discriminator based on the notification type,
+     * this is important for the metadata to be populated properly
+     */
+    switch (notificationType) {
+        case NotificationTypes.SERVICE_TICKET_CREATED:
+            notification = new NotificationServiceTicket(notificationEntry);
+            break;
+
+        case NotificationTypes.CONTRACT_INVITATION:
+        case NotificationTypes.CONTRACT_ACCEPTED:
+        case NotificationTypes.CONTRACT_CANCELED:
+        case NotificationTypes.CONTRACT_REJECTED:
+        case NotificationTypes.CONTRACT_FINISHED:
+            notification = new NotificationContract(notificationEntry);
+            break;
+
+        case NotificationTypes.JOB_RESCHEDULED:
+            notification = new NotificationJob(notificationEntry);
+            break;
+
+        default:
+            notification = new Notification(notificationEntry);
+            break;
+    }
 
     // Save the notification with Service Ticket as the metadata
     await notification.save();
