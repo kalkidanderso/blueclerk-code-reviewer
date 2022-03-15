@@ -684,7 +684,7 @@ export const _addItemTier = async (company: ICompany, next: (err: any, itemTier:
     });
 
     // Search all items belong to the Company
-    const items: IItem[] = await Item.find({ company: company._id });
+    const items: IItem[] = await Item.find({ company: company._id, isDiscountItem: { $ne: true } });
 
     // Iterate all items and add the new tier
     for (const item of items) {

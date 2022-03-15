@@ -153,6 +153,11 @@ export const Validations = {
   // Item
   createItem: [check('title').exists().withMessage(Messages.Required)],
 
+  // Discount Item
+  getDiscountItems: [
+    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
+
   createDiscountItem: [
     check('title').exists().withMessage(Messages.Required),
     check('charges').exists().withMessage(Messages.Required),

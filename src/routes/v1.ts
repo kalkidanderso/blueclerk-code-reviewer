@@ -591,6 +591,15 @@ export default function (sio: any) {
 
     // Discount Item
 
+    router.get(
+        '/getDiscountItems',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Items),
+        validate(Validations.getDiscountItems),
+        itemController.getDiscountItems
+    )
+
     router.post(
         '/createDiscountItem',
         passport.authenticate('jwt', { session: false }),

@@ -5141,6 +5141,54 @@
         ]
       }
     },
+    "/getDiscountItems": {
+      "get": {
+        "tags": [
+          "Discount Item"
+        ],
+        "summary": "To retrieve all discount items of the company",
+        "description": "When the `isActive` query is not provided, it will return all discount items by default.",
+        "parameters": [
+          {
+            "name": "isActive",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "ALL",
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "customerId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/createDiscountItem": {
       "post": {
         "tags": [
@@ -5164,6 +5212,13 @@
                   },
                   "charges": {
                     "type": "integer"
+                  },
+                  "customerId": {
+                    "type": "string"
+                  },
+                  "noOfItems": {
+                    "type": "integer",
+                    "description": "Number of items for the discount to be active"
                   }
                 }
               }
