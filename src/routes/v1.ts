@@ -1040,7 +1040,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Invite_Contractor),
-        validate(Validations.inviteContractor),
+        validate(Validations.startContract),
         (req, res) => {
             vendorController.startContract(req, res, sio)
         }
@@ -1053,6 +1053,15 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Invite_Contractor),
         validate(Validations.searchContractor),
         vendorController.inviteContractor
+    )
+
+    router.post(
+        '/remindContractor',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Invite_Contractor),
+        validate(Validations.remindContractor),
+        vendorController.remindContractor
     )
 
     // limit only for contractors

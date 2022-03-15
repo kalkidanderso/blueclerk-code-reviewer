@@ -53,7 +53,9 @@ export const Validations = {
 
   searchContractor: [check('email').exists().withMessage(Messages.Required), check('email').isEmail()],
 
-  inviteContractor: [check('contractorId').exists().withMessage(Messages.Required), check('contractorId').isMongoId().withMessage(Messages.WrongId)],
+  remindContractor: [check('contractId').exists().withMessage(Messages.Required), check('contractId').isMongoId().withMessage(Messages.WrongId)],
+
+  startContract: [check('contractorId').exists().withMessage(Messages.Required), check('contractorId').isMongoId().withMessage(Messages.WrongId)],
 
   updateContract: [check('contractId').exists().withMessage(Messages.Required), check('contractId').isMongoId().withMessage(Messages.WrongId), check('status').exists().withMessage(Messages.Required)],
 
