@@ -531,3 +531,28 @@ export const _getQBPayments = async (req: Request, res: Response, company: IComp
     });
 
 }
+
+export const _countQBPayments = async (company: ICompany, customer: ICustomer): Promise<boolean> => {
+    return new Promise((resolve, reject) => {
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+        qbo.findPayments([
+            { field: 'CustomerRef', value: customer?.quickbookId },
+            { field: 'limit', value: 1 }
+            // { count: true }
+        ], async (err: any, data: any) => {
+            const qbPayment = data?.QueryResponse?.Payment;
+            if (err) {
+                reject(
+                    new Error(
+                        err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError
+                    )
+                );
+            }
+
+            resolve(<boolean>qbPayment ? true : false);
+        });
+    })
+}

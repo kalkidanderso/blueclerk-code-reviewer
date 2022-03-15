@@ -324,22 +324,46 @@ paths:
                       $ref: '#/components/schemas/Contract'
       security:
         - Bearer: []
+  /getContractors:
+    get:
+      tags:
+        - Vendor
+      summary: To get all vendors and employees
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /getContractorDetail:
     post:
       tags:
         - Vendor
-      summary: To get detail of a contractor.
+      summary: To get detail of a vendor.
       requestBody:
         content:
           application/x-www-form-urlencoded:
             schema:
               type: object
-              required:
-                - contractorId
+              required: []
               properties:
+                type:
+                  type: string
+                  enum:
+                    - vendor
+                    - employee
                 contractorId:
                   type: string
                   description: Id of contractor for getting detail
+                employeeId:
+                  type: string
+                  description: Id of employee for getting detail
         required: true
       responses:
         '200':
@@ -434,6 +458,41 @@ paths:
                 ending:
                   type: string
                   description: last 4 digits of card
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateCommission:
+    put:
+      tags:
+        - Vendor
+      summary: Update commission for vendor and employee
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - type
+                - id
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - vendor
+                    - employee
+                id:
+                  type: string
+                  description: Id of vendor or employee
+                commission:
+                  type: number
+                  description: Send a blank value to make the commission null on database
         required: true
       responses:
         '200':
@@ -665,7 +724,7 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
-  /getCurrentIvoiceNumber:
+  /getCurrentInvoiceNumber:
     post:
       tags:
         - Invoice
@@ -2593,6 +2652,42 @@ paths:
                 $ref: '#/components/schemas/jobSite'
       security:
         - Bearer: []
+    get:
+      tags:
+        - Job Site
+      summary: Get Job site by locationId and customerId
+      parameters:
+        - name: customerId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: locationId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: isActive
+          in: query
+          schema:
+            enum:
+              - ALL
+              - 'true'
+              - 'false'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+                  data:
+                    $ref: '#/components/schemas/jobSite'
+      security:
+        - Bearer: []
   /jobSite/{id}:
     get:
       tags:
@@ -2603,7 +2698,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         '200':
           description: Success
@@ -2627,11 +2722,12 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         content:
-          '*/*':
+          application/json:
             schema:
+              type: object
               $ref: '#/components/schemas/jobSite'
         required: false
       responses:
@@ -2641,36 +2737,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GeneralAPIResponse'
-      security:
-        - Bearer: []
-  /jobSite?companyId={companyId}&customerId={customerId}:
-    get:
-      tags:
-        - Job Site
-      summary: Get Job site by companyId and/or customerId
-      parameters:
-        - name: companyId
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: customerId
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  GeneralAPIResponse:
-                    $ref: '#/components/schemas/GeneralAPIResponse'
-                  data:
-                    $ref: '#/components/schemas/jobSite'
       security:
         - Bearer: []
   /createJobType:
@@ -4500,7 +4566,6 @@ paths:
               type: object
               required:
                 - jobId
-                - jobTypeId
                 - technicianId
               properties:
                 jobId:
@@ -4509,6 +4574,9 @@ paths:
                 technicianId:
                   type: string
                   description: Id of technician to start
+                taskJobTypeId:
+                  type: string
+                  description: Id of job type in task
                 jobTypeId:
                   type: string
                   description: Id of task/job type to start
@@ -4538,7 +4606,6 @@ paths:
               required:
                 - jobId
                 - technicianId
-                - jobTypeId
                 - status
               properties:
                 jobId:
@@ -4547,6 +4614,9 @@ paths:
                 technicianId:
                   type: string
                   description: Id of technician to update status
+                taskJobTypeId:
+                  type: string
+                  description: Id of job type in task
                 jobTypeId:
                   type: string
                   description: Id of task/job type to start
@@ -4694,14 +4764,12 @@ paths:
       summary: To edit job to change assignee and date time of job
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          multipart/form-data:
             schema:
               type: object
               required:
                 - jobId
                 - technicianId
-                - status
-                - note
               properties:
                 jobId:
                   type: string
@@ -4711,9 +4779,17 @@ paths:
                   description: Id of the job technician to edit
                 status:
                   type: number
-                  description: status of purchase order 0 => pending, 1 => approved by customer, 2 => cancelled by customer
+                  description: Id of job task status as number from one of these (FINISHED => 2, CANCELED => 3, RESCHEDULED => 4).
                 note:
                   type: string
+                  description: '**Required** when status is RESCHEDULED => 4'
+                comment:
+                  type: string
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
         required: true
         allowEmptyValue: true
       responses:
@@ -5176,6 +5252,9 @@ paths:
                 items:
                   type: string
                   description: 'Json string of the items e.g [{"name": "repair", "description": "repair description", "price": 100, "tax": 0, "quantity": 2},{"name": "service", "description": "repair description", "price": 50, "tax": 0, "quantity": 1}]  OR [{"item": "5f23240a3a68041ee95d6800", "price": 1000, "tax": 0, "quantity": 2}]'
+                invoiceNumber:
+                  type: string
+                  description: Custom invoice number for this invoice only
                 issuedDate:
                   type: string
                   description: Issued date of the invoice
@@ -5226,6 +5305,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getInvoicesByContractor:
+    get:
+      tags:
+        - Invoice
+      summary: To get detail of invoice
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - vendor
+              - employee
+        - name: id
+          in: query
+          description: Id of Vendor or Employee
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+                  invoice:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InvoiceDetail'
+                  scans:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ScanDetail'
       security:
         - Bearer: []
   /getInvoiceDetail:
@@ -5564,6 +5703,66 @@ paths:
                       $ref: '#/components/schemas/Payment'
       security:
         - Bearer: []
+  /getPaymentsByContractor:
+    get:
+      tags:
+        - Payment
+      summary: To get payments by vendor or employee id
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - vendor
+              - employee
+        - name: isActive
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - ALL
+              - active
+              - void
+        - name: id
+          in: query
+          description: Id of Vendor or Employee
+          required: false
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+                  payments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Payment'
+      security:
+        - Bearer: []
   /recordPayment:
     post:
       tags:
@@ -5575,7 +5774,6 @@ paths:
             schema:
               type: object
               required:
-                - amount
                 - customerId
                 - invoiceId
               properties:
@@ -5603,6 +5801,65 @@ paths:
                 paidAt:
                   type: string
                   description: Date when the customer has made the payment
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /recordPaymentContractor:
+    post:
+      tags:
+        - Payment
+      summary: To record the payment for invoice made by the customer
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - amount
+                - type
+                - id
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - vendor
+                    - employee
+                id:
+                  type: string
+                  description: Id of vendor or employee
+                invoiceIds:
+                  type: string
+                  description: 'Id of invoices to be paid. Example: ["621f9865b084345f2c60904b","61e9b92963a18c3e74b37922"]'
+                amount:
+                  type: number
+                  description: Amount how much customer has paid
+                startDate:
+                  type: string
+                endDate:
+                  type: string
+                dueDate:
+                  type: string
+                paymentType:
+                  type: string
+                  description: Method name how customer has paid
+                  enum:
+                    - ACH
+                    - Bank Wire
+                    - Credit Card/Debit Card
+                    - Check
+                    - Cash
+                paidAt:
+                  type: string
+                  description: Date when the customer has made the payment
+                note:
+                  type: string
         required: true
       responses:
         '200':
@@ -5662,6 +5919,171 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
+  /updatePaymentContractor:
+    put:
+      tags:
+        - Payment
+      summary: To update payment contractor record
+      description: To update payment contractor record
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - type
+                - id
+                - paymentId
+                - amount
+              properties:
+                type:
+                  type: string
+                  description: type of payment
+                  enum:
+                    - vendor
+                    - employee
+                id:
+                  type: string
+                  description: Id of vendor or employee
+                paymentId:
+                  type: string
+                  description: Id of payment to edit
+                amount:
+                  type: number
+                  description: Amount how much vendor/employee has paid
+                referenceNumber:
+                  type: string
+                  description: Reference number of the payment made by client
+                paymentType:
+                  type: string
+                  description: Method name how vendor/employee has paid
+                  enum:
+                    - ACH
+                    - Bank Wire
+                    - Credit Card/Debit Card
+                    - Check
+                    - Cash
+                paidAt:
+                  type: string
+                  description: Date when the vendor/employee has made the payment
+                note:
+                  type: string
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /voidPaymentContractor:
+    post:
+      tags:
+        - Payment
+      summary: To void payment contractor
+      description: To void payment contractor
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - type
+                - paymentId
+              properties:
+                type:
+                  type: string
+                  description: type of payment (PaymentVendor or PaymentEmployee)
+                  enum:
+                    - vendor
+                    - employee
+                paymentId:
+                  type: string
+                  description: Id of payment to void
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getPayrollBalance:
+    get:
+      tags:
+        - Payment
+      summary: To get payroll detail
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getPayrollReport:
+    get:
+      tags:
+        - Payment
+      summary: To get payroll report
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum:
+              - vendor
+              - employee
+        - name: id
+          in: query
+          description: Id of Vendor or Employee
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /uploadImage:
     post:
       tags:
@@ -5700,7 +6122,7 @@ paths:
     delete:
       tags:
         - Image
-      summary: To upload an image
+      summary: To delete an image
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -5713,16 +6135,17 @@ paths:
               properties:
                 type:
                   type: string
-                  description: To delete image from ServiceTicket or Job
+                  description: To delete image from ServiceTicket, Job, or Technician
                   enum:
                     - ServiceTicket
                     - Job
+                    - Technician
                 id:
                   type: string
-                  description: Id of Job or Service Ticket
+                  description: Id of job for Job and Technician type, or id of serviceTicket for serviceTicket type
                 imageId:
                   type: string
-                  description: Id of image in Job or Service Ticket
+                  description: Id of image in job images, technician images, or service ticket images
         required: true
       responses:
         '200':
@@ -6855,6 +7278,78 @@ paths:
       description: |-
         **WARNING: - Only do this when you know what you are doing. Run migrateJobTask first before run this script.**
         To migrate all job tasks(in array format).
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /script/addJobTypeMongooseId:
+    post:
+      tags:
+        - Script
+      summary: To add mongoose id/ _id in task job type
+      description: |-
+        **WARNING: - Only do this when you know what you are doing.** 
+        To add _id in every task job type
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /script/addVendorBalance:
+    post:
+      tags:
+        - Script
+      summary: To add employee and vendor balance
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /script/addPaymentType:
+    post:
+      tags:
+        - Script
+      summary: To add payment type
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /script/addInvoiceCommission:
+    post:
+      tags:
+        - Script
+      summary: To add invoice commission
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /script/updatePaidTechnicians:
+    post:
+      tags:
+        - Script
       responses:
         '200':
           description: Success

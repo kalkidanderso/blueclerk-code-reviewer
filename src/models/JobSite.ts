@@ -4,6 +4,7 @@ export interface IJobSite extends Document {
 
     name: string
     location: 'Point'
+    isActive: boolean
     address: {
       city: string,
       state: string,
@@ -28,6 +29,10 @@ const JobSiteSchema = new Schema({
         type: [Number],
         required: false
       }
+    },
+    isActive: {
+      type: Boolean,
+      default: true
     },
     address: {
       city: String,

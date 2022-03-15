@@ -5,11 +5,11 @@ import fs from 'fs';
 import pdfmake from 'pdfmake';
 import * as http from 'http';
 import * as https from 'https';
-import { InvoiceStatus, Messages, Status } from '../common/constants';
+import { ContractorPermissions, DefaultCommission, InvoiceStatus, Messages, Status } from '../common/constants';
 import { IContact } from '../common/contact';
 import { INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } from '../common/config';
 import { Contact } from '../models/Contact';
-import { IUser } from '../models/User';
+import { IUser, User } from '../models/User';
 import { Company, ICompany } from '../models/Company';
 import { ICompanyAdmin } from '../models/CompanyAdmin';
 import { CompanyInvoice } from '../models/CompanyInvoice';
@@ -30,9 +30,10 @@ import { EmailDefault } from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer } from '../services/aws';
 import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice } from '../controllers/quickbook.invoice';
-import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from './emailDefault';
+import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from '../controllers/emailDefault';
 import { IJobSite } from '../models/JobSite';
 import { IJobLocation } from '../models/JobLocation';
+import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission';
 
 /**
  * To reset Invoice quickbookId,
@@ -171,9 +172,9 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                 })
             } else if (typeof params.invoiceNumber !== 'undefined' && params.invoiceNumber && (typeof params.invoicePrefix === 'undefined' || !params.invoicePrefix)) {
 
-                if (company.currentInvoiceId > params.invoiceNumber) {
-                    return res.json({ 'status': Status.Success, 'message': "Invoice number can not be less then " + company.currentJobId });
-                }
+                // if (company.currentInvoiceId > params.invoiceNumber) {
+                //     return res.json({ 'status': Status.Success, 'message': "Invoice number can not be less then " + company.currentJobId });
+                // }
 
                 company.updateOne({ 'currentInvoiceId': params.invoiceNumber }, (err: any) => {
                     if (err) {
@@ -187,9 +188,9 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
 
                 if (company.invoicePrefix == params.invoicePrefix) {
 
-                    if (company.currentJobId > params.invoiceNumber) {
-                        return res.json({ 'status': Status.Success, 'message': "Invoice number can not be less then " + company.currentJobId });
-                    }
+                    // if (company.currentJobId > params.invoiceNumber) {
+                    //     return res.json({ 'status': Status.Success, 'message': "Invoice number can not be less then " + company.currentJobId });
+                    // }
 
                     company.updateOne({ 'currentInvoiceId': params.invoiceNumber }, (err: any) => {
                         if (err) {
@@ -263,12 +264,12 @@ const checkInvoicePrefixExists = (req: Request, res: Response, next: (req: Reque
 
             } else {
                 if (params.invoiceNumber != undefined && params.invoiceNumber !== null && params.invoiceNumber != '""') {
-                    if (invoicePrefix.maxInvoiceId > params.invoiceNumber) {
-                        return res.json({ 'status': Status.Error, 'message': 'Invoice number with prefix ' + params.invoicePrefix + ' is not allowed. Try no greater then ' + invoicePrefix.maxInvoiceId })
-                    } else {
-                        next(req, res, invoicePrefix)
-                        return
-                    }
+                    // if (invoicePrefix.maxInvoiceId > params.invoiceNumber) {
+                    //     return res.json({ 'status': Status.Error, 'message': 'Invoice number with prefix ' + params.invoicePrefix + ' is not allowed. Try no greater then ' + invoicePrefix.maxInvoiceId })
+                    // } else {
+                    next(req, res, invoicePrefix)
+                    //     return
+                    // }
 
                 } else if (invoicePrefix.maxInvoiceId > req.company.currentJobId) {
                     return res.json({ 'status': Status.Error, 'message': 'Current invoice number with prefix ' + params.invoicePrefix + ' is not allowed. Try no greater then ' + invoicePrefix.maxInvoiceId })
@@ -386,14 +387,71 @@ export const createInvoice = (req: Request, res: Response) => {
                         })
                 })
             })
-            .then((invoice: any) => {
+            .then((invoice: IInvoice) => {
 
                 return new Promise(async (resolve, reject) => {
 
                     if (!invoice.isDraft) {
                         const customer = await Customer.findById(invoice.customer);
+                        const job = await Job.findById(invoice.job);
                         customer.balance += invoice.total;
                         await customer.save();
+                        const invoiceCommissionEntry = [];
+
+                        if (job.tasks) {
+                            const totalTechnician = job.tasks.length;
+                            for (const task of job?.tasks) {
+                                if (task.contractor) {
+                                    const contractor = await Company.findOne({ _id: task.contractor });
+
+                                    if (contractor) {
+                                        const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                        const contractorCommissionEntry = {
+                                            contractor: contractor._id,
+                                            technician: contractor.admin,
+                                            commission: contractor.commission,
+                                            commissionAmount: Number(commission.toFixed(2))
+                                        }
+
+                                        contractor.balance += Number(commission.toFixed(2));
+                                        contractor.save();
+
+                                        invoiceCommissionEntry.push(contractorCommissionEntry);
+                                    }
+                                }
+
+                                if (task.technician && !task.contractor) {
+                                    const technician = await User.findOne({ _id: task.technician });
+
+                                    if (technician) {
+                                        const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                        const technicianCommissionEntry = {
+                                            technician: technician._id,
+                                            commission: technician.commission,
+                                            commissionAmount: Number(commission.toFixed(2))
+                                        }
+
+                                        technician.balance += Number(commission.toFixed(2));
+                                        technician.save();
+
+                                        invoiceCommissionEntry.push(technicianCommissionEntry);
+                                    }
+                                }
+                            }
+                        }
+
+                        let invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
+                        if (!invoiceCommission) {
+                            invoiceCommission = await new InvoiceCommission({
+                                invoice: invoice._id,
+                                technicians: invoiceCommissionEntry
+                            }).save();
+                        } else {
+                            invoiceCommission.technicians = invoiceCommissionEntry;
+                            invoiceCommission.save();
+                        }
+
+                        invoice.commission = invoiceCommission._id;
                     }
 
                     resolve(invoice);
@@ -1229,12 +1287,8 @@ export const createPOInvoice = (req: Request, res: Response) => {
 
                             return res.json({ 'status': Status.Success, 'message': "Purchase order invoice created successfully." })
                         })
-
-
                 })
             })
-
-
         });
 }
 
@@ -1270,6 +1324,7 @@ export const updateInvoice = (req: Request, res: Response) => {
             await company.populate({ path: 'paymentTerm' }).execPopulate();
             // Save the invoice old isDraft before it is replaced
             const oldIsDraft = invoice.isDraft;
+            const oldTotalInvoice = invoice.total
 
             // Retrieve payment term for this invoice
             let paymentTerm: IPaymentTerm;
@@ -1289,6 +1344,12 @@ export const updateInvoice = (req: Request, res: Response) => {
              */
             // paymentTerm = paymentTerm || <IPaymentTerm>customerObj?.paymentTerm || <IPaymentTerm>company?.paymentTerm;
 
+            const invoiceId = params.invoiceNumber === undefined || params.invoiceNumber === null
+                ? invoice.invoiceId
+                : company.invoicePrefix
+                    ? `Invoice ${company.invoicePrefix}-${params.invoiceNumber}`
+                    : `Invoice ${params.invoiceNumber}`;
+
             if (invoice.invoiceType == 0) {
 
                 Job.findById(invoice.job)
@@ -1302,7 +1363,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                         })
                         return Promise.all([job, POPromise])
                     })
-                    .then((result: any) => {
+                    .then(async (result: any) => {
                         let job = result[0]
                         let purchaseOrders = result[1]
 
@@ -1474,6 +1535,48 @@ export const updateInvoice = (req: Request, res: Response) => {
                             total = customPrice?.price || 0;
                         }
 
+                        // Update company and technician commission when charges is updated and invoice is not draft
+                        if (!invoice.isDraft && invoice.job) {
+                            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
+
+                            if (invoiceCommission.technicians) {
+                                const totalTechnician = invoiceCommission.technicians.length;
+                                for (const invoiceCommissionTechnician of invoiceCommission.technicians) {
+                                    if (invoiceCommissionTechnician.contractor) {
+                                        const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
+                                        if (contractor) {
+                                            if (Number(total) !== Number(oldTotalInvoice)) {
+                                                const oldCommission = (oldTotal / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                                const commission = (total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                                contractor.balance -= Number(oldCommission.toFixed(2));
+                                                contractor.balance += Number(commission.toFixed(2));
+                                                invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2));
+                                            }
+
+                                            contractor.save();
+                                            invoiceCommission.save();
+                                        }
+                                    }
+
+                                    if (invoiceCommissionTechnician.technician && !invoiceCommissionTechnician.contractor) {
+                                        const technician = await User.findOne({ _id: invoiceCommissionTechnician.technician }).exec();
+                                        if (technician) {
+                                            if (Number(total) !== Number(oldTotalInvoice)) {
+                                                const oldCommission = (oldTotal / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                                const commission = (total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                                invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2));
+                                                technician.balance -= Number(oldCommission.toFixed(2));
+                                                technician.balance += Number(commission.toFixed(2));
+                                            }
+
+                                            technician.save();
+                                            invoiceCommission.save();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         if (params.charges) {
                             charges = parseFloat(params.charges);
                             total += charges;
@@ -1498,7 +1601,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                             paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                             customerPO: params.customerPO,
                             customerContactId: customerContact,
-                            vendorId: params.vendorId
+                            vendorId: params.vendorId,
+                            invoiceId
                         }, { omitUndefined: true },
 
                             async (err: any) => {
@@ -1685,7 +1789,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                     paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                     customerPO: params.customerPO,
                     customerContactId: customerContact,
-                    vendorId: params.vendorId
+                    vendorId: params.vendorId,
+                    invoiceId
                 }, { omitUndefined: true },
                     async (err: any) => {
                         if (err) {
@@ -1808,11 +1913,12 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     const customer = <ICustomer>invoice.customer;
 
     // Retrieve company email default
-    const emailDefault = await EmailDefault.findOne({ company });
+    let emailDefault = await EmailDefault.findOne({ company });
 
     // Create email default if company doesn't have one yet
     if (!emailDefault) {
         await _createCompanyDefaultEmail(company);
+        emailDefault = await EmailDefault.findOne({ company });
     }
 
     /**
@@ -2076,6 +2182,89 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         const balance = customer.balance + invoice.total;
         Customer.findByIdAndUpdate(customer._id, { balance }).exec();
 
+        const techniciansEntry = []
+        if (invoice.job) {
+            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id })
+            if (invoiceCommission) {
+                if (invoiceCommission?.technicians) {
+                    const totalTechnician = invoiceCommission.technicians.length;
+                    for (const invoiceCommissionTechnician of invoiceCommission.technicians) {
+                        if (invoiceCommissionTechnician.contractor) {
+                            const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
+                            const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                            const contractorBalance = contractor.balance + Number(commission.toFixed(2));
+                            await Company.findByIdAndUpdate(invoiceCommissionTechnician.contractor, { balance: contractorBalance }).exec();
+                            await InvoiceCommission.findByIdAndUpdate(invoiceCommissionTechnician.contractor, { commissionAmount: Number(commission.toFixed(2)) }).exec();
+                        }
+
+                        if (invoiceCommissionTechnician.technician && !invoiceCommissionTechnician.contractor) {
+                            const technician = await User.findOne({ _id: invoiceCommissionTechnician.technician }).exec();
+                            const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                            const technicianBalance = technician.balance + Number(commission.toFixed(2));
+                            await User.findByIdAndUpdate(invoiceCommissionTechnician.technician, { balance: technicianBalance }).exec();
+                            await InvoiceCommission.findByIdAndUpdate(invoiceCommissionTechnician.technician, { commissionAmount: Number(commission.toFixed(2)) }).exec();
+                        }
+                    }
+                }
+            } else {
+                // Add new invoice commission when invoice haven't invoice commission
+                const job = await Job.findById(invoice.job);
+                if (job.tasks) {
+                    const totalTechnician = job.tasks.length;
+                    for (const task of job?.tasks) {
+                        if (task.contractor) {
+                            const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                            const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                            const contractorEntry = {
+                                contractor: contractor._id,
+                                technician: contractor.admin,
+                                commission: contractor.commission,
+                                commissionAmount: Number(commission.toFixed(2))
+                            }
+
+                            if (contractor) {
+                                contractor.balance += Number(commission.toFixed(2));
+                                contractor.save();
+                            }
+
+                            techniciansEntry.push(contractorEntry);
+                        }
+
+                        if (task.technician && !task.contractor) {
+                            const technician = await User.findOne({ _id: task.technician }).exec();
+                            const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                            const invoiceTechnicianEntry: any = {
+                                technician: technician._id,
+                                commission: technician.commission,
+                                commissionAmount: Number(commission.toFixed(2))
+                            }
+
+                            if (technician) {
+                                technician.balance += Number(commission.toFixed(2));
+                                technician.save();
+                            }
+
+                            techniciansEntry.push(invoiceTechnicianEntry);
+                        }
+                    }
+                }
+
+                const commissionInvoice = await new InvoiceCommission({
+                    invoice: invoice._id,
+                    technicians: techniciansEntry
+                }).save();
+
+                invoice.commission = commissionInvoice._id;
+            }
+        }
+
+        const jobReport = await JobReport.findOne({ job: invoice.job });
+        if (jobReport) {
+            jobReport.invoiceCreated = true;
+            jobReport.invoice = invoice._id;
+            jobReport.save();
+        }
+
         // Create QB Invoice
         if (company.qbAuthorized) {
             // Create new Invoice in QuickBooks
@@ -2105,6 +2294,32 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         // Deduct customer balance
         const balance = customer.balance -= invoice.total;
         Customer.findByIdAndUpdate(customer._id, { balance }).exec();
+
+        if (invoice.job && invoice.commission) {
+            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id })
+            if (invoiceCommission.technicians) {
+                const totalTechnician = invoiceCommission.technicians.length;
+                for (const invoiceCommissionTechnician of invoiceCommission?.technicians) {
+                    if (invoiceCommissionTechnician.contractor) {
+                        const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
+                        if (contractor) {
+                            const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                            const contractorBalance = contractor.balance - Number(commission.toFixed(2));
+                            await Company.findByIdAndUpdate(invoiceCommissionTechnician.contractor, { balance: contractorBalance }).exec();
+                        }
+                    }
+
+                    if (invoiceCommissionTechnician.technician && !invoiceCommissionTechnician.contractor) {
+                        const technician = await User.findOne({ _id: invoiceCommissionTechnician.technician }).exec();
+                        if (technician) {
+                            const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                            const technicianBalance = technician.balance - Number(commission.toFixed(2));
+                            await User.findByIdAndUpdate(invoiceCommissionTechnician.technician, { balance: technicianBalance }).exec();
+                        }
+                    }
+                }
+            }
+        }
 
         // Remove Job Report invoice
         const jobReport = await JobReport.findOne({ job: invoice.job });
@@ -2193,7 +2408,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const customer = <ICustomer>invoice.customer;
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
     const job = <IJob>invoice.job;
-    // const customerContact = await Customer.findById(invoice.customerContactId ?? invoice.customer);
+    const ticket = <IServiceTicket>job?.ticket;
     const customerContact = <IContact>invoice.customerContactId;
 
     // Construct Company Address object
@@ -2213,16 +2428,20 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     }
 
     // Construct default Job Service Address object
-    const jobAddress = { ...customerAddress };
+    const jobAddress: any = { ...customerAddress };
 
     if (job) {
         // Take Job Location or Job Site address if any
         const site = <IJobSite>job.jobSite ?? <IJobLocation>job.jobLocation;
         if (site) {
-            jobAddress.street = site.address?.street ? `${site.address?.street}` : '';
-            jobAddress.city = site.address?.city ? `, ${site.address?.city}` : '';
-            jobAddress.state = site.address?.state ? `, ${site.address?.state}` : '';
-            jobAddress.zipCode = site.address?.zipcode ? `, ${site?.address?.zipcode}` : '';
+            jobAddress.name = site?.name ?? '';
+            jobAddress.street = site?.address?.street ?? '';
+            jobAddress.city = jobAddress.street && site?.address?.city ? ', ' : '';
+            jobAddress.city += site?.address?.city ?? '';
+            jobAddress.state = (jobAddress.street || jobAddress.city) && site?.address?.state ? ', ' : '';
+            jobAddress.state += site?.address?.state ?? '';
+            jobAddress.zipCode = (jobAddress.street || jobAddress.city || jobAddress.state) && site?.address?.zipcode ? ', ' : '';
+            jobAddress.zipCode += site?.address?.zipcode ?? '';
         }
     }
 
@@ -2418,6 +2637,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             ],
                             [
                                 { text: "\nSERVICE ADDRESS", style: "smallFont", alignment: "left" },
+                                { text: `${jobAddress.name}`, style: "defaultFontBold" },
                                 { text: `${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
                             ],
                             {},
@@ -2429,21 +2649,38 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                         [{}, {}, {}, {}, {}, {}, {}, {}],
                         [
                             {},
-                            { text: "CONTACT DETAILS", style: "smallFont" },
+                            [
+                                { text: "CONTACT DETAILS", style: "smallFont" },
+                                { text: `${customerContact?.name ?? ''}`, fontSize: 6, bold: true },
+                                { text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 6, bold: true },
+                            ],
                             {},
-                            { text: "\nTOTAL", fontSize: 5, rowSpan: 3, colSpan: 2, fillColor: "#D0D3DC" },
+                            { text: "\nTOTAL", fontSize: 5, rowSpan: 4, colSpan: 2, fillColor: "#D0D3DC" },
                             {},
-                            {
-                                text: `\n$ ${invoice.total}`,
-                                fontSize: 16, rowSpan: 3, colSpan: 2, fillColor: "#D0D3DC", alignment: 'right'
-                            },
+                            { text: "", colSpan: 2, fillColor: "#D0D3DC" },
                             {},
                             {},
                         ],
                         [
                             {},
-                            { text: `${customerContact?.name ?? ''}`, fontSize: 6, bold: true },
-                            contactDetails,
+                            {},
+                            {},
+                            {},
+                            {},
+                            {
+                                text: `\n$${invoice.total}`,
+                                fontSize: 16, rowSpan: 3, colSpan: 2, fillColor: "#D0D3DC", alignment: 'right', lineHeight: 0.1
+                            },
+                            {},
+                            {}
+                        ],
+                        [
+                            {},
+                            [
+                                { text: "NOTE", style: "smallFont" },
+                                { text: `${ticket?.note ?? ''}`, fontSize: 6, bold: true },
+                            ],
+                            {},
                             {},
                             {},
                             {},
@@ -2593,7 +2830,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     return new Promise((resolve) => {
         const fullPath = `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
         // Check if folder path exist, create if not
-        if (!fs.existsSync(INVOICE_PDF_PATH)){
+        if (!fs.existsSync(INVOICE_PDF_PATH)) {
             fs.mkdirSync(INVOICE_PDF_PATH);
         }
         // Check if existing Invoice PDF exist, remove if any
@@ -2619,7 +2856,7 @@ export const downloadFileToPath = async (
 
     const filename = company.info.companyName.replace(/\s+/g, '').toLowerCase();
     const fullPath = `${absoluteTargetPath}/${filename}.jpg`;
-    if (!fs.existsSync(absoluteTargetPath)){
+    if (!fs.existsSync(absoluteTargetPath)) {
         fs.mkdirSync(absoluteTargetPath);
     }
     if (fs.existsSync(fullPath)) {
@@ -2645,4 +2882,160 @@ export const downloadFileToPath = async (
  */
 export const fileExists = async (absolutePath: string): Promise<boolean> => {
     return fs.existsSync(absolutePath);
+}
+
+export const updateCommission = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    let commissionBalance = 0;
+    switch (params.type) {
+        case 'vendor':
+            const contractor = await Company.findById(params.id).exec();
+            if (!contractor) {
+                return res.json({ status: Status.Error, message: 'Vendor not found' });
+            }
+
+            const contractorInvoiceCommissions = await InvoiceCommission.find({ 'technicians.contractor': contractor._id }).populate('invoice').exec();
+            if (contractorInvoiceCommissions.length) {
+                for (const invoiceCommission of contractorInvoiceCommissions) {
+                    const invoice = <IInvoice>invoiceCommission.invoice;
+                    const totalTechnician = invoiceCommission?.technicians?.length;
+                    const contractorCommission = invoiceCommission?.technicians?.find(technician => technician?.contractor?.toString() === contractor._id?.toString());
+                    if (!contractorCommission) {
+                        continue;
+                    }
+
+                    if (!contractorCommission.paid) {
+                        contractorCommission.commission = params.commission ?? null;
+                        const commissionAmount = (invoice.total / totalTechnician) * (params.commission ?? 0) / 100;
+                        contractorCommission.commissionAmount = Number(commissionAmount.toFixed(2));
+                    }
+
+                    commissionBalance += contractorCommission.commissionAmount;
+                    invoiceCommission.save()
+                }
+
+                contractor.commission = params.commission ?? null;
+                contractor.balance = commissionBalance;
+                contractor.save();
+            }
+
+            return res.json({ status: Status.Success, message: 'Commission updated successfully', contractor });
+
+        case 'employee':
+            const employee = await User.findById(params.id).exec();
+            if (!employee) {
+                return res.json({ status: Status.Error, message: 'Employee not found' });
+            }
+
+            const employeeInvoiceCommissions = await InvoiceCommission.find({ 'technicians.technician': employee._id }).populate('invoice').exec();
+            if (employeeInvoiceCommissions.length) {
+                for (const invoiceCommission of employeeInvoiceCommissions) {
+                    const invoice = <IInvoice>invoiceCommission.invoice;
+                    const totalTechnician = invoiceCommission?.technicians?.length;
+                    const employeeCommission = invoiceCommission.technicians?.find(technician => technician?.technician?.toString() === employee._id?.toString());
+                    if (!employeeCommission) {
+                        continue;
+                    }
+
+                    if (!employeeCommission.paid) {
+                        employeeCommission.commission = params.commission ?? null;
+                        const commissionAmount = (invoice.total / totalTechnician) * (params.commission ?? 0) / 100;
+                        employeeCommission.commissionAmount = Number(commissionAmount.toFixed(2));
+                    }
+
+                    commissionBalance += employeeCommission.commissionAmount;
+                    invoiceCommission.save();
+                }
+
+                employee.commission = params.commission ?? null;
+                employee.balance = commissionBalance;
+                employee.save();
+            }
+
+            return res.json({ status: Status.Success, message: 'Commission updated successfully', employee });
+
+        default:
+            return res.json({ status: Status.Success, message: 'Type not supported. Available Type to be used: vendor or employee.' });
+    }
+
+}
+
+export const getInvoicesByContractor = async (req: Request, res: Response) => {
+
+    let jobQuery, query: any;
+    const params = req.query;
+    const company = <ICompany>req.company;
+    const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
+    const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
+
+    if (params.startDate && params.endDate) {
+        query = { issuedDate: { $gte: startDate, $lte: endDate } }
+    }
+
+    if (params.name) {
+        // find to note or vendorId
+        query.$or = [
+            { note: { $regex: params.name, $options: 'i' } },
+            { vendorId: { $regex: params.name, $options: 'i' } },
+            { invoiceId: { $regex: params.name, $options: 'i' } },
+        ]
+    }
+
+    if (!params.id) {
+        return res.json({ status: Status.Error, message: 'Id is required when type is vendor' });
+    }
+
+    switch (params.type) {
+        case 'vendor':
+            jobQuery = { company, 'tasks.contractor': params.id }
+            break;
+
+        case 'employee':
+            jobQuery = { company, 'tasks.technician': params.id };
+            break;
+
+        default:
+            return res.json({ status: Status.Error, message: 'Type is required' });
+    }
+
+    const jobs = await Job.find(jobQuery).exec();
+    const jobIds = jobs.map(job => job._id);
+    const invoices = await Invoice.find({ company: req.companyId, job: { $in: jobIds }, ...query })
+        .populate({
+            path: 'job',
+            populate: [{
+                path: 'type', select: 'title description sku'
+            }, {
+                path: 'customer', select: 'info.email auth.email profile.displayName contactName'
+            }, {
+                path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role'
+            }, {
+                path: 'tasks.technician', select: 'profile auth.email contact'
+            }],
+        })
+        .populate({
+            path: 'items.item',
+            select: 'name description sku itemCode note cost price',
+            populate: [{ path: 'jobType' }]
+        })
+        .populate({
+            path: 'company',
+            select: 'info.companyName info.logoUrl info.email permissions.role address.street address.city address.state address.zipCode contact.phone'
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+        })
+        .populate({
+            path: 'estimate',
+            select: 'total items note status customer company createdBy'
+        }).exec();
+
+    if (!invoices) {
+        return res.json({ status: Status.Success, invoices: '' });
+    }
+
+    return res.json({ status: Status.Success, invoices });
+
 }

@@ -195,8 +195,9 @@ export const removeContact = async (req: Request, res: Response) => {
             await JobLocation.findByIdAndUpdate(jobLocation._id, { $pull: { contacts: req.body.contactId } }, { new: true });
             // Find and check if there any Job Location that still use the contact
             const contactJobLocation = await JobLocation.findOne({ contacts: req.body.contactId });
-            if (!contactJobLocation) {
-                // No Job Location uses it anymore, delete it from DB
+            const contactCustomer = await Customer.findOne({ contacts: req.body.contactId });
+            if (!contactJobLocation && !contactCustomer) {
+                // No Customer and Job Location uses it anymore, delete it from DB
                 await Contact.findByIdAndRemove(req.body.contactId);
             }
 
