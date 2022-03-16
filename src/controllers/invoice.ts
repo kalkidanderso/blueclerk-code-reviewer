@@ -2427,21 +2427,73 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
         zipCode: customer?.address?.zipCode ? `, ${customer?.address?.zipCode}` : '',
     }
 
-    // Construct default Job Service Address object
+    // Construct default Job Service Address and Job Site Address object
     const jobAddress: any = { ...customerAddress };
+    const jobSiteAddress: any = { ...customerAddress };
+
+    let serviceAddress = {
+        text: [
+            { text: "SERVICE ADDRESS", style: "smallFont", alignment: "left" },
+            { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
+        ],
+        rowSpan: 2
+    }
+    let jobSiteServiceAddress = {};
 
     if (job) {
-        // Take Job Location or Job Site address if any
-        const site = <IJobSite>job.jobSite ?? <IJobLocation>job.jobLocation;
+        // Take Job Location address if any
+        const jobLocation = <IJobLocation>job.jobLocation;
+        if (jobLocation) {
+            jobAddress.name = `\n${jobLocation?.name}` ?? '';
+            jobAddress.street = jobLocation?.address?.street ?? '';
+            jobAddress.city = jobAddress.street && jobLocation?.address?.city ? ', ' : '';
+            jobAddress.city += jobLocation?.address?.city ?? '';
+            jobAddress.state = (jobAddress.street || jobAddress.city) && jobLocation?.address?.state ? ', ' : '';
+            jobAddress.state += jobLocation?.address?.state ?? '';
+            jobAddress.zipCode = (jobAddress.street || jobAddress.city || jobAddress.state) && jobLocation?.address?.zipcode ? ', ' : '';
+            jobAddress.zipCode += jobLocation?.address?.zipcode ?? '';
+
+            serviceAddress = {
+                text: [
+                    { text: "SERVICE ADDRESS", style: "smallFont", alignment: "left" },
+                    { text: `${jobAddress.name}`, style: "defaultFontBold" },
+                    { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
+                ],
+                rowSpan: 2
+            }
+        }
+
+        // Take Job Site address if any
+        const site = <IJobSite>job.jobSite;
         if (site) {
-            jobAddress.name = site?.name ?? '';
-            jobAddress.street = site?.address?.street ?? '';
-            jobAddress.city = jobAddress.street && site?.address?.city ? ', ' : '';
-            jobAddress.city += site?.address?.city ?? '';
-            jobAddress.state = (jobAddress.street || jobAddress.city) && site?.address?.state ? ', ' : '';
-            jobAddress.state += site?.address?.state ?? '';
-            jobAddress.zipCode = (jobAddress.street || jobAddress.city || jobAddress.state) && site?.address?.zipcode ? ', ' : '';
-            jobAddress.zipCode += site?.address?.zipcode ?? '';
+            jobSiteAddress.name = `\n${site?.name}` ?? '';
+            jobSiteAddress.street = site?.address?.street ?? '';
+            jobSiteAddress.city = jobSiteAddress.street && site?.address?.city ? ', ' : '';
+            jobSiteAddress.city += site?.address?.city ?? '';
+            jobSiteAddress.state = (jobSiteAddress.street || jobSiteAddress.city) && site?.address?.state ? ', ' : '';
+            jobSiteAddress.state += site?.address?.state ?? '';
+            jobSiteAddress.zipCode = (jobSiteAddress.street || jobSiteAddress.city || jobSiteAddress.state) && site?.address?.zipcode ? ', ' : '';
+            jobSiteAddress.zipCode += site?.address?.zipcode ?? '';
+
+            // If Job Site exist, add additional information for Job Location
+            serviceAddress = {
+                text: [
+                    { text: "JOB LOCATION", style: "smallFont", alignment: "left" },
+                    { text: `${jobAddress.name}`, style: "defaultFontBold" },
+                    { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
+                ],
+                rowSpan: 2
+            }
+
+            // Job Site Address still shown as Service Address but shifted below
+            jobSiteServiceAddress = {
+                text: [
+                    { text: "SERVICE ADDRESS", style: "smallFont", alignment: "left" },
+                    { text: `${jobSiteAddress.name}`, style: "defaultFontBold" },
+                    { text: `\n${jobSiteAddress.street}${jobSiteAddress.city}${jobSiteAddress.state}${jobSiteAddress.zipCode}`, style: "defaultFont" }
+                ],
+                rowSpan: 2
+            }
         }
     }
 
@@ -2635,11 +2687,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                                 { text: !customer?.contact?.phone ? '\n' : `\n${customer.contact.phone}`, style: "defaultFont" },
                                 { text: `${customerAddress.street}${customerAddress.city}${customerAddress.state}${customerAddress.zipCode}`, style: "defaultFont" }
                             ],
-                            [
-                                { text: "\nSERVICE ADDRESS", style: "smallFont", alignment: "left" },
-                                { text: `${jobAddress.name}`, style: "defaultFontBold" },
-                                { text: `${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
-                            ],
+                            { ...serviceAddress },
                             {},
                             {},
                             { text: "TERMS:", style: "smallFont", alignment: "right" },
@@ -2654,7 +2702,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                                 { text: `${customerContact?.name ?? ''}`, fontSize: 6, bold: true },
                                 { text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 6, bold: true },
                             ],
-                            {},
+                            { ...jobSiteServiceAddress },
                             { text: "\nTOTAL", fontSize: 5, rowSpan: 4, colSpan: 2, fillColor: "#D0D3DC" },
                             {},
                             { text: "", colSpan: 2, fillColor: "#D0D3DC" },
