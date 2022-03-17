@@ -73,6 +73,13 @@ export const _createQBItem = async (req: Request, res: Response, company: ICompa
         // Create QB Item
         qbo.createItem(qbItemEntry, async (err: any, qbItem: IQBItem) => {
             if (err) {
+                console.log('== _createQBItem > qbo.createItem > ERROR ==');
+                console.log('== err.Fault:', err.Fault);
+                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                console.log('== err.fault:', err.fault);
+                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+
                 return next(
                     Status.Error,
                     err.Fault?.Error[0]?.Message
@@ -122,8 +129,15 @@ export const syncQBItems = async (req: Request, res: Response) => {
         const items = await Item.find({ company: company._id });
 
         // Retrieve all items of this company from QuickBooks
-        qbo.findItems({}, async (err: any, data: any) => {
+        qbo.findItems({ fetchAll: true }, async (err: any, data: any) => {
             if (err) {
+                console.log('== syncQBItems > qbo.findItems > ERROR ==');
+                console.log('== err.Fault:', err.Fault);
+                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                console.log('== err.fault:', err.fault);
+                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+
                 return res.json({
                     status: Status.Error,
                     message: err.Fault?.Error[0]?.Message

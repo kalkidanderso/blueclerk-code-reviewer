@@ -154,9 +154,12 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
         }
 
         if (company.qbAuthorized) {
+            console.log('=== company QB authorized, creating QB Item');
             // Create new Item in QuickBooks
             _createQBItem(req, res, company, item, async (err: any, errMsg: any, qbItem: IQBItem) => {
                 if (err) {
+                    console.log('== createJobType > _createItem > _createQBItem');
+                    console.log('== errMsg:', errMsg);
                     return res.json({ status: err, message: errMsg });
                 }
 

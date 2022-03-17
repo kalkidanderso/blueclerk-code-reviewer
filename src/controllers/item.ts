@@ -40,6 +40,8 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
         // Create the new Item in QuickBooks
         _createQBItem(req, res, company, item, async (err: any, errMsg: any, qbItem: IQBItem) => {
             if (err) {
+                console.log('== createItem > _createQBItem');
+                console.log('== errMsg:', errMsg);
                 return res.json({ status: Status.Error, message: errMsg });
             }
 
