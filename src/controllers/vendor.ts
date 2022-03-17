@@ -326,7 +326,7 @@ export const inviteContractor = (req: Request, res: Response) => {
             // Check if contract exist
             let contract = await Contract.findOne({ company: company._id, contractorEmail: params.email });
             if (contract) {
-                return res.json({ status: Status.Error, mesage: 'Vendor already invited', contract });
+                return res.json({ status: Status.Error, message: 'Vendor already invited', contract });
             }
 
             // Create contract without customer

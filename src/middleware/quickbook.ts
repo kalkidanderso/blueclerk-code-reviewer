@@ -33,12 +33,12 @@ export const refreshQBToken = () => {
                 qbRefeshTokenExpiry: expiry
             }, (err: any, raw: any)=>{
                 if(err){
-                    return res.json({status: 0, messages: Messages.GenericError});
+                    return res.json({status: 0, message: Messages.GenericError});
                 }
     
                 Company.findById(company._id, (err: any, newCompany: ICompany) => {
                     if(err){
-                        return res.json({status: Status.Error, messages: Messages.GenericError});
+                        return res.json({status: Status.Error, message: Messages.GenericError});
                     }
     
                     next();
@@ -50,7 +50,7 @@ export const refreshQBToken = () => {
             console.log('== error', err);
             console.log('The error message is :', err.originalMessage);
             console.log('Intuit error :', err.intuit_tid);
-            return res.json({ status: err.authResponse?.response?.status || Status.Error, messages: 'Unable to refresh the token'});
+            return res.json({ status: err.authResponse?.response?.status || Status.Error, message: 'Unable to refresh the token'});
         });
     }
 }

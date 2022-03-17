@@ -402,7 +402,7 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
             // Check if vendor exist
             const contractor = await Company.findById(params.id).exec();
             if (!contractor) {
-                return res.json({ status: Status.Error, messages: 'Vendor not found' });
+                return res.json({ status: Status.Error, message: 'Vendor not found' });
             }
 
             // Save the Payment Vendor entry
@@ -439,7 +439,7 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
             // CHeck if employee exist
             const employee = await User.findById(params.id).exec();
             if (!employee) {
-                return res.json({ status: Status.Error, messages: 'Employee not found' });
+                return res.json({ status: Status.Error, message: 'Employee not found' });
             }
 
             // Save the Payment Employee entry
@@ -697,7 +697,7 @@ export const updatePaymentContractor = async (req: Request, res: Response) => {
             break;
 
         default:
-            return res.json({ status: Status.Error, messages: 'Type not supported. Available Type to be used: vendor or employee.' });
+            return res.json({ status: Status.Error, message: 'Type not supported. Available Type to be used: vendor or employee.' });
     }
 
     payment.amountPaid = params.amount ? Number(params.amount) : payment.amountPaid;
@@ -789,7 +789,7 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
     // Check when startDate and endDate is provided, offset must be required
     if (params.startDate && params.endDate) {
         if (!params.offset) {
-            return res.json({ status: Status.Error, meesages: 'Offset is required. when startDate and endDate provided' });
+            return res.json({ status: Status.Error, message: 'Params offset is required when startDate and endDate provided' });
         }
 
         const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
@@ -868,7 +868,7 @@ export const getPayrollReport = async (req: Request, res: Response) => {
 
     if (params.startDate && params.endDate) {
         if (!params.offset) {
-            return res.json({ status: Status.Error, meesages: 'Offset is required. when startDate and endDate provided' });
+            return res.json({ status: Status.Error, message: 'Params offset is required when startDate and endDate provided' });
         }
 
         const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
@@ -990,7 +990,7 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
             break;
 
         default:
-            return res.json({ status: Status.Error, messages: 'Type is required' });
+            return res.json({ status: Status.Error, message: 'Type is required' });
     }
 
     if (payment && !payment.isVoid) {
@@ -1020,5 +1020,5 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
         await payment.save();
     }
 
-    return res.json({ status: Status.Success, messages: 'Payment void successfully' });
+    return res.json({ status: Status.Success, message: 'Payment void successfully' });
 }
