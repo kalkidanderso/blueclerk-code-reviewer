@@ -2423,7 +2423,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const customerAddress = {
         street: customer?.address?.street ? `${customer?.address?.street}` : '',
         city: customer?.address?.city ? `, ${customer?.address?.city}` : '',
-        state: customer?.address?.state ? `, ${customer?.address?.city}` : '',
+        state: customer?.address?.state ? `, ${customer?.address?.state}` : '',
         zipCode: customer?.address?.zipCode ? `, ${customer?.address?.zipCode}` : '',
     }
 
