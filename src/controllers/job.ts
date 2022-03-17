@@ -2804,7 +2804,8 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
     }
 
     await _handleNotification({
-        sio, companyId,
+        sio,
+        companyId: job.company,
         notificationType: NotificationTypes.JOB_RESCHEDULED,
         messageTitle: 'Job Task rescheduled',
         messageBody: `Technician: ${technician?.profile?.displayName} rescheduling his/her task on Job: ${job.jobId}`,
