@@ -7144,6 +7144,18 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "nextCursor": {
+                    "type": "string",
+                    "description": "Cursor to go to next page. Use the nextCursor value from the previous response."
+                  },
+                  "previousCursor": {
+                    "type": "string",
+                    "description": "Cursor to go to previous page. Use the previousCursor value from the previous response."
+                  },
+                  "pageSize": {
+                    "type": "number",
+                    "description": "The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default."
+                  },
                   "companyId": {
                     "type": "string",
                     "description": "Id of company if contractor is hitting for other company"
@@ -8710,6 +8722,7 @@
           {
             "name": "startDate",
             "in": "query",
+            "description": "Filter of start issued date",
             "required": false,
             "schema": {
               "type": "string"
@@ -8718,6 +8731,7 @@
           {
             "name": "endDate",
             "in": "query",
+            "description": "Filter of end issued date",
             "required": false,
             "schema": {
               "type": "string"
@@ -8726,6 +8740,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "Number of hours a certain time zone is ahead of or behind GMT for the client",
             "required": false,
             "schema": {
               "type": "string"
@@ -9367,6 +9382,7 @@
           {
             "name": "startDate",
             "in": "query",
+            "description": "Filter of start paid date",
             "required": false,
             "schema": {
               "type": "string"
@@ -9375,6 +9391,7 @@
           {
             "name": "endDate",
             "in": "query",
+            "description": "Filter of end paid date",
             "required": false,
             "schema": {
               "type": "string"
@@ -9383,6 +9400,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "Number of hours a certain time zone is ahead of or behind GMT for the client",
             "required": false,
             "schema": {
               "type": "string"
@@ -9802,6 +9820,7 @@
           {
             "name": "startDate",
             "in": "query",
+            "description": "Filter of start invoice issued date",
             "required": false,
             "schema": {
               "type": "string"
@@ -9810,6 +9829,7 @@
           {
             "name": "endDate",
             "in": "query",
+            "description": "Filter of end invoice issued date",
             "required": false,
             "schema": {
               "type": "string"
@@ -9818,6 +9838,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "Number of hours a certain time zone is ahead of or behind GMT for the client",
             "required": false,
             "schema": {
               "type": "number"
@@ -9872,6 +9893,7 @@
           {
             "name": "startDate",
             "in": "query",
+            "description": "Filter of start invoice issued date",
             "required": false,
             "schema": {
               "type": "string"
@@ -9880,6 +9902,7 @@
           {
             "name": "endDate",
             "in": "query",
+            "description": "Filter of end invoice issued date",
             "required": false,
             "schema": {
               "type": "string"
@@ -9888,6 +9911,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "Number of hours a certain time zone is ahead of or behind GMT for the client",
             "required": false,
             "schema": {
               "type": "number"

@@ -193,6 +193,8 @@ export const Validations = {
     check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
   ],
 
+  getJobs: [check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')],
+  
   searchJob: [check('pageSize').isNumeric(), check('page').isNumeric()],
 
   generalJob: [check('jobId').exists().withMessage(Messages.Required)],

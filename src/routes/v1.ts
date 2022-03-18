@@ -636,6 +636,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Job_Get_All),
+        validate(Validations.getJobs),
         jobController.getJobs
     )
 
