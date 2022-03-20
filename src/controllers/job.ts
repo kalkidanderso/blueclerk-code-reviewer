@@ -4,7 +4,8 @@ import { CronJob } from 'cron';
 import moment from 'moment';
 import momentTz from 'moment-timezone';
 import * as _ from 'lodash';
-import { Status, Messages, JobStatus, ServiceTicketStatus, NotificationTypes, SocketEvents } from '../common/constants'
+import * as helper from '../services/helper';
+import { Status, Messages, JobStatus, ServiceTicketStatus, NotificationTypes, SocketEvents, DefaultPageSize } from '../common/constants'
 import {
     sendJobEmailToAssignee,
     sendJobEmailToCustomer, sendReportEmailToCustomer
@@ -793,12 +794,45 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
 }
 export const getJobs = (req: Request, res: Response) => {
 
-    let companyId = req.companyId;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId;
+    const params = req.body;
+    let companyId = req.otherCompanyId || req.companyId;
+
+    // Return error when all cursors are provided
+    if (params.nextCursor && params.previousCursor) {
+        return res.json({ status: Status.Error, message: 'Provided cursor could only be one of either nextCursor or previousCursor.' });
     }
 
-    Job.find({ $or: [{ 'tasks.contractor': companyId }, { contractor: companyId }, { company: companyId }] })
+    // Data query that used to search Jobs and available previous/next page
+    const query = {
+        $or: [
+            { 'tasks.contractor': companyId },
+            { contractor: companyId },
+            { company: companyId }
+        ]
+    };
+
+    // Pagination query that default to nothing
+    let paginationQuery = {};
+    // Sort query that default to sort by the recent ones
+    let sortQuery = { _id: -1 };
+
+    if (params.nextCursor) {
+        // Update pagination query to get the next page
+        paginationQuery = { _id: { $lt: helper.fromCursorHash(params.nextCursor.toString()) } };
+    }
+    if (params.previousCursor) {
+        // Update pagination query to get the previous page
+        paginationQuery = { _id: { $gt: helper.fromCursorHash(params.previousCursor?.toString()) } };
+        // Getting previous page is special, we need to reverse the sort
+        sortQuery = { _id: 1};
+    }
+
+    Job.find({
+        ...query,
+        ...paginationQuery
+    })
+        .sort({ ...sortQuery })
+        .limit(params.pageSize || DefaultPageSize)
         .populate({
             path: 'ticket',
             populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
@@ -879,36 +913,37 @@ export const getJobs = (req: Request, res: Response) => {
         .exec(async (err: any, jobs: IJob[]) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': err.errmsg || Messages.GenericError })
             }
 
-            const jobRoutes = await JobRoute.find({ company: companyId })
-                .populate({
-                    path: 'routes.job',
-                    select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
-                    populate: [
-                        { path: 'customer', select: 'profile vendorId address location' },
-                        // TODO: To be deprecated
-                        { path: 'tasks.jobType', select: 'title description sku' },
-                        { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
-                        { path: 'type', select: 'title description sku' },
-                        { path: 'ticket', select: '-__v -track' },
-                        { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
-                        { path: 'jobSite', select: '-__v -locationId -customerId' }
-                    ]
-                })
-                .populate({ path: 'technician', select: 'profile' })
-                .populate({ path: 'createdBy', select: 'profile' })
-                .populate({ path: 'updatedBy', select: 'profile' });
+            // Because we reverse sort for previous page, we need to revert it back
+            if (params.previousCursor) {
+                jobs = jobs.reverse();
+            }
+
+            // Check if next page is available
+            let nextCursor = jobs[jobs.length - 1]?._id;
+            const isNextPage = await Job.findOne({ ...query, _id: { $lt: nextCursor } }).sort({ _id: -1 });
+            if (!isNextPage) {
+                nextCursor = null;
+            }
+
+            // Check if previous page is availabe
+            let previousCursor = jobs[0]?._id;
+            const isPreviousPage = await Job.findOne({ ...query, _id: { $gt: previousCursor } }).sort({ _id: -1 });
+            if (!isPreviousPage) {
+                previousCursor = null;
+            }
 
             return res.json({
                 status: Status.Success,
                 jobs,
                 total: jobs.length,
-                jobRoutes
+                nextCursor: helper.toCursorHash(nextCursor?.toString()),
+                previousCursor: helper.toCursorHash(previousCursor?.toString())
             });
         }
-        )
+    )
 
 }
 

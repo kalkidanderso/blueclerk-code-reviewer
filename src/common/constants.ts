@@ -176,6 +176,8 @@ export enum DefaultCommission {
     EMPLOYEE_COMMISSION = 0,
 }
 
+export const DefaultPageSize = 30;
+
 export const enum Permissions {
     None,
     Permission_Get_All,

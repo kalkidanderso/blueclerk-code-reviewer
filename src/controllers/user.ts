@@ -167,7 +167,7 @@ export const createCompany = (req: Request, res: Response, sio: any) => {
         const passwordRegex = new RegExp(/(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z])[!@#$%^&*0-9a-zA-Z]{8,}/);
 
         if (!passwordRegex.test(params.password)) {
-            return res.json({ status: Status.Error, messages: 'Your password must be have at least: 8 characters long, 1 uppercase, 1 number, & 1 special character' });
+            return res.json({ status: Status.Error, message: 'Your password must be have at least: 8 characters long, 1 uppercase, 1 number, & 1 special character' });
         }
 
         const company = new Company(
