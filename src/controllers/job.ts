@@ -792,7 +792,7 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
         )
 
 }
-export const getJobs = (req: Request, res: Response) => {
+export const getJobs = async (req: Request, res: Response) => {
 
     const params = req.body;
     let companyId = req.otherCompanyId || req.companyId;
@@ -803,36 +803,81 @@ export const getJobs = (req: Request, res: Response) => {
     }
 
     // Data query that used to search Jobs and available previous/next page
-    const query = {
-        $or: [
+    const query: any = {
+        $and: [ { $or: [
             { 'tasks.contractor': companyId },
             { contractor: companyId },
             { company: companyId }
-        ]
+        ]}]
     };
+
+    // Check and add if params filter provided
+    if (params.keyword) {
+        const keywordRegex = { $regex: params.keyword, $options: 'i' };
+        query['$and'].push({
+            $or: [
+                { jobId: keywordRegex },
+                { 'tasksObj.technician.name': keywordRegex },
+                { 'customerObj.profile.displayName': keywordRegex },
+                { 'jobLocationObj.name': keywordRegex },
+                { 'jobLocationObj.address.street': keywordRegex },
+                { 'jobLocationObj.address.city': keywordRegex },
+                { 'jobSiteObj.name': keywordRegex },
+                { 'jobSiteObj.address.street': keywordRegex },
+                { 'jobSiteObj.address.city': keywordRegex },
+            ]
+        })
+    }
+    if (params.status !== undefined && params.status !== null) {
+        query['$and'].push({ status: params.status });
+    }
+    if (params.startDate && params.endDate) {
+        const startDate = moment(params.startDate).format('YYYY-MM-DD');
+        const endDate = moment(params.endDate).format('YYYY-MM-DD');
+        query['$and'].push({ scheduleDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
+    }
+    if (params.customerId) {
+        query['$and'].push({ customer: new ObjectId(params.customerId) });
+    }
 
     // Pagination query that default to nothing
     let paginationQuery = {};
     // Sort query that default to sort by the recent ones
-    let sortQuery = { _id: -1 };
+    let sortQuery = { updatedAt: -1, _id: -1 };
 
     if (params.nextCursor) {
         // Update pagination query to get the next page
-        paginationQuery = { _id: { $lt: helper.fromCursorHash(params.nextCursor.toString()) } };
+        paginationQuery = { updatedAt: { $lt: new Date(helper.fromCursorHash(params.nextCursor.toString())) } };
     }
     if (params.previousCursor) {
         // Update pagination query to get the previous page
-        paginationQuery = { _id: { $gt: helper.fromCursorHash(params.previousCursor?.toString()) } };
+        paginationQuery = { updatedAt: { $gt: new Date(helper.fromCursorHash(params.previousCursor?.toString())) } };
         // Getting previous page is special, we need to reverse the sort
-        sortQuery = { _id: 1};
+        sortQuery = { updatedAt: 1, _id: -1};
     }
 
-    Job.find({
-        ...query,
-        ...paginationQuery
-    })
+    // Construct aggreate lookups here to be used multiple times
+    const aggregateLookups = [
+        { $lookup: { from: 'users', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
+        { $lookup: { from: 'joblocations', localField: 'jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
+        { $lookup: { from: 'jobsites', localField: 'jobSite', foreignField: '_id', as: 'jobSiteObj' } },
+        { $lookup: { from: 'users', localField: 'tasks.technician', foreignField: '_id', as: 'tasksObj' } }
+    ]
+
+    // Filter jobs using aggregate to be search to another collection
+    const jobsAggregate: IJob[] = await Job.aggregate([
+        ...aggregateLookups,
+        { $match: { ...query, ...paginationQuery } },
+        { $project: { _id: 1, updatedAt: 1 } },
+        { $sort: sortQuery },
+        { $limit: params.pageSize || DefaultPageSize }
+    ]);
+    // Map the Job IDs filtered
+    const jobIds = jobsAggregate.map((job) => job._id);
+
+    // Find the filtered jobs again with populated data to be returned to the user
+    Job.find({ _id: { $in: jobIds } })
         .sort({ ...sortQuery })
-        .limit(params.pageSize || DefaultPageSize)
         .populate({
             path: 'ticket',
             populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
@@ -921,24 +966,44 @@ export const getJobs = (req: Request, res: Response) => {
                 jobs = jobs.reverse();
             }
 
+            // Get all total jobs count
+            const totalJobs = await Job.aggregate([
+                ...aggregateLookups,
+                { $match: { ...query } },
+                { $count: 'count' }
+            ])
+
             // Check if next page is available
-            let nextCursor = jobs[jobs.length - 1]?._id;
-            const isNextPage = await Job.findOne({ ...query, _id: { $lt: nextCursor } }).sort({ _id: -1 });
-            if (!isNextPage) {
+            let nextCursor = jobs[jobs.length - 1]?.updatedAt;
+            const isNextPage = await Job.aggregate([
+                ...aggregateLookups,
+                { $match: { ...query, updatedAt: { $lt: new Date(nextCursor) } } },
+                { $project: { _id: 1 } },
+                { $sort: { updatedAt: -1, _id: -1 } },
+                { $limit: 1 }
+            ]);
+            if (!isNextPage.length) {
                 nextCursor = null;
             }
 
             // Check if previous page is availabe
-            let previousCursor = jobs[0]?._id;
-            const isPreviousPage = await Job.findOne({ ...query, _id: { $gt: previousCursor } }).sort({ _id: -1 });
-            if (!isPreviousPage) {
+            let previousCursor = jobs[0]?.updatedAt;
+            console.log('== previousCursor:', previousCursor);
+            const isPreviousPage = await Job.aggregate([
+                ...aggregateLookups,
+                { $match: { ...query, updatedAt: { $gt: new Date(previousCursor) } } },
+                { $project: { _id: 1 } },
+                { $sort: { updatedAt: 1, _id: -1 } },
+                { $limit: 1 }
+            ]);
+            if (!isPreviousPage.length) {
                 previousCursor = null;
             }
 
             return res.json({
                 status: Status.Success,
                 jobs,
-                total: jobs.length,
+                total: totalJobs[0]?.count,
                 nextCursor: helper.toCursorHash(nextCursor?.toString()),
                 previousCursor: helper.toCursorHash(previousCursor?.toString())
             });

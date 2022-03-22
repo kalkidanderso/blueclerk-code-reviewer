@@ -7144,17 +7144,38 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "keyword": {
+                    "type": "string",
+                    "description": "Filter jobs by search keyword to Job Id, Customer's name, Technician's name, and Job Location's name"
+                  },
+                  "status": {
+                    "type": "integer",
+                    "description": "Filter jobs by status (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4, PAUSED => 5, INCOMPLETE => 6)",
+                    "enum": [ 0, 1, 2, 3, 4, 5, 6 ]
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter of start jobs schedule date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter of end jobs schedule date"
+                  },
+                  "customerId": {
+                    "type": "string",
+                    "description": "Filter jobs by customer"
+                  },
                   "nextCursor": {
                     "type": "string",
-                    "description": "Cursor to go to next page. Use the nextCursor value from the previous response."
+                    "description": "Cursor to go to next page. Use the nextCursor value from the previous response"
                   },
                   "previousCursor": {
                     "type": "string",
-                    "description": "Cursor to go to previous page. Use the previousCursor value from the previous response."
+                    "description": "Cursor to go to previous page. Use the previousCursor value from the previous response"
                   },
                   "pageSize": {
                     "type": "number",
-                    "description": "The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default."
+                    "description": "The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default"
                   },
                   "companyId": {
                     "type": "string",
