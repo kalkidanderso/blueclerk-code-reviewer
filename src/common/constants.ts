@@ -91,7 +91,8 @@ export const enum ServiceTicketSource {
 export const enum SocketEvents {
     NOTIFICATION_CENTER = 'notification_center',
     CREATESERVICETICKET = 'createServiceTicketMsg',
-    ALL_OPEN_SERVICE_TICKETS = 'all_open_service_tickets'
+    ALL_OPEN_SERVICE_TICKETS = 'all_open_service_tickets',
+    ALL_SCHEDULED_JOBS = 'all_scheduled_jobs'
 }
 
 export const enum ContractStatus {

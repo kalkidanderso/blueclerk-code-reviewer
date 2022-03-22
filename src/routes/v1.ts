@@ -667,6 +667,16 @@ export default function (sio: any) {
         jobController.getTodaysJobsByTechnicianId
     )
 
+    router.get(
+        '/getScheduledJobsStream',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Get_All),
+        (req, res) => {
+            jobController.getScheduledJobsStream(req, res, sio)
+        }
+    )
+
     router.post(
         '/updateJob',
         passport.authenticate('jwt', { session: false }),
