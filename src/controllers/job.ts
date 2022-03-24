@@ -792,7 +792,7 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
         )
 
 }
-export const getJobs = (req: Request, res: Response) => {
+export const getJobs = async (req: Request, res: Response) => {
 
     const params = req.body;
     let companyId = req.otherCompanyId || req.companyId;
@@ -803,36 +803,100 @@ export const getJobs = (req: Request, res: Response) => {
     }
 
     // Data query that used to search Jobs and available previous/next page
-    const query = {
-        $or: [
+    const filterQuery: any = {
+        $and: [ { $or: [
             { 'tasks.contractor': companyId },
             { contractor: companyId },
             { company: companyId }
-        ]
+        ]}]
     };
 
+    // Check and add if params filter provided
+    if (params.keyword) {
+        const keywordRegex = { $regex: params.keyword, $options: 'i' };
+        filterQuery['$and'].push({
+            $or: [
+                { jobId: keywordRegex },
+                { 'tasksObj.technician.name': keywordRegex },
+                { 'customerObj.profile.displayName': keywordRegex },
+                { 'jobLocationObj.name': keywordRegex },
+                { 'jobLocationObj.address.street': keywordRegex },
+                { 'jobLocationObj.address.city': keywordRegex },
+                { 'jobSiteObj.name': keywordRegex },
+                { 'jobSiteObj.address.street': keywordRegex },
+                { 'jobSiteObj.address.city': keywordRegex },
+            ]
+        })
+    }
+    if (params.status !== undefined && params.status !== null) {
+        filterQuery['$and'].push({ status: params.status });
+    }
+    if (params.startDate && params.endDate) {
+        const startDate = moment(params.startDate).format('YYYY-MM-DD');
+        const endDate = moment(params.endDate).format('YYYY-MM-DD');
+        filterQuery['$and'].push({ scheduleDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
+    }
+    if (params.customerId) {
+        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+    }
+
+    // Deep clone filterQuery
+    const query: any = { $and: [] };
+    filterQuery['$and'].map((q: any) => { query['$and'].push({ ...q }) });
     // Pagination query that default to nothing
     let paginationQuery = {};
     // Sort query that default to sort by the recent ones
-    let sortQuery = { _id: -1 };
+    let sortQuery = { updatedAt: -1, _id: -1 };
 
     if (params.nextCursor) {
         // Update pagination query to get the next page
-        paginationQuery = { _id: { $lt: helper.fromCursorHash(params.nextCursor.toString()) } };
+        const cursor = JSON.parse(helper.fromCursorHash(params.nextCursor));
+        const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
+        paginationQuery = {
+            $or: [
+                { updatedAt: { $lt: new Date(cursor.updatedAt) } },
+                { updatedAt: new Date(cursor.updatedAt), _id: { $lt: cursorId } }
+            ]
+        };
+        query['$and'].push({ ...paginationQuery });
     }
     if (params.previousCursor) {
         // Update pagination query to get the previous page
-        paginationQuery = { _id: { $gt: helper.fromCursorHash(params.previousCursor?.toString()) } };
+        const cursor = JSON.parse(helper.fromCursorHash(params.previousCursor));
+        const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
+        paginationQuery = {
+            $or: [
+                { updatedAt: { $gt: new Date(cursor.updatedAt) } },
+                { updatedAt: new Date(cursor.updatedAt), _id: { $gt: cursorId } }
+            ]
+        };
+        query['$and'].push({ ...paginationQuery });
         // Getting previous page is special, we need to reverse the sort
-        sortQuery = { _id: 1};
+        sortQuery = { updatedAt: 1, _id: 1};
     }
 
-    Job.find({
-        ...query,
-        ...paginationQuery
-    })
+    // Construct aggreate lookups here to be used multiple times
+    const aggregateLookups = [
+        { $lookup: { from: 'users', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
+        { $lookup: { from: 'joblocations', localField: 'jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
+        { $lookup: { from: 'jobsites', localField: 'jobSite', foreignField: '_id', as: 'jobSiteObj' } },
+        { $lookup: { from: 'users', localField: 'tasks.technician', foreignField: '_id', as: 'tasksObj' } }
+    ]
+
+    // Filter jobs using aggregate to be search to another collection
+    const jobsAggregate: IJob[] = await Job.aggregate([
+        ...aggregateLookups,
+        { $match: { ...query } },
+        { $project: { _id: 1, updatedAt: 1 } },
+        { $sort: sortQuery },
+        { $limit: params.pageSize || DefaultPageSize }
+    ]);
+    // Map the Job IDs filtered
+    const jobIds = jobsAggregate.map((job) => job._id);
+
+    // Find the filtered jobs again with populated data to be returned to the user
+    Job.find({ _id: { $in: jobIds } })
         .sort({ ...sortQuery })
-        .limit(params.pageSize || DefaultPageSize)
         .populate({
             path: 'ticket',
             populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
@@ -921,26 +985,61 @@ export const getJobs = (req: Request, res: Response) => {
                 jobs = jobs.reverse();
             }
 
-            // Check if next page is available
-            let nextCursor = jobs[jobs.length - 1]?._id;
-            const isNextPage = await Job.findOne({ ...query, _id: { $lt: nextCursor } }).sort({ _id: -1 });
-            if (!isNextPage) {
-                nextCursor = null;
-            }
+            /**
+             * Get all total jobs count
+             */
+            const totalJobs = await Job.aggregate([
+                ...aggregateLookups,
+                { $match: { ...filterQuery } },
+                { $count: 'count' }
+            ])
 
-            // Check if previous page is availabe
-            let previousCursor = jobs[0]?._id;
-            const isPreviousPage = await Job.findOne({ ...query, _id: { $gt: previousCursor } }).sort({ _id: -1 });
-            if (!isPreviousPage) {
-                previousCursor = null;
-            }
+            /**
+             * Check if next page is available
+             */
+            let nextCursor = { updatedAt: jobs[jobs.length - 1]?.updatedAt, _id: jobs[jobs.length - 1]?._id };
+            // Deep clone filterQuery
+            const nextPageQuery: any = { $and: [] };
+            filterQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
+            // To be added with the pagination for the previous page
+            nextPageQuery['$and'].push({ $or: [
+                { updatedAt: { $lt: new Date(nextCursor.updatedAt) } },
+                { updatedAt: new Date(nextCursor.updatedAt), _id: { $lt: nextCursor._id } }
+            ]});
+            const isNextPage = await Job.aggregate([
+                ...aggregateLookups,
+                { $match: { ...nextPageQuery } },
+                { $project: { _id: 1, updatedAt: 1 } },
+                { $sort: { updatedAt: -1, _id: -1 } },
+                { $limit: 1 }
+            ]);
+
+            /**
+             * Check if previous page is availabe
+             */
+            let previousCursor = { updatedAt: jobs[0]?.updatedAt, _id: jobs[0]?._id };
+            // Deep clone filterQuery
+            const previousPageQuery: any = { $and: [] };
+            filterQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
+            // To be added with the pagination for the previous page
+            previousPageQuery['$and'].push({ $or: [
+                { updatedAt: { $gt: new Date(previousCursor.updatedAt) } },
+                { updatedAt: new Date(previousCursor.updatedAt), _id: { $gt: previousCursor._id } }
+            ]});
+            const isPreviousPage = await Job.aggregate([
+                ...aggregateLookups,
+                { $match: { ...previousPageQuery } },
+                { $project: { _id: 1, updatedAt: 1 } },
+                { $sort: { updatedAt: 1, _id: 1 } },
+                { $limit: 1 }
+            ]);
 
             return res.json({
                 status: Status.Success,
                 jobs,
-                total: jobs.length,
-                nextCursor: helper.toCursorHash(nextCursor?.toString()),
-                previousCursor: helper.toCursorHash(previousCursor?.toString())
+                total: totalJobs[0]?.count,
+                nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)): null,
+                previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null
             });
         }
     )
@@ -1023,6 +1122,129 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
 
         }
         )
+}
+
+export const getScheduledJobsStream = async (req: Request, res: Response, sio: any) => {
+
+    const company = <ICompany>req.company;
+
+    // Initialize started count & total of the jobs
+    let count = 1;
+    const totalJobs = await Job.find({
+        $or: [
+            { 'tasks.contractor': company._id },
+            { contractor: company._id },
+            { company: company._id }
+        ],
+        status: 0
+    }).countDocuments();
+
+    // Return the HTTP request directly to avoid timed-out issue
+    res.json({ status: Status.Success, total: totalJobs, message: `All scheduled jobs will be returned to Socket.io, make sure to listen to event 'all_scheduled_jobs'` });
+
+    /**
+     * Retrieve all scheduled jobs with all populated info,
+     * and return it as a stream via socket.io
+     */
+    const jobCursor = Job.find({
+        $or: [
+            { 'tasks.contractor': company._id },
+            { contractor: company._id },
+            { company: company._id }
+        ],
+        status: 0
+    }).sort({ _id: -1 })
+        .populate({
+            path: 'ticket',
+            populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
+        })
+        .populate({
+            // TODO: To be deprecated
+            path: 'technician',
+            select: 'profile contact auth.email'
+        })
+        .populate({
+            path: 'tasks.technician',
+            select: 'profile contact auth.email'
+        })
+        .populate({
+            // TODO: To be deprecated
+            path: 'contractor',
+            select: 'info.companyName info.companyEmail type'
+        })
+        .populate({
+            path: 'tasks.contractor',
+            select: 'info.companyName info.companyEmail type'
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
+        })
+        .populate({
+            path: 'customerContactId',
+            select: '-id -__v'
+        })
+        .populate({
+            // TODO: To be deprecated
+            path: 'type',
+            select: 'title description sku'
+        })
+        .populate({
+            // TODO: To be deprecated
+            path: 'tasks.jobType',
+            select: 'title description sku'
+        })
+        .populate({
+            // TODO: To be deprecated
+            path: 'tasks.timeUpdatedBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'tasks.jobTypes.jobType',
+            select: 'title description sku'
+        })
+        .populate({
+            path: 'tasks.jobTypes.timeUpdatedBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'company',
+            select: 'info.companyName'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'jobLocation',
+            select: 'name location address'
+        })
+        .populate({
+            path: 'jobSite',
+            select: 'name location address'
+        })
+        .populate({
+            path: 'images.uploadedBy',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: 'technicianImages.uploadedBy',
+            select: 'profile.displayName'
+        })
+        .cursor();
+
+    // Iterate all the cursor and send it to company's room socket.io
+    for (let job = await jobCursor.next(); job != null; job = await jobCursor.next()) {
+        // Send the job via socket.io
+        await sio.to(company._id?.toString()).emit(SocketEvents.ALL_SCHEDULED_JOBS, {
+            job,
+            count: count++,
+            total: totalJobs
+        });
+    }
+
+    return;
+
 }
 
 
