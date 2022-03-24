@@ -851,10 +851,11 @@ export const getJobs = async (req: Request, res: Response) => {
     if (params.nextCursor) {
         // Update pagination query to get the next page
         const cursor = JSON.parse(helper.fromCursorHash(params.nextCursor));
+        const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
         paginationQuery = {
             $or: [
                 { updatedAt: { $lt: new Date(cursor.updatedAt) } },
-                { updatedAt: new Date(cursor.updatedAt), _id: { $lt: cursor._id } }
+                { updatedAt: new Date(cursor.updatedAt), _id: { $lt: cursorId } }
             ]
         };
         query['$and'].push({ ...paginationQuery });
@@ -862,10 +863,11 @@ export const getJobs = async (req: Request, res: Response) => {
     if (params.previousCursor) {
         // Update pagination query to get the previous page
         const cursor = JSON.parse(helper.fromCursorHash(params.previousCursor));
+        const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
         paginationQuery = {
             $or: [
                 { updatedAt: { $gt: new Date(cursor.updatedAt) } },
-                { updatedAt: new Date(cursor.updatedAt), _id: { $gt: cursor._id } }
+                { updatedAt: new Date(cursor.updatedAt), _id: { $gt: cursorId } }
             ]
         };
         query['$and'].push({ ...paginationQuery });
