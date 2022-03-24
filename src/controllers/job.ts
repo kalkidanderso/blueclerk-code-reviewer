@@ -803,7 +803,7 @@ export const getJobs = async (req: Request, res: Response) => {
     }
 
     // Data query that used to search Jobs and available previous/next page
-    const query: any = {
+    const filterQuery: any = {
         $and: [ { $or: [
             { 'tasks.contractor': companyId },
             { contractor: companyId },
@@ -814,7 +814,7 @@ export const getJobs = async (req: Request, res: Response) => {
     // Check and add if params filter provided
     if (params.keyword) {
         const keywordRegex = { $regex: params.keyword, $options: 'i' };
-        query['$and'].push({
+        filterQuery['$and'].push({
             $or: [
                 { jobId: keywordRegex },
                 { 'tasksObj.technician.name': keywordRegex },
@@ -829,17 +829,20 @@ export const getJobs = async (req: Request, res: Response) => {
         })
     }
     if (params.status !== undefined && params.status !== null) {
-        query['$and'].push({ status: params.status });
+        filterQuery['$and'].push({ status: params.status });
     }
     if (params.startDate && params.endDate) {
         const startDate = moment(params.startDate).format('YYYY-MM-DD');
         const endDate = moment(params.endDate).format('YYYY-MM-DD');
-        query['$and'].push({ scheduleDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
+        filterQuery['$and'].push({ scheduleDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
     }
     if (params.customerId) {
-        query['$and'].push({ customer: new ObjectId(params.customerId) });
+        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
     }
 
+    // Deep clone filterQuery
+    const query: any = { $and: [] };
+    filterQuery['$and'].map((q: any) => { query['$and'].push({ ...q }) });
     // Pagination query that default to nothing
     let paginationQuery = {};
     // Sort query that default to sort by the recent ones
@@ -847,13 +850,27 @@ export const getJobs = async (req: Request, res: Response) => {
 
     if (params.nextCursor) {
         // Update pagination query to get the next page
-        paginationQuery = { updatedAt: { $lt: new Date(helper.fromCursorHash(params.nextCursor.toString())) } };
+        const cursor = JSON.parse(helper.fromCursorHash(params.nextCursor));
+        paginationQuery = {
+            $or: [
+                { updatedAt: { $lt: new Date(cursor.updatedAt) } },
+                { updatedAt: new Date(cursor.updatedAt), _id: { $lt: cursor._id } }
+            ]
+        };
+        query['$and'].push({ ...paginationQuery });
     }
     if (params.previousCursor) {
         // Update pagination query to get the previous page
-        paginationQuery = { updatedAt: { $gt: new Date(helper.fromCursorHash(params.previousCursor?.toString())) } };
+        const cursor = JSON.parse(helper.fromCursorHash(params.previousCursor));
+        paginationQuery = {
+            $or: [
+                { updatedAt: { $gt: new Date(cursor.updatedAt) } },
+                { updatedAt: new Date(cursor.updatedAt), _id: { $gt: cursor._id } }
+            ]
+        };
+        query['$and'].push({ ...paginationQuery });
         // Getting previous page is special, we need to reverse the sort
-        sortQuery = { updatedAt: 1, _id: -1};
+        sortQuery = { updatedAt: 1, _id: 1};
     }
 
     // Construct aggreate lookups here to be used multiple times
@@ -867,7 +884,7 @@ export const getJobs = async (req: Request, res: Response) => {
     // Filter jobs using aggregate to be search to another collection
     const jobsAggregate: IJob[] = await Job.aggregate([
         ...aggregateLookups,
-        { $match: { ...query, ...paginationQuery } },
+        { $match: { ...query } },
         { $project: { _id: 1, updatedAt: 1 } },
         { $sort: sortQuery },
         { $limit: params.pageSize || DefaultPageSize }
@@ -966,46 +983,61 @@ export const getJobs = async (req: Request, res: Response) => {
                 jobs = jobs.reverse();
             }
 
-            // Get all total jobs count
+            /**
+             * Get all total jobs count
+             */
             const totalJobs = await Job.aggregate([
                 ...aggregateLookups,
-                { $match: { ...query } },
+                { $match: { ...filterQuery } },
                 { $count: 'count' }
             ])
 
-            // Check if next page is available
-            let nextCursor = jobs[jobs.length - 1]?.updatedAt;
+            /**
+             * Check if next page is available
+             */
+            let nextCursor = { updatedAt: jobs[jobs.length - 1]?.updatedAt, _id: jobs[jobs.length - 1]?._id };
+            // Deep clone filterQuery
+            const nextPageQuery: any = { $and: [] };
+            filterQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
+            // To be added with the pagination for the previous page
+            nextPageQuery['$and'].push({ $or: [
+                { updatedAt: { $lt: new Date(nextCursor.updatedAt) } },
+                { updatedAt: new Date(nextCursor.updatedAt), _id: { $lt: nextCursor._id } }
+            ]});
             const isNextPage = await Job.aggregate([
                 ...aggregateLookups,
-                { $match: { ...query, updatedAt: { $lt: new Date(nextCursor) } } },
-                { $project: { _id: 1 } },
+                { $match: { ...nextPageQuery } },
+                { $project: { _id: 1, updatedAt: 1 } },
                 { $sort: { updatedAt: -1, _id: -1 } },
                 { $limit: 1 }
             ]);
-            if (!isNextPage.length) {
-                nextCursor = null;
-            }
 
-            // Check if previous page is availabe
-            let previousCursor = jobs[0]?.updatedAt;
-            console.log('== previousCursor:', previousCursor);
+            /**
+             * Check if previous page is availabe
+             */
+            let previousCursor = { updatedAt: jobs[0]?.updatedAt, _id: jobs[0]?._id };
+            // Deep clone filterQuery
+            const previousPageQuery: any = { $and: [] };
+            filterQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
+            // To be added with the pagination for the previous page
+            previousPageQuery['$and'].push({ $or: [
+                { updatedAt: { $gt: new Date(previousCursor.updatedAt) } },
+                { updatedAt: new Date(previousCursor.updatedAt), _id: { $gt: previousCursor._id } }
+            ]});
             const isPreviousPage = await Job.aggregate([
                 ...aggregateLookups,
-                { $match: { ...query, updatedAt: { $gt: new Date(previousCursor) } } },
-                { $project: { _id: 1 } },
-                { $sort: { updatedAt: 1, _id: -1 } },
+                { $match: { ...previousPageQuery } },
+                { $project: { _id: 1, updatedAt: 1 } },
+                { $sort: { updatedAt: 1, _id: 1 } },
                 { $limit: 1 }
             ]);
-            if (!isPreviousPage.length) {
-                previousCursor = null;
-            }
 
             return res.json({
                 status: Status.Success,
                 jobs,
                 total: totalJobs[0]?.count,
-                nextCursor: helper.toCursorHash(nextCursor?.toString()),
-                previousCursor: helper.toCursorHash(previousCursor?.toString())
+                nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)): null,
+                previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null
             });
         }
     )
