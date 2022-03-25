@@ -817,7 +817,6 @@ export const getJobs = async (req: Request, res: Response) => {
         filterQuery['$and'].push({
             $or: [
                 { jobId: keywordRegex },
-                { 'tasksObj.technician.name': keywordRegex },
                 { 'customerObj.profile.displayName': keywordRegex },
                 { 'jobLocationObj.name': keywordRegex },
                 { 'jobLocationObj.address.street': keywordRegex },
@@ -825,6 +824,8 @@ export const getJobs = async (req: Request, res: Response) => {
                 { 'jobSiteObj.name': keywordRegex },
                 { 'jobSiteObj.address.street': keywordRegex },
                 { 'jobSiteObj.address.city': keywordRegex },
+                { 'technicianObj.profile.displayName': keywordRegex },
+                { 'contractorsObj.info.companyName': keywordRegex },
             ]
         })
     }
@@ -880,7 +881,8 @@ export const getJobs = async (req: Request, res: Response) => {
         { $lookup: { from: 'users', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
         { $lookup: { from: 'joblocations', localField: 'jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
         { $lookup: { from: 'jobsites', localField: 'jobSite', foreignField: '_id', as: 'jobSiteObj' } },
-        { $lookup: { from: 'users', localField: 'tasks.technician', foreignField: '_id', as: 'tasksObj' } }
+        { $lookup: { from: 'users', localField: 'tasks.technician', foreignField: '_id', as: 'technicianObj' } },
+        { $lookup: { from: 'companies', localField: 'tasks.contractor', foreignField: '_id', as: 'contractorsObj' } }
     ]
 
     // Filter jobs using aggregate to be search to another collection
