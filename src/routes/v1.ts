@@ -813,6 +813,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Job_Report),
+        validate(Validations.getAllJobReports),
         jobController.getAllJobReports
     )
 
