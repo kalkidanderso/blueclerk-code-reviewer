@@ -7146,7 +7146,7 @@
                 "properties": {
                   "keyword": {
                     "type": "string",
-                    "description": "Filter jobs by search keyword to Job Id, Customer's name, Technician's name, and Job Location's name"
+                    "description": "Filter jobs by search keyword to Job Id, Customer's name, Job Location's name address, Job Site's name address, Technician's name, and Contractor's name"
                   },
                   "status": {
                     "type": "integer",
@@ -8249,6 +8249,81 @@
         ]
       }
     },
+    "/getAllJobReports": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get the company's job reports",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "Filter job reports by search keyword to Job Id, Customer's name, Job Location's name address, Job Site's name address, Technician's name, and Contractor's name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Filter of start job reports' job date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "Filter of end job reports' job date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nextCursor",
+            "in": "query",
+            "description": "Cursor to go to next page. Use the nextCursor value from the previous response",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "previousCursor",
+            "in": "query",
+            "description": "Cursor to go to previous page. Use the previousCursor value from the previous response",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/getAllJobReportsResponseSchema"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getJobReport": {
       "get": {
         "tags": [
@@ -8273,31 +8348,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/jobReportSchema"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
-    "/getAllJobReports": {
-      "get": {
-        "tags": [
-          "Reports"
-        ],
-        "summary": "Get the company's job reports",
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/getAllJobReportsResponseSchema"
                 }
               }
             }
