@@ -452,6 +452,7 @@ export const createInvoice = (req: Request, res: Response) => {
                         }
 
                         invoice.commission = invoiceCommission._id;
+                        await invoice.save();
                     }
 
                     resolve(invoice);
@@ -2255,6 +2256,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                 }).save();
 
                 invoice.commission = commissionInvoice._id;
+                await invoice.save();
             }
         }
 
