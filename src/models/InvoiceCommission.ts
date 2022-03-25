@@ -48,6 +48,6 @@ const InvoiceCommissionSchema = new Schema({
         },
         paidAt: Date
     }]
-})
+}, { timestamps: { createdAt: true, updatedAt: true } })
 
 export const InvoiceCommission = mongoose.model<IInvoiceCommission>('InvoiceCommission', InvoiceCommissionSchema)
