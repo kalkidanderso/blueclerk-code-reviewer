@@ -316,6 +316,8 @@ export const Validations = {
 
   getJobReport: [check('jobReportId').exists()],
 
+  getAllJobReports: [check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')],
+
   deleteJobReport: [check('jobReportId').exists()],
 
   createQBCustomer: [check('customerId').exists().withMessage('is required'), check('customerId').isMongoId().withMessage(Messages.WrongId)],
