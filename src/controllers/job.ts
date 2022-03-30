@@ -1297,7 +1297,7 @@ export const getAllJobReports = async (req: Request, res: Response) => {
         const keywordRegex = { $regex: params.keyword, $options: 'i' };
         filterQuery['$and'].push({
             $or: [
-                { jobId: keywordRegex },
+                { "jobObj.jobId": keywordRegex },
                 { customerName: keywordRegex },
                 { technicianName: keywordRegex },
                 { 'customerObj.profile.displayName': keywordRegex },
@@ -1355,11 +1355,12 @@ export const getAllJobReports = async (req: Request, res: Response) => {
 
     // Construct aggreate lookups here to be used multiple times
     const aggregateLookups = [
-        { $lookup: { from: 'users', localField: 'job.customer', foreignField: '_id', as: 'customerObj' } },
-        { $lookup: { from: 'joblocations', localField: 'job.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
-        { $lookup: { from: 'jobsites', localField: 'job.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
-        { $lookup: { from: 'users', localField: 'job.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
-        { $lookup: { from: 'companies', localField: 'job.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } }
+        { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
+        { $lookup: { from: 'users', localField: 'jobObj.customer', foreignField: '_id', as: 'customerObj' } },
+        { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
+        { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
+        { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
+        { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } }
     ]
 
     // Filter jobs using aggregate to be search to another collection
