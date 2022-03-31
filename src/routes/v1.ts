@@ -1614,6 +1614,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.getInvoices),
         invoiceController.getInvoices
     )
 

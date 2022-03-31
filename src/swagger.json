@@ -8565,7 +8565,42 @@
         "tags": [
           "Invoice"
         ],
-        "summary": "To get invoice",
+        "summary": "To get invoices",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keyword": {
+                    "type": "string",
+                    "description": "Filter jobs by search keyword to Job Id, Customer's name, Job Location's name address, Job Site's name address, Technician's name, and Contractor's name"
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter of start jobs schedule date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter of end jobs schedule date"
+                  },
+                  "nextCursor": {
+                    "type": "string",
+                    "description": "Cursor to go to next page. Use the nextCursor value from the previous response"
+                  },
+                  "previousCursor": {
+                    "type": "string",
+                    "description": "Cursor to go to previous page. Use the previousCursor value from the previous response"
+                  },
+                  "pageSize": {
+                    "type": "number",
+                    "description": "The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Success",
