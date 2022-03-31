@@ -1297,7 +1297,7 @@ export const getAllJobReports = async (req: Request, res: Response) => {
         const keywordRegex = { $regex: params.keyword, $options: 'i' };
         filterQuery['$and'].push({
             $or: [
-                { "jobObj.jobId": keywordRegex },
+                { 'jobObj.jobId': keywordRegex },
                 { customerName: keywordRegex },
                 { technicianName: keywordRegex },
                 { 'customerObj.profile.displayName': keywordRegex },
@@ -1447,14 +1447,16 @@ export const getAllJobReports = async (req: Request, res: Response) => {
                     { $sort: { createdAt: 1, _id: 1 } },
                     { $limit: 1 }
                 ]);
+
                 return res.json({
                     status: Status.Success,
-                    reports: reports,
+                    reports,
                     total: totalJobReports[0]?.count,
                     nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)): null,
                     previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null
                 });
             }
+
             return res.json({ status: Status.Success, reports: [], message: 'No job reports was found' });
         }).catch((err) => {
             return res.json({ status: Status.Error, message: err.message });
