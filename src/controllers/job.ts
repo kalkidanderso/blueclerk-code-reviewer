@@ -1132,6 +1132,7 @@ export const getJobsStream = async (req: Request, res: Response, sio: any) => {
 
     // Initialize started count & total of the jobs
     let count = 1;
+    let countAlt = 1;
     const totalJobs = await Job.find({
         $or: [
             { 'tasks.contractor': company._id },
@@ -1245,7 +1246,7 @@ export const getJobsStream = async (req: Request, res: Response, sio: any) => {
         // TODO: to be deprecated
         await sio.to(company._id?.toString()).emit(SocketEvents.ALL_SCHEDULED_JOBS, {
             job,
-            // count: count++,
+            count: countAlt++,
             total: totalJobs
         });
     }
