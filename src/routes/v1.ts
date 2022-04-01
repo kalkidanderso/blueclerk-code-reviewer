@@ -640,6 +640,16 @@ export default function (sio: any) {
         jobController.getJobs
     )
 
+    router.get(
+        '/getJobsStream',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Get_All),
+        (req, res) => {
+            jobController.getJobsStream(req, res, sio)
+        }
+    )
+
     router.post(
         '/searchJobs',
         passport.authenticate('jwt', { session: false }),
@@ -673,7 +683,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Job_Get_All),
         (req, res) => {
-            jobController.getScheduledJobsStream(req, res, sio)
+            jobController.getJobsStream(req, res, sio)
         }
     )
 

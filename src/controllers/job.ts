@@ -1126,7 +1126,7 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
         )
 }
 
-export const getScheduledJobsStream = async (req: Request, res: Response, sio: any) => {
+export const getJobsStream = async (req: Request, res: Response, sio: any) => {
 
     const company = <ICompany>req.company;
 
@@ -1138,14 +1138,13 @@ export const getScheduledJobsStream = async (req: Request, res: Response, sio: a
             { contractor: company._id },
             { company: company._id }
         ],
-        status: 0
     }).countDocuments();
 
     // Return the HTTP request directly to avoid timed-out issue
-    res.json({ status: Status.Success, total: totalJobs, message: `All scheduled jobs will be returned to Socket.io, make sure to listen to event 'all_scheduled_jobs'` });
+    res.json({ status: Status.Success, total: totalJobs, message: `All jobs will be returned to Socket.io, make sure to listen to event 'all_jobs'` });
 
     /**
-     * Retrieve all scheduled jobs with all populated info,
+     * Retrieve all jobs with all populated info,
      * and return it as a stream via socket.io
      */
     const jobCursor = Job.find({
@@ -1154,26 +1153,25 @@ export const getScheduledJobsStream = async (req: Request, res: Response, sio: a
             { contractor: company._id },
             { company: company._id }
         ],
-        status: 0
     }).sort({ _id: -1 })
         .populate({
             path: 'ticket',
             populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
         })
-        .populate({
-            // TODO: To be deprecated
-            path: 'technician',
-            select: 'profile contact auth.email'
-        })
+        // .populate({
+        //     // TODO: To be deprecated
+        //     path: 'technician',
+        //     select: 'profile contact auth.email'
+        // })
         .populate({
             path: 'tasks.technician',
             select: 'profile contact auth.email'
         })
-        .populate({
-            // TODO: To be deprecated
-            path: 'contractor',
-            select: 'info.companyName info.companyEmail type'
-        })
+        // .populate({
+        //     // TODO: To be deprecated
+        //     path: 'contractor',
+        //     select: 'info.companyName info.companyEmail type'
+        // })
         .populate({
             path: 'tasks.contractor',
             select: 'info.companyName info.companyEmail type'
@@ -1186,21 +1184,21 @@ export const getScheduledJobsStream = async (req: Request, res: Response, sio: a
             path: 'customerContactId',
             select: '-id -__v'
         })
-        .populate({
-            // TODO: To be deprecated
-            path: 'type',
-            select: 'title description sku'
-        })
-        .populate({
-            // TODO: To be deprecated
-            path: 'tasks.jobType',
-            select: 'title description sku'
-        })
-        .populate({
-            // TODO: To be deprecated
-            path: 'tasks.timeUpdatedBy',
-            select: 'profile.displayName'
-        })
+        // .populate({
+        //     // TODO: To be deprecated
+        //     path: 'type',
+        //     select: 'title description sku'
+        // })
+        // .populate({
+        //     // TODO: To be deprecated
+        //     path: 'tasks.jobType',
+        //     select: 'title description sku'
+        // })
+        // .populate({
+        //     // TODO: To be deprecated
+        //     path: 'tasks.timeUpdatedBy',
+        //     select: 'profile.displayName'
+        // })
         .populate({
             path: 'tasks.jobTypes.jobType',
             select: 'title description sku'
@@ -1238,9 +1236,16 @@ export const getScheduledJobsStream = async (req: Request, res: Response, sio: a
     // Iterate all the cursor and send it to company's room socket.io
     for (let job = await jobCursor.next(); job != null; job = await jobCursor.next()) {
         // Send the job via socket.io
-        await sio.to(company._id?.toString()).emit(SocketEvents.ALL_SCHEDULED_JOBS, {
+        await sio.to(company._id?.toString()).emit(SocketEvents.ALL_JOBS, {
             job,
             count: count++,
+            total: totalJobs
+        });
+
+        // TODO: to be deprecated
+        await sio.to(company._id?.toString()).emit(SocketEvents.ALL_SCHEDULED_JOBS, {
+            job,
+            // count: count++,
             total: totalJobs
         });
     }
