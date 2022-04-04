@@ -2098,6 +2098,21 @@ export const getInvoices = async (req: Request, res: Response) => {
             ]
         })
     }
+    if (params.isDraft) {
+        switch (params.isDraft) {
+            case true:
+                filterQuery['$and'].push({ isDraft: params.isDraft });
+                break;
+
+            default:
+                /**
+                 * For isDraft false, use the $ne because we want to retrieve old invoices,
+                 * old invoices may don't have isDraft property at all
+                 */
+                filterQuery['$and'].push({ isDraft: { $ne: params.isDraft } });
+                break;
+        }
+    }
     if (params.startDate && params.endDate) {
         const startDate = moment(params.startDate).format('YYYY-MM-DD');
         const endDate = moment(params.endDate).format('YYYY-MM-DD');

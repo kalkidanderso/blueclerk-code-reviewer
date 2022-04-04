@@ -5284,7 +5284,10 @@ paths:
               properties:
                 keyword:
                   type: string
-                  description: Filter jobs by search keyword to Job Id, Customer's name, Job Location's name address, Job Site's name address, Technician's name, and Contractor's name
+                  description: Filter invoices by search keyword to Job Id, Customer's name, Job's Job Location name address, Job's Job Site name address, Job's Technician name, and Job's Contractor name
+                isDraft:
+                  type: boolean
+                  description: Filter invoices by draft
                 startDate:
                   type: string
                   description: Filter of start jobs schedule date
