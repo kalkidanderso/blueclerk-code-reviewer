@@ -336,7 +336,10 @@ export const Validations = {
 
   deleteJobCharges: [check('jobChargesId').exists()],
 
-  getInvoices: [check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')],
+  getInvoices: [
+    check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
+    check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')
+  ],
 
   createInvoice: [
     check('jobId').optional().isMongoId().withMessage(Messages.WrongId),
