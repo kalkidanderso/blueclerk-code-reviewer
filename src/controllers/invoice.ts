@@ -2098,7 +2098,7 @@ export const getInvoices = async (req: Request, res: Response) => {
             ]
         })
     }
-    if (params.isDraft) {
+    if (params.isDraft !== undefined || params.isDraft !== null) {
         switch (params.isDraft) {
             case true:
                 filterQuery['$and'].push({ isDraft: params.isDraft });
@@ -2109,7 +2109,7 @@ export const getInvoices = async (req: Request, res: Response) => {
                  * For isDraft false, use the $ne because we want to retrieve old invoices,
                  * old invoices may don't have isDraft property at all
                  */
-                filterQuery['$and'].push({ isDraft: { $ne: params.isDraft } });
+                filterQuery['$and'].push({ isDraft: { $ne: true } });
                 break;
         }
     }
