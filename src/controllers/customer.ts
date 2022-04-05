@@ -128,6 +128,15 @@ export const createCustomer = async (req: Request, res: Response) => {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
                             }
 
+                            // Create contact customer
+                            const contact = new Contact({
+                                name: customer?.profile?.displayName ?? customer?.profile?.firstName + ` ${customer?.profile?.lastName}`,
+                                email: customer?.info?.email ?? customer?.auth?.email,
+                                phone: customer?.contact?.phone,
+                            });
+
+                            contact.save()
+
                             // create company customer here
                             const companyCustomer = new CompanyCustomer({
                                 company: companyId,
