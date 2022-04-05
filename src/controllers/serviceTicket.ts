@@ -649,7 +649,6 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                                     date: new Date()
                                 })
                                 // Update Job data for these disable data for Job
-                                job.jobLocation = jobLocationId;
                                 job.customerContactId = customerContactId;
                                 job.customerPO = customerPO;
                                 job.track = jobTrack;

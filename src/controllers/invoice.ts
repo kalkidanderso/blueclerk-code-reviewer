@@ -5,7 +5,8 @@ import fs from 'fs';
 import pdfmake from 'pdfmake';
 import * as http from 'http';
 import * as https from 'https';
-import { ContractorPermissions, DefaultCommission, InvoiceStatus, Messages, Status } from '../common/constants';
+import * as helper from '../services/helper';
+import { ContractorPermissions, DefaultCommission, DefaultPageSize, InvoiceStatus, Messages, Status } from '../common/constants';
 import { IContact } from '../common/contact';
 import { INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } from '../common/config';
 import { Contact } from '../models/Contact';
@@ -34,6 +35,7 @@ import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail
 import { IJobSite } from '../models/JobSite';
 import { IJobLocation } from '../models/JobLocation';
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission';
+import { getDatesFilterQuery } from 'src/services/pagination';
 
 /**
  * To reset Invoice quickbookId,
@@ -2066,9 +2068,112 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
 }
 
-export const getInvoices = (req: Request, res: Response) => {
+export const getInvoices = async (req: Request, res: Response) => {
 
-    Invoice.find({ 'company': req.companyId })
+    const params = req.body;
+    let companyId = req.otherCompanyId || req.companyId;
+
+    // Return error when all cursors are provided
+    if (params.nextCursor && params.previousCursor) {
+        return res.json({ status: Status.Error, message: 'Provided cursor could only be one of either nextCursor or previousCursor.' });
+    }
+
+    // Data query that used to search Invoices and available previous/next page
+    const filterQuery: any = {
+        $and: [ { $or: [
+            // { contractor: companyId },
+            { company: companyId }
+        ]}]
+    };
+
+    // Check and add if params filter provided
+    if (params.keyword) {
+        const keywordRegex = { $regex: params.keyword, $options: 'i' };
+        filterQuery['$and'].push({
+            $or: [
+                { invoiceId: keywordRegex },
+                { status: keywordRegex },
+                { 'jobObj.jobId': keywordRegex },
+                { 'customerObj.profile.displayName': keywordRegex },
+            ]
+        })
+    }
+    if (params.isDraft !== undefined || params.isDraft !== null) {
+        switch (params.isDraft) {
+            case true:
+                filterQuery['$and'].push({ isDraft: params.isDraft });
+                break;
+
+            default:
+                /**
+                 * For isDraft false, use the $ne because we want to retrieve old invoices,
+                 * old invoices may don't have isDraft property at all
+                 */
+                filterQuery['$and'].push({ isDraft: { $ne: true } });
+                break;
+        }
+    }
+    if (params.startDate && params.endDate) {
+        const startDate = moment(params.startDate).format('YYYY-MM-DD');
+        const endDate = moment(params.endDate).format('YYYY-MM-DD');
+        filterQuery['$and'].push({ createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) } });
+    }
+
+    // Deep clone filterQuery
+    const query: any = { $and: [] };
+    filterQuery['$and'].map((q: any) => { query['$and'].push({ ...q }) });
+    // Pagination query that default to nothing
+    let paginationQuery = {};
+    // Sort query that default to sort by the recent ones
+    let sortQuery = { createdAt: -1, _id: -1 };
+
+    if (params.nextCursor) {
+        // Update pagination query to get the next page
+        const cursor = JSON.parse(helper.fromCursorHash(params.nextCursor));
+        const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
+        paginationQuery = {
+            $or: [
+                { createdAt: { $lt: new Date(cursor.createdAt) } },
+                { createdAt: new Date(cursor.createdAt), _id: { $lt: cursorId } }
+            ]
+        };
+        query['$and'].push({ ...paginationQuery });
+    }
+    if (params.previousCursor) {
+        // Update pagination query to get the previous page
+        const cursor = JSON.parse(helper.fromCursorHash(params.previousCursor));
+        const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
+        paginationQuery = {
+            $or: [
+                { createdAt: { $gt: new Date(cursor.createdAt) } },
+                { createdAt: new Date(cursor.createdAt), _id: { $gt: cursorId } }
+            ]
+        };
+        query['$and'].push({ ...paginationQuery });
+        // Getting previous page is special, we need to reverse the sort
+        sortQuery = { createdAt: 1, _id: 1};
+    }
+
+    // Construct aggreate lookups here to be used multiple times
+    const aggregateLookups = [
+        { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
+        { $lookup: { from: 'users', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
+    ]
+
+    // Filter jobs using aggregate to be search to another collection
+    const invoicesAggregate: IInvoice[] = await Invoice.aggregate([
+        ...aggregateLookups,
+        { $match: { ...query } },
+        { $project: { _id: 1, createdAt: 1 } },
+        { $sort: sortQuery },
+        { $limit: params.pageSize || DefaultPageSize }
+    ]);
+    // Map the Job Report IDs filtered
+    const invoiceIds = invoicesAggregate.map((invoice) => invoice._id);
+
+    // Invoice.find({ 'company': req.companyId })
+    Invoice.find({ _id: { $in: invoiceIds } })
+        .sort({ ...sortQuery })
         .populate({
             path: 'job',
             populate: [
@@ -2125,15 +2230,84 @@ export const getInvoices = (req: Request, res: Response) => {
             path: 'createdBy',
             select: 'info.companyName auth.email profile.displayName permissions.role address contact.phone'
         })
-        .exec((err: any, invoices: IInvoice[]) => {
+        .exec(async (err: any, invoices: IInvoice[]) => {
 
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
 
-            return res.json({ 'status': Status.Success, 'invoices': invoices })
+            // Because we reverse sort for previous page, we need to revert it back
+            if (params.previousCursor) {
+                invoices = invoices.reverse();
+            }
+
+            /**
+             * Get all total job reports count
+             */
+            const totalInvoices = await Invoice.aggregate([
+                ...aggregateLookups,
+                { $match: { ...filterQuery } },
+                { $count: 'count' }
+            ])
+
+            /**
+             * Check if next page is available
+             */
+            let nextCursor = { createdAt: invoices[invoices.length - 1]?.createdAt, _id: invoices[invoices.length - 1]?._id };
+            // Deep clone filterQuery
+            const nextPageQuery: any = { $and: [] };
+            filterQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
+            // To be added with the pagination for the previous page
+            nextPageQuery['$and'].push({ $or: [
+                { createdAt: { $lt: new Date(nextCursor.createdAt) } },
+                { createdAt: new Date(nextCursor.createdAt), _id: { $lt: nextCursor._id } }
+            ]});
+            const isNextPage = await Invoice.aggregate([
+                ...aggregateLookups,
+                { $match: { ...nextPageQuery } },
+                { $project: { _id: 1, createdAt: 1 } },
+                { $sort: { createdAt: -1, _id: -1 } },
+                { $limit: 1 }
+            ]);
+
+            /**
+             * Check if previous page is availabe
+             */
+            let previousCursor = { createdAt: invoices[0]?.createdAt, _id: invoices[0]?._id };
+            // Deep clone filterQuery
+            const previousPageQuery: any = { $and: [] };
+            filterQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
+            // To be added with the pagination for the previous page
+            previousPageQuery['$and'].push({ $or: [
+                { createdAt: { $gt: new Date(previousCursor.createdAt) } },
+                { createdAt: new Date(previousCursor.createdAt), _id: { $gt: previousCursor._id } }
+            ]});
+            const isPreviousPage = await Invoice.aggregate([
+                ...aggregateLookups,
+                { $match: { ...previousPageQuery } },
+                { $project: { _id: 1, createdAt: 1 } },
+                { $sort: { createdAt: 1, _id: 1 } },
+                { $limit: 1 }
+            ]);
+
+            return res.json({
+                status: Status.Success,
+                invoices,
+                total: totalInvoices[0]?.count,
+                pagination: {
+                    nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)): null,
+                    previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null,
+                    pageSize: params.pageSize || null
+                },
+                // sort: {
+                //     by: params.sortBy,
+                //     order: params.sortOrder
+                // }
+            });
         })
+
 }
+
 export const getCompanyInvoices = (req: Request, res: Response) => {
 
     CompanyInvoice.find({ 'company': req.companyId })
