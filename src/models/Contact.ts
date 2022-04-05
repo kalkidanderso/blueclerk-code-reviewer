@@ -18,6 +18,9 @@ const ContactSchema = new Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    customer: {
+        type: Schema.Types.ObjectId, ref: 'User'
     }
 }, { timestamps: { createdAt: true, updatedAt: true } })
 

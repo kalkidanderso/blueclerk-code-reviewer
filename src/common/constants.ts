@@ -51,7 +51,8 @@ export const enum Role {
     COMPANY_ADMIN,
     ADMIN_EMPLOYEE,
     GLOBAL_ADMIN,
-    CUSTOMER
+    CUSTOMER,
+    CUSTOMER_CONTACT
 }
 
 export const enum OrderStatus {
