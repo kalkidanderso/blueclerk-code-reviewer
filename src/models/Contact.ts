@@ -18,7 +18,12 @@ const ContactSchema = new Schema({
     isActive: {
         type: Boolean,
         default: true
-    }
+    },
+    userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
+    },
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
 export const Contact = mongoose.model<IContact>('Contact', ContactSchema)

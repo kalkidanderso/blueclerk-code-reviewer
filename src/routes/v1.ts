@@ -2007,10 +2007,13 @@ export default function (sio: any) {
         tagController.getLocationTagJobs
     )
 
+    // CONTACT
+
     router.post(
         '/addContact',
         passport.authenticate('jwt', { session: false }),
         checkUserPermissions(Permissions.Customer_Create),
+        validate(Validations.addContact),
         ContactController.addContact
     )
 
@@ -2018,6 +2021,7 @@ export default function (sio: any) {
         '/updateContact',
         passport.authenticate('jwt', { session: false }),
         checkUserPermissions(Permissions.Customer_Create),
+        validate(Validations.updateContact),
         ContactController.updateContact
     )
 
