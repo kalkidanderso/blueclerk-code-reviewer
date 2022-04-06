@@ -102,6 +102,7 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
     const params = req.body
     const admin = <ICompanyAdmin>req.user
     var oldInvoicePrefix: string
+    var newInvoicePrefix: string
     var oldInvoiceId: number
 
     if ((params.invoicePrefix == undefined || params.invoicePrefix === '""') && (params.invoiceNumber == undefined || params.invoiceNumber === '""')) {
@@ -164,10 +165,8 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                                     return res.json({ 'status': Status.Success, 'message': "Prefix updated successfully." });
                                 })
                         } else {
-
                             return res.json({ 'status': Status.Success, 'message': "Prefix updated successfully." });
                         }
-
 
                     })
 
@@ -178,11 +177,12 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                 //     return res.json({ 'status': Status.Success, 'message': "Invoice number can not be less then " + company.currentJobId });
                 // }
 
-                company.updateOne({ 'currentInvoiceId': params.invoiceNumber }, (err: any) => {
+                newInvoicePrefix = params.invoicePrefix == "" ? null : params?.invoicePrefix
+ 
+                company.updateOne({ 'currentInvoiceId': params.invoiceNumber,'invoicePrefix': newInvoicePrefix}, (err: any) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
-
                     return res.json({ 'status': Status.Success, 'message': "Invoice number updated successfully." });
                 })
 
