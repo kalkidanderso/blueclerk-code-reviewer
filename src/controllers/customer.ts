@@ -22,6 +22,7 @@ import { _createQBCustomer, _updateQBCustomer, _inactivateQBCustomers } from '..
 import { _getQBInvoices, _updateQBInvoice, _transferQBInvoices, _countQBInvoices } from '../controllers/quickbook.invoice'
 import { _getQBPayments, _updateQBPayment, _transferQBPayments, _countQBPayments } from '../controllers/quickbook.payment'
 import { _refreshToken } from './quickbook'
+import { createCustomerContact } from './contact'
 
 /**
  * To reset Customer quickbookId,
@@ -127,6 +128,7 @@ export const createCustomer = async (req: Request, res: Response) => {
                             name: customer?.profile?.displayName ?? customer?.profile?.firstName + ` ${customer?.profile?.lastName}`,
                             email: customer?.info?.email ?? customer?.auth?.email,
                             phone: customer?.contact?.phone,
+                            userId: customer._id
                         });
 
                         customer.contacts.push(contactEntry._id);
@@ -136,7 +138,6 @@ export const createCustomer = async (req: Request, res: Response) => {
                             if (err) {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
                             }
-
 
                             // create company customer here
                             const companyCustomer = new CompanyCustomer({

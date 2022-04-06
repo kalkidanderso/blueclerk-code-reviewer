@@ -19,8 +19,10 @@ const ContactSchema = new Schema({
         type: Boolean,
         default: true
     },
-    referenceNumber: {
-        type: Schema.Types.ObjectId
+    userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
     },
 }, { timestamps: { createdAt: true, updatedAt: true } })
 

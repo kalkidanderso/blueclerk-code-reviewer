@@ -32,7 +32,6 @@ export interface ICustomerContact extends IUser {
     contactEmail: string
     inactiveAt?: Date
     inactiveBy?: Schema.Types.ObjectId | IUser,
-    contactId: Schema.Types.ObjectId | IContact
 
 }
 
@@ -49,11 +48,6 @@ const CustomerContactSchema = new Schema({
     company: {
         type: Schema.Types.ObjectId,
         ref: 'Company',
-        required: true
-    },
-    contactId: {
-        type: Schema.Types.ObjectId,
-        ref: 'Contact',
         required: true
     },
     equipments: [{ type: Schema.Types.ObjectId, ref: 'CustomerEquipment' }],
