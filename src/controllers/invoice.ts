@@ -102,6 +102,7 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
     const params = req.body
     const admin = <ICompanyAdmin>req.user
     var oldInvoicePrefix: string
+    var newInvoicePrefix: string
     var oldInvoiceId: number
 
     if ((params.invoicePrefix == undefined || params.invoicePrefix === '""') && (params.invoiceNumber == undefined || params.invoiceNumber === '""')) {
@@ -164,10 +165,8 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                                     return res.json({ 'status': Status.Success, 'message': "Prefix updated successfully." });
                                 })
                         } else {
-
                             return res.json({ 'status': Status.Success, 'message': "Prefix updated successfully." });
                         }
-
 
                     })
 
@@ -178,11 +177,12 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                 //     return res.json({ 'status': Status.Success, 'message': "Invoice number can not be less then " + company.currentJobId });
                 // }
 
-                company.updateOne({ 'currentInvoiceId': params.invoiceNumber }, (err: any) => {
+                newInvoicePrefix = params.invoicePrefix == "" ? null : params?.invoicePrefix
+ 
+                company.updateOne({ 'currentInvoiceId': params.invoiceNumber,'invoicePrefix': newInvoicePrefix}, (err: any) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
-
                     return res.json({ 'status': Status.Success, 'message': "Invoice number updated successfully." });
                 })
 
@@ -2095,6 +2095,14 @@ export const getInvoices = async (req: Request, res: Response) => {
                 { status: keywordRegex },
                 { 'jobObj.jobId': keywordRegex },
                 { 'customerObj.profile.displayName': keywordRegex },
+                { 'jobLocationObj.name': keywordRegex },
+                { 'jobLocationObj.address.street': keywordRegex },
+                { 'jobLocationObj.address.city': keywordRegex },
+                { 'jobSiteObj.name': keywordRegex },
+                { 'jobSiteObj.address.street': keywordRegex },
+                { 'jobSiteObj.address.city': keywordRegex },
+                { 'technicianObj.profile.displayName': keywordRegex },
+                { 'contractorsObj.info.companyName': keywordRegex },
             ]
         })
     }
@@ -2158,6 +2166,10 @@ export const getInvoices = async (req: Request, res: Response) => {
     const aggregateLookups = [
         { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
         { $lookup: { from: 'users', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
+        { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
+        { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
+        { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
+        { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } }
     ]
 
     // Filter jobs using aggregate to be search to another collection
