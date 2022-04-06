@@ -495,6 +495,17 @@ export const Validations = {
   ],
 
   // Contact
+  addContact: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['Customer', 'JobLocation']).withMessage('Only supported for Customer & JobLocation for now'),
+  ],
+
+  updateContact: [
+    check('_id').exists().withMessage(Messages.Required),
+    check('_id').isMongoId().withMessage(Messages.WrongId),
+    check('isActive').optional().isBoolean().toBoolean()
+  ],
+
   getCustomerAllContacts: [
     check('customerId').exists().withMessage(Messages.Required),
     check('customerId').isMongoId().withMessage(Messages.WrongId),
