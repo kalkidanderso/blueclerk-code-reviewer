@@ -19,9 +19,9 @@ const ContactSchema = new Schema({
         type: Boolean,
         default: true
     },
-    customer: {
-        type: Schema.Types.ObjectId, ref: 'User'
-    }
+    referenceNumber: {
+        type: Schema.Types.ObjectId
+    },
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
 export const Contact = mongoose.model<IContact>('Contact', ContactSchema)

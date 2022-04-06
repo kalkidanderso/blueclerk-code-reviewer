@@ -3,7 +3,7 @@ import { Request, Response } from 'express'
 import { Contact } from '../models/Contact'
 import { Messages, Role, Status } from '../common/constants'
 import { Customer, ICustomer } from '../models/Customer'
-import { JobLocation } from '../models/JobLocation'
+import { IJobLocation, JobLocation } from '../models/JobLocation'
 import { IContact } from '../common/contact'
 import { ICompany } from '../models/Company'
 import { CustomerContact, ICustomerContact } from '../models/CustomerContact';
@@ -11,12 +11,12 @@ import { sendCustomerContactNewPassword } from '../services/aws';
 
 const generator = require('generate-password');
 
-const createContact = async (name: string, email: string, phone: string, isActive: boolean, customer: string) => {
+const createContact = async (name: string, email: string, phone: string, isActive: boolean, referenceNumber: string) => {
     const contact = new Contact({
         name: name,
         email: email,
         phone: phone,
-        customer
+        referenceNumber
     })
     await contact.save()
     return contact
@@ -31,7 +31,7 @@ const createContactForCustomer = async (data: any, customer: ICustomer) => {
         }
 
     } else {
-        contact = await createContact(data.name, data.email, data.phone, data.isActive, customer._id)
+        contact = await createContact(data.name, data.email, data.phone, data.isActive, data.referenceNumber)
     }
     customer.contacts.push(contact._id)
     await customer.save()
@@ -52,9 +52,16 @@ const addContactToTheJobLocation = async (contactId: string, jobLocationId: stri
 }
 
 export const addContact = async (req: Request, res: Response) => {
-    const params = req.body;
-
     let contact = null;
+    const params = req.body;
+    const customerContact = await CustomerContact.find({
+        $or: [{ 'info.email': params.email }, { 'auth.email': params.email }]
+    })
+
+    if (customerContact.length) {
+        return res.json({ status: Status.Error, messages: 'This email is already used' })
+    }
+
     switch (params.type) {
         case 'Customer':
             const customer = await Customer.findOne({ _id: params.referenceNumber })
@@ -63,25 +70,29 @@ export const addContact = async (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'Customer not found' })
             }
 
-            const result = await createContactForCustomer({ name: params.name, phone: params.phone, email: params.email, customer: customer._id }, customer)
+            const result = await createContactForCustomer({ name: params.name, phone: params.phone, email: params.email, referenceNumber: customer._id }, customer)
 
             if (params.email) {
-                await createCustomerContact(result, customer);
+                await createCustomerContact({ contact: result, customer });
             }
 
             return res.json({ 'status': Status.Created, contact: result });
 
         case 'JobLocation':
-            const jobLocation = await JobLocation.findOne({ _id: req.body.referenceNumber })
+            const jobLocation = await JobLocation.findOne({ _id: params.referenceNumber })
 
             if (!jobLocation) {
                 return res.json({ status: Status.Error, message: 'Job location not found' })
             }
 
             if (req.body.contactId) {
-                contact = await addContactToTheJobLocation(req.body.contactId, req.body.referenceNumber)
+                contact = await addContactToTheJobLocation(params.contactId, params.referenceNumber)
             } else {
-                contact = await createContactForJobLocation({ name: req.body.name, email: req.body.email, phone: req.body.phone }, jobLocation._id)
+                contact = await createContactForJobLocation({ name: params.name, email: params.email, phone: params.phone, referenceNumber: jobLocation._id }, jobLocation._id)
+            }
+
+            if (params.email) {
+                await createCustomerContact({ contact, jobLocation })
             }
 
             return res.json({ success: Status.Created, contact });
@@ -107,7 +118,7 @@ export const updateContact = async (req: Request, res: Response) => {
                 : !!req.body.isActive
 
         // when params data not available, use the old data
-        const updateEntry: any = {
+        const updateEntry = {
             name: params.name ?? contact.name,
             email: params.email,
             phone: params.phone ?? contact.phone,
@@ -115,76 +126,24 @@ export const updateContact = async (req: Request, res: Response) => {
         }
 
         // Find contact in customer
-        const customer = await Customer.findOne({ contacts: params._id });
+        const customerContact = await CustomerContact.findOne({ contactId: params._id });
 
-        if (customer) {
-            // Find customer contact
-            const customerContact = await CustomerContact.findOne({ customer: contact.customer, 'auth.email': contact.email });
+        if (customerContact) {
+            // Update customer contact email when email contact is udpated
+            await updateCustomerContact({ customerContact, contact, updateEntry: <IContact>updateEntry })
+        }
 
-            if (customerContact) {
-                // Update customer contact email when email contact is udpated
-                if (contact.email !== updateEntry.email) {
-                    customerContact.auth.email = updateEntry.email;
-                    customerContact.info.email = updateEntry.email;
-
-                    // Inactive customer contact account when email on contact is removed
-                    if (!updateEntry.email) {
-                        customerContact.isActive = false
-                        updateEntry.isActive = false
-                    }
-
-                    // Create a new customer contact account when email added in contact and contact have a customer
-                    if (!contact.email && updateEntry.email && contact.customer) {
-                        customerContact.auth.email = updateEntry.email;
-                        customerContact.info.email = updateEntry.email;
-                        customerContact.isActive = true
-                        updateEntry.isActive = true
-                    }
-                }
-
-                // Send customer contact email when not have password
-                if (!customerContact?.auth?.password) {
-                    sendCustomerContactEmail(customerContact);
-                }
-
-                // Update customer contact account when contact name updated
-                if (contact.name !== updateEntry.name) {
-                    if (customerContact) {
-                        const contactName = updateEntry.name ? updateEntry.name.split(' ') : contact.name;
-                        customerContact.profile.firstName = contactName[0];
-                        customerContact.profile.lastName = contactName[contactName.length - 1];
-                        customerContact.profile.displayName = updateEntry.name;
-                    }
-                }
-
-                // Update contact phone
-                if (contact.phone !== updateEntry.phone) {
-                    if (customerContact) {
-                        customerContact.contact.phone = updateEntry.phone;
-                    }
-                }
-
-                // Update active status on customer contact and contact
-                if (contact.isActive !== updateEntry.isActive) {
-                    customerContact.isActive = updateEntry.isActive;
-                    contact.isActive = updateEntry.isActive;
-                }
-
-                customerContact.save();
-            }
-
-            // Create new customer contact when customer contact is not available and add new email on contact
-            if (!customerContact && updateEntry.email && !contact.customer) {
-                createCustomerContact(updateEntry, customer);
-                contact.customer = customer._id;
-                contact.save();
-            }
+        // Create new when customer contact is unavailable in user collection
+        if (!customerContact && updateEntry.email) {
+            const jobLocation = await JobLocation.findOne({ contacts: params._id });
+            const customer = await Customer.findOne({ contacts: params._id });
+            await createCustomerContact({ contact: <IContact>updateEntry, customer, jobLocation });
+            customerContact.contactId = contact._id;
+            customerContact.save();
         }
 
         // Only update contact when contact type is not in customer contacts
-        const result = await Contact.findByIdAndUpdate(req.body._id, updateEntry, {
-            new: true
-        });
+        const result = await Contact.findByIdAndUpdate(req.body._id, updateEntry, { new: true });
 
         return res.json({ status: Status.Success, contact: result });
     } catch (err) {
@@ -265,34 +224,21 @@ export const removeContact = async (req: Request, res: Response) => {
         if (req.body.type === 'Customer') {
             const customer = await Customer.findOne({ _id: req.body.referenceNumber })
             if (customer) {
-                // await Customer.findByIdAndUpdate(req.body.referenceNumber, { $pull: { contacts: req.body.contactId } }, { new: true })
                 // Inactive customer contact when remove contact
-                await CustomerContact.findOneAndUpdate({ customer: req.body.referenceNumber }, { isActive: false });
+                await CustomerContact.findOneAndUpdate({ contactId: req.body.contactId }, { isActive: false });
                 await Contact.findByIdAndUpdate(req.body.contactId, { isActive: false });
-                const contactCustomer = await Customer.findOne({ contacts: req.body.contactId })
-                if (!contactCustomer) {
-                    // await Contact.findByIdAndRemove(req.body.contactId)
-                    await Contact.findByIdAndUpdate(req.body.contactId, { isActive: false });
-                }
-                return res.json({ status: Status.Success, message: 'Contact removed successfully' })
+                return res.json({ status: Status.Success, message: 'Contact removed successfully' });
             } else {
-                return res.json({ status: Status.Error, message: 'Customer not found' })
+                return res.json({ status: Status.Error, message: 'Customer not found' });
             }
         } else if (req.body.type === 'JobLocation') {
             // Find and check Job Location if exist
             const jobLocation = await JobLocation.findById(req.body.referenceNumber)
-            if (!jobLocation) {
+            if (jobLocation) {
+                await CustomerContact.findOneAndUpdate({ contactId: req.body.contactId }, { isActive: false });
+                await Contact.findByIdAndUpdate(req.body.contactId, { isActive: false });
+            } else {
                 return res.json({ status: Status.Error, message: 'Job Location not found' });
-            }
-
-            // Remove the Contact ID from the Job Location's contacts
-            await JobLocation.findByIdAndUpdate(jobLocation._id, { $pull: { contacts: req.body.contactId } }, { new: true });
-            // Find and check if there any Job Location that still use the contact
-            const contactJobLocation = await JobLocation.findOne({ contacts: req.body.contactId });
-            const contactCustomer = await Customer.findOne({ contacts: req.body.contactId });
-            if (!contactJobLocation && !contactCustomer) {
-                // No Customer and Job Location uses it anymore, delete it from DB
-                await Contact.findByIdAndRemove(req.body.contactId);
             }
 
             return res.json({ status: Status.Success, message: 'Contact removed successfully' });
@@ -335,17 +281,27 @@ const _handlefindIsActiveContact = async (isActive: string | boolean, customerCo
 }
 
 // Create customer contact in user collection
-const createCustomerContact = async (contact: IContact, customer: ICustomer) => {
+const createCustomerContact = async ({
+    contact,
+    customer,
+    jobLocation
+}: {
+    contact: IContact,
+    customer?: ICustomer,
+    jobLocation?: IJobLocation
+}) => {
+
     const contactName = contact.name.split(' ')
     const customerContactEntry: any = {
         info: { email: contact.email },
-        profile: { firstName: contactName[0], lastName: contactName[contactName.length - 1], displayName: contact.name },
-        address: customer.address,
+        profile: { firstName: contactName[0], lastName: contactName.length > 1 ? contactName[contactName.length - 1] : '', displayName: contact.name },
+        address: customer?.address ?? jobLocation?.address,
         contact: { phone: contact.phone },
-        company: customer.company,
+        company: customer?.company ?? jobLocation?.companyId,
         permissions: { role: Role.CUSTOMER_CONTACT, extra: [] },
         contactName: contact.name,
-        customer: customer._id
+        contactId: contact._id,
+        location: customer?.location ?? jobLocation?.location
     }
 
     const customerContact = await new CustomerContact(customerContactEntry).save();
@@ -375,5 +331,67 @@ const sendCustomerContactEmail = async (contact: ICustomerContact) => {
     }
 
     sendCustomerContactNewPassword(options);
+    return;
+}
+
+const updateCustomerContact = async ({
+    customerContact,
+    contact,
+    updateEntry,
+}: {
+    customerContact: ICustomerContact,
+    contact: IContact,
+    updateEntry: IContact
+}) => {
+
+    if (contact.email !== updateEntry.email) {
+        customerContact.auth.email = updateEntry.email;
+        customerContact.info.email = updateEntry.email;
+
+        // Inactive customer contact account when email on contact is removed
+        if (!updateEntry.email) {
+            customerContact.isActive = false
+            updateEntry.isActive = false
+        }
+
+        // Create a new customer contact account when email added in contact and contact have a customer
+        if (!contact.email && updateEntry.email) {
+            customerContact.auth.email = updateEntry.email;
+            customerContact.info.email = updateEntry.email;
+            customerContact.isActive = true
+            updateEntry.isActive = true
+        }
+    }
+
+    // Send customer contact email when not have password
+    if (!customerContact?.auth?.password) {
+        await sendCustomerContactEmail(customerContact);
+    }
+
+    // Update customer contact account when contact name updated
+    if (contact.name !== updateEntry.name) {
+        if (customerContact) {
+            const contactName = updateEntry.name ? updateEntry.name.split(' ') : contact.name;
+            customerContact.profile.firstName = contactName[0];
+            customerContact.profile.lastName = contactName.length > 1 ? contactName[contactName.length - 1] : '';
+            customerContact.profile.displayName = updateEntry.name;
+            customerContact.contactName = updateEntry.name;
+        }
+    }
+
+    // Update contact phone
+    if (contact.phone !== updateEntry.phone) {
+        if (customerContact) {
+            customerContact.contact.phone = updateEntry.phone;
+        }
+    }
+
+    // Update active status on customer contact and contact
+    if (contact.isActive !== updateEntry.isActive) {
+        customerContact.isActive = updateEntry.isActive;
+        contact.isActive = updateEntry.isActive;
+    }
+
+    customerContact.save();
     return;
 }
