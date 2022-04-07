@@ -2008,6 +2008,7 @@ export default function (sio: any) {
     router.put(
         '/updateContact',
         passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
         checkUserPermissions(Permissions.Customer_Create),
         validate(Validations.updateContact),
         ContactController.updateContact

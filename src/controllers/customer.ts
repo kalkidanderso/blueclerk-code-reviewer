@@ -104,6 +104,19 @@ export const createCustomer = async (req: Request, res: Response) => {
         }
     }
     const customer = new Customer(data)
+    if (customer.contact.phone || customer.contact.fax) {
+        // Create contact customer
+        const contactEntry = new Contact({
+            name: customer?.profile?.displayName ?? customer?.profile?.firstName + ` ${customer?.profile?.lastName}`,
+            email: customer?.info?.email ?? customer?.auth?.email,
+            phone: customer?.contact?.phone,
+            userId: customer._id
+        });
+
+        createCustomerContact({ contact: contactEntry, customer });
+        customer.contacts.push(contactEntry._id);
+        contactEntry.save();
+    }
 
     CompanyCustomer.find({ company: companyId },
         (err: any, companyCustomers: ICompanyCustomer[]) => {
@@ -123,16 +136,6 @@ export const createCustomer = async (req: Request, res: Response) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
                     if (users.length === 0 || (users.findIndex((element: any) => element.info.email === customer.info.email) < 0)) {
-                        // Create contact customer
-                        const contactEntry = new Contact({
-                            name: customer?.profile?.displayName ?? customer?.profile?.firstName + ` ${customer?.profile?.lastName}`,
-                            email: customer?.info?.email ?? customer?.auth?.email,
-                            phone: customer?.contact?.phone,
-                            userId: customer._id
-                        });
-
-                        customer.contacts.push(contactEntry._id);
-                        contactEntry.save();
                         customer.save((err: any) => {
 
                             if (err) {
