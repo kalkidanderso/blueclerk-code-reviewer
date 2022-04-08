@@ -171,7 +171,7 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                     })
 
                 })
-            } else if (typeof params.invoiceNumber !== 'undefined' && params.invoiceNumber && (typeof params.invoicePrefix === 'undefined' || !params.invoicePrefix)) {
+            } else if (typeof params.invoiceNumber !== 'undefined' && (typeof params.invoicePrefix === 'undefined' || !params.invoicePrefix)) {
 
                 // if (company.currentInvoiceId > params.invoiceNumber) {
                 //     return res.json({ 'status': Status.Success, 'message': "Invoice number can not be less then " + company.currentJobId });
@@ -186,7 +186,7 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                     return res.json({ 'status': Status.Success, 'message': "Invoice number updated successfully." });
                 })
 
-            } else if ((typeof params.invoicePrefix !== 'undefined' && params.invoicePrefix) && (typeof params.invoiceNumber !== 'undefined' && params.invoiceNumber)) {
+            } else if ((typeof params.invoicePrefix !== 'undefined' && params.invoicePrefix) && (typeof params.invoiceNumber !== 'undefined')) {
 
                 if (company.invoicePrefix == params.invoicePrefix) {
 
@@ -887,11 +887,13 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         currentInvoiceId = company.currentInvoiceId
     }
 
+    /* remove checking invoiceId with estimateId 
     if (company.currentEstimateId > company.currentInvoiceId) {
         currentInvoiceId = company.currentEstimateId
     } else if (company.currentInvoiceId > company.currentEstimateId) {
         currentInvoiceId = company.currentInvoiceId
     }
+    */
 
     const invNumber = parseInt(params.invoiceNumber) || company.currentInvoiceId + 1
     let invoiceId = company.invoicePrefix
@@ -2095,31 +2097,8 @@ export const getInvoices = async (req: Request, res: Response) => {
                 { status: keywordRegex },
                 { 'jobObj.jobId': keywordRegex },
                 { 'customerObj.profile.displayName': keywordRegex },
-                { 'jobLocationObj.name': keywordRegex },
-                { 'jobLocationObj.address.street': keywordRegex },
-                { 'jobLocationObj.address.city': keywordRegex },
-                { 'jobSiteObj.name': keywordRegex },
-                { 'jobSiteObj.address.street': keywordRegex },
-                { 'jobSiteObj.address.city': keywordRegex },
-                { 'technicianObj.profile.displayName': keywordRegex },
-                { 'contractorsObj.info.companyName': keywordRegex },
             ]
         })
-    }
-    if (params.isDraft !== undefined || params.isDraft !== null) {
-        switch (params.isDraft) {
-            case true:
-                filterQuery['$and'].push({ isDraft: params.isDraft });
-                break;
-
-            default:
-                /**
-                 * For isDraft false, use the $ne because we want to retrieve old invoices,
-                 * old invoices may don't have isDraft property at all
-                 */
-                filterQuery['$and'].push({ isDraft: { $ne: true } });
-                break;
-        }
     }
     if (params.startDate && params.endDate) {
         const startDate = moment(params.startDate).format('YYYY-MM-DD');
@@ -2166,10 +2145,6 @@ export const getInvoices = async (req: Request, res: Response) => {
     const aggregateLookups = [
         { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
         { $lookup: { from: 'users', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
-        { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
-        { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
-        { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
-        { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } }
     ]
 
     // Filter jobs using aggregate to be search to another collection
