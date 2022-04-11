@@ -454,6 +454,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
 export const getOpenServiceTicketsStream = async (req: Request, res: Response, sio: any) => {
 
     const company = <ICompany>req.company;
+    const user = <IUser>req.user;
 
     // Initialize started count & total of the service tickets
     let count = 1;
@@ -486,7 +487,14 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     // Iterate all the cursor and send it to company's room socket.io
     for (let serviceTicket = await serviceTicketCursor.next(); serviceTicket != null; serviceTicket = await serviceTicketCursor.next()) {
         // Send the service ticket via socket.io
-        await sio.to(company._id.toString()).emit(SocketEvents.ALL_OPEN_SERVICE_TICKETS, {
+
+        let clientExist = sio.sockets?.adapter?.rooms?.get(company._id?.toString() + user._id?.toString())
+        if(!clientExist){
+            // client disconnect, stop sending data
+            break;
+        }
+
+        await sio.to(company._id?.toString() + user._id?.toString()).emit(SocketEvents.ALL_OPEN_SERVICE_TICKETS, {
             serviceTicket,
             count: count++,
             total: totalServiceTickets
@@ -496,7 +504,6 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     return;
 
 }
-
 
 export const updateServiceTicket = (req: Request, res: Response) => {
     const user = <IUser>req.user
