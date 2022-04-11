@@ -171,7 +171,7 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                     })
 
                 })
-            } else if (typeof params.invoiceNumber !== 'undefined' && params.invoiceNumber && (typeof params.invoicePrefix === 'undefined' || !params.invoicePrefix)) {
+            } else if (typeof params.invoiceNumber !== 'undefined' && (typeof params.invoicePrefix === 'undefined' || !params.invoicePrefix)) {
 
                 // if (company.currentInvoiceId > params.invoiceNumber) {
                 //     return res.json({ 'status': Status.Success, 'message': "Invoice number can not be less then " + company.currentJobId });
@@ -186,7 +186,7 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                     return res.json({ 'status': Status.Success, 'message': "Invoice number updated successfully." });
                 })
 
-            } else if ((typeof params.invoicePrefix !== 'undefined' && params.invoicePrefix) && (typeof params.invoiceNumber !== 'undefined' && params.invoiceNumber)) {
+            } else if ((typeof params.invoicePrefix !== 'undefined' && params.invoicePrefix) && (typeof params.invoiceNumber !== 'undefined')) {
 
                 if (company.invoicePrefix == params.invoicePrefix) {
 
@@ -887,11 +887,13 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         currentInvoiceId = company.currentInvoiceId
     }
 
+    /* remove checking invoiceId with estimateId 
     if (company.currentEstimateId > company.currentInvoiceId) {
         currentInvoiceId = company.currentEstimateId
     } else if (company.currentInvoiceId > company.currentEstimateId) {
         currentInvoiceId = company.currentInvoiceId
     }
+    */
 
     const invNumber = parseInt(params.invoiceNumber) || company.currentInvoiceId + 1
     let invoiceId = company.invoicePrefix
