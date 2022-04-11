@@ -110,6 +110,8 @@ sio.on("connection", (socket: any) => {
       } else {
         // Let the client joins the room based on their company_id
         socket.join(user.company && user.company.toString());
+        // Let the client join private room from req.user
+        socket.join(user.company && user.company.toString() + user.id)
       }
     }
   )

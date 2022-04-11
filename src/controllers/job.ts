@@ -1129,6 +1129,7 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
 export const getJobsStream = async (req: Request, res: Response, sio: any) => {
 
     const company = <ICompany>req.company;
+    const user = <IUser>req.user;
 
     // Initialize started count & total of the jobs
     let count = 1;
@@ -1236,15 +1237,21 @@ export const getJobsStream = async (req: Request, res: Response, sio: any) => {
 
     // Iterate all the cursor and send it to company's room socket.io
     for (let job = await jobCursor.next(); job != null; job = await jobCursor.next()) {
+        let clientExist = sio.sockets.adapter.rooms.get(company._id?.toString() + user._id.toString())
+        if(!clientExist){
+            // client disconnect, stop sending data
+            break;
+        }
+
         // Send the job via socket.io
-        await sio.to(company._id?.toString()).emit(SocketEvents.ALL_JOBS, {
+        await sio.to(company._id?.toString() + user._id.toString()).emit(SocketEvents.ALL_JOBS, {
             job,
             count: count++,
             total: totalJobs
         });
 
         // TODO: to be deprecated
-        await sio.to(company._id?.toString()).emit(SocketEvents.ALL_SCHEDULED_JOBS, {
+        await sio.to(company._id?.toString() + user._id.toString()).emit(SocketEvents.ALL_SCHEDULED_JOBS, {
             job,
             count: countAlt++,
             total: totalJobs
