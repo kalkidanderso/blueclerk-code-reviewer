@@ -488,7 +488,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     for (let serviceTicket = await serviceTicketCursor.next(); serviceTicket != null; serviceTicket = await serviceTicketCursor.next()) {
         // Send the service ticket via socket.io
 
-        let clientExist = sio.sockets.adapter.rooms.get(company._id?.toString() + user._id?.toString())
+        let clientExist = sio.sockets?.adapter?.rooms?.get(company._id?.toString() + user._id?.toString())
         if(!clientExist){
             // client disconnect, stop sending data
             break;

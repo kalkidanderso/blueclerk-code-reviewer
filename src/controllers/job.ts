@@ -1237,7 +1237,7 @@ export const getJobsStream = async (req: Request, res: Response, sio: any) => {
 
     // Iterate all the cursor and send it to company's room socket.io
     for (let job = await jobCursor.next(); job != null; job = await jobCursor.next()) {
-        let clientExist = sio.sockets.adapter.rooms.get(company._id?.toString() + user._id?.toString())
+        let clientExist = sio.sockets?.adapter?.rooms?.get(company._id?.toString() + user._id?.toString())
         if(!clientExist){
             // client disconnect, stop sending data
             break;
