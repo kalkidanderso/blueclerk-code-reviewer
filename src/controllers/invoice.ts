@@ -2180,10 +2180,9 @@ export const getInvoices = async (req: Request, res: Response) => {
         { $sort: sortQuery },
         { $limit: params.pageSize || DefaultPageSize }
     ]);
-    // Map the Job Report IDs filtered
+    // Map the Invoice IDs filtered
     const invoiceIds = invoicesAggregate.map((invoice) => invoice._id);
 
-    // Invoice.find({ 'company': req.companyId })
     Invoice.find({ _id: { $in: invoiceIds } })
         .sort({ ...sortQuery })
         .populate({
@@ -2254,7 +2253,7 @@ export const getInvoices = async (req: Request, res: Response) => {
             }
 
             /**
-             * Get all total job reports count
+             * Get all total invoices count
              */
             const totalInvoices = await Invoice.aggregate([
                 ...aggregateLookups,

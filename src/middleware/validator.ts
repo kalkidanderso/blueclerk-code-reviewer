@@ -163,6 +163,15 @@ export const Validations = {
   createDiscountItem: [
     check('title').exists().withMessage(Messages.Required),
     check('charges').exists().withMessage(Messages.Required),
+    check('noOfItems').optional().toInt()
+  ],
+
+  updateDiscountItem: [
+    check('discountItemId').exists().withMessage(Messages.Required),
+    check('discountItemId').isMongoId().withMessage(Messages.WrongId),
+    check('title').exists().withMessage(Messages.Required),
+    check('charges').exists().withMessage(Messages.Required),
+    check('noOfItems').optional().toInt()
   ],
 
   //Job

@@ -609,6 +609,15 @@ export default function (sio: any) {
         itemController.createDiscountItem
     )
 
+    router.put(
+        '/updateDiscountItem',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Type_Create),
+        validate(Validations.updateDiscountItem),
+        itemController.updateDiscountItem
+    )
+
     // Job
 
     router.post(

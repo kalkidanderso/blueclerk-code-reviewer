@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
-import { Status } from '../common/constants';
+import { Messages, Status } from '../common/constants';
 
 import { IUser } from '../models/User';
 import { ICompany } from '../models/Company';
-import { Customer } from '../models/Customer';
+import { ICustomer, Customer } from '../models/Customer';
 import { IItem, IQBItem, Item } from '../models/Item';
 import { DiscountItem } from '../models/DiscountItem';
-import { _createQBItem } from '../controllers/quickbook.item';
+import { _createQBItem, _updateQBItem } from '../controllers/quickbook.item';
 
 export const createItem = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -124,24 +124,11 @@ export const createDiscountItem = async (req: Request, res: Response, next: Next
 
     let customer, custDiscountPrice;
 
-    if (params.customerId) {
-        if (params.noOfItems == undefined || params.noOfItems == null) {
-            return res.json({ status: Status.Error, message: 'Params noOfItems is requireq when customerId is provided' });
-        }
-
-        customer = await Customer.findOne({ _id: params.customerId, company }).populate({ path: 'discountPrices.discountItem' });
-        if (!customer) {
-            return res.json({ status: Status.Error, message: 'Customer not found' });
-        }
-
+    try {
         // Check if customer already have discount item for that quantity of items
-        custDiscountPrice = customer.discountPrices.find((discountPrice) => discountPrice.quantity === Number(params.noOfItems));
-        if (custDiscountPrice?.discountItem) {
-            const custDiscountItem = <IItem>custDiscountPrice.discountItem;
-            if (custDiscountItem.isActive) {
-                return res.json({ status: Status.Error, message: `Customer already have discount item for this No. of Items. Please unassign this Discount Item first: ${custDiscountItem.name}`})
-            }
-        }
+        ({ customer, custDiscountPrice } = await _checkCustomerDiscountItem(params, company, customer, custDiscountPrice));
+    } catch (err) {
+        return res.json({ status: Status.Error, message: err.message || Messages.GenericError });
     }
 
     // Construct the new discount item entry
@@ -149,37 +136,22 @@ export const createDiscountItem = async (req: Request, res: Response, next: Next
         {
             name: params.title,
             description: params.description,
+            tax: params.tax ?? 0,
             charges: params.charges,
             company: company._id,
             isDiscountItem: true,
             isJobType: false,
-            customer: customer._id,
-            noOfItems: Number(params.noOfItems)
+            customer: customer?._id,
+            noOfItems: params.noOfItems
         }
     )
     await item.save();
 
-    // Check and fill Customer's discount prices list
-    const maxDiscountQty = customer.discountPrices[customer.discountPrices.length - 1]?.quantity ?? 0;
-
-    if (maxDiscountQty < Number(params.noOfItems)) {
-        for (let i = maxDiscountQty + 1; i <= Number(params.noOfItems); i++) {
-            // Fill any quantity that not assigned to discount item to null
-            const discountItem = i === Number(params.noOfItems) ? item : null;
-
-            customer.discountPrices.push({
-                quantity: i,
-                discountItem
-            });
-        }
-    } else {
-        custDiscountPrice.discountItem = item;
-    }
-
     try {
-        customer.save();
-    } catch (error) {
-        res.json({ status: Status.Error, message: error.message });
+        // Check and fill Customer's discount prices list
+        await _saveCustomerDiscountItem(params, customer, custDiscountPrice, item);
+    } catch (err) {
+        return res.json({ status: Status.Error, message: err.message || Messages.GenericError });
     }
 
     // Return the HTTP request to user first
@@ -207,5 +179,145 @@ export const createDiscountItem = async (req: Request, res: Response, next: Next
 
         return next();
     });
+
+}
+
+export const updateDiscountItem = async (req: Request, res: Response, next: NextFunction) => {
+
+    const params = req.body;
+    const company = <ICompany>req.company;
+
+    let customer, custDiscountPrice;
+    const item = await DiscountItem.findOne({ _id: params.discountItemId, isActive: true, company: company._id });
+
+    if (!item) {
+        return res.json({ status: Status.Error, message: 'Discount Item not found' });
+    }
+
+    // Discount Item assigned to another specific customer
+    if (item.customer?.toString() !== params.customerId?.toString() || item.noOfItems !== params.noOfItems) {
+        if (item.customer) {
+            const oldCustomer = await Customer.findById(item.customer);
+            const oldCustDiscPrice = oldCustomer.discountPrices.find(dp => dp.quantity === item.noOfItems);
+            oldCustDiscPrice.discountItem = null;
+            await oldCustomer.save();
+        }
+
+        try {
+            // Check if customer already have discount item for that quantity of items
+            ({ customer, custDiscountPrice } = await _checkCustomerDiscountItem(params, company, customer, custDiscountPrice));
+        } catch (err) {
+            return res.json({ status: Status.Error, message: err.message || Messages.GenericError });
+        }
+    } else {
+        customer = await Customer.findOne({ _id: params.customerId, company }).populate({ path: 'discountPrices.discountItem' });
+        custDiscountPrice = customer?.discountPrices?.find((discountPrice) => discountPrice.quantity === Number(params.noOfItems));
+    }
+
+    item.name = params.title || item.name;
+    item.description = params.description;
+    item.tax = params.tax ?? 0;
+    item.charges = params.charges ?? 0;
+    item.customer = customer?._id;
+    item.noOfItems = params.noOfItems;
+
+    await item.save();
+
+    try {
+        // Check and fill Customer's discount prices list
+        await _saveCustomerDiscountItem(params, customer, custDiscountPrice, item);
+    } catch (err) {
+        return res.json({ status: Status.Error, message: err.message || Messages.GenericError });
+    }
+
+    // Return the HTTP request to user first
+    res.json({ status: Status.Success, message: 'Discount Item updated successfully.', discountItem: item, customer });
+
+    if (!company.qbAuthorized) {
+        return next();
+    }
+    // Create the new Discount Item in QuickBooks
+    _updateQBItem(req, res, company, item, async (err: any, errMsg: any) => {
+        if (err) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        // If company's items already synced, update the synced date
+        if (company.qbSync?.itemsSynced) {
+            company.qbSync.itemsSyncedAt = new Date();
+            await company.save();
+        }
+
+        return next();
+    });
+
+}
+
+/**
+ * Configure and save Customer's discount prices
+ */
+const _saveCustomerDiscountItem = async (params: any, customer: ICustomer, custDiscountPrice: any, item: IItem) => {
+
+    if (!customer) {
+        return;
+    }
+
+    // Check and fill Customer's discount prices list
+    const maxDiscountQty = customer.discountPrices[customer.discountPrices.length - 1]?.quantity ?? 0;
+
+    if (maxDiscountQty < Number(params.noOfItems)) {
+        for (let i = maxDiscountQty + 1; i <= Number(params.noOfItems); i++) {
+            // Fill any quantity that not assigned to discount item to null
+            const discountItem = i === Number(params.noOfItems) ? item : null;
+
+            customer.discountPrices.push({
+                quantity: i,
+                discountItem
+            });
+        }
+    } else {
+        custDiscountPrice.discountItem = item;
+    }
+
+    try {
+        customer.save();
+    } catch (error) {
+        throw new Error(error.message);
+    }
+
+    return;
+
+}
+
+/**
+ * Check if customer already have discount item for that quantity of items
+ */
+const _checkCustomerDiscountItem = async (params: any, company: ICompany, customer: ICustomer, custDiscountPrice: any): Promise<{customer: ICustomer, custDiscountPrice: any}> => {
+
+    if (!params.customerId) {
+        return { customer, custDiscountPrice };
+    }
+
+    if (params.noOfItems == undefined || params.noOfItems == null) {
+        throw new Error('Params noOfItems is requireq when customerId is provided');
+    }
+
+    // Find customer on the company
+    customer = await Customer.findOne({ _id: params.customerId, company }).populate({ path: 'discountPrices.discountItem' });
+    if (!customer) {
+        throw new Error('Customer not found');
+    }
+
+    // Get the customer discount price for the quantity of item
+    custDiscountPrice = customer.discountPrices.find((discountPrice) => discountPrice.quantity === Number(params.noOfItems));
+    if (custDiscountPrice?.discountItem) {
+        // If existing discount item found, check if discount item active or not
+        const custDiscountItem = <IItem>custDiscountPrice.discountItem;
+        if (custDiscountItem.isActive) {
+            throw new Error(`Customer already have discount item for this No. of Items. Please unassign this Discount Item first: ${custDiscountItem.name}`);
+        }
+    }
+
+    return { customer, custDiscountPrice };
 
 }
