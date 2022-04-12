@@ -5245,7 +5245,8 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "title"
+                  "title",
+                  "charges"
                 ],
                 "properties": {
                   "title": {
@@ -5254,15 +5255,89 @@
                   "description": {
                     "type": "string"
                   },
+                  "tax": {
+                    "type": "number",
+                    "description": "Tax percentage for this discount item"
+                  },
                   "charges": {
-                    "type": "integer"
+                    "type": "integer",
+                    "description": "How much discount to be applied to the invoice"
                   },
                   "customerId": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "To apply this discount item to specific customer"
                   },
                   "noOfItems": {
                     "type": "integer",
-                    "description": "Number of items for the discount to be active"
+                    "description": "Number of items for the discount to be active to the specific customer"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateDiscountItem": {
+      "put": {
+        "tags": [
+          "Discount Item"
+        ],
+        "summary": "To update a discount item",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "discountItemId",
+                  "title",
+                  "charges"
+                ],
+                "properties": {
+                  "discountItemId": {
+                    "type": "string",
+                    "description": "ID of discount item to be updated"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "tax": {
+                    "type": "number",
+                    "description": "Tax percentage for this discount item"
+                  },
+                  "charges": {
+                    "type": "integer",
+                    "description": "How much discount to be applied to the invoice"
+                  },
+                  "customerId": {
+                    "type": "string",
+                    "description": "To apply this discount item to specific customer"
+                  },
+                  "noOfItems": {
+                    "type": "integer",
+                    "description": "Number of items for the discount to be active to the specific customer"
                   }
                 }
               }
