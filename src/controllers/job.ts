@@ -1130,6 +1130,7 @@ export const getJobsStream = async (req: Request, res: Response, sio: any) => {
 
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
+    const actionId = req.query.actionId;
 
     // Initialize started count & total of the jobs
     let count = 1;
@@ -1237,31 +1238,43 @@ export const getJobsStream = async (req: Request, res: Response, sio: any) => {
 
     // Iterate all the cursor and send it to company's room socket.io
     for (let job = await jobCursor.next(); job != null; job = await jobCursor.next()) {
-        let clientExist = sio.sockets?.adapter?.rooms?.get(company._id?.toString() + user._id?.toString())
+
+        // set roomId for terminating socket connection
+        let roomId = actionId?.toString() || company._id?.toString() + user._id?.toString();
+        let clientExist = sio.sockets?.adapter?.rooms?.get(roomId);
         if(!clientExist){
             // client disconnect, stop sending data
             break;
         }
 
-        // Send the job via socket.io
-        await sio.to(company._id?.toString() + user._id?.toString()).emit(SocketEvents.ALL_JOBS, {
-            job,
-            count: count++,
-            total: totalJobs
-        });
+        if(actionId){
+            // new way , get actionID from FE and send it privately
+            await sio.to(actionId?.toString()).emit(SocketEvents.ALL_JOBS, {
+                job,
+                count: count++,
+                total: totalJobs
+            });
+        }else{
+            // old way , sending to room and disconnect
+            // Send the job via socket.io
+            await sio.to(company._id?.toString() + user._id?.toString()).emit(SocketEvents.ALL_JOBS, {
+                job,
+                count: count++,
+                total: totalJobs
+            });
 
-        // TODO: to be deprecated
-        await sio.to(company._id?.toString() + user._id?.toString()).emit(SocketEvents.ALL_SCHEDULED_JOBS, {
-            job,
-            count: countAlt++,
-            total: totalJobs
-        });
+            // TODO: to be deprecated
+            await sio.to(company._id?.toString() + user._id?.toString()).emit(SocketEvents.ALL_SCHEDULED_JOBS, {
+                job,
+                count: countAlt++,
+                total: totalJobs
+            });
+        }
     }
 
     return;
 
 }
-
 
 const createJobReport = async (jobId: any, companyId: any, customerName: string | null, technicianName: string | null, date: any, contractor?: any) => {
     const job = await Job.findOne({ _id: jobId, $or: [{ contractor: companyId }, { 'tasks.contractor': companyId }, { company: companyId }], status: JobStatus.FINISHED }).select('_id').exec();
