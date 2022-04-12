@@ -455,6 +455,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
 
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
+    const actionId = req.query.actionId;
 
     // Initialize started count & total of the service tickets
     let count = 1;
@@ -488,17 +489,30 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     for (let serviceTicket = await serviceTicketCursor.next(); serviceTicket != null; serviceTicket = await serviceTicketCursor.next()) {
         // Send the service ticket via socket.io
 
-        let clientExist = sio.sockets?.adapter?.rooms?.get(company._id?.toString() + user._id?.toString())
+        // set roomId for terminating socket connection
+        let roomId = actionId?.toString() || company._id?.toString() + user._id?.toString();
+        let clientExist = sio.sockets?.adapter?.rooms?.get(roomId);
         if(!clientExist){
             // client disconnect, stop sending data
             break;
         }
 
-        await sio.to(company._id?.toString() + user._id?.toString()).emit(SocketEvents.ALL_OPEN_SERVICE_TICKETS, {
-            serviceTicket,
-            count: count++,
-            total: totalServiceTickets
-        });
+        if(actionId){
+            // new way , get actionID from FE and send it privately
+            await sio.to(actionId?.toString()).emit(SocketEvents.ALL_OPEN_SERVICE_TICKETS, {
+                serviceTicket,
+                count: count++,
+                total: totalServiceTickets
+            });
+        }else{
+            // old way , sending to room and disconnect
+            await sio.to(company._id?.toString() + user._id?.toString()).emit(SocketEvents.ALL_OPEN_SERVICE_TICKETS, {
+                serviceTicket,
+                count: count++,
+                total: totalServiceTickets
+            });
+        }
+
     }
 
     return;
