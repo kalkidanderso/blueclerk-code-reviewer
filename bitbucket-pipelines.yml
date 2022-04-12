@@ -46,6 +46,10 @@ pipelines:
             - echo "Updating the service..."
             - aws ecs update-service --region "${REGION}" --cluster "${CLUSTER_NAME}" --service "${SERVICE_NAME}"  --task-definition "${TASK_DEFINITION_NAME}"
             - pipe: sonarsource/sonarcloud-scan:1.4.0
+              variables:
+                SONAR_TOKEN: ${SONAR_TOKEN}
+
+
     master:
       - step:
           #python image with aws-cli installed
@@ -75,3 +79,5 @@ pipelines:
             - echo "Updating the service..."
             - aws ecs update-service --region "${REGION}" --cluster "${CLUSTER_NAME}" --service "${SERVICE_NAME}"  --task-definition "${TASK_DEFINITION_NAME}"
             - pipe: sonarsource/sonarcloud-scan:1.4.0
+              variables:
+                SONAR_TOKEN: ${SONAR_TOKEN}
