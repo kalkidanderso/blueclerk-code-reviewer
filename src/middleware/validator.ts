@@ -375,6 +375,8 @@ export const Validations = {
     check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
+  setCustomInvoiceNumber: [check('invoiceNumber').optional().isInt().toInt()],
+
   companyInvoice: [check('companyInvoiceId').exists()],
 
   updateCommission: [

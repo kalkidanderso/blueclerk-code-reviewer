@@ -1481,6 +1481,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Set_Invoice_Number),
+        validate(Validations.setCustomInvoiceNumber),
         invoiceController.setCustomInvoiceNumber
     )
 
