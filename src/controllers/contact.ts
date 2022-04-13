@@ -116,7 +116,7 @@ export const addContact = async (req: Request, res: Response) => {
 export const updateContact = async (req: Request, res: Response) => {
 
     const params = req.body;
-    const companyId = req.companyId
+    const companyId = req.companyId;
 
     try {
         const contact = await Contact.findById(params._id);
@@ -132,13 +132,16 @@ export const updateContact = async (req: Request, res: Response) => {
             isActive: params.isActive
         }
 
+        // Only update contact when contact type is not in customer contacts
+        const result = await Contact.findByIdAndUpdate(req.body._id, updateEntry, { new: true });
+
         if (contact.userId) {
             // Find contact in customer
             const customerContact = await CustomerContact.findById(contact.userId);
 
             if (customerContact) {
                 // Update customer contact email when email contact is udpated
-                await updateCustomerContact({ customerContact, contact, updateEntry: <IContact>updateEntry })
+                await updateCustomerContact({ customerContact, contact, updateEntry: result })
             }
         }
 
@@ -146,32 +149,12 @@ export const updateContact = async (req: Request, res: Response) => {
         if (!contact.userId && updateEntry.email) {
             const customer = await Customer.findOne({ contacts: contact._id });
             const jobLocation = await JobLocation.findOne({ contacts: contact._id });
-            if (!customer && !jobLocation) {
-                const contactName = updateEntry.name.split(' ');
-                const customerContactEntry: any = {
-                    info: { email: updateEntry.email },
-                    profile: { firstName: contactName[0], lastName: contactName.length > 1 ? contactName[contactName.length - 1] : '', displayName: contact.name },
-                    contact: { phone: updateEntry.phone },
-                    company: companyId,
-                    permissions: { role: Role.CUSTOMER_CONTACT, extra: [] },
-                    contactName: updateEntry.name,
-                }
-
-                const customerContact = await new CustomerContact(customerContactEntry).save();
-                await sendCustomerContactEmail(customerContact, contact);
-                contact.userId = customerContact._id;
-                contact.save();
-            } else {
-                await createCustomerContact({
-                    contact: new Contact(updateEntry),
-                    customer,
-                    jobLocation
-                });
-            }
+            await createCustomerContact({
+                contact: result,
+                customer,
+                jobLocation
+            });
         }
-
-        // Only update contact when contact type is not in customer contacts
-        const result = await Contact.findByIdAndUpdate(req.body._id, updateEntry, { new: true });
 
         return res.json({ status: Status.Success, contact: result });
     } catch (err) {
@@ -359,7 +342,10 @@ export const createCustomerContact = async ({
     contact.userId = customerContact._id;
     contact.save();
 
-    await sendCustomerContactEmail(customerContact, contact);
+    if (!customerContact?.auth?.password) {
+        await sendCustomerContactEmail(customerContact, contact);
+    }
+
     return;
 
 }
