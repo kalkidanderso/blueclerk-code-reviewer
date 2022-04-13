@@ -171,7 +171,7 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                     })
 
                 })
-            } else if (typeof params.invoiceNumber !== 'undefined' && params.invoiceNumber && (typeof params.invoicePrefix === 'undefined' || !params.invoicePrefix)) {
+            } else if (typeof params.invoiceNumber !== 'undefined' && (typeof params.invoicePrefix === 'undefined' || !params.invoicePrefix)) {
 
                 // if (company.currentInvoiceId > params.invoiceNumber) {
                 //     return res.json({ 'status': Status.Success, 'message': "Invoice number can not be less then " + company.currentJobId });
@@ -186,7 +186,7 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                     return res.json({ 'status': Status.Success, 'message': "Invoice number updated successfully." });
                 })
 
-            } else if ((typeof params.invoicePrefix !== 'undefined' && params.invoicePrefix) && (typeof params.invoiceNumber !== 'undefined' && params.invoiceNumber)) {
+            } else if ((typeof params.invoicePrefix !== 'undefined' && params.invoicePrefix) && (typeof params.invoiceNumber !== 'undefined')) {
 
                 if (company.invoicePrefix == params.invoicePrefix) {
 
@@ -887,11 +887,13 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         currentInvoiceId = company.currentInvoiceId
     }
 
+    /* remove checking invoiceId with estimateId 
     if (company.currentEstimateId > company.currentInvoiceId) {
         currentInvoiceId = company.currentEstimateId
     } else if (company.currentInvoiceId > company.currentEstimateId) {
         currentInvoiceId = company.currentInvoiceId
     }
+    */
 
     const invNumber = parseInt(params.invoiceNumber) || company.currentInvoiceId + 1
     let invoiceId = company.invoicePrefix
@@ -2180,10 +2182,9 @@ export const getInvoices = async (req: Request, res: Response) => {
         { $sort: sortQuery },
         { $limit: params.pageSize || DefaultPageSize }
     ]);
-    // Map the Job Report IDs filtered
+    // Map the Invoice IDs filtered
     const invoiceIds = invoicesAggregate.map((invoice) => invoice._id);
 
-    // Invoice.find({ 'company': req.companyId })
     Invoice.find({ _id: { $in: invoiceIds } })
         .sort({ ...sortQuery })
         .populate({
@@ -2254,7 +2255,7 @@ export const getInvoices = async (req: Request, res: Response) => {
             }
 
             /**
-             * Get all total job reports count
+             * Get all total invoices count
              */
             const totalInvoices = await Invoice.aggregate([
                 ...aggregateLookups,
@@ -3124,6 +3125,7 @@ export const updateCommission = async (req: Request, res: Response) => {
 
     const params = req.body;
     let commissionBalance = 0;
+
     switch (params.type) {
         case 'vendor':
             const contractor = await Company.findById(params.id).exec();
@@ -3131,8 +3133,13 @@ export const updateCommission = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'Vendor not found' });
             }
 
+            // Update vendor's commission rate
+            contractor.commission = params.commission ?? null;
+
+            // Find if vendor already have invoice commission
             const contractorInvoiceCommissions = await InvoiceCommission.find({ 'technicians.contractor': contractor._id }).populate('invoice').exec();
             if (contractorInvoiceCommissions.length) {
+                // Iterate all invoice commissions 
                 for (const invoiceCommission of contractorInvoiceCommissions) {
                     const invoice = <IInvoice>invoiceCommission.invoice;
                     const totalTechnician = invoiceCommission?.technicians?.length;
@@ -3142,19 +3149,24 @@ export const updateCommission = async (req: Request, res: Response) => {
                     }
 
                     if (!contractorCommission.paid) {
+                        /**
+                         * If invoice commission is not been paid,
+                         * update the amount with the new rate
+                         */
                         contractorCommission.commission = params.commission ?? null;
                         const commissionAmount = (invoice.total / totalTechnician) * (params.commission ?? 0) / 100;
                         contractorCommission.commissionAmount = Number(commissionAmount.toFixed(2));
                     }
 
+                    // Recalculate vendor open balance
                     commissionBalance += contractorCommission.commissionAmount;
-                    invoiceCommission.save()
+                    await invoiceCommission.save();
                 }
-
-                contractor.commission = params.commission ?? null;
-                contractor.balance = commissionBalance;
-                contractor.save();
             }
+
+            // Update vendor balance and save vendor object
+            contractor.balance = commissionBalance;
+            await contractor.save();
 
             return res.json({ status: Status.Success, message: 'Commission updated successfully', contractor });
 
@@ -3164,8 +3176,13 @@ export const updateCommission = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'Employee not found' });
             }
 
+            // Update employee's commission rate
+            employee.commission = params.commission ?? null;
+
+            // Find if employee already have invoice commission
             const employeeInvoiceCommissions = await InvoiceCommission.find({ 'technicians.technician': employee._id }).populate('invoice').exec();
             if (employeeInvoiceCommissions.length) {
+                // Iterate all invoice commissions 
                 for (const invoiceCommission of employeeInvoiceCommissions) {
                     const invoice = <IInvoice>invoiceCommission.invoice;
                     const totalTechnician = invoiceCommission?.technicians?.length;
@@ -3175,19 +3192,24 @@ export const updateCommission = async (req: Request, res: Response) => {
                     }
 
                     if (!employeeCommission.paid) {
+                        /**
+                         * If invoice commission is not been paid,
+                         * update the amount with the new rate
+                         */
                         employeeCommission.commission = params.commission ?? null;
                         const commissionAmount = (invoice.total / totalTechnician) * (params.commission ?? 0) / 100;
                         employeeCommission.commissionAmount = Number(commissionAmount.toFixed(2));
                     }
 
+                    // Recalculate employee open balance
                     commissionBalance += employeeCommission.commissionAmount;
-                    invoiceCommission.save();
+                    await invoiceCommission.save();
                 }
-
-                employee.commission = params.commission ?? null;
-                employee.balance = commissionBalance;
-                employee.save();
             }
+
+            // Update employee balance and save employee object
+            employee.balance = commissionBalance;
+            await employee.save();
 
             return res.json({ status: Status.Success, message: 'Commission updated successfully', employee });
 

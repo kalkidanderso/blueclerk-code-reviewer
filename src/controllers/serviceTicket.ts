@@ -454,6 +454,8 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
 export const getOpenServiceTicketsStream = async (req: Request, res: Response, sio: any) => {
 
     const company = <ICompany>req.company;
+    const user = <IUser>req.user;
+    const actionId = req.query.actionId;
 
     // Initialize started count & total of the service tickets
     let count = 1;
@@ -486,17 +488,36 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     // Iterate all the cursor and send it to company's room socket.io
     for (let serviceTicket = await serviceTicketCursor.next(); serviceTicket != null; serviceTicket = await serviceTicketCursor.next()) {
         // Send the service ticket via socket.io
-        await sio.to(company._id.toString()).emit(SocketEvents.ALL_OPEN_SERVICE_TICKETS, {
-            serviceTicket,
-            count: count++,
-            total: totalServiceTickets
-        });
+
+        // set roomId for terminating socket connection
+        let roomId = actionId?.toString() || company._id?.toString() + user._id?.toString();
+        let clientExist = sio.sockets?.adapter?.rooms?.get(roomId);
+        if(!clientExist){
+            // client disconnect, stop sending data
+            break;
+        }
+
+        if(actionId){
+            // new way , get actionID from FE and send it privately
+            await sio.to(actionId?.toString()).emit(SocketEvents.ALL_OPEN_SERVICE_TICKETS, {
+                serviceTicket,
+                count: count++,
+                total: totalServiceTickets
+            });
+        }else{
+            // old way , sending to room and disconnect
+            await sio.to(company._id?.toString() + user._id?.toString()).emit(SocketEvents.ALL_OPEN_SERVICE_TICKETS, {
+                serviceTicket,
+                count: count++,
+                total: totalServiceTickets
+            });
+        }
+
     }
 
     return;
 
 }
-
 
 export const updateServiceTicket = (req: Request, res: Response) => {
     const user = <IUser>req.user

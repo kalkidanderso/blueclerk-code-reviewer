@@ -163,6 +163,15 @@ export const Validations = {
   createDiscountItem: [
     check('title').exists().withMessage(Messages.Required),
     check('charges').exists().withMessage(Messages.Required),
+    check('noOfItems').optional().toInt()
+  ],
+
+  updateDiscountItem: [
+    check('discountItemId').exists().withMessage(Messages.Required),
+    check('discountItemId').isMongoId().withMessage(Messages.WrongId),
+    check('title').exists().withMessage(Messages.Required),
+    check('charges').exists().withMessage(Messages.Required),
+    check('noOfItems').optional().toInt()
   ],
 
   //Job
@@ -366,6 +375,8 @@ export const Validations = {
     check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
+  setCustomInvoiceNumber: [check('invoiceNumber').optional().isInt().toInt()],
+
   companyInvoice: [check('companyInvoiceId').exists()],
 
   updateCommission: [
@@ -502,6 +513,17 @@ export const Validations = {
   ],
 
   // Contact
+  addContact: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['Customer', 'JobLocation']).withMessage('Only supported for Customer & JobLocation for now'),
+  ],
+
+  updateContact: [
+    check('_id').exists().withMessage(Messages.Required),
+    check('_id').isMongoId().withMessage(Messages.WrongId),
+    check('isActive').optional().isBoolean().toBoolean()
+  ],
+
   getCustomerAllContacts: [
     check('customerId').exists().withMessage(Messages.Required),
     check('customerId').isMongoId().withMessage(Messages.WrongId),

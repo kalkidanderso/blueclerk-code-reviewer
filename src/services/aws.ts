@@ -1258,3 +1258,57 @@ export const sendAccountUpgradeEmail = async (options: any) => {
     )
   })
 }
+
+export const sendCustomerContactNewPassword = function (options: any) {
+
+  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env
+
+  AWS.config.update({
+      region: AWS_REGION,
+      accessKeyId: AWS_SES_ACCESSKEYID,
+      secretAccessKey: AWS_SES_SECRETACCESSKEY,
+  })
+
+  const ses = new AWS.SES({ apiVersion: '2012-10-17' })
+
+  return new Promise((resolve, reject) => {
+      ses.sendEmail(
+          {
+              Source: APP_EMAIL_NOREPLY,
+              Destination: {
+                  CcAddresses: [],
+                  ToAddresses: [options.to],
+              },
+              Message: {
+                  Subject: {
+                      Data: "Welcome to BlueClerk",
+                  },
+                  Body: {
+                      Html: {
+                          Data: `<div style="text-align: center;">
+                          <b>Dear <i>${options.name ?? options.to}</i></b> <br />
+                          <b>Welcome to BlueClerk!  Please login on your mobile app using this credential: </a></b><br />
+                          <p>email: ${options.to}<br /> password: ${options.password}</p>
+                          <p>If you have any questions, you may reach out for help to:</p>
+                          <strong>chris.norton@blueclerk.com</strong><br />
+                          <strong>512-846-6035</strong><br />
+
+                          <br />
+                          <img src='https://blueclerk.com/wp-content/uploads/2020/07/logo.png' />
+                          </div>`,
+                      },
+                  },
+              },
+              ReplyToAddresses: [APP_EMAIL_NOREPLY],
+          },
+          (err, info) => {
+              if (err) {
+                  reject(err)
+              } else {
+                  resolve(info)
+              }
+          },
+      )
+  })
+
+}

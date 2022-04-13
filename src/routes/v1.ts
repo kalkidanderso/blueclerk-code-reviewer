@@ -609,6 +609,15 @@ export default function (sio: any) {
         itemController.createDiscountItem
     )
 
+    router.put(
+        '/updateDiscountItem',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Type_Create),
+        validate(Validations.updateDiscountItem),
+        itemController.updateDiscountItem
+    )
+
     // Job
 
     router.post(
@@ -1472,6 +1481,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Set_Invoice_Number),
+        validate(Validations.setCustomInvoiceNumber),
         invoiceController.setCustomInvoiceNumber
     )
 
@@ -2007,17 +2017,22 @@ export default function (sio: any) {
         tagController.getLocationTagJobs
     )
 
+    // CONTACT
+
     router.post(
         '/addContact',
         passport.authenticate('jwt', { session: false }),
         checkUserPermissions(Permissions.Customer_Create),
+        validate(Validations.addContact),
         ContactController.addContact
     )
 
     router.put(
         '/updateContact',
         passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
         checkUserPermissions(Permissions.Customer_Create),
+        validate(Validations.updateContact),
         ContactController.updateContact
     )
 
