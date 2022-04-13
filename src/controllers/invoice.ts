@@ -3125,6 +3125,7 @@ export const updateCommission = async (req: Request, res: Response) => {
 
     const params = req.body;
     let commissionBalance = 0;
+
     switch (params.type) {
         case 'vendor':
             const contractor = await Company.findById(params.id).exec();
@@ -3132,8 +3133,13 @@ export const updateCommission = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'Vendor not found' });
             }
 
+            // Update vendor's commission rate
+            contractor.commission = params.commission ?? null;
+
+            // Find if vendor already have invoice commission
             const contractorInvoiceCommissions = await InvoiceCommission.find({ 'technicians.contractor': contractor._id }).populate('invoice').exec();
             if (contractorInvoiceCommissions.length) {
+                // Iterate all invoice commissions 
                 for (const invoiceCommission of contractorInvoiceCommissions) {
                     const invoice = <IInvoice>invoiceCommission.invoice;
                     const totalTechnician = invoiceCommission?.technicians?.length;
@@ -3143,19 +3149,24 @@ export const updateCommission = async (req: Request, res: Response) => {
                     }
 
                     if (!contractorCommission.paid) {
+                        /**
+                         * If invoice commission is not been paid,
+                         * update the amount with the new rate
+                         */
                         contractorCommission.commission = params.commission ?? null;
                         const commissionAmount = (invoice.total / totalTechnician) * (params.commission ?? 0) / 100;
                         contractorCommission.commissionAmount = Number(commissionAmount.toFixed(2));
                     }
 
+                    // Recalculate vendor open balance
                     commissionBalance += contractorCommission.commissionAmount;
-                    invoiceCommission.save()
+                    await invoiceCommission.save();
                 }
-
-                contractor.commission = params.commission ?? null;
-                contractor.balance = commissionBalance;
-                contractor.save();
             }
+
+            // Update vendor balance and save vendor object
+            contractor.balance = commissionBalance;
+            await contractor.save();
 
             return res.json({ status: Status.Success, message: 'Commission updated successfully', contractor });
 
@@ -3165,8 +3176,13 @@ export const updateCommission = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'Employee not found' });
             }
 
+            // Update employee's commission rate
+            employee.commission = params.commission ?? null;
+
+            // Find if employee already have invoice commission
             const employeeInvoiceCommissions = await InvoiceCommission.find({ 'technicians.technician': employee._id }).populate('invoice').exec();
             if (employeeInvoiceCommissions.length) {
+                // Iterate all invoice commissions 
                 for (const invoiceCommission of employeeInvoiceCommissions) {
                     const invoice = <IInvoice>invoiceCommission.invoice;
                     const totalTechnician = invoiceCommission?.technicians?.length;
@@ -3176,19 +3192,24 @@ export const updateCommission = async (req: Request, res: Response) => {
                     }
 
                     if (!employeeCommission.paid) {
+                        /**
+                         * If invoice commission is not been paid,
+                         * update the amount with the new rate
+                         */
                         employeeCommission.commission = params.commission ?? null;
                         const commissionAmount = (invoice.total / totalTechnician) * (params.commission ?? 0) / 100;
                         employeeCommission.commissionAmount = Number(commissionAmount.toFixed(2));
                     }
 
+                    // Recalculate employee open balance
                     commissionBalance += employeeCommission.commissionAmount;
                     invoiceCommission.save();
                 }
-
-                employee.commission = params.commission ?? null;
-                employee.balance = commissionBalance;
-                employee.save();
             }
+
+            // Update employee balance and save employee object
+            employee.balance = commissionBalance;
+            employee.save();
 
             return res.json({ status: Status.Success, message: 'Commission updated successfully', employee });
 
