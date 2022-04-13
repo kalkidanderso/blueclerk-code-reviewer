@@ -123,6 +123,7 @@ export const createCustomer = async (req: Request, res: Response) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
                     if (users.length === 0 || (users.findIndex((element: any) => element.info.email === customer.info.email) < 0)) {
+                        // Create contact customer
                         const contactEntry = new Contact({
                             name: customer?.profile?.displayName ?? customer?.profile?.firstName + ` ${customer?.profile?.lastName}`,
                             email: customer?.info?.email ?? customer?.auth?.email,
