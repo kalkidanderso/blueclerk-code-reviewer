@@ -131,6 +131,7 @@ export const createCustomer = async (req: Request, res: Response) => {
                             userId: customer._id
                         });
 
+                        createCustomerContact({ contact: contactEntry, customer });
                         customer.contacts.push(contactEntry._id);
                         contactEntry.save();
                         customer.save((err: any) => {

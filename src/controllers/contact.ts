@@ -5,7 +5,7 @@ import { Messages, Role, Status } from '../common/constants'
 import { Customer, ICustomer } from '../models/Customer'
 import { IJobLocation, JobLocation } from '../models/JobLocation'
 import { IContact } from '../common/contact'
-import { ICompany } from '../models/Company'
+import { Company, ICompany } from '../models/Company'
 import { CustomerContact, ICustomerContact } from '../models/CustomerContact';
 import { sendCustomerContactNewPassword } from '../services/aws';
 
@@ -116,6 +116,7 @@ export const addContact = async (req: Request, res: Response) => {
 export const updateContact = async (req: Request, res: Response) => {
 
     const params = req.body;
+    const companyId = req.companyId;
 
     try {
         const contact = await Contact.findById(params._id);
@@ -131,13 +132,16 @@ export const updateContact = async (req: Request, res: Response) => {
             isActive: params.isActive
         }
 
+        // Only update contact when contact type is not in customer contacts
+        const result = await Contact.findByIdAndUpdate(req.body._id, updateEntry, { new: true });
+
         if (contact.userId) {
             // Find contact in customer
             const customerContact = await CustomerContact.findById(contact.userId);
 
             if (customerContact) {
                 // Update customer contact email when email contact is udpated
-                await updateCustomerContact({ customerContact, contact, updateEntry: <IContact>updateEntry })
+                await updateCustomerContact({ customerContact, contact, updateEntry: result })
             }
         }
 
@@ -145,11 +149,12 @@ export const updateContact = async (req: Request, res: Response) => {
         if (!contact.userId && updateEntry.email) {
             const customer = await Customer.findOne({ contacts: contact._id });
             const jobLocation = await JobLocation.findOne({ contacts: contact._id });
-            await createCustomerContact({ contact: new Contact(updateEntry), customer, jobLocation })
+            await createCustomerContact({
+                contact: result,
+                customer,
+                jobLocation
+            });
         }
-
-        // Only update contact when contact type is not in customer contacts
-        const result = await Contact.findByIdAndUpdate(req.body._id, updateEntry, { new: true });
 
         return res.json({ status: Status.Success, contact: result });
     } catch (err) {
@@ -227,12 +232,19 @@ export const getCustomerAllContacts = async (req: Request, res: Response) => {
 
 export const removeContact = async (req: Request, res: Response) => {
     try {
+        const contact = await Contact.findById(req.body.contactId);
+        if (contact.userId) {
+            const customerContact = await CustomerContact.findById(contact.userId);
+            customerContact.isActive = false;
+            customerContact.save();
+        }
+
         if (req.body.type === 'Customer') {
             const customer = await Customer.findOne({ _id: req.body.referenceNumber })
             if (customer) {
                 await Customer.findByIdAndUpdate(req.body.referenceNumber, { $pull: { contacts: req.body.contactId } }, { new: true })
-                const contact = await Contact.findById(req.body.contactId);
                 const contactCustomer = await Customer.findOne({ contacts: req.body.contactId })
+
                 if (!contactCustomer) {
                     await Contact.findByIdAndRemove(req.body.contactId)
                 }
@@ -330,7 +342,10 @@ export const createCustomerContact = async ({
     contact.userId = customerContact._id;
     contact.save();
 
-    await sendCustomerContactEmail(customerContact, contact);
+    if (!customerContact?.auth?.password) {
+        await sendCustomerContactEmail(customerContact, contact);
+    }
+
     return;
 
 }
