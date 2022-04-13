@@ -3203,13 +3203,13 @@ export const updateCommission = async (req: Request, res: Response) => {
 
                     // Recalculate employee open balance
                     commissionBalance += employeeCommission.commissionAmount;
-                    invoiceCommission.save();
+                    await invoiceCommission.save();
                 }
             }
 
             // Update employee balance and save employee object
             employee.balance = commissionBalance;
-            employee.save();
+            await employee.save();
 
             return res.json({ status: Status.Success, message: 'Commission updated successfully', employee });
 
