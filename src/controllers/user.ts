@@ -688,7 +688,7 @@ const createEmployee = (req: Request, res: Response, role: Role) => {
                             if (err) {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                             }
-                            sendEmployeeEmail({ to: params.email, company: company.info.companyName, role: roles[employee.permissions.role], password: password })
+                            sendEmployeeEmail({ to: params.email, company: company.info.companyName, replyTo: company.info.companyEmail, role: roles[employee.permissions.role], password: password })
                             return res.json({ 'status': Status.Success, 'message': 'Employee created successfully.' })
                         }
                     )
