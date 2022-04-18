@@ -20,6 +20,7 @@ import socketioJwt from 'socketio-jwt';
 import moment from 'moment-timezone';
 import { EmailSchedule, IEmailSchedule } from './models/EmailSchedule';
 import { IUser, User } from './models/User';
+import { IEmployee, Employee } from './models/Employee';
 import { ICompanyAdmin } from './models/CompanyAdmin'
 import { Job } from './models/Job';
 import { sendScheduledJobEmailToAssignee } from './services/aws';
@@ -176,6 +177,7 @@ try {
               // either company contractor or employee/admin
               let userScheduleTime = user.emailPreferences;
               let to: string;
+              let replyTo: string;
               let assigneeName: string;
               switch (emailSchedule.type) {
                 case 1: {
@@ -187,13 +189,18 @@ try {
                 case 2: {
                   let customer = await Customer.findOne({ _id: emailSchedule.user });
                   to = customer.info.email;
+                  let company = await Company.findOne({ company: customer.company });
+                  replyTo = company.info.companyEmail;
                   assigneeName = customer.contactName;
                   break;
                 }
                 default: {
-                  let employee = await User.findOne({ _id: emailSchedule.user });
+                  let employee = await Employee.findOne({ _id: emailSchedule.user });
                   to = employee.auth.email;
                   assigneeName = user.profile.displayName;
+
+                  let company = await Company.findOne({ _id: employee.company });
+                  replyTo = company.info.companyEmail;
                   break;
                 }
               }
@@ -210,7 +217,7 @@ try {
               if (!emailSchedule.pulled && moment().tz(timeZone).diff(sendDate) < 0) {
                 new CronJob(sendDate, async function () {
                   let doc: any = await EmailSchedule.findOne({ _id: emailSchedule._id });
-                  sendScheduledJobEmailToAssignee(doc.jobs, to, assigneeName, emailSchedule);
+                  sendScheduledJobEmailToAssignee(doc.jobs, to,replyTo, assigneeName, emailSchedule);
                   emailQueue = emailQueue.filter((e) => JSON.stringify(e) !== JSON.stringify(emailSchedule._id));
                 }, null, true);
               }

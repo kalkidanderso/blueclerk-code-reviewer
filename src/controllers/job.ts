@@ -381,7 +381,7 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                 if (params.employeeType == 0) {
                     switch (techEmailPreferences) {
                         case 0: {
-                            sendJobEmailToAssignee({ to: tech.auth?.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, notes: job.description, location: job.jobLocation, site: job.jobSite, ticket: job.ticket, dateTime: job.scheduleDate });
+                            sendJobEmailToAssignee({ to: tech.auth?.email, assigneeName: assigneeName, companyName: company.info.companyName, replyTo: company.info.companyEmail, customerName: cust.profile.displayName, jobTitles, notes: job.description, location: job.jobLocation, site: job.jobSite, ticket: job.ticket, dateTime: job.scheduleDate });
                             break;
                         }
                         case 1: {
@@ -416,7 +416,7 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                 if (params.employeeType == 1) {
                     switch (contractorEmailPreferences) {
                         case 0: {
-                            sendJobEmailToAssignee({ to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, notes: job.description, location: job.jobLocation, site: job.jobSite, ticket: job.ticket, dateTime: job.scheduleDate })
+                            sendJobEmailToAssignee({ to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, replyTo: company.info.companyEmail, customerName: cust.profile.displayName, jobTitles, notes: job.description, location: job.jobLocation, site: job.jobSite, ticket: job.ticket, dateTime: job.scheduleDate })
                             break;
                         }
                         case 1: {
@@ -576,7 +576,7 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             if (params.employeeType == 0) {
                 switch (techEmailPreferences) {
                     case 0: {
-                        sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, notes: job.description, location: job.jobLocation, site: job.jobSite, ticket: job.ticket, dateTime: job.scheduleDate });
+                        sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, replyTo: company.info.companyEmail, customerName: cust.profile.displayName, jobTitles, notes: job.description, location: job.jobLocation, site: job.jobSite, ticket: job.ticket, dateTime: job.scheduleDate });
                         break;
                     }
                     case 1: {
@@ -590,12 +590,12 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
 
                         }
                         new CronJob(sendDate, function () {
-                            sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, location: job.jobLocation, site: job.jobSite, ticket: job.ticket, notes: job.description, dateTime: job.scheduleDate });
+                            sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, replyTo: company.info.companyEmail, customerName: cust.profile.displayName, jobTitles, location: job.jobLocation, site: job.jobSite, ticket: job.ticket, notes: job.description, dateTime: job.scheduleDate });
                         }, null, true);
                         break;
                     }
                     default: {
-                        sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, location: job.jobLocation, site: job.jobSite, ticket: job.ticket, notes: job.description, dateTime: job.scheduleDate });
+                        sendJobEmailToAssignee({ to: tech.auth.email, assigneeName: assigneeName, companyName: company.info.companyName, replyTo: company.info.companyEmail, customerName: cust.profile.displayName, jobTitles, location: job.jobLocation, site: job.jobSite, ticket: job.ticket, notes: job.description, dateTime: job.scheduleDate });
                         break;
                     }
                 }
@@ -604,7 +604,7 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             if (params.employeeType == 1) {
                 switch (contractorEmailPreferences) {
                     case 0: {
-                        sendJobEmailToAssignee({ to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, notes: job.description, dateTime: job.scheduleDate })
+                        sendJobEmailToAssignee({ to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, replyTo: company.info.companyEmail, customerName: cust.profile.displayName, jobTitles, notes: job.description, dateTime: job.scheduleDate })
                         break;
                     }
                     case 1: {
@@ -617,12 +617,12 @@ const _sendJobEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                             sendDate = momentTz().tz('America/Chicago').hours(21).minutes(0);
                         }
                         new CronJob(sendDate, function () {
-                            sendJobEmailToAssignee({ to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, notes: job.description, dateTime: job.scheduleDate })
+                            sendJobEmailToAssignee({ to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, replyTo: company.info.companyEmail, customerName: cust.profile.displayName, jobTitles, notes: job.description, dateTime: job.scheduleDate })
                         }, null, true);
                         break;
                     }
                     default: {
-                        sendJobEmailToAssignee({ to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, customerName: cust.profile.displayName, jobTitles, notes: job.description, dateTime: job.scheduleDate })
+                        sendJobEmailToAssignee({ to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, replyTo: company.info.companyEmail, customerName: cust.profile.displayName, jobTitles, notes: job.description, dateTime: job.scheduleDate })
                         break;
                     }
 

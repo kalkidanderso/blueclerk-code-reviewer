@@ -339,7 +339,7 @@ export const inviteContractor = (req: Request, res: Response) => {
             await contract.save();
 
             // ToDo email email with signup link
-            sendInvitationToContractor({ to: params.email, company: company.info?.companyName, companyId: company._id });
+            sendInvitationToContractor({ to: params.email, company: company.info?.companyName,replyTo: company.info?.companyEmail, companyId: company._id });
 
             return res.json({ status: Status.Success, message: 'Invitation sent.', contract });
         }
@@ -460,7 +460,7 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                                     }
 
                                     sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
-                                    sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
+                                    sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, replyTo: company.info.companyEmail, contractStatus: params.status + 'ed' })
                                 })
                             })
                         // Create Company Invoice
@@ -546,7 +546,7 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                             }
 
                             sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
-                            sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
+                            sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, replyTo: company.info.companyEmail, contractStatus: params.status + 'ed' })
 
                             // return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
 
@@ -633,7 +633,7 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                         }
 
                         sendContractStatusChangeEmailToCompany({ to: company.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
-                        sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, contractStatus: params.status + 'ed' })
+                        sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName, company: company.info.companyName, replyTo: company.info.companyEmail, contractStatus: params.status + 'ed' })
 
                         // Save notification
                         let notificationEntry: INotificationContract = new NotificationContract({
@@ -908,7 +908,7 @@ export const remindContractor = async (req: Request, res: Response) => {
     }
 
     // ToDo email email with signup link
-    sendInvitationToContractor({ to: contract.contractorEmail, company: contract.company.info?.companyName, companyId: contract.company._id });
+    sendInvitationToContractor({ to: contract.contractorEmail, company: contract.company.info?.companyName, replyTo: contract.company.info?.companyEmail, companyId: contract.company._id });
 
     return res.json({ status: Status.Success, message: 'Contract invitation resent', contract });
 
