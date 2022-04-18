@@ -99,7 +99,7 @@ export const sendEmployeeEmail = function(options: any) {
             },
           },
         },
-        ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        ReplyToAddresses: [options.replyTo  ?? ""],
       },
       (err, info) => {
         if (err) {
@@ -154,7 +154,7 @@ export const sendInvitationToContractor = function(options: any) {
             },
           },
         },
-        ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        ReplyToAddresses: [options.replyTo  ?? ""],
       },
       (err, info) => {
         if (err) {
@@ -198,7 +198,7 @@ export const sendContractStartEmail = function(options: any) {
               },
             },
           },
-          ReplyToAddresses: [options.companyEmail],
+          ReplyToAddresses: [options.companyEmail ?? ""],
         },
         (err, info) => {
           if (err) {
@@ -305,6 +305,7 @@ export const sendInvoiceEmailToCustomer = async function(options: any) {
   const rawMessage = [
     `From: ${SENDER}`,
     `To: ${RECIPIENT}`,
+    `Reply-To: ${company_email ?? ""}`,
     `Subject: ${SUBJECT}`,
     `MIME-Version: 1.0`,
     `Content-Type: multipart/mixed; boundary=\"${boundary}\"\n`,
@@ -384,7 +385,7 @@ export const sendReportEmailToCustomer = function(options: any) {
               },
             },
           },
-          ReplyToAddresses: [options.companyEmail],
+          ReplyToAddresses: [options.companyEmail ?? ""],
         },
         (err, info) => {
           if (err) {
@@ -428,7 +429,7 @@ export const sendContractStartEmailToCompany = function(options: any) {
             },
           },
         },
-        ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        ReplyToAddresses: [options.replyTo],
       },
       (err, info) => {
         if (err) {
@@ -476,7 +477,7 @@ export const sendContractStatusChangeEmailToContractor = function(options: any) 
             },
           },
         },
-        ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        ReplyToAddresses: [options.replyTo ?? ""],
       },
       (err, info) => {
         if (err) {
@@ -833,7 +834,7 @@ export const sendJobEmailToAssignee = function(options: any) {
             },
           },
         },
-        ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        ReplyToAddresses: [options.replyTo ?? ""],
       },
       (err, info) => {
         if (err) {
@@ -845,7 +846,7 @@ export const sendJobEmailToAssignee = function(options: any) {
     )
   })
 }
-export const sendScheduledJobEmailToAssignee = function(jobs: IJob[], to: string, assigneeName: string, emailSchedule: any ) {
+export const sendScheduledJobEmailToAssignee = function(jobs: IJob[], to: string, replyTo: string, assigneeName: string, emailSchedule: any ) {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION} = process.env
 
@@ -989,7 +990,7 @@ export const sendScheduledJobEmailToAssignee = function(jobs: IJob[], to: string
                 },
               },
             },
-            ReplyToAddresses: [APP_EMAIL_NOREPLY],
+            ReplyToAddresses: [ replyTo ?? ""],
           },
           (err, info) => {
             if (err) {
@@ -1034,7 +1035,7 @@ export const sendJobEmailToCustomer = function(options: any) {
             },
           },
         },
-        ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        ReplyToAddresses: [options.replyTo ?? ""],
       },
       (err, info) => {
         if (err) {
@@ -1077,7 +1078,7 @@ export const sendJobEmailToCompanyAdmin = function(options: any) {
             },
           },
         },
-        ReplyToAddresses: [APP_EMAIL_NOREPLY],
+        ReplyToAddresses: [options.replyTo],
       },
       (err, info) => {
         if (err) {
