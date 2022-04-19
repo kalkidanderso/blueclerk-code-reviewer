@@ -26,7 +26,7 @@ import { CompanyCustomer } from '../models/CompanyCustomer';
 import { INotificationJob, NotificationJob } from '../models/NotificationDiscriminator'
 import { IJobType, JobType } from '../models/JobType';
 import { JobRoute } from '../models/JobRoute';
-import { _handleJobTypesJson } from '../controllers/jobType';
+import { _handleJobTypesJson } from '../controllers/item';
 import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
 import { _handleNotification } from '../controllers/notification';
 
