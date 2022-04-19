@@ -12,7 +12,7 @@ import { Item } from '../models/Item'
 import { NotificationServiceTicket, INotificationServiceTicket } from '../models/NotificationDiscriminator';
 import { IJobTypes } from '../models/JobType'
 import { ITask, Job } from '../models/Job';
-import { _handleJobTypesJson } from '../controllers/jobType';
+import { _handleJobTypesJson } from '../controllers/item';
 
 export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
