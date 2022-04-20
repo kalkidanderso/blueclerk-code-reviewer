@@ -458,7 +458,7 @@ export const updateProfile = (req: Request, res: Response) => {
                 'profile.lastName': params.lastName,
                 'profile.imageUrl': userImage,
                 'profile.displayName': `${params.firstName} ${params.lastName}`,
-                'address.street': params.streest,
+                'address.street': params.street,
                 'address.city': params.city,
                 'address.state': params.state,
                 'address.zipCode': params.zipCode,
