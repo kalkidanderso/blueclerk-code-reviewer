@@ -23,7 +23,7 @@ const Hubspot = require('hubspot');
 export const login = (req: Request, res: Response, sio: any) => {
     const params = req.body
     User.findOne(
-        { 'auth.email': params.email },
+        { 'auth.email': {$regex : params.email , $options: 'i' }},
         (err: any, user: IUser) => {
 
             if (err) {
@@ -458,11 +458,12 @@ export const updateProfile = (req: Request, res: Response) => {
                 'profile.lastName': params.lastName,
                 'profile.imageUrl': userImage,
                 'profile.displayName': `${params.firstName} ${params.lastName}`,
-                'address.street': params.streest,
+                'address.street': params.street,
                 'address.city': params.city,
                 'address.state': params.state,
                 'address.zipCode': params.zipCode,
-                'contact.phone': params.phone
+                'contact.phone': params.phone,
+                'auth.email' : user.auth.email.toLowerCase()
             },
             (err: any, raw: any) => {
 
@@ -522,7 +523,7 @@ export const forgotPassword = (req: Request, res: Response) => {
 
     const params = req.body
 
-    User.findOne({ 'auth.email': params.email },
+    User.findOne({ 'auth.email': {$regex : params.email , $options: 'i' } },
         (err: any, user: IUser) => {
 
             if (err) {
@@ -741,7 +742,7 @@ const checkEmailExists = (req: Request, res: Response, next: (req: Request, res:
     }
 
     User.findOne(
-        { 'auth.email': params.email },
+        { 'auth.email': {$regex : params.email , $options: 'i' } },
         (err: any, user: IUser) => {
 
             if (err) {
@@ -777,7 +778,7 @@ export const checkCompanyEmailExists = (req: Request, res: Response, next: (req:
             }
 
             User.findOne(
-                { 'auth.email': params.email },
+                { 'auth.email': {$regex : params.email , $options: 'i' } },
                 (err: any, user: IUser) => {
 
                     if (err) {
