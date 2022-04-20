@@ -154,6 +154,8 @@ export const Validations = {
   changeJobTypeStatus: [check('jobTypeId').exists(), check('status').exists()],
 
   // Item
+  getItems: [check('includeDiscountItems').optional().isBoolean().toBoolean()],
+
   createItem: [check('title').exists().withMessage(Messages.Required)],
 
   // Discount Item

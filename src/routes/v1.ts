@@ -535,50 +535,16 @@ export default function (sio: any) {
         jobTypeController.getJobTypes
     )
 
+    // Item
+
     router.post(
         '/getItems',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Items),
-        jobTypeController.getAllItems
+        validate(Validations.getItems),
+        itemController.getItems
     )
-
-    router.post(
-        '/updateItem',
-        passport.authenticate('jwt', { session: false }),
-        getCompanyId(),
-        checkUserPermissions(Permissions.Update_Item),
-        validate(Validations.updateItem),
-        jobTypeController.updateItem
-    )
-
-    router.post(
-        '/updateItems',
-        passport.authenticate('jwt', { session: false }),
-        getCompanyId(),
-        checkUserPermissions(Permissions.Update_Item),
-        jobTypeController.updateItems
-    )
-
-    router.post(
-        '/searchDuplicatedItems',
-        passport.authenticate('jwt', { session: false }),
-        getCompanyId(),
-        checkUserPermissions(Permissions.Get_Items),
-        validate(Validations.searchDuplicatedItems),
-        jobTypeController.searchDuplicatedItems
-    )
-
-    router.post(
-        '/mergeItems',
-        passport.authenticate('jwt', { session: false }),
-        getCompanyId(),
-        checkUserPermissions(Permissions.Update_Item),
-        validate(Validations.mergeItems),
-        jobTypeController.mergeItems
-    )
-
-    // Item
 
     router.post(
         '/createItem',
@@ -587,6 +553,41 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Job_Type_Create),
         validate(Validations.createItem),
         itemController.createItem
+    )
+
+    router.post(
+        '/updateItem',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Item),
+        validate(Validations.updateItem),
+        itemController.updateItem
+    )
+
+    router.post(
+        '/updateItems',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Item),
+        itemController.updateItems
+    )
+
+    router.post(
+        '/searchDuplicatedItems',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Items),
+        validate(Validations.searchDuplicatedItems),
+        itemController.searchDuplicatedItems
+    )
+
+    router.post(
+        '/mergeItems',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Item),
+        validate(Validations.mergeItems),
+        itemController.mergeItems
     )
 
     // Discount Item

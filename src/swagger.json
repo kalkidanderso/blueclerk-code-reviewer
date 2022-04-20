@@ -4816,7 +4816,22 @@
         "tags": [
           "Items"
         ],
-        "summary": "To get all items of company ",
+        "summary": "To get all items of company",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "includeDiscountItems": {
+                    "type": "boolean",
+                    "description": "To include discount items or not, default will be false"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Success",
