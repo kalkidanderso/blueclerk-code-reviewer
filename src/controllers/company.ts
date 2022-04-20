@@ -58,7 +58,7 @@ export const updateCompanyProfile = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        if(company.info.companyEmail != params.companyEmail ) {
+        if(company.info.companyEmail.toLowerCase() != params.companyEmail.toLowerCase() ) {
 
             Company.findOne(
                 { 'info.companyEmail': {$regex : params.companyEmail , $options: 'i' }},
