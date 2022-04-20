@@ -130,8 +130,7 @@ export const Validations = {
     check('customerId').exists().withMessage(Messages.Required),
     check('customerId').isMongoId().withMessage(Messages.WrongId),
     check('unusedCustomerIds').exists().withMessage(Messages.Required),
-    check('email').optional().isEmail().withMessage(Messages.InvalidEmail),
-    check('email').normalizeEmail({"all_lowercase": true,"gmail_remove_dots": false})
+    check('email').optional().isEmail().normalizeEmail({"all_lowercase": true,"gmail_remove_dots": false}).withMessage(Messages.InvalidEmail),
   ],
 
   //Customer Equipment
