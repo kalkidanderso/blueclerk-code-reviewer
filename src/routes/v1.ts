@@ -629,8 +629,7 @@ export default function (sio: any) {
         // uploadImageInS3.array('images'),
         uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
         validate(Validations.createJob),
-        // jobController.createJob
-        jobController.createJobs
+        jobController.createJob
     )
 
     router.post(
