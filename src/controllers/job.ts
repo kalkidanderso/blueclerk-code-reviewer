@@ -142,6 +142,10 @@ export const createJob = async (req: Request, res: Response) => {
         paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
     }
 
+    if (!params.ticketId && !params.jobRequestId) {
+        return res.json({ status: Status.Error, message: 'ticketId or jobRequestId must be provided'})
+    }
+
     if (params.employeeType == 0 && !params.technicianId) {
         return res.json({ status: Status.Error, message: 'technicianId must be provided when employeeType is employee' });
     }
