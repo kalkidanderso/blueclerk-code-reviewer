@@ -78,6 +78,14 @@ export const enum JobStatus {
     INCOMPLETE
 }
 
+export const enum JobRequestStatus {
+    PENDING,
+    SCHEDULED,
+    FINISHED,
+    CANCELLED,
+    REJECTED,
+}
+
 export const enum ServiceTicketStatus {
     ACTIVE,
     ARCHIVED,

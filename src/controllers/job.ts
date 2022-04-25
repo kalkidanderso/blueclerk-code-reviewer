@@ -5,7 +5,7 @@ import moment from 'moment';
 import momentTz from 'moment-timezone';
 import * as _ from 'lodash';
 import * as helper from '../services/helper';
-import { Status, Messages, JobStatus, ServiceTicketStatus, NotificationTypes, SocketEvents, DefaultPageSize } from '../common/constants'
+import { Status, Messages, JobStatus, ServiceTicketStatus, NotificationTypes, SocketEvents, DefaultPageSize, JobRequestStatus } from '../common/constants'
 import {
     sendJobEmailToAssignee,
     sendJobEmailToCustomer, sendReportEmailToCustomer
@@ -29,11 +29,111 @@ import { JobRoute } from '../models/JobRoute';
 import { _handleJobTypesJson } from '../controllers/item';
 import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
 import { _handleNotification } from '../controllers/notification';
+import { IJobRequest, JobRequest } from '../models/JobRequest';
+import { convertCompilerOptionsFromJson } from 'typescript';
 
-export const createJob = (req: Request, res: Response) => {
+/**
+ * 04-22-2022
+ * To be deprecated
+ * */
+// export const createJob = (req: Request, res: Response) => {
+
+//     const params = req.body;
+//     const imagesUrl: string[] = [];
+//     if (req.files) {
+//         const paramsImageFile = JSON.parse(JSON.stringify(req.files));
+
+//         // Push image location from req.files to imagesUrl
+//         paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
+//         paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
+//     }
+
+//     const company = <ICompany>req.company;
+
+//     if (params.employeeType == 0 && !params.technicianId) {
+//         return res.json({ status: Status.Error, message: 'technicianId must be provided when employeeType is employee' });
+//     }
+
+//     if (params.employeeType == 1 && !params.contractorId) {
+//         return res.json({ status: Status.Error, message: 'contractorId must be provided when employeeType is contractor' });
+//     }
+
+//     ServiceTicket.findOne({ _id: params.ticketId, company })
+//         .then((serviceTicket: IServiceTicket) => {
+//             if (!serviceTicket) {
+//                 throw new Error('Service Ticket not found');
+//             }
+//             if (serviceTicket.status == ServiceTicketStatus.ARCHIVED) {
+//                 throw new Error(`You can't create a job using canceled ticket.`);
+//             }
+//             if (serviceTicket.jobCreated) {
+//                 throw new Error('Job already created for this ticket.');
+//             }
+
+//             let jobId = serviceTicket.ticketId.replace('Ticket', 'Job');
+
+//             if (params.scheduledStartTime && params.scheduledEndTime) {
+//                 let newStartTime: any = null
+//                 let newEndTime: any = null
+//                 let date;
+//                 if (params.scheduledStartTime) {
+//                     date = new Date(params.scheduleDate)
+//                     newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
+//                 }
+//                 if (params.scheduledEndTime) {
+//                     date = new Date(params.scheduleDate)
+//                     newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
+//                 }
+
+//                 return new Promise((resolve, reject) => {
+//                     Job.findOne({
+//                         $or: [
+//                             {
+//                                 company: company._id,
+//                                 tasks: { technician: params.technicianId },
+//                                 scheduleDate: new Date(params.scheduleDate),
+//                                 scheduledStartTime: { $lte: newStartTime },
+//                                 scheduledEndTime: { $gte: newStartTime }
+//                             },
+//                             {
+//                                 company: company._id,
+//                                 tasks: { technician: params.technicianId },
+//                                 scheduleDate: new Date(params.scheduleDate),
+//                                 scheduledStartTime: { $lte: newEndTime },
+//                                 scheduledEndTime: { $gte: newEndTime }
+//                             }
+//                         ]
+//                     }, (err: any, job: IJob) => {
+//                         if (job) {
+//                             reject(new Error(`Technician is scheduled at time you selected, try scheduling after ${job.scheduledEndTime}`));
+//                         } else {
+//                             resolve([jobId, serviceTicket])
+//                         }
+//                     });
+//                 });
+//             } else {
+//                 return [jobId, serviceTicket]
+//             }
+
+//         })
+//         .then(async (response: any) => {
+//             const jobId = response[0]
+//             const serviceTicket = response[1]
+
+//             const createJob = await _createJob(req, res, undefined, jobId, imagesUrl, serviceTicket);
+//             return res.json({ status: Status.Success, message: 'Job created successfully.', createJob });
+//         })
+//         .catch((error: any) => {
+//             return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+//         });
+
+// }
+
+export const createJob = async (req: Request, res: Response) => {
 
     const params = req.body;
     const imagesUrl: string[] = [];
+    const company = <ICompany>req.company;
     if (req.files) {
         const paramsImageFile = JSON.parse(JSON.stringify(req.files));
 
@@ -42,7 +142,9 @@ export const createJob = (req: Request, res: Response) => {
         paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
     }
 
-    const company = <ICompany>req.company;
+    if (!params.ticketId && !params.jobRequestId) {
+        return res.json({ status: Status.Error, message: 'ticketId or jobRequestId must be provided'})
+    }
 
     if (params.employeeType == 0 && !params.technicianId) {
         return res.json({ status: Status.Error, message: 'technicianId must be provided when employeeType is employee' });
@@ -52,79 +154,27 @@ export const createJob = (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'contractorId must be provided when employeeType is contractor' });
     }
 
-    ServiceTicket.findOne({ _id: params.ticketId, company })
-        .then((serviceTicket: IServiceTicket) => {
-            if (!serviceTicket) {
-                throw new Error('Service Ticket not found');
-            }
-            if (serviceTicket.status == ServiceTicketStatus.ARCHIVED) {
-                throw new Error(`You can't create a job using canceled ticket.`);
-            }
-            if (serviceTicket.jobCreated) {
-                throw new Error('Job already created for this ticket.');
-            }
-
-            let jobId = serviceTicket.ticketId.replace('Ticket', 'Job');
-
-            if (params.scheduledStartTime && params.scheduledEndTime) {
-                let newStartTime: any = null
-                let newEndTime: any = null
-                let date;
-                if (params.scheduledStartTime) {
-                    date = new Date(params.scheduleDate)
-                    newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
-                }
-                if (params.scheduledEndTime) {
-                    date = new Date(params.scheduleDate)
-                    newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
-                }
-
-                return new Promise((resolve, reject) => {
-                    Job.findOne({
-                        $or: [
-                            {
-                                company: company._id,
-                                tasks: { technician: params.technicianId },
-                                scheduleDate: new Date(params.scheduleDate),
-                                scheduledStartTime: { $lte: newStartTime },
-                                scheduledEndTime: { $gte: newStartTime }
-                            },
-                            {
-                                company: company._id,
-                                tasks: { technician: params.technicianId },
-                                scheduleDate: new Date(params.scheduleDate),
-                                scheduledStartTime: { $lte: newEndTime },
-                                scheduledEndTime: { $gte: newEndTime }
-                            }
-                        ]
-                    }, (err: any, job: IJob) => {
-                        if (job) {
-                            reject(new Error(`Technician is scheduled at time you selected, try scheduling after ${job.scheduledEndTime}`));
-                        } else {
-                            resolve([jobId, serviceTicket])
-                        }
-                    });
-                });
-            } else {
-                return [jobId, serviceTicket]
-            }
-
-        })
-        .then(async (response: any) => {
-            const jobId = response[0]
-            const serviceTicket = response[1]
-
-            await _createJob(req, res, undefined, jobId, imagesUrl, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob, invalidJobTypes: string[]) => {
-                if (err != null) {
-                    return res.json({ status: Status.Error, message: err });
-                }
-                return res.json({ status: Status.Success, message: 'Job created successfully.', invalidJobTypes, job: newJob });
+    if (params.scheduledStartTime && params.scheduledEndTime) {
+        try {
+            handleScheduledTime({
+                company,
+                scheduleDate: params.scheduleDate,
+                scheduledStartTime: params.scheduledStartTime,
+                scheduledEndTime: params.scheduledEndTime,
+                technicianId: params.technicianId
             });
-        })
-        .catch((error: any) => {
-            return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
-        });
+        } catch (err) {
+            return res.json({ status: Status.Error, message: err });
+        }
+    }
 
+    if (params.ticketId) {
+        await createServiceTicketJob(req, res, params.ticketId, imagesUrl, company);
+    }
+
+    if (params.jobRequestId) {
+        await createJobRequestJob(req, res, params.jobRequestId, imagesUrl, company);
+    }
 }
 
 /**
@@ -155,23 +205,25 @@ export const createSubJob = async (req: Request, res: Response) => {
     const jobId = `${parentJob.jobId} - ${jobCount + 1}`;
 
     const serviceTicket = await ServiceTicket.findById(parentJob.ticket);
-    await _createJob(req, res, parentJob, jobId, undefined, serviceTicket, (req: Request, res: Response, err: any, newJob: IJob, invalidJobTypes: string[]) => {
-        if (err) {
-            return res.json({ status: Status.Error, message: err ?? Messages.GenericError });
-        }
-
-        return res.json({ status: Status.Success, message: 'Job created successfully.', invalidJobTypes, job: newJob });
-    });
+    const createJob = await _createJob(req, res, parentJob, jobId, undefined, serviceTicket);
+    return res.json({ status: Status.Success, message: 'Job created successfully.', createJob });
 
 }
 
-const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: string, imagesUrl: string[], serviceTicket: IServiceTicket, next: (req: Request, res: Response, err: any, job: IJob, invalidJobTypes: string[]) => void) => {
+const _createJob = async (
+    req: Request,
+    res: Response,
+    parentJob: IJob,
+    jobId: string,
+    imagesUrl: string[],
+    serviceTicket: IServiceTicket,
+) => {
 
     const params = req.body
     const invalidJobType: any[] = []
-    let jobTypes = serviceTicket.tasks;
-    let invalidJobTypes: string[];
     let paramTasks: TaskEntry[] = params.tasks ?? [];
+    const images = [];
+    let newJob: IJob;
 
     // To handle any over-stringified strings
     if (!Array.isArray(paramTasks)) {
@@ -202,36 +254,60 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         date: new Date()
     });
 
-
     if (params.ticketId) {
-        await ServiceTicket.findOne({ _id: new ObjectId(params.ticketId) }).then((t) => {
-            if (t) {
-                if (!t.jobLocation && params.jobLocation) {
-                    t.jobLocation = params.jobLocation;
-                }
-                if (!t.jobSite && params.jobSite) {
-                    t.jobSite = params.jobSite;
-                }
-                t.save().then(() => { }).catch((err) => {
-                    return res.json({ 'status': Status.Error, 'message': err.message });
-                })
+        serviceTicket = await ServiceTicket.findById(params.ticketId);
+        if (serviceTicket) {
+            if (!serviceTicket.jobLocation && params.jobLocation) {
+                serviceTicket.jobLocation = params.jobLocation;
             }
-        }).catch((err) => {
-            return res.json({ 'status': Status.Error, 'message': err.message });
-        });
+            if (!serviceTicket.jobSite && params.jobSite) {
+                serviceTicket.jobSite = params.jobSite;
+            }
+
+            await serviceTicket.save();
+        }
+
+        const ticketImages = parentJob?.images?.length
+            ? parentJob?.images
+            : serviceTicket?.images?.length
+                ? serviceTicket?.images
+                : [];
+
+        images.push(...ticketImages)
     }
 
-    const images = parentJob?.images?.length
-        ? parentJob?.images
-        : serviceTicket?.images?.length
-            ? serviceTicket?.images
-            : [];
+    if (params.jobRequestId) {
+        const jobRequest = await JobRequest.findById(params.jobRequestId);
+        if (jobRequest) {
+            if (!jobRequest.jobLocation && params.jobLocation) {
+                jobRequest.jobLocation = params.jobLocation;
+            }
+
+            if (!jobRequest.jobSite && params.jobSite) {
+                jobRequest.jobSite = params.jobSite;
+            }
+
+            jobRequest.status = JobRequestStatus.SCHEDULED;
+            await jobRequest.save();
+            jobRequest?.requests.forEach(request => {
+                const requestImages = parentJob?.images?.length
+                    ? parentJob?.images
+                    : request.images?.length
+                        ? request?.images
+                        : []
+
+                images.push(...requestImages);
+            })
+        }
+    }
+
 
     const job = new Job({
         parentJob: parentJob?._id,
         scheduleDate: params.scheduleDate ? moment(params.scheduleDate).format("YYYY-MM-DD") : parentJob?.scheduleDate,
         jobId: jobId,
-        ticket: params.ticketId ?? parentJob?.ticket,
+        ticket: params.ticketId ?? parentJob?.ticket ?? null,
+        request: params.jobRequestId ?? null,
         // technician: technicianId,
         // contractor: params.contractorId,
         customer,
@@ -271,32 +347,28 @@ const _createJob = async (req: Request, res: Response, parentJob: IJob, jobId: s
         job.equipmentId = params.equipmentId
     }
 
-    await job.save((err: any) => {
-        if (err) {
-            return next(req, res, Messages.GenericError, null, null)
-        }
+    newJob = await job.save();
 
-        trackedServiceTicket.push({
-            user: user._id,
-            action: `|Job created by ${user.profile.displayName}|`,
-            date: new Date()
-        });
+    trackedServiceTicket.push({
+        user: user._id,
+        action: `|Job created by ${user.profile.displayName}|`,
+        date: new Date()
+    });
 
-        serviceTicket.updateOne({ jobCreated: true, track: trackedServiceTicket }, async (serviceTicketError: any, raw: any) => {
-            if (serviceTicketError) {
-                return next(req, res, Messages.GenericError, null, null)
-            }
+    if (serviceTicket) {
+        await serviceTicket.updateOne({ jobCreated: true, track: trackedServiceTicket });
+    }
 
-            for (const task of job.tasks) {
-                // Add the new job to the existing job route on the scheduleDate
-                // await _addOrRemoveJobRoutes(job.technician, job.scheduleDate, 'ADD', job._id);
-                await _addOrRemoveJobRoutes(task.technician, job.scheduleDate, 'ADD', job._id);
-            }
-            scheduleEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => {
-                return next(req, res, null, newJob, invalidJobType)
-            });
-        })
-    })
+    if (params.jobRequestId) {
+        await JobRequest.findByIdAndUpdate(params.jobRequestId, { jobCreated: true, track: trackedServiceTicket });
+    }
+
+    for (const task of job.tasks) {
+        await _addOrRemoveJobRoutes(task.technician, job.scheduleDate, 'ADD', job._id);
+    }
+
+    scheduleEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => { })
+    return { job: newJob, invalidJobTypes: invalidJobType };
 }
 
 
@@ -713,6 +785,7 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
     let count = await Job.find(query).countDocuments();
     await Job.find(query).sort({ _id: -1 })
         .populate('ticket')
+        .populate('request')
         .populate({
             // TODO: To be deprecated
             path: 'technician',
@@ -804,11 +877,13 @@ export const getJobs = async (req: Request, res: Response) => {
 
     // Data query that used to search Jobs and available previous/next page
     const filterQuery: any = {
-        $and: [ { $or: [
-            { 'tasks.contractor': companyId },
-            { contractor: companyId },
-            { company: companyId }
-        ]}]
+        $and: [{
+            $or: [
+                { 'tasks.contractor': companyId },
+                { contractor: companyId },
+                { company: companyId }
+            ]
+        }]
     };
 
     // Check and add if params filter provided
@@ -873,7 +948,7 @@ export const getJobs = async (req: Request, res: Response) => {
         };
         query['$and'].push({ ...paginationQuery });
         // Getting previous page is special, we need to reverse the sort
-        sortQuery = { updatedAt: 1, _id: 1};
+        sortQuery = { updatedAt: 1, _id: 1 };
     }
 
     // Construct aggreate lookups here to be used multiple times
@@ -902,6 +977,10 @@ export const getJobs = async (req: Request, res: Response) => {
         .populate({
             path: 'ticket',
             populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
+        })
+        .populate({
+            path: 'request',
+            populate: [{ path: 'customerContactId' }]
         })
         .populate({
             // TODO: To be deprecated
@@ -1004,10 +1083,12 @@ export const getJobs = async (req: Request, res: Response) => {
             const nextPageQuery: any = { $and: [] };
             filterQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
             // To be added with the pagination for the previous page
-            nextPageQuery['$and'].push({ $or: [
-                { updatedAt: { $lt: new Date(nextCursor.updatedAt) } },
-                { updatedAt: new Date(nextCursor.updatedAt), _id: { $lt: nextCursor._id } }
-            ]});
+            nextPageQuery['$and'].push({
+                $or: [
+                    { updatedAt: { $lt: new Date(nextCursor.updatedAt) } },
+                    { updatedAt: new Date(nextCursor.updatedAt), _id: { $lt: nextCursor._id } }
+                ]
+            });
             const isNextPage = await Job.aggregate([
                 ...aggregateLookups,
                 { $match: { ...nextPageQuery } },
@@ -1024,10 +1105,12 @@ export const getJobs = async (req: Request, res: Response) => {
             const previousPageQuery: any = { $and: [] };
             filterQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
             // To be added with the pagination for the previous page
-            previousPageQuery['$and'].push({ $or: [
-                { updatedAt: { $gt: new Date(previousCursor.updatedAt) } },
-                { updatedAt: new Date(previousCursor.updatedAt), _id: { $gt: previousCursor._id } }
-            ]});
+            previousPageQuery['$and'].push({
+                $or: [
+                    { updatedAt: { $gt: new Date(previousCursor.updatedAt) } },
+                    { updatedAt: new Date(previousCursor.updatedAt), _id: { $gt: previousCursor._id } }
+                ]
+            });
             const isPreviousPage = await Job.aggregate([
                 ...aggregateLookups,
                 { $match: { ...previousPageQuery } },
@@ -1040,11 +1123,11 @@ export const getJobs = async (req: Request, res: Response) => {
                 status: Status.Success,
                 jobs,
                 total: totalJobs[0]?.count,
-                nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)): null,
+                nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)) : null,
                 previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null
             });
         }
-    )
+        )
 
 }
 
@@ -1054,6 +1137,9 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
     Job.find({ $or: [{ "tasks.technician": params.employeeId }, { technician: params.employeeId }] })
         .populate({
             path: 'ticket',
+        })
+        .populate({
+            path: 'request'
         })
         .populate({
             // TODO: To be deprecated
@@ -1161,6 +1247,10 @@ export const getJobsStream = async (req: Request, res: Response, sio: any) => {
             path: 'ticket',
             populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
         })
+        .populate({
+            path: 'request',
+            populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
+        })
         // .populate({
         //     // TODO: To be deprecated
         //     path: 'technician',
@@ -1242,19 +1332,19 @@ export const getJobsStream = async (req: Request, res: Response, sio: any) => {
         // set roomId for terminating socket connection
         let roomId = actionId?.toString() || company._id?.toString() + user._id?.toString();
         let clientExist = sio.sockets?.adapter?.rooms?.get(roomId);
-        if(!clientExist){
+        if (!clientExist) {
             // client disconnect, stop sending data
             break;
         }
 
-        if(actionId){
+        if (actionId) {
             // new way , get actionID from FE and send it privately
             await sio.to(actionId?.toString()).emit(SocketEvents.ALL_JOBS, {
                 job,
                 count: count++,
                 total: totalJobs
             });
-        }else{
+        } else {
             // old way , sending to room and disconnect
             // Send the job via socket.io
             await sio.to(company._id?.toString() + user._id?.toString()).emit(SocketEvents.ALL_JOBS, {
@@ -1312,10 +1402,12 @@ export const getAllJobReports = async (req: Request, res: Response) => {
 
     // Data query that used to search Job Reports and available previous/next page
     const filterQuery: any = {
-        $and: [ { $or: [
-            { contractor: companyId },
-            { company: companyId }
-        ]}]
+        $and: [{
+            $or: [
+                { contractor: companyId },
+                { company: companyId }
+            ]
+        }]
     };
 
     // Check and add if params filter provided
@@ -1376,7 +1468,7 @@ export const getAllJobReports = async (req: Request, res: Response) => {
         };
         query['$and'].push({ ...paginationQuery });
         // Getting previous page is special, we need to reverse the sort
-        sortQuery = { createdAt: 1, _id: 1};
+        sortQuery = { createdAt: 1, _id: 1 };
     }
 
     // Construct aggreate lookups here to be used multiple times
@@ -1442,10 +1534,12 @@ export const getAllJobReports = async (req: Request, res: Response) => {
                 const nextPageQuery: any = { $and: [] };
                 filterQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
                 // To be added with the pagination for the previous page
-                nextPageQuery['$and'].push({ $or: [
-                    { createdAt: { $lt: new Date(nextCursor.createdAt) } },
-                    { createdAt: new Date(nextCursor.createdAt), _id: { $lt: nextCursor._id } }
-                ]});
+                nextPageQuery['$and'].push({
+                    $or: [
+                        { createdAt: { $lt: new Date(nextCursor.createdAt) } },
+                        { createdAt: new Date(nextCursor.createdAt), _id: { $lt: nextCursor._id } }
+                    ]
+                });
                 const isNextPage = await JobReport.aggregate([
                     ...aggregateLookups,
                     { $match: { ...nextPageQuery } },
@@ -1462,10 +1556,12 @@ export const getAllJobReports = async (req: Request, res: Response) => {
                 const previousPageQuery: any = { $and: [] };
                 filterQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
                 // To be added with the pagination for the previous page
-                previousPageQuery['$and'].push({ $or: [
-                    { createdAt: { $gt: new Date(previousCursor.createdAt) } },
-                    { createdAt: new Date(previousCursor.createdAt), _id: { $gt: previousCursor._id } }
-                ]});
+                previousPageQuery['$and'].push({
+                    $or: [
+                        { createdAt: { $gt: new Date(previousCursor.createdAt) } },
+                        { createdAt: new Date(previousCursor.createdAt), _id: { $gt: previousCursor._id } }
+                    ]
+                });
                 const isPreviousPage = await JobReport.aggregate([
                     ...aggregateLookups,
                     { $match: { ...previousPageQuery } },
@@ -1478,7 +1574,7 @@ export const getAllJobReports = async (req: Request, res: Response) => {
                     status: Status.Success,
                     reports,
                     total: totalJobReports[0]?.count,
-                    nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)): null,
+                    nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)) : null,
                     previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null
                 });
             }
@@ -1502,6 +1598,7 @@ export const getJobReportDetails = (req: Request, res: Response) => {
             path: 'job',
             populate: [
                 { path: 'ticket', select: 'ticketId note scheduleDateTime image customerPO customerContactId' },
+                { path: 'request', select: 'requestId requests dueDate customerContact' },
                 // TODO: To be deprecated
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
                 { path: 'tasks.technician', select: 'profile auth.email contact' },
@@ -1604,6 +1701,11 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             select: 'customer',
             populate: { path: 'customer', select: 'profile.displayName' }
         })
+        .populate({
+            path: 'request',
+            select: 'customer',
+            populate: { path: 'customer', select: 'profile.displayName' }
+        })
         .then((job: IJob) => {
 
             if (job == undefined) {
@@ -1655,6 +1757,11 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                         select: 'customer',
                         populate: { path: 'customer', select: 'profile.displayName' }
                     })
+                    .populate({
+                        path: 'request',
+                        select: 'customer',
+                        populate: { path: 'customer', select: 'profile.displayName' }
+                    })
                     .execPopulate();
             }
 
@@ -1698,6 +1805,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     if (job.status == JobStatus.CANCELED) {
                         action = '|Re-starting the job|';
                         await ServiceTicket.findOneAndUpdate({ _id: job.ticket }, { jobCreated: true });
+                        await JobRequest.findOneAndUpdate({ _id: job.request }, { jobCreated: true });
                     } else {
                         action = '|Starting the job|';
                     }
@@ -1708,6 +1816,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 if (params.status == JobStatus.CANCELED) {
                     action = '|Canceling the job|';
                     await ServiceTicket.findOneAndUpdate({ _id: job.ticket }, { jobCreated: false });
+                    await JobRequest.findOneAndUpdate({ _id: job.request }, { jobCreated: false });
                 }
                 if (params.status == JobStatus.RESCHEDULED) {
                     action = '|Rescheduling the job|';
@@ -2138,6 +2247,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
         // TODO: To be deprecated
         .populate({ path: 'technician', select: 'profile.displayName' })
         .populate({ path: 'ticket.customer', select: 'profile.displayName' })
+        .populate({ path: 'request.customer', select: 'profile.displayName' })
 
     // Check if job exist and job status is not FINISHED or CANCELED
     if (!job)
@@ -2251,7 +2361,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
     }
 
     // Create Job Report for Job
-    const customerName = job.customer?.profile?.displayName || job.ticket?.customer?.profile?.displayName;
+    const customerName = job.customer?.profile?.displayName || job.ticket?.customer?.profile?.displayName || job.request?.customer?.profile?.displayName;
     await createJobReport(job._id, job.company, customerName, task.technician?.profile?.displayName, job.scheduleDate, task.contractor || companyId);
 
     // HANDLE PARENT/SUB JOB
@@ -2571,6 +2681,10 @@ export const getJobDetails = (req: Request, res: Response) => {
             populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title' }]
         })
         .populate({
+            path: 'request',
+            populate: [{ path: 'customerContactId' }]
+        })
+        .populate({
             // TODO: To be deprecated
             path: 'technician',
             select: 'profile contact auth.email'
@@ -2764,6 +2878,7 @@ export const sendJobReport = (req: Request, res: Response) => {
             path: 'job',
             populate: [
                 { path: 'ticket', select: 'ticketId note scheduleDateTime' },
+                { path: 'request', select: 'requestId requests dueDate' },
                 // TODO: To be deprecated
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
                 { path: 'tasks.technician', select: 'profile auth.email contact' },
@@ -2893,6 +3008,9 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
             path: 'ticket',
         })
         .populate({
+            path: 'request',
+        })
+        .populate({
             // TODO: To be deprecated
             path: 'technician',
             select: 'profile contact auth.email'
@@ -2986,6 +3104,7 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
                         { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                         { path: 'type', select: 'title description sku' },
                         { path: 'ticket', select: '-__v -track' },
+                        { path: 'request', select: '-__v -track' },
                         { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
                         { path: 'jobSite', select: '-__v -locationId -customerId' }
                     ]
@@ -3121,6 +3240,11 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
         })
         .populate({
             path: 'ticket',
+            select: 'customer',
+            populate: { path: 'customer', select: 'profile.displayName' }
+        })
+        .populate({
+            path: 'request',
             select: 'customer',
             populate: { path: 'customer', select: 'profile.displayName' }
         })
@@ -3363,9 +3487,9 @@ const _handleMutltipleTechniciansTasks = async ({
 
     const params = req.body;
     const invalidJobType: any[] = []
-    let jobTypes = serviceTicket.tasks;
+    let jobTypes = serviceTicket?.tasks;
     let invalidJobTypes: string[];
-    const tasks: ITask[] = []
+    const tasks: ITask[] = [];
 
     const customer = params.customerId || parentJob && parentJob.customer;
 
@@ -3439,4 +3563,107 @@ const _handleMutltipleTechniciansTasks = async ({
 
     return tasks;
 
+}
+
+export const createServiceTicketJob = async (
+    req: Request,
+    res: Response,
+    serviceTicketId: string,
+    imagesUrl: string[],
+    company: ICompany
+) => {
+
+    const serviceTicket = await ServiceTicket.findOne({ _id: serviceTicketId, company });
+    if (!serviceTicket) {
+        return res.json({ status: Status.Error, message: 'Service Ticket not found!' });
+    }
+
+    if (serviceTicket.status == ServiceTicketStatus.ARCHIVED) {
+        return res.json({ status: Status.Error, message: `You can't create a job using canceled ticket.` });
+    }
+    if (serviceTicket.jobCreated) {
+        return res.json({ status: Status.Error, message: 'Job already created for this ticket.' });
+    }
+
+    const jobId = serviceTicket.ticketId.replace('Ticket', 'Job');
+    const createJob = await _createJob(req, res, undefined, jobId, imagesUrl, serviceTicket);
+    return res.json({ status: Status.Success, message: 'Job created successfully.', createJob });
+}
+
+export const createJobRequestJob = async (
+    req: Request,
+    res: Response,
+    jobRequestId: string,
+    imagesUrl: string[],
+    company: ICompany
+) => {
+
+    const jobRequest = await JobRequest.findOne({ _id: jobRequestId, company });
+    if (!jobRequest) {
+        return res.json({ status: Status.Error, message: 'Job Request not found!' });
+    }
+
+    if (jobRequest.status === JobRequestStatus.CANCELLED || jobRequest.status === JobRequestStatus.FINISHED) {
+        return res.json({ status: Status.Error, message: 'You can`t create a job using either cancelled or finished request' });
+    }
+
+    if (jobRequest.jobCreated) {
+        return res.json({ status: Status.Error, message: 'Job already created for this request.' });
+    }
+
+    const jobId = jobRequest.requestId.replace('Request', 'Job');
+    const createJob = await _createJob(req, res, undefined, jobId, imagesUrl, undefined);
+    return res.json({ status: Status.Success, message: 'Job created successfully.', createJob });
+}
+
+export const handleScheduledTime = async ({
+    company,
+    scheduleDate,
+    scheduledStartTime,
+    scheduledEndTime,
+    technicianId
+}: {
+    company: ICompany,
+    scheduleDate: string,
+    scheduledStartTime: string,
+    scheduledEndTime: string,
+    technicianId: string
+}) => {
+
+    let newStartTime: any = null;
+    let newEndTime: any = null
+    let date;
+    if (scheduledStartTime) {
+        date = new Date(scheduleDate)
+        newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + scheduledStartTime)
+    }
+    if (scheduledEndTime) {
+        date = new Date(scheduleDate)
+        newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + scheduledEndTime)
+    }
+
+    const job = await Job.findOne({
+        $or: [
+            {
+                company: company._id,
+                tasks: { technician: technicianId },
+                scheduleDate: new Date(scheduleDate),
+                scheduledStartTime: { $lte: newStartTime },
+                scheduledEndTime: { $gte: newStartTime }
+            },
+            {
+                company: company._id,
+                tasks: { technician: technicianId },
+                scheduleDate: new Date(scheduleDate),
+                scheduledStartTime: { $lte: newEndTime },
+                scheduledEndTime: { $gte: newEndTime }
+            }
+        ]
+    });
+
+    if (job) {
+        throw new Error(`Technician is scheduled at time you selected, try scheduling after ${job.scheduledEndTime}`);
+    }
+
+    return;
 }
