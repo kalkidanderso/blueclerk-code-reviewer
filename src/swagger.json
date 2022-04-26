@@ -4816,7 +4816,22 @@
         "tags": [
           "Items"
         ],
-        "summary": "To get all items of company ",
+        "summary": "To get all items of company",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "includeDiscountItems": {
+                    "type": "boolean",
+                    "description": "To include discount items or not, default will be false"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Success",
@@ -7050,8 +7065,7 @@
                 "required": [
                   "customerId",
                   "tasks",
-                  "scheduleDate",
-                  "ticketId"
+                  "scheduleDate"
                 ],
                 "properties": {
                   "scheduleDate": {
@@ -7069,6 +7083,9 @@
                   "ticketId": {
                     "type": "string",
                     "description": "Id of a service ticket fetched by /getServiceTickets api"
+                  },
+                  "jobRequestId": {
+                    "type": "string"
                   },
                   "equipmentId": {
                     "type": "string",

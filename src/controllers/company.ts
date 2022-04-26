@@ -58,10 +58,10 @@ export const updateCompanyProfile = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
 
-        if(company.info.companyEmail != params.companyEmail ) {
+        if(company.info.companyEmail.toLowerCase() != params.companyEmail ) {
 
             Company.findOne(
-                { 'info.companyEmail': params.companyEmail },
+                { 'info.companyEmail': {$regex : params.companyEmail , $options: 'i' }},
                 (err: any, previousCompany: ICompany) => {
 
                     if (err) {
@@ -106,6 +106,7 @@ export const updateCompanyProfile = (req: Request, res: Response) => {
                     'address.zipCode': params.zipCode,
                     'contact.phone': params.phone,
                     'contact.fax': params.fax,
+                    'info.companyEmail': params.companyEmail,
                 },
                 (err: any) => {
 

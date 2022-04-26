@@ -11,6 +11,7 @@ export interface IJob extends Document {
     jobId: string
     parentJob: Schema.Types.ObjectId | IJob
     ticket: Schema.Types.ObjectId | any
+    request: Schema.Types.ObjectId | any
     technician: Schema.Types.ObjectId | any // TODO: To be deprecated
     contractor: Schema.Types.ObjectId // TODO: To be deprecated
     customer: Schema.Types.ObjectId | any
@@ -121,7 +122,10 @@ const JobSchema = new Schema({
     ticket: {
         type: Schema.Types.ObjectId,
         ref: 'ServiceTicket',
-        required: true
+    },
+    request: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobRequest',
     },
     equipmentId: {
         type: Schema.Types.ObjectId,
