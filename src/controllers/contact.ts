@@ -367,8 +367,7 @@ const sendCustomerContactEmail = async (customerContact: ICustomerContact, conta
 
     /**
      * Kris' remark (Apr 27th, 2022):
-     * Disable the email for now for not pissing of Lance's customer,
-     * and to keep professional
+     * Disable the email for now to keep professional
      */
     // const options = {
     //     to: customerContact?.info?.email ?? contact.email,
