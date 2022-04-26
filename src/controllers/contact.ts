@@ -365,13 +365,17 @@ const sendCustomerContactEmail = async (customerContact: ICustomerContact, conta
         await customerContact.updateOne({ _id: customerContact._id, 'auth.email': customerContact.info.email, 'auth.password': hash });
     })
 
-    const options = {
-        to: customerContact?.info?.email ?? contact.email,
-        name: customerContact?.profile?.displayName ?? contact.name,
-        password: contactPassword,
-    }
+    /**
+     * Kris' remark (Apr 27th, 2022):
+     * Disable the email for now to keep professional
+     */
+    // const options = {
+    //     to: customerContact?.info?.email ?? contact.email,
+    //     name: customerContact?.profile?.displayName ?? contact.name,
+    //     password: contactPassword,
+    // }
 
-    sendCustomerContactNewPassword(options);
+    // sendCustomerContactNewPassword(options);
     return;
 }
 
