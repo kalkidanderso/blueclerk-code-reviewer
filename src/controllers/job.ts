@@ -143,7 +143,11 @@ export const createJob = async (req: Request, res: Response) => {
     }
 
     if (!params.ticketId && !params.jobRequestId) {
-        return res.json({ status: Status.Error, message: 'ticketId or jobRequestId must be provided'})
+        return res.json({ status: Status.Error, message: 'ticketId or jobRequestId must be provided' })
+    }
+
+    if (params.ticketId && params.jobRequestId) {
+        return res.json({ status: Status.Error, message: 'Can only use one of the ticketId or jobRequestId' })
     }
 
     if (params.employeeType == 0 && !params.technicianId) {
@@ -1137,9 +1141,26 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
     Job.find({ $or: [{ "tasks.technician": params.employeeId }, { technician: params.employeeId }] })
         .populate({
             path: 'ticket',
+            select: '-__v',
+            populate: [
+                { path: 'track', select: 'track.user track.action track.date' },
+                { path: 'jobLocation' },
+                { path: 'jobSite' },
+                { path: 'customerContactId' },
+                { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+                { path: 'tasks.jobType', select: 'title description sku' }
+            ]
         })
         .populate({
-            path: 'request'
+            path: 'request',
+            select: '-__v',
+            populate: [
+                { path: 'track', select: 'track.user track.action track.date' },
+                { path: 'jobLocation' },
+                { path: 'jobSite' },
+                { path: 'customerContactId' },
+                { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+            ]
         })
         .populate({
             // TODO: To be deprecated
@@ -1245,11 +1266,26 @@ export const getJobsStream = async (req: Request, res: Response, sio: any) => {
     }).sort({ _id: -1 })
         .populate({
             path: 'ticket',
-            populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
+            select: '-__v',
+            populate: [
+                { path: 'track', select: 'track.user track.action track.date' },
+                { path: 'jobLocation' },
+                { path: 'jobSite' },
+                { path: 'customerContactId' },
+                { path: 'createdBy', select: 'info auth.email profile address contactName' },
+                { path: 'tasks.jobType', select: 'title description sku' }
+            ]
         })
         .populate({
             path: 'request',
-            populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
+            select: '-__v',
+            populate: [
+                { path: 'track', select: 'track.user track.action track.date' },
+                { path: 'jobLocation' },
+                { path: 'jobSite' },
+                { path: 'customerContactId' },
+                { path: 'createdBy', select: 'info auth.email profile.displayName address contactName' },
+            ]
         })
         // .populate({
         //     // TODO: To be deprecated
@@ -1597,8 +1633,28 @@ export const getJobReportDetails = (req: Request, res: Response) => {
         .populate({
             path: 'job',
             populate: [
-                { path: 'ticket', select: 'ticketId note scheduleDateTime image customerPO customerContactId' },
-                { path: 'request', select: 'requestId requests dueDate customerContact' },
+                {
+                    path: 'ticket',
+                    select: '-__v',
+                    populate: [
+                        { path: 'track', select: 'track.user track.action track.date' },
+                        { path: 'jobLocation' },
+                        { path: 'jobSite' },
+                        { path: 'customerContactId' },
+                        { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+                    ]
+                },
+                {
+                    path: 'request',
+                    select: '-__v',
+                    populate: [
+                        { path: 'track', select: 'track.user track.action track.date' },
+                        { path: 'jobLocation' },
+                        { path: 'jobSite' },
+                        { path: 'customerContactId' },
+                        { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+                    ]
+                },
                 // TODO: To be deprecated
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
                 { path: 'tasks.technician', select: 'profile auth.email contact' },
@@ -1703,8 +1759,14 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
         })
         .populate({
             path: 'request',
-            select: 'customer',
-            populate: { path: 'customer', select: 'profile.displayName' }
+            select: '-__v',
+            populate: [
+                { path: 'track', select: 'track.user track.action track.date' },
+                { path: 'jobLocation' },
+                { path: 'jobSite' },
+                { path: 'customerContactId' },
+                { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+            ]
         })
         .then((job: IJob) => {
 
@@ -2678,11 +2740,26 @@ export const getJobDetails = (req: Request, res: Response) => {
     Job.findOne({ _id: params.jobId, $or: [{ contractor: companyId }, { 'tasks.contractor': companyId }, { company: companyId }] })
         .populate({
             path: 'ticket',
-            populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title' }]
+            select: '-__v',
+            populate: [
+                { path: 'track', select: 'track.user track.action track.date' },
+                { path: 'jobLocation' },
+                { path: 'jobSite' },
+                { path: 'customerContactId' },
+                { path: 'createdBy', select: 'info auth.email profile address.state address.city address.state address.zipCode contactName' },
+                { path: 'tasks.jobType', select: 'title' }
+            ]
         })
         .populate({
             path: 'request',
-            populate: [{ path: 'customerContactId' }]
+            select: '-__v',
+            populate: [
+                { path: 'track', select: 'track.user track.action track.date' },
+                { path: 'jobLocation' },
+                { path: 'jobSite' },
+                { path: 'customerContactId' },
+                { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+            ]
         })
         .populate({
             // TODO: To be deprecated
@@ -2878,7 +2955,17 @@ export const sendJobReport = (req: Request, res: Response) => {
             path: 'job',
             populate: [
                 { path: 'ticket', select: 'ticketId note scheduleDateTime' },
-                { path: 'request', select: 'requestId requests dueDate' },
+                {
+                    path: 'request',
+                    select: '-__v',
+                    populate: [
+                        { path: 'track', select: 'track.user track.action track.date' },
+                        { path: 'jobLocation' },
+                        { path: 'jobSite' },
+                        { path: 'customerContactId' },
+                        { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+                    ]
+                },
                 // TODO: To be deprecated
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
                 { path: 'tasks.technician', select: 'profile auth.email contact' },
@@ -3006,9 +3093,26 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
     Job.find({ $or: [{ "tasks.technician": params.employeeId }, { technician: params.employeeId }], scheduleDate: scheduleDateQuery })
         .populate({
             path: 'ticket',
+            select: '-__v',
+            populate: [
+                { path: 'track', select: 'track.user track.action track.date' },
+                { path: 'jobLocation' },
+                { path: 'jobSite' },
+                { path: 'customerContactId' },
+                { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+                { path: 'tasks.jobType', select: 'title description sku' }
+            ]
         })
         .populate({
             path: 'request',
+            select: '-__v',
+            populate: [
+                { path: 'track', select: 'track.user track.action track.date' },
+                { path: 'jobLocation' },
+                { path: 'jobSite' },
+                { path: 'customerContactId' },
+                { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+            ]
         })
         .populate({
             // TODO: To be deprecated
@@ -3104,7 +3208,17 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
                         { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                         { path: 'type', select: 'title description sku' },
                         { path: 'ticket', select: '-__v -track' },
-                        { path: 'request', select: '-__v -track' },
+                        {
+                            path: 'request',
+                            select: '-__v',
+                            populate: [
+                                { path: 'track', select: 'track.user track.action track.date' },
+                                { path: 'jobLocation' },
+                                { path: 'jobSite' },
+                                { path: 'customerContactId' },
+                                { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+                            ]
+                        },
                         { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
                         { path: 'jobSite', select: '-__v -locationId -customerId' }
                     ]
@@ -3115,8 +3229,7 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
 
             return res.json({ status: Status.Success, jobs, jobRoutes });
 
-        }
-        )
+        })
 
 }
 
@@ -3245,8 +3358,14 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
         })
         .populate({
             path: 'request',
-            select: 'customer',
-            populate: { path: 'customer', select: 'profile.displayName' }
+            select: '-__v',
+            populate: [
+                { path: 'track', select: 'track.user track.action track.date' },
+                { path: 'jobLocation' },
+                { path: 'jobSite' },
+                { path: 'customerContactId' },
+                { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+                { path: 'customer', select: 'profile.displayName' }]
         })
         .populate({
             path: 'images.uploadedBy',
