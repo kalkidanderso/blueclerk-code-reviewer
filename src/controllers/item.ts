@@ -542,7 +542,7 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
             return res.json({ status: Status.Error, message: err.message || Messages.GenericError });
         }
     } else {
-        customer = await Customer.findOne({ _id: params.customerId, company }).populate({ path: 'discountPrices.discountItem' });
+        customer = await Customer.findOne({ _id: params.customerId }).populate({ path: 'discountPrices.discountItem' });
         custDiscountPrice = customer?.discountPrices?.find((discountPrice) => discountPrice.quantity === Number(params.noOfItems));
     }
 
@@ -753,7 +753,7 @@ const _checkCustomerDiscountItem = async (params: any, company: ICompany, custom
     }
 
     // Find customer on the company
-    customer = await Customer.findOne({ _id: params.customerId, company }).populate({ path: 'discountPrices.discountItem' });
+    customer = await Customer.findOne({ _id: params.customerId }).populate({ path: 'discountPrices.discountItem' });
     if (!customer) {
         throw new Error('Customer not found');
     }

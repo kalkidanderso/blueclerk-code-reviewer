@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
 import { Request, Response } from 'express';
 
-import { DefaultCommission, JobStatus, Messages, Status } from '../common/constants';
+import { DefaultCommission, JobStatus, Messages, Role, Status } from '../common/constants';
 
 import { Company, ICompany } from '../models/Company';
-import { Customer } from '../models/Customer';
+import { Customer, ICustomer } from '../models/Customer';
 import { IPriceTier } from '../models/PriceTier';
 
 import { _addItemTier } from '../controllers/company';
@@ -15,6 +15,11 @@ import { Invoice } from '../models/Invoice';
 import { User } from '../models/User';
 import { Payment, PaymentCustomer } from '../models/Payment';
 import { InvoiceCommission } from '../models/InvoiceCommission';
+import { IContact } from '../common/contact';
+import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin';
+import { CustomerContact, ICustomerContact } from '../models/CustomerContact';
+import { CompanyCustomer } from '../models/CompanyCustomer';
+import { Contact } from '../models/Contact';
 
 /**
  * To sync and update all companies and customers to have Item Price Tier,
@@ -407,4 +412,109 @@ export const updatePaidTechnicians = async (req: Request, res: Response) => {
     }
 
     return
+}
+
+export const migrateCustomer = async (req: Request, res: Response) => {
+    const customers: any[] = await User.find({ __t: 'Customer' });
+    if (!customers.length) {
+        return res.json({ status: Status.NotFound, message: 'Customer not found' });
+    }
+
+    res.json({ status: Status.Success, message: 'Customer migration successfully' });
+
+    for (const userCustomer of customers) {
+        const customer: ICustomer = userCustomer.toObject()
+        const customerEntry: any = {
+            isActive: customer?.isActive,
+            info: customer?.info,
+            contactName: customer?.contactName,
+            equipments: customer?.equipments,
+            jobLocations: customer?.jobLocations,
+            quickbookId: customer?.quickbookId,
+            balance: customer?.balance,
+            credit: customer?.credit,
+            itemTier: customer?.itemTier,
+            isCustomPrice: customer?.isCustomPrice,
+            customPrices: customer?.customPrices,
+            discountPrices: customer?.discountPrices,
+            paymentTerm: customer?.paymentTerm,
+            vendorId: customer?.vendorId,
+            inactiveAt: customer?.inactiveAt,
+            inactiveBy: customer?.inactiveBy,
+            address: customer?.address,
+            location: customer?.location,
+            emailPreferences: customer?.emailPreferences,
+            profile: customer.profile,
+            contact: customer.contact,
+            permissions: customer.permissions,
+            commission: customer.commission,
+            contactEmail: customer.contactEmail,
+        }
+
+        // Create customer admin in user
+        const customerUser = await new CustomerAdmin({
+            ...customerEntry,
+            auth: {
+                email: customer?.info?.email
+            },
+            customer: customer._id
+        }).save();
+
+        customerEntry.admin = customerUser._id;
+        customerEntry._id = customer._id;
+        // Remove old customer
+        // await CustomerAdmin.findByIdAndDelete(customerCompanyEntry._id).exec();
+        const contacts = await Contact.find({ _id: { $in: customer.contacts } }).exec();
+        const customerContacts = [];
+        for (const contact of contacts) {
+            const customerContact = await createCustomerContact({ contact, customer: customer });
+            customerContacts.push(customerContact._id);
+        }
+
+        customerEntry.contacts = customerContacts;
+        await new Customer(customerEntry).save();
+        await new CompanyCustomer({
+            // company: companyId,
+            company: customer._id,
+            customer: customerUser._id,
+            createdAt: Date.now()
+        }).save();
+    }
+
+    return
+}
+
+// Create customer contact in user collection
+export const createCustomerContact = async ({
+    contact,
+    customer,
+}: {
+    contact: IContact,
+    customer: ICustomer,
+}): Promise<ICustomerContact> => {
+
+    let customerContact = await CustomerContact.findOne({
+        $or: [{ 'info.email': contact.email }, { 'auth.email': contact.email }]
+    });
+
+    if (!customerContact) {
+        const contactName = contact.name.split(' ')
+        const customerContactEntry: any = {
+            info: { email: contact.email },
+            profile: { firstName: contactName[0], lastName: contactName.length > 1 ? contactName[contactName.length - 1] : '', displayName: contact.name },
+            address: customer?.address ?? {},
+            contact: { phone: contact.phone },
+            company: customer?._id,
+            permissions: { role: Role.CUSTOMER_CONTACT, extra: [] },
+            contactName: contact.name,
+            location: customer?.location ?? {}
+        }
+
+        customerContact = await new CustomerContact(customerContactEntry).save();
+    }
+
+    contact.userId = customerContact._id;
+    contact.save();
+
+    return customerContact;
 }

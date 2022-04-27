@@ -330,7 +330,7 @@ export const createCustomerContact = async ({
             profile: { firstName: contactName[0], lastName: contactName.length > 1 ? contactName[contactName.length - 1] : '', displayName: contact.name },
             address: customer?.address ?? jobLocation?.address,
             contact: { phone: contact.phone },
-            company: customer?.company ?? jobLocation?.companyId,
+            company: customer._id ?? jobLocation?.companyId,
             permissions: { role: Role.CUSTOMER_CONTACT, extra: [] },
             contactName: contact.name,
             location: customer?.location ?? jobLocation?.location
