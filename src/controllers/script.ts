@@ -449,6 +449,7 @@ export const migrateCustomer = async (req: Request, res: Response) => {
             permissions: customer.permissions,
             commission: customer.commission,
             contactEmail: customer.contactEmail,
+            contacts: customer.contacts
         }
 
         // Create customer admin in user
@@ -464,21 +465,21 @@ export const migrateCustomer = async (req: Request, res: Response) => {
         customerEntry._id = customer._id;
         // Remove old customer
         // await CustomerAdmin.findByIdAndDelete(customerCompanyEntry._id).exec();
-        const contacts = await Contact.find({ _id: { $in: customer.contacts } }).exec();
-        const customerContacts = [];
-        for (const contact of contacts) {
-            const customerContact = await createCustomerContact({ contact, customer: customer });
-            customerContacts.push(customerContact._id);
-        }
+        // const contacts = await Contact.find({ _id: { $in: customer.contacts } }).exec();
+        // const customerContacts = [];
+        // for (const contact of contacts) {
+        //     const customerContact = await createCustomerContact({ contact, customer: customer });
+        //     customerContacts.push(customerContact._id);
+        // }
 
-        customerEntry.contacts = customerContacts;
+        // customerEntry.contacts = customerContacts;
         await new Customer(customerEntry).save();
-        await new CompanyCustomer({
-            // company: companyId,
-            company: customer._id,
-            customer: customerUser._id,
-            createdAt: Date.now()
-        }).save();
+        // await new CompanyCustomer({
+        //     // company: companyId,
+        //     company: userCustomer.company,
+        //     customer: customerUser._id,
+        //     createdAt: Date.now()
+        // }).save();
     }
 
     return
@@ -498,10 +499,10 @@ export const createCustomerContact = async ({
     });
 
     if (!customerContact) {
-        const contactName = contact.name.split(' ')
+        const contactName = contact.name?.split(' ')
         const customerContactEntry: any = {
             info: { email: contact.email },
-            profile: { firstName: contactName[0], lastName: contactName.length > 1 ? contactName[contactName.length - 1] : '', displayName: contact.name },
+            profile: { firstName: contactName && contactName[0], lastName: contactName?.length > 1 ? contactName && contactName[contactName.length - 1] : '', displayName: contact.name },
             address: customer?.address ?? {},
             contact: { phone: contact.phone },
             company: customer?._id,

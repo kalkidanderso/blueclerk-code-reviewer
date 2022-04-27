@@ -158,9 +158,8 @@ export const createCustomer = async (req: Request, res: Response) => {
 
                             // create company customer here
                             const companyCustomer = new CompanyCustomer({
-                                // company: companyId,
-                                company: customer._id,
-                                customer: customerAdmin._id,
+                                company: companyId,
+                                customer: customer._id,
                                 createdAt: Date.now()
                             })
 

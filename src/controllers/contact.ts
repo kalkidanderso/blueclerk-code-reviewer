@@ -169,7 +169,7 @@ export const getContacts = async (req: Request, res: Response) => {
                 const customerContacts = <IContact[]>customer?.contacts;
                 const contacts = await _handlefindIsActiveContact(req.query.isActive, customerContacts)
 
-                if (customer && contacts.length) {
+                if (customer) {
                     return res.json({ result: contacts });
                 } else {
                     return res.json({ status: Status.Error, message: 'Customer not found' });
@@ -180,7 +180,7 @@ export const getContacts = async (req: Request, res: Response) => {
                 const customerContacts = <IContact[]>customer?.contacts;
                 const contacts = await _handlefindIsActiveContact(req.query.isActive, customerContacts)
 
-                if (customer && contacts.length) {
+                if (customer) {
                     return res.json({ status: Status.Success, result: contacts })
                 } else {
                     return res.json({ status: Status.Error, message: 'Customer not found' })
