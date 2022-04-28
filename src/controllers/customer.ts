@@ -125,16 +125,6 @@ export const createCustomer = async (req: Request, res: Response) => {
                     }
                     if (users.length === 0 || (users.findIndex((element: any) => element?.info?.email === customer?.info?.email) < 0)) {
                         // Create contact customer
-                        const contactEntry = new Contact({
-                            name: customer?.profile?.displayName ?? customer?.profile?.firstName + ` ${customer?.profile?.lastName}`,
-                            email: customer?.info?.email,
-                            phone: customer?.contact?.phone,
-                            userId: customer._id
-                        });
-
-                        createCustomerContact({ contact: contactEntry, customer });
-                        customer.contacts.push(contactEntry._id);
-                        contactEntry.save();
                         const customerAdmin = await new CustomerAdmin({
                             auth: {
                                 email: customer?.info?.email
@@ -404,6 +394,8 @@ export const updateCustomer = (req: Request, res: Response) => {
             if (params.latitude && params.longitude) {
                 data['location.coordinates'] = [params.longitude, params.latitude]
             }
+
+            await CustomerAdmin.findOneAndUpdate({ _id: customer.admin }, data);
             customer.updateOne(data, { omitUndefined: true }, (err: any, raw: any) => {
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': err.message });

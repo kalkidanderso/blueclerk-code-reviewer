@@ -61,7 +61,7 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
         const qbPaymentEntry: IQBPayment = {
             TxnDate: moment(payment.paidAt).format('YYYY-MM-DD'),
             CustomerRef: {
-                value: jobLocation?.quickbookId || customer.quickbookId
+                value: jobLocation?.quickbookId || customer?.quickbookId
             },
             Line: [{
                 Amount: payment.amountPaid,
