@@ -366,6 +366,7 @@ export const updateCustomer = (req: Request, res: Response) => {
 
             var data: any = {
                 'info.email': params.email,
+                'auth.email': params.email,
                 'profile.firstName': params.name,
                 'profile.lastName': params.name,
                 'profile.displayName': params.name,
