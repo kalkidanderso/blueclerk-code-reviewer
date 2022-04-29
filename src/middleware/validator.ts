@@ -88,6 +88,12 @@ export const Validations = {
 
   updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('companyEmail').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }), check('phone').exists()],
 
+  updateCompanyCustomer: [
+    check('companyCustomerId').exists().isMongoId().withMessage(Messages.WrongId),
+    check('status').optional().isBoolean().toBoolean(),
+    check('isPreferred').optional().isBoolean().toBoolean(),
+  ],
+
   updateItemTier: [check('itemTierId').exists().withMessage('is required')],
 
   deleteEmployee: [check('employeeId').exists()],
