@@ -180,26 +180,33 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
              * Check if contract with PENDING or ACCEPTED already existed,
              * otherwise, company can resend new contract to the same vendor
              */
-            Contract.findOne({
+            Contract.find({
                 'company': req.companyId,
                 'contractor': contractor._id,
-                'status': { $in: [ContractStatus.PENDING, ContractStatus.ACCEPTED] }
-            },
-                (err: any, oldcontract: IContract) => {
+            }).sort({$natural: -1}).limit(1).exec(
+                (err: any, oldcontract: IContract[]) => {
+                    let contract: IContract;
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
 
-                    if (oldcontract != undefined) {
+                    if (oldcontract[0]?.status == ContractStatus.PENDING || oldcontract[0]?.status == ContractStatus.ACCEPTED) {
                         return res.json({ 'status': Status.Error, 'message': 'Vendor already exist.' })
+                    }else if(oldcontract[0]?.status == ContractStatus.CANCELED || oldcontract[0]?.status == ContractStatus.FINISHED || oldcontract[0]?.status == ContractStatus.REJECTED){
+
+                    // if previous canceled, finished or rejected contract found, reactivate it instead creating new one
+                        contract = oldcontract[0]
+                        contract.status = ContractStatus.ACCEPTED
+                    }else{
+                        // if first time start contract with contractor, create new
+                        contract = new Contract(
+                            {
+                                company: req.companyId,
+                                contractor: contractor._id,
+                                status: ContractStatus.ACCEPTED,
+                            }
+                        )
                     }
-                    const contract = new Contract(
-                        {
-                            company: req.companyId,
-                            contractor: contractor._id,
-                            status: ContractStatus.ACCEPTED,
-                        }
-                    )
 
                     contract.save(async (err: any) => {
 
@@ -665,6 +672,108 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
     }).catch((err) => {
         return res.json({ 'status': Status.Error, 'message': err.message });
     })
+}
+
+export const updateContract = async (req: Request, res: Response, sio: any) => {
+
+    const params = req.body;
+    const company = <ICompany>req.company;
+
+    const contract: IContract = await Contract.findById(params.contractId);
+
+    if(contract){
+        const contractor: ICompany = await Company.findById(contract.contractor);
+
+        if(contractor){
+            if(params.status == ContractStatus.ACCEPTED){
+                // populate data
+                // Send email to contractor for contract started
+                sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName, companyEmail: req.company.info.companyEmail })
+
+                if (
+                    (company.paid
+                        && new Date() < company.chargeDate)
+                    || company.stripeId
+                ) {
+                    // Get the pro-rated charge
+                    const { amount, tax } = await _getProRatedAmount();
+
+                    // Create a pending invoice items to Stripe
+                    const invoiceItem = await createStripeInvoiceItem(company.stripeId, amount + tax, contractor.info?.companyName);
+
+                    // Find existing company invoice
+                    let companyInvoice = await CompanyInvoice.findOne({
+                        company: company._id,
+                        isDraft: true
+                    });
+
+                    // No company invoice, create new
+                    if (!companyInvoice) {
+                        companyInvoice = new CompanyInvoice({
+                            technicians: 0,
+                            managers: 0,
+                            officeAdmins: 0,
+                            admins: 0,
+                            contractors: 0,
+                            charges: 0,
+                            tax: 0,
+                            total: 0,
+                            isDraft: true,
+                            company: company._id
+                        })
+                        await companyInvoice.save();
+                    }
+
+                    // Update company invoice data
+                    companyInvoice.contractors += 1;
+                    companyInvoice.charges += amount;
+                    companyInvoice.tax += tax;
+                    companyInvoice.total += invoiceItem.amount / 100;
+                    await companyInvoice.save();
+
+                    // Add the company invoice
+                    company.companyInvoices = company.companyInvoices ?? [];
+                    const existCompanyInvoice = company.companyInvoices.find(
+                        inv => inv.toString() === companyInvoice._id.toString()
+                    );
+                    if (!existCompanyInvoice) {
+                        company.companyInvoices.push(companyInvoice);
+                        await company.save();
+                    }
+                }
+
+                // Construct notification entry to be saved
+                let notificationEntry: INotificationContract = new NotificationContract({
+                    company: contractor._id,
+                    notificationType: NotificationTypes.CONTRACT_ACCEPTED,
+                    message: {
+                        title: 'New vendor contract received',
+                        body: `Company ${company.info.companyName} has added you to be a vendor`
+                    },
+                    metadata: contract._id
+                });
+
+                // Save the notification with Contrac as the metadata
+                notificationEntry.save(async (err: any, notification: INotificationContract) => {
+
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+                    }
+
+                    // Send notification message to specific room based on the Company ID
+                    await notification.populate('metadata').execPopulate();
+                    await sio.to(contractor._id.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
+                    console.log("DONE SENDING notifications....")
+                })
+            }
+            // save contract status
+            contract.status = params.status
+            await contract.save();
+            return res.json({'status': Status.Success, 'message': "Company Contract status updated successfully."});
+        }else{
+            return res.json({'status': Status.Error, 'message': "No Contract found."});
+        }
+    }
 }
 
 // cancel or finish by compnay
