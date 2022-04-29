@@ -33,9 +33,9 @@ export const validate = (validations: ValidationChain[]) => {
 
 export const Validations = {
   //Auth
-  signUp: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('password').exists(), check('companyName').exists(), check('industryId').exists(), check('email').normalizeEmail({"all_lowercase": true,"gmail_remove_dots": false})],
+  signUp: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('password').exists(), check('companyName').exists(), check('industryId').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
-  login: [check('email').exists(), check('email').isEmail(), check('password').exists(),check('email').normalizeEmail({"all_lowercase": true,"gmail_remove_dots": false})],
+  login: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
   socialLogin: [check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric()],
 
@@ -45,13 +45,13 @@ export const Validations = {
 
   agree: [check('agreedStatus').exists()],
 
-  adminSignUp: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({"all_lowercase": true,"gmail_remove_dots": false})],
+  adminSignUp: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
-  contractorSignup: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists(), check('email').normalizeEmail({"all_lowercase": true,"gmail_remove_dots": false})],
+  contractorSignup: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
   contractorSocialSignUp: [check('email').exists(), check('email').isEmail(), check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
 
-  searchContractor: [check('email').exists().withMessage(Messages.Required), check('email').isEmail(), check('email').normalizeEmail({"all_lowercase": true,"gmail_remove_dots": false})],
+  searchContractor: [check('email').exists().withMessage(Messages.Required), check('email').isEmail(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
   remindContractor: [check('contractId').exists().withMessage(Messages.Required), check('contractId').isMongoId().withMessage(Messages.WrongId)],
 
@@ -66,11 +66,11 @@ export const Validations = {
   upgradeToCompany: [check('token').exists(), check('ending').exists()],
 
   //Users
-  createManager: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({"all_lowercase": true,"gmail_remove_dots": false})],
+  createManager: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
-  createTechnician: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({"all_lowercase": true,"gmail_remove_dots": false})],
+  createTechnician: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
-  createOfficeAdmin: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({"all_lowercase": true,"gmail_remove_dots": false})],
+  createOfficeAdmin: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
   changeEmployeeRole: [check('employeeId').exists(), check('newRole').exists()],
 
@@ -86,7 +86,7 @@ export const Validations = {
     check('employeeId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
-  updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(),check('companyEmail').normalizeEmail({"all_lowercase": true,"gmail_remove_dots": false}), check('phone').exists()],
+  updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('companyEmail').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }), check('phone').exists()],
 
   updateItemTier: [check('itemTierId').exists().withMessage('is required')],
 
@@ -106,7 +106,7 @@ export const Validations = {
 
   updateCustomerEmailPreferences: [check('customerId').exists(), check('emailPreferences').isNumeric()],
 
-  forgotPassword: [check('email').exists(), check('email').normalizeEmail({"all_lowercase": true,"gmail_remove_dots": false})],
+  forgotPassword: [check('email').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
   //Industry
   createIndustry: [check('title').exists()],
@@ -120,7 +120,7 @@ export const Validations = {
   createEquipmentBrand: [check('title').exists()],
 
   //Customers
-  createCustomer: [check('name').exists(), check('email').exists(), check('email').normalizeEmail({"all_lowercase": true,"gmail_remove_dots": false})],
+  createCustomer: [check('name').exists(), check('email').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
   updateCustomer: [check('customerId').exists()],
 
@@ -136,7 +136,7 @@ export const Validations = {
     check('customerId').exists().withMessage(Messages.Required),
     check('customerId').isMongoId().withMessage(Messages.WrongId),
     check('unusedCustomerIds').exists().withMessage(Messages.Required),
-    check('email').optional().isEmail().normalizeEmail({"all_lowercase": true,"gmail_remove_dots": false}).withMessage(Messages.InvalidEmail),
+    check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }).withMessage(Messages.InvalidEmail),
   ],
 
   //Customer Equipment
@@ -188,10 +188,12 @@ export const Validations = {
     check('customerId').exists().withMessage(Messages.Required),
     check('customerId').isMongoId().withMessage(Messages.WrongId),
     // check('jobTypes').exists().withMessage(Messages.Required),
-    check('ticketId').exists().withMessage(Messages.Required),
-    check('ticketId').isMongoId().withMessage(Messages.WrongId),
+    // check('ticketId').exists().withMessage(Messages.Required),
+    // check('requestId').exists().withMessage(Messages.Required),
     // check('employeeType').exists().withMessage(Messages.Required),
     // check('employeeType').isNumeric(),
+    check('ticketId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('jobRequestId').optional().isMongoId().withMessage(Messages.WrongId),
     check('equipmentId').optional().isMongoId().withMessage(Messages.WrongId),
     // check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
     // check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
@@ -215,7 +217,7 @@ export const Validations = {
     check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
     check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')
   ],
-  
+
   searchJob: [check('pageSize').isNumeric(), check('page').isNumeric()],
 
   generalJob: [check('jobId').exists().withMessage(Messages.Required)],
@@ -565,7 +567,7 @@ export const Validations = {
     check('name').exists().withMessage(Messages.Required),
     check('email').exists().withMessage(Messages.Required),
     check('email').isEmail().withMessage(Messages.InvalidEmail),
-    check('email').normalizeEmail({"all_lowercase": true,"gmail_remove_dots": false}),
+    check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }),
     check('street').exists().withMessage(Messages.Required),
     check('city').exists().withMessage(Messages.Required),
     check('state').exists().withMessage(Messages.Required),

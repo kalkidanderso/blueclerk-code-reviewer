@@ -57,7 +57,7 @@ export const login = (req: Request, res: Response, sio: any) => {
                                 return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
                             }
 
-                            return res.json({ 'status': Status.Success, 'user': user, 'token': user.jwt() })
+                            return res.json({ 'status': Status.Success, userType: user.permissions.role, 'user': user, 'token': user.jwt() })
                         })
                     })
 
@@ -88,7 +88,7 @@ export const login = (req: Request, res: Response, sio: any) => {
                             company.qbRefreshToken = undefined
                             company.socketId = undefined
                             company.realmId = undefined
-                            return res.json({ 'status': Status.Success, 'user': user, 'company': company, 'token': user.jwt() })
+                            return res.json({ 'status': Status.Success, userType: user.permissions.role, 'user': user, 'company': company, 'token': user.jwt() })
                         }
                     )
 
@@ -101,7 +101,7 @@ export const login = (req: Request, res: Response, sio: any) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
                     }
 
-                    return res.json({ 'status': Status.Success, 'user': user, 'token': user.jwt() })
+                    return res.json({ 'status': Status.Success, userType: user.permissions.role, 'user': user, 'token': user.jwt() })
                 })
             }
         }

@@ -7120,8 +7120,7 @@
                 "required": [
                   "customerId",
                   "tasks",
-                  "scheduleDate",
-                  "ticketId"
+                  "scheduleDate"
                 ],
                 "properties": {
                   "scheduleDate": {
@@ -7139,6 +7138,9 @@
                   "ticketId": {
                     "type": "string",
                     "description": "Id of a service ticket fetched by /getServiceTickets api"
+                  },
+                  "jobRequestId": {
+                    "type": "string"
                   },
                   "equipmentId": {
                     "type": "string",
