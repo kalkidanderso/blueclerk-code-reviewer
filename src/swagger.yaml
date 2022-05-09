@@ -4123,21 +4123,23 @@ paths:
     get:
       tags:
         - Service Ticket
-      summary: To get all open service tickets and jobs of a company and return the result progressively via socket.io
-      description: 'All service tickets and jobs will be send progressively via socket.io, **make sure FE connects using the right company''s token and listen to event: ''all_open_service_tickets''**.'
+      summary: To get all open service tickets and job requests of a company and return the result progressively via socket.io
+      description: 'All service tickets and job requests will be send progressively via socket.io, **make sure FE connects using the right company''s token and listen to event: ''all_open_service_tickets''**.'
       parameters:
         - name: actionId
           in: query
           description: Client Socket ID
           required: true
-          schema: {}
+          schema:
+            type: string
         - name: includeOpenJobRequest
           in: query
           description: true for getting all jobs request (default is false)
           schema:
+            type: boolean
             enum:
-              - 'true'
-              - 'false'
+              - true
+              - false
       responses:
         '200':
           description: Success
