@@ -6696,8 +6696,8 @@
         "tags": [
           "Service Ticket"
         ],
-        "summary": "To get all open service tickets of a company and return the result progressively via socket.io",
-        "description": "All service tickets will be send progressively via socket.io, **make sure FE connects using the right company's token and listen to event: 'all_open_service_tickets'**.",
+        "summary": "To get all open service tickets and jobs of a company and return the result progressively via socket.io",
+        "description": "All service tickets and jobs will be send progressively via socket.io, **make sure FE connects using the right company's token and listen to event: 'all_open_service_tickets'**.",
         "parameters": [
           {
             "name": "actionId",
@@ -6705,6 +6705,16 @@
             "description": "Client Socket ID",
             "required": true,
             "schema": {}
+          },{
+            "name": "includeOpenJobRequest",
+            "in": "query",
+            "description": "true for getting all jobs request (default is false)",
+            "schema": {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
           }
         ],
         "responses": {

@@ -456,6 +456,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
     const actionId = req.query.actionId;
+    const includeOpenJobRequest = req.query.includeOpenJobRequest || false;
 
     // Initialize started count & total of the service tickets
     let count = 1;
@@ -466,7 +467,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     }).countDocuments();
 
     // Return the HTTP request directly to avoid timed-out issue
-    res.json({ status: Status.OK, total: totalServiceTickets, message: `All open service tickets will be returned to Socket.io, make sure to listen to event 'all_open_service_tickets'` });
+    res.json({ status: Status.OK, total: totalServiceTickets, message: `All open service tickets${includeOpenJobRequest ? ' and jobs' : '' } will be returned to Socket.io, make sure to listen to event 'all_open_service_tickets'` });
 
     /**
      * Retrieve all open service tickets with all populated info,
@@ -514,6 +515,146 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
         }
 
     }
+
+    // sending job stream if includeOpenJobRequest = true
+    if(includeOpenJobRequest){
+        // Re-Initialize started count & total of the jobs
+        count = 1;
+        const totalJobs = await Job.find({
+            $or: [
+                { 'tasks.contractor': company._id },
+                { contractor: company._id },
+                { company: company._id }
+            ],
+        }).countDocuments();
+
+        // Return the HTTP request directly to avoid timed-out issue
+        //res.json({ status: Status.Success, total: totalJobs, message: `All jobs will be returned to Socket.io, make sure to listen to event 'all_jobs'` });
+
+        /**
+         * Retrieve all jobs with all populated info,
+         * and return it as a stream via socket.io
+         */
+        const jobCursor = Job.find({
+            $or: [
+                { 'tasks.contractor': company._id },
+                { contractor: company._id },
+                { company: company._id }
+            ],
+        }).sort({ _id: -1 })
+            .populate({
+                path: 'ticket',
+                select: '-__v',
+                populate: [
+                    { path: 'track', select: 'track.user track.action track.date' },
+                    { path: 'jobLocation' },
+                    { path: 'jobSite' },
+                    { path: 'customerContactId' },
+                    { path: 'createdBy', select: 'info auth.email profile address contactName' },
+                    { path: 'tasks.jobType', select: 'title description sku' }
+                ]
+            })
+            .populate({
+                path: 'request',
+                select: '-__v',
+                populate: [
+                    { path: 'track', select: 'track.user track.action track.date' },
+                    { path: 'jobLocation' },
+                    { path: 'jobSite' },
+                    { path: 'customerContactId' },
+                    { path: 'createdBy', select: 'info auth.email profile.displayName address contactName' },
+                ]
+            })
+            // .populate({
+            //     // TODO: To be deprecated
+            //     path: 'technician',
+            //     select: 'profile contact auth.email'
+            // })
+            .populate({
+                path: 'tasks.technician',
+                select: 'profile contact auth.email'
+            })
+            // .populate({
+            //     // TODO: To be deprecated
+            //     path: 'contractor',
+            //     select: 'info.companyName info.companyEmail type'
+            // })
+            .populate({
+                path: 'tasks.contractor',
+                select: 'info.companyName info.companyEmail type'
+            })
+            .populate({
+                path: 'customer',
+                select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
+            })
+            .populate({
+                path: 'customerContactId',
+                select: '-id -__v'
+            })
+            .populate({
+                path: 'tasks.jobTypes.jobType',
+                select: 'title description sku'
+            })
+            .populate({
+                path: 'tasks.jobTypes.timeUpdatedBy',
+                select: 'profile.displayName'
+            })
+            .populate({
+                path: 'company',
+                select: 'info.companyName'
+            })
+            .populate({
+                path: 'createdBy',
+                select: 'profile.displayName'
+            })
+            .populate({
+                path: 'jobLocation',
+                select: 'name location address'
+            })
+            .populate({
+                path: 'jobSite',
+                select: 'name location address'
+            })
+            .populate({
+                path: 'images.uploadedBy',
+                select: 'profile.displayName'
+            })
+            .populate({
+                path: 'technicianImages.uploadedBy',
+                select: 'profile.displayName'
+            })
+            .cursor();
+
+        // Iterate all the cursor and send it to company's room socket.io
+        for (let job = await jobCursor.next(); job != null; job = await jobCursor.next()) {
+
+            // set roomId for terminating socket connection
+            let roomId = actionId?.toString() || company._id?.toString() + user._id?.toString();
+            let clientExist = sio.sockets?.adapter?.rooms?.get(roomId);
+            if (!clientExist) {
+                // client disconnect, stop sending data
+                break;
+            }
+
+            if (actionId) {
+                // new way , get actionID from FE and send it privately
+                await sio.to(actionId?.toString()).emit(SocketEvents.ALL_OPEN_SERVICE_TICKETS, {
+                    job,
+                    count: count++,
+                    total: totalJobs
+                });
+            } else {
+                // old way , sending to room and disconnect
+                // Send the job via socket.io
+                await sio.to(company._id?.toString() + user._id?.toString()).emit(SocketEvents.ALL_OPEN_SERVICE_TICKETS, {
+                    job,
+                    count: count++,
+                    total: totalJobs
+                });
+            }
+        }
+    }
+
 
     return;
 
