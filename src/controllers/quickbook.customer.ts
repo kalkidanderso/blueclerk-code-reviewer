@@ -1025,7 +1025,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                             customer: custEntry._id
                         }).save();
 
-                        customerAdmin.company = custEntry._id
+                        customerAdmin.customer = custEntry._id
                         custEntry.admin = customerAdmin._id;
 
                         custsToCreate.push(custEntry);

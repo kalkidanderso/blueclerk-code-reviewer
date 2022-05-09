@@ -4,7 +4,7 @@ import { User, IUser } from './User'
 export interface ICustomerAdmin extends IUser {
 
     isActive: boolean
-    company: Schema.Types.ObjectId
+    customer: Schema.Types.ObjectId
     info: {
         email: string
     }
