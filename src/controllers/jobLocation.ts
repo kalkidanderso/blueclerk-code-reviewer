@@ -156,7 +156,7 @@ export const update = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
 
     // Find and check if customer existed
-    const customer = await Customer.findOne({ company, _id: params.customerId });
+    const customer = await Customer.findOne({ _id: params.customerId });
 
     if (!customer) {
         return res.json({ status: Status.Error, message: 'Customer not found.' });

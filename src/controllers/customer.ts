@@ -23,6 +23,7 @@ import { _getQBInvoices, _updateQBInvoice, _transferQBInvoices, _countQBInvoices
 import { _getQBPayments, _updateQBPayment, _transferQBPayments, _countQBPayments } from '../controllers/quickbook.payment'
 import { _refreshToken } from './quickbook'
 import { createCustomerContact } from './contact'
+import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin'
 
 /**
  * To reset Customer quickbookId,
@@ -117,23 +118,28 @@ export const createCustomer = async (req: Request, res: Response) => {
 
             User.find({ _id: { $in: customerIds } },
                 'info.email',
-                (err: any, users: IUser[]) => {
+                async (err: any, users: IUser[]) => {
 
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
-                    if (users.length === 0 || (users.findIndex((element: any) => element.info.email === customer.info.email) < 0)) {
+                    if (users.length === 0 || (users.findIndex((element: any) => element?.info?.email === customer?.info?.email) < 0)) {
                         // Create contact customer
-                        const contactEntry = new Contact({
-                            name: customer?.profile?.displayName ?? customer?.profile?.firstName + ` ${customer?.profile?.lastName}`,
-                            email: customer?.info?.email ?? customer?.auth?.email,
-                            phone: customer?.contact?.phone,
-                            userId: customer._id
-                        });
+                        const customerAdmin = await new CustomerAdmin({
+                            auth: {
+                                email: customer?.info?.email
+                            },
+                            info: customer?.info,
+                            address: customer?.address,
+                            location: customer?.location,
+                            permissions: customer?.permissions,
+                            emailPreferences: customer?.emailPreferences,
+                            balance: customer?.balance,
+                            commission: customer?.commission,
+                            customer: customer._id
+                        }).save();
 
-                        createCustomerContact({ contact: contactEntry, customer });
-                        customer.contacts.push(contactEntry._id);
-                        contactEntry.save();
+                        customer.admin = customerAdmin._id;
                         customer.save((err: any) => {
 
                             if (err) {
@@ -197,16 +203,16 @@ export const _createCustomer = async (req: Request, res: Response, next: (err: a
 
     const params = req.body;
     const companyId = req.otherCompanyId || req.companyId;
-    let customer: IUser;
+    let customer: ICustomer;
 
     // Check existing customer from the Company's customers
     const companyCustomers: ICompanyCustomer[] = await CompanyCustomer.find({ company: companyId });
     const customerIds = companyCustomers.map(obj => obj.customer) || [];
-    const users: IUser[] = await User.find({ _id: { $in: customerIds } });
-    const existingCustomer = users.find((user: ICustomer) => user.info.email === params.email);
+    const customers: ICustomer[] = await Customer.find({ _id: { $in: customerIds } });
+    const existingCustomer = customers.find((customer: ICustomer) => customer.info.email === params.email);
     if (existingCustomer) {
         // Existing customer found, return it already
-        customer = await User.findById(existingCustomer._id);
+        customer = await Customer.findById(existingCustomer._id);
         return next(null, <ICustomer>customer);
     }
 
@@ -322,6 +328,7 @@ export const updateCustomer = (req: Request, res: Response) => {
 
     const params = req.body;
     const user = <IUser>req.user;
+    const companyId = req.companyId;
     let companyTier: { tier: any };
     Customer.findById(params.customerId)
         .exec(async (err: any, customer: ICustomer) => {
@@ -333,7 +340,7 @@ export const updateCustomer = (req: Request, res: Response) => {
              * Check if Item Tier ID is active & belong to the company,
              * then assigned it to the updated Customer
              */
-            const company = await Company.findById(customer.company).populate({ path: 'itemTier.list.tier' });
+            const company = await Company.findById(companyId).populate({ path: 'itemTier.list.tier' });
             if (params.itemTierId) {
                 companyTier = company.itemTier.list.find(t => {
                     const tier = <IPriceTier>t.tier;
@@ -359,6 +366,7 @@ export const updateCustomer = (req: Request, res: Response) => {
 
             var data: any = {
                 'info.email': params.email,
+                'auth.email': params.email,
                 'profile.firstName': params.name,
                 'profile.lastName': params.name,
                 'profile.displayName': params.name,
@@ -387,6 +395,8 @@ export const updateCustomer = (req: Request, res: Response) => {
             if (params.latitude && params.longitude) {
                 data['location.coordinates'] = [params.longitude, params.latitude]
             }
+
+            await CustomerAdmin.findOneAndUpdate({ _id: customer.admin }, data);
             customer.updateOne(data, { omitUndefined: true }, (err: any, raw: any) => {
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': err.message });

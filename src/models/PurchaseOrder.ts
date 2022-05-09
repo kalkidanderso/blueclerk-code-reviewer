@@ -94,7 +94,7 @@ const PurchaseOrderSchema = new Schema({
     },
     customer: {
         type: Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Customer',
         required: true
     },
     company: {

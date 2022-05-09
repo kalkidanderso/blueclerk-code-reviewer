@@ -12,7 +12,7 @@ export const _createDefaultPaymentTerms = async (company: ICompany): Promise<voi
         company: company._id,
         isActive: true
     });
-    
+
     const paymentTermEntries: IPaymentTerm[] = [];
     for (const term of DefaultPaymentTerms) {
         const { name, dueDays } = term;
@@ -78,8 +78,7 @@ export const setCustomerPaymentTerm = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
 
     const customer = await Customer.findOne({
-        _id: params.customerId,
-        company: company._id
+        _id: params.customerId
     });
 
     if (!customer) {

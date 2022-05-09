@@ -277,8 +277,7 @@ export const createPayment = async (req: Request, res: Response) => {
 
     // Find and check if customer existed
     const customer = await Customer.findOne({
-        _id: params.customerId,
-        company: company._id
+        _id: params.customerId
     });
 
     if (!customer) {
@@ -567,8 +566,7 @@ export const updatePayment = async (req: Request, res: Response) => {
 
     // Find and check if customer existed
     const customer = await Customer.findOne({
-        _id: params.customerId,
-        company: company._id
+        _id: params.customerId
     });
 
     if (!customer) {

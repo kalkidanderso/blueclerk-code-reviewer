@@ -12268,6 +12268,32 @@
           }
         ]
       }
+    },
+    "/script/migrateCustomer": {
+      "post": {
+        "tags": [
+          "Script"
+        ],
+        "summary": "To migrate customer as user to customer company",
+        "description": "**WARNING: - Only do this when you know what you are doing.** \nTo migrate customer as user to customer company",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
