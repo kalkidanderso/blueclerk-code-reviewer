@@ -46,7 +46,8 @@ export const checkUserScanPermissions = (permissionId: number) => {
         const company =<ICompany>req.company;
         const tag = req.body.nfcTag;
         const checkTag = await Tag.findOne({"info.nfcTag" : tag});
-        const equipmentTag = await CustomerEquipment.findOne({ 'info.nfcTag': tag }).populate({ path: 'customer', select: 'company' });
+        const equipmentTag = await CustomerEquipment.findOne({ 'info.nfcTag': tag });
+
         if(!checkTag && !equipmentTag) {
             return res.json({ 'status': Status.Success, 'tagStatus': Status.TagNotAssociated, 'message': 'Tag Not In System' })
         }
@@ -62,8 +63,8 @@ export const checkUserScanPermissions = (permissionId: number) => {
         const companyOfTag =
             checkTag && checkTag.company
                 ? checkTag.company
-                : equipmentTag && equipmentTag.customer.company
-                    ? equipmentTag.customer.company
+                : equipmentTag && equipmentTag.customer
+                    ? equipmentTag.customer
                     : undefined;
 
         // check if it's the company owner

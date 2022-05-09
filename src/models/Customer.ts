@@ -5,15 +5,47 @@ import { IItem } from '../models/Item'
 import { IPriceTier } from '../models/PriceTier'
 import { IJobLocation } from '../models/JobLocation'
 import { IPaymentTerm } from '../models/PaymentTerm'
+import moment from 'moment'
+import { Role } from 'src/common/constants'
 
-export interface ICustomer extends IUser {
+export interface ICustomer extends Document {
 
+    profile: {
+        firstName: string
+        lastName: string
+        displayName: string
+        imageUrl: string
+    }
+    address: {
+        street?: string
+        unit?: string
+        city?: string
+        state?: string
+        zipCode?: string
+    }
+    location: {
+        type?: 'Point',
+        coordinates: number[]
+    },
+    contact: {
+        phone: string
+        fax?: string
+    }
+    permissions: {
+        role: Role,
+        extra: [string]
+    },
+    emailPreferences: {
+        preferences: Number,
+        time: Date,
+        timeZone: String
+    },
+    commission: number,
     isActive: boolean
     info:{
         email: string
     }
     contactName: string
-    company: Schema.Types.ObjectId
     equipments: [Schema.Types.ObjectId]
     jobLocations: [Schema.Types.ObjectId | IJobLocation]
     quickbookId: string
@@ -35,6 +67,7 @@ export interface ICustomer extends IUser {
     contactEmail: string
     inactiveAt?: Date
     inactiveBy?: Schema.Types.ObjectId | IUser
+    admin: Schema.Types.ObjectId | IUser
 
 }
 
@@ -76,6 +109,69 @@ export interface IQBAddress {
 
 const CustomerSchema = new Schema({
 
+    profile: {
+        firstName: String,
+        lastName: String,
+        displayName: String,
+        imageUrl: String,
+    },
+    address: {
+        street: String,
+        unit: String,
+        city: String,
+        state: String,
+        zipCode: String,
+    },
+    location: {
+        type: {
+          type: String,
+          enum: ['Point'],
+          required: false
+        },
+        coordinates: {
+          type: [Number],
+          required: false
+        }
+    },
+    contact: {
+        phone: String,
+        fax: String,
+    },
+    permissions: {
+        role: Number,
+        extra: [String],
+    },
+    emailPreferences: {
+        preferences: {
+            type: Number,
+            default: 1
+            // 0 for email everytime a job is scheduled
+            // 1 for once at the specified time
+            // 2 no emails
+        },
+        time: {
+            type: Date,
+            default: moment().local().hour(18).minute(0o0).second(0o0)
+        },
+        timeZone: {
+            type: String,
+            default: 'America/Chicago'
+        }
+
+    },
+    contacts: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Contact',
+        required: false
+    }],
+    balance: {
+        type: Number,
+        default: 0
+    },
+    commission: {
+        type: Number,
+        default: null
+    },
     isActive: {type: Boolean, default: true},
     info:{
         email: String
@@ -83,11 +179,6 @@ const CustomerSchema = new Schema({
     contactName: {
         type: String,
         required: false
-    },
-    company: {
-        type: Schema.Types.ObjectId,
-        ref: 'Company',
-        required: true
     },
     equipments: [{ type: Schema.Types.ObjectId, ref: 'CustomerEquipment' }],
     jobLocations: [{
@@ -98,10 +189,6 @@ const CustomerSchema = new Schema({
     quickbookId: {
         type: String,
         default: null
-    },
-    balance: {
-        type: Number,
-        default: 0
     },
     credit: {
         type: Number,
@@ -145,11 +232,6 @@ const CustomerSchema = new Schema({
     vendorId: {
         type: String,
     },
-    contacts: [{
-        type: Schema.Types.ObjectId,
-        ref: 'Contact',
-        required: false
-    }],
     inactiveAt: {
         type: Date
     },
@@ -157,7 +239,11 @@ const CustomerSchema = new Schema({
         type: String,
         ref: 'User'
     },
+    admin:{
+        type: String,
+        ref: 'User'
+    }
 
 });
 
-export const Customer = User.discriminator<ICustomer>('Customer', CustomerSchema)
+export const Customer = mongoose.model<ICustomer>('Customer', CustomerSchema);

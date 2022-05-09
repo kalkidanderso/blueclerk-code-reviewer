@@ -2160,6 +2160,13 @@ export default function (sio: any) {
         scriptController.updatePaidTechnicians
     )
 
+    router.post(
+        '/script/migrateCustomer',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        scriptController.migrateCustomer
+    )
+
     return router
 
 }
