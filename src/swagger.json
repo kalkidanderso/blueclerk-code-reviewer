@@ -492,7 +492,7 @@
       }
     },
     "/updateContract": {
-      "post": {
+      "put": {
         "tags": [
           "Vendor"
         ],

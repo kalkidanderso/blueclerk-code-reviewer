@@ -1377,7 +1377,7 @@ export default function (sio: any) {
         companyController.getContractorDetail
     )
 
-    router.post(
+    router.put(
         '/updateContract',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),

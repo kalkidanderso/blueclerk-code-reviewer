@@ -791,7 +791,12 @@ export const updateContract = async (req: Request, res: Response, sio: any) => {
             messageTitle,
             messageBody,
             metadataId: contract._id
-        })
+        });
+
+        await contract
+            .populate({ path: 'company', select: 'info address contact' })
+            .populate({ path: 'contractor', select: 'info address contact' })
+            .execPopulate();
 
         return res.json({ status: Status.Success, message: 'Company Contract status updated successfully.', contract });
     }
