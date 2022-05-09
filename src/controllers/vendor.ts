@@ -16,8 +16,6 @@ import { NotificationContract, INotificationContract } from '../models/Notificat
 import { _createHubSpotContact, _upgradeHubSpotContact, checkCompanyEmailExists, login } from '../controllers/user';
 import { _handleNotification } from './notification';
 import { Employee } from '../models/Employee';
-import { Job } from '../models/Job';
-import { Invoice } from '../models/Invoice';
 
 // new contractor signup
 export const createContractor = (req: Request, res: Response, sio: any) => {
@@ -677,131 +675,127 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
 export const updateContract = async (req: Request, res: Response, sio: any) => {
 
     const params = req.body;
+    const user = <IUser>req.user;
     const company = <ICompany>req.company;
 
     const contract: IContract = await Contract.findById(params.contractId);
 
-    if(contract){
+    if (contract) {
+        if (contract.status === ContractStatus.ACCOUNT_NOT_CREATED) {
+            return res.json({ status: Status.Error, message: `Contract found but the Contractor haven't registered to BlueClerk, you can remind them to registered first` });
+        }
+
         const contractor: ICompany = await Company.findById(contract.contractor);
 
         if (!contractor) {
-            return res.json({ status: Status.Error, message: 'Contract not found.' });
+            return res.json({ status: Status.Error, message: 'Contractor not found.' });
         }
 
-        if (contract.status == ContractStatus.ACCEPTED) {
-            return res.json({ 'status': Status.Error, message: 'Contract is already accepted.' })
-        }
+        let notificationType
+        let messageTitle
+        let messageBody
 
-        if (contract.status === ContractStatus.FINISHED) {
-            return res.json({ status: Status.Error, message: 'Contract is already finished.' });
-        }
+        switch(params.status){
+            case ContractStatus.ACCEPTED:
+                // Reset finished information
+                contract.finishedBy = null;
+                contract.finishedAt = null;
 
-        if(contractor){
-            let notificationType
-            let messageTitle
-            let messageBody
+                // Construct notification data
+                notificationType = NotificationTypes.CONTRACT_ACCEPTED;
+                messageTitle = 'New vendor contract received';
+                messageBody = `Company ${company.info.companyName} has added you to be a vendor`;
 
-            switch(params.status){
-                case ContractStatus.ACCEPTED:
-                    notificationType = NotificationTypes.CONTRACT_ACCEPTED;
-                    messageTitle = 'New vendor contract received';
-                    messageBody = `Company ${company.info.companyName} has added you to be a vendor`;
-                    // Send email to contractor for contract started
-                    sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName, companyEmail: req.company.info.companyEmail })
+                // Send email to contractor for contract started
+                sendContractStartEmail({ to: contractor.info.companyEmail, company: req.company.info.companyName, contractor: contractor.info.companyName, companyEmail: req.company.info.companyEmail })
 
-                    if (
-                        (company.paid
-                            && new Date() < company.chargeDate)
-                        || company.stripeId
-                    ) {
-                        // Get the pro-rated charge
-                        const { amount, tax } = await _getProRatedAmount();
+                // Handle charge for the company
+                if (
+                    (company.paid
+                        && new Date() < company.chargeDate)
+                    || company.stripeId
+                ) {
+                    // Get the pro-rated charge
+                    const { amount, tax } = await _getProRatedAmount();
 
-                        // Create a pending invoice items to Stripe
-                        const invoiceItem = await createStripeInvoiceItem(company.stripeId, amount + tax, contractor.info?.companyName);
+                    // Create a pending invoice items to Stripe
+                    const invoiceItem = await createStripeInvoiceItem(company.stripeId, amount + tax, contractor.info?.companyName);
 
-                        // Find existing company invoice
-                        let companyInvoice = await CompanyInvoice.findOne({
-                            company: company._id,
-                            isDraft: true
-                        });
+                    // Find existing company invoice
+                    let companyInvoice = await CompanyInvoice.findOne({
+                        company: company._id,
+                        isDraft: true
+                    });
 
-                        // No company invoice, create new
-                        if (!companyInvoice) {
-                            companyInvoice = new CompanyInvoice({
-                                technicians: 0,
-                                managers: 0,
-                                officeAdmins: 0,
-                                admins: 0,
-                                contractors: 0,
-                                charges: 0,
-                                tax: 0,
-                                total: 0,
-                                isDraft: true,
-                                company: company._id
-                            })
-                            await companyInvoice.save();
-                        }
-
-                        // Update company invoice data
-                        companyInvoice.contractors += 1;
-                        companyInvoice.charges += amount;
-                        companyInvoice.tax += tax;
-                        companyInvoice.total += invoiceItem.amount / 100;
+                    // No company invoice, create new
+                    if (!companyInvoice) {
+                        companyInvoice = new CompanyInvoice({
+                            technicians: 0,
+                            managers: 0,
+                            officeAdmins: 0,
+                            admins: 0,
+                            contractors: 0,
+                            charges: 0,
+                            tax: 0,
+                            total: 0,
+                            isDraft: true,
+                            company: company._id
+                        })
                         await companyInvoice.save();
-
-                        // Add the company invoice
-                        company.companyInvoices = company.companyInvoices ?? [];
-                        const existCompanyInvoice = company.companyInvoices.find(
-                            inv => inv.toString() === companyInvoice._id.toString()
-                        );
-                        if (!existCompanyInvoice) {
-                            company.companyInvoices.push(companyInvoice);
-                            await company.save();
-                        }
-                    }
-                    break;
-                case ContractStatus.FINISHED:
-                    notificationType = NotificationTypes.CONTRACT_FINISHED;
-                    messageTitle = 'Contract finished';
-                    messageBody = `Company ${company.info.companyName} has finished your vendor contract`;
-                    break;
-                default:
-                    return res.json({'status': Status.Error, 'message': "status must be 1 (ACCEPTED) or 4 (FINISHED) "});
-
-            }
-
-                // Construct notification entry to be saved
-                let notificationEntry: INotificationContract = new NotificationContract({
-                    company: contractor._id,
-                    notificationType: notificationType,
-                    message: {
-                        title: messageTitle,
-                        body: messageBody
-                    },
-                    metadata: contract._id
-                });
-
-                // Save the notification with Contrac as the metadata
-                notificationEntry.save(async (err: any, notification: INotificationContract) => {
-
-                    if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                     }
 
-                    // Send notification message to specific room based on the Company ID
-                    await notification.populate('metadata').execPopulate();
-                    await sio.to(contractor._id.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
-                    console.log("DONE SENDING notifications....")
-                })
-            // save contract status
-            contract.status = params.status
-            await contract.save();
-            return res.json({'status': Status.Success, 'message': "Company Contract status updated successfully."});
-        }else{
-            return res.json({'status': Status.Error, 'message': "No Contract found."});
+                    // Update company invoice data
+                    companyInvoice.contractors += 1;
+                    companyInvoice.charges += amount;
+                    companyInvoice.tax += tax;
+                    companyInvoice.total += invoiceItem.amount / 100;
+                    await companyInvoice.save();
+
+                    // Add the company invoice
+                    company.companyInvoices = company.companyInvoices ?? [];
+                    const existCompanyInvoice = company.companyInvoices.find(
+                        inv => inv.toString() === companyInvoice._id.toString()
+                    );
+                    if (!existCompanyInvoice) {
+                        company.companyInvoices.push(companyInvoice);
+                        await company.save();
+                    }
+                }
+                break;
+
+            case ContractStatus.FINISHED:
+                // Add finished information
+                contract.finishedBy = user;
+                contract.finishedAt = new Date();
+
+                // Construct notification data
+                notificationType = NotificationTypes.CONTRACT_FINISHED;
+                messageTitle = 'Contract finished';
+                messageBody = `Company ${company.info.companyName} has finished your vendor contract`;
+                break;
+
+            default:
+                return res.json({ status: Status.Error, message: 'Status must be 1 (ACCEPTED) or 4 (FINISHED).' });
+
         }
+
+        // Save contract status
+        contract.status = params.status;
+        await contract.save();
+
+        // Save notification to DB and send through SocketIO
+        await _handleNotification({
+            sio,
+            companyId: contractor._id,
+            notificationType: notificationType,
+            messageTitle,
+            messageBody,
+            metadataId: contract._id
+        })
+
+        return res.json({ status: Status.Success, message: 'Company Contract status updated successfully.', contract });
     }
+
 }
 
 // cancel or finish by compnay
