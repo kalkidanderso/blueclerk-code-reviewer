@@ -1377,6 +1377,16 @@ export default function (sio: any) {
         companyController.getContractorDetail
     )
 
+    router.put(
+        '/updateContract',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.updateCompanyContract),
+        (req, res) => {
+            vendorController.updateContract(req,res,sio)
+        }
+    )
+
     router.post(
         '/updateCompanyProfile',
         passport.authenticate('jwt', { session: false }),

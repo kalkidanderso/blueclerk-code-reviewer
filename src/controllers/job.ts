@@ -3492,6 +3492,7 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
         return res.json({ status: Status.Error, message: err.message });
     }
 
+    // Save notification to DB and send through SocketIO
     await _handleNotification({
         sio,
         companyId: job.company,

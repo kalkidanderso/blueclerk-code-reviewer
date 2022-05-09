@@ -275,11 +275,29 @@ export const getContractorForJob = (req: Request, res: Response) => {
 
 }
 
-export const getCompanyContracts = (req: Request, res: Response) => {
+export const getCompanyContracts = async (req: Request, res: Response) => {
 
     const company = <ICompany>req.company
 
-    Contract.find({company: company._id})
+    const contractAggregate: IContract[] = await Contract.aggregate([
+        {
+        $match: {"company": company._id}
+        },{
+            $sort: { _id: -1}
+        },{
+            $group: {
+                _id: "$contractor",
+                "docs": {"$first": "$$ROOT"}
+            }
+        },{
+            "$replaceRoot":{"newRoot":"$docs"}
+        }
+    ])
+
+    // Map the Contract IDs filtered
+    const contractIds = contractAggregate.map((result)=>result._id)
+
+    Contract.find({_id: {$in : contractIds}})
     .populate({
         path: 'company',
         select: 'info.companyName info.companyEmail type'

@@ -491,6 +491,61 @@
         ]
       }
     },
+    "/updateContract": {
+      "put": {
+        "tags": [
+          "Vendor"
+        ],
+        "summary": "To update a contract of a company ",
+        "description": "Update contract from a company",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "contractId",
+                  "status"
+                ],
+                "properties": {
+                  "contractId": {
+                    "type": "string",
+                    "description": "Id of a contract fetched by /getContracts api"
+                  },
+                  "status": {
+                    "type": "integer",
+                    "description": "status of contract, 1=ACCEPTED, 4=FINISHED"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/finishContract": {
       "post": {
         "tags": [
