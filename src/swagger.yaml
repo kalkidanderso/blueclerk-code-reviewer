@@ -282,6 +282,40 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
+  /updateContract:
+    put:
+      tags:
+        - Vendor
+      summary: 'To update a contract of a company '
+      description: Update contract from a company
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - contractId
+                - status
+              properties:
+                contractId:
+                  type: string
+                  description: Id of a contract fetched by /getContracts api
+                status:
+                  type: integer
+                  description: status of contract, 1=ACCEPTED, 4=FINISHED
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /finishContract:
     post:
       tags:
@@ -2922,7 +2956,16 @@ paths:
     post:
       tags:
         - Items
-      summary: 'To get all items of company '
+      summary: To get all items of company
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                includeDiscountItems:
+                  type: boolean
+                  description: To include discount items or not, default will be false
       responses:
         '200':
           description: Success
@@ -4080,8 +4123,23 @@ paths:
     get:
       tags:
         - Service Ticket
-      summary: To get all open service tickets of a company and return the result progressively via socket.io
-      description: 'All service tickets will be send progressively via socket.io, **make sure FE connects using the right company''s token and listen to event: ''all_open_service_tickets''**.'
+      summary: To get all open service tickets and job requests of a company and return the result progressively via socket.io
+      description: 'All service tickets and job requests will be send progressively via socket.io, **make sure FE connects using the right company''s token and listen to event: ''all_open_service_tickets''**.'
+      parameters:
+        - name: actionId
+          in: query
+          description: Client Socket ID
+          required: true
+          schema:
+            type: string
+        - name: includeOpenJobRequest
+          in: query
+          description: true for getting all jobs request (default is false)
+          schema:
+            type: boolean
+            enum:
+              - true
+              - false
       responses:
         '200':
           description: Success
@@ -4303,7 +4361,6 @@ paths:
                 - customerId
                 - tasks
                 - scheduleDate
-                - ticketId
               properties:
                 scheduleDate:
                   type: string
@@ -4317,6 +4374,8 @@ paths:
                 ticketId:
                   type: string
                   description: Id of a service ticket fetched by /getServiceTickets api
+                jobRequestId:
+                  type: string
                 equipmentId:
                   type: string
                   description: Id of a equipment for single scan
@@ -4479,6 +4538,12 @@ paths:
         - Job
       summary: To get all jobs of a company and return the result progressively via socket.io
       description: 'All jobs will be send progressively via socket.io, **make sure FE connects using the right company''s token and listen to event: ''all_jobs''**.'
+      parameters:
+        - name: actionId
+          in: query
+          description: Client Socket ID
+          required: true
+          schema: {}
       responses:
         '200':
           description: Success
@@ -7546,6 +7611,23 @@ paths:
     post:
       tags:
         - Script
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /script/migrateCustomer:
+    post:
+      tags:
+        - Script
+      summary: To migrate customer as user to customer company
+      description: |-
+        **WARNING: - Only do this when you know what you are doing.** 
+        To migrate customer as user to customer company
       responses:
         '200':
           description: Success

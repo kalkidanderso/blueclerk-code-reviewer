@@ -15,6 +15,7 @@ export interface ICustomerContact extends IUser {
     }
     contactName: string
     company: Schema.Types.ObjectId
+    customer: Schema.Types.ObjectId
     equipments: [Schema.Types.ObjectId]
     jobLocations: [Schema.Types.ObjectId | IJobLocation]
     isCustomPrice?: boolean
@@ -48,7 +49,12 @@ const CustomerContactSchema = new Schema({
     company: {
         type: Schema.Types.ObjectId,
         ref: 'Company',
-        required: true
+        required: false
+    },
+    customer: {
+        type: Schema.Types.ObjectId,
+        ref: 'Customer',
+        required: false
     },
     equipments: [{ type: Schema.Types.ObjectId, ref: 'CustomerEquipment' }],
     jobLocations: [{

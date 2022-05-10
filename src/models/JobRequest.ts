@@ -74,12 +74,12 @@ const JobRequestSchema = new Schema({
     }],
     customer: {
         type: Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Customer',
         required: false
     },
     customerContact: {
         type: Schema.Types.ObjectId,
-        ref: 'Contact',
+        ref: 'User',
         required: false
     },
     company: {

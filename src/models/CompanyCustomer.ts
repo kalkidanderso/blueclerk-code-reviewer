@@ -19,7 +19,7 @@ const CompanyCustomerSchema = new Schema({
     },
     customer: {
         type: Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Customer',
         required: true
     },
     status: {

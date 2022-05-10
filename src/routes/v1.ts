@@ -1213,6 +1213,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Service_Tickets),
+        validate(Validations.getOpenServiceTicketsStream),
         (req, res) => {
             serviceTicketController.getOpenServiceTicketsStream(req, res, sio)
         }
@@ -1375,6 +1376,16 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Contractor_Detail),
         validate(Validations.getContractorDetail),
         companyController.getContractorDetail
+    )
+
+    router.put(
+        '/updateContract',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.updateCompanyContract),
+        (req, res) => {
+            vendorController.updateContract(req,res,sio)
+        }
     )
 
     router.post(
@@ -2157,6 +2168,13 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         scriptController.updatePaidTechnicians
+    )
+
+    router.post(
+        '/script/migrateCustomer',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        scriptController.migrateCustomer
     )
 
     return router

@@ -3033,7 +3033,10 @@ export const sendJobReport = (req: Request, res: Response) => {
                      */
                     recipientEmails = paramRecipients?.length > 0
                         ? paramRecipients
-                        : [(customerContact?.email ?? customer?.info?.email)];
+                        : [(customerContact?.email?.length > 0
+                            ? customerContact.email
+                            : customer?.info?.email
+                        )];
 
                     // Add the user's email himself if he want to receive copy email
                     if (copyToMyself) {
@@ -3489,6 +3492,7 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
         return res.json({ status: Status.Error, message: err.message });
     }
 
+    // Save notification to DB and send through SocketIO
     await _handleNotification({
         sio,
         companyId: job.company,
