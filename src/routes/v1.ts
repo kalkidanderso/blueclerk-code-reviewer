@@ -1397,6 +1397,15 @@ export default function (sio: any) {
         companyController.updateCompanyProfile
     )
 
+    router.put(
+        '/updateCompanyCustomer',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Company_Profile),
+        validate(Validations.updateCompanyCustomer),
+        companyController.updateCompanyCustomer
+    )
+
     // Item Tier
 
     router.get(

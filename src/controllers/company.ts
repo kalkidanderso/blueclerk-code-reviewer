@@ -1293,3 +1293,15 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
         })
 }
 
+export const updateCompanyCustomer = async (req: Request, res: Response) => {
+    const params = req.body;
+    const companyCustomer = await CompanyCustomer.findById(params.companyCustomerId);
+    if (!companyCustomer) {
+        return res.json({ status: Status.NotFound, messages: 'Company customer not found.' });
+    }
+
+    companyCustomer.status = params.status ?? companyCustomer.status;
+    companyCustomer.isPreferred = params.isPreferred ?? companyCustomer.isPreferred;
+    companyCustomer.save();
+    return res.json({ status: Status.Success, messages: 'Company customer updated successfully.', companyCustomer });
+}

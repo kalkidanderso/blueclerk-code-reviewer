@@ -1427,6 +1427,46 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
+  /updateCompanyCustomer:
+    put:
+      tags:
+        - Company
+      summary: To update "contract" in between company and customer
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - companyCustomerId
+              properties:
+                companyCustomerId:
+                  type: string
+                  description: Id of company customer
+                status:
+                  type: integer
+                  description: Status for the "contract" (PENDING => 0, ACCEPTED/ACTIVE => 1, CANCELED => 2, REJECTED => 3, FINISHED => 4)
+                  enum:
+                    - 0
+                    - 1
+                    - 2
+                    - 3
+                    - 4
+                isPreferred:
+                  type: boolean
+                  enum:
+                    - true
+                    - false
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /getCompanyEmailDefault:
     get:
       tags:
