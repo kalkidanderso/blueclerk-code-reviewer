@@ -274,6 +274,12 @@ export const createPayment = async (req: Request, res: Response) => {
     const params = req.body;
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
+    let paramInvoices = params.line ?? [];
+    let invoice: IInvoice;
+
+    if (!Array.isArray(paramInvoices)) {
+        paramInvoices = JSON.parse(params.line);
+    }
 
     // Find and check if customer existed
     const customer = await Customer.findOne({
@@ -284,18 +290,20 @@ export const createPayment = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Customer not found.' });
     }
 
-    // Find and check if invoice existed and belongs to the customer
-    const invoice = await Invoice.findOne({
-        _id: params.invoiceId,
-        customer: customer._id,
-        company: company._id
-    });
+    if (params.invoiceId) {
+        // Find and check if invoice existed and belongs to the customer
+        invoice = await Invoice.findOne({
+            _id: params.invoiceId,
+            customer: customer._id,
+            company: company._id
+        });
 
-    if (!invoice || invoice.isDraft) {
-        return res.json({ status: Status.Error, message: 'Invoice not found or does not belong to the customer.' });
-    }
-    if (invoice.status === InvoiceStatus.PAID) {
-        return res.json({ status: Status.Success, message: 'Invoice already paid off.' });
+        if (!invoice || invoice.isDraft) {
+            return res.json({ status: Status.Error, message: 'Invoice not found or does not belong to the customer.' });
+        }
+        if (invoice.status === InvoiceStatus.PAID) {
+            return res.json({ status: Status.Success, message: 'Invoice already paid off.' });
+        }
     }
 
     // Construct payment entry
@@ -313,27 +321,32 @@ export const createPayment = async (req: Request, res: Response) => {
     });
 
     try {
+        if (paramInvoices.length) {
+            // Handle multiple invoices
+            handleMultipleInvoice(paramInvoices, payment, customer);
+        } else {
+            // Handle invoice balance due, underpayment, and overpayment
+            await _calculateInvoiceBalance(invoice, customer, parseFloat(params.amount));
+        }
+
         // Save the new payment
         await payment.save();
 
-        // Handle invoice balance due, underpayment, and overpayment
-        await _calculateInvoiceBalance(invoice, customer, parseFloat(params.amount));
-
         if (company.qbAuthorized) {
             // Create new Payment in QuickBooks
-            _createQBPayment(req, res, company, payment, (err, errMsg, qbPayment) => {
+            _createQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
                 if (err) {
                     return res.json({ status: err, message: errMsg });
                 }
 
                 if (qbPayment) {
                     payment.quickbookId = qbPayment.Id;
-                    payment.save();
+                    await payment.save();
 
                     // If company's payments already synced, update the synced date
                     if (company.qbSync?.paymentsSynced) {
                         company.qbSync.paymentsSyncedAt = new Date();
-                        company.save();
+                        await company.save();
                     }
                 }
 
@@ -1019,4 +1032,26 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
     }
 
     return res.json({ status: Status.Success, message: 'Payment void successfully' });
+}
+
+export const handleMultipleInvoice = async (paramInvoices: any[], payment: IPayment, customer: ICustomer) => {
+    for (const paramInvoice of paramInvoices) {
+        const invoice = await Invoice.findById(paramInvoice.invoiceId);
+        if (!invoice || invoice.isDraft) {
+            throw new Error(`Invoice with id ${paramInvoice.invoiceId} not found or invoice status is draft.`);
+        }
+
+        if (invoice.status === InvoiceStatus.PAID) {
+            throw new Error(`Invoice with id ${paramInvoice.invoiceId} already paid off.`);
+        }
+
+        payment.line.push({
+            invoice: invoice._id,
+            amountPaid: paramInvoice.amountPaid
+        });
+
+        await _calculateInvoiceBalance(invoice, customer, parseFloat(paramInvoice.amountPaid));
+    }
+
+    return;
 }
