@@ -2332,7 +2332,14 @@
                     "description": "Id of company customer"
                   },
                   "status": {
-                    "type": "boolean"
+                    "type": "integer",
+                    "enum": [
+                      0,
+                      1,
+                      2,
+                      3,
+                      4
+                    ]
                   },
                   "isPreferred": {
                     "type": "boolean"
@@ -7302,7 +7309,15 @@
                   "status": {
                     "type": "integer",
                     "description": "Filter jobs by status (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4, PAUSED => 5, INCOMPLETE => 6)",
-                    "enum": [ 0, 1, 2, 3, 4, 5, 6 ]
+                    "enum": [
+                      0,
+                      1,
+                      2,
+                      3,
+                      4,
+                      5,
+                      6
+                    ]
                   },
                   "startDate": {
                     "type": "string",

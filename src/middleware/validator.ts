@@ -90,7 +90,7 @@ export const Validations = {
 
   updateCompanyCustomer: [
     check('companyCustomerId').exists().isMongoId().withMessage(Messages.WrongId),
-    check('status').optional().isBoolean().toBoolean(),
+    check('status').optional().isNumeric().toInt(),
     check('isPreferred').optional().isBoolean().toBoolean(),
   ],
 
