@@ -2372,7 +2372,7 @@
         "tags": [
           "Company"
         ],
-        "summary": "To update company customer",
+        "summary": "To update \"contract\" in between company and customer",
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
@@ -2388,6 +2388,7 @@
                   },
                   "status": {
                     "type": "integer",
+                    "description": "Status for the \"contract\" (PENDING => 0, ACCEPTED/ACTIVE => 1, CANCELED => 2, REJECTED => 3, FINISHED => 4)",
                     "enum": [
                       0,
                       1,
@@ -2397,7 +2398,8 @@
                     ]
                   },
                   "isPreferred": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "enum": [ true, false ]
                   }
                 }
               }
