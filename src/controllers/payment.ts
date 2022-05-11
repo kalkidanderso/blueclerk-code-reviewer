@@ -310,7 +310,6 @@ export const createPayment = async (req: Request, res: Response) => {
     const payment = new PaymentCustomer({
         customer,
         invoice,
-        amountPaid: params.amount,
         referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
         paymentType: params.paymentType,
         paidAt: params.paidAt ? moment(params.paidAt).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
@@ -323,8 +322,9 @@ export const createPayment = async (req: Request, res: Response) => {
     try {
         if (paramInvoices.length) {
             // Handle multiple invoices
-            handleMultipleInvoice(paramInvoices, payment, customer);
+            await handleMultipleInvoice(paramInvoices, payment, customer, company);
         } else {
+            payment.amountPaid = params.amount;
             // Handle invoice balance due, underpayment, and overpayment
             await _calculateInvoiceBalance(invoice, customer, parseFloat(params.amount));
         }
@@ -1034,11 +1034,16 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
     return res.json({ status: Status.Success, message: 'Payment void successfully' });
 }
 
-export const handleMultipleInvoice = async (paramInvoices: any[], payment: IPayment, customer: ICustomer) => {
+export const handleMultipleInvoice = async (paramInvoices: any[], payment: IPayment, customer: ICustomer, company: ICompany) => {
     for (const paramInvoice of paramInvoices) {
-        const invoice = await Invoice.findById(paramInvoice.invoiceId);
+        const invoice = await Invoice.findOne({
+            _id: paramInvoice.incoiceId,
+            customer: customer._id,
+            company: company._id
+        });
+
         if (!invoice || invoice.isDraft) {
-            throw new Error(`Invoice with id ${paramInvoice.invoiceId} not found or invoice status is draft.`);
+            throw new Error(`Invoice with id ${paramInvoice.invoiceId} not found or does not belong to the customer.`);
         }
 
         if (invoice.status === InvoiceStatus.PAID) {
