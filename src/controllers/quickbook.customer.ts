@@ -10,6 +10,7 @@ import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
 import { NotificationServiceTicket } from '../models/NotificationDiscriminator';
+import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin';
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");
@@ -905,7 +906,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
             res.json({ status: Status.Success, message: 'Customer syncing in the background, try to refresh the page later' });
 
             // Find customers from DB and populate its jobLocations
-            let customers = await Customer.find({ company: company._id }).populate({ path: 'jobLocations' });
+            let customers = await Customer.find({}).populate({ path: 'jobLocations' });
 
             qbo.findCustomers({ fetchAll: true }, async (err: any, data: any) => {
                 if (err) {
@@ -1008,6 +1009,24 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                         //         coordinates: [Number(qbCustomer.BillAddr?.Long), Number(qbCustomer.BillAddr?.Lat)]
                         //     }
                         // }
+                        const customerAdmin = await new CustomerAdmin({
+                            auth: {
+                                email: qbCustomer.PrimaryEmailAddr?.Address
+                            },
+                            info: { email: qbCustomer.PrimaryEmailAddr?.Address },
+                            location: customer?.location,
+                            address: {
+                                street: qbCustomer.BillAddr?.Line1,
+                                unit: qbCustomer.BillAddr?.Line2,
+                                city: qbCustomer.BillAddr?.City,
+                                state: qbCustomer.BillAddr?.CountrySubDivisionCode,
+                                zipCode: qbCustomer.BillAddr?.PostalCode
+                            },
+                            customer: custEntry._id
+                        }).save();
+
+                        customerAdmin.customer = custEntry._id
+                        custEntry.admin = customerAdmin._id;
 
                         custsToCreate.push(custEntry);
                         // Save the new customer from QB
@@ -1021,8 +1040,8 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                         createdCustomers.push({ _id: customer._id, name: customer.profile?.displayName });
                         compCustsToCreate.push(
                             new CompanyCustomer({
-                                company: company._id,
-                                customer: customer._id,
+                                company: customer._id,
+                                customer: customer.admin,
                                 createdAt: Date.now()
                             })
                         )
@@ -1036,7 +1055,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                 const qbCustomerJobs = qbCustomers.filter(qbCustomer => qbCustomer.Job && qbCustomer.Level === 1);
 
                 // Update customers data from DB and populate its jobLocations
-                customers = await Customer.find({ company: company._id }).populate({ path: 'jobLocations' });
+                customers = await Customer.find({}).populate({ path: 'jobLocations' });
 
                 // Iterate all QuickBooks jobs only
                 for (const qbCustJob of qbCustomerJobs) {

@@ -5,6 +5,8 @@ export interface ICompanyCustomer extends Document {
     company: Schema.Types.ObjectId
     customer: Schema.Types.ObjectId | any
     createdAt: Date
+    status: number
+    isPreferred: boolean
 
 }
 
@@ -17,8 +19,16 @@ const CompanyCustomerSchema = new Schema({
     },
     customer: {
         type: Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Customer',
         required: true
+    },
+    status: {
+        type: Number,
+        default: 1
+    },
+    isPreferred: {
+        type: Boolean,
+        default: false
     },
     createdAt: Date
 

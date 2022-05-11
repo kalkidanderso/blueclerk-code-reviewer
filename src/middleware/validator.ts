@@ -88,6 +88,12 @@ export const Validations = {
 
   updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('companyEmail').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }), check('phone').exists()],
 
+  updateCompanyCustomer: [
+    check('companyCustomerId').exists().isMongoId().withMessage(Messages.WrongId),
+    check('status').optional().isNumeric().toInt(),
+    check('isPreferred').optional().isBoolean().toBoolean(),
+  ],
+
   updateItemTier: [check('itemTierId').exists().withMessage('is required')],
 
   deleteEmployee: [check('employeeId').exists()],
@@ -95,6 +101,12 @@ export const Validations = {
   getEmployeeDetails: [check('employeeId').exists()],
 
   updateEmployeeEmailPreferences: [check('employeeId').exists(), check('emailPreferences').isNumeric()],
+
+  updateCompanyContract: [
+    check('contractId').exists().withMessage(Messages.Required), 
+    check('contractId').isMongoId().withMessage(Messages.WrongId),
+    check('status').isInt({ min: 1,max: 4 }).toInt().withMessage('status has to be number with value between 1 and 4')
+  ],
 
   updateContractorEmailPreferences: [check('contractorId').exists(), check('emailPreferences').isNumeric()],
 
@@ -495,6 +507,8 @@ export const Validations = {
   getLocationTagJobs: [check('nfcTag').exists()],
 
   getOpenServiceTickets: [check('page').exists().isNumeric(), check('pagesize').exists().isNumeric(), check('customerNames').optional(), check('jobTypeTitle').optional(), check('dueDate').optional(), check('ticketId').optional()],
+
+  getOpenServiceTicketsStream: [check('includeOpenJobRequest').optional().toBoolean()],
 
   // Job location
   getJobLocation: [

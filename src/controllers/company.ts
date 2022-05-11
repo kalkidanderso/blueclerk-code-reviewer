@@ -275,11 +275,29 @@ export const getContractorForJob = (req: Request, res: Response) => {
 
 }
 
-export const getCompanyContracts = (req: Request, res: Response) => {
+export const getCompanyContracts = async (req: Request, res: Response) => {
 
     const company = <ICompany>req.company
 
-    Contract.find({company: company._id})
+    const contractAggregate: IContract[] = await Contract.aggregate([
+        {
+        $match: {"company": company._id}
+        },{
+            $sort: { _id: -1}
+        },{
+            $group: {
+                _id: "$contractor",
+                "docs": {"$first": "$$ROOT"}
+            }
+        },{
+            "$replaceRoot":{"newRoot":"$docs"}
+        }
+    ])
+
+    // Map the Contract IDs filtered
+    const contractIds = contractAggregate.map((result)=>result._id)
+
+    Contract.find({_id: {$in : contractIds}})
     .populate({
         path: 'company',
         select: 'info.companyName info.companyEmail type'
@@ -1275,3 +1293,15 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
         })
 }
 
+export const updateCompanyCustomer = async (req: Request, res: Response) => {
+    const params = req.body;
+    const companyCustomer = await CompanyCustomer.findById(params.companyCustomerId);
+    if (!companyCustomer) {
+        return res.json({ status: Status.NotFound, messages: 'Company customer not found.' });
+    }
+
+    companyCustomer.status = params.status ?? companyCustomer.status;
+    companyCustomer.isPreferred = params.isPreferred ?? companyCustomer.isPreferred;
+    companyCustomer.save();
+    return res.json({ status: Status.Success, messages: 'Company customer updated successfully.', companyCustomer });
+}

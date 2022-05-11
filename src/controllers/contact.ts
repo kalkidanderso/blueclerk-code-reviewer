@@ -169,7 +169,7 @@ export const getContacts = async (req: Request, res: Response) => {
                 const customerContacts = <IContact[]>customer?.contacts;
                 const contacts = await _handlefindIsActiveContact(req.query.isActive, customerContacts)
 
-                if (customer && contacts.length) {
+                if (customer) {
                     return res.json({ result: contacts });
                 } else {
                     return res.json({ status: Status.Error, message: 'Customer not found' });
@@ -180,7 +180,7 @@ export const getContacts = async (req: Request, res: Response) => {
                 const customerContacts = <IContact[]>customer?.contacts;
                 const contacts = await _handlefindIsActiveContact(req.query.isActive, customerContacts)
 
-                if (customer && contacts.length) {
+                if (customer) {
                     return res.json({ status: Status.Success, result: contacts })
                 } else {
                     return res.json({ status: Status.Error, message: 'Customer not found' })
@@ -330,7 +330,8 @@ export const createCustomerContact = async ({
             profile: { firstName: contactName[0], lastName: contactName.length > 1 ? contactName[contactName.length - 1] : '', displayName: contact.name },
             address: customer?.address ?? jobLocation?.address,
             contact: { phone: contact.phone },
-            company: customer?.company ?? jobLocation?.companyId,
+            company: jobLocation?.companyId,
+            customer: customer?._id,
             permissions: { role: Role.CUSTOMER_CONTACT, extra: [] },
             contactName: contact.name,
             location: customer?.location ?? jobLocation?.location

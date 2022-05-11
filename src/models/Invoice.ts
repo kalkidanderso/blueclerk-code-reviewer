@@ -183,7 +183,7 @@ const InvoiceSchema = new Schema({
     vendorId: String,
     customer: {
         type: Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Customer',
         required: true
     },
     company: {

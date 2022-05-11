@@ -68,6 +68,14 @@ export const enum EquipmentStatus {
     CHECKOUT
 }
 
+export const enum CompanyCustomerStatus {
+    PENDING,
+    ACCEPTED,
+    CANCELED,
+    REJECTED,
+    FINISHED
+}
+
 export const enum JobStatus {
     PENDING,
     STARTED,

@@ -1213,6 +1213,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Service_Tickets),
+        validate(Validations.getOpenServiceTicketsStream),
         (req, res) => {
             serviceTicketController.getOpenServiceTicketsStream(req, res, sio)
         }
@@ -1377,6 +1378,16 @@ export default function (sio: any) {
         companyController.getContractorDetail
     )
 
+    router.put(
+        '/updateContract',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.updateCompanyContract),
+        (req, res) => {
+            vendorController.updateContract(req,res,sio)
+        }
+    )
+
     router.post(
         '/updateCompanyProfile',
         passport.authenticate('jwt', { session: false }),
@@ -1384,6 +1395,15 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Update_Company_Profile),
         validate(Validations.updateCompanyProfile),
         companyController.updateCompanyProfile
+    )
+
+    router.put(
+        '/updateCompanyCustomer',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Company_Profile),
+        validate(Validations.updateCompanyCustomer),
+        companyController.updateCompanyCustomer
     )
 
     // Item Tier
@@ -2148,6 +2168,13 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         scriptController.updatePaidTechnicians
+    )
+
+    router.post(
+        '/script/migrateCustomer',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        scriptController.migrateCustomer
     )
 
     return router
