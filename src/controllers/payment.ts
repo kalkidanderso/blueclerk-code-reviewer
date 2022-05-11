@@ -275,7 +275,7 @@ export const createPayment = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
     let paramInvoices = params.line ?? [];
-    let invoice: IInvoice;
+    let invoice: any;
 
     if (!Array.isArray(paramInvoices)) {
         paramInvoices = JSON.parse(params.line);
@@ -322,7 +322,7 @@ export const createPayment = async (req: Request, res: Response) => {
     try {
         if (paramInvoices.length) {
             // Handle multiple invoices
-            await handleMultipleInvoice(paramInvoices, payment, customer, company);
+            invoice = await handleMultipleInvoice(paramInvoices, payment, customer, company);
         } else {
             payment.amountPaid = params.amount;
             // Handle invoice balance due, underpayment, and overpayment
@@ -1034,10 +1034,16 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
     return res.json({ status: Status.Success, message: 'Payment void successfully' });
 }
 
-export const handleMultipleInvoice = async (paramInvoices: any[], payment: IPayment, customer: ICustomer, company: ICompany) => {
+export const handleMultipleInvoice = async (
+    paramInvoices: any[],
+    payment: IPayment,
+    customer: ICustomer,
+    company: ICompany
+): Promise<IInvoice[]> => {
+    const invoices = [];
     for (const paramInvoice of paramInvoices) {
         const invoice = await Invoice.findOne({
-            _id: paramInvoice.incoiceId,
+            _id: paramInvoice.invoiceId,
             customer: customer._id,
             company: company._id
         });
@@ -1056,7 +1062,8 @@ export const handleMultipleInvoice = async (paramInvoices: any[], payment: IPaym
         });
 
         await _calculateInvoiceBalance(invoice, customer, parseFloat(paramInvoice.amountPaid));
+        invoices.push(invoice)
     }
 
-    return;
+    return invoices;
 }
