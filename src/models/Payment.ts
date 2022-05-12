@@ -10,6 +10,10 @@ export interface IPayment extends Document {
     customer: Schema.Types.ObjectId | ICustomer
     invoice: Schema.Types.ObjectId | IInvoice
     invoices: [Schema.Types.ObjectId | IInvoice]
+    line: [{
+        invoice: Schema.Types.ObjectId | IInvoice
+        amountPaid: number
+    }]
     contractor: Schema.Types.ObjectId | ICompany
     employee: Schema.Types.ObjectId | ICustomer
     amountPaid: number
@@ -149,7 +153,17 @@ const PaymentSchema = new Schema({
     isVoid: {
         type: Boolean,
         default: false
-    }
+    },
+    line: [{
+        invoice: {
+            type: Schema.Types.ObjectId,
+            ref: 'Invoice'
+        },
+        amountPaid: {
+            type: Number,
+            default: 0
+        }
+    }]
 })
 
 const PaymentCustomerSchema = new Schema({
@@ -162,7 +176,7 @@ const PaymentCustomerSchema = new Schema({
     invoice: {
         type: Schema.Types.ObjectId,
         ref: 'Invoice',
-        required: true
+        required: false
     },
 })
 
