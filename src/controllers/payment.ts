@@ -281,6 +281,10 @@ export const createPayment = async (req: Request, res: Response) => {
         paramInvoices = JSON.parse(params.line);
     }
 
+    if (params.invoiceId && paramInvoices.length || !params.invoiceId && !paramInvoices.length) {
+        return res.json({ status: Status.Error, message: 'Either of invoiceId or line is required' });
+    }
+
     // Find and check if customer existed
     const customer = await Customer.findOne({
         _id: params.customerId

@@ -1927,7 +1927,7 @@ export default function (sio: any) {
         '/recordPayment',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        // validate(Validations.recordPayment),
+        validate(Validations.recordPayment),
         checkUserPermissions(Permissions.Create_Payment),
         paymentController.createPayment
     )
