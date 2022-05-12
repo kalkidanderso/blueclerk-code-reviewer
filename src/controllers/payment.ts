@@ -326,7 +326,7 @@ export const createPayment = async (req: Request, res: Response) => {
     try {
         if (paramInvoices.length) {
             // Handle multiple invoices
-            invoice = await handleMultipleInvoice(paramInvoices, payment, customer, company);
+            await _handleMultipleInvoices(paramInvoices, payment, customer, company);
         } else {
             payment.amountPaid = params.amount;
             // Handle invoice balance due, underpayment, and overpayment
@@ -1038,12 +1038,12 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
     return res.json({ status: Status.Success, message: 'Payment void successfully' });
 }
 
-export const handleMultipleInvoice = async (
+export const _handleMultipleInvoices = async (
     paramInvoices: any[],
     payment: IPayment,
     customer: ICustomer,
     company: ICompany
-): Promise<IInvoice[]> => {
+): Promise<void> => {
     const invoices = [];
     for (const paramInvoice of paramInvoices) {
         const invoice = await Invoice.findOne({
@@ -1065,9 +1065,12 @@ export const handleMultipleInvoice = async (
             amountPaid: paramInvoice.amountPaid
         });
 
+        payment.amountPaid = payment.amountPaid ?? 0;
+        payment.amountPaid += paramInvoice.amountPaid;
+
         await _calculateInvoiceBalance(invoice, customer, parseFloat(paramInvoice.amountPaid));
-        invoices.push(invoice)
+        invoices.push(invoice);
     }
 
-    return invoices;
+    return;
 }

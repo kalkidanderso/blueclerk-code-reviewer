@@ -59,7 +59,7 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
         // QB Payment Object
         const qbPaymentEntry: IQBPayment[] = []
 
-        if (payment.line.length) {
+        if (payment?.line?.length) {
             for (const paymentLine of payment.line) {
                 const invoice = <IInvoice>paymentLine.invoice;
                 const job = <IJob>invoice?.job;
