@@ -39,8 +39,10 @@ tags:
     description: For company equipment's Check In Check Out history
   - name: Inventory
     description: For Inventory of company equipments
-  - name: Job Location
-    description: For company Job locations
+  - name: Subdivision
+    description: For company Subdivision (formerly Job Location)
+  - name: Job Address
+    description: For adding, updating and fetching Job Address detail (formerly Job Site)
   - name: Job Type
     description: For job types
   - name: Items
@@ -51,8 +53,6 @@ tags:
     description: For customer custom discount pricing
   - name: Job Charges
     description: For job charges
-  - name: Job Site
-    description: For adding, updating and fetching Job Site detail
   - name: Service Ticket
     description: For creating and getting service tickets
   - name: Job
@@ -2596,8 +2596,8 @@ paths:
   /jobLocation:
     get:
       tags:
-        - Job Location
-      summary: Get Job location by companyId and/or customerId
+        - Subdivision
+      summary: Get Subdivision by companyId and/or customerId
       parameters:
         - name: companyId
           in: query
@@ -2609,7 +2609,7 @@ paths:
             type: string
         - name: isActive
           in: query
-          description: If not provided will return ALL job locations
+          description: If not provided will return ALL subdivision / job locations
           schema:
             enum:
               - ALL
@@ -2626,8 +2626,8 @@ paths:
         - Bearer: []
     post:
       tags:
-        - Job Location
-      summary: Create a customer job location
+        - Subdivision
+      summary: Create a customer subdivision
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -2669,8 +2669,8 @@ paths:
   /jobLocation/{id}:
     get:
       tags:
-        - Job Location
-      summary: Get Job location by Id
+        - Subdivision
+      summary: Get Subdivision by Id
       parameters:
         - name: id
           in: path
@@ -2688,12 +2688,12 @@ paths:
         - Bearer: []
     put:
       tags:
-        - Job Location
-      summary: Update Job location by Id
+        - Subdivision
+      summary: Update Subdivision by Id
       parameters:
         - name: id
           in: path
-          description: Id of job location to be updated
+          description: Id of subdivision / job location to be updated
           required: true
           schema:
             type: string
@@ -2707,7 +2707,7 @@ paths:
               properties:
                 customerId:
                   type: string
-                  description: Id of customer that owns the job location
+                  description: Id of customer that owns the subdivision / job location
                 name:
                   type: string
                 isActive:
@@ -2734,8 +2734,8 @@ paths:
   /jobSite:
     post:
       tags:
-        - Job Site
-      summary: Create a customer job site
+        - Job Address
+      summary: Create a customer job address
       requestBody:
         content:
           application/json:
@@ -2754,8 +2754,8 @@ paths:
         - Bearer: []
     get:
       tags:
-        - Job Site
-      summary: Get Job site by locationId and customerId
+        - Job Address
+      summary: Get job address by locationId and customerId
       parameters:
         - name: customerId
           in: query
@@ -2791,8 +2791,8 @@ paths:
   /jobSite/{id}:
     get:
       tags:
-        - Job Site
-      summary: Get Job site by Id
+        - Job Address
+      summary: Get job address by Id
       parameters:
         - name: id
           in: path
@@ -2815,8 +2815,8 @@ paths:
         - Bearer: []
     put:
       tags:
-        - Job Site
-      summary: Update Job site by Id
+        - Job Address
+      summary: Update job address by Id
       parameters:
         - name: id
           in: path
@@ -6070,7 +6070,6 @@ paths:
               type: object
               required:
                 - customerId
-                - invoiceId
               properties:
                 customerId:
                   type: string
@@ -6078,6 +6077,9 @@ paths:
                 invoiceId:
                   type: string
                   description: Id of invoice to be paid
+                line:
+                  type: string
+                  description: Json string of the payment line e.g [{"invoiceId":"6268ef3234370b4364a45a69","amountPaid":250}, {"invoiceId":"6268e21b9f94c709789abac9","amountPaid":20}]}]
                 amount:
                   type: number
                   description: Amount how much customer has paid
