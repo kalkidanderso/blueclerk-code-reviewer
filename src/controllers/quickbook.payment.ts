@@ -30,6 +30,10 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
             path: 'invoice',
             populate: [{ path: 'job', populate: [{ path: 'jobLocation' }] }]
         })
+        .populate({
+            path: 'line.invoice',
+            populate: [{ path: 'job', populate: [{ path: 'jobLocation' }] }]
+        })
         .execPopulate();
 
     // Customer of the payment
@@ -57,54 +61,43 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
         // Initiate node-quickbooks object with the refreshed company token
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
         // QB Payment Object
-        const qbPaymentEntry: IQBPayment[] = []
+        const qbPaymentEntry: IQBPayment = {
+            TxnDate: moment(payment.paidAt).format('YYYY-MM-DD'),
+            CustomerRef: {
+                value: jobLocation?.quickbookId ?? customer?.quickbookId
+            },
+            Line: [{
+                Amount: payment.amountPaid,
+                LinkedTxn: [{
+                    TxnId: invoice?.quickbookId,
+                    TxnType: IQBPaymentTxnTypes.INVOICE
+                }]
+            }],
+            TotalAmt: payment.amountPaid,
+            PaymentRefNum: payment.referenceNumber,
+            PaymentMethodRef: {
+                value: payment.paymentType ? await _getPaymentMethod(qbo, payment) : null
+            },
+            PrivateNote: payment.note
+        }
 
         if (payment?.line?.length) {
+            const qbPaymentLine = []
             for (const paymentLine of payment.line) {
-                const invoice = <IInvoice>paymentLine.invoice;
-                const job = <IJob>invoice?.job;
-                const jobLocation = <IJobLocation>job?.jobLocation;
-                qbPaymentEntry.push({
-                    TxnDate: moment(payment.paidAt).format('YYYY-MM-DD'),
-                    CustomerRef: {
-                        value: jobLocation?.quickbookId || customer?.quickbookId
-                    },
-                    Line: [{
-                        Amount: paymentLine.amountPaid,
-                        LinkedTxn: [{
-                            TxnId: invoice?.quickbookId,
-                            TxnType: IQBPaymentTxnTypes.INVOICE
-                        }]
-                    }],
-                    TotalAmt: paymentLine.amountPaid,
-                    PaymentRefNum: payment.referenceNumber,
-                    PaymentMethodRef: {
-                        value: payment.paymentType ? await _getPaymentMethod(qbo, payment) : null
-                    },
-                    PrivateNote: payment.note
-                })
+                const invoiceLine = <IInvoice>paymentLine.invoice;
+                if (invoiceLine?.quickbookId) {
+                    qbPaymentLine.push(
+                        {
+                            Amount: paymentLine.amountPaid,
+                            LinkedTxn: [{
+                                TxnId: invoiceLine?.quickbookId,
+                                TxnType: IQBPaymentTxnTypes.INVOICE
+                            }]
+                        })
+                }
+
+                qbPaymentEntry.Line = qbPaymentLine;
             }
-        } else {
-            // Create QB Payment
-            qbPaymentEntry.push({
-                TxnDate: moment(payment.paidAt).format('YYYY-MM-DD'),
-                CustomerRef: {
-                    value: jobLocation?.quickbookId || customer?.quickbookId
-                },
-                Line: [{
-                    Amount: payment.amountPaid,
-                    LinkedTxn: [{
-                        TxnId: invoice?.quickbookId,
-                        TxnType: IQBPaymentTxnTypes.INVOICE
-                    }]
-                }],
-                TotalAmt: payment.amountPaid,
-                PaymentRefNum: payment.referenceNumber,
-                PaymentMethodRef: {
-                    value: payment.paymentType ? await _getPaymentMethod(qbo, payment) : null
-                },
-                PrivateNote: payment.note
-            });
         }
 
         qbo.createPayment(qbPaymentEntry, async (err: any, qbPayment: IQBPayment) => {

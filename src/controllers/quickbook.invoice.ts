@@ -473,7 +473,7 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
 
             // Iterate all invoices from DB
             for (const invoice of invoices) {
-                const existQBInvoice = qbInvoices.find(qbInvoice => qbInvoice.DocNumber === invoice.invoiceId);
+                const existQBInvoice = qbInvoices?.find(qbInvoice => qbInvoice.DocNumber === invoice.invoiceId);
 
                 if (!existQBInvoice) {
                     // Create invoice on QB
