@@ -195,10 +195,9 @@ export const getContacts = async (req: Request, res: Response) => {
 export const getCustomerAllContacts = async (req: Request, res: Response) => {
 
     const params = req.query;
-    const company = <ICompany>req.company;
 
     const customer = await Customer
-        .findOne({ _id: params.customerId, company: company._id })
+        .findOne({ _id: params.customerId })
         .populate({ path: 'contacts', select: '-__v' })
 
     if (!customer) {
