@@ -30,6 +30,10 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
             path: 'invoice',
             populate: [{ path: 'job', populate: [{ path: 'jobLocation' }] }]
         })
+        .populate({
+            path: 'line.invoice',
+            populate: [{ path: 'job', populate: [{ path: 'jobLocation' }] }]
+        })
         .execPopulate();
 
     // Customer of the payment
@@ -56,17 +60,16 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
 
         // Initiate node-quickbooks object with the refreshed company token
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
-
         // QB Payment Object
         const qbPaymentEntry: IQBPayment = {
             TxnDate: moment(payment.paidAt).format('YYYY-MM-DD'),
             CustomerRef: {
-                value: jobLocation?.quickbookId || customer?.quickbookId
+                value: jobLocation?.quickbookId ?? customer?.quickbookId
             },
             Line: [{
                 Amount: payment.amountPaid,
                 LinkedTxn: [{
-                    TxnId: invoice.quickbookId,
+                    TxnId: invoice?.quickbookId,
                     TxnType: IQBPaymentTxnTypes.INVOICE
                 }]
             }],
@@ -76,9 +79,27 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
                 value: payment.paymentType ? await _getPaymentMethod(qbo, payment) : null
             },
             PrivateNote: payment.note
-        };
+        }
 
-        // Create QB Payment
+        if (payment?.line?.length) {
+            const qbPaymentLine = []
+            for (const paymentLine of payment.line) {
+                const invoiceLine = <IInvoice>paymentLine.invoice;
+                if (invoiceLine?.quickbookId) {
+                    qbPaymentLine.push(
+                        {
+                            Amount: paymentLine.amountPaid,
+                            LinkedTxn: [{
+                                TxnId: invoiceLine?.quickbookId,
+                                TxnType: IQBPaymentTxnTypes.INVOICE
+                            }]
+                        })
+                }
+
+                qbPaymentEntry.Line = qbPaymentLine;
+            }
+        }
+
         qbo.createPayment(qbPaymentEntry, async (err: any, qbPayment: IQBPayment) => {
             if (err) {
                 return next(
@@ -95,7 +116,6 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
             return next(null, null, qbPayment);
         });
     })
-
 }
 
 /**

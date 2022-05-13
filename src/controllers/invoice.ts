@@ -1167,21 +1167,28 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         const discountItem = await Item.findById(customerDiscount?.discountItem);
 
         if (discountItem) {
+            const discountAmount = discountItem.charges ?? 0;
+            const discountTaxAmount = discountItem.tax > 0 ? discountAmount * discountItem.tax / 100 : 0;
             const obj = {
                 quantity: 1,
-                price: Math.round((discountItem.charges ?? 0) * 100) / 100,
+                price: Math.round(discountAmount * 100) / 100,
                 isFixed: discountItem.isFixed,
-                tax: 0,
-                taxAmount: 0,
-                subTotal: Math.round((discountItem.charges ?? 0) * 100) / 100,
+                tax: discountItem.tax,
+                taxAmount: Math.round(discountTaxAmount * 100) / 100,
+                subTotal: Math.round(discountAmount * 100) / 100,
                 item: discountItem._id,
                 name: discountItem.name,
                 description: discountItem.description
             };
 
             invoiceItems.push(obj);
-            subTotalBeforeTax += (discountItem.charges ?? 0);
-            total += (discountItem.charges ?? 0);
+            subTotalBeforeTax += discountAmount;
+            // Take into account the tax amount from discount
+            taxAmount += discountTaxAmount;
+            // Deduct the grand total with the discount amount
+            total += discountAmount;
+            // Deduct the grand total with the discount tax amountD
+            total += discountTaxAmount;
         }
     }
 
