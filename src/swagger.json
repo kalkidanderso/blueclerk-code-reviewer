@@ -2367,6 +2367,73 @@
         ]
       }
     },
+    "/getCompanyCustomer": {
+      "get": {
+        "tags": [
+          "Company"
+        ],
+        "summary": "Returns list of all Customer",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "query",
+            "description": "The id of the company to retrieve from the database",
+            "schema": {
+              "type":"string"
+            }
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "description": "The id of the customer to retrieve from the database",
+            "schema": {
+              "type":"string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Status for the \"companyCustomers\" (0=PENDING, 1=ACCEPTED, 2=CANCELED, 3=REJECTED, 4=FINISHED)",
+            "schema": {
+              "type":"number"
+            }
+          },
+          {
+            "name": "isPreferred",
+            "in": "query",
+            "schema" :{
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "isActive",
+            "in": "query",
+            "schema" :{
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContactSchemaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/updateCompanyCustomer": {
       "put": {
         "tags": [

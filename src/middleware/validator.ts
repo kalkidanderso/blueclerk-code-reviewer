@@ -88,6 +88,14 @@ export const Validations = {
 
   updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('companyEmail').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }), check('phone').exists()],
 
+  getCompanyCustomer: [
+    check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('status').optional().isInt({ min: 0, max: 4}).toInt().withMessage('status has to be number with value between 0 and 4'),
+    check('isPreferred').optional().isBoolean().toBoolean(),
+    check('isActive').optional().isBoolean().toBoolean()
+  ],
+
   updateCompanyCustomer: [
     check('companyCustomerId').exists().isMongoId().withMessage(Messages.WrongId),
     check('status').optional().isNumeric().toInt(),
