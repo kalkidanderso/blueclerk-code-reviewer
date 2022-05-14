@@ -4,7 +4,7 @@ info:
   description: APIs for both app and website
   version: 1.0.1
 servers:
-  - url: http://localhost:3006/api/v1
+  - url: https://blueclerk-node-api.deploy.blueclerk.com/api/v1
 tags:
   - name: Auth
     description: For login and signup
