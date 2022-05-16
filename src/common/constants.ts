@@ -153,7 +153,9 @@ export enum NotificationTypes {
     CONTRACT_REJECTED = 'ContractRejected',
     CONTRACT_FINISHED = 'ContractFinished',
     JOB_RESCHEDULED = 'JobRescheduled',
-    COMPANY_INVOICE_FAILED = 'CompanyInvoiceFailed'
+    COMPANY_INVOICE_FAILED = 'CompanyInvoiceFailed',
+    JOB_REQUEST_CREATED = 'JobRequestCreated',
+    JOB_REQUEST_STATUS_UPDATED = 'JobRequestStatusUpdated',
 }
 
 export enum PaymentTermNames {
