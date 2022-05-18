@@ -16,6 +16,8 @@ tags:
     description: For all kind of users
   - name: Company
     description: For all kind of company stuff
+  - name: Company Location
+    description: For all kind of company location stuff
   - name: Email Default
     description: For all kind of company email default
   - name: Equipment Type
@@ -1457,6 +1459,66 @@ paths:
                   enum:
                     - true
                     - false
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getCompanyLocations:
+    get:
+      tags:
+        - Company Location
+      summary: Retrieve locations of company
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /createCompanyLocation:
+    post:
+      tags:
+        - Company Location
+      summary: ''
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                isMainLocation:
+                  type: string
+                  enum:
+                    - true
+                    - false
+                contactName:
+                  type: string
+                email:
+                  type: string
+                logoUrl:
+                  type: string
+                street:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+                zipCode:
+                  type: string
+                phone:
+                  type: string
         required: true
       responses:
         '200':
