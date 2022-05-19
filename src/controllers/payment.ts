@@ -326,7 +326,9 @@ export const createPayment = async (req: Request, res: Response) => {
     try {
         if (paramInvoices.length) {
             // Handle multiple invoices
-            await _handleMultipleInvoices(paramInvoices, payment, customer, company);
+            for (const paramInvoice of paramInvoices) {
+                await _handleMultipleInvoices(paramInvoice, payment, customer, company);
+            }
         } else {
             payment.amountPaid = params.amount;
             // Handle invoice balance due, underpayment, and overpayment
@@ -580,6 +582,12 @@ export const updatePayment = async (req: Request, res: Response) => {
     const params = req.body;
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
+    const invoices: IInvoice[] = [];
+    let paramsInvoices = params.line ?? [];
+
+    if (!Array.isArray(paramsInvoices)) {
+        paramsInvoices = JSON.parse(params.line);
+    }
 
     // Find and check if customer existed
     const customer = await Customer.findOne({
@@ -595,10 +603,16 @@ export const updatePayment = async (req: Request, res: Response) => {
         _id: params.paymentId,
         customer: customer._id,
         company: company._id
-    }).populate({ path: 'invoice' });
+    })
+        .populate({ path: 'invoice' })
+        .populate({ path: 'line.invoice' });
 
     if (!payment) {
         return res.json({ status: Status.Error, message: 'Payment not found or does not belong to the customer.' });
+    }
+
+    if (payment.line && !paramsInvoices.length) {
+        return res.json({ status: Status.Error, message: 'Line is required on this payment' })
     }
 
     const invoice = <IInvoice>payment.invoice;
@@ -619,11 +633,13 @@ export const updatePayment = async (req: Request, res: Response) => {
     payment.updatedAt = new Date();
 
     try {
-        // Save the updated payment
-        await payment.save();
+        if (payment.line.length && paramsInvoices.length) {
+            const invoiceLIne = await _handleUpdateMultipleInvoices(paramsInvoices, payment, customer, company);
+            invoices.push(...invoiceLIne);
+        }
 
         // If amount changed, recalculate invoice & customer balance
-        if (newAmountPaid && diffAmountPaid !== 0) {
+        if (!paramsInvoices.length && newAmountPaid && diffAmountPaid !== 0) {
             /**
              * If invoice full paid and the new amount still cover the whole invoice,
              * the deducted amount will only deduct customer's credit
@@ -635,9 +651,14 @@ export const updatePayment = async (req: Request, res: Response) => {
                 // Otherwise, recalculate invoice & customer balance
                 await _calculateInvoiceBalance(invoice, customer, diffAmountPaid)
             }
+
+            invoices.push(invoice);
         }
 
-        if (company.qbAuthorized && invoice.quickbookId && payment.quickbookId) {
+        // Save the updated payment
+        await payment.save();
+
+        if (company.qbAuthorized && payment.quickbookId) {
             // Sync the update to Payment in QuickBooks
             _updateQBPayment(req, res, company, payment, (err, errMsg, qbPayment) => {
                 if (err) {
@@ -656,7 +677,7 @@ export const updatePayment = async (req: Request, res: Response) => {
                     status: Status.Success,
                     message: 'Payment successfully updated.',
                     payment, quickbookPayment: qbPayment,
-                    customer, invoice
+                    customer, invoices
                 });
             })
         } else {
@@ -1039,38 +1060,77 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
 }
 
 export const _handleMultipleInvoices = async (
-    paramInvoices: any[],
+    paramInvoice: any,
     payment: IPayment,
     customer: ICustomer,
     company: ICompany
-): Promise<void> => {
-    const invoices = [];
-    for (const paramInvoice of paramInvoices) {
-        const invoice = await Invoice.findOne({
-            _id: paramInvoice.invoiceId,
-            customer: customer._id,
-            company: company._id
-        });
+) => {
+    const invoice = await Invoice.findOne({
+        _id: paramInvoice.invoiceId,
+        customer: customer._id,
+        company: company._id
+    });
 
-        if (!invoice || invoice.isDraft) {
-            throw new Error(`Invoice with id ${paramInvoice.invoiceId} not found or does not belong to the customer.`);
-        }
-
-        if (invoice.status === InvoiceStatus.PAID) {
-            throw new Error(`Invoice with id ${paramInvoice.invoiceId} already paid off.`);
-        }
-
-        payment.line.push({
-            invoice: invoice._id,
-            amountPaid: paramInvoice.amountPaid
-        });
-
-        payment.amountPaid = payment.amountPaid ?? 0;
-        payment.amountPaid += paramInvoice.amountPaid;
-
-        await _calculateInvoiceBalance(invoice, customer, parseFloat(paramInvoice.amountPaid));
-        invoices.push(invoice);
+    if (!invoice || invoice.isDraft) {
+        throw new Error(`Invoice with id ${paramInvoice.invoiceId} not found or does not belong to the customer.`);
     }
 
-    return;
+    if (invoice.status === InvoiceStatus.PAID) {
+        throw new Error(`Invoice with id ${paramInvoice.invoiceId} already paid off.`);
+    }
+
+    payment.line.push({
+        invoice: invoice,
+        amountPaid: paramInvoice.amountPaid
+    });
+
+    payment.amountPaid = payment.amountPaid ?? 0;
+    payment.amountPaid += paramInvoice.amountPaid;
+
+    await _calculateInvoiceBalance(invoice, customer, parseFloat(paramInvoice.amountPaid));
+
+    return { invoice, amountPaid: paramInvoice.amountPaid };
+}
+
+export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payment: IPayment, customer: ICustomer, company: ICompany): Promise<IInvoice[]> => {
+    const invoices: IInvoice[] = [];
+    let newAmountPaid, diffAmountPaid = 0;
+    let paymentAmountPaid = 0;
+
+    for (const paramInvoice of paramsInvoices) {
+        let line = payment.line.find((invoiceLine: any) =>
+            invoiceLine.invoice._id.toString() === paramInvoice.invoiceId
+        );
+
+        if (!line) {
+            // throw new Error(`Invoice with id ${paramInvoice.invoiceId} is not found at this payment`);
+            line = await _handleMultipleInvoices(paramInvoice, payment, customer, company);
+        }
+
+        const invoiceLine = <IInvoice>line.invoice;
+        const oldAmountPaid = line.amountPaid;
+        if (paramInvoice.amountPaid !== line.amountPaid) {
+            newAmountPaid = Number(paramInvoice.amountPaid);
+            diffAmountPaid = newAmountPaid - oldAmountPaid;
+        }
+
+        // count amountPaid when invoice line amount paid is updated
+        line.amountPaid = newAmountPaid ?? line.amountPaid;
+
+        if (invoiceLine.balanceDue === 0 && diffAmountPaid < 0 && newAmountPaid >= invoiceLine.total) {
+            customer.credit += diffAmountPaid;
+            await customer.save();
+        } else {
+            await _calculateInvoiceBalance(invoiceLine, customer, diffAmountPaid);
+        }
+
+        invoices.push(invoiceLine);
+    }
+
+    payment.line.forEach(paymentLine => {
+        paymentAmountPaid += paymentLine.amountPaid;
+    });
+
+    payment.amountPaid = paymentAmountPaid;
+    return invoices;
 }

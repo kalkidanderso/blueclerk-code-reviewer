@@ -9945,6 +9945,9 @@
                     "type": "string",
                     "description": "Id of payment to edit"
                   },
+                  "line": {
+                    "type": "string"
+                  },
                   "amount": {
                     "type": "number",
                     "description": "Amount how much customer has paid"
