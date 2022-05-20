@@ -62,27 +62,22 @@ export const create = async (req: Request, res: Response) => {
     } = params
 
     const missingParams = []
-    if (!(lat && long) || !address) missingParams.push('location or address')
     if (!locationId) missingParams.push('locationId')
     const isMissingParams = missingParams.length > 0
 
     if (isMissingParams) {
         const message = `${Messages.MissingParams}: ${missingParams.join(', ')}`
-        res.status(Status.MissingParameters)
-        res.send(message)
-        return () => {}
+        return res.json({ status: Status.Error, message });
     }
 
     let jobLocation = null
     try {
         jobLocation = await JobLocation.findById(locationId, 'customerId')
         if (jobLocation == null) {
-            res.status(Status.MissingParameters)
-            res.send('No location was found for provided locationId')
+            return res.json({ status: Status.Error, message: 'No location was found for provided locationId' });
         }
     } catch (err) {
-        res.status(Status.InternalError)
-        res.send(Messages.InternalServerError)
+        return res.json({ status: Status.Error, message: Messages.InternalServerError });
     }
     if (!jobLocation) return
     const { customerId = null } = jobLocation || {}
@@ -90,15 +85,14 @@ export const create = async (req: Request, res: Response) => {
     await JobSite.create({
         name,
         location: {
-            coordinates: [long, lat]
+            coordinates: [long ?? '', lat ?? '']
         },
         address,
         locationId,
         customerId
     }, (err: any, jobSite: IJobSite) => {
         if (err) {
-            res.status(Status.InternalError)
-            return res.send(Messages.InternalServerError)
+            return res.json({ status: Status.Error, message: Messages.InternalServerError });
         } else {
             JobLocation.findByIdAndUpdate(locationId, {
                 $push: { jobSites: jobSite._id }
@@ -125,27 +119,22 @@ export const update = async (req: Request, res: Response) => {
 
     const missingParams = []
     if (!id) missingParams.push('id')
-    if (!(lat && long) || !address) missingParams.push('location or address')
     if (!locationId) missingParams.push('locationId')
     const isMissingParams = missingParams.length > 0
 
     if (isMissingParams) {
         const message = `${Messages.MissingParams}: ${missingParams.join(', ')}`
-        res.status(Status.MissingParameters)
-        res.send(message)
-        return () => {}
+        return res.json({ status: Status.Error, message });
     }
 
     let jobLocation = null
     try {
         jobLocation = await JobLocation.findById(locationId, 'customerId')
         if (jobLocation == null) {
-            res.status(Status.MissingParameters)
-            res.send('No location was found for provided locationId')
+            return res.json({ status: Status.Error, message: 'No location was found for provided locationId' });
         }
     } catch (err) {
-        res.status(Status.InternalError)
-        res.send(Messages.InternalServerError)
+        return res.json({ status: Status.Error, message: Messages.InternalServerError });
     }
     if (!jobLocation) return
     const { customerId = null } = jobLocation || {}
@@ -160,7 +149,7 @@ export const update = async (req: Request, res: Response) => {
     JobSite.updateOne({ _id: id }, {
         name: name ?? jobSite.name,
         location: {
-            coordinates: [long, lat]
+            coordinates: [long ?? '', lat ?? '']
         },
         isActive: isJobSiteActive,
         address: address,
@@ -168,11 +157,9 @@ export const update = async (req: Request, res: Response) => {
         customerId: customerId
     }, (err: any) => {
         if (err) {
-            res.status(Status.InternalError)
-            res.send(Messages.InternalServerError)
+            return res.json({ status: Status.Error, message: Messages.InternalServerError });
         } else {
-            res.status(Status.OK)
-            res.send('Job Site has been updated successfully.')
+            return res.json({ status: Status.OK, message: 'Job Site has been updated successfully.' });
         }
     })
 }
