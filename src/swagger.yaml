@@ -1487,7 +1487,7 @@ paths:
     post:
       tags:
         - Company Location
-      summary: ''
+      summary: To create new company location
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -1496,6 +1496,55 @@ paths:
               required:
                 - name
               properties:
+                name:
+                  type: string
+                isMainLocation:
+                  type: string
+                  enum:
+                    - true
+                    - false
+                contactName:
+                  type: string
+                email:
+                  type: string
+                logoUrl:
+                  type: string
+                street:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+                zipCode:
+                  type: string
+                phone:
+                  type: string
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateCompanyLocation:
+    put:
+      tags:
+        - Company Location
+      summary: To update company location
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - companyLocationId
+                - name
+              properties:
+                companyLocationId:
+                  type: string
                 name:
                   type: string
                 isMainLocation:
