@@ -53,6 +53,38 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
 
 }
 
-export const updateCompanyLocation = (req: Request, res: Response) => {
-// upcoming
+export const updateCompanyLocation = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const company = <ICompany>req.company;
+
+    const companyLocation = await CompanyLocation.findOne({ _id: params.companyLocationId, company });
+
+    if (!companyLocation) {
+        return res.json({ status: Status.Error, message: 'Company Location is not found' });
+    }
+
+    companyLocation.name = params.name;
+    companyLocation.isMainLocation = params.isMainLocation ?? companyLocation.isMainLocation;
+
+    companyLocation.info = companyLocation.info ?? {};
+    companyLocation.info.companyEmail = params.email;
+    companyLocation.info.logoUrl = params.logoUrl;
+
+    companyLocation.address = companyLocation.address ?? {};
+    companyLocation.address.street = params.street;
+    companyLocation.address.unit = params.unit;
+    companyLocation.address.city = params.city;
+    companyLocation.address.state = params.state;
+    companyLocation.address.zipCode = params.zipCode;
+
+    companyLocation.contact = companyLocation.contact ?? {};
+    companyLocation.contact.phone = params.phone;
+    companyLocation.contact.fax = params.fax;
+    companyLocation.contactName = params.contactName;
+
+    await companyLocation.save();
+
+    return res.json({ status: Status.Success, message: 'Company Location updated successfully', companyLocation });
+
 }

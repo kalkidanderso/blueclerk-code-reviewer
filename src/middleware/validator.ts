@@ -121,6 +121,14 @@ export const Validations = {
     check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }),
   ],
 
+  updateCompanyLocation: [
+    check('companyLocationId').exists().withMessage(Messages.Required),
+    check('companyLocationId').isMongoId().withMessage(Messages.WrongId),
+    check('name').exists().withMessage(Messages.Required),
+    check('isMainLocation').optional().toBoolean(),
+    check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }),
+  ],
+
   //Industry
   createIndustry: [check('title').exists()],
 

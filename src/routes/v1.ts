@@ -388,6 +388,15 @@ export default function (sio: any) {
         companyLocationController.createCompanyLocation
     )
 
+    router.put(
+        '/updateCompanyLocation',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Company_Profile),
+        validate(Validations.updateCompanyLocation),
+        companyLocationController.updateCompanyLocation
+    )
+
     // Customers
     router.post(
         '/createCustomer',

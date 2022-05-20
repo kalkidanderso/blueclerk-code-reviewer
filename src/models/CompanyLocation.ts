@@ -7,8 +7,8 @@ export interface ICompanyLocation extends Document {
     isMainLocation: boolean
     contactName?: string
     info?: {
-        companyEmail: string
-        logoUrl: string
+        companyEmail?: string
+        logoUrl?: string
     }
     address?: {
         street?: string
@@ -18,8 +18,8 @@ export interface ICompanyLocation extends Document {
         zipCode?: string
     }
     contact?: {
-        phone: string
-        fax: string
+        phone?: string
+        fax?: string
     }
     company: Schema.Types.ObjectId | ICompany
 }
