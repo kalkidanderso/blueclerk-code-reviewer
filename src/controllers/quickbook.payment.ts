@@ -8,7 +8,7 @@ import { ICompany, Company } from '../models/Company'
 import { IInvoice, Invoice, IQBInvoice } from '../models/Invoice';
 import { IJob } from '../models/Job';
 import { IJobLocation, JobLocation } from '../models/JobLocation';
-import { IPayment, IQBPayment, IQBPaymentMethod, IQBPaymentTxnTypes, Payment } from '../models/Payment';
+import { IPayment, IQBPayment, IQBPaymentMethod, IQBPaymentTxnTypes, Payment, PaymentCustomer } from '../models/Payment';
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
 import { _calculateInvoiceBalance } from '../controllers/payment';
 
@@ -192,7 +192,7 @@ export const syncQBPayments = async (req: Request, res: Response) => {
          * Retrieve all payments of this company from Database,
          * that doesn't have quickbookId 
          */
-        const payments = await Payment.find({
+        const payments = await PaymentCustomer.find({
             company: company._id,
             quickbookId: null
         }).sort({ paidAt: 1 }).populate({ path: 'invoice' });
@@ -317,7 +317,7 @@ export const createBCPayment = async (req: Request, res: Response, company: ICom
                 let customer: ICustomer;
                 if (!qbCustomer.Job) {
                     // Get BC Customer by QB Payment's Customer quickbookId
-                    customer = await Customer.findOne({ quickbookId: qbCustomer.Id, company: company._id });
+                    customer = await Customer.findOne({ quickbookId: qbCustomer.Id, "info.email": qbCustomer.PrimaryEmailAddr?.Address });
                 } else {
                     /**
                      * Invoice was recorded to Customer Job Location in QB,
@@ -340,26 +340,27 @@ export const createBCPayment = async (req: Request, res: Response, company: ICom
                     // Iterate all invoice lines on the payment
                     for (const line of qbPayment.Line) {
                         // Get BC Invoice by QB line's Invoice quickbookId
-                        const invoice = await Invoice.findOne({ quickbookId: line.LinkedTxn[0]?.TxnId, company });
+                        const qbInvoiceTxn = line.LinkedTxn.find(txn => txn.TxnType === IQBPaymentTxnTypes.INVOICE);
+                        const invoice = await Invoice.findOne({ quickbookId: qbInvoiceTxn.TxnId, company });
 
-                        const existPayment = await Payment.findOne({
-                            company,
-                            customer,
-                            invoice,
+                        const existPayment = await PaymentCustomer.findOne({
+                            company: company._id,
+                            customer: customer._id,
+                            invoice: invoice._id,
                             amountPaid: line.Amount,
                             referenceNumber: qbPayment.PaymentRefNum,
                         });
 
                         // BC Invoice found, proceed the payment for the invoice
                         if (invoice && !existPayment) {
-                            paymentEntries.push(new Payment({
+                            paymentEntries.push(new PaymentCustomer({
                                 customer,
                                 invoice,
                                 amountPaid: line.Amount,
                                 referenceNumber: qbPayment.PaymentRefNum,
                                 paymentType: qbPaymentMethod?.Name,
                                 paidAt: qbPayment.TxnDate ? new Date(qbPayment.TxnDate) : Date.now(),
-                                company,
+                                company: company._id,
                                 quickbookRefNum: Buffer.from(qbPayment.MetaData?.CreateTime).toString('base64'),
                                 quickbookId: qbPayment.Id,
                                 createdBy: company.admin,
@@ -375,7 +376,7 @@ export const createBCPayment = async (req: Request, res: Response, company: ICom
 
                     if (paymentEntries.length > 0) {
                         // Create all payment entries on one shot
-                        await Payment.create(paymentEntries, async (err, payments) => {
+                        await PaymentCustomer.create(paymentEntries, async (err, payments) => {
 
                             if (payments.length > 0) {
                                 // Iterate all created payments and calculate invoices
