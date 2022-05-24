@@ -103,6 +103,10 @@ export const getPayments = (req: Request, res: Response) => {
             select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
         })
         .populate({
+            path: 'line.invoice',
+            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+        })
+        .populate({
             path: 'createdBy',
             select: 'profile.displayName auth.email'
         })
@@ -124,7 +128,7 @@ export const getPaymentsByCustomerId = (req: Request, res: Response) => {
 
     const params = req.query;
 
-    Payment.find({ company: req.companyId, customer: params.customerId })
+    Payment.find({ company: req.companyId, customer: new ObjectId(params.customerId) })
         .populate({
             path: 'company',
             select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -135,6 +139,14 @@ export const getPaymentsByCustomerId = (req: Request, res: Response) => {
         })
         .populate({
             path: 'invoices',
+            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+        })
+        .populate({
+            path: 'invoice',
+            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+        })
+        .populate({
+            path: 'line.invoice',
             select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
         })
         .populate({
@@ -1117,8 +1129,8 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
             diffAmountPaid = newAmountPaid - oldAmountPaid;
         }
 
-        // count amountPaid when invoice line amount paid is updated
-        line.amountPaid = newAmountPaid ?? line.amountPaid;
+        // calculate amountPaid when invoice line amount paid is updated
+        line.amountPaid = Number(paramInvoice.amountPaid) ?? line.amountPaid;
 
         if (invoiceLine.balanceDue === 0 && diffAmountPaid < 0 && newAmountPaid >= invoiceLine.total) {
             customer.credit += diffAmountPaid;
