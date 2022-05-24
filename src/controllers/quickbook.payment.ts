@@ -155,15 +155,33 @@ export const _updateQBPayment = async (req: Request, res: Response, company: ICo
             qbPayment.TxnDate = moment(payment.paidAt).format('YYYY-MM-DD');
             qbPayment.PrivateNote = payment.note;
 
+            if (payment?.line?.length) {
+                const qbPaymentLine: any = [];
+                for (const paymentLine of payment.line) {
+                    const invoiceLine = <IInvoice>paymentLine.invoice;
+                    if (invoiceLine?.quickbookId) {
+                        qbPaymentLine.push({
+                            Amount: paymentLine.amountPaid,
+                            LinkedTxn: [{
+                                TxnId: invoiceLine?.quickbookId,
+                                TxnType: IQBPaymentTxnTypes.INVOICE
+                            }]
+                        })
+                    }
+
+                    qbPayment.Line = qbPaymentLine;
+                }
+            }
+
             // Update QB Payment
             qbo.updatePayment(qbPayment, async (err: any, qbPayment: IQBPayment) => {
                 if (err) {
                     return next(
                         Status.Error,
-                        err.Fault?.Error[0]?.Detail
-                        || err.Fault?.Error[0]?.Message
-                        || err.fault?.error[0]?.detail
-                        || err.fault?.error[0]?.message
+                        err?.Fault?.Error[0]?.Detail
+                        || err?.Fault?.Error[0]?.Message
+                        || err?.fault?.error[0]?.detail
+                        || err?.fault?.error[0]?.message
                         || Messages.GenericError,
                         null
                     );
