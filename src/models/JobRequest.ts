@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { ICompany } from './Company';;
+import { ICompany } from './Company';
+import { IJob } from './Job';
 import { IJobLocation } from './JobLocation';
 import { IJobSite } from './JobSite';
 import { IJobTypes } from './JobType';
@@ -21,6 +22,7 @@ export interface IJobRequest extends Document {
     company: Schema.Types.ObjectId | ICompany
     requests: IRequests[]
     jobCreated: boolean
+    job: Schema.Types.ObjectId | IJob
     track: any[];
     createdBy: Schema.Types.ObjectId
     createdAt: Date
@@ -87,6 +89,14 @@ const JobRequestSchema = new Schema({
         ref: 'Company',
         required: true
     },
+    jobCreated: {
+        type: Boolean,
+        default: false
+    },
+    job: {
+        type: Schema.Types.ObjectId,
+        ref: 'Job'
+    },
     track: [{
         user: {
             type: Schema.Types.ObjectId,
@@ -106,10 +116,6 @@ const JobRequestSchema = new Schema({
     },
     editedAt: {
         type: Date
-    },
-    jobCreated: {
-        type: Boolean,
-        default: false
     }
 }, { timestamps: { createdAt: true, updatedAt: true } })
 

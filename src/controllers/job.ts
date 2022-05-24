@@ -364,7 +364,11 @@ const _createJob = async (
     }
 
     if (params.jobRequestId) {
-        await JobRequest.findByIdAndUpdate(params.jobRequestId, { jobCreated: true, track: trackedServiceTicket });
+        await JobRequest.findByIdAndUpdate(params.jobRequestId, {
+            jobCreated: true,
+            job: newJob._id,
+            track: trackedServiceTicket
+        });
     }
 
     for (const task of job.tasks) {
@@ -984,7 +988,7 @@ export const getJobs = async (req: Request, res: Response) => {
         })
         .populate({
             path: 'request',
-            populate: [{ path: 'customerContactId' }]
+            populate: [{ path: 'customerContact' }]
         })
         .populate({
             // TODO: To be deprecated
@@ -1158,7 +1162,7 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
                 { path: 'track', select: 'track.user track.action track.date' },
                 { path: 'jobLocation' },
                 { path: 'jobSite' },
-                { path: 'customerContactId' },
+                { path: 'customerContact' },
                 { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
             ]
         })
@@ -1283,7 +1287,7 @@ export const getJobsStream = async (req: Request, res: Response, sio: any) => {
                 { path: 'track', select: 'track.user track.action track.date' },
                 { path: 'jobLocation' },
                 { path: 'jobSite' },
-                { path: 'customerContactId' },
+                { path: 'customerContact' },
                 { path: 'createdBy', select: 'info auth.email profile.displayName address contactName' },
             ]
         })
@@ -1651,7 +1655,7 @@ export const getJobReportDetails = (req: Request, res: Response) => {
                         { path: 'track', select: 'track.user track.action track.date' },
                         { path: 'jobLocation' },
                         { path: 'jobSite' },
-                        { path: 'customerContactId' },
+                        { path: 'customerContact' },
                         { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
                     ]
                 },
@@ -1764,7 +1768,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 { path: 'track', select: 'track.user track.action track.date' },
                 { path: 'jobLocation' },
                 { path: 'jobSite' },
-                { path: 'customerContactId' },
+                { path: 'customerContact' },
                 { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
             ]
         })
@@ -2757,7 +2761,7 @@ export const getJobDetails = (req: Request, res: Response) => {
                 { path: 'track', select: 'track.user track.action track.date' },
                 { path: 'jobLocation' },
                 { path: 'jobSite' },
-                { path: 'customerContactId' },
+                { path: 'customerContact' },
                 { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
             ]
         })
@@ -2962,7 +2966,7 @@ export const sendJobReport = (req: Request, res: Response) => {
                         { path: 'track', select: 'track.user track.action track.date' },
                         { path: 'jobLocation' },
                         { path: 'jobSite' },
-                        { path: 'customerContactId' },
+                        { path: 'customerContact' },
                         { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
                     ]
                 },
@@ -3113,7 +3117,7 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
                 { path: 'track', select: 'track.user track.action track.date' },
                 { path: 'jobLocation' },
                 { path: 'jobSite' },
-                { path: 'customerContactId' },
+                { path: 'customerContact' },
                 { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
             ]
         })
@@ -3218,7 +3222,7 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
                                 { path: 'track', select: 'track.user track.action track.date' },
                                 { path: 'jobLocation' },
                                 { path: 'jobSite' },
-                                { path: 'customerContactId' },
+                                { path: 'customerContact' },
                                 { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
                             ]
                         },
@@ -3366,7 +3370,7 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
                 { path: 'track', select: 'track.user track.action track.date' },
                 { path: 'jobLocation' },
                 { path: 'jobSite' },
-                { path: 'customerContactId' },
+                { path: 'customerContact' },
                 { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
                 { path: 'customer', select: 'profile.displayName' }]
         })
