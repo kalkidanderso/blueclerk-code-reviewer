@@ -1059,6 +1059,7 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
     return res.json({ status: Status.Success, message: 'Payment void successfully' });
 }
 
+// To handle create payment for multiple invoices
 export const _handleMultipleInvoices = async (
     paramInvoice: any,
     payment: IPayment,
@@ -1092,18 +1093,20 @@ export const _handleMultipleInvoices = async (
     return { invoice, amountPaid: paramInvoice.amountPaid };
 }
 
+// To handle update payment with multiple invoices
 export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payment: IPayment, customer: ICustomer, company: ICompany): Promise<IInvoice[]> => {
     const invoices: IInvoice[] = [];
     let newAmountPaid, diffAmountPaid = 0;
     let paymentAmountPaid = 0;
 
     for (const paramInvoice of paramsInvoices) {
+        // find invoice id in payment line
         let line = payment.line.find((invoiceLine: any) =>
             invoiceLine.invoice._id.toString() === paramInvoice.invoiceId
         );
 
+        // When invoice id not found in payment line, add the invoice id to payment line
         if (!line) {
-            // throw new Error(`Invoice with id ${paramInvoice.invoiceId} is not found at this payment`);
             line = await _handleMultipleInvoices(paramInvoice, payment, customer, company);
         }
 
