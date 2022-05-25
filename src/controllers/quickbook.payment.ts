@@ -102,6 +102,12 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
 
         qbo.createPayment(qbPaymentEntry, async (err: any, qbPayment: IQBPayment) => {
             if (err) {
+                console.log('== err.Fault:', err.Fault);
+                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                console.log('== err.fault:', err.fault);
+                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+
                 return next(
                     Status.Error,
                     err.Fault?.Error[0]?.Detail
@@ -155,15 +161,33 @@ export const _updateQBPayment = async (req: Request, res: Response, company: ICo
             qbPayment.TxnDate = moment(payment.paidAt).format('YYYY-MM-DD');
             qbPayment.PrivateNote = payment.note;
 
+            if (payment?.line?.length) {
+                const qbPaymentLine: any = [];
+                for (const paymentLine of payment.line) {
+                    const invoiceLine = <IInvoice>paymentLine.invoice;
+                    if (invoiceLine?.quickbookId) {
+                        qbPaymentLine.push({
+                            Amount: paymentLine.amountPaid,
+                            LinkedTxn: [{
+                                TxnId: invoiceLine?.quickbookId,
+                                TxnType: IQBPaymentTxnTypes.INVOICE
+                            }]
+                        })
+                    }
+
+                    qbPayment.Line = qbPaymentLine;
+                }
+            }
+
             // Update QB Payment
             qbo.updatePayment(qbPayment, async (err: any, qbPayment: IQBPayment) => {
                 if (err) {
                     return next(
                         Status.Error,
-                        err.Fault?.Error[0]?.Detail
-                        || err.Fault?.Error[0]?.Message
-                        || err.fault?.error[0]?.detail
-                        || err.fault?.error[0]?.message
+                        err?.Fault?.Error[0]?.Detail
+                        || err?.Fault?.Error[0]?.Message
+                        || err?.fault?.error[0]?.detail
+                        || err?.fault?.error[0]?.message
                         || Messages.GenericError,
                         null
                     );
@@ -317,7 +341,7 @@ export const createBCPayment = async (req: Request, res: Response, company: ICom
                 let customer: ICustomer;
                 if (!qbCustomer.Job) {
                     // Get BC Customer by QB Payment's Customer quickbookId
-                    customer = await Customer.findOne({ quickbookId: qbCustomer.Id, "info.email": qbCustomer.PrimaryEmailAddr?.Address });
+                    customer = await Customer.findOne({ quickbookId: qbCustomer.Id, 'info.email': qbCustomer.PrimaryEmailAddr?.Address });
                 } else {
                     /**
                      * Invoice was recorded to Customer Job Location in QB,

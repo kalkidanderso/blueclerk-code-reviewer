@@ -178,8 +178,8 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                 // }
 
                 newInvoicePrefix = params.invoicePrefix == "" ? null : params?.invoicePrefix
- 
-                company.updateOne({ 'currentInvoiceId': params.invoiceNumber,'invoicePrefix': newInvoicePrefix}, (err: any) => {
+
+                company.updateOne({ 'currentInvoiceId': params.invoiceNumber, 'invoicePrefix': newInvoicePrefix }, (err: any) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
@@ -1897,7 +1897,10 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
 
                     const payments = await Payment.find({
                         company: req.companyId,
-                        invoice: invoice._id
+                        $or: [
+                            { invoice: invoice._id },
+                            { 'line.invoice': invoice._id }
+                        ]
                     });
 
                     return res.json({ status: Status.Success, invoice, scans, payments });
@@ -2089,10 +2092,12 @@ export const getInvoices = async (req: Request, res: Response) => {
 
     // Data query that used to search Invoices and available previous/next page
     const filterQuery: any = {
-        $and: [ { $or: [
-            // { contractor: companyId },
-            { company: companyId }
-        ]}]
+        $and: [{
+            $or: [
+                // { contractor: companyId },
+                { company: companyId }
+            ]
+        }]
     };
 
     // Check and add if params filter provided
@@ -2114,6 +2119,16 @@ export const getInvoices = async (req: Request, res: Response) => {
                 { 'contractorsObj.info.companyName': keywordRegex },
             ]
         })
+    }
+    if (params.customerId) {
+        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+    }
+    if (params.dueDate) {
+        const dueDate = moment(params.dueDate).endOf('day').format();
+        filterQuery['$and'].push({ dueDate: { $lte: new Date(dueDate) } });
+    }
+    if (params.status) {
+        filterQuery['$and'].push({ status: { $in: JSON.parse(params.status) } });
     }
     if (params.isDraft !== undefined || params.isDraft !== null) {
         switch (params.isDraft) {
@@ -2168,7 +2183,7 @@ export const getInvoices = async (req: Request, res: Response) => {
         };
         query['$and'].push({ ...paginationQuery });
         // Getting previous page is special, we need to reverse the sort
-        sortQuery = { createdAt: 1, _id: 1};
+        sortQuery = { createdAt: 1, _id: 1 };
     }
 
     // Construct aggreate lookups here to be used multiple times
@@ -2278,10 +2293,12 @@ export const getInvoices = async (req: Request, res: Response) => {
             const nextPageQuery: any = { $and: [] };
             filterQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
             // To be added with the pagination for the previous page
-            nextPageQuery['$and'].push({ $or: [
-                { createdAt: { $lt: new Date(nextCursor.createdAt) } },
-                { createdAt: new Date(nextCursor.createdAt), _id: { $lt: nextCursor._id } }
-            ]});
+            nextPageQuery['$and'].push({
+                $or: [
+                    { createdAt: { $lt: new Date(nextCursor.createdAt) } },
+                    { createdAt: new Date(nextCursor.createdAt), _id: { $lt: nextCursor._id } }
+                ]
+            });
             const isNextPage = await Invoice.aggregate([
                 ...aggregateLookups,
                 { $match: { ...nextPageQuery } },
@@ -2298,10 +2315,12 @@ export const getInvoices = async (req: Request, res: Response) => {
             const previousPageQuery: any = { $and: [] };
             filterQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
             // To be added with the pagination for the previous page
-            previousPageQuery['$and'].push({ $or: [
-                { createdAt: { $gt: new Date(previousCursor.createdAt) } },
-                { createdAt: new Date(previousCursor.createdAt), _id: { $gt: previousCursor._id } }
-            ]});
+            previousPageQuery['$and'].push({
+                $or: [
+                    { createdAt: { $gt: new Date(previousCursor.createdAt) } },
+                    { createdAt: new Date(previousCursor.createdAt), _id: { $gt: previousCursor._id } }
+                ]
+            });
             const isPreviousPage = await Invoice.aggregate([
                 ...aggregateLookups,
                 { $match: { ...previousPageQuery } },
@@ -2315,7 +2334,7 @@ export const getInvoices = async (req: Request, res: Response) => {
                 invoices,
                 total: totalInvoices[0]?.count,
                 pagination: {
-                    nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)): null,
+                    nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)) : null,
                     previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null,
                     pageSize: params.pageSize || null
                 },

@@ -5551,15 +5551,24 @@ paths:
                 keyword:
                   type: string
                   description: Filter invoices by search keyword to Job Id, Customer's name, Job's Job Location name address, Job's Job Site name address, Job's Technician name, and Job's Contractor name
+                customerId:
+                  type: string
+                  description: Filter invoices by Customer ID
+                status:
+                  type: string
+                  description: 'Filter invoices by multiple status. Format example: ["UNPAID", "PARTIALLY PAID", "PAID"]'
                 isDraft:
                   type: boolean
                   description: Filter invoices by draft
+                dueDate:
+                  type: string
+                  description: Filter invoices by dueDate or before
                 startDate:
                   type: string
-                  description: Filter of start jobs schedule date
+                  description: Filter invoices by start of the created date
                 endDate:
                   type: string
-                  description: Filter of end jobs schedule date
+                  description: Filter invoices by end of the created date
                 nextCursor:
                   type: string
                   description: Cursor to go to next page. Use the nextCursor value from the previous response
@@ -6190,7 +6199,7 @@ paths:
                   description: Id of invoice to be paid
                 line:
                   type: string
-                  description: Json string of the payment line e.g [{"invoiceId":"6268ef3234370b4364a45a69","amountPaid":250}, {"invoiceId":"6268e21b9f94c709789abac9","amountPaid":20}]}]
+                  description: Json string of the payment line e.g [{"invoiceId":"6268ef3234370b4364a45a69","amountPaid":250}, {"invoiceId":"6268e21b9f94c709789abac9","amountPaid":20}]
                 amount:
                   type: number
                   description: Amount how much customer has paid
@@ -6299,6 +6308,9 @@ paths:
                 paymentId:
                   type: string
                   description: Id of payment to edit
+                line:
+                  type: string
+                  description: Json string of the payment line e.g [{"invoiceId":"6268ef3234370b4364a45a69","amountPaid":250}, {"invoiceId":"6268e21b9f94c709789abac9","amountPaid":20}]
                 amount:
                   type: number
                   description: Amount how much customer has paid
