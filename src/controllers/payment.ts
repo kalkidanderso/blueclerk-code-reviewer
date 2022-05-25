@@ -624,7 +624,7 @@ export const updatePayment = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Payment not found or does not belong to the customer.' });
     }
 
-    if (payment.line.length && !paramsInvoices.length) {
+    if (payment?.line.length && !paramsInvoices.length) {
         return res.json({ status: Status.Error, message: 'Line is required on this payment' })
     }
 
@@ -646,7 +646,7 @@ export const updatePayment = async (req: Request, res: Response) => {
     payment.updatedAt = new Date();
 
     try {
-        if (payment.line.length && paramsInvoices.length) {
+        if (payment?.line.length && paramsInvoices.length) {
             const invoiceLIne = await _handleUpdateMultipleInvoices(paramsInvoices, payment, customer, company);
             invoices.push(...invoiceLIne);
         }
