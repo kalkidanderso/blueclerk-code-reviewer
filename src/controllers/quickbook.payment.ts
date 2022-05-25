@@ -102,6 +102,12 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
 
         qbo.createPayment(qbPaymentEntry, async (err: any, qbPayment: IQBPayment) => {
             if (err) {
+                console.log('== err.Fault:', err.Fault);
+                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                console.log('== err.fault:', err.fault);
+                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+
                 return next(
                     Status.Error,
                     err.Fault?.Error[0]?.Detail
@@ -335,7 +341,7 @@ export const createBCPayment = async (req: Request, res: Response, company: ICom
                 let customer: ICustomer;
                 if (!qbCustomer.Job) {
                     // Get BC Customer by QB Payment's Customer quickbookId
-                    customer = await Customer.findOne({ quickbookId: qbCustomer.Id, "info.email": qbCustomer.PrimaryEmailAddr?.Address });
+                    customer = await Customer.findOne({ quickbookId: qbCustomer.Id, 'info.email': qbCustomer.PrimaryEmailAddr?.Address });
                 } else {
                     /**
                      * Invoice was recorded to Customer Job Location in QB,

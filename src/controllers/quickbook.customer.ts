@@ -1193,7 +1193,7 @@ export const updateBCCustomer = async (req: Request, res: Response, company: ICo
             // Handle QB Customer for this method
             if (!qbCustomer.Job) {
                 // Get BC Customer by QB Customer's quickbookId
-                customer = await Customer.findOne({ company: company._id, quickbookId: qbCustomer.Id });
+                customer = await Customer.findOne({ quickbookId: qbCustomer.Id, 'info.email': qbCustomer.PrimaryEmailAddr?.Address });
                 const currentIsActive = customer.isActive;
 
                 // Update Customer data based on QB Customer
@@ -1210,6 +1210,7 @@ export const updateBCCustomer = async (req: Request, res: Response, company: ICo
                 customer.address.city = qbCustomer.BillAddr?.City;
                 customer.address.state = qbCustomer.BillAddr?.CountrySubDivisionCode;
                 customer.address.zipCode = qbCustomer.BillAddr?.PostalCode;
+
                 if (currentIsActive && !qbCustomer.Active) {
                     customer.inactiveAt = new Date();
                 } else if (qbCustomer.Active) {
