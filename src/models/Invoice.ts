@@ -80,7 +80,7 @@ export interface IQBInvoice {
     Line: IQBInvoiceLine[]
     TotalAmt?: number
     Notes?: string
-    TaxTaxDetail?: {
+    TxnTaxDetail?: {
         TotalTax?: number
     }
     SalesTermRef?: {

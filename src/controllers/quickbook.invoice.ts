@@ -139,7 +139,10 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
                     Type: 'StringType',
                     StringValue: invoice.vendorId || customer.vendorId
                 }
-            ]
+            ],
+            TxnTaxDetail: {
+                TotalTax: invoice?.taxAmount
+            }
         };
 
         if (jobLocation) {
@@ -246,6 +249,10 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
             qbInvoice.TxnDate = moment(invoice.issuedDate).format("YYYY-MM-DD");
             qbInvoice.DueDate = moment(invoice.dueDate).format("YYYY-MM-DD");
             qbInvoice.Line = qbInvoiceLines;
+            qbInvoice.TxnTaxDetail = {
+                TotalTax: invoice?.taxAmount
+            }
+
             if (qbInvoice.SalesTermRef) {
                 qbInvoice.SalesTermRef.value = paymentTerm?.quickbookId;
             }
