@@ -10024,7 +10024,7 @@
                   },
                   "line": {
                     "type": "string",
-                    "description": "Json string of the payment line e.g [{\"invoiceId\":\"6268ef3234370b4364a45a69\",\"amountPaid\":250}, {\"invoiceId\":\"6268e21b9f94c709789abac9\",\"amountPaid\":20}]}]"
+                    "description": "Json string of the payment line e.g [{\"invoiceId\":\"6268ef3234370b4364a45a69\",\"amountPaid\":250}, {\"invoiceId\":\"6268e21b9f94c709789abac9\",\"amountPaid\":20}]"
                   },
                   "amount": {
                     "type": "number",
@@ -10189,7 +10189,7 @@
                   },
                   "line": {
                     "type": "string",
-                    "description": "Json string of the payment line e.g [{\"invoiceId\":\"6268ef3234370b4364a45a69\",\"amountPaid\":250}, {\"invoiceId\":\"6268e21b9f94c709789abac9\",\"amountPaid\":20}]}]"
+                    "description": "Json string of the payment line e.g [{\"invoiceId\":\"6268ef3234370b4364a45a69\",\"amountPaid\":250}, {\"invoiceId\":\"6268e21b9f94c709789abac9\",\"amountPaid\":20}]"
                   },
                   "amount": {
                     "type": "number",
