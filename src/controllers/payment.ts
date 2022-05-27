@@ -99,7 +99,7 @@ export const getPayments = (req: Request, res: Response) => {
             select: 'info.email auth.email profile.displayName address contact contactName vendorId'
         })
         .populate({
-            path: 'invoices',
+            path: 'invoice',
             select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
         })
         .populate({
