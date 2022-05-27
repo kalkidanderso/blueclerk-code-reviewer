@@ -62,6 +62,7 @@ export interface IInvoice extends Document {
     lastEmailSent?: Date
     quickbookId?: string
     commission?: Schema.Types.ObjectId | IInvoiceCommission
+    isVoid?: boolean
 }
 
 export enum LineDetailTypes {
@@ -312,6 +313,10 @@ const InvoiceSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'InvoiceCommission',
         required: false
+    },
+    isVoid: {
+        type: Boolean,
+        default: false
     }
 })
 

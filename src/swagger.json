@@ -2403,7 +2403,10 @@
                   },
                   "isPreferred": {
                     "type": "boolean",
-                    "enum": [ true, false ]
+                    "enum": [
+                      true,
+                      false
+                    ]
                   }
                 }
               }
@@ -2475,7 +2478,10 @@
                   },
                   "isMainLocation": {
                     "type": "string",
-                    "enum": [ true, false ]
+                    "enum": [
+                      true,
+                      false
+                    ]
                   },
                   "contactName": {
                     "type": "string"
@@ -2550,7 +2556,10 @@
                   },
                   "isMainLocation": {
                     "type": "string",
-                    "enum": [ true, false ]
+                    "enum": [
+                      true,
+                      false
+                    ]
                   },
                   "contactName": {
                     "type": "string"
@@ -9394,6 +9403,51 @@
                       }
                     }
                   }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/voidInvoice": {
+      "delete": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To void invoice",
+        "description": "To void invoice",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "invoiceId"
+                ],
+                "properties": {
+                  "invoiceId": {
+                    "type": "string",
+                    "description": "Id of invoice to void"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
                 }
               }
             }

@@ -313,7 +313,7 @@ export const createInvoice = (req: Request, res: Response) => {
 
     if (params.jobId) {
 
-        Invoice.findOne({ 'job': params.jobId, 'company': req.companyId })
+        Invoice.findOne({ 'job': params.jobId, 'company': req.companyId, isVoid: { $ne: true } })
             .then((previousInvoice: any) => {
 
                 if (previousInvoice) {
@@ -3312,4 +3312,56 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, invoices });
 
+}
+
+export const voidInvoice = async (req: Request, res: Response) => {
+    const params = req.body;
+    const invoice = await Invoice.findById(params.invoiceId);
+    const company = <ICompany>req.company;
+
+    if (!invoice) {
+        return res.json({ status: Status.Error, message: 'Invoice not found' });
+    }
+
+    if (invoice.status === InvoiceStatus.PAID && invoice.paid) {
+        return res.json({ status: Status.Error, message: 'Cannot voided a paid invoice' });
+    }
+
+    const customer = await Customer.findById(invoice.customer);
+    if (customer) {
+        customer.balance += invoice.paymentApplied
+    }
+
+    invoice.isVoid = true;
+
+    const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
+    // remove invoice commission if exsists
+    if (invoiceCommission) {
+        await InvoiceCommission.deleteOne({ _id: invoiceCommission._id });
+    }
+
+    const jobReport = await JobReport.findOne({ invoice: invoice._id });
+    // remove invoice and invoiceCreated in job report if exsists
+    if (jobReport) {
+        await jobReport.updateOne({ $unset: { invoice: "", invoiceCreated: "" } });
+    }
+
+    if (company.qbAuthorized && invoice.quickbookId) {
+        // Delete Invoice in QuickBooks when invoice have quickbook id
+        _deleteQBInvoice(req, res, company, invoice, (err, errMsg, status) => {
+            if (status === 'Deleted') {
+                invoice.quickbookId = null;
+
+                // If company's invoices already synced, update the synced date
+                if (company.qbSync?.invoicesSynced) {
+                    company.qbSync.invoicesSyncedAt = new Date();
+                    company.save();
+                }
+            }
+        });
+    }
+
+    customer.save();
+    invoice.save();
+    return res.json({ status: Status.Success, message: 'Invoice voided successfully' });
 }
