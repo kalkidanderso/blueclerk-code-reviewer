@@ -2107,6 +2107,8 @@ export const getInvoices = async (req: Request, res: Response) => {
             $or: [
                 { invoiceId: keywordRegex },
                 { status: keywordRegex },
+                { customerPO: keywordRegex },
+                { vendorId: keywordRegex },
                 { 'jobObj.jobId': keywordRegex },
                 { 'customerObj.profile.displayName': keywordRegex },
                 { 'jobLocationObj.name': keywordRegex },
@@ -2648,7 +2650,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
 
     let serviceAddress = {
         text: [
-            { text: "SERVICE ADDRESS", style: "smallFont", alignment: "left" },
+            { text: "JOB ADDRESS", style: "smallFont", alignment: "left" },
             { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
         ],
         rowSpan: 2
@@ -2670,7 +2672,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
 
             serviceAddress = {
                 text: [
-                    { text: "SERVICE ADDRESS", style: "smallFont", alignment: "left" },
+                    { text: "JOB ADDRESS", style: "smallFont", alignment: "left" },
                     { text: `${jobAddress.name}`, style: "defaultFontBold" },
                     { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
                 ],
@@ -2693,7 +2695,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             // If Job Site exist, add additional information for Job Location
             serviceAddress = {
                 text: [
-                    { text: "JOB LOCATION", style: "smallFont", alignment: "left" },
+                    { text: "SUBDIVISION", style: "smallFont", alignment: "left" },
                     { text: `${jobAddress.name}`, style: "defaultFontBold" },
                     { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
                 ],
@@ -2703,7 +2705,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             // Job Site Address still shown as Service Address but shifted below
             jobSiteServiceAddress = {
                 text: [
-                    { text: "SERVICE ADDRESS", style: "smallFont", alignment: "left" },
+                    { text: "JOB ADDRESS", style: "smallFont", alignment: "left" },
                     { text: `${jobSiteAddress.name}`, style: "defaultFontBold" },
                     { text: `\n${jobSiteAddress.street}${jobSiteAddress.city}${jobSiteAddress.state}${jobSiteAddress.zipCode}`, style: "defaultFont" }
                 ],
