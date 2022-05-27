@@ -2120,20 +2120,16 @@ export const getInvoices = async (req: Request, res: Response) => {
             ]
         })
     }
-
     if (params.customerId) {
         filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
     }
-
     if (params.dueDate) {
         const dueDate = moment(params.dueDate).endOf('day').format();
         filterQuery['$and'].push({ dueDate: { $lte: new Date(dueDate) } });
     }
-
     if (params.status) {
         filterQuery['$and'].push({ status: { $in: JSON.parse(params.status) } });
     }
-
     if (params.isDraft !== undefined || params.isDraft !== null) {
         switch (params.isDraft) {
             case true:
