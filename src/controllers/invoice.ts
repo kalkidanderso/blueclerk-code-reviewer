@@ -2107,6 +2107,8 @@ export const getInvoices = async (req: Request, res: Response) => {
             $or: [
                 { invoiceId: keywordRegex },
                 { status: keywordRegex },
+                { customerPO: keywordRegex },
+                { vendorId: keywordRegex },
                 { 'jobObj.jobId': keywordRegex },
                 { 'customerObj.profile.displayName': keywordRegex },
                 { 'jobLocationObj.name': keywordRegex },
