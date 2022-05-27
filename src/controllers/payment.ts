@@ -348,6 +348,7 @@ export const createPayment = async (req: Request, res: Response) => {
         }
 
         // Save the new payment
+        payment.amountPaid = Math.round(payment.amountPaid * 100) / 100;
         await payment.save();
 
         if (company.qbAuthorized) {
@@ -623,7 +624,7 @@ export const updatePayment = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Payment not found or does not belong to the customer.' });
     }
 
-    if (payment.line && !paramsInvoices.length) {
+    if (payment?.line.length && !paramsInvoices.length) {
         return res.json({ status: Status.Error, message: 'Line is required on this payment' })
     }
 
@@ -637,7 +638,7 @@ export const updatePayment = async (req: Request, res: Response) => {
     }
 
     payment.amountPaid = newAmountPaid ?? payment.amountPaid;
-    payment.referenceNumber = params.referenceNumber;
+    payment.referenceNumber = params.referenceNumber ?? payment.referenceNumber;
     payment.paymentType = params.paymentType;
     payment.paidAt = params.paidAt ? new Date(moment(params.paidAt).format('YYYY-MM-DD')) : payment.paidAt;
     payment.note = params.note;
@@ -645,7 +646,7 @@ export const updatePayment = async (req: Request, res: Response) => {
     payment.updatedAt = new Date();
 
     try {
-        if (payment.line.length && paramsInvoices.length) {
+        if (payment?.line.length && paramsInvoices.length) {
             const invoiceLIne = await _handleUpdateMultipleInvoices(paramsInvoices, payment, customer, company);
             invoices.push(...invoiceLIne);
         }
@@ -1146,6 +1147,6 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
         paymentAmountPaid += paymentLine.amountPaid;
     });
 
-    payment.amountPaid = paymentAmountPaid;
+    payment.amountPaid = Math.round(paymentAmountPaid * 100) / 100;
     return invoices;
 }
