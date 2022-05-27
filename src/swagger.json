@@ -3940,7 +3940,7 @@
                 "properties": {
                   "jobLocationId": {
                     "type": "string",
-                    "description": "Job location ID"
+                    "description": "Job location/Subdivison ID"
                   },
                   "customerId": {
                     "type": "string",
@@ -3948,7 +3948,7 @@
                   },
                   "jobSiteId": {
                     "type": "string",
-                    "description": "Job Site ID"
+                    "description": "Job Address ID"
                   },
                   "nfcTag": {
                     "type": "string"
@@ -7550,7 +7550,7 @@
                 "properties": {
                   "keyword": {
                     "type": "string",
-                    "description": "Filter jobs by search keyword to Job Id, Customer's name, Job Location's name address, Job Site's name address, Technician's name, and Contractor's name"
+                    "description": "Filter jobs by search keyword to Job Id, Customer's name, Subdivision's name address, Job Address's name address, Technician's name, and Contractor's name"
                   },
                   "status": {
                     "type": "integer",
@@ -8680,7 +8680,7 @@
           {
             "name": "keyword",
             "in": "query",
-            "description": "Filter job reports by search keyword to Job Id, Customer's name, Job Location's name address, Job Site's name address, Technician's name, and Contractor's name",
+            "description": "Filter job reports by search keyword to Job Id, Customer's name, Subdivision's name address, Job Address's name address, Technician's name, and Contractor's name",
             "schema": {
               "type": "string"
             }
@@ -8995,7 +8995,7 @@
                 "properties": {
                   "keyword": {
                     "type": "string",
-                    "description": "Filter invoices by search keyword to Job Id, Customer's name, Job's Job Location name address, Job's Job Site name address, Job's Technician name, and Job's Contractor name"
+                    "description": "Filter invoices by search keyword to Job Id, Customer's name, Job's Subdivision name address, Job's Job Address name address, Job's Technician name, and Job's Contractor name"
                   },
                   "customerId": {
                     "type": "string",

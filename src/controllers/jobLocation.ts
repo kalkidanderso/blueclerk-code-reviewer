@@ -137,10 +137,10 @@ export const create = async (req: Request, res: Response) => {
                     jobLocation.save();
                 }
 
-                return res.json({ status: Status.Success, message: 'Job Location created successfully.', jobLocation, quickbookCustomerJob: qbCustomerJob });
+                return res.json({ status: Status.Success, message: 'Subdivision created successfully.', jobLocation, quickbookCustomerJob: qbCustomerJob });
             });
         } else {
-            return res.json({ status: Status.Success, message: 'Job Location created successfully.', jobLocation });
+            return res.json({ status: Status.Success, message: 'Subdivision created successfully.', jobLocation });
         }
 
     }).catch((err) => {
@@ -170,7 +170,7 @@ export const update = async (req: Request, res: Response) => {
     });
 
     if (!jobLocation) {
-        return res.json({ status: Status.Error, message: 'Job Location not found.' });
+        return res.json({ status: Status.Error, message: 'Subdivision not found.' });
     }
 
     // Check the value of params req.body.isActive
@@ -222,13 +222,13 @@ export const update = async (req: Request, res: Response) => {
 
             return res.json({
                 status: Status.Success,
-                message: 'Job Location updated successfully.',
+                message: 'Subdivision updated successfully.',
                 jobLocation,
                 quickbookCustomerJob: qbCustomerJob
             })
         })
     } else {
-        return res.json({ status: Status.Success, message: 'Job Location updated successfully.', jobLocation });
+        return res.json({ status: Status.Success, message: 'Subdivision updated successfully.', jobLocation });
     }
 
 
