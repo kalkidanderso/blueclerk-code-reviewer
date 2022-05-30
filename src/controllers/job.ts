@@ -2376,7 +2376,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
     // To update Job's status based on cummulative of tasks status
     // const allTaskStatus = task.jobTypes.map(newTask => newTask.status);
     const allTaskJobTypeStatus: Number[] = [];
-    const allTechnicianStatus: Number[] = []
+    const techAllJobTypesStatus: Number[] = []
     for (const jobTask of job.tasks) {
         for (const jobType of jobTask.jobTypes) {
             allTaskJobTypeStatus.push(jobType.status);
@@ -2384,14 +2384,14 @@ export const updateJobTask = async (req: Request, res: Response) => {
     }
 
     for (const taskJobType of task.jobTypes) {
-        allTechnicianStatus.push(taskJobType.status);
+        techAllJobTypesStatus.push(taskJobType.status);
     }
 
     if (taskJobType.status === JobStatus.FINISHED) {
         taskJobType.isSelfFinished = true;
     }
 
-    if (allTechnicianStatus.every(status => status === JobStatus.FINISHED)) {
+    if (techAllJobTypesStatus.every(status => status === JobStatus.FINISHED)) {
         // All new job type task are FINISHED, Job is FINISHED
         taskStatus = JobStatus.FINISHED;
         action += `|Finishing the technician task|`;
@@ -3384,16 +3384,15 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
         });
 
     let action = '';
-    let allTechnicianStatus: JobStatus[] = [];
     const task = job.tasks.find(task => task?.technician?._id.toString() === params.technicianId);
     const technician = <IUser>task.technician;
 
     if (params.status) {
-        if (Number(params.status) === JobStatus.RESCHEDULED && !params.note) {
+        if (params.status === JobStatus.RESCHEDULED && !params.note) {
             return res.json({ status: Status.Error, message: 'Note is required when you reschedule or make the job incomplete' });
         }
 
-        switch (Number(params.status)) {
+        switch (params.status) {
             case JobStatus.FINISHED:
                 // Cannot FINISHED technician task with FINISHED status
                 if (task.status === JobStatus.FINISHED) {
@@ -3412,12 +3411,6 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
                     await _updateTask({ job, taskJobType, user, params, status: params.status });
                 };
 
-                // Check if all technician statuses are FINISHED as well and update job's status
-                allTechnicianStatus = job.tasks.map(task => task.status);
-                if (allTechnicianStatus.every(status => status === JobStatus.FINISHED)) {
-                    job.status = JobStatus.FINISHED;
-                }
-
                 break;
 
             case JobStatus.CANCELED:
@@ -3430,18 +3423,6 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
                 task.status = JobStatus.CANCELED;
                 action += `|Technician: ${technician?.profile?.displayName} canceling his/her task|`;
 
-                /**
-                 * Check if there no more PENDING, STARTED, or PAUSED technician statuses,
-                 * if it does, update job's status to CANCELED as well
-                 */
-                allTechnicianStatus = job.tasks.map(task => task.status);
-                if (
-                    !allTechnicianStatus.includes(JobStatus.PENDING)
-                    && !allTechnicianStatus.includes(JobStatus.STARTED)
-                    && !allTechnicianStatus.includes(JobStatus.PAUSED)
-                ) {
-                    job.status = JobStatus.CANCELED;
-                }
                 break;
 
             case JobStatus.RESCHEDULED:
@@ -3460,23 +3441,49 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
                     await _updateTask({ job, taskJobType, user, params, status: params.status });
                 }
 
-                /**
-                 * Check if there no more PENDING, STARTED, or PAUSED technician statuses,
-                 * if it does, update job's status to RESCHEDULED as well
-                 */
-                allTechnicianStatus = job.tasks.map(task => task.status);
-                if (
-                    !allTechnicianStatus.includes(JobStatus.PENDING)
-                    && !allTechnicianStatus.includes(JobStatus.STARTED)
-                    && !allTechnicianStatus.includes(JobStatus.PAUSED)
-                ) {
-                    job.status = JobStatus.RESCHEDULED;
-                }
                 break;
 
             default:
                 return res.json({ status: Status.Error, message: `Only status: FINISHED (2), CANCELED (3), and RESCHEDULED (4) that supported by this API` });
         }
+
+        // To update Job's status based on cummulative of tasks status
+        let allTechnicianStatus: JobStatus[] = [];
+        allTechnicianStatus = job.tasks.map(task => task.status);
+
+        // Check if all technician statuses are FINISHED as well and update job's status
+        if (allTechnicianStatus.every(status => status === JobStatus.FINISHED)) {
+            job.status = JobStatus.FINISHED;
+            action += `|Finishing the job|`;
+        }
+
+        /**
+         * Check if there no more PENDING, STARTED, or PAUSED technician statuses,
+         * if it does, update job's status to CANCELED as well
+         */
+         if (
+            allTechnicianStatus.includes(JobStatus.CANCELED)
+            && !allTechnicianStatus.includes(JobStatus.PENDING)
+            && !allTechnicianStatus.includes(JobStatus.STARTED)
+            && !allTechnicianStatus.includes(JobStatus.PAUSED)
+         ) {
+             job.status = JobStatus.CANCELED;
+             action += `|Canceling the job|`;
+         }
+
+        /**
+         * Check if there no more PENDING, STARTED, or PAUSED technician statuses,
+         * if it does, update job's status to RESCHEDULED as well
+         */
+         if (
+            allTechnicianStatus.includes(JobStatus.RESCHEDULED)
+            && !allTechnicianStatus.includes(JobStatus.PENDING)
+            && !allTechnicianStatus.includes(JobStatus.STARTED)
+            && !allTechnicianStatus.includes(JobStatus.PAUSED)
+         ) {
+            job.status = JobStatus.RESCHEDULED;
+            action += `|Rescheduling the job|`;
+         }
     }
 
     job.track.push({ user: user._id, action, note: params.note, date: new Date() });
@@ -3496,17 +3503,21 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
         return res.json({ status: Status.Error, message: err.message });
     }
 
-    // Save notification to DB and send through SocketIO
-    await _handleNotification({
-        sio,
-        companyId: job.company,
-        notificationType: NotificationTypes.JOB_RESCHEDULED,
-        messageTitle: 'Job Task rescheduled',
-        messageBody: `Technician: ${technician?.profile?.displayName} rescheduling his/her task on Job: ${job.jobId}`,
-        metadataId: job._id
-    })
+    res.json({ status: Status.Success, message: `Technician task status updated successfully.`, job, technicianTask: task });
 
-    return res.json({ status: Status.Success, message: `Technician task status updated successfully.`, job, technicianTask: task });
+    if (params.status === JobStatus.RESCHEDULED) {
+        // Save notification to DB and send through SocketIO
+        await _handleNotification({
+            sio,
+            companyId: job.company,
+            notificationType: NotificationTypes.JOB_RESCHEDULED,
+            messageTitle: 'Job Task rescheduled',
+            messageBody: `Technician: ${technician?.profile?.displayName} rescheduling his/her task on Job: ${job.jobId}`,
+            metadataId: job._id
+        })
+    }
+
+    return;
 
 }
 
