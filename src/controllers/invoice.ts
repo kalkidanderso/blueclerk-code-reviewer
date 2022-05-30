@@ -178,8 +178,8 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                 // }
 
                 newInvoicePrefix = params.invoicePrefix == "" ? null : params?.invoicePrefix
- 
-                company.updateOne({ 'currentInvoiceId': params.invoiceNumber,'invoicePrefix': newInvoicePrefix}, (err: any) => {
+
+                company.updateOne({ 'currentInvoiceId': params.invoiceNumber, 'invoicePrefix': newInvoicePrefix }, (err: any) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
@@ -1167,21 +1167,28 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         const discountItem = await Item.findById(customerDiscount?.discountItem);
 
         if (discountItem) {
+            const discountAmount = discountItem.charges ?? 0;
+            const discountTaxAmount = discountItem.tax > 0 ? discountAmount * discountItem.tax / 100 : 0;
             const obj = {
                 quantity: 1,
-                price: Math.round((discountItem.charges ?? 0) * 100) / 100,
+                price: Math.round(discountAmount * 100) / 100,
                 isFixed: discountItem.isFixed,
-                tax: 0,
-                taxAmount: 0,
-                subTotal: Math.round((discountItem.charges ?? 0) * 100) / 100,
+                tax: discountItem.tax,
+                taxAmount: Math.round(discountTaxAmount * 100) / 100,
+                subTotal: Math.round(discountAmount * 100) / 100,
                 item: discountItem._id,
                 name: discountItem.name,
                 description: discountItem.description
             };
 
             invoiceItems.push(obj);
-            subTotalBeforeTax += (discountItem.charges ?? 0);
-            total += (discountItem.charges ?? 0);
+            subTotalBeforeTax += discountAmount;
+            // Take into account the tax amount from discount
+            taxAmount += discountTaxAmount;
+            // Deduct the grand total with the discount amount
+            total += discountAmount;
+            // Deduct the grand total with the discount tax amountD
+            total += discountTaxAmount;
         }
     }
 
@@ -1890,7 +1897,10 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
 
                     const payments = await Payment.find({
                         company: req.companyId,
-                        invoice: invoice._id
+                        $or: [
+                            { invoice: invoice._id },
+                            { 'line.invoice': invoice._id }
+                        ]
                     });
 
                     return res.json({ status: Status.Success, invoice, scans, payments });
@@ -2082,10 +2092,12 @@ export const getInvoices = async (req: Request, res: Response) => {
 
     // Data query that used to search Invoices and available previous/next page
     const filterQuery: any = {
-        $and: [ { $or: [
-            // { contractor: companyId },
-            { company: companyId }
-        ]}]
+        $and: [{
+            $or: [
+                // { contractor: companyId },
+                { company: companyId }
+            ]
+        }]
     };
 
     // Check and add if params filter provided
@@ -2095,6 +2107,8 @@ export const getInvoices = async (req: Request, res: Response) => {
             $or: [
                 { invoiceId: keywordRegex },
                 { status: keywordRegex },
+                { customerPO: keywordRegex },
+                { vendorId: keywordRegex },
                 { 'jobObj.jobId': keywordRegex },
                 { 'customerObj.profile.displayName': keywordRegex },
                 { 'jobLocationObj.name': keywordRegex },
@@ -2107,6 +2121,16 @@ export const getInvoices = async (req: Request, res: Response) => {
                 { 'contractorsObj.info.companyName': keywordRegex },
             ]
         })
+    }
+    if (params.customerId) {
+        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+    }
+    if (params.dueDate) {
+        const dueDate = moment(params.dueDate).endOf('day').format();
+        filterQuery['$and'].push({ dueDate: { $lte: new Date(dueDate) } });
+    }
+    if (params.status) {
+        filterQuery['$and'].push({ status: { $in: JSON.parse(params.status) } });
     }
     if (params.isDraft !== undefined || params.isDraft !== null) {
         switch (params.isDraft) {
@@ -2161,7 +2185,7 @@ export const getInvoices = async (req: Request, res: Response) => {
         };
         query['$and'].push({ ...paginationQuery });
         // Getting previous page is special, we need to reverse the sort
-        sortQuery = { createdAt: 1, _id: 1};
+        sortQuery = { createdAt: 1, _id: 1 };
     }
 
     // Construct aggreate lookups here to be used multiple times
@@ -2271,10 +2295,12 @@ export const getInvoices = async (req: Request, res: Response) => {
             const nextPageQuery: any = { $and: [] };
             filterQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
             // To be added with the pagination for the previous page
-            nextPageQuery['$and'].push({ $or: [
-                { createdAt: { $lt: new Date(nextCursor.createdAt) } },
-                { createdAt: new Date(nextCursor.createdAt), _id: { $lt: nextCursor._id } }
-            ]});
+            nextPageQuery['$and'].push({
+                $or: [
+                    { createdAt: { $lt: new Date(nextCursor.createdAt) } },
+                    { createdAt: new Date(nextCursor.createdAt), _id: { $lt: nextCursor._id } }
+                ]
+            });
             const isNextPage = await Invoice.aggregate([
                 ...aggregateLookups,
                 { $match: { ...nextPageQuery } },
@@ -2291,10 +2317,12 @@ export const getInvoices = async (req: Request, res: Response) => {
             const previousPageQuery: any = { $and: [] };
             filterQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
             // To be added with the pagination for the previous page
-            previousPageQuery['$and'].push({ $or: [
-                { createdAt: { $gt: new Date(previousCursor.createdAt) } },
-                { createdAt: new Date(previousCursor.createdAt), _id: { $gt: previousCursor._id } }
-            ]});
+            previousPageQuery['$and'].push({
+                $or: [
+                    { createdAt: { $gt: new Date(previousCursor.createdAt) } },
+                    { createdAt: new Date(previousCursor.createdAt), _id: { $gt: previousCursor._id } }
+                ]
+            });
             const isPreviousPage = await Invoice.aggregate([
                 ...aggregateLookups,
                 { $match: { ...previousPageQuery } },
@@ -2308,7 +2336,7 @@ export const getInvoices = async (req: Request, res: Response) => {
                 invoices,
                 total: totalInvoices[0]?.count,
                 pagination: {
-                    nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)): null,
+                    nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)) : null,
                     previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null,
                     pageSize: params.pageSize || null
                 },
@@ -2622,7 +2650,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
 
     let serviceAddress = {
         text: [
-            { text: "SERVICE ADDRESS", style: "smallFont", alignment: "left" },
+            { text: "JOB ADDRESS", style: "smallFont", alignment: "left" },
             { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
         ],
         rowSpan: 2
@@ -2644,7 +2672,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
 
             serviceAddress = {
                 text: [
-                    { text: "SERVICE ADDRESS", style: "smallFont", alignment: "left" },
+                    { text: "JOB ADDRESS", style: "smallFont", alignment: "left" },
                     { text: `${jobAddress.name}`, style: "defaultFontBold" },
                     { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
                 ],
@@ -2667,7 +2695,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             // If Job Site exist, add additional information for Job Location
             serviceAddress = {
                 text: [
-                    { text: "JOB LOCATION", style: "smallFont", alignment: "left" },
+                    { text: "SUBDIVISION", style: "smallFont", alignment: "left" },
                     { text: `${jobAddress.name}`, style: "defaultFontBold" },
                     { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
                 ],
@@ -2677,7 +2705,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             // Job Site Address still shown as Service Address but shifted below
             jobSiteServiceAddress = {
                 text: [
-                    { text: "SERVICE ADDRESS", style: "smallFont", alignment: "left" },
+                    { text: "JOB ADDRESS", style: "smallFont", alignment: "left" },
                     { text: `${jobSiteAddress.name}`, style: "defaultFontBold" },
                     { text: `\n${jobSiteAddress.street}${jobSiteAddress.city}${jobSiteAddress.state}${jobSiteAddress.zipCode}`, style: "defaultFont" }
                 ],

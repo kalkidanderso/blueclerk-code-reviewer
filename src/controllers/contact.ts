@@ -89,7 +89,7 @@ export const addContact = async (req: Request, res: Response) => {
                 const jobLocation = await JobLocation.findOne({ _id: params.referenceNumber })
 
                 if (!jobLocation) {
-                    return res.json({ status: Status.Error, message: 'Job location not found' })
+                    return res.json({ status: Status.Error, message: 'Subdivision not found.' })
                 }
 
                 if (req.body.contactId) {
@@ -195,10 +195,9 @@ export const getContacts = async (req: Request, res: Response) => {
 export const getCustomerAllContacts = async (req: Request, res: Response) => {
 
     const params = req.query;
-    const company = <ICompany>req.company;
 
     const customer = await Customer
-        .findOne({ _id: params.customerId, company: company._id })
+        .findOne({ _id: params.customerId })
         .populate({ path: 'contacts', select: '-__v' })
 
     if (!customer) {
@@ -256,7 +255,7 @@ export const removeContact = async (req: Request, res: Response) => {
             // Find and check Job Location if exist
             const jobLocation = await JobLocation.findById(req.body.referenceNumber)
             if (!jobLocation) {
-                return res.json({ status: Status.Error, message: 'Job Location not found' });
+                return res.json({ status: Status.Error, message: 'Subdivision not found.' });
             }
 
             // Remove the Contact ID from the Job Location's contacts

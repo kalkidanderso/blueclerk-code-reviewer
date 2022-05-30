@@ -121,6 +121,21 @@ export const Validations = {
 
   forgotPassword: [check('email').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
+  // COMPANY LOCATIONS
+  createCompanyLocation: [
+    check('name').exists().withMessage(Messages.Required),
+    check('isMainLocation').optional().toBoolean(),
+    check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }),
+  ],
+
+  updateCompanyLocation: [
+    check('companyLocationId').exists().withMessage(Messages.Required),
+    check('companyLocationId').isMongoId().withMessage(Messages.WrongId),
+    check('name').exists().withMessage(Messages.Required),
+    check('isMainLocation').optional().toBoolean(),
+    check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }),
+  ],
+
   //Industry
   createIndustry: [check('title').exists()],
 
@@ -369,6 +384,7 @@ export const Validations = {
   deleteJobCharges: [check('jobChargesId').exists()],
 
   getInvoices: [
+    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
     check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
     check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')
   ],

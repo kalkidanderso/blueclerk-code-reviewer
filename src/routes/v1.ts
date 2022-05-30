@@ -32,6 +32,7 @@ import * as orderController from '../controllers/order'
 import * as companyEquipmentHistoryController from '../controllers/companyEquipmentHistory'
 import * as companyEquipmentInventoryController from '../controllers/companyEquipmentInventory'
 import * as companyCardController from '../controllers/companyCard'
+import * as companyLocationController from '../controllers/companyLocation';
 import * as subscriptionController from '../controllers/subscription'
 import * as permissionController from '../controllers/permission'
 import * as customerImportController from '../controllers/customerImport'
@@ -367,6 +368,33 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Equipment_Brand_Get),
         equipmentBrandController.getEquipmentBrands
+    )
+
+    // COMPANY LOCATION
+    router.get(
+        '/getCompanyLocations',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Company_Profile),
+        companyLocationController.getCompanyLocations
+    )
+
+    router.post(
+        '/createCompanyLocation',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Company_Profile),
+        validate(Validations.createCompanyLocation),
+        companyLocationController.createCompanyLocation
+    )
+
+    router.put(
+        '/updateCompanyLocation',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Company_Profile),
+        validate(Validations.updateCompanyLocation),
+        companyLocationController.updateCompanyLocation
     )
 
     // Customers

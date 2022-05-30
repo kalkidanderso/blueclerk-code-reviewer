@@ -32,6 +32,10 @@
       "description": "For all kind of company stuff"
     },
     {
+      "name": "Company Location",
+      "description": "For all kind of company location stuff"
+    },
+    {
       "name": "Email Default",
       "description": "For all kind of company email default"
     },
@@ -79,8 +83,12 @@
       "description": "For Inventory of company equipments"
     },
     {
-      "name": "Job Location",
-      "description": "For company Job locations"
+      "name": "Subdivision",
+      "description": "For company Subdivision (formerly Job Location)"
+    },
+    {
+      "name": "Job Address",
+      "description": "For adding, updating and fetching Job Address detail (formerly Job Site)"
     },
     {
       "name": "Job Type",
@@ -101,10 +109,6 @@
     {
       "name": "Job Charges",
       "description": "For job charges"
-    },
-    {
-      "name": "Job Site",
-      "description": "For adding, updating and fetching Job Site detail"
     },
     {
       "name": "Service Ticket",
@@ -2491,6 +2495,177 @@
         ]
       }
     },
+    "/getCompanyLocations": {
+      "get": {
+        "tags": [
+          "Company Location"
+        ],
+        "summary": "Retrieve locations of company",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createCompanyLocation": {
+      "post": {
+        "tags": [
+          "Company Location"
+        ],
+        "summary": "To create new company location",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "isMainLocation": {
+                    "type": "string",
+                    "enum": [ true, false ]
+                  },
+                  "contactName": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "logoUrl": {
+                    "type": "string"
+                  },
+                  "street": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "zipCode": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateCompanyLocation": {
+      "put": {
+        "tags": [
+          "Company Location"
+        ],
+        "summary": "To update company location",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "companyLocationId",
+                  "name"
+                ],
+                "properties": {
+                  "companyLocationId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "isMainLocation": {
+                    "type": "string",
+                    "enum": [ true, false ]
+                  },
+                  "contactName": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "logoUrl": {
+                    "type": "string"
+                  },
+                  "street": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "zipCode": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getCompanyEmailDefault": {
       "get": {
         "tags": [
@@ -3830,7 +4005,7 @@
                 "properties": {
                   "jobLocationId": {
                     "type": "string",
-                    "description": "Job location ID"
+                    "description": "Job location/Subdivison ID"
                   },
                   "customerId": {
                     "type": "string",
@@ -3838,7 +4013,7 @@
                   },
                   "jobSiteId": {
                     "type": "string",
-                    "description": "Job Site ID"
+                    "description": "Job Address ID"
                   },
                   "nfcTag": {
                     "type": "string"
@@ -4329,9 +4504,9 @@
     "/jobLocation": {
       "get": {
         "tags": [
-          "Job Location"
+          "Subdivision"
         ],
-        "summary": "Get Job location by companyId and/or customerId",
+        "summary": "Get Subdivision by companyId and/or customerId",
         "parameters": [
           {
             "name": "companyId",
@@ -4350,7 +4525,7 @@
           {
             "name": "isActive",
             "in": "query",
-            "description": "If not provided will return ALL job locations",
+            "description": "If not provided will return ALL subdivision / job locations",
             "schema": {
               "enum": [
                 "ALL",
@@ -4380,9 +4555,9 @@
       },
       "post": {
         "tags": [
-          "Job Location"
+          "Subdivision"
         ],
-        "summary": "Create a customer job location",
+        "summary": "Create a customer subdivision",
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
@@ -4449,9 +4624,9 @@
     "/jobLocation/{id}": {
       "get": {
         "tags": [
-          "Job Location"
+          "Subdivision"
         ],
-        "summary": "Get Job location by Id",
+        "summary": "Get Subdivision by Id",
         "parameters": [
           {
             "name": "id",
@@ -4482,14 +4657,14 @@
       },
       "put": {
         "tags": [
-          "Job Location"
+          "Subdivision"
         ],
-        "summary": "Update Job location by Id",
+        "summary": "Update Subdivision by Id",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Id of job location to be updated",
+            "description": "Id of subdivision / job location to be updated",
             "required": true,
             "schema": {
               "type": "string"
@@ -4507,7 +4682,7 @@
                 "properties": {
                   "customerId": {
                     "type": "string",
-                    "description": "Id of customer that owns the job location"
+                    "description": "Id of customer that owns the subdivision / job location"
                   },
                   "name": {
                     "type": "string"
@@ -4555,9 +4730,9 @@
     "/jobSite": {
       "post": {
         "tags": [
-          "Job Site"
+          "Job Address"
         ],
-        "summary": "Create a customer job site",
+        "summary": "Create a customer job address",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4589,9 +4764,9 @@
       },
       "get": {
         "tags": [
-          "Job Site"
+          "Job Address"
         ],
-        "summary": "Get Job site by locationId and customerId",
+        "summary": "Get job address by locationId and customerId",
         "parameters": [
           {
             "name": "customerId",
@@ -4651,9 +4826,9 @@
     "/jobSite/{id}": {
       "get": {
         "tags": [
-          "Job Site"
+          "Job Address"
         ],
-        "summary": "Get Job site by Id",
+        "summary": "Get job address by Id",
         "parameters": [
           {
             "name": "id",
@@ -4692,9 +4867,9 @@
       },
       "put": {
         "tags": [
-          "Job Site"
+          "Job Address"
         ],
-        "summary": "Update Job site by Id",
+        "summary": "Update job address by Id",
         "parameters": [
           {
             "name": "id",
@@ -7440,7 +7615,7 @@
                 "properties": {
                   "keyword": {
                     "type": "string",
-                    "description": "Filter jobs by search keyword to Job Id, Customer's name, Job Location's name address, Job Site's name address, Technician's name, and Contractor's name"
+                    "description": "Filter jobs by search keyword to Job Id, Customer's name, Subdivision's name address, Job Address's name address, Technician's name, and Contractor's name"
                   },
                   "status": {
                     "type": "integer",
@@ -8570,7 +8745,7 @@
           {
             "name": "keyword",
             "in": "query",
-            "description": "Filter job reports by search keyword to Job Id, Customer's name, Job Location's name address, Job Site's name address, Technician's name, and Contractor's name",
+            "description": "Filter job reports by search keyword to Job Id, Customer's name, Subdivision's name address, Job Address's name address, Technician's name, and Contractor's name",
             "schema": {
               "type": "string"
             }
@@ -8885,19 +9060,31 @@
                 "properties": {
                   "keyword": {
                     "type": "string",
-                    "description": "Filter invoices by search keyword to Job Id, Customer's name, Job's Job Location name address, Job's Job Site name address, Job's Technician name, and Job's Contractor name"
+                    "description": "Filter invoices by search keyword to Job Id, Customer's name, Job's Subdivision name address, Job's Job Address name address, Job's Technician name, and Job's Contractor name"
+                  },
+                  "customerId": {
+                    "type": "string",
+                    "description": "Filter invoices by Customer ID"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "Filter invoices by multiple status. Format example: [\"UNPAID\", \"PARTIALLY PAID\", \"PAID\"]"
                   },
                   "isDraft": {
                     "type": "boolean",
                     "description": "Filter invoices by draft"
                   },
+                  "dueDate": {
+                    "type": "string",
+                    "description": "Filter invoices by dueDate or before"
+                  },
                   "startDate": {
                     "type": "string",
-                    "description": "Filter of start jobs schedule date"
+                    "description": "Filter invoices by start of the created date"
                   },
                   "endDate": {
                     "type": "string",
-                    "description": "Filter of end jobs schedule date"
+                    "description": "Filter invoices by end of the created date"
                   },
                   "nextCursor": {
                     "type": "string",
@@ -9914,7 +10101,7 @@
                   },
                   "line": {
                     "type": "string",
-                    "description": "Json string of the payment line e.g [{\"invoiceId\":\"6268ef3234370b4364a45a69\",\"amountPaid\":250}, {\"invoiceId\":\"6268e21b9f94c709789abac9\",\"amountPaid\":20}]}]"
+                    "description": "Json string of the payment line e.g [{\"invoiceId\":\"6268ef3234370b4364a45a69\",\"amountPaid\":250}, {\"invoiceId\":\"6268e21b9f94c709789abac9\",\"amountPaid\":20}]"
                   },
                   "amount": {
                     "type": "number",
@@ -10076,6 +10263,10 @@
                   "paymentId": {
                     "type": "string",
                     "description": "Id of payment to edit"
+                  },
+                  "line": {
+                    "type": "string",
+                    "description": "Json string of the payment line e.g [{\"invoiceId\":\"6268ef3234370b4364a45a69\",\"amountPaid\":250}, {\"invoiceId\":\"6268e21b9f94c709789abac9\",\"amountPaid\":20}]"
                   },
                   "amount": {
                     "type": "number",
