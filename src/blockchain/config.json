@@ -1,0 +1,16 @@
+{
+    "peerRequestUrl": "grpcs://localhost:7051",
+    "peerEventUrl": "grpcs://localhost:7053",
+    "networkOrdererUrl": "grpcs://localhost:7050",
+    "networkCaUrl": "https://localhost:7054",
+    "channelName": "blueclerkchannel",
+    "chainCodeName": "blueclerkcc",
+    "orgName": "blueclerk",
+    "defaultOrgUser": "blueclerkMember1",
+    "mspName": "BlueclerkMSP",
+    "caName": "ca-blueclerk",
+    "peer": "peer0.blueclerk.blueclerk-bcn.com",
+    "orderer": "orderer.blueclerk-bcn.com",
+    "tlsPeerCert": "/tlsca.blueclerk.blueclerk-bcn.com-cert.pem",
+    "tlsOrdererCert": "/tlsca.blueclerk-bcn.com-cert.pem"
+}
