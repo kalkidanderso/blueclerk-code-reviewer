@@ -92,8 +92,7 @@ export const Validations = {
     check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
     check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
     check('status').optional().isInt({ min: 0, max: 4}).toInt().withMessage('status has to be number with value between 0 and 4'),
-    check('isPreferred').optional().isBoolean().toBoolean(),
-    check('isActive').optional().isBoolean().toBoolean()
+    check('isPreferred').optional().isBoolean().toBoolean()
   ],
 
   updateCompanyCustomer: [

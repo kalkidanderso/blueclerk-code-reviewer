@@ -1294,74 +1294,57 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
 }
 
 export const getCompanyCustomer = async (req: Request, res: Response) => {
-    const filterQuery: any = {
-        $and: []
-    };
+
     const companyId = req.query.companyId;
     const customerId = req.query.customerId;
     const status = req.query.status;
     const isPreferred = req.query.isPreferred;
     const isActive = req.query.isActive;
 
-    if(!companyId && !customerId){
-        return res.json({ 'status' : Status.Error, 'message' : 'Either companyId or customerId need to be provided'})
-    }else if(companyId && customerId){
-        filterQuery['$and'].push({company: companyId, customer: customerId})
-    }else{
-        if (companyId){
-            filterQuery['$and'].push({company: companyId})
-        }else {
-            filterQuery['$and'].push({customer: customerId})
-        }
+    const filterQuery: any = {
+        $and: []
+    };
+
+    if (!companyId && !customerId) {
+        return res.json({ status: Status.Error, message: 'Either companyId or customerId need to be provided' });
     }
 
-    if(status !== undefined && status !== null){
+    if (companyId) {
+        filterQuery['$and'].push({ company: companyId });
+    } else {
+        filterQuery['$and'].push({ customer: customerId });
+    }
+
+    if (status !== undefined && status !== null) {
         // check if customer status 1 , existing customer that didn't have status will be returned too
-        if(status == CompanyCustomerStatus.ACCEPTED){
-            filterQuery['$and'].push({'$or':[{'status':CompanyCustomerStatus.ACCEPTED},{'status':null}]})
-        }else{
-            filterQuery['$and'].push({'status': status});
+        if (status == CompanyCustomerStatus.ACCEPTED) {
+            filterQuery['$and'].push({ '$or': [{ status: CompanyCustomerStatus.ACCEPTED }, { status: null }] });
+        } else {
+            filterQuery['$and'].push({ status: status });
         }
     }
-    if(isPreferred){
-        filterQuery['$and'].push({'isPreferred': isPreferred});
-    }else{
-        // if isPreferred false , existing customer that didn't have isPreferred will be returned too
-        filterQuery['$and'].push({'$or':[{'isPreferred': false},{'isPreferred': null}]})
-    }
-    if(isActive){
-        filterQuery['$and'].push({'isActive': isActive});
-    }else{
-        // if isActive false , existing customer that didn't have isActive will be returned too
-        filterQuery['$and'].push({'$or':[{'isActive':true},{'isActive': null}]});
+
+    if (isPreferred !== undefined && isPreferred !== null) {
+        if (isPreferred) {
+            filterQuery['$and'].push({ isPreferred: isPreferred });
+        } else {
+            // if isPreferred false, existing customer that didn't have isPreferred will be returned too
+            filterQuery['$and'].push({ '$or': [{ isPreferred: false }, { isPreferred: null }] });
+        }
     }
 
-     CompanyCustomer.find(filterQuery,
-        (err: any, companyCustomers: ICompanyCustomer[]) => {
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            }
-
-            if (companyCustomers.length == 0) {
-                return res.json({ 'status': Status.Success, 'customers': [] })
-            }
-            const customerIds = companyCustomers.map((obj: any) => {
-
-                return obj.customer
-            })
-
-            Customer.find({ _id: { $in: customerIds }},
-                'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId itemTier paymentTerm quickbookId inactiveBy inactiveAt')
-                .populate({ path: 'itemTier', select: '-companyId -__v' })
-                .populate({ path: 'inactiveBy', select: 'profile' })
-                .exec((err: any, customers: ICustomer[]) => {
-
-                    if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                    }
-                    return res.json({ 'status': Status.Success, 'customers': customers })
-                })
+    const companyCustomers = await CompanyCustomer.find(filterQuery)
+        .populate({
+            path: 'company',
+            select: 'info address contact'
         })
+        .populate({
+            path: 'customer',
+            select: 'info profile address contact location vendorId'
+        })
+
+    return res.json({ status: Status.Success, companyCustomers });
+
 }
 
 export const updateCompanyCustomer = async (req: Request, res: Response) => {
