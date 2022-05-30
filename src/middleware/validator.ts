@@ -291,7 +291,8 @@ export const Validations = {
     check('jobId').exists().withMessage(Messages.Required),
     check('jobId').isMongoId().withMessage(Messages.WrongId),
     check('technicianId').exists().withMessage(Messages.Required),
-    check('technicianId').isMongoId().withMessage(Messages.WrongId)
+    check('technicianId').isMongoId().withMessage(Messages.WrongId),
+    check('status').optional().isInt().toInt()
   ],
 
   technicianJobs: [check('employeeId').exists().withMessage(Messages.Required), check('employeeId').isMongoId().withMessage(Messages.WrongId)],
