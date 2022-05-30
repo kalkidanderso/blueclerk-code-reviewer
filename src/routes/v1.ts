@@ -1425,6 +1425,13 @@ export default function (sio: any) {
         companyController.updateCompanyProfile
     )
 
+    router.get(
+        '/getCompanyCustomer',
+        passport.authenticate('jwt', { session: false }),
+        validate(Validations.getCompanyCustomer),
+        companyController.getCompanyCustomer
+    )
+
     router.put(
         '/updateCompanyCustomer',
         passport.authenticate('jwt', { session: false }),

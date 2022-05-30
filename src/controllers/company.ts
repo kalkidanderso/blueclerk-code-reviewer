@@ -1,5 +1,5 @@
 import {Request, Response} from 'express'
-import {CompanyType, ContractStatus, EmployeeStatus, Messages, Role, Status} from '../common/constants'
+import {CompanyType, ContractStatus, EmployeeStatus, Messages, Role, Status, CompanyCustomerStatus} from '../common/constants'
 import {sendAccountDowngradeEmail} from '../services/aws'
 import {Company, ICompany} from '../models/Company'
 import {ObjectId} from 'mongodb'
@@ -12,7 +12,7 @@ import {IJob, Job} from '../models/Job'
 import {IUser, User} from '../models/User'
 import {IContractorActivity} from '../models/ContractorActivity'
 import { ICustomer, Customer } from '../models/Customer'
-import {CompanyCustomer} from '../models/CompanyCustomer';
+import {CompanyCustomer, ICompanyCustomer} from '../models/CompanyCustomer';
 import { IItem, Item } from '../models/Item'
 import { IPriceTier, PriceTier } from '../models/PriceTier'
 import { PaymentEmployee, PaymentVendor } from '../models/Payment'
@@ -1291,6 +1291,60 @@ export const getCompanyContractorActivity = (req: Request, res: Response) => {
                     return res.json({ 'status': Status.Success, 'contractorActivities': contractorActivities })
                 })
         })
+}
+
+export const getCompanyCustomer = async (req: Request, res: Response) => {
+
+    const companyId = req.query.companyId;
+    const customerId = req.query.customerId;
+    const status = req.query.status;
+    const isPreferred = req.query.isPreferred;
+    const isActive = req.query.isActive;
+
+    const filterQuery: any = {
+        $and: []
+    };
+
+    if (!companyId && !customerId) {
+        return res.json({ status: Status.Error, message: 'Either companyId or customerId need to be provided' });
+    }
+
+    if (companyId) {
+        filterQuery['$and'].push({ company: companyId });
+    } else {
+        filterQuery['$and'].push({ customer: customerId });
+    }
+
+    if (status !== undefined && status !== null) {
+        // check if customer status 1 , existing customer that didn't have status will be returned too
+        if (status == CompanyCustomerStatus.ACCEPTED) {
+            filterQuery['$and'].push({ '$or': [{ status: CompanyCustomerStatus.ACCEPTED }, { status: null }] });
+        } else {
+            filterQuery['$and'].push({ status: status });
+        }
+    }
+
+    if (isPreferred !== undefined && isPreferred !== null) {
+        if (isPreferred) {
+            filterQuery['$and'].push({ isPreferred: isPreferred });
+        } else {
+            // if isPreferred false, existing customer that didn't have isPreferred will be returned too
+            filterQuery['$and'].push({ '$or': [{ isPreferred: false }, { isPreferred: null }] });
+        }
+    }
+
+    const companyCustomers = await CompanyCustomer.find(filterQuery)
+        .populate({
+            path: 'company',
+            select: 'info address contact'
+        })
+        .populate({
+            path: 'customer',
+            select: 'info profile address contact location vendorId'
+        })
+
+    return res.json({ status: Status.Success, companyCustomers });
+
 }
 
 export const updateCompanyCustomer = async (req: Request, res: Response) => {
