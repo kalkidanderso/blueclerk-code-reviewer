@@ -925,24 +925,6 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
 
         await job.populate({ path: 'ticket' }).execPopulate();
         ticket = job.ticket;
-
-        /**
-         * Kris' remark (Jun 30th, 2021):
-         * TODO: These commented lines are TO BE DEPRECATED,
-         * because now job has multiple tasks with their own charge and timeSpent
-         */
-        // if (!jobTypeitem.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
-        //     return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
-        // } else if (!jobTypeitem.isFixed) {
-        //     hourlyRate = params.hourlyRate
-        // }
-
-        // Take the first job type's isFixed as all job types should be the same type
-        // if (!jobTypeitems[0]?.isFixed && !params.timeSpent) {
-        //     return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
-        // } else if (!jobTypeitems[0]?.isFixed) {
-        //     timeSpent = params.timeSpent
-        // }
     }
 
     if (purchaseOrder != null) {
@@ -1392,8 +1374,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                             : params.dueDate
                                 ? new Date(params.dueDate)
                                 : issuedDate
-                        // let tax: number = invoice.tax;
-                        // let taxPercentage: number = invoice.taxPercentage;
                         let charges: number = invoice.charges;
                         let shippingCost: number = invoice.shippingCost;
                         let taxAmount: number = 0;
@@ -1404,40 +1384,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                         let paid = invoice.paid;
                         let status = invoice.status;
                         const oldTotal = invoice.total;
-
-                        // if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
-                        //     (params.charges == undefined || params.charges == null || params.charges == '""' )) {
-
-                        //     taxPercentage = params.tax
-                        //     tax = (charges * params.tax) /100
-                        //     total = charges + tax
-
-                        // } else if ((params.charges != undefined && params.charges !== null && params.charges !== '""' ) &&
-                        //     (params.tax == undefined || params.tax == null || params.tax == '""' )) {
-
-                        //     tax = (params.charges * taxPercentage) / 100
-                        //     charges = parseFloat(params.charges)
-                        //     total = charges + tax
-
-                        // }else{
-
-                        //     // update tax and charges
-                        //     charges = parseFloat(params.charges)
-                        //     taxPercentage = params.tax
-                        //     tax = (charges * params.tax) /100
-                        //     total = charges + tax
-                        // }
-
-                        // invoice.tax = tax
-                        // invoice.taxPercentage = taxPercentage
-                        // invoice.charges = charges
-                        // invoice.total = total
-
-                        // if(!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""' )) {
-                        //     return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
-                        // }else if(!job.isFixed){
-                        //     invoice.hourlyRate = params.hourlyRate
-                        // }
 
                         if (!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
                             return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
@@ -1643,8 +1589,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                     : params.dueDate
                         ? new Date(params.dueDate)
                         : issuedDate
-                // let tax: number = invoice.tax;
-                // let taxPercentage: number = invoice.taxPercentage;
                 let charges: number = invoice.charges;
                 let shippingCost: number = invoice.shippingCost;
                 let taxAmount: number = 0;
@@ -1656,35 +1600,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                 let status = invoice.status;
                 const oldTotal = invoice.total;
 
-                // if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
-                //     (params.charges == undefined || params.charges == null || params.charges == '""' )) {
-
-                //     taxPercentage = params.tax
-                //     tax = (charges * params.tax) /100
-                //     total = charges + tax
-
-                // } else if ((params.charges != undefined && params.charges !== null && params.charges !== '""' ) &&
-                //     (params.tax == undefined || params.tax == null || params.tax == '""' )) {
-
-                //     tax = (params.charges * taxPercentage) / 100
-                //     charges = parseFloat(params.charges)
-                //     total = charges + tax
-
-                // }else{
-
-                //     charges = parseFloat(params.charges)
-                //     taxPercentage = params.tax
-                //     tax = (charges * params.tax) /100
-                //     total = charges + tax
-                // }
-
-                // invoice.tax = tax
-                // invoice.taxPercentage = taxPercentage
-                // invoice.charges = charges
-                // invoice.total = total
-                // invoice.note = params.note
-
-                // total = invoice.total
                 var items: any = []
                 if (params.items != undefined) {
                     try {
