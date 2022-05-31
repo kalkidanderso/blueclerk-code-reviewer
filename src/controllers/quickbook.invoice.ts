@@ -75,6 +75,7 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
         // Iterate all items in the invoice and construct is to QB Inv Lines
         for (const invItem of invoice.items) {
             const item = <IItem>invItem.item;
+
             const qbInvoiceLinesEntry: any = {
                 DetailType: LineDetailTypes.SalesItemLineDetail,
                 Amount: invItem.subTotal,
@@ -83,12 +84,14 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
                         value: item.quickbookId
                     },
                     Qty: invItem.quantity,
-                    UnitPrice: invItem.price,
-                    TaxInclusiveAmt: invItem.taxAmount,
-                    TaxCodeRef: {
-                        value: 'TAX'
-                    }
+                    UnitPrice: invItem.price
                 }
+            };
+
+            // Input tax of the item line if any
+            if (invItem.taxAmount) {
+                qbInvoiceLinesEntry.SalesItemLineDetail.TaxInclusiveAmt = invItem.taxAmount;
+                qbInvoiceLinesEntry.SalesItemLineDetail.TaxCodeRef = { value: 'TAX' };
             }
 
             qbInvoiceLines.push(qbInvoiceLinesEntry);
@@ -228,11 +231,12 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
 
         const qbInvoiceLines: IQBInvoiceLine[] = [];
         const taxCode = await _getTaxRates(company);
+
         // Iterate all items in the invoice and construct is to QB Inv Lines
         for (const invItem of invoice.items) {
             const item = <IItem>invItem.item;
 
-            qbInvoiceLines.push({
+            const qbInvoiceLinesEntry: any = {
                 DetailType: LineDetailTypes.SalesItemLineDetail,
                 Amount: invItem.subTotal,
                 SalesItemLineDetail: {
@@ -240,13 +244,17 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
                         value: item.quickbookId
                     },
                     Qty: invItem.quantity,
-                    UnitPrice: invItem.price,
-                    TaxInclusiveAmt: invItem.taxAmount,
-                    TaxCodeRef: {
-                        value: "TAX"
-                    }
+                    UnitPrice: invItem.price
                 }
-            });
+            };
+
+            // Input tax of the item line if any
+            if (invItem.taxAmount) {
+                qbInvoiceLinesEntry.SalesItemLineDetail.TaxInclusiveAmt = invItem.taxAmount;
+                qbInvoiceLinesEntry.SalesItemLineDetail.TaxCodeRef = { value: 'TAX' };
+            }
+
+            qbInvoiceLines.push(qbInvoiceLinesEntry);
         }
 
         if (invoice.subTotal) {
