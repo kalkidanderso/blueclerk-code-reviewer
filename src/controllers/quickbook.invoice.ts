@@ -70,11 +70,13 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
         const qbInvoiceLines: IQBInvoiceLine[] = [];
+        const taxCode = await _getTaxRates(company);
+
         // Iterate all items in the invoice and construct is to QB Inv Lines
         for (const invItem of invoice.items) {
             const item = <IItem>invItem.item;
 
-            qbInvoiceLines.push({
+            const qbInvoiceLinesEntry: any = {
                 DetailType: LineDetailTypes.SalesItemLineDetail,
                 Amount: invItem.subTotal,
                 SalesItemLineDetail: {
@@ -82,9 +84,17 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
                         value: item.quickbookId
                     },
                     Qty: invItem.quantity,
-                    UnitPrice: invItem.price,
+                    UnitPrice: invItem.price
                 }
-            });
+            };
+
+            // Input tax of the item line if any
+            if (invItem.taxAmount) {
+                qbInvoiceLinesEntry.SalesItemLineDetail.TaxInclusiveAmt = invItem.taxAmount;
+                qbInvoiceLinesEntry.SalesItemLineDetail.TaxCodeRef = { value: 'TAX' };
+            }
+
+            qbInvoiceLines.push(qbInvoiceLinesEntry);
         }
 
         if (invoice.subTotal) {
@@ -139,7 +149,13 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
                     Type: 'StringType',
                     StringValue: invoice.vendorId || customer.vendorId
                 }
-            ]
+            ],
+            TxnTaxDetail: {
+                TotalTax: invoice.taxAmount,
+                TxnTaxCodeRef: {
+                    value: taxCode.Id
+                }
+            }
         };
 
         if (jobLocation) {
@@ -214,11 +230,13 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
         const qbInvoiceLines: IQBInvoiceLine[] = [];
+        const taxCode = await _getTaxRates(company);
+
         // Iterate all items in the invoice and construct is to QB Inv Lines
         for (const invItem of invoice.items) {
             const item = <IItem>invItem.item;
 
-            qbInvoiceLines.push({
+            const qbInvoiceLinesEntry: any = {
                 DetailType: LineDetailTypes.SalesItemLineDetail,
                 Amount: invItem.subTotal,
                 SalesItemLineDetail: {
@@ -226,9 +244,17 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
                         value: item.quickbookId
                     },
                     Qty: invItem.quantity,
-                    UnitPrice: invItem.price,
+                    UnitPrice: invItem.price
                 }
-            });
+            };
+
+            // Input tax of the item line if any
+            if (invItem.taxAmount) {
+                qbInvoiceLinesEntry.SalesItemLineDetail.TaxInclusiveAmt = invItem.taxAmount;
+                qbInvoiceLinesEntry.SalesItemLineDetail.TaxCodeRef = { value: 'TAX' };
+            }
+
+            qbInvoiceLines.push(qbInvoiceLinesEntry);
         }
 
         if (invoice.subTotal) {
@@ -246,6 +272,13 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
             qbInvoice.TxnDate = moment(invoice.issuedDate).format("YYYY-MM-DD");
             qbInvoice.DueDate = moment(invoice.dueDate).format("YYYY-MM-DD");
             qbInvoice.Line = qbInvoiceLines;
+            qbInvoice.TxnTaxDetail = {
+                TotalTax: invoice?.taxAmount,
+                TxnTaxCodeRef: {
+                    value: taxCode.Id
+                }
+            }
+
             if (qbInvoice.SalesTermRef) {
                 qbInvoice.SalesTermRef.value = paymentTerm?.quickbookId;
             }
@@ -769,6 +802,56 @@ export const _countQBInvoices = async (company: ICompany, customer: ICustomer): 
             }
 
             resolve(<boolean>qbInvoice ? true : false);
+        });
+    });
+}
+
+export const _getTaxRates = async (company: ICompany): Promise<any> => {
+    return new Promise((resolve, reject) => {
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.findTaxAgencies({ fetchAll: true }, async (err: any, data: any) => {
+            const dataTaxAgency = data?.QueryResponse?.TaxAgency;
+
+            // find tax agencies on quickbook by company name
+            let taxAgency = dataTaxAgency.find((agency: any) => agency.DisplayName === company?.info?.companyName);
+
+            if (!taxAgency) {
+                // create tax agency when tax agency not found in qb
+                qbo.createTaxAgency({ DisplayName: company?.info?.companyName }, (err: any, qbTaxAgency: any) => {
+                    taxAgency = qbTaxAgency;
+                });
+            }
+
+            // find tax code on quickbook
+            qbo.findTaxCodes({ fetchAll: true }, async (err: any, dataTaxCode: any) => {
+                const taxCode = dataTaxCode?.QueryResponse?.TaxCode;
+                const tax = taxCode.find((tCode: any) => tCode.Name === 'Alaska');
+
+                if (!tax) {
+                    const taxServiceEntry = {
+                        TaxCode: 'Alaska',
+                        TaxRateDetails: [{
+                            RateValue: 8.25,
+                            TaxRateName: 'Alaska',
+                            TaxAgencyId: taxAgency.Id
+                        }],
+                    }
+
+                    // create a new tax service when tax code is not found
+                    qbo.createTaxService(taxServiceEntry, async (err: any, taxService: any) => {
+                        if (err) {
+                            reject(err)
+                        }
+
+                        resolve(taxService);
+                    });
+
+                } else {
+                    resolve(tax);
+                }
+
+            });
         });
     });
 }
