@@ -1559,6 +1559,8 @@ paths:
                   type: string
                 phone:
                   type: string
+                fax:
+                  type: string
         required: true
       responses:
         '200':
@@ -1607,6 +1609,8 @@ paths:
                 zipCode:
                   type: string
                 phone:
+                  type: string
+                fax:
                   type: string
         required: true
       responses:
