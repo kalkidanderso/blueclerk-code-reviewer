@@ -2565,6 +2565,9 @@
                   },
                   "phone": {
                     "type": "string"
+                  },
+                  "fax": {
+                    "type": "string"
                   }
                 }
               }
@@ -2639,6 +2642,9 @@
                     "type": "string"
                   },
                   "phone": {
+                    "type": "string"
+                  },
+                  "fax": {
                     "type": "string"
                   }
                 }
@@ -4005,7 +4011,7 @@
                 "properties": {
                   "jobLocationId": {
                     "type": "string",
-                    "description": "Job location/Subdivison ID"
+                    "description": "Job location/Subdivision ID"
                   },
                   "customerId": {
                     "type": "string",

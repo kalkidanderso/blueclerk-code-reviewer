@@ -6,6 +6,7 @@ import {ObjectId} from 'mongodb'
 import {Contract, IContract} from '../models/Contract'
 import {ICompanyAdmin} from '../models/CompanyAdmin'
 import {CompanyPrefix, ICompanyPrefix} from '../models/CompanyPrefix'
+import { _manageCompanyMainLocation } from '../controllers/companyLocation';
 import {ISaleTax, SaleTax} from '../models/SaleTax'
 import {IJobCharges, JobCharges} from '../models/JobCharges'
 import {IJob, Job} from '../models/Job'
@@ -50,74 +51,51 @@ export const _resetCompanyQB = (company: ICompany): Promise<void> => {
 
 export const updateCompanyProfile = (req: Request, res: Response) => {
 
-    const params = req.body
+    const params = req.body;
 
-    Company.findById(req.companyId, function (err: any, company: ICompany) {
+    Company.findById(req.companyId, async (err: any, company: ICompany) => {
 
         if (err) {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            return res.json({ status: Status.Error, message: Messages.GenericError });
         }
 
-        if(company.info.companyEmail.toLowerCase() != params.companyEmail ) {
+        if (!company) {
+            return res.json({ status: Status.Error, message: 'Company not found.' });
+        }
 
+        // If email updated, check if another company with that email exist
+        if (company.info.companyEmail.toLowerCase() != params.companyEmail) {
             Company.findOne(
                 { 'info.companyEmail': {$regex : params.companyEmail , $options: 'i' }},
-                (err: any, previousCompany: ICompany) => {
+                (err: any, existingCompany: ICompany) => {
 
                     if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        return res.json({ status: Status.Error, message: Messages.GenericError });
                     }
 
-                    if (previousCompany) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.CompanyDuplicateEmail })
+                    if (existingCompany) {
+                        return res.json({ status: Status.Error, message: Messages.CompanyDuplicateEmail });
                     }
-                    company.updateOne(
-                        {
-                            'info.companyName': params.companyName,
-                            'info.companyEmail': params.companyEmail,
-                            'info.logoUrl': params.logoUrl,
-                            'address.street': params.street,
-                            'address.city': params.city,
-                            'address.state': params.state,
-                            'address.zipCode': params.zipCode,
-                            'contact.phone': params.phone,
-                            'contact.fax': params.fax,
-                        },
-                        (err: any) => {
-
-                            if (err) {
-                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                            }
-
-                            return res.json({ 'status': Status.Success, 'message': 'Profile updated successfully.' })
-                        }
-                    )
-                }
-            )
-
-        }else{
-            company.updateOne(
-                {
-                    'info.companyName': params.companyName,
-                    'info.logoUrl': params.logoUrl,
-                    'address.street': params.street,
-                    'address.city': params.city,
-                    'address.state': params.state,
-                    'address.zipCode': params.zipCode,
-                    'contact.phone': params.phone,
-                    'contact.fax': params.fax,
-                    'info.companyEmail': params.companyEmail,
-                },
-                (err: any) => {
-
-                    if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                    }
-
-                    return res.json({ 'status': Status.Success, 'message': 'Profile updated successfully.' })
                 }
             )
         }
+
+        // Update company properties
+        company.info.companyName = params.companyName;
+        company.info.companyEmail = params.companyEmail;
+        company.info.logoUrl = params.logoUrl;
+        company.address.street = params.street;
+        company.address.city = params.city;
+        company.address.state = params.state;
+        company.address.zipCode = params.zipCode;
+        company.contact.phone = params.phone;
+        company.contact.fax = params.fax;
+        await company.save();
+
+        // To manage company main location, create new or update existing
+        const mainLocation = await _manageCompanyMainLocation(company);
+
+        return res.json({ status: Status.Success, message: 'Company Profile updated successfully.', company, mainLocation });
     })
 
 }
