@@ -24,6 +24,13 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
     const params = req.body;
     const company = <ICompany>req.company;
 
+    if (params.isMainLocation) {
+        let existingMainLocation = await CompanyLocation.findOne({ company, isActive: true, isMainLocation: true });
+        if (existingMainLocation) {
+            return res.json({ status: Status.Error, message: 'Company already have main location', mainLocation: existingMainLocation });
+        }
+    }
+
     const companyLocation = new CompanyLocation(
         {
             name: params.name,
@@ -63,6 +70,13 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
 
     if (!companyLocation) {
         return res.json({ status: Status.Error, message: 'Company Location is not found' });
+    }
+
+    if (!companyLocation.isMainLocation && params.isMainLocation) {
+        let existingMainLocation = await CompanyLocation.findOne({ company, isActive: true, isMainLocation: true });
+        if (existingMainLocation) {
+            return res.json({ status: Status.Error, message: 'Company already have main location', mainLocation: existingMainLocation });
+        }
     }
 
     companyLocation.name = params.name;
