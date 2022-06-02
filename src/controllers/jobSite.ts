@@ -73,8 +73,8 @@ export const create = async (req: Request, res: Response) => {
     let jobLocation = null
     try {
         jobLocation = await JobLocation.findById(locationId, 'customerId')
-        if (jobLocation == null) {
-            return res.json({ status: Status.Error, message: 'No location was found for provided locationId' });
+        if (!jobLocation) {
+            return res.json({ status: Status.Error, message: 'Subdivision not found.' });
         }
     } catch (err) {
         return res.json({ status: Status.Error, message: Messages.InternalServerError });
@@ -130,8 +130,8 @@ export const update = async (req: Request, res: Response) => {
     let jobLocation = null
     try {
         jobLocation = await JobLocation.findById(locationId, 'customerId')
-        if (jobLocation == null) {
-            return res.json({ status: Status.Error, message: 'No location was found for provided locationId' });
+        if (!jobLocation) {
+            return res.json({ status: Status.Error, message: 'Subdivision not found.' });
         }
     } catch (err) {
         return res.json({ status: Status.Error, message: Messages.InternalServerError });
@@ -159,7 +159,7 @@ export const update = async (req: Request, res: Response) => {
         if (err) {
             return res.json({ status: Status.Error, message: Messages.InternalServerError });
         } else {
-            return res.json({ status: Status.OK, message: 'Job Site has been updated successfully.' });
+            return res.json({ status: Status.OK, message: 'Job Address has been updated successfully.' });
         }
     })
 }

@@ -1429,6 +1429,46 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
+  /getCompanyCustomer:
+    get:
+      tags:
+        - Company
+      summary: Returns list of all Company Customer relation list
+      parameters:
+        - name: companyId
+          in: query
+          description: ID of company to retrieve customers of the company
+          schema:
+            type: string
+        - name: customerId
+          in: query
+          description: ID of the customer to retrieve companies of the customer
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by status for the "contract" between Company and Customer (0=PENDING, 1=ACCEPTED, 2=CANCELED, 3=REJECTED, 4=FINISHED)
+          schema:
+            type: number
+            enum:
+              - 0
+              - 1
+              - 2
+              - 3
+              - 4
+        - name: isPreferred
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /updateCompanyCustomer:
     put:
       tags:
@@ -1519,6 +1559,8 @@ paths:
                   type: string
                 phone:
                   type: string
+                fax:
+                  type: string
         required: true
       responses:
         '200':
@@ -1567,6 +1609,8 @@ paths:
                 zipCode:
                   type: string
                 phone:
+                  type: string
+                fax:
                   type: string
         required: true
       responses:
@@ -2407,13 +2451,13 @@ paths:
               properties:
                 jobLocationId:
                   type: string
-                  description: Job location ID
+                  description: Job location/Subdivision ID
                 customerId:
                   type: string
                   description: Customer ID
                 jobSiteId:
                   type: string
-                  description: Job Site ID
+                  description: Job Address ID
                 nfcTag:
                   type: string
                 images:
@@ -4634,7 +4678,7 @@ paths:
               properties:
                 keyword:
                   type: string
-                  description: Filter jobs by search keyword to Job Id, Customer's name, Job Location's name address, Job Site's name address, Technician's name, and Contractor's name
+                  description: Filter jobs by search keyword to Job Id, Customer's name, Subdivision's name address, Job Address's name address, Technician's name, and Contractor's name
                 status:
                   type: integer
                   description: Filter jobs by status (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4, PAUSED => 5, INCOMPLETE => 6)
@@ -5349,7 +5393,7 @@ paths:
       parameters:
         - name: keyword
           in: query
-          description: Filter job reports by search keyword to Job Id, Customer's name, Job Location's name address, Job Site's name address, Technician's name, and Contractor's name
+          description: Filter job reports by search keyword to Job Id, Customer's name, Subdivision's name address, Job Address's name address, Technician's name, and Contractor's name
           schema:
             type: string
         - name: startDate
@@ -5550,7 +5594,7 @@ paths:
               properties:
                 keyword:
                   type: string
-                  description: Filter invoices by search keyword to Job Id, Customer's name, Job's Job Location name address, Job's Job Site name address, Job's Technician name, and Job's Contractor name
+                  description: Filter invoices by search keyword to Job Id, Customer's name, Job's Subdivision name address, Job's Job Address name address, Job's Technician name, and Job's Contractor name
                 customerId:
                   type: string
                   description: Filter invoices by Customer ID

@@ -925,24 +925,6 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
 
         await job.populate({ path: 'ticket' }).execPopulate();
         ticket = job.ticket;
-
-        /**
-         * Kris' remark (Jun 30th, 2021):
-         * TODO: These commented lines are TO BE DEPRECATED,
-         * because now job has multiple tasks with their own charge and timeSpent
-         */
-        // if (!jobTypeitem.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
-        //     return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
-        // } else if (!jobTypeitem.isFixed) {
-        //     hourlyRate = params.hourlyRate
-        // }
-
-        // Take the first job type's isFixed as all job types should be the same type
-        // if (!jobTypeitems[0]?.isFixed && !params.timeSpent) {
-        //     return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
-        // } else if (!jobTypeitems[0]?.isFixed) {
-        //     timeSpent = params.timeSpent
-        // }
     }
 
     if (purchaseOrder != null) {
@@ -1392,8 +1374,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                             : params.dueDate
                                 ? new Date(params.dueDate)
                                 : issuedDate
-                        // let tax: number = invoice.tax;
-                        // let taxPercentage: number = invoice.taxPercentage;
                         let charges: number = invoice.charges;
                         let shippingCost: number = invoice.shippingCost;
                         let taxAmount: number = 0;
@@ -1404,40 +1384,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                         let paid = invoice.paid;
                         let status = invoice.status;
                         const oldTotal = invoice.total;
-
-                        // if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
-                        //     (params.charges == undefined || params.charges == null || params.charges == '""' )) {
-
-                        //     taxPercentage = params.tax
-                        //     tax = (charges * params.tax) /100
-                        //     total = charges + tax
-
-                        // } else if ((params.charges != undefined && params.charges !== null && params.charges !== '""' ) &&
-                        //     (params.tax == undefined || params.tax == null || params.tax == '""' )) {
-
-                        //     tax = (params.charges * taxPercentage) / 100
-                        //     charges = parseFloat(params.charges)
-                        //     total = charges + tax
-
-                        // }else{
-
-                        //     // update tax and charges
-                        //     charges = parseFloat(params.charges)
-                        //     taxPercentage = params.tax
-                        //     tax = (charges * params.tax) /100
-                        //     total = charges + tax
-                        // }
-
-                        // invoice.tax = tax
-                        // invoice.taxPercentage = taxPercentage
-                        // invoice.charges = charges
-                        // invoice.total = total
-
-                        // if(!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""' )) {
-                        //     return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
-                        // }else if(!job.isFixed){
-                        //     invoice.hourlyRate = params.hourlyRate
-                        // }
 
                         if (!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
                             return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
@@ -1643,8 +1589,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                     : params.dueDate
                         ? new Date(params.dueDate)
                         : issuedDate
-                // let tax: number = invoice.tax;
-                // let taxPercentage: number = invoice.taxPercentage;
                 let charges: number = invoice.charges;
                 let shippingCost: number = invoice.shippingCost;
                 let taxAmount: number = 0;
@@ -1656,35 +1600,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                 let status = invoice.status;
                 const oldTotal = invoice.total;
 
-                // if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
-                //     (params.charges == undefined || params.charges == null || params.charges == '""' )) {
-
-                //     taxPercentage = params.tax
-                //     tax = (charges * params.tax) /100
-                //     total = charges + tax
-
-                // } else if ((params.charges != undefined && params.charges !== null && params.charges !== '""' ) &&
-                //     (params.tax == undefined || params.tax == null || params.tax == '""' )) {
-
-                //     tax = (params.charges * taxPercentage) / 100
-                //     charges = parseFloat(params.charges)
-                //     total = charges + tax
-
-                // }else{
-
-                //     charges = parseFloat(params.charges)
-                //     taxPercentage = params.tax
-                //     tax = (charges * params.tax) /100
-                //     total = charges + tax
-                // }
-
-                // invoice.tax = tax
-                // invoice.taxPercentage = taxPercentage
-                // invoice.charges = charges
-                // invoice.total = total
-                // invoice.note = params.note
-
-                // total = invoice.total
                 var items: any = []
                 if (params.items != undefined) {
                     try {
@@ -2107,6 +2022,8 @@ export const getInvoices = async (req: Request, res: Response) => {
             $or: [
                 { invoiceId: keywordRegex },
                 { status: keywordRegex },
+                { customerPO: keywordRegex },
+                { vendorId: keywordRegex },
                 { 'jobObj.jobId': keywordRegex },
                 { 'customerObj.profile.displayName': keywordRegex },
                 { 'jobLocationObj.name': keywordRegex },
@@ -2648,7 +2565,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
 
     let serviceAddress = {
         text: [
-            { text: "SERVICE ADDRESS", style: "smallFont", alignment: "left" },
+            { text: "JOB ADDRESS", style: "smallFont", alignment: "left" },
             { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
         ],
         rowSpan: 2
@@ -2670,7 +2587,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
 
             serviceAddress = {
                 text: [
-                    { text: "SERVICE ADDRESS", style: "smallFont", alignment: "left" },
+                    { text: "JOB ADDRESS", style: "smallFont", alignment: "left" },
                     { text: `${jobAddress.name}`, style: "defaultFontBold" },
                     { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
                 ],
@@ -2693,7 +2610,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             // If Job Site exist, add additional information for Job Location
             serviceAddress = {
                 text: [
-                    { text: "JOB LOCATION", style: "smallFont", alignment: "left" },
+                    { text: "SUBDIVISION", style: "smallFont", alignment: "left" },
                     { text: `${jobAddress.name}`, style: "defaultFontBold" },
                     { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
                 ],
@@ -2703,7 +2620,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             // Job Site Address still shown as Service Address but shifted below
             jobSiteServiceAddress = {
                 text: [
-                    { text: "SERVICE ADDRESS", style: "smallFont", alignment: "left" },
+                    { text: "JOB ADDRESS", style: "smallFont", alignment: "left" },
                     { text: `${jobSiteAddress.name}`, style: "defaultFontBold" },
                     { text: `\n${jobSiteAddress.street}${jobSiteAddress.city}${jobSiteAddress.state}${jobSiteAddress.zipCode}`, style: "defaultFont" }
                 ],
@@ -2731,7 +2648,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
 
     // Construct Contact Details text
     let contactDetails = {
-        text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 6, bold: true
+        text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 8, bold: true
     };
 
     // Construct the header for the Invoice Items
@@ -2781,11 +2698,11 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const bodyTable: any = [];
     invoice.items.forEach(item => {
         const itemPopulated = <IItem>item.item;
-        const itemName = [{ text: `${item.name ?? itemPopulated?.name ?? ''}`, style: "defaultFontBold", alignment: "left" }, { text: `${item.description ?? itemPopulated?.description ?? ''}`, style: "defaultFont", alignment: "left" }];
-        const itemQuantity = [{ text: " ", style: "defaultFontBold", alignment: "center" }, { text: item.quantity, style: "defaultFont", alignment: "center" }];
-        const itemPrice = [{ text: " ", style: "defaultFontBold", alignment: "center" }, { text: `$${item.price}`, style: "defaultFont", alignment: "center" }];
-        const itemTax = [{ text: " ", style: "defaultFontBold", alignment: "center" }, { text: item.tax === 0 ? 'No' : `Yes`, style: "defaultFont", alignment: "center" }];
-        const itemSubTotal = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: `$${item.subTotal}`, style: "defaultFont", alignment: "right" }];
+        const itemName = [{ text: `${item.name ?? itemPopulated?.name ?? ''}`, style: "lineFontBold", alignment: "left" }, { text: `${item.description ?? itemPopulated?.description ?? ''}`, style: "lineFont", alignment: "left" }];
+        const itemQuantity = [{ text: " ", style: "lineFontBold", alignment: "center" }, { text: item.quantity, style: "lineFont", alignment: "center" }];
+        const itemPrice = [{ text: " ", style: "lineFontBold", alignment: "center" }, { text: `$${item.price}`, style: "lineFont", alignment: "center" }];
+        const itemTax = [{ text: " ", style: "lineFontBold", alignment: "center" }, { text: item.tax === 0 ? 'No' : `Yes`, style: "lineFont", alignment: "center" }];
+        const itemSubTotal = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `$${item.subTotal}`, style: "lineFont", alignment: "right" }];
 
         bodyTable.push([
             {},
@@ -2854,9 +2771,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {},
                             {
                                 text: "BILL TO",
-                                italics: true,
-                                fontSize: 5,
-                                lineHeight: 1.2,
+                                style: "smallFont",
                             },
                             {},
                             {
@@ -2914,8 +2829,8 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {},
                             [
                                 { text: "CONTACT DETAILS", style: "smallFont" },
-                                { text: `${customerContact?.name ?? ''}`, fontSize: 6, bold: true },
-                                { text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 6, bold: true },
+                                { text: `${customerContact?.name ?? ''}`, fontSize: 8, bold: true },
+                                { text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 8, bold: true },
                             ],
                             { ...jobSiteServiceAddress },
                             { text: "\nTOTAL", fontSize: 5, rowSpan: 4, colSpan: 2, fillColor: "#D0D3DC" },
@@ -2941,7 +2856,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {},
                             [
                                 { text: "NOTE", style: "smallFont" },
-                                { text: `${ticket?.note ?? ''}`, fontSize: 6, bold: true },
+                                { text: `${ticket?.note ?? ''}`, fontSize: 8, bold: true },
                             ],
                             {},
                             {},
@@ -3054,18 +2969,30 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             },
             smallFont: {
                 italics: true,
-                fontSize: 5,
+                fontSize: 7,
                 lineHeight: 1.2,
             },
             defaultFont: {
                 bold: false,
-                fontSize: 6,
+                fontSize: 8,
                 weight: 100,
                 lineHeight: 1.2,
             },
             defaultFontBold: {
                 bold: true,
-                fontSize: 6,
+                fontSize: 8,
+                weight: 100,
+                lineHeight: 1.2,
+            },
+            lineFont: {
+                bold: false,
+                fontSize: 10,
+                weight: 100,
+                lineHeight: 1.2,
+            },
+            lineFontBold: {
+                bold: true,
+                fontSize: 10,
                 weight: 100,
                 lineHeight: 1.2,
             },

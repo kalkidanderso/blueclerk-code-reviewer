@@ -99,12 +99,12 @@ export const getPayments = (req: Request, res: Response) => {
             select: 'info.email auth.email profile.displayName address contact contactName vendorId'
         })
         .populate({
-            path: 'invoices',
-            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+            path: 'invoice',
+            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
         })
         .populate({
             path: 'line.invoice',
-            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
         })
         .populate({
             path: 'createdBy',
@@ -139,15 +139,15 @@ export const getPaymentsByCustomerId = (req: Request, res: Response) => {
         })
         .populate({
             path: 'invoices',
-            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
         })
         .populate({
             path: 'invoice',
-            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
         })
         .populate({
             path: 'line.invoice',
-            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total'
+            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
         })
         .populate({
             path: 'createdBy',
@@ -209,7 +209,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                 })
                 .populate({
                     path: 'invoices',
-                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total note'
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
                 })
                 .populate({
                     path: 'createdBy',
@@ -234,7 +234,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                 })
                 .populate({
                     path: 'invoices',
-                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total note'
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
                 })
                 .populate({
                     path: 'createdBy',
@@ -263,7 +263,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                 })
                 .populate({
                     path: 'invoices',
-                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost tax paid total note'
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
                 })
                 .populate({
                     path: 'createdBy',
