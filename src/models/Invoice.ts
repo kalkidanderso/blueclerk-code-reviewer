@@ -81,8 +81,11 @@ export interface IQBInvoice {
     Line: IQBInvoiceLine[]
     TotalAmt?: number
     Notes?: string
-    TaxTaxDetail?: {
+    TxnTaxDetail?: {
         TotalTax?: number
+        TxnTaxCodeRef?: {
+            value: string
+        }
     }
     SalesTermRef?: {
         name?: string
@@ -126,6 +129,9 @@ export interface IQBInvoiceLine {
         DiscountRate?: number
         DiscountAmt?: number
         TaxInclusiveAmt?: number
+        TaxCodeRef?: {
+            value?: string
+        }
     }
 }
 

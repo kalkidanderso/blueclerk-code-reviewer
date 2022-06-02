@@ -2371,6 +2371,71 @@
         ]
       }
     },
+    "/getCompanyCustomer": {
+      "get": {
+        "tags": [
+          "Company"
+        ],
+        "summary": "Returns list of all Company Customer relation list",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "query",
+            "description": "ID of company to retrieve customers of the company",
+            "schema": {
+              "type":"string"
+            }
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "description": "ID of the customer to retrieve companies of the customer",
+            "schema": {
+              "type":"string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by status for the \"contract\" between Company and Customer (0=PENDING, 1=ACCEPTED, 2=CANCELED, 3=REJECTED, 4=FINISHED)",
+            "schema": {
+              "type":"number",
+              "enum": [
+                0,
+                1,
+                2,
+                3,
+                4
+              ]
+            }
+          },
+          {
+            "name": "isPreferred",
+            "in": "query",
+            "schema" :{
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/updateCompanyCustomer": {
       "put": {
         "tags": [
@@ -2506,6 +2571,9 @@
                   },
                   "phone": {
                     "type": "string"
+                  },
+                  "fax": {
+                    "type": "string"
                   }
                 }
               }
@@ -2583,6 +2651,9 @@
                     "type": "string"
                   },
                   "phone": {
+                    "type": "string"
+                  },
+                  "fax": {
                     "type": "string"
                   }
                 }
@@ -3949,7 +4020,7 @@
                 "properties": {
                   "jobLocationId": {
                     "type": "string",
-                    "description": "Job location/Subdivison ID"
+                    "description": "Job location/Subdivision ID"
                   },
                   "customerId": {
                     "type": "string",
