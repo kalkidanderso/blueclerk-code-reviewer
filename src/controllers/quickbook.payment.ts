@@ -601,3 +601,38 @@ export const _countQBPayments = async (company: ICompany, customer: ICustomer): 
         });
     })
 }
+
+export const _deleteQBPayment = async (req: Request, res: Response, company: ICompany, payment: IPayment): Promise<any> => {
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
+
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return res.json({ status: Status.QBUnauthorized, message: Messages.QBUnAuthorized });
+        }
+
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+        qbo.deletePayment(payment.quickbookId, async (err: any, response: { Payment: IQBPayment }) => {
+            if (err) {
+                return res.json({
+                    status: Status.Error,
+                    message: err.Fault?.Error[0]?.Detail
+                        || err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError
+                });
+            } else {
+                return res.json({ status: response.Payment.status })
+            }
+
+        });
+    });
+}

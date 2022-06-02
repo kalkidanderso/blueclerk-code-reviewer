@@ -104,6 +104,7 @@ export interface IQBPayment {
         TxnId?: string
         TxnType?: string
     }[]
+    status?: string
 }
 
 export interface IQBPaymentMethod {

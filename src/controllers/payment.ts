@@ -8,7 +8,7 @@ import { IUser, User } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
 import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer, IPaymentVendor, IPaymentEmployee } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
-import { _createQBPayment, _updateQBPayment } from './quickbook.payment'
+import { _createQBPayment, _deleteQBPayment, _updateQBPayment } from './quickbook.payment'
 import { Employee } from '../models/Employee'
 import { Contract } from '../models/Contract'
 import { IJob, Job } from '../models/Job'
@@ -1038,32 +1038,38 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
             }
             break;
 
+        case 'customer':
+            payment = await Payment.findOne({ _id: params.paymentId, company, __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] } }).exec();
+
+            if (!payment) {
+                return res.json({ status: Status.Error, message: `Payment with type ${params.type} is Not Found` });
+            }
+            break;
+
         default:
             return res.json({ status: Status.Error, message: 'Type is required' });
     }
 
+    const invoiceIds: string[] = [];
     if (payment && !payment.isVoid) {
-        for (const invoice of payment.invoices) {
-            const invoiceCommission = await InvoiceCommission.findOne({ invoice }).exec();
-            if (invoiceCommission.technicians) {
-                for (const technicianCommission of invoiceCommission.technicians) {
-                    if (technicianCommission.contractor) {
-                        const contractor = await Company.findById(technicianCommission.contractor).exec();
-                        contractor.balance += technicianCommission.commissionAmount;
-                        await contractor.save();
-                    }
-
-                    if (technicianCommission.technician && !technicianCommission.contractor) {
-                        const technician = await User.findById(technicianCommission.technician).exec();
-                        technician.balance += technicianCommission.commissionAmount;
-                        await technician.save();
-                    }
-
-                    technicianCommission.paid = false;
-                    await invoiceCommission.save()
-                }
-            }
+        if (payment?.line?.length) {
+            payment.line.forEach(line => invoiceIds.push(line.invoice.toString()));
         }
+
+        if (payment?.invoices?.length) {
+            payment.invoices.forEach(invoice => invoiceIds.push(invoice.toString()));
+        }
+
+        if (payment?.invoice) {
+            invoiceIds.push(payment.invoice.toString());
+        }
+
+        // Delete payment in quickbook
+        if (company.qbAuthorized && payment.quickbookId) {
+            await _deleteQBPayment(req, res, company, payment);
+        }
+
+        await _handleVoidPayment(invoiceIds);
 
         payment.isVoid = true;
         await payment.save();
@@ -1149,4 +1155,44 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
 
     payment.amountPaid = Math.round(paymentAmountPaid * 100) / 100;
     return invoices;
+}
+
+export const _handleVoidPayment = async (invoiceIds: string[]) => {
+    const invoices = await Invoice.find({ _id: { $in: [...new Set(invoiceIds)] } })
+    if (invoices.length) {
+        for (const invoice of invoices) {
+            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id }).exec();
+            if (invoiceCommission?.technicians) {
+                for (const technicianCommission of invoiceCommission.technicians) {
+                    if (technicianCommission.contractor) {
+                        const contractor = await Company.findById(technicianCommission.contractor).exec();
+                        contractor.balance += technicianCommission.commissionAmount;
+                        await contractor.save();
+                    }
+
+                    if (technicianCommission.technician && !technicianCommission.contractor) {
+                        const technician = await User.findById(technicianCommission.technician).exec();
+                        technician.balance += technicianCommission.commissionAmount;
+                        await technician.save();
+                    }
+
+                    technicianCommission.paid = false;
+                    await invoiceCommission.save();
+                }
+            }
+
+            invoice.balanceDue = invoice.total;
+            const paymentApplied = invoice.total - invoice.paymentApplied;
+            invoice.paymentApplied = paymentApplied;
+            if (paymentApplied > 0) {
+                invoice.status = InvoiceStatus.PARTIALLY_PAID;
+            } else {
+                invoice.status = InvoiceStatus.UNPAID;
+            }
+
+            await invoice.save();
+        }
+    }
+
+    return;
 }

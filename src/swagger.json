@@ -10462,6 +10462,61 @@
         ]
       }
     },
+    "/voidPayment": {
+      "delete": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "To void payment contractor",
+        "description": "To void payment contractor",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "paymentId"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "type of payment (PaymentVendor or PaymentEmployee)",
+                    "enum": [
+                      "vendor",
+                      "employee",
+                      "customer"
+                    ]
+                  },
+                  "paymentId": {
+                    "type": "string",
+                    "description": "Id of payment to void"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getPayrollBalance": {
       "get": {
         "tags": [

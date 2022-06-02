@@ -2012,6 +2012,15 @@ export default function (sio: any) {
         paymentController.voidPaymentContractor
     )
 
+    router.delete(
+        '/voidPayment',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.voidPaymentContractor),
+        checkUserPermissions(Permissions.Update_Payment),
+        paymentController.voidPaymentContractor
+    )
+
     router.get(
         '/getPayrollBalance',
         passport.authenticate('jwt', { session: false }),
