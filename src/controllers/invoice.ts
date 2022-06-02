@@ -3335,8 +3335,9 @@ export const voidInvoice = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Invoice not found' });
     }
 
-    if (invoice.status === InvoiceStatus.PAID && invoice.paid) {
-        return res.json({ status: Status.Error, message: 'Cannot voided a paid invoice' });
+    const payment = await Payment.findOne({ invoice: invoice._id });
+    if (payment || invoice.status !== InvoiceStatus.UNPAID) {
+        return res.json({ status: Status.Error, message: 'Invoice already paid, cannot void this invoice.' });
     }
 
     const customer = await Customer.findById(invoice.customer);
