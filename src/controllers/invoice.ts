@@ -2733,7 +2733,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
 
     // Construct Contact Details text
     let contactDetails = {
-        text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 6, bold: true
+        text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 8, bold: true
     };
 
     // Construct the header for the Invoice Items
@@ -2783,11 +2783,11 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const bodyTable: any = [];
     invoice.items.forEach(item => {
         const itemPopulated = <IItem>item.item;
-        const itemName = [{ text: `${item.name ?? itemPopulated?.name ?? ''}`, style: "defaultFontBold", alignment: "left" }, { text: `${item.description ?? itemPopulated?.description ?? ''}`, style: "defaultFont", alignment: "left" }];
-        const itemQuantity = [{ text: " ", style: "defaultFontBold", alignment: "center" }, { text: item.quantity, style: "defaultFont", alignment: "center" }];
-        const itemPrice = [{ text: " ", style: "defaultFontBold", alignment: "center" }, { text: `$${item.price}`, style: "defaultFont", alignment: "center" }];
-        const itemTax = [{ text: " ", style: "defaultFontBold", alignment: "center" }, { text: item.tax === 0 ? 'No' : `Yes`, style: "defaultFont", alignment: "center" }];
-        const itemSubTotal = [{ text: " ", style: "defaultFontBold", alignment: "right" }, { text: `$${item.subTotal}`, style: "defaultFont", alignment: "right" }];
+        const itemName = [{ text: `${item.name ?? itemPopulated?.name ?? ''}`, style: "lineFontBold", alignment: "left" }, { text: `${item.description ?? itemPopulated?.description ?? ''}`, style: "lineFont", alignment: "left" }];
+        const itemQuantity = [{ text: " ", style: "lineFontBold", alignment: "center" }, { text: item.quantity, style: "lineFont", alignment: "center" }];
+        const itemPrice = [{ text: " ", style: "lineFontBold", alignment: "center" }, { text: `$${item.price}`, style: "lineFont", alignment: "center" }];
+        const itemTax = [{ text: " ", style: "lineFontBold", alignment: "center" }, { text: item.tax === 0 ? 'No' : `Yes`, style: "lineFont", alignment: "center" }];
+        const itemSubTotal = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `$${item.subTotal}`, style: "lineFont", alignment: "right" }];
 
         bodyTable.push([
             {},
@@ -2856,9 +2856,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {},
                             {
                                 text: "BILL TO",
-                                italics: true,
-                                fontSize: 5,
-                                lineHeight: 1.2,
+                                style: "smallFont",
                             },
                             {},
                             {
@@ -2916,8 +2914,8 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {},
                             [
                                 { text: "CONTACT DETAILS", style: "smallFont" },
-                                { text: `${customerContact?.name ?? ''}`, fontSize: 6, bold: true },
-                                { text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 6, bold: true },
+                                { text: `${customerContact?.name ?? ''}`, fontSize: 8, bold: true },
+                                { text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 8, bold: true },
                             ],
                             { ...jobSiteServiceAddress },
                             { text: "\nTOTAL", fontSize: 5, rowSpan: 4, colSpan: 2, fillColor: "#D0D3DC" },
@@ -2943,7 +2941,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {},
                             [
                                 { text: "NOTE", style: "smallFont" },
-                                { text: `${ticket?.note ?? ''}`, fontSize: 6, bold: true },
+                                { text: `${ticket?.note ?? ''}`, fontSize: 8, bold: true },
                             ],
                             {},
                             {},
@@ -3056,18 +3054,30 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             },
             smallFont: {
                 italics: true,
-                fontSize: 5,
+                fontSize: 7,
                 lineHeight: 1.2,
             },
             defaultFont: {
                 bold: false,
-                fontSize: 6,
+                fontSize: 8,
                 weight: 100,
                 lineHeight: 1.2,
             },
             defaultFontBold: {
                 bold: true,
-                fontSize: 6,
+                fontSize: 8,
+                weight: 100,
+                lineHeight: 1.2,
+            },
+            lineFont: {
+                bold: false,
+                fontSize: 10,
+                weight: 100,
+                lineHeight: 1.2,
+            },
+            lineFontBold: {
+                bold: true,
+                fontSize: 10,
                 weight: 100,
                 lineHeight: 1.2,
             },
