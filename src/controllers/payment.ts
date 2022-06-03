@@ -1064,12 +1064,16 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
             invoiceIds.push(payment.invoice.toString());
         }
 
+        try {
+            await _handleVoidPayment(invoiceIds);
+        } catch (err) {
+            return res.json({ status: Status.Error, message: err.message });
+        }
+
         // Delete payment in quickbook
         if (company.qbAuthorized && payment.quickbookId) {
             await _deleteQBPayment(req, res, company, payment);
         }
-
-        await _handleVoidPayment(invoiceIds);
 
         payment.isVoid = true;
         await payment.save();
@@ -1159,7 +1163,8 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
 
 export const _handleVoidPayment = async (invoiceIds: string[]) => {
     const invoices = await Invoice.find({ _id: { $in: [...new Set(invoiceIds)] } })
-    if (invoices.length) {
+
+    if (invoices?.length) {
         for (const invoice of invoices) {
             const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id }).exec();
             if (invoiceCommission?.technicians) {
@@ -1181,9 +1186,10 @@ export const _handleVoidPayment = async (invoiceIds: string[]) => {
                 }
             }
 
-            invoice.balanceDue = invoice.total;
             const paymentApplied = invoice.total - invoice.paymentApplied;
+            invoice.balanceDue = invoice.total;
             invoice.paymentApplied = paymentApplied;
+
             if (paymentApplied > 0) {
                 invoice.status = InvoiceStatus.PARTIALLY_PAID;
             } else {
@@ -1192,6 +1198,8 @@ export const _handleVoidPayment = async (invoiceIds: string[]) => {
 
             await invoice.save();
         }
+    } else {
+        throw new Error('Invoice not found');
     }
 
     return;

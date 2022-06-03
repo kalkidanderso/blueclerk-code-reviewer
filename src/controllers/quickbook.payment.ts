@@ -102,12 +102,6 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
 
         qbo.createPayment(qbPaymentEntry, async (err: any, qbPayment: IQBPayment) => {
             if (err) {
-                console.log('== err.Fault:', err.Fault);
-                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
-                console.log('== err.fault:', err.fault);
-                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
-                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
-
                 return next(
                     Status.Error,
                     err.Fault?.Error[0]?.Detail
@@ -619,8 +613,8 @@ export const _deleteQBPayment = async (req: Request, res: Response, company: ICo
         }
 
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
-        qbo.deletePayment(payment.quickbookId, async (err: any, response: { Payment: IQBPayment }) => {
-            if (err) {
+        qbo.deletePayment(payment.quickbookId, async (err: any, response: { Payment: { status: string } }) => {
+            if (err || !response) {
                 return res.json({
                     status: Status.Error,
                     message: err.Fault?.Error[0]?.Detail
@@ -629,10 +623,19 @@ export const _deleteQBPayment = async (req: Request, res: Response, company: ICo
                         || err.fault?.error[0]?.message
                         || Messages.GenericError
                 });
-            } else {
-                return res.json({ status: response.Payment.status })
             }
 
+            if (response?.Payment?.status === 'Deleted') {
+                payment.quickbookId = null;
+                payment.save();
+
+                if (company?.qbSync?.paymentsSynced) {
+                    company.qbSync.paymentsSyncedAt = new Date();
+                    company.save();
+                }
+
+                return;
+            }
         });
     });
 }

@@ -10410,6 +10410,7 @@
     },
     "/voidPaymentContractor": {
       "post": {
+        "deprecated": true,
         "tags": [
           "Payment"
         ],
