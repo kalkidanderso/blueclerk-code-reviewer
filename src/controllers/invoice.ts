@@ -30,7 +30,7 @@ import { IScan, Scan } from '../models/Scan';
 import { EmailDefault } from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer } from '../services/aws';
-import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice } from '../controllers/quickbook.invoice';
+import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice, _voidQBInvoice } from '../controllers/quickbook.invoice';
 import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from '../controllers/emailDefault';
 import { IJobSite } from '../models/JobSite';
 import { IJobLocation } from '../models/JobLocation';
@@ -3338,7 +3338,7 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
 
 export const voidInvoice = async (req: Request, res: Response) => {
     const params = req.body;
-    const invoice = await Invoice.findById(params.invoiceId);
+    const invoice = await Invoice.findOne({ _id: params.invoiceId, isVoid: { $ne: true } });
     const company = <ICompany>req.company;
 
     if (!invoice) {
@@ -3371,17 +3371,12 @@ export const voidInvoice = async (req: Request, res: Response) => {
 
     if (company.qbAuthorized && invoice.quickbookId) {
         // Delete Invoice in QuickBooks when invoice have quickbook id
-        _deleteQBInvoice(req, res, company, invoice, (err, errMsg, status) => {
-            if (status === 'Deleted') {
-                invoice.quickbookId = null;
-
-                // If company's invoices already synced, update the synced date
-                if (company.qbSync?.invoicesSynced) {
-                    company.qbSync.invoicesSyncedAt = new Date();
-                    company.save();
-                }
-            }
-        });
+        try {
+            await _voidQBInvoice(req, res, company, invoice);
+            invoice.quickbookId = null;
+        } catch (err) {
+            return res.json({ status: Status.Error, message: err.message })
+        }
     }
 
     customer.save();

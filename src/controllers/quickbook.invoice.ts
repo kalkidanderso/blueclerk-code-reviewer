@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
+import axios from 'axios';
 import moment from 'moment';
 import { Status, Messages } from '../common/constants';
-
 import { IContact } from '../common/contact';
 import { ICompany, Company } from '../models/Company'
 import { ICustomer, IQBCustomer } from '../models/Customer'
@@ -852,6 +852,52 @@ export const _getTaxRates = async (company: ICompany): Promise<any> => {
                 }
 
             });
+        });
+    });
+}
+
+export const _voidQBInvoice = async (req: Request, res: Response, company: ICompany, invoice: IInvoice) => {
+    const { QB_SANDBOX_URL } = process.env;
+
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            throw new Error(errMsg);
+        }
+
+        if (err === 400) {
+            Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            throw new Error(Messages.QBUnAuthorized);
+        }
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+        // Get quickbook invoice
+        qbo.getInvoice(invoice.quickbookId, async (err: any, qbInvoice: IQBInvoice) => {
+            // Void invoice in quickbook
+            return await axios({
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${company.qbAccessToken}`
+                },
+                method: 'post',
+                url: `${QB_SANDBOX_URL}/v3/company/${company.realmId}/invoice?operation=void&minorversion=65`,
+                data: { SyncToken: qbInvoice.SyncToken, Id: qbInvoice.Id },
+            })
+                .then(response => response)
+                .catch(err => {
+                    throw new Error(err.Fault?.Error[0]?.Detail
+                        || err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError
+                    );
+                });
         });
     });
 }
