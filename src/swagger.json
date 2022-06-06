@@ -2383,7 +2383,7 @@
             "in": "query",
             "description": "ID of company to retrieve customers of the company",
             "schema": {
-              "type":"string"
+              "type": "string"
             }
           },
           {
@@ -2391,7 +2391,7 @@
             "in": "query",
             "description": "ID of the customer to retrieve companies of the customer",
             "schema": {
-              "type":"string"
+              "type": "string"
             }
           },
           {
@@ -2399,7 +2399,7 @@
             "in": "query",
             "description": "Filter by status for the \"contract\" between Company and Customer (0=PENDING, 1=ACCEPTED, 2=CANCELED, 3=REJECTED, 4=FINISHED)",
             "schema": {
-              "type":"number",
+              "type": "number",
               "enum": [
                 0,
                 1,
@@ -2412,7 +2412,7 @@
           {
             "name": "isPreferred",
             "in": "query",
-            "schema" :{
+            "schema": {
               "type": "boolean"
             }
           }
@@ -2468,7 +2468,10 @@
                   },
                   "isPreferred": {
                     "type": "boolean",
-                    "enum": [ true, false ]
+                    "enum": [
+                      true,
+                      false
+                    ]
                   }
                 }
               }
@@ -2540,7 +2543,10 @@
                   },
                   "isMainLocation": {
                     "type": "string",
-                    "enum": [ true, false ]
+                    "enum": [
+                      true,
+                      false
+                    ]
                   },
                   "contactName": {
                     "type": "string"
@@ -2618,7 +2624,10 @@
                   },
                   "isMainLocation": {
                     "type": "string",
-                    "enum": [ true, false ]
+                    "enum": [
+                      true,
+                      false
+                    ]
                   },
                   "contactName": {
                     "type": "string"

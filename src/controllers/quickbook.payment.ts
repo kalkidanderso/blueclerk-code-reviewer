@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import moment from 'moment';
+import axios from 'axios';
 import * as _ from 'lodash';
 import { Status, Messages, PaymentTypes } from '../common/constants';
 
@@ -636,6 +637,56 @@ export const _deleteQBPayment = async (req: Request, res: Response, company: ICo
 
                 return;
             }
+        });
+    });
+}
+
+export const _voidPayment = async (req: Request, res: Response, company: ICompany, payment: IPayment): Promise<any> => {
+
+    const qbApiUrl = process.env.QB_API_URL || 'https://sandbox-quickbooks.api.intuit.com/';
+
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            throw new Error(errMsg);
+        }
+
+        if (err === 400) {
+            Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            throw new Error(Messages.QBUnAuthorized);
+        }
+
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        // Get quickbook invoice
+        qbo.getPayment(payment.quickbookId, async (err: any, qbPayment: IQBPayment) => {
+
+            // Void invoice in quickbook
+            return await axios({
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${company.qbAccessToken}`
+                },
+                method: 'post',
+                url: `${qbApiUrl}/v3/company/${company.realmId}/payment?operation=update&include=void&minorversion=65`,
+                data: { SyncToken: qbPayment.SyncToken, Id: qbPayment.Id, sparse: true },
+            })
+                .then(response => response)
+                .catch(err => {
+                    throw new Error(err.Fault?.Error[0]?.Detail
+                        || err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError
+                    );
+                });
         });
     });
 }

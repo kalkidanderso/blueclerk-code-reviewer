@@ -8,7 +8,7 @@ import { IUser, User } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
 import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer, IPaymentVendor, IPaymentEmployee } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
-import { _createQBPayment, _deleteQBPayment, _updateQBPayment } from './quickbook.payment'
+import { _createQBPayment, _deleteQBPayment, _updateQBPayment, _voidPayment } from './quickbook.payment'
 import { Employee } from '../models/Employee'
 import { Contract } from '../models/Contract'
 import { IJob, Job } from '../models/Job'
@@ -1072,7 +1072,7 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
 
         // Delete payment in quickbook
         if (company.qbAuthorized && payment.quickbookId) {
-            await _deleteQBPayment(req, res, company, payment);
+            await _voidPayment(req, res, company, payment);
         }
 
         payment.isVoid = true;
