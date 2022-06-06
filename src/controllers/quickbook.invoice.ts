@@ -857,6 +857,7 @@ export const _getTaxRates = async (company: ICompany): Promise<any> => {
 }
 
 export const _voidQBInvoice = async (req: Request, res: Response, company: ICompany, invoice: IInvoice) => {
+
     const qbApiUrl = process.env.QB_API_URL || 'https://sandbox-quickbooks.api.intuit.com/';
 
     _refreshToken(req, res, company, async (err, errMsg, company) => {
@@ -878,6 +879,11 @@ export const _voidQBInvoice = async (req: Request, res: Response, company: IComp
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
         // Get quickbook invoice
         qbo.getInvoice(invoice.quickbookId, async (err: any, qbInvoice: IQBInvoice) => {
+
+            if (!qbInvoice) {
+                return true;
+            }
+
             // Void invoice in quickbook
             return await axios({
                 headers: {
@@ -900,4 +906,5 @@ export const _voidQBInvoice = async (req: Request, res: Response, company: IComp
                 });
         });
     });
+
 }

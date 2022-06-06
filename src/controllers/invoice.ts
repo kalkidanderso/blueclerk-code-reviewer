@@ -925,24 +925,6 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
 
         await job.populate({ path: 'ticket' }).execPopulate();
         ticket = job.ticket;
-
-        /**
-         * Kris' remark (Jun 30th, 2021):
-         * TODO: These commented lines are TO BE DEPRECATED,
-         * because now job has multiple tasks with their own charge and timeSpent
-         */
-        // if (!jobTypeitem.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""')) {
-        //     return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
-        // } else if (!jobTypeitem.isFixed) {
-        //     hourlyRate = params.hourlyRate
-        // }
-
-        // Take the first job type's isFixed as all job types should be the same type
-        // if (!jobTypeitems[0]?.isFixed && !params.timeSpent) {
-        //     return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
-        // } else if (!jobTypeitems[0]?.isFixed) {
-        //     timeSpent = params.timeSpent
-        // }
     }
 
     if (purchaseOrder != null) {
@@ -1392,8 +1374,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                             : params.dueDate
                                 ? new Date(params.dueDate)
                                 : issuedDate
-                        // let tax: number = invoice.tax;
-                        // let taxPercentage: number = invoice.taxPercentage;
                         let charges: number = invoice.charges;
                         let shippingCost: number = invoice.shippingCost;
                         let taxAmount: number = 0;
@@ -1404,40 +1384,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                         let paid = invoice.paid;
                         let status = invoice.status;
                         const oldTotal = invoice.total;
-
-                        // if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
-                        //     (params.charges == undefined || params.charges == null || params.charges == '""' )) {
-
-                        //     taxPercentage = params.tax
-                        //     tax = (charges * params.tax) /100
-                        //     total = charges + tax
-
-                        // } else if ((params.charges != undefined && params.charges !== null && params.charges !== '""' ) &&
-                        //     (params.tax == undefined || params.tax == null || params.tax == '""' )) {
-
-                        //     tax = (params.charges * taxPercentage) / 100
-                        //     charges = parseFloat(params.charges)
-                        //     total = charges + tax
-
-                        // }else{
-
-                        //     // update tax and charges
-                        //     charges = parseFloat(params.charges)
-                        //     taxPercentage = params.tax
-                        //     tax = (charges * params.tax) /100
-                        //     total = charges + tax
-                        // }
-
-                        // invoice.tax = tax
-                        // invoice.taxPercentage = taxPercentage
-                        // invoice.charges = charges
-                        // invoice.total = total
-
-                        // if(!job.isFixed && (params.hourlyRate == undefined && params.hourlyRate == null && params.hourlyRate == '""' )) {
-                        //     return res.json({ 'status': Status.Error, 'message': 'Hourly rate is required' })
-                        // }else if(!job.isFixed){
-                        //     invoice.hourlyRate = params.hourlyRate
-                        // }
 
                         if (!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
                             return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
@@ -1643,8 +1589,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                     : params.dueDate
                         ? new Date(params.dueDate)
                         : issuedDate
-                // let tax: number = invoice.tax;
-                // let taxPercentage: number = invoice.taxPercentage;
                 let charges: number = invoice.charges;
                 let shippingCost: number = invoice.shippingCost;
                 let taxAmount: number = 0;
@@ -1656,35 +1600,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                 let status = invoice.status;
                 const oldTotal = invoice.total;
 
-                // if ((params.tax != undefined && params.tax !== null && params.tax !== '""' && params.tax > 0) &&
-                //     (params.charges == undefined || params.charges == null || params.charges == '""' )) {
-
-                //     taxPercentage = params.tax
-                //     tax = (charges * params.tax) /100
-                //     total = charges + tax
-
-                // } else if ((params.charges != undefined && params.charges !== null && params.charges !== '""' ) &&
-                //     (params.tax == undefined || params.tax == null || params.tax == '""' )) {
-
-                //     tax = (params.charges * taxPercentage) / 100
-                //     charges = parseFloat(params.charges)
-                //     total = charges + tax
-
-                // }else{
-
-                //     charges = parseFloat(params.charges)
-                //     taxPercentage = params.tax
-                //     tax = (charges * params.tax) /100
-                //     total = charges + tax
-                // }
-
-                // invoice.tax = tax
-                // invoice.taxPercentage = taxPercentage
-                // invoice.charges = charges
-                // invoice.total = total
-                // invoice.note = params.note
-
-                // total = invoice.total
                 var items: any = []
                 if (params.items != undefined) {
                     try {
@@ -3337,25 +3252,22 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
 }
 
 export const voidInvoice = async (req: Request, res: Response) => {
+
     const params = req.body;
     const invoice = await Invoice.findOne({ _id: params.invoiceId, isVoid: { $ne: true } });
     const company = <ICompany>req.company;
 
     if (!invoice) {
-        return res.json({ status: Status.Error, message: 'Invoice not found' });
+        return res.json({ status: Status.Error, message: 'Invoice not found.' });
+    }
+    if (invoice.isVoid) {
+        return res.json({ status: Status.Error, message: 'Invoice already voided.' });
     }
 
     const payment = await Payment.findOne({ invoice: invoice._id });
     if (payment || invoice.status !== InvoiceStatus.UNPAID) {
-        return res.json({ status: Status.Error, message: 'Invoice already paid, cannot void this invoice.' });
+        return res.json({ status: Status.Error, message: 'Invoice already paid or partially paid, cannot void this invoice.' });
     }
-
-    const customer = await Customer.findById(invoice.customer);
-    if (customer) {
-        customer.balance += invoice.paymentApplied
-    }
-
-    invoice.isVoid = true;
 
     const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
     // remove invoice commission if exsists
@@ -3363,19 +3275,28 @@ export const voidInvoice = async (req: Request, res: Response) => {
         await InvoiceCommission.deleteOne({ _id: invoiceCommission._id });
     }
 
+    invoice.isVoid = true;
+    invoice.commission = null;
+    await invoice.save();
+
+    const customer = await Customer.findById(invoice.customer);
+    if (customer) {
+        customer.balance -= invoice.total;
+        customer.balance = Math.round(customer.balance * 100) / 100;
+        await customer.save();
+    }
+
     const jobReport = await JobReport.findOne({ invoice: invoice._id });
     // remove invoice and invoiceCreated in job report if exsists
     if (jobReport) {
-        await jobReport.updateOne({ $unset: { invoice: "", invoiceCreated: "" } });
+        await jobReport.updateOne({ $unset: { invoice: null, invoiceCreated: false } });
     }
 
     if (company.qbAuthorized && invoice.quickbookId) {
         // Delete Invoice in QuickBooks when invoice have quickbook id
         await _voidQBInvoice(req, res, company, invoice);
-        invoice.quickbookId = null;
     }
 
-    customer.save();
-    invoice.save();
-    return res.json({ status: Status.Success, message: 'Invoice voided successfully' });
+    return res.json({ status: Status.Success, message: 'Invoice voided successfully', invoice });
+
 }
