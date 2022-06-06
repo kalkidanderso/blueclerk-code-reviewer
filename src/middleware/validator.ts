@@ -110,9 +110,9 @@ export const Validations = {
   updateEmployeeEmailPreferences: [check('employeeId').exists(), check('emailPreferences').isNumeric()],
 
   updateCompanyContract: [
-    check('contractId').exists().withMessage(Messages.Required), 
+    check('contractId').exists().withMessage(Messages.Required),
     check('contractId').isMongoId().withMessage(Messages.WrongId),
-    check('status').isInt({ min: 1,max: 4 }).toInt().withMessage('status has to be number with value between 1 and 4')
+    check('status').isInt({ min: 1, max: 4 }).toInt().withMessage('status has to be number with value between 1 and 4')
   ],
 
   updateContractorEmailPreferences: [check('contractorId').exists(), check('emailPreferences').isNumeric()],
@@ -418,6 +418,8 @@ export const Validations = {
   setCustomInvoiceNumber: [check('invoiceNumber').optional().isInt().toInt()],
 
   companyInvoice: [check('companyInvoiceId').exists()],
+
+  voidInvoice: [check('invoiceId').exists().withMessage(Messages.Required), check('invoiceId').isMongoId().withMessage(Messages.WrongId)],
 
   updateCommission: [
     check('type').exists().withMessage(Messages.Required),

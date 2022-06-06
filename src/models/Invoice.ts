@@ -62,6 +62,7 @@ export interface IInvoice extends Document {
     lastEmailSent?: Date
     quickbookId?: string
     commission?: Schema.Types.ObjectId | IInvoiceCommission
+    isVoid?: boolean
 }
 
 export enum LineDetailTypes {
@@ -77,7 +78,8 @@ export interface IQBInvoice {
     DocNumber?: string
     TxnDate?: string
     DueDate?: string
-    Line: IQBInvoiceLine[]
+    Line?: IQBInvoiceLine[]
+    SyncToken?: string
     TotalAmt?: number
     Notes?: string
     TxnTaxDetail?: {
@@ -116,12 +118,12 @@ export interface IQBInvoice {
 }
 
 export interface IQBInvoiceLine {
-    DetailType: LineDetailTypes
+    DetailType?: LineDetailTypes
     Amount?: number
-    SalesItemLineDetail: {
+    SalesItemLineDetail?: {
         ItemRef?: {
             name?: string
-            value: string
+            value?: string
         }
         Qty?: number
         UnitPrice?: number
@@ -318,6 +320,10 @@ const InvoiceSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'InvoiceCommission',
         required: false
+    },
+    isVoid: {
+        type: Boolean,
+        default: false
     }
 })
 

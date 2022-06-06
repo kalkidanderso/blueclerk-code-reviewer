@@ -1710,6 +1710,15 @@ export default function (sio: any) {
         invoiceController.getCompanyInvoiceDetails
     )
 
+    router.delete(
+        '/voidInvoice',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.voidInvoice),
+        invoiceController.voidInvoice
+    )
+
     router.post(
         '/updateCompaniesDefaultPermissions',
         permissionController.updateAllCompaniesPermissions
