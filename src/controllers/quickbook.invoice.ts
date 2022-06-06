@@ -857,7 +857,7 @@ export const _getTaxRates = async (company: ICompany): Promise<any> => {
 }
 
 export const _voidQBInvoice = async (req: Request, res: Response, company: ICompany, invoice: IInvoice) => {
-    const { QB_SANDBOX_URL } = process.env;
+    const qbApiUrl = process.env.QB_API_URL || 'https://sandbox-quickbooks.api.intuit.com/';
 
     _refreshToken(req, res, company, async (err, errMsg, company) => {
         if (err === 0) {
@@ -886,7 +886,7 @@ export const _voidQBInvoice = async (req: Request, res: Response, company: IComp
                     'Authorization': `Bearer ${company.qbAccessToken}`
                 },
                 method: 'post',
-                url: `${QB_SANDBOX_URL}/v3/company/${company.realmId}/invoice?operation=void&minorversion=65`,
+                url: `${qbApiUrl}/v3/company/${company.realmId}/invoice?operation=void&minorversion=65`,
                 data: { SyncToken: qbInvoice.SyncToken, Id: qbInvoice.Id },
             })
                 .then(response => response)

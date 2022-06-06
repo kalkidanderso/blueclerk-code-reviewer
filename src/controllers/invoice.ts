@@ -3371,12 +3371,8 @@ export const voidInvoice = async (req: Request, res: Response) => {
 
     if (company.qbAuthorized && invoice.quickbookId) {
         // Delete Invoice in QuickBooks when invoice have quickbook id
-        try {
-            await _voidQBInvoice(req, res, company, invoice);
-            invoice.quickbookId = null;
-        } catch (err) {
-            return res.json({ status: Status.Error, message: err.message })
-        }
+        await _voidQBInvoice(req, res, company, invoice);
+        invoice.quickbookId = null;
     }
 
     customer.save();
