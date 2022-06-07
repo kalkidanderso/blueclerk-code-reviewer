@@ -1020,6 +1020,7 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
     const params = req.body;
     const company = <ICompany>req.company;
     let payment: IPayment;
+    let customer: ICustomer;
 
     switch (params.type) {
         case 'vendor':
@@ -1044,6 +1045,7 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
             if (!payment) {
                 return res.json({ status: Status.Error, message: `Payment with type ${params.type} is Not Found` });
             }
+            customer = await Customer.findById(payment.customer);
             break;
 
         default:
@@ -1057,6 +1059,7 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
         }
 
         payment.isVoid = true;
+        payment.voidedAt = new Date();
         await payment.save();
 
         if (payment?.line?.length) {
@@ -1072,7 +1075,7 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
         }
 
         try {
-            await _handleVoidPayment(invoiceIds, payment);
+            await _handleVoidPayment(invoiceIds, payment, customer);
         } catch (err) {
             return res.json({ status: Status.Error, message: err.message });
         }
@@ -1084,7 +1087,8 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
 
     }
 
-    return res.json({ status: Status.Success, message: 'Payment void successfully' });
+    return res.json({ status: Status.Success, message: 'Payment void successfully', payment });
+
 }
 
 // To handle create payment for multiple invoices
@@ -1166,8 +1170,14 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
     return invoices;
 }
 
-export const _handleVoidPayment = async (invoiceIds: string[], payment: IPayment) => {
+export const _handleVoidPayment = async (invoiceIds: string[], payment: IPayment, customer: ICustomer) => {
+
     const invoices = await Invoice.find({ _id: { $in: [...new Set(invoiceIds)] } })
+
+    if (customer) {
+        customer.balance += payment.amountPaid;
+        await customer.save();
+    }
 
     if (invoices?.length) {
         for (const invoice of invoices) {
@@ -1196,11 +1206,11 @@ export const _handleVoidPayment = async (invoiceIds: string[], payment: IPayment
             invoice.balanceDue += paymentLine?.amountPaid ?? payment.amountPaid;
             invoice.paymentApplied -= paymentLine?.amountPaid ?? payment.amountPaid;
 
-            if (payment.amountPaid < invoice.balanceDue) {
+            if (invoice.balanceDue > 0) {
                 invoice.status = InvoiceStatus.PARTIALLY_PAID;
             }
 
-            if (invoice.paymentApplied === 0) {
+            if (invoice.paymentApplied <= 0) {
                 invoice.status = InvoiceStatus.UNPAID;
             }
 
