@@ -1051,7 +1051,14 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
     }
 
     const invoiceIds: string[] = [];
-    if (payment && !payment.isVoid) {
+    if (payment) {
+        if (payment.isVoid) {
+            return res.json({ status: Status.Error, message: 'Payment already voided' });
+        }
+
+        payment.isVoid = true;
+        await payment.save();
+
         if (payment?.line?.length) {
             payment.line.forEach(line => invoiceIds.push(line.invoice.toString()));
         }
@@ -1065,18 +1072,16 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
         }
 
         try {
-            await _handleVoidPayment(invoiceIds);
+            await _handleVoidPayment(invoiceIds, payment);
         } catch (err) {
             return res.json({ status: Status.Error, message: err.message });
         }
 
         // Delete payment in quickbook
         if (company.qbAuthorized && payment.quickbookId) {
-            await _voidPayment(req, res, company, payment);
+            _voidPayment(req, res, company, payment);
         }
 
-        payment.isVoid = true;
-        await payment.save();
     }
 
     return res.json({ status: Status.Success, message: 'Payment void successfully' });
@@ -1161,7 +1166,7 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
     return invoices;
 }
 
-export const _handleVoidPayment = async (invoiceIds: string[]) => {
+export const _handleVoidPayment = async (invoiceIds: string[], payment: IPayment) => {
     const invoices = await Invoice.find({ _id: { $in: [...new Set(invoiceIds)] } })
 
     if (invoices?.length) {
@@ -1186,13 +1191,16 @@ export const _handleVoidPayment = async (invoiceIds: string[]) => {
                 }
             }
 
-            const paymentApplied = invoice.total - invoice.paymentApplied;
-            invoice.balanceDue = invoice.total;
-            invoice.paymentApplied = paymentApplied;
+            // Find invoice in line for multiple invoices
+            const paymentLine = payment?.line?.find(line => line.invoice.toString() === invoice._id.toString());
+            invoice.balanceDue += paymentLine?.amountPaid ?? payment.amountPaid;
+            invoice.paymentApplied -= paymentLine?.amountPaid ?? payment.amountPaid;
 
-            if (paymentApplied > 0) {
+            if (payment.amountPaid < invoice.balanceDue) {
                 invoice.status = InvoiceStatus.PARTIALLY_PAID;
-            } else {
+            }
+
+            if (invoice.paymentApplied === 0) {
                 invoice.status = InvoiceStatus.UNPAID;
             }
 

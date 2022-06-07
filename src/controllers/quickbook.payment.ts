@@ -103,6 +103,12 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
 
         qbo.createPayment(qbPaymentEntry, async (err: any, qbPayment: IQBPayment) => {
             if (err) {
+                console.log('== err.Fault:', err.Fault);
+                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                console.log('== err.fault:', err.fault);
+                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+
                 return next(
                     Status.Error,
                     err.Fault?.Error[0]?.Detail
@@ -666,6 +672,10 @@ export const _voidPayment = async (req: Request, res: Response, company: ICompan
 
         // Get quickbook invoice
         qbo.getPayment(payment.quickbookId, async (err: any, qbPayment: IQBPayment) => {
+
+            if (!qbPayment) {
+                return;
+            }
 
             // Void invoice in quickbook
             return await axios({
