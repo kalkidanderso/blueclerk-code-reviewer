@@ -311,11 +311,12 @@ export const createPayment = async (req: Request, res: Response) => {
         invoice = await Invoice.findOne({
             _id: params.invoiceId,
             customer: customer._id,
-            company: company._id
+            company: company._id,
+            isVoid: { $ne: true }
         });
 
         if (!invoice || invoice.isDraft) {
-            return res.json({ status: Status.Error, message: 'Invoice not found or does not belong to the customer.' });
+            return res.json({ status: Status.Error, message: 'Invoice either not found, already voided, or does not belong to the customer.' });
         }
         if (invoice.status === InvoiceStatus.PAID) {
             return res.json({ status: Status.Success, message: 'Invoice already paid off.' });
@@ -1082,11 +1083,12 @@ export const _handleMultipleInvoices = async (
     const invoice = await Invoice.findOne({
         _id: paramInvoice.invoiceId,
         customer: customer._id,
-        company: company._id
+        company: company._id,
+        isVoid: { $ne: true }
     });
 
     if (!invoice || invoice.isDraft) {
-        throw new Error(`Invoice with id ${paramInvoice.invoiceId} not found or does not belong to the customer.`);
+        throw new Error(`Invoice with id ${paramInvoice.invoiceId} either not found, already voided, or does not belong to the customer.`);
     }
 
     if (invoice.status === InvoiceStatus.PAID) {

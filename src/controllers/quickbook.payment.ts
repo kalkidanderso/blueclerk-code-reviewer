@@ -152,8 +152,11 @@ export const _updateQBPayment = async (req: Request, res: Response, company: ICo
         // Get the QB Payment object based on payment quickbookId
         qbo.getPayment(payment.quickbookId, async (err: any, qbPayment: IQBPayment) => {
 
+            if (!qbPayment) {
+                return next(null, null, null);
+            }
+
             // Set the new value from the updated payment object
-            qbPayment.Line[0].Amount = payment.amountPaid;
             qbPayment.TotalAmt = payment.amountPaid;
             qbPayment.PaymentRefNum = payment.referenceNumber;
             qbPayment.PaymentMethodRef = qbPayment.PaymentMethodRef ?? { value: null };
@@ -161,21 +164,25 @@ export const _updateQBPayment = async (req: Request, res: Response, company: ICo
             qbPayment.TxnDate = moment(payment.paidAt).format('YYYY-MM-DD');
             qbPayment.PrivateNote = payment.note;
 
-            if (payment?.line?.length) {
-                const qbPaymentLine: any = [];
-                for (const paymentLine of payment.line) {
-                    const invoiceLine = <IInvoice>paymentLine.invoice;
-                    if (invoiceLine?.quickbookId) {
-                        qbPaymentLine.push({
-                            Amount: paymentLine.amountPaid,
-                            LinkedTxn: [{
-                                TxnId: invoiceLine?.quickbookId,
-                                TxnType: IQBPaymentTxnTypes.INVOICE
-                            }]
-                        })
-                    }
+            if (qbPayment?.Line?.length) {
+                if (payment?.line?.length) {
+                    const qbPaymentLine: any = [];
+                    for (const paymentLine of payment.line) {
+                        const invoiceLine = <IInvoice>paymentLine.invoice;
+                        if (invoiceLine?.quickbookId) {
+                            qbPaymentLine.push({
+                                Amount: paymentLine.amountPaid,
+                                LinkedTxn: [{
+                                    TxnId: invoiceLine?.quickbookId,
+                                    TxnType: IQBPaymentTxnTypes.INVOICE
+                                }]
+                            })
+                        }
 
-                    qbPayment.Line = qbPaymentLine;
+                        qbPayment.Line = qbPaymentLine;
+                    }
+                } else {
+                    qbPayment.Line[0].Amount = payment.amountPaid;
                 }
             }
 
