@@ -311,7 +311,8 @@ export const createPayment = async (req: Request, res: Response) => {
         invoice = await Invoice.findOne({
             _id: params.invoiceId,
             customer: customer._id,
-            company: company._id
+            company: company._id,
+            isVoid: { $ne: true }
         });
 
         if (!invoice || invoice.isDraft) {

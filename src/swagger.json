@@ -9089,6 +9089,10 @@
                     "type": "boolean",
                     "description": "Filter invoices by draft"
                   },
+                  "isVoid": {
+                    "type": "boolean",
+                    "description": "Filter invoices by void"
+                  },
                   "dueDate": {
                     "type": "string",
                     "description": "Filter invoices by dueDate or before"

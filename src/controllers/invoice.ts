@@ -2047,21 +2047,35 @@ export const getInvoices = async (req: Request, res: Response) => {
     if (params.status) {
         filterQuery['$and'].push({ status: { $in: JSON.parse(params.status) } });
     }
-    if (params.isDraft !== undefined || params.isDraft !== null) {
-        switch (params.isDraft) {
-            case true:
-                filterQuery['$and'].push({ isDraft: params.isDraft });
-                break;
+    // if (params.isDraft !== undefined || params.isDraft !== null) {
+    switch (params.isDraft) {
+        case true:
+            filterQuery['$and'].push({ isDraft: params.isDraft });
+            break;
 
-            default:
-                /**
-                 * For isDraft false, use the $ne because we want to retrieve old invoices,
-                 * old invoices may don't have isDraft property at all
-                 */
-                filterQuery['$and'].push({ isDraft: { $ne: true } });
-                break;
-        }
+        default:
+            /**
+             * For isDraft false, use the $ne because we want to retrieve old invoices,
+             * old invoices may don't have isDraft property at all
+             */
+            filterQuery['$and'].push({ isDraft: { $ne: true } });
+            break;
     }
+
+    switch (params.isVoid) {
+        case true:
+            filterQuery['$and'].push({ isVoid: params.isVoid });
+            break;
+
+        default:
+            /**
+             * For isVoid false, use the $ne because we want to retrieve old invoices,
+             * old invoices may don't have isVoid property at all
+             */
+            filterQuery['$and'].push({ isVoid: { $ne: true } });
+            break;
+    }
+    // }
     if (params.startDate && params.endDate) {
         const startDate = moment(params.startDate).format('YYYY-MM-DD');
         const endDate = moment(params.endDate).format('YYYY-MM-DD');
@@ -3254,7 +3268,7 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
 export const voidInvoice = async (req: Request, res: Response) => {
 
     const params = req.body;
-    const invoice = await Invoice.findOne({ _id: params.invoiceId, isVoid: { $ne: true } });
+    const invoice = await Invoice.findById(params.invoiceId);
     const company = <ICompany>req.company;
 
     if (!invoice) {
