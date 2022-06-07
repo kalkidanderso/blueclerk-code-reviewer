@@ -2383,7 +2383,7 @@
             "in": "query",
             "description": "ID of company to retrieve customers of the company",
             "schema": {
-              "type":"string"
+              "type": "string"
             }
           },
           {
@@ -2391,7 +2391,7 @@
             "in": "query",
             "description": "ID of the customer to retrieve companies of the customer",
             "schema": {
-              "type":"string"
+              "type": "string"
             }
           },
           {
@@ -2399,7 +2399,7 @@
             "in": "query",
             "description": "Filter by status for the \"contract\" between Company and Customer (0=PENDING, 1=ACCEPTED, 2=CANCELED, 3=REJECTED, 4=FINISHED)",
             "schema": {
-              "type":"number",
+              "type": "number",
               "enum": [
                 0,
                 1,
@@ -2412,7 +2412,7 @@
           {
             "name": "isPreferred",
             "in": "query",
-            "schema" :{
+            "schema": {
               "type": "boolean"
             }
           }
@@ -10468,6 +10468,7 @@
     },
     "/voidPaymentContractor": {
       "post": {
+        "deprecated": true,
         "tags": [
           "Payment"
         ],
@@ -10489,6 +10490,61 @@
                     "enum": [
                       "vendor",
                       "employee"
+                    ]
+                  },
+                  "paymentId": {
+                    "type": "string",
+                    "description": "Id of payment to void"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/voidPayment": {
+      "delete": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "To void payment contractor",
+        "description": "To void payment contractor",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "paymentId"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "type of payment (PaymentVendor or PaymentEmployee)",
+                    "enum": [
+                      "vendor",
+                      "employee",
+                      "customer"
                     ]
                   },
                   "paymentId": {
