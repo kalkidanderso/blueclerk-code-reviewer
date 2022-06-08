@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { Status, Messages, QBEntityNames, QBEntityOperations, NotificationTypes} from '../common/constants'
+import { Status, Messages, QBEntityNames, QBEntityOperations, NotificationTypes } from '../common/constants'
 
 import { ICompany, IQBCompany, Company } from '../models/Company';
 import { _resetCompanyQB } from '../controllers/company';
@@ -12,6 +12,7 @@ import { _resetPaymentQB } from '../controllers/payment';
 import { updateBCCustomer } from '../controllers/quickbook.customer';
 import { createBCPayment } from '../controllers/quickbook.payment';
 import { NotificationServiceTicket } from '../models/NotificationDiscriminator';
+import { createBCItem, updateBCItem } from './quickbook.item';
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");
@@ -284,6 +285,12 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
                     // => ITEM CREATE ACTION
                     case QBEntityOperations.CREATE:
                         // Create BC Job Type and Item here
+                        createBCItem(req, res, company, eventEntity?.id);
+                        break;
+
+                    case QBEntityOperations.UPDATE:
+                        // Update BC Job Type and Item here
+                        updateBCItem(req, res, company, eventEntity?.id);
                         break;
 
                     default:
