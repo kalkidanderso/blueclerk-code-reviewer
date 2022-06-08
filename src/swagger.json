@@ -2383,7 +2383,7 @@
             "in": "query",
             "description": "ID of company to retrieve customers of the company",
             "schema": {
-              "type":"string"
+              "type": "string"
             }
           },
           {
@@ -2391,7 +2391,7 @@
             "in": "query",
             "description": "ID of the customer to retrieve companies of the customer",
             "schema": {
-              "type":"string"
+              "type": "string"
             }
           },
           {
@@ -2399,7 +2399,7 @@
             "in": "query",
             "description": "Filter by status for the \"contract\" between Company and Customer (0=PENDING, 1=ACCEPTED, 2=CANCELED, 3=REJECTED, 4=FINISHED)",
             "schema": {
-              "type":"number",
+              "type": "number",
               "enum": [
                 0,
                 1,
@@ -2412,7 +2412,7 @@
           {
             "name": "isPreferred",
             "in": "query",
-            "schema" :{
+            "schema": {
               "type": "boolean"
             }
           }
@@ -2468,7 +2468,10 @@
                   },
                   "isPreferred": {
                     "type": "boolean",
-                    "enum": [ true, false ]
+                    "enum": [
+                      true,
+                      false
+                    ]
                   }
                 }
               }
@@ -2540,7 +2543,10 @@
                   },
                   "isMainLocation": {
                     "type": "string",
-                    "enum": [ true, false ]
+                    "enum": [
+                      true,
+                      false
+                    ]
                   },
                   "contactName": {
                     "type": "string"
@@ -2618,7 +2624,10 @@
                   },
                   "isMainLocation": {
                     "type": "string",
-                    "enum": [ true, false ]
+                    "enum": [
+                      true,
+                      false
+                    ]
                   },
                   "contactName": {
                     "type": "string"
@@ -9080,6 +9089,10 @@
                     "type": "boolean",
                     "description": "Filter invoices by draft"
                   },
+                  "isVoid": {
+                    "type": "boolean",
+                    "description": "Filter invoices by void"
+                  },
                   "dueDate": {
                     "type": "string",
                     "description": "Filter invoices by dueDate or before"
@@ -9477,6 +9490,51 @@
                       }
                     }
                   }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/voidInvoice": {
+      "delete": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To void invoice",
+        "description": "To void invoice",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "invoiceId"
+                ],
+                "properties": {
+                  "invoiceId": {
+                    "type": "string",
+                    "description": "Id of invoice to void"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
                 }
               }
             }
@@ -10410,6 +10468,7 @@
     },
     "/voidPaymentContractor": {
       "post": {
+        "deprecated": true,
         "tags": [
           "Payment"
         ],
@@ -10431,6 +10490,61 @@
                     "enum": [
                       "vendor",
                       "employee"
+                    ]
+                  },
+                  "paymentId": {
+                    "type": "string",
+                    "description": "Id of payment to void"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/voidPayment": {
+      "delete": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "To void payment contractor",
+        "description": "To void payment contractor",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "paymentId"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "type of payment (PaymentVendor or PaymentEmployee)",
+                    "enum": [
+                      "vendor",
+                      "employee",
+                      "customer"
                     ]
                   },
                   "paymentId": {

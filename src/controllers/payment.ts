@@ -8,7 +8,7 @@ import { IUser, User } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
 import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer, IPaymentVendor, IPaymentEmployee } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
-import { _createQBPayment, _updateQBPayment } from './quickbook.payment'
+import { _createQBPayment, _deleteQBPayment, _updateQBPayment, _voidPayment } from './quickbook.payment'
 import { Employee } from '../models/Employee'
 import { Contract } from '../models/Contract'
 import { IJob, Job } from '../models/Job'
@@ -311,11 +311,12 @@ export const createPayment = async (req: Request, res: Response) => {
         invoice = await Invoice.findOne({
             _id: params.invoiceId,
             customer: customer._id,
-            company: company._id
+            company: company._id,
+            isVoid: { $ne: true }
         });
 
         if (!invoice || invoice.isDraft) {
-            return res.json({ status: Status.Error, message: 'Invoice not found or does not belong to the customer.' });
+            return res.json({ status: Status.Error, message: 'Invoice either not found, already voided, or does not belong to the customer.' });
         }
         if (invoice.status === InvoiceStatus.PAID) {
             return res.json({ status: Status.Success, message: 'Invoice already paid off.' });
@@ -1020,6 +1021,7 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
     const params = req.body;
     const company = <ICompany>req.company;
     let payment: IPayment;
+    let customer: ICustomer;
 
     switch (params.type) {
         case 'vendor':
@@ -1038,38 +1040,56 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
             }
             break;
 
+        case 'customer':
+            payment = await Payment.findOne({ _id: params.paymentId, company, __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] } }).exec();
+
+            if (!payment) {
+                return res.json({ status: Status.Error, message: `Payment with type ${params.type} is Not Found` });
+            }
+            customer = await Customer.findById(payment.customer);
+            break;
+
         default:
             return res.json({ status: Status.Error, message: 'Type is required' });
     }
 
-    if (payment && !payment.isVoid) {
-        for (const invoice of payment.invoices) {
-            const invoiceCommission = await InvoiceCommission.findOne({ invoice }).exec();
-            if (invoiceCommission.technicians) {
-                for (const technicianCommission of invoiceCommission.technicians) {
-                    if (technicianCommission.contractor) {
-                        const contractor = await Company.findById(technicianCommission.contractor).exec();
-                        contractor.balance += technicianCommission.commissionAmount;
-                        await contractor.save();
-                    }
-
-                    if (technicianCommission.technician && !technicianCommission.contractor) {
-                        const technician = await User.findById(technicianCommission.technician).exec();
-                        technician.balance += technicianCommission.commissionAmount;
-                        await technician.save();
-                    }
-
-                    technicianCommission.paid = false;
-                    await invoiceCommission.save()
-                }
-            }
+    const invoiceIds: string[] = [];
+    if (payment) {
+        if (payment.isVoid) {
+            return res.json({ status: Status.Error, message: 'Payment already voided' });
         }
 
         payment.isVoid = true;
+        payment.voidedAt = new Date();
         await payment.save();
+
+        if (payment?.line?.length) {
+            payment.line.forEach(line => invoiceIds.push(line.invoice.toString()));
+        }
+
+        if (payment?.invoices?.length) {
+            payment.invoices.forEach(invoice => invoiceIds.push(invoice.toString()));
+        }
+
+        if (payment?.invoice) {
+            invoiceIds.push(payment.invoice.toString());
+        }
+
+        try {
+            await _handleVoidPayment(invoiceIds, payment, customer);
+        } catch (err) {
+            return res.json({ status: Status.Error, message: err.message });
+        }
+
+        // Delete payment in quickbook
+        if (company.qbAuthorized && payment.quickbookId) {
+            _voidPayment(req, res, company, payment);
+        }
+
     }
 
-    return res.json({ status: Status.Success, message: 'Payment void successfully' });
+    return res.json({ status: Status.Success, message: 'Payment void successfully', payment });
+
 }
 
 // To handle create payment for multiple invoices
@@ -1082,11 +1102,12 @@ export const _handleMultipleInvoices = async (
     const invoice = await Invoice.findOne({
         _id: paramInvoice.invoiceId,
         customer: customer._id,
-        company: company._id
+        company: company._id,
+        isVoid: { $ne: true }
     });
 
     if (!invoice || invoice.isDraft) {
-        throw new Error(`Invoice with id ${paramInvoice.invoiceId} not found or does not belong to the customer.`);
+        throw new Error(`Invoice with id ${paramInvoice.invoiceId} either not found, already voided, or does not belong to the customer.`);
     }
 
     if (invoice.status === InvoiceStatus.PAID) {
@@ -1149,4 +1170,57 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
 
     payment.amountPaid = Math.round(paymentAmountPaid * 100) / 100;
     return invoices;
+}
+
+export const _handleVoidPayment = async (invoiceIds: string[], payment: IPayment, customer: ICustomer) => {
+
+    const invoices = await Invoice.find({ _id: { $in: [...new Set(invoiceIds)] } })
+
+    if (customer) {
+        customer.balance += payment.amountPaid;
+        await customer.save();
+    }
+
+    if (invoices?.length) {
+        for (const invoice of invoices) {
+            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id }).exec();
+            if (invoiceCommission?.technicians) {
+                for (const technicianCommission of invoiceCommission.technicians) {
+                    if (technicianCommission.contractor) {
+                        const contractor = await Company.findById(technicianCommission.contractor).exec();
+                        contractor.balance += technicianCommission.commissionAmount;
+                        await contractor.save();
+                    }
+
+                    if (technicianCommission.technician && !technicianCommission.contractor) {
+                        const technician = await User.findById(technicianCommission.technician).exec();
+                        technician.balance += technicianCommission.commissionAmount;
+                        await technician.save();
+                    }
+
+                    technicianCommission.paid = false;
+                    await invoiceCommission.save();
+                }
+            }
+
+            // Find invoice in line for multiple invoices
+            const paymentLine = payment?.line?.find(line => line.invoice.toString() === invoice._id.toString());
+            invoice.balanceDue += paymentLine?.amountPaid ?? payment.amountPaid;
+            invoice.paymentApplied -= paymentLine?.amountPaid ?? payment.amountPaid;
+
+            if (invoice.balanceDue > 0) {
+                invoice.status = InvoiceStatus.PARTIALLY_PAID;
+            }
+
+            if (invoice.paymentApplied <= 0) {
+                invoice.status = InvoiceStatus.UNPAID;
+            }
+
+            await invoice.save();
+        }
+    } else {
+        throw new Error('Invoice not found');
+    }
+
+    return;
 }

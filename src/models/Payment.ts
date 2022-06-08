@@ -20,7 +20,10 @@ export interface IPayment extends Document {
     referenceNumber: string
     paymentType?: PaymentTypes | string
     paidAt: Date
+    dueDate: Date
     note?: string
+    isVoid: boolean
+    voidedAt: Date
     company: Schema.Types.ObjectId | ICompany
     quickbookRefNum?: string
     quickbookId?: string
@@ -28,8 +31,6 @@ export interface IPayment extends Document {
     createdAt: Date
     updatedBy: Schema.Types.ObjectId | IUser
     updatedAt: Date
-    dueDate: Date
-    isVoid: boolean
 }
 
 export interface IPaymentCustomer extends IPayment {
@@ -104,6 +105,7 @@ export interface IQBPayment {
         TxnId?: string
         TxnType?: string
     }[]
+    status?: string
 }
 
 export interface IQBPaymentMethod {
@@ -130,7 +132,22 @@ const PaymentSchema = new Schema({
     },
     referenceNumber: String,
     paymentType: String,
+    line: [{
+        invoice: {
+            type: Schema.Types.ObjectId,
+            ref: 'Invoice'
+        },
+        amountPaid: {
+            type: Number,
+            default: 0
+        }
+    }],
     paidAt: Date,
+    isVoid: {
+        type: Boolean,
+        default: false
+    },
+    voidedAt: Date,
     note: String,
     company: {
         type: Schema.Types.ObjectId,
@@ -150,20 +167,6 @@ const PaymentSchema = new Schema({
         ref: 'User',
     },
     updatedAt: Date,
-    isVoid: {
-        type: Boolean,
-        default: false
-    },
-    line: [{
-        invoice: {
-            type: Schema.Types.ObjectId,
-            ref: 'Invoice'
-        },
-        amountPaid: {
-            type: Number,
-            default: 0
-        }
-    }]
 })
 
 const PaymentCustomerSchema = new Schema({

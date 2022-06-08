@@ -30,7 +30,7 @@ import { IScan, Scan } from '../models/Scan';
 import { EmailDefault } from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer } from '../services/aws';
-import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice } from '../controllers/quickbook.invoice';
+import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice, _voidQBInvoice } from '../controllers/quickbook.invoice';
 import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from '../controllers/emailDefault';
 import { IJobSite } from '../models/JobSite';
 import { IJobLocation } from '../models/JobLocation';
@@ -313,7 +313,7 @@ export const createInvoice = (req: Request, res: Response) => {
 
     if (params.jobId) {
 
-        Invoice.findOne({ 'job': params.jobId, 'company': req.companyId })
+        Invoice.findOne({ 'job': params.jobId, 'company': req.companyId, isVoid: { $ne: true } })
             .then((previousInvoice: any) => {
 
                 if (previousInvoice) {
@@ -2047,21 +2047,35 @@ export const getInvoices = async (req: Request, res: Response) => {
     if (params.status) {
         filterQuery['$and'].push({ status: { $in: JSON.parse(params.status) } });
     }
-    if (params.isDraft !== undefined || params.isDraft !== null) {
-        switch (params.isDraft) {
-            case true:
-                filterQuery['$and'].push({ isDraft: params.isDraft });
-                break;
+    // if (params.isDraft !== undefined || params.isDraft !== null) {
+    switch (params.isDraft) {
+        case true:
+            filterQuery['$and'].push({ isDraft: params.isDraft });
+            break;
 
-            default:
-                /**
-                 * For isDraft false, use the $ne because we want to retrieve old invoices,
-                 * old invoices may don't have isDraft property at all
-                 */
-                filterQuery['$and'].push({ isDraft: { $ne: true } });
-                break;
-        }
+        default:
+            /**
+             * For isDraft false, use the $ne because we want to retrieve old invoices,
+             * old invoices may don't have isDraft property at all
+             */
+            filterQuery['$and'].push({ isDraft: { $ne: true } });
+            break;
     }
+
+    switch (params.isVoid) {
+        case true:
+            filterQuery['$and'].push({ isVoid: params.isVoid });
+            break;
+
+        default:
+            /**
+             * For isVoid false, use the $ne because we want to retrieve old invoices,
+             * old invoices may don't have isVoid property at all
+             */
+            filterQuery['$and'].push({ isVoid: { $ne: true } });
+            break;
+    }
+    // }
     if (params.startDate && params.endDate) {
         const startDate = moment(params.startDate).format('YYYY-MM-DD');
         const endDate = moment(params.endDate).format('YYYY-MM-DD');
@@ -3248,5 +3262,55 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
     }
 
     return res.json({ status: Status.Success, invoices });
+
+}
+
+export const voidInvoice = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const invoice = await Invoice.findById(params.invoiceId);
+    const company = <ICompany>req.company;
+
+    if (!invoice) {
+        return res.json({ status: Status.Error, message: 'Invoice not found.' });
+    }
+    if (invoice.isVoid) {
+        return res.json({ status: Status.Error, message: 'Invoice already voided.' });
+    }
+
+    const payment = await Payment.findOne({ invoice: invoice._id });
+    if (payment || invoice.status !== InvoiceStatus.UNPAID) {
+        return res.json({ status: Status.Error, message: 'Invoice already paid or partially paid, cannot void this invoice.' });
+    }
+
+    const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
+    // remove invoice commission if exsists
+    if (invoiceCommission) {
+        await InvoiceCommission.deleteOne({ _id: invoiceCommission._id });
+    }
+
+    invoice.isVoid = true;
+    invoice.commission = null;
+    await invoice.save();
+
+    const customer = await Customer.findById(invoice.customer);
+    if (customer) {
+        customer.balance -= invoice.total;
+        customer.balance = Math.round(customer.balance * 100) / 100;
+        await customer.save();
+    }
+
+    const jobReport = await JobReport.findOne({ invoice: invoice._id });
+    // remove invoice and invoiceCreated in job report if exsists
+    if (jobReport) {
+        await jobReport.updateOne({ $unset: { invoice: null, invoiceCreated: false } });
+    }
+
+    if (company.qbAuthorized && invoice.quickbookId) {
+        // Delete Invoice in QuickBooks when invoice have quickbook id
+        await _voidQBInvoice(req, res, company, invoice);
+    }
+
+    return res.json({ status: Status.Success, message: 'Invoice voided successfully', invoice });
 
 }

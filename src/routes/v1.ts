@@ -1710,6 +1710,15 @@ export default function (sio: any) {
         invoiceController.getCompanyInvoiceDetails
     )
 
+    router.delete(
+        '/voidInvoice',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.voidInvoice),
+        invoiceController.voidInvoice
+    )
+
     router.post(
         '/updateCompaniesDefaultPermissions',
         permissionController.updateAllCompaniesPermissions
@@ -2005,6 +2014,15 @@ export default function (sio: any) {
 
     router.post(
         '/voidPaymentContractor',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.voidPaymentContractor),
+        checkUserPermissions(Permissions.Update_Payment),
+        paymentController.voidPaymentContractor
+    )
+
+    router.delete(
+        '/voidPayment',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         validate(Validations.voidPaymentContractor),

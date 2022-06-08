@@ -110,9 +110,9 @@ export const Validations = {
   updateEmployeeEmailPreferences: [check('employeeId').exists(), check('emailPreferences').isNumeric()],
 
   updateCompanyContract: [
-    check('contractId').exists().withMessage(Messages.Required), 
+    check('contractId').exists().withMessage(Messages.Required),
     check('contractId').isMongoId().withMessage(Messages.WrongId),
-    check('status').isInt({ min: 1,max: 4 }).toInt().withMessage('status has to be number with value between 1 and 4')
+    check('status').isInt({ min: 1, max: 4 }).toInt().withMessage('status has to be number with value between 1 and 4')
   ],
 
   updateContractorEmailPreferences: [check('contractorId').exists(), check('emailPreferences').isNumeric()],
@@ -387,6 +387,7 @@ export const Validations = {
   getInvoices: [
     check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
     check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
+    check('isVoid').optional().isBoolean().toBoolean().withMessage('isVoid has to be boolean'),
     check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')
   ],
 
@@ -418,6 +419,8 @@ export const Validations = {
   setCustomInvoiceNumber: [check('invoiceNumber').optional().isInt().toInt()],
 
   companyInvoice: [check('companyInvoiceId').exists()],
+
+  voidInvoice: [check('invoiceId').exists().withMessage(Messages.Required), check('invoiceId').isMongoId().withMessage(Messages.WrongId)],
 
   updateCommission: [
     check('type').exists().withMessage(Messages.Required),
@@ -515,7 +518,7 @@ export const Validations = {
 
   voidPaymentContractor: [
     check('type').exists().withMessage(Messages.Required),
-    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('type').isIn(['vendor', 'employee', 'customer']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
     check('paymentId').exists().withMessage(Messages.Required),
     check('paymentId').isMongoId().withMessage(Messages.WrongId),
   ],
