@@ -182,7 +182,8 @@ export enum QBEntityNames {
     CUSTOMER = 'Customer',
     ITEM = 'Item',
     PAYMENT = 'Payment',
-    TERM = 'Term'
+    TERM = 'Term',
+    INVOICE = 'Invoice'
 }
 
 export enum QBEntityOperations {
