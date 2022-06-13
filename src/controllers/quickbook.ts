@@ -9,7 +9,7 @@ import { _resetItemQB } from '../controllers/jobType';
 import { _resetPaymentTermQB } from '../controllers/paymentTerm';
 import { _resetInvoiceQB } from '../controllers/invoice';
 import { _resetPaymentQB } from '../controllers/payment';
-import { updateBCCustomer } from '../controllers/quickbook.customer';
+import { createBCCustomer, updateBCCustomer } from '../controllers/quickbook.customer';
 import { createBCPayment } from '../controllers/quickbook.payment';
 import { NotificationServiceTicket } from '../models/NotificationDiscriminator';
 import { createBCItem, updateBCItem } from './quickbook.item';
@@ -266,6 +266,7 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
                     // => CUSTOMER CREATE ACTION
                     case QBEntityOperations.CREATE:
                         // Create BC Customer here
+                        createBCCustomer(req, res, company, eventEntity?.id);
                         break;
 
                     case QBEntityOperations.UPDATE:
@@ -304,7 +305,7 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
                         // Update BC Invoice here
                         updateBCInvoice(req, res, company, eventEntity?.id);
                         break;
-                    
+
                     case QBEntityOperations.VOID:
                         // Void BC Invoice here
                         voidBCInvoice(req, res, company, eventEntity?.id);

@@ -403,15 +403,8 @@ export const createBCItem = async (req: Request, res: Response, company: ICompan
     _refreshToken(req, res, company, async (err, errMsg, company) => {
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
         qbo.getItem(qbItemId, async (err: any, qbItem: IQBItem) => {
-            if (err) {
-                return res.json({
-                    status: Status.Error,
-                    message: err.Fault?.Error[0]?.Detail
-                        || err.Fault?.Error[0]?.Message
-                        || err.fault?.error[0]?.detail
-                        || err.fault?.error[0]?.message
-                        || Messages.GenericError,
-                });
+            if (!qbItem || err) {
+                return;
             }
 
             if (qbItem) {
@@ -457,15 +450,8 @@ export const updateBCItem = async (req: Request, res: Response, company: ICompan
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
         qbo.getItem(qbItemId, async (err: any, qbItem: IQBItem) => {
-            if (err) {
-                return res.json({
-                    status: Status.Error,
-                    message: err.Fault?.Error[0]?.Detail
-                        || err.Fault?.Error[0]?.Message
-                        || err.fault?.error[0]?.detail
-                        || err.fault?.error[0]?.message
-                        || Messages.GenericError,
-                });
+            if (!qbItem || err) {
+                return;
             }
 
             if (qbItem) {

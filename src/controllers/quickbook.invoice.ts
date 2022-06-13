@@ -923,73 +923,62 @@ export const updateBCInvoice = async (req: Request, res: Response, company: ICom
     _refreshToken(req, res, company, async (err, errMsg, company) => {
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
         qbo.getInvoice(qbInvoiceId, async (err: any, qbInvoice: IQBInvoice) => {
-            if (err) {
-                return res.status(400).json({
-                    success: false,
-                    message: err.Fault?.Error[0]?.Detail
-                        || err.Fault?.Error[0]?.Message
-                        || err.fault?.error[0]?.detail
-                        || err.fault?.error[0]?.message
-                        || Messages.GenericError
-                });
+            if (!qbInvoice || err) {
+                return;
             }
 
-            if (qbInvoice) {
-                const invoice = await Invoice.findOne({ company, quickbookId: qbInvoiceId });
-                const customer = await Customer.findById(invoice?.customer);
-                if (invoice && customer) {
-                    if (qbInvoice.CustomerRef) {
-                        let customer: ICustomer;
-                        const jobLocation = await JobLocation.findOne({ quickbookId: qbInvoice.CustomerRef.value });
-                        if (jobLocation) {
-                            customer = await Customer.findById(jobLocation.customerId);
-                        } else {
-                            customer = await Customer.findOne({ quickbookId: qbInvoice.CustomerRef.value });
-                        }
-
-                        invoice.customer = customer._id ?? invoice.customer;
+            const invoice = await Invoice.findOne({ company, quickbookId: qbInvoiceId });
+            const customer = await Customer.findById(invoice?.customer);
+            if (invoice && customer) {
+                if (qbInvoice.CustomerRef) {
+                    let customer: ICustomer;
+                    const jobLocation = await JobLocation.findOne({ quickbookId: qbInvoice.CustomerRef.value });
+                    if (jobLocation) {
+                        customer = await Customer.findById(jobLocation.customerId);
+                    } else {
+                        customer = await Customer.findOne({ quickbookId: qbInvoice.CustomerRef.value });
                     }
 
-                    invoice.issuedDate = new Date(qbInvoice?.TxnDate);
-                    invoice.dueDate = new Date(qbInvoice?.DueDate);
-                    invoice.total = qbInvoice?.TotalAmt;
-                    invoice.balanceDue = invoice.total - invoice.paymentApplied;
-                    invoice.taxAmount = qbInvoice?.TxnTaxDetail?.TotalTax;
-                    customer.balance -= invoice.total;
-                    customer.balance = Math.round(customer.balance * 100) / 100;
-                    await customer.save();
-
-                    console.log(qbInvoice.Line)
-                    if (invoice.balanceDue > 0) {
-                        invoice.status = InvoiceStatus.PARTIALLY_PAID;
-                    }
-
-                    if (invoice.paymentApplied <= 0) {
-                        invoice.status = InvoiceStatus.UNPAID;
-                    }
-
-                    if (invoice.balanceDue === 0) {
-                        InvoiceStatus.PAID;
-                    }
-
-                    if (qbInvoice?.Line?.length) {
-                        let subTotal = 0;
-                        for (const qbInvoiceLine of qbInvoice.Line) {
-                            if (qbInvoiceLine.DetailType === 'SalesItemLineDetail') {
-                                subTotal += qbInvoiceLine.Amount;
-                                const item = await Item.findOne({ quickbookId: qbInvoiceLine?.SalesItemLineDetail?.ItemRef?.value });
-                                const invoiceItem = invoice.items.find(itemInvoice => item._id);
-                                invoiceItem.price = qbInvoiceLine?.SalesItemLineDetail?.UnitPrice
-                                invoiceItem.quantity = qbInvoiceLine?.SalesItemLineDetail?.Qty;
-                                invoiceItem.subTotal = qbInvoiceLine?.SalesItemLineDetail?.Qty * qbInvoiceLine?.SalesItemLineDetail?.UnitPrice;
-                            }
-                        }
-
-                        invoice.subTotal = subTotal;
-                    }
-
-                    await invoice.save();
+                    invoice.customer = customer._id ?? invoice.customer;
                 }
+
+                invoice.issuedDate = new Date(qbInvoice?.TxnDate);
+                invoice.dueDate = new Date(qbInvoice?.DueDate);
+                invoice.balanceDue = invoice.total - invoice.paymentApplied;
+                invoice.taxAmount = qbInvoice?.TxnTaxDetail?.TotalTax;
+                customer.balance -= invoice.total;
+                customer.balance = Math.round(customer.balance * 100) / 100;
+                await customer.save();
+
+                if (invoice.balanceDue > 0) {
+                    invoice.status = InvoiceStatus.PARTIALLY_PAID;
+                }
+
+                if (invoice.paymentApplied <= 0) {
+                    invoice.status = InvoiceStatus.UNPAID;
+                }
+
+                if (invoice.balanceDue === 0) {
+                    InvoiceStatus.PAID;
+                }
+
+                if (qbInvoice?.Line?.length) {
+                    let subTotal = 0;
+                    for (const qbInvoiceLine of qbInvoice.Line) {
+                        if (qbInvoiceLine.DetailType === 'SalesItemLineDetail') {
+                            subTotal += qbInvoiceLine.Amount;
+                            const item = await Item.findOne({ quickbookId: qbInvoiceLine?.SalesItemLineDetail?.ItemRef?.value });
+                            const invoiceItem = invoice.items.find(itemInvoice => item._id);
+                            invoiceItem.price = qbInvoiceLine?.SalesItemLineDetail?.UnitPrice
+                            invoiceItem.quantity = qbInvoiceLine?.SalesItemLineDetail?.Qty;
+                            invoiceItem.subTotal = qbInvoiceLine?.SalesItemLineDetail?.Qty * qbInvoiceLine?.SalesItemLineDetail?.UnitPrice;
+                        }
+                    }
+
+                    invoice.subTotal = subTotal;
+                }
+
+                await invoice.save();
             }
 
             return;
@@ -1001,15 +990,8 @@ export const voidBCInvoice = async (req: Request, res: Response, company: ICompa
     _refreshToken(req, res, company, async (err, errMsg, company) => {
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
         qbo.getInvoice(qbInvoiceId, async (err: any, qbInvoice: IQBInvoice) => {
-            if (err) {
-                res.status(400).json({
-                    success: false,
-                    message: err.Fault?.Error[0]?.Detail
-                        || err.Fault?.Error[0]?.Message
-                        || err.fault?.error[0]?.detail
-                        || err.fault?.error[0]?.message
-                        || Messages.GenericError
-                });
+            if (!qbInvoice || err) {
+                return;
             }
 
             if (qbInvoice?.PrivateNote === 'Voided') {
@@ -1043,54 +1025,35 @@ export const voidBCInvoice = async (req: Request, res: Response, company: ICompa
                 }
             }
 
-            return
+            return;
         })
     })
 }
 
 export const deleteBCInvoice = async (req: Request, res: Response, company: ICompany, qbInvoiceId: string) => {
-    _refreshToken(req, res, company, async (err, errMsg, company) => {
-        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
-        qbo.getInvoice(qbInvoiceId, async (err: any, qbInvoice: IQBInvoice) => {
-            if (err) {
-                res.status(400).json({
-                    success: false,
-                    message: err.Fault?.Error[0]?.Detail
-                        || err.Fault?.Error[0]?.Message
-                        || err.fault?.error[0]?.detail
-                        || err.fault?.error[0]?.message
-                        || Messages.GenericError
-                });
-            }
+    const invoice = await Invoice.findOne({ company: company._id, quickbookId: qbInvoiceId });
 
-            if (qbInvoice?.status === 'Deleted') {
-                const invoice = await Invoice.findOne({ company: company._id, quickbookId: qbInvoiceId });
+    if (invoice) {
+        await Invoice.deleteOne({ _id: invoice._id });
+        const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
+        // remove invoice commission if exsists
+        if (invoiceCommission) {
+            await InvoiceCommission.deleteOne({ _id: invoiceCommission._id });
+        }
 
-                if (invoice) {
-                    await Invoice.deleteOne({ _id: invoice._id });
-                }
+        const customer = await Customer.findById(invoice.customer);
+        if (customer) {
+            customer.balance -= invoice.total;
+            customer.balance = Math.round(customer.balance * 100) / 100;
+            await customer.save();
+        }
 
-                const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
-                // remove invoice commission if exsists
-                if (invoiceCommission) {
-                    await InvoiceCommission.deleteOne({ _id: invoiceCommission._id });
-                }
+        const jobReport = await JobReport.findOne({ invoice: invoice._id });
+        // remove invoice and invoiceCreated in job report if exsists
+        if (jobReport) {
+            await jobReport.updateOne({ $unset: { invoice: null, invoiceCreated: false } });
+        }
+    }
 
-                const customer = await Customer.findById(invoice.customer);
-                if (customer) {
-                    customer.balance -= invoice.total;
-                    customer.balance = Math.round(customer.balance * 100) / 100;
-                    await customer.save();
-                }
-
-                const jobReport = await JobReport.findOne({ invoice: invoice._id });
-                // remove invoice and invoiceCreated in job report if exsists
-                if (jobReport) {
-                    await jobReport.updateOne({ $unset: { invoice: null, invoiceCreated: false } });
-                }
-
-                return;
-            }
-        })
-    })
+    return;
 }
