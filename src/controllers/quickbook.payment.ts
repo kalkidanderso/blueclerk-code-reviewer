@@ -103,6 +103,7 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
 
         qbo.createPayment(qbPaymentEntry, async (err: any, qbPayment: IQBPayment) => {
             if (err) {
+                console.log('== _createQBPayment > qbo.createPayment > ERROR ==');
                 console.log('== err.Fault:', err.Fault);
                 console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
                 console.log('== err.fault:', err.fault);
