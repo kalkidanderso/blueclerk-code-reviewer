@@ -945,8 +945,6 @@ export const updateBCInvoice = async (req: Request, res: Response, company: ICom
                 const oldTotal = invoice.total;
                 invoice.issuedDate = new Date(qbInvoice?.TxnDate);
                 invoice.dueDate = new Date(qbInvoice?.DueDate);
-                invoice.balanceDue = invoice.total - invoice.paymentApplied;
-                invoice.taxAmount = qbInvoice?.TxnTaxDetail?.TotalTax;
 
                 if (invoice.balanceDue > 0) {
                     invoice.status = InvoiceStatus.PARTIALLY_PAID;
@@ -960,32 +958,53 @@ export const updateBCInvoice = async (req: Request, res: Response, company: ICom
                     InvoiceStatus.PAID;
                 }
 
-                let total = 0;
+                let taxAmount = 0;
+                let subTotal = 0;
+                const items: any = [];
                 if (qbInvoice?.Line?.length) {
+                    if (qbInvoice?.TxnTaxDetail) {
+                        qbo.getTaxRate(qbInvoice?.TxnTaxDetail?.TaxLine[0]?.TaxLineDetail?.TaxRateRef, async (err: any, taxRate: any) => {
+                            if (taxRate) {
+                                taxAmount = taxRate.RateValue;
+                            }
+                        })
+                    }
+
                     for (const qbInvoiceLine of qbInvoice.Line) {
                         if (qbInvoiceLine.DetailType === 'SalesItemLineDetail') {
-                            const invoiceItem = invoice.items.find((itemInvoice: any) => itemInvoice.item.quickbookId === qbInvoiceLine?.SalesItemLineDetail?.ItemRef?.value);
-                            if (invoiceItem) {
-                                invoiceItem.price = qbInvoiceLine?.SalesItemLineDetail?.UnitPrice
-                                invoiceItem.quantity = qbInvoiceLine?.SalesItemLineDetail?.Qty;
-                                invoiceItem.subTotal = qbInvoiceLine?.SalesItemLineDetail?.Qty * qbInvoiceLine?.SalesItemLineDetail?.UnitPrice;
+                            const item = await Item.findOne({ quickbookId: qbInvoiceLine?.SalesItemLineDetail?.ItemRef?.value });
+                            if (item) {
+                                const itemEntry: any = {
+                                    price: qbInvoiceLine?.SalesItemLineDetail?.UnitPrice,
+                                    quantity: qbInvoiceLine?.SalesItemLineDetail?.Qty,
+                                    item: item._id,
+                                    subTotal: qbInvoiceLine?.SalesItemLineDetail?.Qty * qbInvoiceLine?.SalesItemLineDetail?.UnitPrice,
+                                }
+
+                                const subTotalLine = itemEntry.price * itemEntry.quantity;
+                                subTotal += subTotalLine;
+
+                                if (qbInvoiceLine?.SalesItemLineDetail?.TaxCodeRef.value === 'TAX') {
+                                    itemEntry.taxAmount = subTotalLine * 8.25 / 100;
+                                }
+
+                                items.push(itemEntry);
                             }
                         }
                     }
                 }
 
-                invoice.items.forEach(item => {
-                    const totalItem = item.price * item.quantity;
-                    total += totalItem;
-                });
+                invoice.items = items;
+                invoice.subTotal = subTotal;
+                invoice.taxAmount = qbInvoice?.TxnTaxDetail?.TotalTax;
+                invoice.total = qbInvoice.TotalAmt;
+                invoice.balanceDue = invoice.total - invoice.paymentApplied;
+                await invoice.save();
 
-                invoice.total = total;
-                invoice.subTotal = total;
                 customer.balance -= oldTotal;
                 customer.balance += invoice.total;
                 customer.balance = Math.round(customer.balance * 100) / 100;
                 await customer.save();
-                await invoice.save();
             }
 
             return;
