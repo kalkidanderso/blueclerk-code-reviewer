@@ -408,6 +408,14 @@ export const createBCItem = async (req: Request, res: Response, company: ICompan
             }
 
             if (qbItem) {
+
+                const itemTiers = [];
+
+                // Iterate company itemTier to add to the new Item
+                for (const t of company.itemTier.list) {
+                    itemTiers.push({ tier: t.tier });
+                }
+
                 const existItem = await Item.findOne({
                     company: company._id,
                     name: qbItem.Name
@@ -422,7 +430,8 @@ export const createBCItem = async (req: Request, res: Response, company: ICompan
                         isJobType: true,
                         isActive: qbItem.Active,
                         quickbookId: qbItem.Id,
-                        charges: qbItem.UnitPrice
+                        charges: qbItem.UnitPrice,
+                        tiers: itemTiers
                     };
 
                     const jobTypeEntry = {
@@ -445,10 +454,12 @@ export const createBCItem = async (req: Request, res: Response, company: ICompan
     })
 }
 
+// To update all items' changes from QB to BC
 export const updateBCItem = async (req: Request, res: Response, company: ICompany, qbItemId: string) => {
     _refreshToken(req, res, company, async (err, errMsg, company) => {
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
+        // get item on QB
         qbo.getItem(qbItemId, async (err: any, qbItem: IQBItem) => {
             if (!qbItem || err) {
                 return;
@@ -468,6 +479,7 @@ export const updateBCItem = async (req: Request, res: Response, company: ICompan
                     item.charges = qbItem.UnitPrice;
                     await item.save();
 
+                    // update job type when item have it
                     if (item.jobType) {
                         const jobType = await JobType.findById(item.jobType);
                         jobType.title = qbItem.Name;
