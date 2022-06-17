@@ -958,40 +958,39 @@ export const updateBCInvoice = async (req: Request, res: Response, company: ICom
                     InvoiceStatus.PAID;
                 }
 
-                let taxAmount = 0;
                 let subTotal = 0;
                 const items: any = [];
                 if (qbInvoice?.Line?.length) {
-                    if (qbInvoice?.TxnTaxDetail) {
-                        qbo.getTaxRate(qbInvoice?.TxnTaxDetail?.TaxLine[0]?.TaxLineDetail?.TaxRateRef, async (err: any, taxRate: any) => {
-                            if (taxRate) {
-                                taxAmount = taxRate.RateValue;
-                            }
-                        })
-                    }
+                    qbo.getTaxRate(qbInvoice?.TxnTaxDetail?.TaxLine[0]?.TaxLineDetail?.TaxRateRef?.value, async (err: any, taxRate: any) => {
+                        let taxAmount = 0;
 
-                    for (const qbInvoiceLine of qbInvoice.Line) {
-                        if (qbInvoiceLine.DetailType === 'SalesItemLineDetail') {
-                            const item = await Item.findOne({ quickbookId: qbInvoiceLine?.SalesItemLineDetail?.ItemRef?.value });
-                            if (item) {
-                                const itemEntry: any = {
-                                    price: qbInvoiceLine?.SalesItemLineDetail?.UnitPrice,
-                                    quantity: qbInvoiceLine?.SalesItemLineDetail?.Qty,
-                                    item: item._id,
-                                    subTotal: qbInvoiceLine?.SalesItemLineDetail?.Qty * qbInvoiceLine?.SalesItemLineDetail?.UnitPrice,
+                        if (taxRate) {
+                            taxAmount = taxRate.RateValue;
+                        }
+
+                        for (const qbInvoiceLine of qbInvoice.Line) {
+                            if (qbInvoiceLine.DetailType === 'SalesItemLineDetail') {
+                                const item = await Item.findOne({ quickbookId: qbInvoiceLine?.SalesItemLineDetail?.ItemRef?.value });
+                                if (item) {
+                                    const itemEntry: any = {
+                                        price: qbInvoiceLine?.SalesItemLineDetail?.UnitPrice,
+                                        quantity: qbInvoiceLine?.SalesItemLineDetail?.Qty,
+                                        item: item._id,
+                                        subTotal: qbInvoiceLine?.SalesItemLineDetail?.Qty * qbInvoiceLine?.SalesItemLineDetail?.UnitPrice,
+                                    }
+
+                                    const subTotalLine = itemEntry.price * itemEntry.quantity;
+                                    subTotal += subTotalLine;
+
+                                    if (qbInvoiceLine?.SalesItemLineDetail?.TaxCodeRef.value === 'TAX') {
+                                        itemEntry.taxAmount = subTotalLine * taxAmount / 100;
+                                    }
+
+                                    items.push(itemEntry);
                                 }
-
-                                const subTotalLine = itemEntry.price * itemEntry.quantity;
-                                subTotal += subTotalLine;
-
-                                if (qbInvoiceLine?.SalesItemLineDetail?.TaxCodeRef.value === 'TAX') {
-                                    itemEntry.taxAmount = subTotalLine * 8.25 / 100;
-                                }
-
-                                items.push(itemEntry);
                             }
                         }
-                    }
+                    });
                 }
 
                 invoice.items = items;
