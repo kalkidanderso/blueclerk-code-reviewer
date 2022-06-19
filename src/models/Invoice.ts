@@ -87,6 +87,18 @@ export interface IQBInvoice {
         TxnTaxCodeRef?: {
             value: string
         }
+        TaxLine?: {
+            Amount?: number,
+            DetailType?: string,
+            TaxLineDetail?: {
+                TaxRateRef?: {
+                    value?: string
+                },
+                PercentBased?: boolean,
+                TaxPercent?: number,
+                NetAmountTaxable?: number
+            }
+        }[]
     }
     SalesTermRef?: {
         name?: string
@@ -114,7 +126,9 @@ export interface IQBInvoice {
         Type?: string
         StringValue?: string
     }[]
-    status?: string
+    status?: string,
+    Balance?: number,
+    PrivateNote?: string,
 }
 
 export interface IQBInvoiceLine {

@@ -397,3 +397,100 @@ export const _updateQBItemsStatus = async (company: ICompany, items: IItem[], is
 
     return;
 }
+
+export const createBCItem = async (req: Request, res: Response, company: ICompany, qbItemId: string) => {
+
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+        qbo.getItem(qbItemId, async (err: any, qbItem: IQBItem) => {
+            if (!qbItem || err) {
+                return;
+            }
+
+            if (qbItem) {
+
+                const itemTiers = [];
+
+                // Iterate company itemTier to add to the new Item
+                for (const t of company.itemTier.list) {
+                    itemTiers.push({ tier: t.tier });
+                }
+
+                const existItem = await Item.findOne({
+                    company: company._id,
+                    name: qbItem.Name
+                })
+
+                if (!existItem) {
+                    const itemEntries: any = {
+                        company: company._id,
+                        name: qbItem.Name,
+                        description: qbItem.Description,
+                        sku: qbItem.Sku,
+                        isJobType: true,
+                        isActive: qbItem.Active,
+                        quickbookId: qbItem.Id,
+                        charges: qbItem.UnitPrice,
+                        tiers: itemTiers
+                    };
+
+                    const jobTypeEntry = {
+                        title: qbItem.Name,
+                        description: qbItem.Description,
+                        sku: qbItem.Sku,
+                        industry: company?.info?.industry,
+                        createdBy: company.admin,
+                        quickbookId: qbItem.Id,
+                    }
+
+                    const jobType = await new JobType(jobTypeEntry).save();
+                    itemEntries.jobType = jobType._id;
+                    await new Item(itemEntries).save();
+                }
+            }
+
+            return;
+        })
+    })
+}
+
+// To update all items' changes from QB to BC
+export const updateBCItem = async (req: Request, res: Response, company: ICompany, qbItemId: string) => {
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        // get item on QB
+        qbo.getItem(qbItemId, async (err: any, qbItem: IQBItem) => {
+            if (!qbItem || err) {
+                return;
+            }
+
+            if (qbItem) {
+                const item = await Item.findOne({
+                    quickbookId: qbItem.Id,
+                    company: company._id,
+                });
+
+                if (item) {
+                    item.name = qbItem.Name;
+                    item.description = qbItem.Description;
+                    item.sku = qbItem.Sku;
+                    item.isActive = qbItem.Active;
+                    item.charges = qbItem.UnitPrice;
+                    await item.save();
+
+                    // update job type when item have it
+                    if (item.jobType) {
+                        const jobType = await JobType.findById(item.jobType);
+                        jobType.title = qbItem.Name;
+                        jobType.description = qbItem.Description;
+                        jobType.sku = qbItem.Sku;
+                        await jobType.save();
+                    }
+                }
+            }
+
+            return;
+        });
+    });
+}

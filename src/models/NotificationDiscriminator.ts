@@ -1,4 +1,4 @@
-import mongoose, { Schema } from 'mongoose';
+import { Schema } from 'mongoose';
 import { Notification, INotification } from './Notification';
 
 // CONTRACT DISCRIMINATOR
@@ -52,8 +52,27 @@ const NotificationJobSchema = new Schema({
 
 });
 
+// JOB REQUEST DISCRIMINATOR
+export interface INotificationJobRequest extends INotification {
+
+    metadata: Schema.Types.ObjectId
+
+};
+
+const NotificationJobRequestSchema = new Schema({
+
+    metadata: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobRequest',
+        required: true
+    }
+
+});
+
 export const NotificationContract = Notification.discriminator<INotificationContract>('NotificationContract', NotificationContractSchema);
 
 export const NotificationServiceTicket = Notification.discriminator<INotificationServiceTicket>('NotificationServiceTicket', NotificationServiceTicketSchema);
 
 export const NotificationJob = Notification.discriminator<INotificationJob>('NotificationJob', NotificationJobSchema);
+
+export const NotificationJobRequest = Notification.discriminator<INotificationJobRequest>('NotificationJobRequest', NotificationJobRequestSchema);
