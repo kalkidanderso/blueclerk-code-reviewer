@@ -187,6 +187,7 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
                 console.log('== err.fault:', err.fault);
                 console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
                 console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                console.log('== invoiceId:', invoice._id);
 
                 return next(
                     Status.Error,
@@ -822,21 +823,12 @@ export const _createTaxService = async (company: ICompany): Promise<any> => {
 
         qbo.findTaxAgencies({ fetchAll: true }, async (err: any, data: any) => {
             const dataTaxAgency = data?.QueryResponse?.TaxAgency;
-
-            // find tax agencies on quickbook by company name
-            let taxAgency = dataTaxAgency.find((agency: any) => agency.DisplayName === company?.info?.companyName);
-
-            if (!taxAgency) {
-                // create tax agency when tax agency not found in qb
-                qbo.createTaxAgency({ DisplayName: company?.info?.companyName }, (err: any, qbTaxAgency: any) => {
-                    taxAgency = qbTaxAgency;
-                });
-            }
+            const taxAgency = await _createTaxAgency(company, dataTaxAgency);
 
             // find tax code on quickbook
             qbo.findTaxCodes({ fetchAll: true }, async (err: any, dataTaxCode: any) => {
                 const taxCode = dataTaxCode?.QueryResponse?.TaxCode;
-                const tax = taxCode.find((tCode: any) => tCode.Name === 'Alaska');
+                const tax = taxCode?.find((tCode: any) => tCode.Name === 'Alaska');
 
                 if (!tax) {
                     const taxServiceEntry = {
@@ -851,6 +843,13 @@ export const _createTaxService = async (company: ICompany): Promise<any> => {
                     // create a new tax service when tax code is not found
                     qbo.createTaxService(taxServiceEntry, async (err: any, taxService: any) => {
                         if (err) {
+                            console.log('== _createTaxService > qbo.createTaxService > ERROR ==');
+                            console.log('== err.Fault:', err.Fault);
+                            console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                            console.log('== err.fault:', err.fault);
+                            console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                            console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+
                             reject(err)
                         }
 
@@ -864,6 +863,34 @@ export const _createTaxService = async (company: ICompany): Promise<any> => {
             });
         });
     });
+}
+
+export const _createTaxAgency = async (company: ICompany, taxAgencies: any[]): Promise<any> => {
+    return new Promise((resolve, reject) => {
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+        const taxAgency = taxAgencies?.find((agency: any) => agency.DisplayName === company?.info?.companyName);
+
+        if (!taxAgency) {
+            // create tax agency when tax agency not found in qb
+            qbo.createTaxAgency({ DisplayName: company?.info?.companyName }, (err: any, qbTaxAgency: any) => {
+                if (err) {
+                    console.log('== _createTaxAgency > qbo.createTaxAgency > ERROR ==');
+                    console.log('== err.Fault:', err.Fault);
+                    console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                    console.log('== err.fault:', err.fault);
+                    console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                    console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+
+                    reject(err)
+                }
+
+                resolve(qbTaxAgency);
+            });
+
+        } else {
+            resolve(taxAgency);
+        }
+    })
 }
 
 export const _voidQBInvoice = async (req: Request, res: Response, company: ICompany, invoice: IInvoice) => {
