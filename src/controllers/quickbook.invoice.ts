@@ -81,19 +81,19 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
 
             const qbInvoiceLinesEntry: any = {
                 DetailType: LineDetailTypes.SalesItemLineDetail,
-                Amount: invItem.subTotal,
+                Amount: invItem?.subTotal,
                 SalesItemLineDetail: {
                     ItemRef: {
-                        value: item.quickbookId
+                        value: item?.quickbookId
                     },
-                    Qty: invItem.quantity,
-                    UnitPrice: invItem.price
+                    Qty: invItem?.quantity,
+                    UnitPrice: invItem?.price
                 }
             };
 
             // Input tax of the item line if any
             if (invItem.taxAmount) {
-                qbInvoiceLinesEntry.SalesItemLineDetail.TaxInclusiveAmt = invItem.taxAmount;
+                qbInvoiceLinesEntry.SalesItemLineDetail.TaxInclusiveAmt = invItem?.taxAmount;
                 qbInvoiceLinesEntry.SalesItemLineDetail.TaxCodeRef = { value: 'TAX' };
             }
 
@@ -1111,4 +1111,30 @@ export const deleteBCInvoice = async (req: Request, res: Response, company: ICom
     }
 
     return;
+}
+
+export const getQBInvoice = async (req: Request, res: Response) => {
+    return new Promise((resolve, reject) => {
+        const params = req.query;
+        const company = <ICompany>req.company
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+        qbo.getInvoice(params.quickbookId, async (err: any, qbInvoice: IQBInvoice) => {
+
+            if (err) {
+                reject(err)
+            } else {
+                resolve(qbInvoice)
+            }
+        });
+    })
+    .then((response: any) => {
+        return res.json({ 'status': Status.Success, 'message': response })
+    })
+    .catch((error: any) => {
+        if (error != undefined && error.message != undefined) {
+            return res.json({ 'status': Status.Error, 'message': error.message })
+        } else {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
+    })
 }

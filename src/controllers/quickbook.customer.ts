@@ -1327,3 +1327,29 @@ export const createBCCustomer = async (req: Request, res: Response, company: ICo
     });
 
 }
+
+export const getQBCustomer = async (req: Request, res: Response) => {
+    return new Promise((resolve, reject) => {
+        const params = req.query;
+        const company = <ICompany>req.company
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.getCustomer(params.quickbookId, async (err: any, qbCustomer: IQBCustomer) => {
+            if (err) {
+                reject(err)
+            } else {
+                resolve(qbCustomer)
+            }
+        });
+    })
+    .then((response: any) => {
+        return res.json({ 'status': Status.Success, 'message': response })
+    })
+    .catch((error: any) => {
+        if (error != undefined && error.message != undefined) {
+            return res.json({ 'status': Status.Error, 'message': error.message })
+        } else {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
+    })
+}
