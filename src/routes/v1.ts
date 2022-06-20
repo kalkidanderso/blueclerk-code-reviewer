@@ -1425,6 +1425,13 @@ export default function (sio: any) {
         companyController.updateCompanyProfile
     )
 
+    router.get(
+        '/getCompanyCustomer',
+        passport.authenticate('jwt', { session: false }),
+        validate(Validations.getCompanyCustomer),
+        companyController.getCompanyCustomer
+    )
+
     router.put(
         '/updateCompanyCustomer',
         passport.authenticate('jwt', { session: false }),
@@ -1701,6 +1708,15 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.companyInvoice),
         invoiceController.getCompanyInvoiceDetails
+    )
+
+    router.delete(
+        '/voidInvoice',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.voidInvoice),
+        invoiceController.voidInvoice
     )
 
     router.post(
@@ -2005,6 +2021,15 @@ export default function (sio: any) {
         paymentController.voidPaymentContractor
     )
 
+    router.delete(
+        '/voidPayment',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        validate(Validations.voidPaymentContractor),
+        checkUserPermissions(Permissions.Update_Payment),
+        paymentController.voidPaymentContractor
+    )
+
     router.get(
         '/getPayrollBalance',
         passport.authenticate('jwt', { session: false }),
@@ -2203,6 +2228,34 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         scriptController.migrateCustomer
+    )
+
+    router.get(
+        '/quickbook/invoiceCheck',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookInvoiceController.getQBInvoice
+    )
+
+    router.get(
+        '/quickbook/itemCheck',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookItemController.getQBItem
+    )
+
+    router.get(
+        '/quickbook/paymentCheck',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookPaymentController.getQBPayment
+    )
+
+    router.get(
+        '/quickbook/customerCheck',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookCustomerController.getQBCustomer
     )
 
     return router

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { Status, Messages, QBEntityNames, QBEntityOperations, NotificationTypes} from '../common/constants'
+import { Status, Messages, QBEntityNames, QBEntityOperations, NotificationTypes } from '../common/constants'
 
 import { ICompany, IQBCompany, Company } from '../models/Company';
 import { _resetCompanyQB } from '../controllers/company';
@@ -9,9 +9,11 @@ import { _resetItemQB } from '../controllers/jobType';
 import { _resetPaymentTermQB } from '../controllers/paymentTerm';
 import { _resetInvoiceQB } from '../controllers/invoice';
 import { _resetPaymentQB } from '../controllers/payment';
-import { updateBCCustomer } from '../controllers/quickbook.customer';
+import { createBCCustomer, updateBCCustomer } from '../controllers/quickbook.customer';
 import { createBCPayment } from '../controllers/quickbook.payment';
 import { NotificationServiceTicket } from '../models/NotificationDiscriminator';
+import { createBCItem, updateBCItem } from './quickbook.item';
+import { deleteBCInvoice, updateBCInvoice, voidBCInvoice } from './quickbook.invoice';
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");
@@ -49,44 +51,44 @@ export const _refreshToken = (req: Request, res: Response, company: ICompany, ne
     });
 
     oauthClient
-    .refreshUsingToken(company.qbRefreshToken)
-    .then(function (authResponse: any) {
-        const refresh_token = authResponse.token.refresh_token
-        const access_token = authResponse.token.access_token
+        .refreshUsingToken(company.qbRefreshToken)
+        .then(function (authResponse: any) {
+            const refresh_token = authResponse.token.refresh_token
+            const access_token = authResponse.token.access_token
 
-        var expiry = new Date();
-        expiry.setDate(expiry.getDate() + 99)
+            var expiry = new Date();
+            expiry.setDate(expiry.getDate() + 99)
 
-        company.updateOne({
-            qbAccessToken: access_token,
-            qbRefreshToken: refresh_token,
-            qbAuthorized: true,
-            qbRefeshTokenExpiry: expiry
-        }, (err: any, raw: any)=>{
-            if(err){
-                return next(0, Messages.GenericError, null);
-            }
-
-            Company.findById(company._id, (err: any, newCompany: ICompany) => {
-                if(err){
+            company.updateOne({
+                qbAccessToken: access_token,
+                qbRefreshToken: refresh_token,
+                qbAuthorized: true,
+                qbRefeshTokenExpiry: expiry
+            }, (err: any, raw: any) => {
+                if (err) {
                     return next(0, Messages.GenericError, null);
                 }
 
-                return next(1, '', newCompany);
+                Company.findById(company._id, (err: any, newCompany: ICompany) => {
+                    if (err) {
+                        return next(0, Messages.GenericError, null);
+                    }
+
+                    return next(1, '', newCompany);
+                })
             })
         })
-    })
-    .catch(function (err: any) {
-        console.log('== error', err);
-        console.log('The error message is :', err.originalMessage);
-        console.log('Intuit error :', err.intuit_tid);
-        return next(err.authResponse?.response?.status || Status.Error, 'Unable to refresh the token', null);
-    });
+        .catch(function (err: any) {
+            console.log('== error', err);
+            console.log('The error message is :', err.originalMessage);
+            console.log('Intuit error :', err.intuit_tid);
+            return next(err.authResponse?.response?.status || Status.Error, 'Unable to refresh the token', null);
+        });
 
 }
 
-export const get = function(obj: any, key: any) {
-    return key.split(".").reduce(function(o: any, x: any) {
+export const get = function (obj: any, key: any) {
+    return key.split(".").reduce(function (o: any, x: any) {
         return (typeof o == "undefined" || o === null) ? '' : o[x];
     }, obj);
 }
@@ -110,21 +112,21 @@ export const getQBUri = (req: Request, res: Response) => {
     });
 
     Company.findById(req.companyId, (err: any, company: ICompany) => {
-        if(err){
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        if (err) {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
-        if(company == undefined || company ==null){
-            return res.json({'status': Status.Error, 'message': "Invalid company id"})
+        if (company == undefined || company == null) {
+            return res.json({ 'status': Status.Error, 'message': "Invalid company id" })
         }
 
         company.updateOne({
             socketId: params.sessionID
-        }, (err: any, raw: any)=>{
-            if(err){
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+        }, (err: any, raw: any) => {
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
-            
-            return res.json({'status': Status.Success, 'authUri': authUri})
+
+            return res.json({ 'status': Status.Success, 'authUri': authUri })
         })
     })
 }
@@ -141,61 +143,61 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
         environment: QB_ENVIRONMENT,
         redirectUri: query.redirectUri || QB_REDIRECT_URI,
     });
-    
+
     oauthClient
-    .createToken(req.url)
-    .then(function (authResponse: any) {
+        .createToken(req.url)
+        .then(function (authResponse: any) {
 
-        // var oauth2_token_json: any = JSON.stringify(authResponse.getJson(), null, 2);
-      
-        const companyId = req.query.state
-        const refresh_token = authResponse.token.refresh_token
-        const access_token = authResponse.token.access_token
-        const realmId = req.query.realmId
+            // var oauth2_token_json: any = JSON.stringify(authResponse.getJson(), null, 2);
 
-        Company.findById(companyId, (err: any, company: ICompany) => {
-            if(err){
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-            }
-            if(company == undefined || company ==null){
-                return res.json({'status': Status.Error, 'message': "Invalid company id"})
-            }
+            const companyId = req.query.state
+            const refresh_token = authResponse.token.refresh_token
+            const access_token = authResponse.token.access_token
+            const realmId = req.query.realmId
 
-            // Initiate node-quickbooks object with the refreshed company token
-            const qbo = _getQbo(access_token, realmId, refresh_token);
+            Company.findById(companyId, (err: any, company: ICompany) => {
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                }
+                if (company == undefined || company == null) {
+                    return res.json({ 'status': Status.Error, 'message': "Invalid company id" })
+                }
 
-            // Find the QuickBooks company info to be saved to Company Object
-            qbo.findCompanyInfos({}, (err: any, data: any) => {
+                // Initiate node-quickbooks object with the refreshed company token
+                const qbo = _getQbo(access_token, realmId, refresh_token);
 
-                const qbCompany: IQBCompany = data?.QueryResponse?.CompanyInfo[0];
+                // Find the QuickBooks company info to be saved to Company Object
+                qbo.findCompanyInfos({}, (err: any, data: any) => {
 
-                var expiry = new Date();
-                expiry.setDate(expiry.getDate() + 99);
-                company.updateOne({
-                    qbAccessToken: access_token,
-                    qbRefreshToken: refresh_token,
-                    realmId: realmId,
-                    qbCompanyName: qbCompany?.CompanyName,
-                    qbCompanyEmail: qbCompany?.Email?.Address,
-                    qbAuthorized: true,
-                    qbRefeshTokenExpiry: expiry
-                }, (err: any, raw: any)=>{
-                    if(err){
-                        sio.emit(company.socketId, {'status': Status.Error, 'message': Messages.GenericError});
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                    }
+                    const qbCompany: IQBCompany = data?.QueryResponse?.CompanyInfo[0];
 
-                    // sio.emit("authToken", oauth2_token_json);
+                    var expiry = new Date();
+                    expiry.setDate(expiry.getDate() + 99);
+                    company.updateOne({
+                        qbAccessToken: access_token,
+                        qbRefreshToken: refresh_token,
+                        realmId: realmId,
+                        qbCompanyName: qbCompany?.CompanyName,
+                        qbCompanyEmail: qbCompany?.Email?.Address,
+                        qbAuthorized: true,
+                        qbRefeshTokenExpiry: expiry
+                    }, (err: any, raw: any) => {
+                        if (err) {
+                            sio.emit(company.socketId, { 'status': Status.Error, 'message': Messages.GenericError });
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        }
 
-                    sio.emit(company.socketId, {'status': Status.Success, 'message': 'Quickbooks Connected Successfully'});
-                    return res.json({ 'status': Status.Success, 'message': 'Quickbooks Connected Successfully' });
+                        // sio.emit("authToken", oauth2_token_json);
+
+                        sio.emit(company.socketId, { 'status': Status.Success, 'message': 'Quickbooks Connected Successfully' });
+                        return res.json({ 'status': Status.Success, 'message': 'Quickbooks Connected Successfully' });
+                    })
                 })
             })
         })
-    })
-    .catch(function (err: any) {
-        return res.json({'status': Status.Error, 'message': err.error_description || err.originalMessage || err.message || Messages.GenericError});
-    });
+        .catch(function (err: any) {
+            return res.json({ 'status': Status.Error, 'message': err.error_description || err.originalMessage || err.message || Messages.GenericError });
+        });
 }
 
 export const disconnectQB = async (req: Request, res: Response) => {
@@ -264,6 +266,7 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
                     // => CUSTOMER CREATE ACTION
                     case QBEntityOperations.CREATE:
                         // Create BC Customer here
+                        createBCCustomer(req, res, company, eventEntity?.id);
                         break;
 
                     case QBEntityOperations.UPDATE:
@@ -284,12 +287,35 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
                     // => ITEM CREATE ACTION
                     case QBEntityOperations.CREATE:
                         // Create BC Job Type and Item here
+                        createBCItem(req, res, company, eventEntity?.id);
+                        break;
+
+                    case QBEntityOperations.UPDATE:
+                        // Update BC Job Type and Item here
+                        updateBCItem(req, res, company, eventEntity?.id);
                         break;
 
                     default:
                         break;
                 }
 
+            case QBEntityNames.INVOICE:
+                switch (eventEntity?.operation) {
+                    case QBEntityOperations.UPDATE:
+                        // Update BC Invoice here
+                        updateBCInvoice(req, res, company, eventEntity?.id);
+                        break;
+
+                    case QBEntityOperations.VOID:
+                        // Void BC Invoice here
+                        voidBCInvoice(req, res, company, eventEntity?.id);
+                        break;
+
+                    case QBEntityOperations.DELETE:
+                        // Delete BC Invoice here
+                        deleteBCInvoice(req, res, company, eventEntity?.id);
+                        break;
+                }
             // => PAYMENT ENTITY EVENT
             case QBEntityNames.PAYMENT:
                 switch (eventEntity?.operation) {

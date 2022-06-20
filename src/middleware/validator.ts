@@ -88,6 +88,13 @@ export const Validations = {
 
   updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('companyEmail').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }), check('phone').exists()],
 
+  getCompanyCustomer: [
+    check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('status').optional().isInt({ min: 0, max: 4}).toInt().withMessage('status has to be number with value between 0 and 4'),
+    check('isPreferred').optional().isBoolean().toBoolean()
+  ],
+
   updateCompanyCustomer: [
     check('companyCustomerId').exists().isMongoId().withMessage(Messages.WrongId),
     check('status').optional().isNumeric().toInt(),
@@ -103,9 +110,9 @@ export const Validations = {
   updateEmployeeEmailPreferences: [check('employeeId').exists(), check('emailPreferences').isNumeric()],
 
   updateCompanyContract: [
-    check('contractId').exists().withMessage(Messages.Required), 
+    check('contractId').exists().withMessage(Messages.Required),
     check('contractId').isMongoId().withMessage(Messages.WrongId),
-    check('status').isInt({ min: 1,max: 4 }).toInt().withMessage('status has to be number with value between 1 and 4')
+    check('status').isInt({ min: 1, max: 4 }).toInt().withMessage('status has to be number with value between 1 and 4')
   ],
 
   updateContractorEmailPreferences: [check('contractorId').exists(), check('emailPreferences').isNumeric()],
@@ -284,7 +291,8 @@ export const Validations = {
     check('jobId').exists().withMessage(Messages.Required),
     check('jobId').isMongoId().withMessage(Messages.WrongId),
     check('technicianId').exists().withMessage(Messages.Required),
-    check('technicianId').isMongoId().withMessage(Messages.WrongId)
+    check('technicianId').isMongoId().withMessage(Messages.WrongId),
+    check('status').optional().isInt().toInt()
   ],
 
   technicianJobs: [check('employeeId').exists().withMessage(Messages.Required), check('employeeId').isMongoId().withMessage(Messages.WrongId)],
@@ -379,6 +387,7 @@ export const Validations = {
   getInvoices: [
     check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
     check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
+    check('isVoid').optional().isBoolean().toBoolean().withMessage('isVoid has to be boolean'),
     check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')
   ],
 
@@ -410,6 +419,8 @@ export const Validations = {
   setCustomInvoiceNumber: [check('invoiceNumber').optional().isInt().toInt()],
 
   companyInvoice: [check('companyInvoiceId').exists()],
+
+  voidInvoice: [check('invoiceId').exists().withMessage(Messages.Required), check('invoiceId').isMongoId().withMessage(Messages.WrongId)],
 
   updateCommission: [
     check('type').exists().withMessage(Messages.Required),
@@ -507,7 +518,7 @@ export const Validations = {
 
   voidPaymentContractor: [
     check('type').exists().withMessage(Messages.Required),
-    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('type').isIn(['vendor', 'employee', 'customer']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
     check('paymentId').exists().withMessage(Messages.Required),
     check('paymentId').isMongoId().withMessage(Messages.WrongId),
   ],

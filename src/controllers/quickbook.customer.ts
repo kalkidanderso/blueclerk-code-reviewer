@@ -1246,3 +1246,110 @@ export const updateBCCustomer = async (req: Request, res: Response, company: ICo
     });
 
 }
+
+export const createBCCustomer = async (req: Request, res: Response, company: ICompany, qbCustomerId: string) => {
+
+    // Always refresh the token first because token valid only for 60 minutes
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        // Get QB Customer by ID sent through webhook
+        qbo.getCustomer(qbCustomerId, async (err: any, qbCustomer: IQBCustomer) => {
+            if (!qbCustomer || err) {
+                return;
+            }
+
+            const customer = new Customer({
+                info: {
+                    email: qbCustomer?.PrimaryEmailAddr?.Address,
+                },
+                profile: {
+                    firstName: qbCustomer?.GivenName,
+                    lastName: qbCustomer?.FamilyName,
+                    displayName: qbCustomer?.DisplayName,
+                    imageUrl: '',
+                },
+                address: {
+                    street: qbCustomer?.BillAddr?.Line1,
+                    city: qbCustomer?.BillAddr?.City,
+                    state: qbCustomer?.BillAddr?.Country,
+                    zipCode: qbCustomer?.BillAddr?.PostalCode
+                },
+                contact: {
+                    phone: qbCustomer?.PrimaryPhone?.FreeFormNumber
+                },
+                permissions: {
+                    role: Role.CUSTOMER,
+                    extra: [],
+                },
+                quickbookId: qbCustomer.Id
+            });
+
+            const customerAdmin = await new CustomerAdmin({
+                auth: {
+                    email: qbCustomer?.PrimaryEmailAddr?.Address
+                },
+                info: {
+                    email: qbCustomer?.PrimaryEmailAddr?.Address
+                },
+                address: {
+                    street: qbCustomer?.BillAddr?.Line1,
+                    city: qbCustomer?.BillAddr?.City,
+                    state: qbCustomer?.BillAddr?.Country,
+                    zipCode: qbCustomer?.BillAddr?.PostalCode
+                },
+                permissions: {
+                    role: Role.CUSTOMER,
+                    extra: [],
+                },
+                contact: {
+                    phone: qbCustomer?.PrimaryPhone?.FreeFormNumber
+                },
+                emailPreferences: customer?.emailPreferences,
+                balance: customer?.balance,
+                commission: customer?.commission,
+                customer: customer._id
+            }).save();
+
+            customer.admin = customerAdmin._id;
+            await customer.save();
+
+            await new CompanyCustomer({
+                company: company._id,
+                customer: customer._id,
+                createdAt: Date.now()
+            }).save();
+
+            return;
+        });
+    });
+
+}
+
+export const getQBCustomer = async (req: Request, res: Response) => {
+    return new Promise((resolve, reject) => {
+        const params = req.query;
+        const company = <ICompany>req.company
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.getCustomer(params.quickbookId, async (err: any, qbCustomer: IQBCustomer) => {
+            if (err) {
+                reject(err)
+            } else {
+                resolve(qbCustomer)
+            }
+        });
+    })
+    .then((response: any) => {
+        return res.json({ 'status': Status.Success, 'message': response })
+    })
+    .catch((error: any) => {
+        if (error != undefined && error.message != undefined) {
+            return res.json({ 'status': Status.Error, 'message': error.message })
+        } else {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
+    })
+}

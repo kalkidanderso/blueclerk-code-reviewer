@@ -1,7 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { Status } from '../common/constants';
 import { ICompany } from '../models/Company';
-import { CompanyLocation } from '../models/CompanyLocation';
+import { CompanyAdmin } from '../models/CompanyAdmin';
+import { CompanyLocation, ICompanyLocation } from '../models/CompanyLocation';
 
 
 export const getCompanyLocations = async (req: Request, res: Response) => {
@@ -22,6 +23,13 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
 
     const params = req.body;
     const company = <ICompany>req.company;
+
+    if (params.isMainLocation) {
+        let existingMainLocation = await CompanyLocation.findOne({ company, isActive: true, isMainLocation: true });
+        if (existingMainLocation) {
+            return res.json({ status: Status.Error, message: 'Company already have main location', mainLocation: existingMainLocation });
+        }
+    }
 
     const companyLocation = new CompanyLocation(
         {
@@ -64,6 +72,13 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Company Location is not found' });
     }
 
+    if (!companyLocation.isMainLocation && params.isMainLocation) {
+        let existingMainLocation = await CompanyLocation.findOne({ company, isActive: true, isMainLocation: true });
+        if (existingMainLocation) {
+            return res.json({ status: Status.Error, message: 'Company already have main location', mainLocation: existingMainLocation });
+        }
+    }
+
     companyLocation.name = params.name;
     companyLocation.isMainLocation = params.isMainLocation ?? companyLocation.isMainLocation;
 
@@ -86,5 +101,61 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
     await companyLocation.save();
 
     return res.json({ status: Status.Success, message: 'Company Location updated successfully', companyLocation });
+
+}
+
+/**
+ * To manage company main location when Company Profile updated,
+ * if company already have a main location, update it based on the latest Company Profile,
+ * if not, create new main location for the company
+ */
+export const _manageCompanyMainLocation = async (company: ICompany): Promise<ICompanyLocation> => {
+
+    let mainLocation = await CompanyLocation.findOne({ company, isActive: true, isMainLocation: true }).sort({ _id: -1 });
+
+    if (!mainLocation) {
+        // No main location found, create a new one
+        const companyAdmin = await CompanyAdmin.findById(company.admin);
+
+        mainLocation = new CompanyLocation(
+            {
+                name: 'Main HQ',
+                isMainLocation: true,
+                info: {
+                    companyEmail: companyAdmin?.auth?.email,
+                    logoUrl: company.info?.logoUrl
+                },
+                address: {
+                    street: company.address?.street,
+                    city: company.address?.city,
+                    state: company.address?.state,
+                    zipCode: company.address?.zipCode
+                },
+                contact: {
+                    phone: company.contact?.phone,
+                    fax: company.contact?.fax
+                },
+                contactName: companyAdmin?.profile?.displayName,
+                company
+            }
+        );
+    } else {
+        // Main locatin found, update existing
+        mainLocation.info.logoUrl = company.info?.logoUrl;
+        mainLocation.address = {
+            street: company.address?.street,
+            city: company.address?.city,
+            state: company.address?.state,
+            zipCode: company.address?.zipCode
+        };
+        mainLocation.contact = {
+            phone: company.contact?.phone,
+            fax: company.contact?.fax
+        }
+    }
+
+    await mainLocation.save();
+
+    return mainLocation;
 
 }
