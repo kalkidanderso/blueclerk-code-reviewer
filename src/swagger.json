@@ -12809,6 +12809,146 @@
           }
         ]
       }
+    },
+    "/quickbook/invoiceCheck": {
+      "get": {
+        "tags": [
+          "Quickbook Check"
+        ],
+        "summary": "Returns list of all Company Customer relation list",
+        "parameters": [
+          {
+            "name": "quickbookId",
+            "in": "query",
+            "description": "ID of invoice quickbook",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/quickbook/itemCheck": {
+      "get": {
+        "tags": [
+          "Quickbook Check"
+        ],
+        "summary": "Returns list of all Company Customer relation list",
+        "parameters": [
+          {
+            "name": "quickbookId",
+            "in": "query",
+            "description": "ID of invoice quickbook",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/quickbook/paymentCheck": {
+      "get": {
+        "tags": [
+          "Quickbook Check"
+        ],
+        "summary": "Returns list of all Company Customer relation list",
+        "parameters": [
+          {
+            "name": "quickbookId",
+            "in": "query",
+            "description": "ID of invoice quickbook",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/quickbook/customerCheck": {
+      "get": {
+        "tags": [
+          "Quickbook Check"
+        ],
+        "summary": "Returns list of all Company Customer relation list",
+        "parameters": [
+          {
+            "name": "quickbookId",
+            "in": "query",
+            "description": "ID of invoice quickbook",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
     }
   },
   "components": {

@@ -109,6 +109,7 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
                 console.log('== err.fault:', err.fault);
                 console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
                 console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                console.log('== paymentId:', payment._id);
 
                 return next(
                     Status.Error,
@@ -707,4 +708,30 @@ export const _voidPayment = async (req: Request, res: Response, company: ICompan
                 });
         });
     });
+}
+
+export const getQBPayment = async (req: Request, res: Response) => {
+    return new Promise((resolve, reject) => {
+        const params = req.query;
+        const company = <ICompany>req.company
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.getPayment(params.quickbookId, async (err: any, qbPayment: IQBPayment) => {
+            if (err) {
+                reject(err)
+            } else {
+                resolve(qbPayment)
+            }
+        });
+    })
+    .then((response: any) => {
+        return res.json({ 'status': Status.Success, 'message': response })
+    })
+    .catch((error: any) => {
+        if (error != undefined && error.message != undefined) {
+            return res.json({ 'status': Status.Error, 'message': error.message })
+        } else {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
+    })
 }
