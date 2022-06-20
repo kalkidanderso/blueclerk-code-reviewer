@@ -2230,6 +2230,34 @@ export default function (sio: any) {
         scriptController.migrateCustomer
     )
 
+    router.get(
+        '/quickbook/invoiceCheck',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookInvoiceController.getQBInvoice
+    )
+
+    router.get(
+        '/quickbook/itemCheck',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookItemController.getQBItem
+    )
+
+    router.get(
+        '/quickbook/paymentCheck',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookPaymentController.getQBPayment
+    )
+
+    router.get(
+        '/quickbook/customerCheck',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        quickBookCustomerController.getQBCustomer
+    )
+
     return router
 
 }
