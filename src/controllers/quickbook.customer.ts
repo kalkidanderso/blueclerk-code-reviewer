@@ -557,6 +557,7 @@ export const _createQBCustomerJob = async (req: Request, res: Response, company:
             Job: true,
             Active: jobLocation.isActive ?? true,
             ParentRef: { value: parentQBCustomerId },
+            BillWithParent: true,
             PrimaryPhone: {
                 FreeFormNumber: customer?.contact?.phone
             },
@@ -622,9 +623,9 @@ export const _updateQBCustomerJob = async (req: Request, res: Response, company:
 
         if (err === 400) {
             await Company.findByIdAndUpdate(req.company._id, {
-                qbAuthorized: false,
-                qbAccessToken: undefined,
-                qbRefreshToken: undefined
+                // qbAuthorized: false,
+                // qbAccessToken: undefined,
+                // qbRefreshToken: undefined
             });
 
             return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
@@ -635,7 +636,12 @@ export const _updateQBCustomerJob = async (req: Request, res: Response, company:
 
         qbo.getCustomer(jobLocation.quickbookId, async (err: any, qbCustomerJob: IQBCustomer) => {
 
+            if (!qbCustomerJob) {
+                return next(null, null, null);
+            }
+
             qbCustomerJob.DisplayName = jobLocation.name;
+            qbCustomerJob.BillWithParent = true;
             qbCustomerJob.Active = jobLocation.isActive;
             qbCustomerJob.ShipAddr = qbCustomerJob.ShipAddr ?? {};
             qbCustomerJob.ShipAddr.Line1 = jobLocation?.address?.street;
@@ -647,6 +653,14 @@ export const _updateQBCustomerJob = async (req: Request, res: Response, company:
 
             qbo.updateCustomer(qbCustomerJob, async (err: any, qbCustomerJob: IQBCustomer) => {
                 if (err) {
+                    console.log('== _updateQBCustomerJob > qbo.updateCustomer > ERROR ==');
+                    console.log('== err.Fault:', err.Fault);
+                    console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                    console.log('== err.fault:', err.fault);
+                    console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                    console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                    console.log('== jobLocationId:', jobLocation._id);
+
                     return next(
                         Status.Error,
                         err.Fault?.Error[0]?.Detail
@@ -994,7 +1008,6 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                                     email: qbCustomer.PrimaryEmailAddr?.Address
                                 }).save()
                             ],
-                            company: company._id,
                             permissions: { role: Role.CUSTOMER, extra: [] },
                             quickbookId: qbCustomer.Id,
                         });
