@@ -20,6 +20,8 @@ import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin';
 import { CustomerContact, ICustomerContact } from '../models/CustomerContact';
 import { CompanyCustomer } from '../models/CompanyCustomer';
 import { Contact } from '../models/Contact';
+import { JobLocation } from '../models/JobLocation';
+import { _updateQBCustomerJob } from '../controllers/quickbook.customer';
 
 /**
  * To sync and update all companies and customers to have Item Price Tier,
@@ -518,4 +520,36 @@ export const createCustomerContact = async ({
     contact.save();
 
     return customerContact;
+}
+
+export const updateQBCustomerJob = async (req: Request, res: Response) => {
+
+    const companyId = req.companyId;
+
+    const jobLocations = await JobLocation.find({
+        companyId,
+        quickbookId: { $ne: null }
+    })
+        // .limit(300)
+        // .skip(300);
+
+    res.json({
+        ok: true,
+        msg: 'Script running in background',
+        companyId,
+        jobLocationCount: jobLocations?.length
+    });
+
+    for (const jobLocation of jobLocations) {
+        const company = await Company.findById(jobLocation.companyId);
+        await _updateQBCustomerJob(req, res, company, jobLocation, null, (err, errMsg, qbCustomerJob) => {
+            console.log('== qbCustomerJob.Id:', qbCustomerJob?.Id);
+            console.log('== qbCustomerJob.BillWithParent:', qbCustomerJob?.BillWithParent);
+        })
+    }
+
+    console.log('== done ==');
+
+    return;
+
 }

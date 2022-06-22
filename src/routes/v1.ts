@@ -2230,6 +2230,13 @@ export default function (sio: any) {
         scriptController.migrateCustomer
     )
 
+    router.post(
+        '/script/updateQBCustomerJob',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        scriptController.updateQBCustomerJob
+    )
+
     router.get(
         '/quickbook/invoiceCheck',
         passport.authenticate('jwt', { session: false }),
