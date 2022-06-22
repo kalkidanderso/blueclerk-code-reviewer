@@ -1274,6 +1274,16 @@ export const createBCCustomer = async (req: Request, res: Response, company: ICo
                 return;
             }
 
+            // Find existing customer
+            const customers = await Customer.find({ quickbookId: qbCustomer.Id });
+            if (customers?.length) {
+                const customerIds = customers.map(customer => customer._id);
+                const companyCustomer = await CompanyCustomer.findOne({ company: company._id, customer: { $in: customerIds } });
+                if (companyCustomer) {
+                    return;
+                }
+            }
+
             const customer = new Customer({
                 info: {
                     email: qbCustomer?.PrimaryEmailAddr?.Address,
