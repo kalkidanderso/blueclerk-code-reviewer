@@ -24,7 +24,7 @@ import { IPurchaseOrder, PurchaseOrder } from '../models/PurchaseOrder';
 import { Estimate, IEstimate } from '../models/Estimate';
 import { IInvoicePrefix, InvoicePrefix } from '../models/InvoicePrefix';
 import { IPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
-import { Payment } from '../models/Payment';
+import { Payment, PaymentCustomer } from '../models/Payment';
 import { IInvoice, IQBInvoice, Invoice } from '../models/Invoice';
 import { IScan, Scan } from '../models/Scan';
 import { EmailDefault } from '../models/EmailDefault';
@@ -1810,8 +1810,9 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
 
-                    const payments = await Payment.find({
+                    const payments = await PaymentCustomer.find({
                         company: req.companyId,
+                        isVoid: { $ne: true },
                         $or: [
                             { invoice: invoice._id },
                             { 'line.invoice': invoice._id }
