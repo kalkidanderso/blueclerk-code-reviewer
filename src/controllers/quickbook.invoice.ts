@@ -1118,9 +1118,15 @@ export const getQBInvoice = async (req: Request, res: Response) => {
         const params = req.query;
         const company = <ICompany>req.company
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
-        qbo.getInvoice(params.quickbookId, async (err: any, qbInvoice: IQBInvoice) => {
 
+        qbo.getInvoice(params.quickbookId, async (err: any, qbInvoice: IQBInvoice) => {
             if (err) {
+                console.log('== getQBInvoice > qbo.getInvoice > ERROR ==');
+                console.log('== err.Fault:', err.Fault);
+                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                console.log('== err.fault:', err.fault);
+                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
                 reject(err)
             } else {
                 resolve(qbInvoice)
@@ -1131,10 +1137,6 @@ export const getQBInvoice = async (req: Request, res: Response) => {
         return res.json({ 'status': Status.Success, 'message': response })
     })
     .catch((error: any) => {
-        if (error != undefined && error.message != undefined) {
-            return res.json({ 'status': Status.Error, 'message': error.message })
-        } else {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        }
+        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }

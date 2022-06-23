@@ -92,6 +92,7 @@ export interface IQBCustomer {
     }
     BillWithParent?: boolean
     Level?: number
+    Balance?: number
     BillAddr?: IQBAddress
     ShipAddr?: IQBAddress
 

@@ -2241,6 +2241,7 @@ export default function (sio: any) {
         '/quickbook/invoiceCheck',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
+        refreshQBToken(),
         quickBookInvoiceController.getQBInvoice
     )
 
@@ -2248,6 +2249,7 @@ export default function (sio: any) {
         '/quickbook/itemCheck',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
+        refreshQBToken(),
         quickBookItemController.getQBItem
     )
 
@@ -2255,6 +2257,7 @@ export default function (sio: any) {
         '/quickbook/paymentCheck',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
+        refreshQBToken(),
         quickBookPaymentController.getQBPayment
     )
 
@@ -2262,6 +2265,7 @@ export default function (sio: any) {
         '/quickbook/customerCheck',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
+        refreshQBToken(),
         quickBookCustomerController.getQBCustomer
     )
 
