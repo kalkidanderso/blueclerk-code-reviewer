@@ -361,7 +361,9 @@ export const createPayment = async (req: Request, res: Response) => {
                 }
 
                 if (qbPayment) {
+                    // Save quickbookId and our unique generated referenceNumber
                     payment.quickbookId = qbPayment.Id;
+                    payment.quickbookRefNum = Buffer.from(qbPayment.MetaData?.CreateTime).toString('base64');
                     await payment.save();
 
                     // If company's payments already synced, update the synced date
@@ -676,12 +678,16 @@ export const updatePayment = async (req: Request, res: Response) => {
 
         if (company.qbAuthorized && payment.quickbookId) {
             // Sync the update to Payment in QuickBooks
-            _updateQBPayment(req, res, company, payment, (err, errMsg, qbPayment) => {
+            _updateQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
                 if (err) {
                     return res.json({ status: err, message: errMsg });
                 }
 
                 if (qbPayment) {
+                    // Save our unique generated referenceNumber
+                    payment.quickbookRefNum = Buffer.from(qbPayment.MetaData?.CreateTime).toString('base64');
+                    await payment.save();
+
                     // If company's payments already synced, update the synced date
                     if (company.qbSync?.paymentsSynced) {
                         company.qbSync.paymentsSyncedAt = new Date();

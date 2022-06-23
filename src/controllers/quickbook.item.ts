@@ -513,10 +513,6 @@ export const getQBItem = async (req: Request, res: Response) => {
         return res.json({ 'status': Status.Success, 'message': response })
     })
     .catch((error: any) => {
-        if (error != undefined && error.message != undefined) {
-            return res.json({ 'status': Status.Error, 'message': error.message })
-        } else {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        }
+        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }
