@@ -41,6 +41,7 @@ export const refreshQBToken = () => {
                         return res.json({status: Status.Error, message: Messages.GenericError});
                     }
     
+                    req.company = newCompany;
                     next();
                     return
                 })
