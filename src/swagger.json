@@ -12949,6 +12949,41 @@
           }
         ]
       }
+    },
+    "/quickbook/findQBCustomers": {
+      "get": {
+        "tags": [
+          "Quickbook Check"
+        ],
+        "summary": "Returns list of QB Customers by that name",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Display Name of Customer",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
     }
   },
   "components": {

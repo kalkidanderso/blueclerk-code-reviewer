@@ -1312,7 +1312,9 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Create_QB_customer),
         validate(Validations.createQBCustomer),
-        quickBookCustomerController.createQBCustomer
+        refreshQBToken(),
+        // quickBookCustomerController.createQBCustomer
+        quickBookCustomerController.NEWcreateQBCustomer
     )
 
     router.post(
@@ -2267,6 +2269,22 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookCustomerController.getQBCustomer
+    )
+
+    router.get(
+        '/quickbook/findQBCustomers',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookCustomerController.findQBCustomers
+    )
+
+    router.get(
+        '/quickbook/findQBCustomersByEmail',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookCustomerController.findQBCustomersByEmail
     )
 
     return router

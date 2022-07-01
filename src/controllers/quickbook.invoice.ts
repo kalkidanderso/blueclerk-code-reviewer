@@ -451,9 +451,9 @@ export const createQBInvoice = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Invoice not found.' });
     }
 
-    if (invoice.invoiceType === 3) {
-        return res.json({ status: Status.Success, message: 'Manual invoice cannot be synced to QB.' });
-    }
+    // if (invoice.invoiceType === 3) {
+    //     return res.json({ status: Status.Success, message: 'Manual invoice cannot be synced to QB.' });
+    // }
 
     _createQBInvoice(req, res, company, invoice, async (err, errMsg, qbInvoice) => {
         if (err || !qbInvoice) {

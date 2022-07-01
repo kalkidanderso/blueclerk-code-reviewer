@@ -159,9 +159,9 @@ export const _createQBCustomer = async (req: Request, res: Response, company: IC
 
         if (err === 400) {
             await Company.findByIdAndUpdate(req.company._id, {
-                qbAuthorized: false,
-                qbAccessToken: undefined,
-                qbRefreshToken: undefined
+                // qbAuthorized: false,
+                // qbAccessToken: undefined,
+                // qbRefreshToken: undefined
             });
 
             return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
@@ -170,54 +170,89 @@ export const _createQBCustomer = async (req: Request, res: Response, company: IC
         // Initiate node-quickbooks object with the refreshed company token
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
-        // Construct QB Customer Entry
-        const qbCustomerEntry: IQBCustomer = {
-            PrimaryEmailAddr: {
-                Address: customer?.info?.email
-            },
-            DisplayName: customer?.profile?.displayName,
-            GivenName: customer?.profile?.firstName,
-            FamilyName: customer?.profile?.lastName,
-            CompanyName: customer?.profile?.displayName,
-            Job: false,
-            PrimaryPhone: {
-                FreeFormNumber: customer?.contact?.phone
-            },
-            BillAddr: {
-                Line1: customer?.address?.street,
-                Line2: customer?.address?.unit,
-                City: customer?.address?.city,
-                CountrySubDivisionCode: customer?.address?.state,
-                PostalCode: customer?.address?.zipCode,
-                Long: customer?.location?.coordinates[0]?.toString(),
-                Lat: customer?.location?.coordinates[1]?.toString(),
-            },
-            ShipAddr: {
-                Line1: customer?.address?.street,
-                Line2: customer?.address?.unit,
-                City: customer?.address?.city,
-                CountrySubDivisionCode: customer?.address?.state,
-                PostalCode: customer?.address?.zipCode,
-                Long: customer?.location?.coordinates[0]?.toString(),
-                Lat: customer?.location?.coordinates[1]?.toString(),
-            }
-        }
-
-        // Create QB Customer
-        qbo.createCustomer(qbCustomerEntry, async (err: any, qbCustomer: IQBCustomer) => {
+        qbo.findCustomers({ DisplayName: customer?.profile?.displayName }, async (err: any, data: any) => {
             if (err) {
-                return next(
-                    Status.Error,
-                    err.Fault?.Error[0]?.Message
-                    || err.fault?.error[0]?.detail
-                    || err.fault?.error[0]?.message
-                    || Messages.GenericError,
-                    null
-                );
+                console.log('== _createQBCustomer > qbo.findCustomers > ERROR ==');
+                console.log('== err.Fault:', err.Fault);
+                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                console.log('== err.fault:', err.fault);
+                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                console.log('== customerId:', customer._id);
             }
 
-            return next(null, null, qbCustomer);
+            const qbCustomer = data?.QueryResponse?.Customer[0];
+            console.log('== qbCustomer:', qbCustomer);
+
+            if (qbCustomer) {
+                customer.quickbookId = qbCustomer.Id;
+                await customer.save();
+
+                return next(null, null, qbCustomer);
+            } else {
+                // Construct QB Customer Entry
+                const qbCustomerEntry: IQBCustomer = {
+                    PrimaryEmailAddr: {
+                        Address: customer?.info?.email
+                    },
+                    DisplayName: customer?.profile?.displayName,
+                    GivenName: customer?.profile?.firstName,
+                    FamilyName: customer?.profile?.lastName,
+                    CompanyName: customer?.profile?.displayName,
+                    Job: false,
+                    PrimaryPhone: {
+                        FreeFormNumber: customer?.contact?.phone
+                    },
+                    BillAddr: {
+                        Line1: customer?.address?.street,
+                        Line2: customer?.address?.unit,
+                        City: customer?.address?.city,
+                        CountrySubDivisionCode: customer?.address?.state,
+                        PostalCode: customer?.address?.zipCode,
+                        Long: customer?.location?.coordinates[0]?.toString(),
+                        Lat: customer?.location?.coordinates[1]?.toString(),
+                    },
+                    ShipAddr: {
+                        Line1: customer?.address?.street,
+                        Line2: customer?.address?.unit,
+                        City: customer?.address?.city,
+                        CountrySubDivisionCode: customer?.address?.state,
+                        PostalCode: customer?.address?.zipCode,
+                        Long: customer?.location?.coordinates[0]?.toString(),
+                        Lat: customer?.location?.coordinates[1]?.toString(),
+                    }
+                }
+
+                // Create QB Customer
+                qbo.createCustomer(qbCustomerEntry, async (err: any, qbCustomer: IQBCustomer) => {
+                    if (err) {
+                        console.log('== _createQBCustomer > qbo.createCustomer > ERROR ==');
+                        console.log('== err.Fault:', err.Fault);
+                        console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                        console.log('== err.fault:', err.fault);
+                        console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                        console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                        console.log('== customerId:', customer._id);
+                        return next(
+                            Status.Error,
+                            err.Fault?.Error[0]?.Message
+                            || err.fault?.error[0]?.detail
+                            || err.fault?.error[0]?.message
+                            || Messages.GenericError,
+                            null
+                        );
+                    }
+
+                    if (qbCustomer) {
+                        customer.quickbookId = qbCustomer.Id;
+                        await customer.save();
+                    }
+
+                    return next(null, null, qbCustomer);
+                })
+            }
         })
+
     })
 
 }
@@ -458,6 +493,16 @@ export const _createQBCustomerJob = async (req: Request, res: Response, company:
         // Create QB Customer
         qbo.createCustomer(qbCustomerEntry, async (err: any, qbCustomer: IQBCustomer) => {
             if (err) {
+                if (err) {
+                    console.log('== _createQBCustomerJob > qbo.createCustomer > ERROR ==');
+                    console.log('== err.Fault:', err.Fault);
+                    console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                    console.log('== err.fault:', err.fault);
+                    console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                    console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                    console.log('== jobLocationId:', jobLocation._id);
+                }
+
                 return next(
                     Status.Error,
                     err.Fault?.Error[0]?.Message
@@ -551,6 +596,210 @@ export const _updateQBCustomerJob = async (req: Request, res: Response, company:
             });
         });
     });
+
+}
+
+export const NEWcreateQBCustomer = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const companyId = req.companyId;
+    const company = req.company;
+
+    // Initiate node-quickbooks object with the refreshed company token
+    const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+    // Find the customer
+    const companyCustomer = await CompanyCustomer.findOne({ company: companyId, customer: params.customerId });
+
+    if (!companyCustomer) {
+        return res.json({ status: Status.Error, message: 'Customer not found' });
+    }
+
+    const customer = await Customer.findById(params.customerId);
+
+    qbo.findCustomers({ DisplayName: customer?.profile?.displayName }, async (err: any, data: any) => {
+        if (err) {
+            console.log('== _createQBCustomer > qbo.findCustomers > ERROR ==');
+            console.log('== err.Fault:', err.Fault);
+            console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+            console.log('== err.fault:', err.fault);
+            console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+            console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+            console.log('== customerId:', customer._id);
+        }
+
+        if (data?.QueryResponse?.Customer?.length) {
+            const qbCustomer = data.QueryResponse.Customer[0];
+            console.log('== qbCustomer:', qbCustomer);
+
+            customer.quickbookId = qbCustomer.Id;
+            await customer.save();
+
+            // Populate job locations of customer
+            await customer.populate({ path: 'jobLocations' }).execPopulate();
+
+            /**
+             * Iterate all job locations of the customer,
+             * check, then create on QB it not existed
+             */
+            for (const custJobLoc of customer?.jobLocations) {
+                const jobLocation = <IJobLocation>custJobLoc;
+
+                // Check if job location doesn't have associated quickbookId
+                qbo.findCustomers([
+                    { DisplayName: jobLocation.name },
+                    { field: 'Job', value: true }
+                ], async (err: any, data: any) => {
+                    console.log('== jobLocation.name:', jobLocation.name);
+                    console.log('== data:', data);
+
+                    if (data?.QueryResponse?.Customer?.length) {
+                        const qbCustomerJob = data.QueryResponse.Customer[0];
+                        console.log('== qbCustomerJob:', qbCustomerJob);
+
+                        console.log('== qbCustomerJob.ParentRef.value:', qbCustomerJob.ParentRef.value);
+                        console.log('== customer.quickbookId:', customer.quickbookId);
+                        if (qbCustomerJob.ParentRef.value !== customer.quickbookId) {
+                            console.log('== qbCustomerJob found, but not  Sub Customer of Customer, creating new one');
+
+                            _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, async (err, errMsg, qbCustomerJob) => {
+                                if (qbCustomerJob) {
+                                    jobLocation.quickbookId = qbCustomerJob.Id;
+                                    await jobLocation.save();
+                                }
+                            })
+                        } else {
+                            console.log('== qbCustomerJob found');
+                            jobLocation.quickbookId = qbCustomerJob.Id;
+                            await jobLocation.save();
+                        }
+                    } else {
+                        console.log('== qbCustomerJob NOT found, creating new one');
+                        _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, async (err, errMsg, qbCustomerJob) => {
+                            if (qbCustomerJob) {
+                                jobLocation.quickbookId = qbCustomerJob.Id;
+                                await jobLocation.save();
+                            }
+                        })
+                    }
+                })
+            }
+
+            return res.json({ status: Status.Error, qbCustomer });
+        } else {
+            // Construct QB Customer Entry
+            const qbCustomerEntry: IQBCustomer = {
+                PrimaryEmailAddr: {
+                    Address: customer?.info?.email
+                },
+                DisplayName: customer?.profile?.displayName,
+                GivenName: customer?.profile?.firstName,
+                FamilyName: customer?.profile?.lastName,
+                CompanyName: customer?.profile?.displayName,
+                Job: false,
+                PrimaryPhone: {
+                    FreeFormNumber: customer?.contact?.phone
+                },
+                BillAddr: {
+                    Line1: customer?.address?.street,
+                    Line2: customer?.address?.unit,
+                    City: customer?.address?.city,
+                    CountrySubDivisionCode: customer?.address?.state,
+                    PostalCode: customer?.address?.zipCode,
+                    Long: customer?.location?.coordinates[0]?.toString(),
+                    Lat: customer?.location?.coordinates[1]?.toString(),
+                },
+                ShipAddr: {
+                    Line1: customer?.address?.street,
+                    Line2: customer?.address?.unit,
+                    City: customer?.address?.city,
+                    CountrySubDivisionCode: customer?.address?.state,
+                    PostalCode: customer?.address?.zipCode,
+                    Long: customer?.location?.coordinates[0]?.toString(),
+                    Lat: customer?.location?.coordinates[1]?.toString(),
+                }
+            }
+
+            // Create QB Customer
+            qbo.createCustomer(qbCustomerEntry, async (err: any, qbCustomer: IQBCustomer) => {
+                if (err) {
+                    console.log('== _createQBCustomer > qbo.createCustomer > ERROR ==');
+                    console.log('== err.Fault:', err.Fault);
+                    console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                    console.log('== err.fault:', err.fault);
+                    console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                    console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                    console.log('== customerId:', customer._id);
+                    // return next(
+                    //     Status.Error,
+                    //     err.Fault?.Error[0]?.Message
+                    //     || err.fault?.error[0]?.detail
+                    //     || err.fault?.error[0]?.message
+                    //     || Messages.GenericError,
+                    //     null
+                    // );
+                }
+
+                if (qbCustomer) {
+                    customer.quickbookId = qbCustomer.Id;
+                    await customer.save();
+
+                    // Populate job locations of customer
+                    await customer.populate({ path: 'jobLocations' }).execPopulate();
+
+                    /**
+                     * Iterate all job locations of the customer,
+                     * check, then create on QB it not existed
+                     */
+                    for (const custJobLoc of customer?.jobLocations) {
+                        const jobLocation = <IJobLocation>custJobLoc;
+
+                        // Check if job location doesn't have associated quickbookId
+                        qbo.findCustomers([
+                            { DisplayName: jobLocation.name },
+                            { field: 'Job', value: true }
+                        ], async (err: any, data: any) => {
+                            console.log('== jobLocation.name:', jobLocation.name);
+                            console.log('== data:', data);
+
+                            if (data?.QueryResponse?.Customer?.length) {
+                                const qbCustomerJob = data?.QueryResponse?.Customer[0];
+                                console.log('== qbCustomerJob:', qbCustomerJob);
+
+                                console.log('== qbCustomerJob.ParentRef.value:', qbCustomerJob.ParentRef.value);
+                                console.log('== customer.quickbookId:', customer.quickbookId);
+
+                                if (qbCustomerJob.ParentRef.value !== customer.quickbookId) {
+                                    console.log('== qbCustomerJob found, but NOT Sub Customer of Customer, creating new one');
+
+                                    _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, async (err, errMsg, qbCustomerJob) => {
+                                        if (qbCustomerJob) {
+                                            jobLocation.quickbookId = qbCustomerJob.Id;
+                                            await jobLocation.save();
+                                        }
+                                    })
+                                } else {
+                                    console.log('== qbCustomerJob found');
+                                    jobLocation.quickbookId = qbCustomerJob.Id;
+                                    await jobLocation.save();
+                                }
+                            } else {
+                                console.log('== qbCustomerJob NOT found, create new one');
+                                _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, (err, errMsg, qbCustomerJob) => {
+                                    if (qbCustomerJob) {
+                                        jobLocation.quickbookId = qbCustomerJob.Id;
+                                        jobLocation.save();
+                                    }
+                                })
+                            }
+                        })
+                    }
+                }
+
+                return res.json({ status: Status.Error, qbCustomer });
+            })
+        }
+    })
 
 }
 
@@ -1340,6 +1589,56 @@ export const getQBCustomer = async (req: Request, res: Response) => {
     })
     .then((response: any) => {
         return res.json({ 'status': Status.Success, 'message': response })
+    })
+    .catch((error: any) => {
+        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
+    })
+}
+
+export const findQBCustomers = async (req: Request, res: Response) => {
+    return new Promise((resolve, reject) => {
+        const params = req.query;
+        const company = <ICompany>req.company;
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.findCustomers([
+            { field: 'DisplayName', value: params.name },
+            // { field: 'ParentRef', value: '40461' },
+            // { field: 'Job', value: true }
+        ], async (err: any, data: any) => {
+            if (err) {
+                reject(err)
+            } else {
+                resolve(data?.QueryResponse?.Customer);
+            }
+        })
+    })
+    .then((data: any) => {
+        return res.json({ status: Status.Success, data: data ?? null });
+    })
+    .catch((error: any) => {
+        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
+    })
+}
+
+export const findQBCustomersByEmail = async (req: Request, res: Response) => {
+    return new Promise((resolve, reject) => {
+        const params = req.query;
+        const company = <ICompany>req.company;
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.findCustomers([
+            { field: 'PrimaryEmailAddr', value: params.email },
+        ], async (err: any, data: any) => {
+            if (err) {
+                reject(err)
+            } else {
+                resolve(data?.QueryResponse?.Customer);
+            }
+        })
+    })
+    .then((data: any) => {
+        return res.json({ status: Status.Success, data: data ?? null });
     })
     .catch((error: any) => {
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
