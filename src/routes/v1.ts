@@ -90,11 +90,19 @@ export default function (sio: any) {
         userController.agreeToTermAndConditions
     )
 
+    // router.post(
+    //     '/signup',
+    //     validate(Validations.signUp),
+    //     (req, res) => {
+    //         userController.createCompany(req, res, sio)
+    //     }
+    // )
+
     router.post(
         '/signup',
         validate(Validations.signUp),
         (req, res) => {
-            userController.createCompany(req, res, sio)
+            userController.signup(req, res, sio)
         }
     )
 
