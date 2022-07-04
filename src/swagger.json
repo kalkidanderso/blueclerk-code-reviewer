@@ -135,7 +135,7 @@
       "description": "For Estimate"
     },
     {
-      "name": "Reports",
+      "name": "Job Report",
       "description": "For job and other reports"
     },
     {
@@ -153,6 +153,10 @@
     {
       "name": "Payment",
       "description": "For payments of invoices"
+    },
+    {
+      "name": "Report",
+      "description": "For all reports"
     },
     {
       "name": "Image",
@@ -8753,7 +8757,7 @@
     "/getAllJobReports": {
       "get": {
         "tags": [
-          "Reports"
+          "Job Report"
         ],
         "summary": "Get the company's job reports",
         "parameters": [
@@ -8828,7 +8832,7 @@
     "/getJobReport": {
       "get": {
         "tags": [
-          "Reports"
+          "Job Report"
         ],
         "summary": "Get the report details of a finished job",
         "parameters": [
@@ -8864,7 +8868,7 @@
     "/deleteJobReport": {
       "delete": {
         "tags": [
-          "Reports"
+          "Job Report"
         ],
         "summary": "delete a job report",
         "parameters": [
@@ -8900,7 +8904,7 @@
     "/sendJobReportEmail": {
       "post": {
         "tags": [
-          "Reports"
+          "Job Report"
         ],
         "summary": "send an email about the job report",
         "requestBody": {
@@ -10682,6 +10686,64 @@
             "schema": {
               "type": "number"
             }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/generateIncomeReport": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To generate standard and custom income report",
+        "parameters": [
+          {
+            "name": "reportType",
+            "in": "query",
+            "required": true,
+            "description": "1 => Standard Report; 2 => Custom Report",
+            "schema": {
+              "type": "number",
+              "enum": [ 1, 2]
+            }
+          },
+          {
+            "name": "customerIds",
+            "in": "query",
+            "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Filter report by start of invoice's issued date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "Filter report by end of invoice's issued date"
           }
         ],
         "responses": {

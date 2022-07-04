@@ -51,6 +51,7 @@ import * as purchaseOrderController from '../controllers/purchaseOrder'
 import * as estimateController from '../controllers/estimate'
 import * as paymentController from '../controllers/payment'
 import * as paymentTermController from '../controllers/paymentTerm'
+import * as reportController from '../controllers/report';
 import * as tagController from '../controllers/tag'
 import * as ContactController from '../controllers/contact';
 import * as notificationController from '../controllers/notification';
@@ -2044,6 +2045,16 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Payments),
         paymentController.getPayrollReport
+    )
+
+    // REPORT
+    router.get(
+        '/generateIncomeReport',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateIncomeReport),
+        reportController.generateIncomeReport
     )
 
     // CODE LOCATION TAG
