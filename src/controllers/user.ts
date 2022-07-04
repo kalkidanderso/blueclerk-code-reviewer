@@ -17,7 +17,7 @@ import { CompanyInvoice } from '../models/CompanyInvoice';
 import { _getProRatedAmount } from '../controllers/vendor';
 import { CustomerContact } from '../models/CustomerContact';
 import { Customer } from '../models/Customer';
-import { CompanyContractor } from '../models/CompanyContractor';
+import { IndependentContractor } from '../models/IndependentContractor';
 
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
@@ -37,7 +37,7 @@ export const login = (req: Request, res: Response, sio: any) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
             }
 
-            if ((user.permissions.role != Role.COMPANY_ADMIN && user.permissions.role != Role.ADMIN_EMPLOYEE && user.permissions.role != Role.GLOBAL_ADMIN)) {
+            if ((user.permissions.role != Role.COMPANY_ADMIN && user.permissions.role != Role.ADMIN_EMPLOYEE && user.permissions.role != Role.GLOBAL_ADMIN && user.permissions.role != Role.CUSTOMER_CONTACT)) {
                 const employee = <IEmployee>user
 
                 Company.findById(employee.company,
@@ -64,7 +64,7 @@ export const login = (req: Request, res: Response, sio: any) => {
                         })
                     })
 
-            } else if (user.permissions.role == Role.GLOBAL_ADMIN || user.permissions.role == Role.COMPANY_ADMIN || user.permissions.role == Role.ADMIN_EMPLOYEE) {
+            } else if (user.permissions.role == Role.GLOBAL_ADMIN || user.permissions.role == Role.COMPANY_ADMIN || user.permissions.role == Role.ADMIN_EMPLOYEE || user.permissions.role != Role.CUSTOMER_CONTACT) {
 
                 user.comparePassword(params.password, (isMatching: Boolean) => {
 
@@ -163,83 +163,126 @@ export const createGlobalAdmin = (req: Request, res: Response, sio: any) => {
 export const signup = async (req: Request, res: Response, sio: any) => {
     checkEmailExists(req, res, async (req: Request, res: Response) => {
         const params = req.body;
+        const passwordRegex = new RegExp(/(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z])[!@#$%^&*0-9a-zA-Z]{8,}/);
+
+        if (!passwordRegex.test(params.password)) {
+            return res.json({ status: Status.Error, message: 'Your password must be have at least: 8 characters long, 1 uppercase, 1 number, & 1 special character' });
+        }
+
+        const userEntry: any = {
+            auth: {
+                email: params.email,
+                password: params.password
+            },
+            profile: {
+                firstName: params.firstName,
+                lastName: params.lastName,
+                displayName: `${params.firstName} ${params.lastName}`,
+                imageUrl: '',
+            },
+            address: {
+                street: params.street,
+                unit: params.unit,
+                city: params.city,
+                state: params.state,
+                zipCode: params.zipCode,
+            },
+            contact: {
+                phone: params.phone,
+                fax: params.fax,
+            },
+            permissions: {},
+            contactName: params.contactName,
+            vendorId: params.vendorId,
+            contacts: params.contacts,
+            info: params.email,
+        }
+
         switch (params.type) {
             case 'builder':
-                if (!params.customer) {
-                    return res.json({ status: Status.Error, message: 'customer is required for this user type' })
+                if (!params.customerId) {
+                    return res.json({ status: Status.Error, message: 'customerId is required for this user type' })
                 }
 
-                const customer = await Customer.findById(params.customer);
+                const customer = await Customer.findById(params.customerId);
                 if (!customer) {
                     return res.json({ status: Status.NotFound, message: 'customer not found' })
                 }
 
-                const customerContact = await new CustomerContact({
-                    auth: {
-                        email: params.email,
-                        password: params.password
-                    },
-                    profile: {
-                        firstName: params.firstName,
-                        lastName: params.lastName,
-                        displayName: `${params.firstName} ${params.lastName}`,
-                        imageUrl: '',
-                    },
-                    address: {
-                        street: params.street,
-                        unit: params.unit,
-                        city: params.city,
-                        state: params.state,
-                        zipCode: params.zipCode,
-                    },
-                    contact: {
-                        phone: params.phone,
-                        fax: params.fax,
-                    },
-                    permissions: {
-                        role: Role.CUSTOMER_CONTACT,
-                        extra: [],
-                    },
-                    contactName: params.contactName,
-                    vendorId: params.vendorId,
-                    contacts: params.contacts,
-                    info: params.email,
-                    customer: customer,
-                    type: UserType.BUILDER
-                }).save();
+                userEntry.customer = customer;
+                userEntry.type = UserType.BUILDER;
+                userEntry.permissions.role = Role.CUSTOMER_CONTACT;
 
+                const customerContact = await new CustomerContact(userEntry).save();
                 customer.contacts.push(customerContact._id);
                 await customer.save();
-                return res.json({ status: Status.Success, message: 'Signup successfully', builder: customerContact });
+
+                sendEmail({ to: params?.email });
+                login(req, res, sio);
+                break;
 
             case 'supplier':
-                if (!params.company) {
-                    return res.json({ status: Status.Error, message: 'Company is required on  type supplier' })
+                if (!params.companyId) {
+                    return res.json({ status: Status.Error, message: 'cid is required on type supplier' })
                 }
 
-                const company = await Company.findById(params.company);
+                const company = await Company.findById(params.companyId);
                 if (!company) {
                     return res.json({ status: Status.NotFound, message: 'Company Not Found' })
                 }
 
                 req.company = company;
-                checkNoOfUsers(req, res, Role.ADMIN_EMPLOYEE, async (req: Request, res: Response) => {
-                    createSupplier(req, res);
+                const roles = ['OfficeAdmin', 'Technician', 'Manager', '', 'Admin'];
+                const role = roles.indexOf(params.role);
+
+                checkNoOfUsers(req, res, role > 0 ? role : Role.ADMIN_EMPLOYEE, async (req: Request, res: Response) => {
+                    userEntry.permissions.role = role > 0 ? role : Role.ADMIN_EMPLOYEE;
+                    userEntry.type = UserType.SUPPLIER;
+                    userEntry.company = company._id;
+                    const supplier = await new Employee(userEntry).save();
+                    company.employees.push(supplier._id);
+                    company.save();
+
+                    sendEmployeeEmail({
+                        to: params.email,
+                        company: company.info.companyName,
+                        replyTo: company.info.companyEmail,
+                        role: roles[supplier.permissions.role],
+                        password: params.password
+                    });
+
+                    login(req, res, sio);
                 });
+
                 break;
 
             case 'contractor':
-                createCompanyContractor(req, res);
+                const { BC_COMPANY_ID } = process.env;
+                const bcCompany = await Company.findById(BC_COMPANY_ID);
+
+                userEntry.company = bcCompany;
+                userEntry.permissions.role = Role.CONTRACTOR;
+                userEntry.type = UserType.CONTRACTOR;
+
+                const independentContractor = await new IndependentContractor(userEntry).save();
+                bcCompany.employees.push(independentContractor._id);
+                await bcCompany.save();
+
+                sendEmail({ to: params?.email });
+                login(req, res, sio);
                 break;
+
+            case 'company':
             default:
-                return res.json({ status: Status.Error, message: 'Type is required' })
+                createCompany(req, res, sio);
         }
+
     });
 }
 
 export const createCompany = (req: Request, res: Response, sio: any) => {
 
-    checkCompanyEmailExists(req, res, (req: Request, res: Response) => {
+    checkCompanyEmailExists(req, res, async (req: Request, res: Response) => {
 
         const params = req.body
         var chargeDate = new Date();
@@ -250,11 +293,20 @@ export const createCompany = (req: Request, res: Response, sio: any) => {
             return res.json({ status: Status.Error, message: 'Your password must be have at least: 8 characters long, 1 uppercase, 1 number, & 1 special character' });
         }
 
+        if (!params.industryId) {
+            return res.json({ status: Status.Error, message: 'industryId is required' });
+        }
+
+        const industry = await Industry.findById(params.industryId);
+        if (!industry) {
+            return res.json({ status: Status.NotFound, message: 'indsutry not found' });
+        }
+
         const company = new Company(
             {
                 info: {
                     companyName: params.companyName,
-                    industry: params.industryId,
+                    industry: industry._id,
                     logoUrl: '',
                     companyEmail: params.email,
                 },
@@ -1429,124 +1481,4 @@ export const createContractorSocial = (req: Request, res: Response) => {
             })
 
         })
-}
-
-export const createSupplier = async (req: Request, res: Response) => {
-    const params = req.body;
-    // if (!params.company) {
-    //     return res.json({ status: Status.Error, message: 'Company is required for this user type' });
-    // }
-
-    // const company = await Company.findById(params.company);
-    // req.company = company;
-    const roles = ['OfficeAdmin', 'Technician', 'Manager', '', 'Admin'];
-
-    const employee = new Employee(
-        {
-            auth: {
-                email: params.email,
-                password: params.password,
-            },
-            profile: {
-                firstName: params.firstName,
-                lastName: params.lastName,
-                displayName: `${params.firstName} ${params.lastName}`,
-                imageUrl: '',
-            },
-            address: {
-                street: '',
-                city: '',
-                state: '',
-                zipCode: '',
-            },
-            contact: {
-                phone: params.phone,
-            },
-            permissions: {
-                role: Role.ADMIN_EMPLOYEE,
-                extra: [],
-            },
-            company: req.company,
-            extraPermissions: {
-                on: [],
-                off: []
-            },
-            type: UserType.SUPPLIER
-        }
-    )
-
-    await employee.save(async (err: any) => {
-
-        if (err) {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-        }
-
-        await Company.findById(req?.company?._id, function (err: any, company: ICompany) {
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            }
-
-            company.employees.push(employee._id)
-
-            company.updateOne(
-                { employees: company.employees },
-                (err: any, raw: any) => {
-                    if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                    }
-                    sendEmployeeEmail({ to: params.email, company: company.info.companyName, replyTo: company.info.companyEmail, role: roles[employee.permissions.role], password: params.password })
-                    return res.json({ 'status': Status.Success, 'message': 'Employee created successfully.' })
-                }
-            )
-        })
-
-    })
-
-}
-
-export const createCompanyContractor = async (req: Request, res: Response) => {
-    checkCompanyEmailExists(req, res, async (req: Request, res: Response) => {
-
-        const params = req.body;
-        const { BC_COMPANY } = process.env;
-        const company = await Company.findById(BC_COMPANY);
-        const contractorEntry = await new CompanyContractor({
-            auth: {
-                email: params.email,
-                password: params.password,
-            },
-            profile: {
-                firstName: params.firstName,
-                lastName: params.lastName,
-                displayName: `${params.firstName} ${params.lastName}`,
-                imageUrl: '',
-            },
-            address: {
-                street: '',
-                city: '',
-                state: '',
-                zipCode: '',
-            },
-            contact: {
-                phone: params.phone,
-            },
-            permissions: {
-                role: Role.CONTRACTOR,
-                extra: [],
-            },
-            company: company,
-            extraPermissions: {
-                on: [],
-                off: []
-            },
-            type: UserType.CONTRACTOR,
-        }
-        ).save()
-
-        company.employees.push(contractorEntry._id);
-        await company.save();
-        sendEmail({ to: params.email });
-
-        return res.json({ status: Status.Success, message: 'contractor created successfully', contractor: contractorEntry})
-    })
 }

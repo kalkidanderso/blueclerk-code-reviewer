@@ -33,7 +33,7 @@ export const validate = (validations: ValidationChain[]) => {
 
 export const Validations = {
   //Auth
-  signUp: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('password').exists(), check('companyName').exists(), check('industryId').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
+  signUp: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('password').exists(), check('companyName').exists(), check('industryId').optional().isMongoId(), check('customerId').optional().isMongoId(), check('industryId').optional().isMongoId(), check('companyId').optional().isMongoId(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
   login: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
@@ -91,7 +91,7 @@ export const Validations = {
   getCompanyCustomer: [
     check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
     check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('status').optional().isInt({ min: 0, max: 4}).toInt().withMessage('status has to be number with value between 0 and 4'),
+    check('status').optional().isInt({ min: 0, max: 4 }).toInt().withMessage('status has to be number with value between 0 and 4'),
     check('isPreferred').optional().isBoolean().toBoolean()
   ],
 
