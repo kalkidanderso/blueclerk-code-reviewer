@@ -523,6 +523,12 @@ export const Validations = {
     check('paymentId').isMongoId().withMessage(Messages.WrongId),
   ],
 
+  // REPORT
+  generateIncomeReport: [
+    check('reportType').exists().withMessage(Messages.Required),
+    check('reportType').isInt().toInt().withMessage('has to be number')
+  ],
+
   // Code Location
 
   codeLocationTag: [check('nfcTag').exists(), check('customerId').exists()],
