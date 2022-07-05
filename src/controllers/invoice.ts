@@ -30,6 +30,7 @@ import { IScan, Scan } from '../models/Scan';
 import { EmailDefault } from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer } from '../services/aws';
+import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer';
 import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice, _voidQBInvoice } from '../controllers/quickbook.invoice';
 import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from '../controllers/emailDefault';
 import { IJobSite } from '../models/JobSite';
@@ -478,30 +479,44 @@ export const createInvoice = (req: Request, res: Response) => {
             })
             .then((invoice: IInvoice) => {
                 if (company.qbAuthorized && !invoice.isDraft) {
-                    // Create new Invoice in QuickBooks
-                    _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
-                        if (err) {
-                            return res.json({ status: err, message: errMsg })
+                    /**
+                     * Check Customer & Job Locations data on QBooks,
+                     * if not found, create them on QBooks
+                     */
+                    const customerId = invoice.customer.toString();
+                    _checkQBCustomerJobLocation(req, res, company, customerId, (err, errMsg, qbCustomer) => {
+                        if (err || errMsg) {
+                            return res.json({ status: Status.Success, message: 'Job invoice created successfully.', invoice });
                         }
 
-                        if (qbInvoice) {
-                            invoice.quickbookId = qbInvoice.Id;
-                            invoice.save();
+                        if (qbCustomer) {
+                            // Create new Invoice in QuickBooks
+                            _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                                if (err || errMsg) {
+                                    return res.json({ status: Status.Success, message: 'Job invoice created successfully.', invoice });
+                                }
 
-                            // If company's invoices already synced, update the synced date
-                            if (company.qbSync?.invoicesSynced) {
-                                company.qbSync.invoicesSyncedAt = new Date();
-                                company.save();
-                            }
+                                if (qbInvoice) {
+                                    invoice.quickbookId = qbInvoice.Id;
+                                    invoice.save();
+
+                                    // If company's invoices already synced, update the synced date
+                                    if (company.qbSync?.invoicesSynced) {
+                                        company.qbSync.invoicesSyncedAt = new Date();
+                                        company.save();
+                                    }
+                                }
+
+                                return res.json({
+                                    status: Status.Success,
+                                    message: 'Job invoice created successfully.',
+                                    invoice,
+                                    quickbookInvoice: qbInvoice
+                                });
+                            });
                         }
+                    });
 
-                        return res.json({
-                            status: Status.Success,
-                            message: 'Job invoice created successfully.',
-                            invoice,
-                            quickbookInvoice: qbInvoice
-                        });
-                    })
                 } else {
                     return res.json({ status: Status.Success, message: 'Job invoice created successfully.', invoice });
                 }
@@ -572,30 +587,44 @@ export const createInvoice = (req: Request, res: Response) => {
             })
             .then((invoice: IInvoice) => {
                 if (company.qbAuthorized && !invoice.isDraft) {
-                    // Create new Invoice in QuickBooks
-                    _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
-                        if (err) {
-                            return res.json({ status: err, message: errMsg })
+                    /**
+                     * Check Customer & Job Locations data on QBooks,
+                     * if not found, create them on QBooks
+                     */
+                    const customerId = invoice.customer.toString();
+                    _checkQBCustomerJobLocation(req, res, company, customerId, (err, errMsg, qbCustomer) => {
+                        if (err || errMsg) {
+                            return res.json({ status: Status.Success, message: 'Purchase order invoice created successfully.', invoice });
                         }
 
-                        if (qbInvoice) {
-                            invoice.quickbookId = qbInvoice.Id;
-                            invoice.save();
+                        if (qbCustomer) {
+                            // Create new Invoice in QuickBooks
+                            _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                                if (err) {
+                                    return res.json({ status: Status.Success, message: 'Purchase order invoice created successfully.', invoice });
+                                }
 
-                            // If company's invoices already synced, update the synced date
-                            if (company.qbSync?.invoicesSynced) {
-                                company.qbSync.invoicesSyncedAt = new Date();
-                                company.save();
-                            }
+                                if (qbInvoice) {
+                                    invoice.quickbookId = qbInvoice.Id;
+                                    invoice.save();
+
+                                    // If company's invoices already synced, update the synced date
+                                    if (company.qbSync?.invoicesSynced) {
+                                        company.qbSync.invoicesSyncedAt = new Date();
+                                        company.save();
+                                    }
+                                }
+
+                                return res.json({
+                                    status: Status.Success,
+                                    message: 'Purchase order invoice created successfully.',
+                                    invoice,
+                                    quickbookInvoice: qbInvoice
+                                });
+                            })
                         }
+                    });
 
-                        return res.json({
-                            status: Status.Success,
-                            message: 'Purchase order invoice created successfully.',
-                            invoice,
-                            quickbookInvoice: qbInvoice
-                        });
-                    })
                 } else {
                     return res.json({ status: Status.Success, message: 'Purchase order invoice created successfully.', invoice });
                 }
@@ -726,30 +755,44 @@ export const createInvoice = (req: Request, res: Response) => {
             })
             .then((invoice: IInvoice) => {
                 if (company.qbAuthorized && !invoice.isDraft) {
-                    // Create new Invoice in QuickBooks
-                    _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
-                        if (err) {
-                            return res.json({ status: err, message: errMsg })
+                    /**
+                     * Check Customer & Job Locations data on QBooks,
+                     * if not found, create them on QBooks
+                     */
+                    const customerId = invoice.customer.toString();
+                    _checkQBCustomerJobLocation(req, res, company, customerId, (err, errMsg, qbCustomer) => {
+                        if (err || errMsg) {
+                            return res.json({ status: Status.Success, message: 'Estimate invoice created successfully.', invoice });
                         }
 
-                        if (qbInvoice) {
-                            invoice.quickbookId = qbInvoice.Id;
-                            invoice.save();
+                        if (qbCustomer) {
+                            // Create new Invoice in QuickBooks
+                            _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                                if (err) {
+                                    return res.json({ status: Status.Success, message: 'Estimate invoice created successfully.', invoice });
+                                }
 
-                            // If company's invoices already synced, update the synced date
-                            if (company.qbSync?.invoicesSynced) {
-                                company.qbSync.invoicesSyncedAt = new Date();
-                                company.save();
-                            }
+                                if (qbInvoice) {
+                                    invoice.quickbookId = qbInvoice.Id;
+                                    invoice.save();
+
+                                    // If company's invoices already synced, update the synced date
+                                    if (company.qbSync?.invoicesSynced) {
+                                        company.qbSync.invoicesSyncedAt = new Date();
+                                        company.save();
+                                    }
+                                }
+
+                                return res.json({
+                                    status: Status.Success,
+                                    message: 'Estimate invoice created successfully.',
+                                    invoice,
+                                    quickbookInvoice: qbInvoice
+                                });
+                            });
                         }
+                    });
 
-                        return res.json({
-                            status: Status.Success,
-                            message: 'Estimate invoice created successfully.',
-                            invoice,
-                            quickbookInvoice: qbInvoice
-                        });
-                    })
                 } else {
                     return res.json({ status: Status.Success, message: 'Estimate invoice created successfully.', invoice });
                 }
@@ -836,37 +879,49 @@ export const createInvoice = (req: Request, res: Response) => {
                             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                         }
 
+                        const customer = await Customer.findById(newInvoice.customer);
                         if (!newInvoice.isDraft) {
-                            const customer = await Customer.findById(newInvoice.customer);
                             customer.balance += newInvoice.total;
                             await customer.save();
                         }
 
                         if (company.qbAuthorized && !newInvoice.isDraft) {
-                            // Create new Invoice in QuickBooks
-                            _createQBInvoice(req, res, company, newInvoice, (err, errMsg, qbInvoice) => {
-                                if (err) {
-                                    return res.json({ status: err, message: errMsg })
+                            /**
+                             * Check Customer & Job Locations data on QBooks,
+                             * if not found, create them on QBooks
+                             */
+                            await _checkQBCustomerJobLocation(req, res, company, customer._id, (err, errMsg, qbCustomer) => {
+                                if (err || errMsg) {
+                                    return res.json({ status: Status.Success, message: 'Invoice created successfully.', invoice: newInvoice });
                                 }
 
-                                if (qbInvoice) {
-                                    newInvoice.quickbookId = qbInvoice.Id;
-                                    newInvoice.save();
+                                if (qbCustomer) {
+                                    // Create new Invoice in QuickBooks
+                                    _createQBInvoice(req, res, company, newInvoice, (err, errMsg, qbInvoice) => {
+                                        if (err) {
+                                            return res.json({ status: Status.Success, message: 'Invoice created successfully.', invoice: newInvoice });
+                                        }
 
-                                    // If company's invoices already synced, update the synced date
-                                    if (company.qbSync?.invoicesSynced) {
-                                        company.qbSync.invoicesSyncedAt = new Date();
-                                        company.save();
-                                    }
+                                        if (qbInvoice) {
+                                            newInvoice.quickbookId = qbInvoice.Id;
+                                            newInvoice.save();
+
+                                            // If company's invoices already synced, update the synced date
+                                            if (company.qbSync?.invoicesSynced) {
+                                                company.qbSync.invoicesSyncedAt = new Date();
+                                                company.save();
+                                            }
+                                        }
+
+                                        return res.json({
+                                            status: Status.Success,
+                                            message: 'Invoice created successfully.',
+                                            invoice: newInvoice,
+                                            quickbookInvoice: qbInvoice
+                                        });
+                                    });
                                 }
-
-                                return res.json({
-                                    status: Status.Success,
-                                    message: 'Invoice created successfully.',
-                                    invoice: newInvoice,
-                                    quickbookInvoice: qbInvoice
-                                });
-                            })
+                            });
                         } else {
                             return res.json({ status: Status.Success, message: 'Invoice created successfully.', invoice: newInvoice });
                         }
@@ -2414,21 +2469,38 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 
         // Create QB Invoice
         if (company.qbAuthorized) {
-            // Create new Invoice in QuickBooks
-            _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
-                if (qbInvoice) {
-                    invoice.quickbookId = qbInvoice.Id;
-                    invoice.save();
-
-                    // If company's invoices already synced, update the synced date
-                    if (company.qbSync?.invoicesSynced) {
-                        company.qbSync.invoicesSyncedAt = new Date();
-                        company.save();
-                    }
+            /**
+             * Check Customer & Job Locations data on QBooks,
+             * if not found, create them on QBooks
+             */
+            _checkQBCustomerJobLocation(req, res, company, customer._id, (err, errMsg, qbCustomer) => {
+                if (err || errMsg) {
+                    return next(invoice, null);
                 }
 
-                return next(invoice, qbInvoice);
-            })
+                if (qbCustomer) {
+                    // Create new Invoice in QuickBooks
+                    _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                        if (err || errMsg) {
+                            return next(invoice, null);
+                        }
+
+                        if (qbInvoice) {
+                            invoice.quickbookId = qbInvoice.Id;
+                            invoice.save();
+
+                            // If company's invoices already synced, update the synced date
+                            if (company.qbSync?.invoicesSynced) {
+                                company.qbSync.invoicesSyncedAt = new Date();
+                                company.save();
+                            }
+                        }
+
+                        return next(invoice, qbInvoice);
+                    });
+                }
+            });
+
         } else {
             return next(invoice, null);
         }

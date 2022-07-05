@@ -12170,34 +12170,6 @@
                   "customerId": {
                     "type": "string",
                     "description": "Id of a customer to be associated"
-                  },
-                  "email": {
-                    "type": "string",
-                    "description": "To replace customer email from database, to be saved to QuickBooks"
-                  },
-                  "name": {
-                    "type": "string",
-                    "description": "To replace customer name from database, to be saved to QuickBooks"
-                  },
-                  "street": {
-                    "type": "string",
-                    "description": "To replace customer street from database, to be saved to QuickBooks"
-                  },
-                  "city": {
-                    "type": "string",
-                    "description": "To replace customer city from database, to be saved to QuickBooks"
-                  },
-                  "state": {
-                    "type": "string",
-                    "description": "To replace customer state from database, to be saved to QuickBooks"
-                  },
-                  "zipCode": {
-                    "type": "string",
-                    "description": "To replace customer zip code from database, to be saved to QuickBooks"
-                  },
-                  "phone": {
-                    "type": "string",
-                    "description": "To replace customer phone from database, to be saved to QuickBooks"
                   }
                 }
               }
@@ -12988,6 +12960,41 @@
             "name": "quickbookId",
             "in": "query",
             "description": "ID of invoice quickbook",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/quickbook/findQBCustomers": {
+      "get": {
+        "tags": [
+          "Quickbook Check"
+        ],
+        "summary": "Returns list of QB Customers by that name",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Display Name of Customer",
             "schema": {
               "type": "string"
             }
