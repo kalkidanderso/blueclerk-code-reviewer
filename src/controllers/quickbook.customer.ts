@@ -956,6 +956,8 @@ export const createQBCustomer = async (req: Request, res: Response) => {
 
 export const syncQBCustomers = async (req: Request, res: Response) => {
 
+    return res.json({ status: Status.Success, message: 'Hi, this feature is currently on maintenance. But don\'t worry, your QuickBooks automatic sync feature are still working. If you have something urgent, you can contact the dev team. We\'ll be back up soon.' });
+
     try {
         const user = <IUser>req.user;
         const createdCustomers: { _id: string, name: string }[] = [];
