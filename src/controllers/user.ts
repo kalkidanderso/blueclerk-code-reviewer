@@ -260,6 +260,10 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                 const { BC_COMPANY_ID } = process.env;
                 const bcCompany = await Company.findById(BC_COMPANY_ID);
 
+                if (!bcCompany) {
+                    return res.json({ status: Status.NotFound, message: 'Company not found' });
+                }
+
                 userEntry.company = bcCompany;
                 userEntry.permissions.role = Role.CONTRACTOR;
                 userEntry.type = UserType.CONTRACTOR;
