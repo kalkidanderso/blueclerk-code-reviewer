@@ -51,6 +51,7 @@ import * as purchaseOrderController from '../controllers/purchaseOrder'
 import * as estimateController from '../controllers/estimate'
 import * as paymentController from '../controllers/payment'
 import * as paymentTermController from '../controllers/paymentTerm'
+import * as reportController from '../controllers/report';
 import * as tagController from '../controllers/tag'
 import * as ContactController from '../controllers/contact';
 import * as notificationController from '../controllers/notification';
@@ -1312,6 +1313,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Create_QB_customer),
         validate(Validations.createQBCustomer),
+        refreshQBToken(),
         quickBookCustomerController.createQBCustomer
     )
 
@@ -1333,6 +1335,7 @@ export default function (sio: any) {
         '/createQBInvoice',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
+        refreshQBToken(),
         quickBookInvoiceController.createQBInvoice
     )
 
@@ -1341,6 +1344,14 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         quickBookInvoiceController.syncQBInvoices
+    )
+
+    router.post(
+        '/createQBPayment',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookPaymentController.createQBPayment
     )
 
     router.post(
@@ -1628,6 +1639,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Create_Invoice),
         validate(Validations.createInvoice),
+        refreshQBToken(),
         invoiceController.createInvoice
     )
 
@@ -1674,6 +1686,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Update_Invoice),
         validate(Validations.updateInvoice),
+        refreshQBToken(),
         invoiceController.updateInvoice
     )
 
@@ -1982,6 +1995,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.recordPayment),
         checkUserPermissions(Permissions.Create_Payment),
+        refreshQBToken(),
         paymentController.createPayment
     )
 
@@ -2044,6 +2058,16 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Payments),
         paymentController.getPayrollReport
+    )
+
+    // REPORT
+    router.get(
+        '/generateIncomeReport',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateIncomeReport),
+        reportController.generateIncomeReport
     )
 
     // CODE LOCATION TAG
@@ -2267,6 +2291,22 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookCustomerController.getQBCustomer
+    )
+
+    router.get(
+        '/quickbook/findQBCustomers',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookCustomerController.findQBCustomers
+    )
+
+    router.get(
+        '/quickbook/findQBCustomersByEmail',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookCustomerController.findQBCustomersByEmail
     )
 
     return router

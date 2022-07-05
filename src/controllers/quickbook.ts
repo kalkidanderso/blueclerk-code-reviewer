@@ -202,6 +202,8 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
 
 export const disconnectQB = async (req: Request, res: Response) => {
 
+    return res.json({ status: Status.Success, message: 'Hi, this feature is currently on maintenance. But don\'t worry, your QuickBooks automatic sync feature are still working. If you have something urgent, you can contact the dev team. We\'ll be back up soon.' });
+
     const company = <ICompany>req.company;
 
     /**

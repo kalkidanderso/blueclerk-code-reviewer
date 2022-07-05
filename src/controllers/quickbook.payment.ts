@@ -44,88 +44,71 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
     const job = <IJob>invoice?.job;
     const jobLocation = <IJobLocation>job?.jobLocation;
 
-    // Always refresh the token first because token valid only for 60 minutes
-    _refreshToken(req, res, company, async (err, errMsg, company) => {
-        if (err === 0) {
-            return res.json({ status: Status.Error, message: errMsg });
-        }
+    // Initiate node-quickbooks object with the refreshed company token
+    const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+    // QB Payment Object
+    const qbPaymentEntry: IQBPayment = {
+        TxnDate: moment(payment.paidAt).format('YYYY-MM-DD'),
+        CustomerRef: {
+            value: jobLocation?.quickbookId ?? customer?.quickbookId
+        },
+        Line: [{
+            Amount: payment.amountPaid,
+            LinkedTxn: [{
+                TxnId: invoice?.quickbookId,
+                TxnType: IQBPaymentTxnTypes.INVOICE
+            }]
+        }],
+        TotalAmt: payment.amountPaid,
+        PaymentRefNum: payment.referenceNumber,
+        PaymentMethodRef: {
+            value: payment.paymentType ? await _getPaymentMethod(qbo, payment) : null
+        },
+        PrivateNote: payment.note
+    }
 
-        if (err === 400) {
-            await Company.findByIdAndUpdate(req.company._id, {
-                qbAuthorized: false,
-                qbAccessToken: undefined,
-                qbRefreshToken: undefined
-            });
-
-            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
-        }
-
-        // Initiate node-quickbooks object with the refreshed company token
-        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
-        // QB Payment Object
-        const qbPaymentEntry: IQBPayment = {
-            TxnDate: moment(payment.paidAt).format('YYYY-MM-DD'),
-            CustomerRef: {
-                value: jobLocation?.quickbookId ?? customer?.quickbookId
-            },
-            Line: [{
-                Amount: payment.amountPaid,
-                LinkedTxn: [{
-                    TxnId: invoice?.quickbookId,
-                    TxnType: IQBPaymentTxnTypes.INVOICE
-                }]
-            }],
-            TotalAmt: payment.amountPaid,
-            PaymentRefNum: payment.referenceNumber,
-            PaymentMethodRef: {
-                value: payment.paymentType ? await _getPaymentMethod(qbo, payment) : null
-            },
-            PrivateNote: payment.note
-        }
-
-        if (payment?.line?.length) {
-            const qbPaymentLine = []
-            for (const paymentLine of payment.line) {
-                const invoiceLine = <IInvoice>paymentLine.invoice;
-                if (invoiceLine?.quickbookId) {
-                    qbPaymentLine.push(
-                        {
-                            Amount: paymentLine.amountPaid,
-                            LinkedTxn: [{
-                                TxnId: invoiceLine?.quickbookId,
-                                TxnType: IQBPaymentTxnTypes.INVOICE
-                            }]
-                        })
-                }
-
-                qbPaymentEntry.Line = qbPaymentLine;
-            }
-        }
-
-        qbo.createPayment(qbPaymentEntry, async (err: any, qbPayment: IQBPayment) => {
-            if (err) {
-                console.log('== _createQBPayment > qbo.createPayment > ERROR ==');
-                console.log('== err.Fault:', err.Fault);
-                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
-                console.log('== err.fault:', err.fault);
-                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
-                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
-                console.log('== paymentId:', payment._id);
-
-                return next(
-                    Status.Error,
-                    err.Fault?.Error[0]?.Detail
-                    || err.Fault?.Error[0]?.Message
-                    || err.fault?.error[0]?.detail
-                    || err.fault?.error[0]?.message
-                    || Messages.GenericError,
-                    null
-                );
+    if (payment?.line?.length) {
+        const qbPaymentLine = []
+        for (const paymentLine of payment.line) {
+            const invoiceLine = <IInvoice>paymentLine.invoice;
+            if (invoiceLine?.quickbookId) {
+                qbPaymentLine.push(
+                    {
+                        Amount: paymentLine.amountPaid,
+                        LinkedTxn: [{
+                            TxnId: invoiceLine?.quickbookId,
+                            TxnType: IQBPaymentTxnTypes.INVOICE
+                        }]
+                    })
             }
 
-            return next(null, null, qbPayment);
-        });
-    })
+            qbPaymentEntry.Line = qbPaymentLine;
+        }
+    }
+
+    qbo.createPayment(qbPaymentEntry, async (err: any, qbPayment: IQBPayment) => {
+        if (err) {
+            console.log('== _createQBPayment > qbo.createPayment > ERROR ==');
+            console.log('== err.Fault:', err.Fault);
+            console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+            console.log('== err.fault:', err.fault);
+            console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+            console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+            console.log('== paymentId:', payment._id);
+
+            return next(
+                Status.Error,
+                err.Fault?.Error[0]?.Detail
+                || err.Fault?.Error[0]?.Message
+                || err.fault?.error[0]?.detail
+                || err.fault?.error[0]?.message
+                || Messages.GenericError,
+                null
+            );
+        }
+
+        return next(null, null, qbPayment);
+    });
 }
 
 /**
@@ -208,6 +191,49 @@ export const _updateQBPayment = async (req: Request, res: Response, company: ICo
             });
         });
     });
+
+}
+
+/**
+* To manually create single BClerk Payment to QBooks
+*/
+export const createQBPayment = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const company = req.company;
+
+    const payment = await Payment.findOne({ _id: params.paymentId, company: company._id });
+
+    if (!payment) {
+        return res.json({ status: Status.Error, message: 'Payment is not found or doesn\'t belong to this company.' });
+    }
+    if (payment.isVoid) {
+        return res.json({ status: Status.Error, message: 'Voided payment cannot be synced ot Quickbooks.' });
+    }
+
+    _createQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
+        if (err) {
+            return res.json({ status: err, message: errMsg });
+        }
+
+        if (qbPayment) {
+            payment.quickbookId = qbPayment.Id;
+            payment.quickbookRefNum = Buffer.from(qbPayment.MetaData?.CreateTime).toString('base64');
+            await payment.save();
+
+            // If company's payments already synced, update the synced date
+            if (company.qbSync?.paymentsSynced) {
+                company.qbSync.paymentsSyncedAt = new Date();
+                await company.save();
+            }
+        }
+
+        return res.json({
+            status: Status.Success,
+            qbPayment,
+            payment
+        });
+    })
 
 }
 

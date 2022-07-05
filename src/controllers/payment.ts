@@ -8,6 +8,7 @@ import { IUser, User } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
 import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer, IPaymentVendor, IPaymentEmployee } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
+import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer'
 import { _createQBPayment, _deleteQBPayment, _updateQBPayment, _voidPayment } from './quickbook.payment'
 import { Employee } from '../models/Employee'
 import { Contract } from '../models/Contract'
@@ -354,32 +355,45 @@ export const createPayment = async (req: Request, res: Response) => {
         await payment.save();
 
         if (company.qbAuthorized) {
-            // Create new Payment in QuickBooks
-            _createQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
-                if (err) {
-                    return res.json({ status: err, message: errMsg });
+            /**
+             * Check Customer & Job Locations data on QBooks,
+             * if not found, create them on QBooks
+             */
+            _checkQBCustomerJobLocation(req, res, company, customer._id, (err, errMsg, qbCustomer) => {
+                if (err || errMsg) {
+                    return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
                 }
 
-                if (qbPayment) {
-                    // Save quickbookId and our unique generated referenceNumber
-                    payment.quickbookId = qbPayment.Id;
-                    payment.quickbookRefNum = Buffer.from(qbPayment.MetaData?.CreateTime).toString('base64');
-                    await payment.save();
+                if (qbCustomer) {
+                    // Create new Payment in QuickBooks
+                    _createQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
+                        if (err) {
+                            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
+                        }
 
-                    // If company's payments already synced, update the synced date
-                    if (company.qbSync?.paymentsSynced) {
-                        company.qbSync.paymentsSyncedAt = new Date();
-                        await company.save();
-                    }
+                        if (qbPayment) {
+                            // Save quickbookId and our unique generated referenceNumber
+                            payment.quickbookId = qbPayment.Id;
+                            payment.quickbookRefNum = Buffer.from(qbPayment.MetaData?.CreateTime).toString('base64');
+                            await payment.save();
+
+                            // If company's payments already synced, update the synced date
+                            if (company.qbSync?.paymentsSynced) {
+                                company.qbSync.paymentsSyncedAt = new Date();
+                                await company.save();
+                            }
+                        }
+
+                        return res.json({
+                            status: Status.Success,
+                            message: 'Payment successfully created.',
+                            payment, quickbookPayment: qbPayment,
+                            customer, invoice
+                        });
+                    });
                 }
-
-                return res.json({
-                    status: Status.Success,
-                    message: 'Payment successfully created.',
-                    payment, quickbookPayment: qbPayment,
-                    customer, invoice
-                });
             });
+
         } else {
             return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
         }
