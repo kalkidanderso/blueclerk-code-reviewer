@@ -1313,8 +1313,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Create_QB_customer),
         validate(Validations.createQBCustomer),
         refreshQBToken(),
-        // quickBookCustomerController.createQBCustomer
-        quickBookCustomerController.NEWcreateQBCustomer
+        quickBookCustomerController.createQBCustomer
     )
 
     router.post(
@@ -1335,6 +1334,7 @@ export default function (sio: any) {
         '/createQBInvoice',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
+        refreshQBToken(),
         quickBookInvoiceController.createQBInvoice
     )
 
@@ -1343,6 +1343,14 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         quickBookInvoiceController.syncQBInvoices
+    )
+
+    router.post(
+        '/createQBPayment',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookPaymentController.createQBPayment
     )
 
     router.post(
@@ -1630,6 +1638,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Create_Invoice),
         validate(Validations.createInvoice),
+        refreshQBToken(),
         invoiceController.createInvoice
     )
 
@@ -1676,6 +1685,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Update_Invoice),
         validate(Validations.updateInvoice),
+        refreshQBToken(),
         invoiceController.updateInvoice
     )
 
@@ -1984,6 +1994,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.recordPayment),
         checkUserPermissions(Permissions.Create_Payment),
+        refreshQBToken(),
         paymentController.createPayment
     )
 

@@ -12108,34 +12108,6 @@
                   "customerId": {
                     "type": "string",
                     "description": "Id of a customer to be associated"
-                  },
-                  "email": {
-                    "type": "string",
-                    "description": "To replace customer email from database, to be saved to QuickBooks"
-                  },
-                  "name": {
-                    "type": "string",
-                    "description": "To replace customer name from database, to be saved to QuickBooks"
-                  },
-                  "street": {
-                    "type": "string",
-                    "description": "To replace customer street from database, to be saved to QuickBooks"
-                  },
-                  "city": {
-                    "type": "string",
-                    "description": "To replace customer city from database, to be saved to QuickBooks"
-                  },
-                  "state": {
-                    "type": "string",
-                    "description": "To replace customer state from database, to be saved to QuickBooks"
-                  },
-                  "zipCode": {
-                    "type": "string",
-                    "description": "To replace customer zip code from database, to be saved to QuickBooks"
-                  },
-                  "phone": {
-                    "type": "string",
-                    "description": "To replace customer phone from database, to be saved to QuickBooks"
                   }
                 }
               }
