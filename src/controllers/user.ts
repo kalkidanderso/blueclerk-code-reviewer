@@ -223,7 +223,7 @@ export const signup = async (req: Request, res: Response, sio: any) => {
 
             case 'supplier':
                 if (!params.companyId) {
-                    return res.json({ status: Status.Error, message: 'cid is required on type supplier' })
+                    return res.json({ status: Status.Error, message: 'companyId is required on type supplier' })
                 }
 
                 const company = await Company.findById(params.companyId);
