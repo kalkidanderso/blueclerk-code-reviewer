@@ -3351,8 +3351,10 @@ export const voidInvoice = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Invoice already voided.' });
     }
 
-    const payment = await Payment.findOne({ invoice: invoice._id });
-    if (payment || invoice.status !== InvoiceStatus.UNPAID) {
+    // TODO: Check more properly for all possible payments ?
+    // const payment = await Payment.findOne({ invoice: invoice._id });
+    // if (payment || invoice.status !== InvoiceStatus.UNPAID) {
+    if (invoice.status !== InvoiceStatus.UNPAID) {
         return res.json({ status: Status.Error, message: 'Invoice already paid or partially paid, cannot void this invoice.' });
     }
 

@@ -267,6 +267,7 @@ const _createJob = async (
             if (!serviceTicket.jobSite && params.jobSite) {
                 serviceTicket.jobSite = params.jobSite;
             }
+            trackedServiceTicket = serviceTicket.track;
 
             await serviceTicket.save();
         }
