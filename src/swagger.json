@@ -260,12 +260,21 @@
                   "companyName",
                   "email",
                   "firstName",
-                  "industryId",
                   "lastName",
                   "password",
-                  "phone"
+                  "phone",
+                  "type"
                 ],
                 "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "builder",
+                      "supplier",
+                      "contractor",
+                      "company"
+                    ]
+                  },
                   "email": {
                     "type": "string",
                     "description": "email address of admin of a company"
@@ -292,6 +301,21 @@
                   "industryId": {
                     "type": "string",
                     "description": "Id of the selected industry from the industries fetched with /getIndustries api"
+                  },
+                  "customerId": {
+                    "type": "string"
+                  },
+                  "companyId": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "OfficeAdmin",
+                      "Technician",
+                      "Manager",
+                      "Admin"
+                    ]
                   },
                   "isci": {
                     "type": "boolean",
