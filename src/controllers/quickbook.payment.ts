@@ -422,8 +422,8 @@ export const createBCPayment = async (req: Request, res: Response, company: ICom
                     const existingPayment = await PaymentCustomer.findOne({
                         company: company._id,
                         customer: customer._id,
-                        quickbookRefNum: Buffer.from(qbPayment.MetaData.CreateTime).toString('base64'),
-                        referenceNumber: qbPayment.PaymentRefNum,
+                        quickbookRefNum: Buffer.from(qbPayment.MetaData?.CreateTime).toString('base64'),
+                        referenceNumber: qbPayment.PaymentRefNum ?? '',
                     });
 
                     // Payment existed, return directly
