@@ -29,7 +29,7 @@ import { IInvoice, IQBInvoice, Invoice } from '../models/Invoice';
 import { IScan, Scan } from '../models/Scan';
 import { EmailDefault } from '../models/EmailDefault';
 
-import { sendInvoiceEmailToCustomer } from '../services/aws';
+import { sendInvoiceEmailToCustomer, uploadFileInS3 } from '../services/aws';
 import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer';
 import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice, _voidQBInvoice } from '../controllers/quickbook.invoice';
 import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from '../controllers/emailDefault';
@@ -3388,4 +3388,21 @@ export const voidInvoice = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, message: 'Invoice voided successfully', invoice });
 
+}
+
+export const generateInvoicePdf = async (req: Request, res: Response) => {
+    const params = req.query;
+    const company = <ICompany>req.company;
+    const invoice = await Invoice.findOne({ _id: params.invoiceId, customer: params.customerId, company: company._id });
+
+    if (!invoice) {
+        return res.json({ status: Status.NotFound, message: 'Invoice not found' });
+    }
+
+    const filepath = `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
+
+    // Generate Invoice PDF
+    await _generateInvoicePdf(company, invoice);
+    const invoiceUrl = await uploadFileInS3(filepath, 'pdf');
+    return res.json({ status: Status.Success, message: 'Invoice Successfully Generated', invoiceUrl: invoiceUrl });
 }

@@ -9676,6 +9676,49 @@
         ]
       }
     },
+    "/generateInvoicePdf": {
+      "get": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To get invoice url",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/setCompanyDefaultPaymentTerm": {
       "post": {
         "tags": [
