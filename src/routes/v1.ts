@@ -1431,7 +1431,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateCompanyContract),
         (req, res) => {
-            vendorController.updateContract(req,res,sio)
+            vendorController.updateContract(req, res, sio)
         }
     )
 
@@ -1668,6 +1668,15 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Invoice_Detail),
         validate(Validations.sendInvoice),
         invoiceController.sendInvoiceEmail
+    )
+
+    router.get(
+        '/generateInvoicePdf',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoice_Detail),
+        validate(Validations.sendInvoice),
+        invoiceController.generateInvoicePdf
     )
 
     router.post(
