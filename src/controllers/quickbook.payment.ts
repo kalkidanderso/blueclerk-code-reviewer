@@ -670,33 +670,42 @@ export const _countQBPayments = async (company: ICompany, customer: ICustomer): 
     })
 }
 
-export const _deleteQBPayment = async (req: Request, res: Response, company: ICompany, payment: IPayment): Promise<any> => {
-    _refreshToken(req, res, company, async (err, errMsg, company) => {
-        if (err === 0) {
-            return res.json({ status: Status.Error, message: errMsg });
-        }
+export const _deleteQBPayment = async (req: Request, res: Response, company: ICompany, payment: IPayment, next: (error: number, errorMessage: string, status: string) => void): Promise<any> => {
+    // _refreshToken(req, res, company, async (err, errMsg, company) => {
+    //     if (err === 0) {
+    //         return res.json({ status: Status.Error, message: errMsg });
+    //     }
 
-        if (err === 400) {
-            await Company.findByIdAndUpdate(req.company._id, {
-                qbAuthorized: false,
-                qbAccessToken: undefined,
-                qbRefreshToken: undefined
-            });
+    //     if (err === 400) {
+    //         await Company.findByIdAndUpdate(req.company._id, {
+    //             qbAuthorized: false,
+    //             qbAccessToken: undefined,
+    //             qbRefreshToken: undefined
+    //         });
 
-            return res.json({ status: Status.QBUnauthorized, message: Messages.QBUnAuthorized });
-        }
+    //         return res.json({ status: Status.QBUnauthorized, message: Messages.QBUnAuthorized });
+    //     }
 
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
         qbo.deletePayment(payment.quickbookId, async (err: any, response: { Payment: { status: string } }) => {
             if (err || !response) {
-                return res.json({
-                    status: Status.Error,
-                    message: err.Fault?.Error[0]?.Detail
-                        || err.Fault?.Error[0]?.Message
-                        || err.fault?.error[0]?.detail
-                        || err.fault?.error[0]?.message
-                        || Messages.GenericError
-                });
+                console.log('== _deleteQBPayment > qbo.deletePayment > ERROR ==');
+                console.log('== err.Fault:', err.Fault);
+                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                console.log('== err.fault:', err.fault);
+                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                console.log('== paymentId:', payment._id);
+
+                return next(
+                    Status.Error,
+                    err.Fault?.Error[0]?.Detail
+                    || err.Fault?.Error[0]?.Message
+                    || err.fault?.error[0]?.detail
+                    || err.fault?.error[0]?.message
+                    || Messages.GenericError,
+                    null
+                );
             }
 
             if (response?.Payment?.status === 'Deleted') {
@@ -711,7 +720,39 @@ export const _deleteQBPayment = async (req: Request, res: Response, company: ICo
                 return;
             }
         });
-    });
+    // });
+}
+
+export const deleteQBPayment = async (req: Request, res: Response) => {
+
+    return new Promise((resolve, reject) => {
+        const params = req.query;
+        const company = <ICompany>req.company;
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.deletePayment(params.quickbookId, async (err: any, response: { Payment: { status: string } }) => {
+            if (err) {
+                console.log('== _deleteQBPayment > qbo.deletePayment > ERROR ==');
+                console.log('== err.Fault:', err.Fault);
+                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                console.log('== err.fault:', err.fault);
+                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                console.log('== payment quickbookId:', params.quickbookId);
+
+                reject(err);
+            } else {
+                resolve(response);
+            }
+        });
+    })
+        .then((response: { Payment: { status: string } }) => {
+            return res.json({ status: Status.Success, message: response });
+        })
+        .catch((error: any) => {
+            return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
+        })
+
 }
 
 export const _voidPayment = async (req: Request, res: Response, company: ICompany, payment: IPayment): Promise<any> => {

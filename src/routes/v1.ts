@@ -2278,12 +2278,15 @@ export default function (sio: any) {
         scriptController.updateQBCustomerJob
     )
 
+
+    // QUICKBOOK DIRECT CHECK API
+
     router.get(
-        '/quickbook/invoiceCheck',
+        '/quickbook/customerCheck',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         refreshQBToken(),
-        quickBookInvoiceController.getQBInvoice
+        quickBookCustomerController.getQBCustomer
     )
 
     router.get(
@@ -2295,6 +2298,14 @@ export default function (sio: any) {
     )
 
     router.get(
+        '/quickbook/invoiceCheck',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookInvoiceController.getQBInvoice
+    )
+
+    router.get(
         '/quickbook/paymentCheck',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
@@ -2302,13 +2313,7 @@ export default function (sio: any) {
         quickBookPaymentController.getQBPayment
     )
 
-    router.get(
-        '/quickbook/customerCheck',
-        passport.authenticate('jwt', { session: false }),
-        getCompanyId(),
-        refreshQBToken(),
-        quickBookCustomerController.getQBCustomer
-    )
+    // QUICKBOOK DIRECT CUSTOMER API
 
     router.get(
         '/quickbook/findQBCustomers',
@@ -2324,6 +2329,54 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookCustomerController.findQBCustomersByEmail
+    )
+
+    // QUICKBOOK DIRECT ACCOUNT API
+
+    router.get(
+        '/quickbook/findQBInvoice',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookInvoiceController.findQBInvoice
+    )
+
+    router.get(
+        '/quickbook/findQBAccount',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookItemController.findQBAccount
+    )
+
+    // QUICKBOOK DIRECT ITEM API
+
+    router.get(
+        '/quickbook/findQBItem',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookItemController.findQBItem
+    )
+
+    // QUICKBOOK DIRECT PAYMENT METHOD API
+
+    router.get(
+        '/quickbook/findQBAllTerms',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookPaymentTermController.findQBAllTerms
+    )
+
+    // QUICKBOOK DIRECT PAYMENT API
+
+    router.delete(
+        '/quickbook/deleteQBPayment',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookPaymentController.deleteQBPayment
     )
 
     return router

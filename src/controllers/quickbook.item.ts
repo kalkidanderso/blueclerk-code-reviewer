@@ -66,7 +66,7 @@ export const _createQBItem = async (req: Request, res: Response, company: ICompa
             UnitPrice: item.charges,
             Active: item.isActive,
             SalesTaxIncluded: false,
-            IncomeAccountRef: { name: 'Sales of Product Income', value: '79' },
+            IncomeAccountRef: { name: 'Sales of Product Income', value: '685' },
             MetaData: { CreateTime: new Date(), LastUpdatedTime: new Date() }
         };
 
@@ -79,6 +79,7 @@ export const _createQBItem = async (req: Request, res: Response, company: ICompa
                 console.log('== err.fault:', err.fault);
                 console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
                 console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                console.log('== itemId:', item._id);
 
                 return next(
                     Status.Error,
@@ -151,8 +152,10 @@ export const syncQBItems = async (req: Request, res: Response) => {
 
             // Iterate all items from DB
             for (const item of items) {
+                console.log('==== item.name:', item.name);
                 // Check if there any item on DB that not on QB yet
                 const existQBItem = qbItems?.find((qbItem: IQBItem) => qbItem.Name?.toLowerCase() === item.name.toLowerCase());
+                console.log('==== existQBItem.Name:', existQBItem?.Name ?? '-', '\n\n');
 
                 // Item not exist on QB, create it
                 if (!existQBItem) {
@@ -164,29 +167,25 @@ export const syncQBItems = async (req: Request, res: Response) => {
                         }
                     })
                 } else {
-                    if (item.quickbookId !== existQBItem.Id) {
-                        // QB Item exist, update DB Item & JobType's quickbookId directly
-                        Item.findByIdAndUpdate(item, { quickbookId: existQBItem.Id }).exec();
-                        JobType.findByIdAndUpdate(item.jobType, { quickbookId: existQBItem.Id }).exec();
-
-                        updatedItems.push({ _id: item._id, name: item.name });
-                    }
+                    // QB Item exist, update DB Item & JobType's quickbookId directly
+                    Item.findByIdAndUpdate(item, { quickbookId: existQBItem.Id }).exec();
+                    JobType.findByIdAndUpdate(item.jobType, { quickbookId: existQBItem.Id }).exec();
                 }
             }
 
             // Iterate all QuickBooks items
             for (const qbItem of qbItems) {
+                console.log('++++ qbItem.Name:', qbItem.Name);
                 // Check if there any item on QB that not on DB yet
                 let item = items.find(item => item.name?.toLowerCase() === qbItem.Name?.toLowerCase());
+                console.log('++++ item.name:', item?.name ?? '-', '\n\n');
 
                 if (item) {
                     // Item found, check and update quickbookId
-                    if (item.quickbookId !== qbItem.Id) {
-                        Item.findByIdAndUpdate(item, { quickbookId: qbItem.Id }).exec();
-                        JobType.findByIdAndUpdate(item.jobType, { quickbookId: qbItem.Id }).exec();
+                    Item.findByIdAndUpdate(item, { quickbookId: qbItem.Id }).exec();
+                    JobType.findByIdAndUpdate(item.jobType, { quickbookId: qbItem.Id }).exec();
 
-                        updatedItems.push({ _id: item._id, name: item.name });
-                    }
+                    updatedItems.push({ _id: item._id, name: item.name });
                 } else {
                     // Item not found, find any similar Job Type
                     let jobType = await JobType.findOne({
@@ -511,6 +510,57 @@ export const getQBItem = async (req: Request, res: Response) => {
     })
     .then((response: any) => {
         return res.json({ 'status': Status.Success, 'message': response })
+    })
+    .catch((error: any) => {
+        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
+    })
+}
+
+export const findQBItem = async (req: Request, res: Response) => {
+
+    return new Promise((resolve, reject) => {
+        const params = req.query;
+        const company = <ICompany>req.company;
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.findItems([
+            { field: 'Name', value: params.name }
+        ], async (err: any, data: any) => {
+            if (err) {
+                reject(err)
+            } else {
+                resolve(data?.QueryResponse?.Item);
+            }
+        })
+    })
+    .then((data: any) => {
+        return res.json({ status: Status.Success, data: data ?? null });
+    })
+    .catch((error: any) => {
+        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
+    })
+
+}
+
+export const findQBAccount = async (req: Request, res: Response) => {
+
+    return new Promise((resolve, reject) => {
+        const params = req.query;
+        const company = <ICompany>req.company;
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.findAccounts([
+            { field: 'Name', value: params.name }
+        ], async (err: any, data: any) => {
+            if (err) {
+                reject(err)
+            } else {
+                resolve(data?.QueryResponse?.Account);
+            }
+        })
+    })
+    .then((data: any) => {
+        return res.json({ status: Status.Success, data: data ?? null });
     })
     .catch((error: any) => {
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });

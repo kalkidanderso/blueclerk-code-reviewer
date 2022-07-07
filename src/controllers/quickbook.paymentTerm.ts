@@ -206,3 +206,29 @@ export const syncQBPaymentTerms = async (req: Request, res: Response) => {
     })
 
 }
+
+export const findQBAllTerms = async (req: Request, res: Response) => {
+
+    return new Promise((resolve, reject) => {
+        const params = req.query;
+        const company = <ICompany>req.company;
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.findTerms([
+            // { field: 'Name', value: params.name }
+            { field: 'fetchAll', value: true }
+        ], async (err: any, data: any) => {
+            if (err) {
+                reject(err)
+            } else {
+                resolve(data?.QueryResponse?.Term);
+            }
+        })
+    })
+    .then((data: any) => {
+        return res.json({ status: Status.Success, data: data ?? null });
+    })
+    .catch((error: any) => {
+        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
+    })
+}
