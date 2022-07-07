@@ -265,11 +265,12 @@
                   "type": {
                     "type": "string",
                     "enum": [
-                      "builder",
-                      "supplier",
-                      "contractor",
-                      "company"
-                    ]
+                      1,
+                      2,
+                      4,
+                      5
+                    ],
+                    "description": "1 => BUILDER, 2 => SUPPLIER, 4 => CONTRACTOR, 5 => COMPANY"
                   },
                   "email": {
                     "type": "string",

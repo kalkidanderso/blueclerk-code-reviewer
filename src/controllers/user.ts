@@ -199,7 +199,7 @@ export const signup = async (req: Request, res: Response, sio: any) => {
         }
 
         switch (params.type) {
-            case 'builder':
+            case UserType.BUILDER:
                 if (!params.customerId) {
                     return res.json({ status: Status.Error, message: 'customerId is required for this user type' })
                 }
@@ -210,7 +210,7 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                 }
 
                 userEntry.customer = customer;
-                userEntry.type = UserType.BUILDER;
+                userEntry.userType = UserType.BUILDER;
                 userEntry.permissions.role = Role.CUSTOMER_CONTACT;
 
                 const customerContact = await new CustomerContact(userEntry).save();
@@ -221,7 +221,7 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                 login(req, res, sio);
                 break;
 
-            case 'supplier':
+            case UserType.SUPPLIER:
                 if (!params.companyId) {
                     return res.json({ status: Status.Error, message: 'companyId is required on type supplier' })
                 }
@@ -237,7 +237,7 @@ export const signup = async (req: Request, res: Response, sio: any) => {
 
                 checkNoOfUsers(req, res, role > 0 ? role : Role.ADMIN_EMPLOYEE, async (req: Request, res: Response) => {
                     userEntry.permissions.role = role > 0 ? role : Role.ADMIN_EMPLOYEE;
-                    userEntry.type = UserType.SUPPLIER;
+                    userEntry.userType = UserType.SUPPLIER;
                     userEntry.company = company._id;
                     const supplier = await new Employee(userEntry).save();
                     company.employees.push(supplier._id);
@@ -256,7 +256,7 @@ export const signup = async (req: Request, res: Response, sio: any) => {
 
                 break;
 
-            case 'contractor':
+            case UserType.CONTRACTOR:
                 const { BC_COMPANY_ID } = process.env;
                 const bcCompany = await Company.findById(BC_COMPANY_ID);
 
@@ -266,7 +266,7 @@ export const signup = async (req: Request, res: Response, sio: any) => {
 
                 userEntry.company = bcCompany;
                 userEntry.permissions.role = Role.CONTRACTOR;
-                userEntry.type = UserType.CONTRACTOR;
+                userEntry.userType = UserType.CONTRACTOR;
 
                 const independentContractor = await new IndependentContractor(userEntry).save();
                 bcCompany.employees.push(independentContractor._id);
@@ -276,7 +276,7 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                 login(req, res, sio);
                 break;
 
-            case 'company':
+            case UserType.COMPANY:
             default:
                 createCompany(req, res, sio);
         }

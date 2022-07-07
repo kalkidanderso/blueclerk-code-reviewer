@@ -46,7 +46,7 @@ export interface IUser extends Document {
     },
     balance: number,
     commission: number,
-    type?: UserType
+    userType?: UserType
 
     hashPassword: (password: string, next: (err?: any, hash?: string)=>void)=>void
     comparePassword: (password: string, next: (isMatch: boolean)=>void)=>void
@@ -132,7 +132,7 @@ const UserSchema = new Schema({
         type: Number,
         default: null
     },
-    type: Number
+    userType: Number
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
 UserSchema.pre('save', async function(next) {
