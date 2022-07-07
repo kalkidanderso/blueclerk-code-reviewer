@@ -33,7 +33,19 @@ export const validate = (validations: ValidationChain[]) => {
 
 export const Validations = {
   //Auth
-  signUp: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('password').exists(), check('companyName').exists(), check('industryId').optional().isMongoId(), check('customerId').optional().isMongoId(), check('industryId').optional().isMongoId(), check('companyId').optional().isMongoId(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
+  signUp: [
+    check('userType').optional().isInt().toInt().withMessage('has to be interger'),
+    check('email').exists().withMessage(Messages.Required),
+    check('email').isEmail().withMessage('not in email format'),
+    check('password').exists().withMessage(Messages.Required),
+    check('firstName').exists().withMessage(Messages.Required),
+    check('lastName').exists().withMessage(Messages.Required),
+    check('phone').exists().withMessage(Messages.Required),
+    check('industryId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })
+  ],
 
   login: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 

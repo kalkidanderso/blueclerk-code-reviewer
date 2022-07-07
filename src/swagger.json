@@ -257,56 +257,59 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "companyName",
+                  "userType",
                   "email",
+                  "password",
                   "firstName",
                   "lastName",
-                  "password",
-                  "phone",
-                  "type"
+                  "phone"
                 ],
                 "properties": {
-                  "type": {
+                  "userType": {
                     "type": "string",
                     "enum": [
-                      "builder",
-                      "supplier",
-                      "contractor",
-                      "company"
-                    ]
+                      1,
+                      2,
+                      4,
+                      5
+                    ],
+                    "description": "1 => BUILDER, 2 => SUPPLIER, 4 => CONTRACTOR, 5 => COMPANY"
                   },
                   "email": {
                     "type": "string",
-                    "description": "email address of admin of a company"
+                    "description": "Email address of the user login"
                   },
                   "password": {
                     "type": "string",
-                    "description": "password for company admin login"
+                    "description": "Password for the user login"
                   },
                   "firstName": {
                     "type": "string",
-                    "description": "first Name of admin of company"
+                    "description": "First name of the user"
                   },
                   "lastName": {
                     "type": "string",
-                    "description": "last Name of admin of company"
+                    "description": "Last name of the user"
                   },
                   "phone": {
                     "type": "string",
-                    "description": "phone number of admin of company"
+                    "description": "Phone number of the user"
                   },
                   "companyName": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "**REQUIRED when** userType is 5 (COMPANY)"
                   },
                   "industryId": {
                     "type": "string",
-                    "description": "Id of the selected industry from the industries fetched with /getIndustries api"
+                    "description": "**REQUIRED when** userType is 5 (COMPANY). Id of the selected industry from the industries fetched with /getIndustries API"
                   },
                   "customerId": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "**REQUIRED when** userType is 2 (BUILDER)"
                   },
                   "companyId": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "**REQUIRED when** userType is 3 (SUPPLIER)"
                   },
                   "role": {
                     "type": "string",
@@ -315,7 +318,8 @@
                       "Technician",
                       "Manager",
                       "Admin"
-                    ]
+                    ],
+                    "description": "Used for Company's employee role"
                   },
                   "isci": {
                     "type": "boolean",

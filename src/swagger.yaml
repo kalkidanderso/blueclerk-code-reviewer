@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: BlueClerk
   description: APIs for both app and website
-  version: 1.0.1
+  version: 1.1.0
 servers:
   - url: https://blueclerk-node-api.deploy.blueclerk.com/api/v1
 tags:
@@ -136,34 +136,56 @@ paths:
             schema:
               type: object
               required:
-                - companyName
+                - userType
                 - email
-                - firstName
-                - industryId
-                - lastName
                 - password
+                - firstName
+                - lastName
                 - phone
               properties:
+                userType:
+                  type: string
+                  enum:
+                    - 1
+                    - 2
+                    - 4
+                    - 5
+                  description: 1 => BUILDER, 2 => SUPPLIER, 4 => CONTRACTOR, 5 => COMPANY
                 email:
                   type: string
-                  description: email address of admin of a company
+                  description: Email address of the user login
                 password:
                   type: string
-                  description: password for company admin login
+                  description: Password for the user login
                 firstName:
                   type: string
-                  description: first Name of admin of company
+                  description: First name of the user
                 lastName:
                   type: string
-                  description: last Name of admin of company
+                  description: Last name of the user
                 phone:
                   type: string
-                  description: phone number of admin of company
+                  description: Phone number of the user
                 companyName:
                   type: string
+                  description: '**REQUIRED when** userType is 5 (COMPANY)'
                 industryId:
                   type: string
-                  description: Id of the selected industry from the industries fetched with /getIndustries api
+                  description: '**REQUIRED when** userType is 5 (COMPANY). Id of the selected industry from the industries fetched with /getIndustries API'
+                customerId:
+                  type: string
+                  description: '**REQUIRED when** userType is 2 (BUILDER)'
+                companyId:
+                  type: string
+                  description: '**REQUIRED when** userType is 3 (SUPPLIER)'
+                role:
+                  type: string
+                  enum:
+                    - OfficeAdmin
+                    - Technician
+                    - Manager
+                    - Admin
+                  description: Used for Company's employee role
                 isci:
                   type: boolean
                   description: Abbreviation of 'isContractInvitation', boolean value to trigger BE to create notification and vendor contract after the sign up
@@ -2854,7 +2876,7 @@ paths:
             type: string
       requestBody:
         content:
-          multipart/form-data:
+          application/x-www-form-urlencoded:
             schema:
               type: object
               required:
@@ -5604,6 +5626,9 @@ paths:
                 isDraft:
                   type: boolean
                   description: Filter invoices by draft
+                isVoid:
+                  type: boolean
+                  description: Filter invoices by void
                 dueDate:
                   type: string
                   description: Filter invoices by dueDate or before
@@ -5858,6 +5883,33 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ScanDetail'
+      security:
+        - Bearer: []
+  /voidInvoice:
+    delete:
+      tags:
+        - Invoice
+      summary: To void invoice
+      description: To void invoice
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - invoiceId
+              properties:
+                invoiceId:
+                  type: string
+                  description: Id of invoice to void
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
   /getInvoiceEmailTemplate:
@@ -6444,6 +6496,7 @@ paths:
         - Bearer: []
   /voidPaymentContractor:
     post:
+      deprecated: true
       tags:
         - Payment
       summary: To void payment contractor
@@ -6463,6 +6516,41 @@ paths:
                   enum:
                     - vendor
                     - employee
+                paymentId:
+                  type: string
+                  description: Id of payment to void
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /voidPayment:
+    delete:
+      tags:
+        - Payment
+      summary: To void payment contractor
+      description: To void payment contractor
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - type
+                - paymentId
+              properties:
+                type:
+                  type: string
+                  description: type of payment (PaymentVendor or PaymentEmployee)
+                  enum:
+                    - vendor
+                    - employee
+                    - customer
                 paymentId:
                   type: string
                   description: Id of payment to void
@@ -7837,6 +7925,86 @@ paths:
       description: |-
         **WARNING: - Only do this when you know what you are doing.** 
         To migrate customer as user to customer company
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /quickbook/invoiceCheck:
+    get:
+      tags:
+        - Quickbook Check
+      summary: Returns list of all Company Customer relation list
+      parameters:
+        - name: quickbookId
+          in: query
+          description: ID of invoice quickbook
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /quickbook/itemCheck:
+    get:
+      tags:
+        - Quickbook Check
+      summary: Returns list of all Company Customer relation list
+      parameters:
+        - name: quickbookId
+          in: query
+          description: ID of invoice quickbook
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /quickbook/paymentCheck:
+    get:
+      tags:
+        - Quickbook Check
+      summary: Returns list of all Company Customer relation list
+      parameters:
+        - name: quickbookId
+          in: query
+          description: ID of invoice quickbook
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /quickbook/customerCheck:
+    get:
+      tags:
+        - Quickbook Check
+      summary: Returns list of all Company Customer relation list
+      parameters:
+        - name: quickbookId
+          in: query
+          description: ID of invoice quickbook
+          schema:
+            type: string
       responses:
         '200':
           description: Success

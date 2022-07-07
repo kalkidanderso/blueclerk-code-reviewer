@@ -60,7 +60,12 @@ export const login = (req: Request, res: Response, sio: any) => {
                                 return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
                             }
 
-                            return res.json({ 'status': Status.Success, userType: user.permissions.role, 'user': user, 'token': user.jwt() })
+                            return res.json({
+                                status: Status.Success,
+                                token: user.jwt(),
+                                userType: user.permissions.role,
+                                user,
+                            });
                         })
                     })
 
@@ -91,7 +96,13 @@ export const login = (req: Request, res: Response, sio: any) => {
                             company.qbRefreshToken = undefined
                             company.socketId = undefined
                             company.realmId = undefined
-                            return res.json({ 'status': Status.Success, userType: user.permissions.role, 'user': user, 'company': company, 'token': user.jwt() })
+
+                            return res.json({
+                                status: Status.Success,
+                                token: user.jwt(),
+                                userType: user.permissions.role,
+                                user, company
+                            });
                         }
                     )
 
@@ -104,7 +115,12 @@ export const login = (req: Request, res: Response, sio: any) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
                     }
 
-                    return res.json({ 'status': Status.Success, userType: user.permissions.role, 'user': user, 'token': user.jwt() })
+                    return res.json({
+                        status: Status.Success,
+                        token: user.jwt(),
+                        userType: user.permissions.role,
+                        user,
+                    });
                 })
             }
         }
@@ -198,19 +214,19 @@ export const signup = async (req: Request, res: Response, sio: any) => {
             info: params.email,
         }
 
-        switch (params.type) {
-            case 'builder':
+        switch (params.userType) {
+            case UserType.BUILDER:
                 if (!params.customerId) {
-                    return res.json({ status: Status.Error, message: 'customerId is required for this user type' })
+                    return res.json({ status: Status.Error, message: 'customerId is required for Builder userType' })
                 }
 
                 const customer = await Customer.findById(params.customerId);
                 if (!customer) {
-                    return res.json({ status: Status.NotFound, message: 'customer not found' })
+                    return res.json({ status: Status.Error, message: 'Customer not found' })
                 }
 
                 userEntry.customer = customer;
-                userEntry.type = UserType.BUILDER;
+                userEntry.userType = UserType.BUILDER;
                 userEntry.permissions.role = Role.CUSTOMER_CONTACT;
 
                 const customerContact = await new CustomerContact(userEntry).save();
@@ -221,14 +237,14 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                 login(req, res, sio);
                 break;
 
-            case 'supplier':
+            case UserType.SUPPLIER:
                 if (!params.companyId) {
-                    return res.json({ status: Status.Error, message: 'companyId is required on type supplier' })
+                    return res.json({ status: Status.Error, message: 'companyId is required for Supplier userType' })
                 }
 
                 const company = await Company.findById(params.companyId);
                 if (!company) {
-                    return res.json({ status: Status.NotFound, message: 'Company Not Found' })
+                    return res.json({ status: Status.Error, message: 'Company not found' })
                 }
 
                 req.company = company;
@@ -237,7 +253,7 @@ export const signup = async (req: Request, res: Response, sio: any) => {
 
                 checkNoOfUsers(req, res, role > 0 ? role : Role.ADMIN_EMPLOYEE, async (req: Request, res: Response) => {
                     userEntry.permissions.role = role > 0 ? role : Role.ADMIN_EMPLOYEE;
-                    userEntry.type = UserType.SUPPLIER;
+                    userEntry.userType = UserType.SUPPLIER;
                     userEntry.company = company._id;
                     const supplier = await new Employee(userEntry).save();
                     company.employees.push(supplier._id);
@@ -256,17 +272,17 @@ export const signup = async (req: Request, res: Response, sio: any) => {
 
                 break;
 
-            case 'contractor':
+            case UserType.CONTRACTOR:
                 const { BC_COMPANY_ID } = process.env;
                 const bcCompany = await Company.findById(BC_COMPANY_ID);
 
                 if (!bcCompany) {
-                    return res.json({ status: Status.NotFound, message: 'Company not found' });
+                    return res.json({ status: Status.Error, message: 'Company not found' });
                 }
 
                 userEntry.company = bcCompany;
                 userEntry.permissions.role = Role.CONTRACTOR;
-                userEntry.type = UserType.CONTRACTOR;
+                userEntry.userType = UserType.CONTRACTOR;
 
                 const independentContractor = await new IndependentContractor(userEntry).save();
                 bcCompany.employees.push(independentContractor._id);
@@ -276,9 +292,13 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                 login(req, res, sio);
                 break;
 
-            case 'company':
+            case UserType.COMPANY:
             default:
+                if (!params.companyName) {
+                    return res.json({ status: Status.Error, message: 'companyName is required for Company Signup.' })
+                }
                 createCompany(req, res, sio);
+                break;
         }
 
     });
@@ -298,12 +318,12 @@ export const createCompany = (req: Request, res: Response, sio: any) => {
         }
 
         if (!params.industryId) {
-            return res.json({ status: Status.Error, message: 'industryId is required' });
+            return res.json({ status: Status.Error, message: 'industryId is required for Company Signup' });
         }
 
         const industry = await Industry.findById(params.industryId);
         if (!industry) {
-            return res.json({ status: Status.NotFound, message: 'indsutry not found' });
+            return res.json({ status: Status.NotFound, message: 'Industry not found' });
         }
 
         const company = new Company(

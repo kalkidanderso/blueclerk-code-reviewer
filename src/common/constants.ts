@@ -150,7 +150,8 @@ export const enum UserType {
     BUILDER = 1, // Customer Contact
     SUPPLIER = 2, // Company Employee
     SERVICE_PROVIDER = 3,
-    CONTRACTOR = 4 // Independent Contractor
+    CONTRACTOR = 4, // Independent Contractor
+    COMPANY = 5
 }
 
 export enum NotificationTypes {
