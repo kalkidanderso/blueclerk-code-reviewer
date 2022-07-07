@@ -962,7 +962,7 @@ export const getJobs = async (req: Request, res: Response) => {
 
     // Construct aggreate lookups here to be used multiple times
     const aggregateLookups = [
-        { $lookup: { from: 'users', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
+        { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
         { $lookup: { from: 'joblocations', localField: 'jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
         { $lookup: { from: 'jobsites', localField: 'jobSite', foreignField: '_id', as: 'jobSiteObj' } },
         { $lookup: { from: 'users', localField: 'tasks.technician', foreignField: '_id', as: 'technicianObj' } },
@@ -1515,7 +1515,7 @@ export const getAllJobReports = async (req: Request, res: Response) => {
     // Construct aggreate lookups here to be used multiple times
     const aggregateLookups = [
         { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
-        { $lookup: { from: 'users', localField: 'jobObj.customer', foreignField: '_id', as: 'customerObj' } },
+        { $lookup: { from: 'customers', localField: 'jobObj.customer', foreignField: '_id', as: 'customerObj' } },
         { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
         { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
         { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },

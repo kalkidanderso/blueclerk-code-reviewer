@@ -4,6 +4,7 @@ import moment from 'moment';
 
 import { Status } from '../common/constants';
 import { Invoice } from '../models/Invoice';
+import { ICustomer } from 'src/models/Customer';
 
 export const generateIncomeReport = async (req: Request, res: Response) => {
 
@@ -14,12 +15,8 @@ export const generateIncomeReport = async (req: Request, res: Response) => {
     // Generate the income report based on which that requests by user
     switch (params.reportType) {
         case 2:
-            return res.json({
-                status: Status.Success,
-                reportType: params.reportType,
-                report: {},
-                message: 'Custom report is not yet supported, please wait for the next update.'
-            });
+            reportData = await _customIncomeReport(companyId, params);
+            break;
 
         case 1:
         default:
@@ -41,9 +38,79 @@ export const generateIncomeReport = async (req: Request, res: Response) => {
 
 /**
  * Generate standard income report,
- * where only return the total amount, total unique customers and jobs
+ * where only return the total amount, customers count, and jobs count
  */
-const _standartIncomeReport = async (companyId: string, params: any): Promise<{totalIncome: number, customers: number, jobs: number}> => {
+const _standartIncomeReport = async (companyId: string, params: any): Promise<{ totalIncome: number, customerCount: number, jobCount: number }> => {
+
+    // Call the generic function to generate the basic income report
+    const { totalIncomeAggregate, customersAggregate, jobsAggregate } = await _generateIncomeReport(companyId, params);
+
+    return {
+        totalIncome: totalIncomeAggregate[0]?.totalIncome ?? 0,
+        customerCount: customersAggregate[0]?.customers ?? 0,
+        jobCount: jobsAggregate[0]?.jobs ?? 0
+    };
+
+}
+
+/**
+ * Generate custom income report,
+ * return the total amount, customers count, jobs count,
+ * and each customer's total
+ */
+const _customIncomeReport = async (companyId: string, params: any): Promise<{ totalIncome: number, customerCount: number, jobCount: number, customers: any[] }> => {
+
+    const customers: any[] = [];
+
+    // Call the generic function to generate the basic income report
+    const { query, totalIncomeAggregate, customersAggregate, jobsAggregate } = await _generateIncomeReport(companyId, params);
+
+    // Get the total unique customers based on filter
+    const customerListAggregate = await Invoice.aggregate([
+        { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
+        { $match: { ...query } },
+        {
+            $group: {
+                _id: { customer: '$customerObj' },
+                total: { '$sum': '$total' }
+            }
+        },
+        { $sort: { '_id.customer.profile.displayName': 1 } }
+    ]);
+
+    // Iterate all invoices from customer aggregate
+    for (const customerInvoice of customerListAggregate) {
+        if (customerInvoice?._id?.customer.length) {
+            const customer = <ICustomer>customerInvoice?._id?.customer[0];
+
+            // Construct the readable information of customer
+            customers.push({
+                customer: {
+                    _id: customer._id,
+                    profile: customer.profile,
+                    info: customer.info,
+                    address: customer.address,
+                    contact: customer.contact
+                },
+                total: customerInvoice?.total
+            });
+        }
+    }
+
+    return {
+        totalIncome: totalIncomeAggregate[0]?.totalIncome ?? 0,
+        customerCount: customersAggregate[0]?.customers ?? 0,
+        jobCount: jobsAggregate[0]?.jobs ?? 0,
+        customers
+    };
+
+}
+
+/**
+ * Generate basic income report,
+ * where only return the total amount, customers count, and jobs count
+ */
+const _generateIncomeReport = async (companyId: string, params: any) => {
 
     const query: any = {
         company: companyId,
@@ -93,9 +160,10 @@ const _standartIncomeReport = async (companyId: string, params: any): Promise<{t
     ]);
 
     return {
-        totalIncome: totalIncomeAggregate[0]?.totalIncome ?? 0,
-        customers: customersAggregate[0]?.customers ?? 0,
-        jobs: jobsAggregate[0]?.jobs ?? 0
-    };
+        query,
+        totalIncomeAggregate,
+        customersAggregate,
+        jobsAggregate
+    }
 
 }
