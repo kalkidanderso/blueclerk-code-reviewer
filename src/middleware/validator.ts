@@ -405,6 +405,13 @@ export const Validations = {
     check('invoiceId').isMongoId().withMessage(Messages.WrongId),
   ],
 
+  generateInvoicePdf: [
+    check('customerId').exists().withMessage(Messages.Required),
+    check('customerId').isMongoId().withMessage(Messages.WrongId),
+    check('invoiceId').exists().withMessage(Messages.Required),
+    check('invoiceId').isMongoId().withMessage(Messages.WrongId),
+  ],
+
   sendReport: [check('jobReportId').exists()],
 
   createPOInvoice: [check('purchaseOrderId').exists()],
