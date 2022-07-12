@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: BlueClerk
   description: APIs for both app and website
-  version: 1.0.1
+  version: 1.1.1
 servers:
   - url: https://blueclerk-node-api.deploy.blueclerk.com/api/v1
 tags:
@@ -67,7 +67,7 @@ tags:
     description: For company purchase orders
   - name: Estimate
     description: For Estimate
-  - name: Reports
+  - name: Job Report
     description: For job and other reports
   - name: Sales Tax
     description: For salesTax
@@ -77,6 +77,8 @@ tags:
     description: For payment terms of invoices
   - name: Payment
     description: For payments of invoices
+  - name: Report
+    description: For all reports
   - name: Image
     description: For images
   - name: Group
@@ -2854,7 +2856,7 @@ paths:
             type: string
       requestBody:
         content:
-          multipart/form-data:
+          application/x-www-form-urlencoded:
             schema:
               type: object
               required:
@@ -5388,7 +5390,7 @@ paths:
   /getAllJobReports:
     get:
       tags:
-        - Reports
+        - Job Report
       summary: Get the company's job reports
       parameters:
         - name: keyword
@@ -5433,7 +5435,7 @@ paths:
   /getJobReport:
     get:
       tags:
-        - Reports
+        - Job Report
       summary: Get the report details of a finished job
       parameters:
         - name: jobReportId
@@ -5454,7 +5456,7 @@ paths:
   /deleteJobReport:
     delete:
       tags:
-        - Reports
+        - Job Report
       summary: delete a job report
       parameters:
         - name: jobReportId
@@ -5475,7 +5477,7 @@ paths:
   /sendJobReportEmail:
     post:
       tags:
-        - Reports
+        - Job Report
       summary: send an email about the job report
       requestBody:
         content:
@@ -5604,6 +5606,9 @@ paths:
                 isDraft:
                   type: boolean
                   description: Filter invoices by draft
+                isVoid:
+                  type: boolean
+                  description: Filter invoices by void
                 dueDate:
                   type: string
                   description: Filter invoices by dueDate or before
@@ -5860,6 +5865,33 @@ paths:
                       $ref: '#/components/schemas/ScanDetail'
       security:
         - Bearer: []
+  /voidInvoice:
+    delete:
+      tags:
+        - Invoice
+      summary: To void invoice
+      description: To void invoice
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - invoiceId
+              properties:
+                invoiceId:
+                  type: string
+                  description: Id of invoice to void
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /getInvoiceEmailTemplate:
     get:
       tags:
@@ -5914,6 +5946,31 @@ paths:
                   description: PDF file of invoice
                   format: binary
         required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /generateInvoicePdf:
+    get:
+      tags:
+        - Invoice
+      summary: To get invoice url
+      parameters:
+        - name: customerId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: invoiceId
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Success
@@ -6444,6 +6501,7 @@ paths:
         - Bearer: []
   /voidPaymentContractor:
     post:
+      deprecated: true
       tags:
         - Payment
       summary: To void payment contractor
@@ -6463,6 +6521,41 @@ paths:
                   enum:
                     - vendor
                     - employee
+                paymentId:
+                  type: string
+                  description: Id of payment to void
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /voidPayment:
+    delete:
+      tags:
+        - Payment
+      summary: To void payment contractor
+      description: To void payment contractor
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - type
+                - paymentId
+              properties:
+                type:
+                  type: string
+                  description: type of payment (PaymentVendor or PaymentEmployee)
+                  enum:
+                    - vendor
+                    - employee
+                    - customer
                 paymentId:
                   type: string
                   description: Id of payment to void
@@ -6545,6 +6638,51 @@ paths:
           required: false
           schema:
             type: number
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /generateIncomeReport:
+    get:
+      tags:
+        - Report
+      summary: To generate standard and custom income report
+      parameters:
+        - name: reportType
+          in: query
+          required: true
+          description: 1 => Standard Report; 2 => Custom Report
+          schema:
+            type: number
+            enum:
+              - 1
+              - 2
+        - name: reportSource
+          in: query
+          description: 1 => Invoice; 2 => Job
+          schema:
+            type: number
+            enum:
+              - 1
+              - 2
+        - name: customerIds
+          in: query
+          description: 'To filter report by specific customers. Example: ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]'
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          description: Filter report by start of invoice's issued date
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          description: Filter report by end of invoice's issued date
       responses:
         '200':
           description: Success
@@ -7415,27 +7553,6 @@ paths:
                 customerId:
                   type: string
                   description: Id of a customer to be associated
-                email:
-                  type: string
-                  description: To replace customer email from database, to be saved to QuickBooks
-                name:
-                  type: string
-                  description: To replace customer name from database, to be saved to QuickBooks
-                street:
-                  type: string
-                  description: To replace customer street from database, to be saved to QuickBooks
-                city:
-                  type: string
-                  description: To replace customer city from database, to be saved to QuickBooks
-                state:
-                  type: string
-                  description: To replace customer state from database, to be saved to QuickBooks
-                zipCode:
-                  type: string
-                  description: To replace customer zip code from database, to be saved to QuickBooks
-                phone:
-                  type: string
-                  description: To replace customer phone from database, to be saved to QuickBooks
         required: true
       responses:
         '200':
@@ -7837,6 +7954,106 @@ paths:
       description: |-
         **WARNING: - Only do this when you know what you are doing.** 
         To migrate customer as user to customer company
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /quickbook/invoiceCheck:
+    get:
+      tags:
+        - Quickbook Check
+      summary: Returns list of all Company Customer relation list
+      parameters:
+        - name: quickbookId
+          in: query
+          description: ID of invoice quickbook
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /quickbook/itemCheck:
+    get:
+      tags:
+        - Quickbook Check
+      summary: Returns list of all Company Customer relation list
+      parameters:
+        - name: quickbookId
+          in: query
+          description: ID of invoice quickbook
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /quickbook/paymentCheck:
+    get:
+      tags:
+        - Quickbook Check
+      summary: Returns list of all Company Customer relation list
+      parameters:
+        - name: quickbookId
+          in: query
+          description: ID of invoice quickbook
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /quickbook/customerCheck:
+    get:
+      tags:
+        - Quickbook Check
+      summary: Returns list of all Company Customer relation list
+      parameters:
+        - name: quickbookId
+          in: query
+          description: ID of invoice quickbook
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /quickbook/findQBCustomers:
+    get:
+      tags:
+        - Quickbook Check
+      summary: Returns list of QB Customers by that name
+      parameters:
+        - name: name
+          in: query
+          description: Display Name of Customer
+          schema:
+            type: string
       responses:
         '200':
           description: Success
