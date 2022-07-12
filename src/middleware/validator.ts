@@ -34,7 +34,7 @@ export const validate = (validations: ValidationChain[]) => {
 export const Validations = {
   //Auth
   signUp: [
-    check('userType').optional().isInt().toInt().withMessage('has to be interger'),
+    check('accountType').optional().isInt().toInt().withMessage('has to be interger'),
     check('email').exists().withMessage(Messages.Required),
     check('email').isEmail().withMessage('not in email format'),
     check('password').exists().withMessage(Messages.Required),

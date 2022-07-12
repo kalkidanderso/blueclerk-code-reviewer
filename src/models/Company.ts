@@ -8,7 +8,7 @@ export interface ICompany extends Document{
 
     info: {
         companyName: string
-        industry: Schema.Types.ObjectId
+        industry?: Schema.Types.ObjectId
         logoUrl: string,
         companyEmail: string
     },
