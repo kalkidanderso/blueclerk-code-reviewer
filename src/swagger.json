@@ -10792,7 +10792,16 @@
             "description": "1 => Standard Report; 2 => Custom Report",
             "schema": {
               "type": "number",
-              "enum": [ 1, 2]
+              "enum": [1, 2]
+            }
+          },
+          {
+            "name": "reportSource",
+            "in": "query",
+            "description": "1 => Invoice; 2 => Job",
+            "schema": {
+              "type": "number",
+              "enum": [1, 2]
             }
           },
           {
