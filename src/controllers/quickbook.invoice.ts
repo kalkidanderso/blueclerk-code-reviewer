@@ -959,38 +959,39 @@ export const updateBCInvoice = async (req: Request, res: Response, company: ICom
                 }
 
                 let subTotal = 0;
+                let taxAmount = 8.25;
                 const items: any = [];
                 if (qbInvoice?.Line?.length) {
-                    qbo.getTaxRate(qbInvoice?.TxnTaxDetail?.TaxLine[0]?.TaxLineDetail?.TaxRateRef?.value, async (err: any, taxRate: any) => {
-                        let taxAmount = 0;
+                    if (qbInvoice?.TxnTaxDetail) {
+                        qbo.getTaxRate(qbInvoice?.TxnTaxDetail?.TaxLine[0]?.TaxLineDetail?.TaxRateRef?.value, async (err: any, taxRate: any) => {
+                            if (taxRate) {
+                                taxAmount = taxRate.RateValue;
+                            }
+                        });
+                    }
 
-                        if (taxRate) {
-                            taxAmount = taxRate.RateValue;
-                        }
-
-                        for (const qbInvoiceLine of qbInvoice.Line) {
-                            if (qbInvoiceLine.DetailType === 'SalesItemLineDetail') {
-                                const item = await Item.findOne({ quickbookId: qbInvoiceLine?.SalesItemLineDetail?.ItemRef?.value });
-                                if (item) {
-                                    const itemEntry: any = {
-                                        price: qbInvoiceLine?.SalesItemLineDetail?.UnitPrice,
-                                        quantity: qbInvoiceLine?.SalesItemLineDetail?.Qty,
-                                        item: item._id,
-                                        subTotal: qbInvoiceLine?.SalesItemLineDetail?.Qty * qbInvoiceLine?.SalesItemLineDetail?.UnitPrice,
-                                    }
-
-                                    const subTotalLine = itemEntry.price * itemEntry.quantity;
-                                    subTotal += subTotalLine;
-
-                                    if (qbInvoiceLine?.SalesItemLineDetail?.TaxCodeRef.value === 'TAX') {
-                                        itemEntry.taxAmount = subTotalLine * taxAmount / 100;
-                                    }
-
-                                    items.push(itemEntry);
+                    for (const qbInvoiceLine of qbInvoice.Line) {
+                        if (qbInvoiceLine.DetailType === 'SalesItemLineDetail') {
+                            const item = await Item.findOne({ quickbookId: qbInvoiceLine?.SalesItemLineDetail?.ItemRef?.value });
+                            if (item) {
+                                const itemEntry: any = {
+                                    price: qbInvoiceLine?.SalesItemLineDetail?.UnitPrice,
+                                    quantity: qbInvoiceLine?.SalesItemLineDetail?.Qty,
+                                    item: item._id,
+                                    subTotal: qbInvoiceLine?.SalesItemLineDetail?.Qty * qbInvoiceLine?.SalesItemLineDetail?.UnitPrice,
                                 }
+
+                                const subTotalLine = itemEntry.price * itemEntry.quantity;
+                                subTotal += subTotalLine;
+
+                                if (qbInvoiceLine?.SalesItemLineDetail?.TaxCodeRef.value === 'TAX') {
+                                    itemEntry.taxAmount = subTotalLine * taxAmount / 100;
+                                }
+
+                                items.push(itemEntry);
                             }
                         }
-                    });
+                    }
                 }
 
                 invoice.items = items;
