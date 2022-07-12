@@ -656,22 +656,15 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                         : []
                     });
 
-                    let customerPO = params.customerPO ? params.customerPO : serviceTicket.customerPO;
+                    let customerPO = params.customerPO ?? null;
 
-                    let customerContactId = customerContact ? customerContact : serviceTicket.customerContactId;
+                    let customerContactId = customerContact ?? null;
 
                     let customer = params.customerId ? new ObjectId(params.customerId) : serviceTicket.customer;
 
-                    let jobLocationId: any = serviceTicket.jobLocation
-                    if (params.jobLocationId) {
-                        jobLocationId = params.jobLocationId
-                    }
+                    let jobLocationId: any = params.jobLocationId ?? null;
 
-
-                    let jobSiteId: any = serviceTicket.jobSite
-                    if (params.jobSiteId) {
-                        jobSiteId = params.jobSiteId
-                    }
+                    let jobSiteId: any = params.jobSiteId ?? null;
 
                     let jobTypeId: any = serviceTicket.jobType
                     if (params.jobTypeId) {

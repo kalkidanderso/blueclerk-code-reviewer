@@ -1313,3 +1313,35 @@ export const sendCustomerContactNewPassword = function (options: any) {
   })
 
 }
+
+/**
+ * To upload file to aws 
+ * fileType for pdf use 'pdf'
+ */
+export const uploadFileInS3 = async (filePath: string, fileType: string) => {
+  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, AWS_BUCKET_NAME, AWS_REGION } = process.env
+
+  AWS.config.update({
+    region: AWS_REGION,
+    accessKeyId: AWS_SES_ACCESSKEYID,
+    secretAccessKey: AWS_SES_SECRETACCESSKEY,
+  });
+
+  const s3 = new AWS.S3();
+
+  return new Promise((resolve, reject) => {
+    s3.upload({
+      Bucket: AWS_BUCKET_NAME,
+      Body: fs.createReadStream(filePath),
+      ACL: 'public-read',
+      ContentType: `application/${fileType}`,
+      Key: uuidv4()
+    }, (err: any, data: any) => {
+      if (err) {
+        reject(err);
+      }
+
+      resolve(data.Location);
+    });
+  });
+}

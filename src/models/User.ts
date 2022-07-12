@@ -1,6 +1,6 @@
 import mongoose, {Document, Mongoose, Schema} from 'mongoose'
 import jwt from 'jsonwebtoken'
-import { Role } from '../common/constants'
+import { Role, UserType } from '../common/constants'
 import bcrypt from "bcrypt-nodejs"
 import moment from 'moment'
 
@@ -46,6 +46,7 @@ export interface IUser extends Document {
     },
     balance: number,
     commission: number,
+    userType?: UserType
 
     hashPassword: (password: string, next: (err?: any, hash?: string)=>void)=>void
     comparePassword: (password: string, next: (isMatch: boolean)=>void)=>void
@@ -130,7 +131,8 @@ const UserSchema = new Schema({
     commission: {
         type: Number,
         default: null
-    }
+    },
+    userType: Number
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
 UserSchema.pre('save', async function(next) {

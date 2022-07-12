@@ -90,7 +90,9 @@ export interface IQBCustomer {
     ParentRef?: {
         value: string
     }
+    BillWithParent?: boolean
     Level?: number
+    Balance?: number
     BillAddr?: IQBAddress
     ShipAddr?: IQBAddress
 

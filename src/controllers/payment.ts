@@ -8,6 +8,7 @@ import { IUser, User } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
 import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer, IPaymentVendor, IPaymentEmployee } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
+import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer'
 import { _createQBPayment, _deleteQBPayment, _updateQBPayment, _voidPayment } from './quickbook.payment'
 import { Employee } from '../models/Employee'
 import { Contract } from '../models/Contract'
@@ -327,7 +328,8 @@ export const createPayment = async (req: Request, res: Response) => {
     const payment = new PaymentCustomer({
         customer,
         invoice,
-        referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
+        // referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
+        referenceNumber: params.referenceNumber,
         paymentType: params.paymentType,
         paidAt: params.paidAt ? moment(params.paidAt).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
         note: params.note,
@@ -353,30 +355,45 @@ export const createPayment = async (req: Request, res: Response) => {
         await payment.save();
 
         if (company.qbAuthorized) {
-            // Create new Payment in QuickBooks
-            _createQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
-                if (err) {
-                    return res.json({ status: err, message: errMsg });
+            /**
+             * Check Customer & Job Locations data on QBooks,
+             * if not found, create them on QBooks
+             */
+            _checkQBCustomerJobLocation(req, res, company, customer._id, (err, errMsg, qbCustomer) => {
+                if (err || errMsg) {
+                    return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
                 }
 
-                if (qbPayment) {
-                    payment.quickbookId = qbPayment.Id;
-                    await payment.save();
+                if (qbCustomer) {
+                    // Create new Payment in QuickBooks
+                    _createQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
+                        if (err) {
+                            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
+                        }
 
-                    // If company's payments already synced, update the synced date
-                    if (company.qbSync?.paymentsSynced) {
-                        company.qbSync.paymentsSyncedAt = new Date();
-                        await company.save();
-                    }
+                        if (qbPayment) {
+                            // Save quickbookId and our unique generated referenceNumber
+                            payment.quickbookId = qbPayment.Id;
+                            payment.quickbookRefNum = Buffer.from(qbPayment.MetaData?.CreateTime).toString('base64');
+                            await payment.save();
+
+                            // If company's payments already synced, update the synced date
+                            if (company.qbSync?.paymentsSynced) {
+                                company.qbSync.paymentsSyncedAt = new Date();
+                                await company.save();
+                            }
+                        }
+
+                        return res.json({
+                            status: Status.Success,
+                            message: 'Payment successfully created.',
+                            payment, quickbookPayment: qbPayment,
+                            customer, invoice
+                        });
+                    });
                 }
-
-                return res.json({
-                    status: Status.Success,
-                    message: 'Payment successfully created.',
-                    payment, quickbookPayment: qbPayment,
-                    customer, invoice
-                });
             });
+
         } else {
             return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
         }
@@ -419,7 +436,8 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
         invoices: invoiceIds,
         amountPaid: params.amount,
         paymentType: params.paymentType,
-        referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
+        // referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
+        referenceNumber: params.referenceNumber,
         startDate: params.startDate ? moment(params.startDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
         endDate: params.endDate ? moment(params.endDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
         paidAt: params.paidAt ? moment(params.paidAt).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
@@ -674,12 +692,16 @@ export const updatePayment = async (req: Request, res: Response) => {
 
         if (company.qbAuthorized && payment.quickbookId) {
             // Sync the update to Payment in QuickBooks
-            _updateQBPayment(req, res, company, payment, (err, errMsg, qbPayment) => {
+            _updateQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
                 if (err) {
                     return res.json({ status: err, message: errMsg });
                 }
 
                 if (qbPayment) {
+                    // Save our unique generated referenceNumber
+                    payment.quickbookRefNum = Buffer.from(qbPayment.MetaData?.CreateTime).toString('base64');
+                    await payment.save();
+
                     // If company's payments already synced, update the synced date
                     if (company.qbSync?.paymentsSynced) {
                         company.qbSync.paymentsSyncedAt = new Date();
@@ -944,40 +966,7 @@ export const getPayrollReport = async (req: Request, res: Response) => {
         company: company._id,
         isDraft: { $ne: true },
         ...query
-    })
-        .populate({
-            path: 'job',
-            populate: [{
-                path: 'type', select: 'title description sku'
-            }, {
-                path: 'customer', select: 'info.email auth.email profile.displayName contactName'
-            }, {
-                path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role'
-            }, {
-                path: 'tasks.technician', select: 'profile auth.email contact'
-            }],
-        })
-        .populate({
-            path: 'items.item',
-            select: 'name description sku itemCode note cost price',
-            populate: [{ path: 'jobType' }]
-        })
-        .populate({
-            path: 'company',
-            select: 'info.companyName info.logoUrl info.email permissions.role address.street address.city address.state address.zipCode contact.phone'
-        })
-        .populate({
-            path: 'customer',
-            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
-        })
-        .populate({
-            path: 'estimate',
-            select: 'total items note status customer company createdBy'
-        })
-        .populate({
-            path: 'commission',
-            select: 'technicians'
-        }).exec();
+    });
 
     const invoiceIds = invoices.map(invoice => invoice._id);
     const invoiceCommissions = await InvoiceCommission.find({
@@ -987,6 +976,39 @@ export const getPayrollReport = async (req: Request, res: Response) => {
 
     for (const invoiceCommission of invoiceCommissions) {
         const invoice = <IInvoice>invoiceCommission.invoice;
+
+        await invoice
+            .populate({
+                path: 'job',
+                populate: [
+                    { path: 'technician', select: 'profile auth.email contact' },
+                    { path: 'contractor', select: 'info address contact' },
+                    { path: 'tasks.technician', select: 'profile auth.email contact' },
+                    { path: 'tasks.contractor', select: 'info address contact' },
+                    { path: 'tasks.jobTypes.jobType', select: 'title description sku' }
+                ],
+            })
+            .populate({
+                path: 'items.item',
+                select: 'name description sku itemCode note cost price',
+                populate: [{ path: 'jobType' }]
+            })
+            .populate({
+                path: 'company',
+                select: 'info permissions.role address contact'
+            })
+            .populate({
+                path: 'customer',
+                select: 'info auth.email profile address contact contactName'
+            })
+            .populate({
+                path: 'estimate',
+                select: 'total items note status customer company createdBy'
+            })
+            .populate({
+                path: 'commission',
+                populate: [{ path: 'technician', select: 'profile auth.email contact' }]
+            }).execPopulate();
 
         if (invoiceCommission.technicians) {
             for (const technicianCommission of invoiceCommission.technicians) {
