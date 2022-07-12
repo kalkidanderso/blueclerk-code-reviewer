@@ -4,7 +4,8 @@ import moment from 'moment';
 
 import { Status } from '../common/constants';
 import { Invoice } from '../models/Invoice';
-import { ICustomer } from 'src/models/Customer';
+import { ICustomer } from '../models/Customer';
+import { ReportTypes, ReportSources } from '../models/Report';
 
 export const generateIncomeReport = async (req: Request, res: Response) => {
 
@@ -14,11 +15,11 @@ export const generateIncomeReport = async (req: Request, res: Response) => {
 
     // Generate the income report based on which that requests by user
     switch (params.reportType) {
-        case 2:
+        case ReportTypes.CUSTOM:
             reportData = await _customIncomeReport(companyId, params);
             break;
 
-        case 1:
+        case ReportTypes.STANDARD:
         default:
             reportData = await _standartIncomeReport(companyId, params);
             break;
@@ -63,11 +64,14 @@ const _customIncomeReport = async (companyId: string, params: any): Promise<{ to
     const customers: any[] = [];
 
     // Call the generic function to generate the basic income report
-    const { query, totalIncomeAggregate, customersAggregate, jobsAggregate } = await _generateIncomeReport(companyId, params);
+    const { query, aggregateLookups, totalIncomeAggregate, customersAggregate, jobsAggregate } = await _generateIncomeReport(companyId, params);
+
+    // Add additional aggregate to the Customer collection
+    aggregateLookups.push({ $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } });
 
     // Get the total unique customers based on filter
     const customerListAggregate = await Invoice.aggregate([
-        { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
+        ...aggregateLookups,
         { $match: { ...query } },
         {
             $group: {
@@ -118,6 +122,10 @@ const _generateIncomeReport = async (companyId: string, params: any) => {
         isVoid: { $ne: true }
     };
 
+    // Handle if report source from generated jobs
+    if (params.reportSource === ReportSources.JOB) {
+        query.job = { $ne: null };
+    }
     // Handle if there multiple customers to be filtered
     if (params.customerIds) {
         const customerIds = [];
@@ -132,11 +140,29 @@ const _generateIncomeReport = async (companyId: string, params: any) => {
     if (params.startDate && params.endDate) {
         const startDate = moment(params.startDate).format('YYYY-MM-DD');
         const endDate = moment(params.endDate).format('YYYY-MM-DD');
-        query.issuedDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
+
+        switch (params.reportSource) {
+            // Handle if report source from generated jobs
+            case ReportSources.JOB:
+                query['jobObj.scheduleDate'] = { $gte: new Date(startDate), $lte: new Date(endDate) };
+                break;
+
+            // Handle if report source from invoice only
+            case ReportSources.INVOICE:
+            default:
+                query.issuedDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
+                break;
+        }
     }
+
+    // Construct aggregate lookups to the Job collection
+    const aggregateLookups = [
+        { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } }
+    ]
 
     // Get the total income based on filter
     const totalIncomeAggregate = await Invoice.aggregate([
+        ...aggregateLookups,
         { $match: { ...query } },
         {
             $group: {
@@ -148,6 +174,7 @@ const _generateIncomeReport = async (companyId: string, params: any) => {
 
     // Get the total unique customers based on filter
     const customersAggregate = await Invoice.aggregate([
+        ...aggregateLookups,
         { $match: { ...query } },
         { $group: { _id: { customer: "$customer" } } },
         { $count: "customers" }
@@ -155,12 +182,14 @@ const _generateIncomeReport = async (companyId: string, params: any) => {
 
     // Get the total jobs based on filter
     const jobsAggregate = await Invoice.aggregate([
+        ...aggregateLookups,
         { $match: { ...query, job: { $ne: null } } },
         { $count: "jobs" }
     ]);
 
     return {
         query,
+        aggregateLookups,
         totalIncomeAggregate,
         customersAggregate,
         jobsAggregate

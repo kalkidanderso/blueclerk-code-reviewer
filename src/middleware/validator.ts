@@ -545,7 +545,8 @@ export const Validations = {
   // REPORT
   generateIncomeReport: [
     check('reportType').exists().withMessage(Messages.Required),
-    check('reportType').isInt().toInt().withMessage('has to be number')
+    check('reportType').isInt().toInt().withMessage('has to be number'),
+    check('reportSource').optional().isInt().toInt().withMessage('has to be number')
   ],
 
   // Code Location
