@@ -146,10 +146,10 @@ export const enum CompanyType {
     FREE,
 }
 
-export const enum UserType {
-    BUILDER = 1, // Customer Contact
-    SUPPLIER = 2, // Company Employee
-    SERVICE_PROVIDER = 3,
+export enum AccountTypes {
+    SERVICE_PROVIDER = 1, // Company Employee
+    BUILDER = 2, // Customer Contact
+    SUPPLIER = 3, // Window Supplier, BFS, Throphy
     CONTRACTOR = 4, // Independent Contractor
     COMPANY = 5
 }
