@@ -434,6 +434,13 @@ export default function (sio: any) {
         customerController.customerDetail
     )
 
+    router.get(
+        '/getAllCustomers',
+        passport.authenticate('jwt', { session: false }),
+        checkUserPermissions(Permissions.Get_Customer_Detail),
+        customerController.getAllCustomers
+    )
+
     router.post(
         '/updateCustomer',
         passport.authenticate('jwt', { session: false }),
@@ -1449,6 +1456,12 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         validate(Validations.getCompanyCustomer),
         companyController.getCompanyCustomer
+    )
+
+    router.get(
+        '/getAllCompanies',
+        passport.authenticate('jwt', { session: false }),
+        companyController.getAllCompanies
     )
 
     router.put(

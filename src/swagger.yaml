@@ -3,8 +3,7 @@ info:
   title: BlueClerk
   description: APIs for both app and website
   version: 1.0.1
-servers:
-  - url: https://blueclerk-node-api.deploy.blueclerk.com/api/v1
+servers: []
 tags:
   - name: Auth
     description: For login and signup
@@ -1493,6 +1492,25 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
+  /getAllCompanies:
+    get:
+      tags:
+        - Company
+      summary: Search for companies
+      parameters:
+        - name: keyword
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /updateCompanyCustomer:
     put:
       tags:
@@ -2205,6 +2223,25 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Customer'
+      security:
+        - Bearer: []
+  /getAllCustomers:
+    get:
+      tags:
+        - Customer
+      summary: Search for customers
+      parameters:
+        - name: keyword
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
   /searchDuplicatedCustomers:

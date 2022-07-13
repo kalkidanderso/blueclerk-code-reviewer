@@ -324,6 +324,34 @@ export const getCustomers = (req: Request, res: Response) => {
         })
 }
 
+export const getAllCustomers = async (req: Request, res: Response) => {
+    const { ENVIRONMENT } = process.env;
+    const params = req.query;
+    const query: any = {};
+    const customerName = ["Westin Homes", "Shea Homes", "Perry Homes", "Toll Brothers, Inc."]
+
+    switch (ENVIRONMENT) {
+        case 'production':
+            query['$or'] = [{ 'profile.displayName': { $in: customerName } }];
+            break;
+
+        case 'staging':
+        default:
+            if (params.keyword) {
+                const keywordRegex = { $regex: params.keyword, $options: '$i' };
+                query['$or'] = [
+                    { 'profile.displayName': keywordRegex },
+                    { 'info.email': keywordRegex },
+                ]
+            }
+
+            break;
+    }
+
+    const customers = await Customer.find({ ...query }, 'profile info contact address').sort({ 'profile.displayName': 1 });
+    return res.json({ status: Status.Success, customers })
+}
+
 export const updateCustomer = (req: Request, res: Response) => {
 
     const params = req.body;

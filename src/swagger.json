@@ -5,11 +5,7 @@
     "description": "APIs for both app and website",
     "version": "1.0.1"
   },
-  "servers": [
-    {
-      "url": "https://blueclerk-node-api.deploy.blueclerk.com/api/v1"
-    }
-  ],
+  "servers": [],
   "tags": [
     {
       "name": "Auth",
@@ -2468,6 +2464,40 @@
         ]
       }
     },
+    "/getAllCompanies": {
+      "get": {
+        "tags": [
+          "Company"
+        ],
+        "summary": "Search for companies",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/updateCompanyCustomer": {
       "put": {
         "tags": [
@@ -3624,6 +3654,40 @@
                       }
                     }
                   }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getAllCustomers": {
+      "get": {
+        "tags": [
+          "Customer"
+        ],
+        "summary": "Search for customers",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
                 }
               }
             }
