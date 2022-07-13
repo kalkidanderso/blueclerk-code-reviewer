@@ -253,7 +253,7 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "userType",
+                  "accountType",
                   "email",
                   "password",
                   "firstName",
@@ -261,7 +261,7 @@
                   "phone"
                 ],
                 "properties": {
-                  "userType": {
+                  "accountType": {
                     "type": "string",
                     "enum": [
                       1,
@@ -269,7 +269,7 @@
                       4,
                       5
                     ],
-                    "description": "1 => BUILDER, 2 => SUPPLIER, 4 => CONTRACTOR, 5 => COMPANY"
+                    "description": "1 => SERVICE PROVIDER, 2 => BUILDER, 4 => INDEPENDENT CONTRACTOR, 5 => COMPANY (old company signup)"
                   },
                   "email": {
                     "type": "string",
@@ -293,19 +293,19 @@
                   },
                   "companyName": {
                     "type": "string",
-                    "description": "**REQUIRED when** userType is 5 (COMPANY)"
+                    "description": "**REQUIRED when** accountType is 5 (COMPANY) for old company signup"
                   },
                   "industryId": {
                     "type": "string",
-                    "description": "**REQUIRED when** userType is 5 (COMPANY). Id of the selected industry from the industries fetched with /getIndustries API"
-                  },
-                  "customerId": {
-                    "type": "string",
-                    "description": "**REQUIRED when** userType is 2 (BUILDER)"
+                    "description": "Id of the selected industry from the industries fetched with /getIndustries API"
                   },
                   "companyId": {
                     "type": "string",
-                    "description": "**REQUIRED when** userType is 3 (SUPPLIER)"
+                    "description": "**REQUIRED when** accountType is 1 (SERVICE PROVIDER)"
+                  },
+                  "customerId": {
+                    "type": "string",
+                    "description": "**REQUIRED when** accountType is 2 (BUILDER)"
                   },
                   "role": {
                     "type": "string",
@@ -10856,7 +10856,16 @@
             "description": "1 => Standard Report; 2 => Custom Report",
             "schema": {
               "type": "number",
-              "enum": [ 1, 2]
+              "enum": [1, 2]
+            }
+          },
+          {
+            "name": "reportSource",
+            "in": "query",
+            "description": "1 => Invoice; 2 => Job",
+            "schema": {
+              "type": "number",
+              "enum": [1, 2]
             }
           },
           {
