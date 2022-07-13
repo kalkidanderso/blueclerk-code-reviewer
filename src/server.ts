@@ -82,7 +82,7 @@ passportMiddleWare(passport)
 app.use(logger('dev'))
 //Swagger
 app.use('/api-docs', (req: any, res: any, next: any) => {
-  swaggerDocument.servers.push({ url: process.env.BASE_URL || "https://staging-customer.blueclerk.com/api/v1" });
+  swaggerDocument.servers.push({ url: process.env.BASE_URL || "https://blueclerk-node-api.deploy.blueclerk.com/api/v1" });
   req.swaggerDoc = swaggerDocument;
   next();
 }, swaggerUi.serve, swaggerUi.setup(swaggerDocument));

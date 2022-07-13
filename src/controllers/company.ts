@@ -1329,7 +1329,7 @@ export const getAllCompanies = async (req: Request, res: Response) => {
     const { ENVIRONMENT } = process.env;
     const params = req.query;
     const query: any = { __t: { $ne: 'CompanyCustomer' } };
-    const companyName = ["Norton Fitness", "Lance Dahse.Inc"];
+    const companyName = ["Norton Fitness", "Lance Dahse, Inc."];
 
     switch (ENVIRONMENT) {
         case 'staging':
