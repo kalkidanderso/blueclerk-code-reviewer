@@ -81,7 +81,11 @@ passportMiddleWare(passport)
 //Logger
 app.use(logger('dev'))
 //Swagger
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/api-docs', (req: any, res: any, next: any) => {
+  swaggerDocument.servers.push({ url: process.env.BASE_URL || "https://staging-customer.blueclerk.com/api/v1" });
+  req.swaggerDoc = swaggerDocument;
+  next();
+}, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const httpServer = require('http').createServer(app);
 const sio = require("socket.io")(httpServer, {
