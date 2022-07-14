@@ -4,6 +4,8 @@ declare namespace Express {
        otherCompanyId?: string,
        company?: any,
        technician?: any,
-       contractor?: any
+       contractor?: any,
+       userSession?: any,
+       sessionId?: any
     }
  }

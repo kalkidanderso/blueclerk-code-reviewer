@@ -18,6 +18,7 @@ import { _getProRatedAmount } from '../controllers/vendor';
 import { CustomerContact } from '../models/CustomerContact';
 import { Customer } from '../models/Customer';
 import { IndependentContractor } from '../models/IndependentContractor';
+import { ISession, Session } from '../models/Session';
 
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
@@ -35,6 +36,10 @@ export const login = (req: Request, res: Response, sio: any) => {
 
             if (!user) {
                 return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
+            }
+
+            if ([AccountTypes.BUILDER, AccountTypes.CONTRACTOR, AccountTypes.SUPPLIER].includes(Number(user.accountType))) {
+                return res.json({ status: Status.Error, message: 'Your account type does not have web access' });
             }
 
             if ((user.permissions.role != Role.COMPANY_ADMIN && user.permissions.role != Role.ADMIN_EMPLOYEE && user.permissions.role != Role.GLOBAL_ADMIN && user.permissions.role != Role.CUSTOMER_CONTACT)) {
@@ -60,9 +65,11 @@ export const login = (req: Request, res: Response, sio: any) => {
                                 return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
                             }
 
+                            req.session.save();
+
                             return res.json({
                                 status: Status.Success,
-                                token: user.jwt(),
+                                token: user.jwt(req),
                                 userType: user.permissions.role,
                                 accountType: user.accountType,
                                 user,
@@ -98,9 +105,11 @@ export const login = (req: Request, res: Response, sio: any) => {
                             company.socketId = undefined
                             company.realmId = undefined
 
+                            req.session.save();
+
                             return res.json({
                                 status: Status.Success,
-                                token: user.jwt(),
+                                token: user.jwt(req),
                                 userType: user.permissions.role,
                                 accountType: user.accountType,
                                 user, company
@@ -117,9 +126,11 @@ export const login = (req: Request, res: Response, sio: any) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
                     }
 
+                    req.session.save();
+
                     return res.json({
                         status: Status.Success,
-                        token: user.jwt(),
+                        token: user.jwt(req),
                         userType: user.permissions.role,
                         accountType: user.accountType,
                         user,
@@ -129,6 +140,16 @@ export const login = (req: Request, res: Response, sio: any) => {
         }
     )
 
+}
+
+export const logout = async (req: Request, res: Response) => {
+    const session = <ISession>req.userSession;
+    try {
+        await Session.findByIdAndRemove(session._id);
+        return res.json({ status: Status.Success, message: 'Logout Successfully' });
+    } catch (err) {
+        return res.json({ status: Status.Error, message: Messages.GenericError });
+    }
 }
 
 export const createGlobalAdmin = (req: Request, res: Response, sio: any) => {
@@ -271,8 +292,12 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                 await customer.save();
 
                 sendEmail({ to: params?.email });
-                login(req, res, sio);
-                break;
+                return res.json({
+                    status: Status.Success,
+                    userType: customerContact.permissions.role,
+                    accountType: customerContact.accountType,
+                    user: customerContact,
+                });
 
             case AccountTypes.CONTRACTOR:
                 const { BC_COMPANY_ID } = process.env;
@@ -291,8 +316,12 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                 await bcCompany.save();
 
                 sendEmail({ to: params?.email });
-                login(req, res, sio);
-                break;
+                return res.json({
+                    status: Status.Success,
+                    userType: independentContractor.permissions.role,
+                    accountType: independentContractor.accountType,
+                    user: independentContractor,
+                });
 
             case AccountTypes.COMPANY:
             default:
@@ -365,6 +394,7 @@ export const createCompany = (req: Request, res: Response, sio: any) => {
                         displayName: `${params.firstName} ${params.lastName}`,
                         imageUrl: '',
                     },
+                    accountType: AccountTypes.COMPANY,
                     address: {
                         street: '',
                         city: '',
@@ -1276,7 +1306,7 @@ export const checkAndGetUser = (req: Request, res: Response) => {
                             return res.json({ 'status': Status.Error, 'message': Messages.AccountDeleted })
                         }
 
-                        return res.json({ 'status': Status.Success, 'user': user, 'token': user.jwt() })
+                        return res.json({ 'status': Status.Success, 'user': user, 'token': user.jwt(req) })
                     })
 
             } else {
@@ -1296,7 +1326,7 @@ export const checkAndGetUser = (req: Request, res: Response) => {
                         company.maxAdmins = undefined
                         company.maxManagers = undefined
                         company.maxOfficeAdmins = undefined
-                        return res.json({ 'status': Status.Success, 'user': user, 'company': company, 'token': user.jwt() })
+                        return res.json({ 'status': Status.Success, 'user': user, 'company': company, 'token': user.jwt(req) })
                     }
                 )
             }
@@ -1392,7 +1422,7 @@ export const createCompanySocial = (req: Request, res: Response) => {
 
                         sendEmail({ to: params.email })
 
-                        return res.json({ 'status': Status.Success, 'user': companyAdmin, 'token': companyAdmin.jwt() })
+                        return res.json({ 'status': Status.Success, 'user': companyAdmin, 'token': companyAdmin.jwt(req) })
                     })
 
                 })
@@ -1491,7 +1521,7 @@ export const createContractorSocial = (req: Request, res: Response) => {
 
                         sendEmail({ to: params.email })
 
-                        return res.json({ 'status': Status.Success, 'user': companyAdmin, 'token': companyAdmin.jwt() })
+                        return res.json({ 'status': Status.Success, 'user': companyAdmin, 'token': companyAdmin.jwt(req) })
 
                     })
                 })
