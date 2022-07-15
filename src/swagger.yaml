@@ -172,7 +172,7 @@ paths:
                   description: '**REQUIRED when** accountType is 5 (COMPANY) for old company signup'
                 industryId:
                   type: string
-                  description: 'Id of the selected industry from the industries fetched with /getIndustries API'
+                  description: Id of the selected industry from the industries fetched with /getIndustries API
                 companyId:
                   type: string
                   description: '**REQUIRED when** accountType is 1 (SERVICE PROVIDER)'
@@ -201,6 +201,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthAPIResponse'
+  /logout:
+    post:
+      tags:
+        - Auth
+      summary: Logout for all kind user
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthAPIResponse'
+      security:
+        - Bearer: []
   /searchContractor:
     post:
       tags:
