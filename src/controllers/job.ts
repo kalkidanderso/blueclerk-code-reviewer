@@ -1725,6 +1725,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
     const params = req.body
     let companyId = req.companyId;
     let jobType: ITaskJobType;
+    let trackedServiceTicket: { user: any; action: string; date: Date; }[] = [];
 
     const user = <IUser>req.user;
     if (req.otherCompanyId != undefined) {
@@ -1864,6 +1865,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             let tasksLinked = linkedJob && linkedJob.tasks || [];
             let action = '';
 
+            const serviceTicket = await ServiceTicket.findById(job.ticket._id);
             if (params.status && params.status != job.status) {
                 if (params.status == JobStatus.PENDING) {
                     action = '|Scheduling the job|';
@@ -1882,7 +1884,14 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 }
                 if (params.status == JobStatus.CANCELED) {
                     action = '|Canceling the job|';
-                    await ServiceTicket.findOneAndUpdate({ _id: job.ticket }, { jobCreated: false });
+                    serviceTicket.track.push({
+                        user: user._id,
+                        action: `|Job cancelled by ${user.profile.displayName}|`,
+                        date: new Date()
+                    });
+
+                    serviceTicket.jobCreated = false
+                    // await ServiceTicket.findOneAndUpdate({ _id: job.ticket }, { jobCreated: false });
                     await JobRequest.findOneAndUpdate({ _id: job.request }, { jobCreated: false });
                 }
                 if (params.status == JobStatus.RESCHEDULED) {
@@ -1895,6 +1904,9 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     action = '|Update the job to Incomplete|'
                 }
             }
+
+            await serviceTicket.save();
+
             let userComment = '';
             if (params.comment !== 'undefined') {
                 userComment = params.comment;
