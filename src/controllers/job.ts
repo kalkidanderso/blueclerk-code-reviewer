@@ -1725,7 +1725,6 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
     const params = req.body
     let companyId = req.companyId;
     let jobType: ITaskJobType;
-    let trackedServiceTicket: { user: any; action: string; date: Date; }[] = [];
 
     const user = <IUser>req.user;
     if (req.otherCompanyId != undefined) {
@@ -1891,7 +1890,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     });
 
                     serviceTicket.jobCreated = false
-                    // await ServiceTicket.findOneAndUpdate({ _id: job.ticket }, { jobCreated: false });
+                    await serviceTicket.save();
                     await JobRequest.findOneAndUpdate({ _id: job.request }, { jobCreated: false, status: JobRequestStatus.PENDING });
                 }
                 if (params.status == JobStatus.RESCHEDULED) {
@@ -1904,8 +1903,6 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     action = '|Update the job to Incomplete|'
                 }
             }
-
-            await serviceTicket.save();
 
             let userComment = '';
             if (params.comment !== 'undefined') {
