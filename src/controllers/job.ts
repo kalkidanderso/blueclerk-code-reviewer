@@ -1892,7 +1892,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
 
                     serviceTicket.jobCreated = false
                     // await ServiceTicket.findOneAndUpdate({ _id: job.ticket }, { jobCreated: false });
-                    await JobRequest.findOneAndUpdate({ _id: job.request }, { jobCreated: false });
+                    await JobRequest.findOneAndUpdate({ _id: job.request }, { jobCreated: false, status: JobRequestStatus.PENDING });
                 }
                 if (params.status == JobStatus.RESCHEDULED) {
                     action = '|Rescheduling the job|';
