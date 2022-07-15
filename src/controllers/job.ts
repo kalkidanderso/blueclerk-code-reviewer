@@ -1880,6 +1880,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 }
                 if (params.status == JobStatus.FINISHED) {
                     action = '|Finishing the job|';
+                    ticketAction = `|Job finished by ${user.profile.displayName}|`;
                 }
                 if (params.status == JobStatus.CANCELED) {
                     action = '|Canceling the job|';
