@@ -3,7 +3,7 @@
   "info": {
     "title": "BlueClerk",
     "description": "APIs for both app and website",
-    "version": "1.0.1"
+    "version": "2.2.0"
   },
   "servers": [],
   "tags": [
@@ -10850,7 +10850,7 @@
         "summary": "To generate standard and custom income report",
         "parameters": [
           {
-            "name": "reportType",
+            "name": "reportData",
             "in": "query",
             "required": true,
             "description": "1 => Standard Report; 2 => Custom Report",
@@ -10890,6 +10890,203 @@
             "description": "Filter report by end of invoice's issued date"
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getMemorizedReports": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "Returns list of all memorized reports that the company saved",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getMemorizedReport": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "Return detail of one memorized report",
+        "parameters": [
+          {
+            "name": "memorizedReportId",
+            "in": "query",
+            "description": "ID of the memorized report",
+            "scema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createMemorizedReport": {
+      "post": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To memorized a custom report",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reportType"
+                ],
+                "properties": {
+                  "reportType": {
+                    "type": "number",
+                    "description": "1 => Income Report",
+                    "enum": [1]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "reportData": {
+                    "type": "number",
+                    "description": "1 => Standard Report; 2 => Custom Report",
+                    "enum": [1, 2]
+                  },
+                  "reportSource": {
+                    "type": "number",
+                    "description": "1 => Invoice; 2 => Job",
+                    "enum": [1, 2]
+                  },
+                  "customerIds": {
+                    "type": "string",
+                    "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]"
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter report by start of invoice's issued date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter report by end of invoice's issued date"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateMemorizedReport": {
+      "put": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To update a memorized custom report",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "memorizedReportId"
+                ],
+                "properties": {
+                  "memorizedReportId": {
+                    "type": "string",
+                    "description": "ID of memorized report to be updated"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "reportData": {
+                    "type": "number",
+                    "description": "1 => Standard Report; 2 => Custom Report",
+                    "enum": [1, 2]
+                  },
+                  "reportSource": {
+                    "type": "number",
+                    "description": "1 => Invoice; 2 => Job",
+                    "enum": [1, 2]
+                  },
+                  "customerIds": {
+                    "type": "string",
+                    "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]"
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter report by start of invoice's issued date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter report by end of invoice's issued date"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Success",

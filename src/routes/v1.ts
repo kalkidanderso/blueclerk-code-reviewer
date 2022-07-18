@@ -2091,6 +2091,7 @@ export default function (sio: any) {
     )
 
     // REPORT
+
     router.get(
         '/generateIncomeReport',
         passport.authenticate('jwt', { session: false }),
@@ -2098,6 +2099,40 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.generateIncomeReport),
         reportController.generateIncomeReport
+    )
+
+    router.get(
+        '/getMemorizedReports',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        reportController.getMemorizedReports
+    )
+
+    router.get(
+        '/getMemorizedReport',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        reportController.getMemorizedReport
+    )
+
+    router.post(
+        '/createMemorizedReport',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.createMemorizedReport),
+        reportController.createMemorizedReport
+    )
+
+    router.put(
+        '/updateMemorizedReport',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.updateMemorizedReport),
+        reportController.updateMemorizedReport
     )
 
     // CODE LOCATION TAG
