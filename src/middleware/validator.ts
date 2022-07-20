@@ -544,9 +544,19 @@ export const Validations = {
 
   // REPORT
   generateIncomeReport: [
-    check('reportType').exists().withMessage(Messages.Required),
-    check('reportType').isInt().toInt().withMessage('has to be number'),
+    check('reportData').exists().withMessage(Messages.Required),
+    check('reportData').isInt().toInt().withMessage('has to be number'),
     check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+  ],
+
+  createMemorizedReport: [
+    check('reportType').exists().withMessage(Messages.Required),
+    check('reportType').isInt().toInt().withMessage('has to be number')
+  ],
+
+  updateMemorizedReport: [
+    check('memorizedReportId').exists().withMessage(Messages.Required),
+    check('memorizedReportId').isMongoId().withMessage(Messages.WrongId)
   ],
 
   // Code Location
