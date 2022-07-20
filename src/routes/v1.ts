@@ -69,13 +69,25 @@ export default function (sio: any) {
     router.use('/jobLocation', jobLocation)
     router.use('/jobSite', jobSite)
 
-    //Auth
+    // Auth
     router.post(
         '/login',
         validate(Validations.login),
         (req, res) => {
             userController.login(req, res, sio)
         }
+    )
+
+    // Used for Service Provider Sign Up
+    router.get(
+        '/getAllCompanies',
+        companyController.getAllCompanies
+    )
+
+    // Used for Builder Sign Up
+    router.get(
+        '/getAllCustomers',
+        customerController.getAllCustomers
     )
 
     router.post(
@@ -475,14 +487,6 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Customer_Detail),
         validate(Validations.getCustomerDetail),
         customerController.customerDetail
-    )
-
-    router.get(
-        '/getAllCustomers',
-        passport.authenticate('jwt', { session: false }),
-        isLogin(),
-        checkUserPermissions(Permissions.Get_Customer_Detail),
-        customerController.getAllCustomers
     )
 
     router.post(
@@ -1601,13 +1605,6 @@ export default function (sio: any) {
         isLogin(),
         validate(Validations.getCompanyCustomer),
         companyController.getCompanyCustomer
-    )
-
-    router.get(
-        '/getAllCompanies',
-        passport.authenticate('jwt', { session: false }),
-        isLogin(),
-        companyController.getAllCompanies
     )
 
     router.put(
