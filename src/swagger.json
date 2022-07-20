@@ -3,7 +3,7 @@
   "info": {
     "title": "BlueClerk",
     "description": "APIs for both app and website",
-    "version": "2.2.0"
+    "version": "2.2.1"
   },
   "servers": [],
   "tags": [
@@ -338,6 +338,64 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AuthAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/getAllCompanies": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Search for companies",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/getAllCustomers": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Search for customers",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
                 }
               }
             }
@@ -2489,40 +2547,6 @@
         ]
       }
     },
-    "/getAllCompanies": {
-      "get": {
-        "tags": [
-          "Company"
-        ],
-        "summary": "Search for companies",
-        "parameters": [
-          {
-            "name": "keyword",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GeneralAPIResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
     "/updateCompanyCustomer": {
       "put": {
         "tags": [
@@ -3679,40 +3703,6 @@
                       }
                     }
                   }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
-    "/getAllCustomers": {
-      "get": {
-        "tags": [
-          "Customer"
-        ],
-        "summary": "Search for customers",
-        "parameters": [
-          {
-            "name": "keyword",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GeneralAPIResponse"
                 }
               }
             }
