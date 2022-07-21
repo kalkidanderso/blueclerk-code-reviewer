@@ -6,7 +6,7 @@ import { ICompany } from '../models/Company';
 import { IUser } from '../models/User';
 import { ICustomer } from '../models/Customer';
 import { IInvoice } from '../models/Invoice';
-import { IEmailDefault, DefaultEmailTemplate, EmailDefault } from '../models/EmailDefault';
+import { IEmailDefault, DefaultEmailTemplate, EmailDefault, EmailTypes, DefaultIncomReportEmailTemplate } from '../models/EmailDefault';
 
 
 export const getCompanyEmailDefault = async (req: Request, res: Response) => {
@@ -14,9 +14,9 @@ export const getCompanyEmailDefault = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
 
     // Check and create default email template of the company
-    await _createCompanyDefaultEmail(company);
+    await _createCompanyDefaultEmail(company, req.query.emailType);
 
-    const emailDefault = await EmailDefault.findOne({ company });
+    const emailDefault = await EmailDefault.findOne({ company, emailType: req.query.emailType ?? EmailTypes.INVOICE });
 
     return res.json({ status: Status.Success, emailDefault });
 
@@ -30,14 +30,15 @@ export const updateCompanyEmailDefault = async (req: Request, res: Response) => 
     const company = <ICompany>req.company;
 
     // Check and create default email template of the company
-    await _createCompanyDefaultEmail(company);
+    await _createCompanyDefaultEmail(company, req.body.emailType);
 
     // const emailDefault = await EmailDefault.findOne({ company, _id: params.emailDefaultId });
-    let emailDefault = await EmailDefault.findOne({ company });
+    let emailDefault = await EmailDefault.findOne({ company, emailType: params.emailType });
 
     emailDefault.subject = subject ?? emailDefault.subject;
     emailDefault.message = message ?? emailDefault.message;
     emailDefault.updatedBy = user;
+    emailDefault.emailType = params.emailType;
     await emailDefault.save();
 
     return res.json({ status: Status.Success, message: 'Company Email Default updated successfully.', emailDefault });
@@ -90,7 +91,7 @@ export const getPlaceholderValues = async (company: ICompany, invoice: IInvoice,
  * ===================================
  */
 
-export const _createCompanyDefaultEmail = async (company: ICompany): Promise<void> => {
+export const _createCompanyDefaultEmail = async (company: ICompany, emailType: EmailTypes): Promise<void> => {
 
     const emailDefault = await EmailDefault.findOne({ company });
 
@@ -98,11 +99,25 @@ export const _createCompanyDefaultEmail = async (company: ICompany): Promise<voi
         return;
     }
 
-    await new EmailDefault({
-        subject: DefaultEmailTemplate.subject,
-        message: DefaultEmailTemplate.message,
-        company
-    }).save();
+    switch (emailType) {
+        case EmailTypes.INCOME_REPORT:
+            await new EmailDefault({
+                subject: DefaultIncomReportEmailTemplate.subject,
+                message: DefaultIncomReportEmailTemplate.message,
+                emailType: EmailTypes.INCOME_REPORT,
+                company
+            }).save()
+            break;
+        case EmailTypes.INVOICE:
+        default:
+            await new EmailDefault({
+                subject: DefaultEmailTemplate.subject,
+                message: DefaultEmailTemplate.message,
+                emailType: EmailTypes.INVOICE,
+                company
+            }).save();
+            break;
+    }
 
     return;
 

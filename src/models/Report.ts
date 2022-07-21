@@ -15,6 +15,13 @@ export enum ReportSources {
     JOB = 2
 }
 
+export interface IReport {
+    totalIncome: number,
+    customerCount: number,
+    jobCount: number,
+    customers?: any[]
+}
+
 export interface IMemorizedReport extends Document {
 
     company: Schema.Types.ObjectId | ICompany

@@ -2102,6 +2102,25 @@ export default function (sio: any) {
     )
 
     router.get(
+        '/generateIncomeReportPdf',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateIncomeReport),
+        reportController.generateIncomeReportPdf
+    )
+
+    router.post(
+        '/sendIncomeReport',
+        passport.authenticate('jwt', { session: false }),
+        uploadInvoices.single('incomeReportPdf'),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateIncomeReport),
+        reportController.sendIncomeReportEmail
+    )
+
+    router.get(
         '/getMemorizedReports',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
@@ -2324,6 +2343,12 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         scriptController.updateQBCustomerJob
+    )
+
+    router.post(
+        '/script/addDefaultEmailTypes',
+        passport.authenticate('jwt', {session: false}),
+        scriptController.addDefaultEmailTypes
     )
 
     router.get(

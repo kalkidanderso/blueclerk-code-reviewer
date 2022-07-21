@@ -1,11 +1,19 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import moment from 'moment';
-
-import { Status } from '../common/constants';
+import fs from 'fs';
+import pdfmake from 'pdfmake';
+import { Messages, Status } from '../common/constants';
 import { Invoice } from '../models/Invoice';
 import { ICustomer } from '../models/Customer';
-import { ReportTypes, ReportData, ReportSources, IncomeReport, MemorizedReport, IIncomeReport, IMemorizedReport, IAllReport } from '../models/Report';
+import { ReportTypes, ReportData, ReportSources, IncomeReport, MemorizedReport, IIncomeReport, IMemorizedReport, IAllReport, IReport } from '../models/Report';
+import { ICompany } from '../models/Company';
+import { INCOME_REPORT_PDF_PATH, INVOICE_FONT_PATH, INVOICE_IMAGE_PATH } from '../common/config';
+import { downloadFileToPath } from './invoice';
+import { sendIncomeReport, uploadFileInS3 } from '../services/aws';
+import { IUser } from '../models/User';
+import { EmailDefault, EmailTypes } from '../models/EmailDefault';
+import { transformPlaceholders, _createCompanyDefaultEmail } from './emailDefault';
 
 
 /**
@@ -152,6 +160,101 @@ export const updateMemorizedReport = async (req: Request, res: Response) => {
     });
 
 }
+
+export const generateIncomeReportPdf = async (req: Request, res: Response) => {
+    const params = req.query;
+    const company = req.company;
+
+    const generatedIncomeReport = await _generateIncomeReportPdf({
+        user: <IUser>req.user,
+        company,
+        params
+    });
+
+    const reportUrl = await uploadFileInS3(generatedIncomeReport.fullPath, 'pdf')
+
+    return res.json({
+        status: Status.Success,
+        reportType: ReportTypes.INCOME,
+        reportData: params.reportData,
+        report: generatedIncomeReport.incomeReport,
+        filter: {
+            ...params,
+            customerIds: params.customerIds && JSON.parse(params.customerIds)
+        },
+        incomeReportUrl: reportUrl
+    });
+}
+
+export const sendIncomeReportEmail = async (req: Request, res: Response) => {
+    const params = req.body;
+    const user = <IUser>req.user;
+    const company = <ICompany>req.company;
+
+    // Retrieve company email default
+    let emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INCOME_REPORT });
+
+    // Create email default if company doesn't have one yet
+    if (!emailDefault) {
+        await _createCompanyDefaultEmail(company, EmailTypes.INCOME_REPORT);
+        emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INCOME_REPORT });
+    }
+
+    await transformPlaceholders(emailDefault);
+    const generateIncomeReport = await _generateIncomeReportPdf({
+        user,
+        company,
+        params
+    });
+
+    const filePath = req.file?.path ?? generateIncomeReport.fullPath;
+    let paramRecipients: string[];
+    let recipientEmails: string[];
+    let copyToMyself: boolean;
+    try {
+        // Handle the stringify array of recipients value
+        if (params.recipients && !Array.isArray(params.recipients)) {
+            paramRecipients = JSON.parse(params.recipients);
+        }
+
+        // Handle the stringify boolean value
+        copyToMyself = params.copyToMyself
+            ? params.copyToMyself === 'false' || params.copyToMyself === false
+                ? false
+                : !!params.copyToMyself
+            : false;
+
+        recipientEmails = paramRecipients?.length > 0
+            ? paramRecipients
+            : [user?.auth?.email];
+
+        // Add the user's email himself if he want to receive copy email
+        if (copyToMyself) {
+            recipientEmails.push(user.auth?.email);
+        }
+    } catch (error) {
+        console.log(error);
+        return res.json({ status: Status.Error, message: Messages.GenericError });
+    }
+
+    // Call AWS SES method
+    await sendIncomeReport({
+        subject: params.subject ?? emailDefault?.subject,
+        message: params.message ?? emailDefault?.message,
+        sender_email: user.auth?.email,
+        company_name: company.info?.companyName,
+        company_email: company.info?.companyEmail,
+        company_logo: company.info?.logoUrl,
+        recipient_emails: recipientEmails,
+        date_range: !(params.startDate && params.endDate) ? 'All Time' : `${moment(params.startDate).format('MMM. DD, YYYY')} - ${moment(params.endDate).format('MMM. DD, YYYY')}`,
+        income_pdf: filePath,
+        income_pdf_name: req.file?.originalname ?? filePath.replace(/^.*[\\\/]/, '')
+    });
+
+    // Update email history and last email sent info
+    return res.json({ status: Status.Success, message: 'Report has been sent successfully.' });
+}
+
 
 
 // ==================================
@@ -339,4 +442,477 @@ const _generateDefaultReportName = async (companyId: string, name: string, memor
 
     return reportName;
 
+}
+
+export const _generateIncomeReportPdf = async ({
+    user,
+    company,
+    params
+}: {
+    user: IUser,
+    company: ICompany,
+    params: any
+}): Promise<{ fullPath: string, incomeReport: IReport }> => {
+
+    let incomeReport: IReport;
+    let reportType: string;
+
+    if (params.reportSource === ReportSources.JOB) {
+        reportType = 'Completed Jobs (Invoiced)'
+    }
+
+    // Generate the income report based on which that requests by user
+    switch (params.reportData) {
+        case ReportData.CUSTOM:
+            incomeReport = await _customIncomeReport(company._id, params);
+            break;
+
+        case ReportData.STANDARD:
+        default:
+            incomeReport = await _standartIncomeReport(company._id, params);
+            break;
+    }
+
+    const fonts = {
+        Roboto: {
+            normal: `${INVOICE_FONT_PATH}/Roboto-Regular.ttf`,
+            bold: `${INVOICE_FONT_PATH}/Roboto-Medium.ttf`,
+            italics: `${INVOICE_FONT_PATH}/Roboto-Thin.ttf`,
+            bolditalics: `${INVOICE_FONT_PATH}/Roboto-MediumItalic.ttf`,
+        }
+    };
+
+    // Initialize PDF Make
+    const pdfMake = new pdfmake(fonts);
+    const generatePdf = await _handleReportPdf({ company, user, startDate: params.startDate, endDate: params.endDate, incomeReport, reportType })
+
+    const fullPath = `${INCOME_REPORT_PDF_PATH}/${Date.now()}.pdf`
+    return new Promise((resolve) => {
+        // Check if folder path exist, create if not
+        if (!fs.existsSync(INCOME_REPORT_PDF_PATH)) {
+            fs.mkdirSync(INCOME_REPORT_PDF_PATH);
+        }
+        // Check if existing Invoice PDF exist, remove if any
+        if (fs.existsSync(fullPath)) {
+            fs.unlinkSync(fullPath);
+        }
+
+        const pdfDoc = pdfMake.createPdfKitDocument(generatePdf);
+        const writeStream = fs.createWriteStream(fullPath);
+        pdfDoc.pipe(writeStream);
+        pdfDoc.end();
+        writeStream.on('finish', resolve);
+    }).then(() => {
+        return { fullPath, incomeReport }
+    })
+}
+
+const _handleReportPdf = async ({
+    company,
+    incomeReport,
+    user,
+    reportType,
+    startDate,
+    endDate
+}: {
+    company: ICompany,
+    incomeReport: IReport,
+    user: IUser,
+    reportType: string,
+    startDate: string,
+    endDate: string
+}): Promise<any> => {
+
+    // Construct Company Address object
+    const companyAddress = {
+        street: company.address?.street ? `${company.address?.street}` : '',
+        city: company.address?.city ? `, ${company.address?.city}` : '',
+        state: company.address?.state ? `, ${company.address?.state}` : '',
+        zipCode: company.address?.zipCode ? `, ${company.address?.zipCode}` : '',
+    }
+
+    // Construct default Company Logo image
+    let companyImage: any = {
+        text: '',
+        fillColor: '#cccccc'
+    }
+
+    if (company.info?.logoUrl) {
+        // Check and download Company Logo to /tmp file
+        await downloadFileToPath(company, company.info.logoUrl, INVOICE_IMAGE_PATH);
+
+        companyImage = {
+            image: 'companyLogo',
+            width: 67,
+            height: 52,
+        }
+    }
+
+    // Construct the header for the Invoice Items
+    const table: any = {
+        headerRows: 1,
+        widths: [44, 202, 40, 86, 40, 86, 35],
+        body: [],
+    }
+
+    // Add Invoice's Items to table template
+    const bodyTable: any = [];
+    if (incomeReport?.customers?.length) {
+        for (const customer of incomeReport.customers) {
+            const customerName = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `${customer.customer?.profile?.displayName ?? ''}`, style: "lineFontBold", alignment: "left" }];
+            const incomeTotal = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `$${customer.total}`, style: "lineFont", alignment: "right" }];
+            bodyTable.push([
+                {},
+                customerName,
+                {},
+                {},
+                {},
+                incomeTotal,
+                {}
+            ]);
+        }
+    }
+
+    bodyTable.push([{}, {}, {}, {}, {}, {}, {}]);
+    for (let i = 0; i < bodyTable.length; i++) {
+        table.body.push(bodyTable[i]);
+    }
+
+    // INITIALIZE PDF TEMPLATE
+    const docDefinition: any = {
+        pageSize: "A4",
+        pageMargins: [0, 0, 70, 30],
+        footer: {
+            columns: [
+                [{
+                    alignment: 'right',
+                    text: ['Report generated by ', { text: user.profile?.displayName, style: "smallFontBold" }, ' at ', { text: moment(new Date()).format('MMM. DD, YYYY'), style: 'smallFontBold' }],
+                    style: 'smallFont'
+                }],
+            ],
+            margin: [0, 0, 40, 0]
+        },
+        content: [
+            {
+                table: {
+                    headerRows: 1,
+                    widths: [48, 67, 100, 100, 203, 73],
+                    body: [
+                        [{}, {}, {}, {}, {}, {}],
+                        [
+                            {},
+                            companyImage,
+                            [{
+                                text: `${company.info?.companyName}`,
+                                fontSize: 8,
+                                alignment: "left",
+                                bold: true,
+                            }, {
+                                text: `\n${company.contact?.phone ?? ''}\n${company.info?.companyEmail ?? ''}\n${companyAddress.street}${companyAddress.city}${companyAddress.state}${companyAddress.zipCode}`,
+                                style: "defaultFont",
+                            }],
+                            {},
+                            [{
+                                text: 'Generated From',
+                                style: 'smallFont',
+                                alignment: 'right'
+                            }, {
+                                text: `${reportType ?? 'Income'}`,
+                                style: 'defaultFont',
+                                alignment: 'right'
+                            }],
+                            {}
+                        ],
+                        [{}, {}, {}, {}, {}, {}],
+                    ],
+                },
+                fillColor: '#EAECF3',
+                layout: 'noBorders'
+            },
+            {
+                //   layout: 'lightHorizontalLines', // optional
+                table: {
+                    // headers are automatically repeated if the table spans over multiple pages
+                    // you can declare how many rows should be treated as headers
+                    headerRows: 2,
+                    widths: [48, 85, 110, 70, 63, 50, 74, 70],
+                    body: [
+
+                        [
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {}
+                        ],
+                        [
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {}
+                        ],
+                        [
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {}
+                        ],
+                        [
+                            {},
+                            {
+                                //   border: [false, false, false, false],
+                                text: "REVENUE FROM",
+                                style: "smallFont",
+                            },
+                            {
+                                text: "PERIOD",
+                                style: "smallFont",
+                                alignment: "left"
+                            },
+                            {},
+                            {},
+                            { text: 'TOTAL REVENUE', style: 'defaultFont', colSpan: 2, alignment: 'right' },
+                            {},
+                            {}
+                        ],
+                        [
+                            {},
+                            {
+                                text: 'Income', style: 'defaultFont', alignment: 'left'
+                            },
+                            {
+                                text: !(startDate && endDate) ? 'All Time' : `${moment(startDate).format('MMM. DD, YYYY')} - ${moment(endDate).format('MMM. DD, YYYY')}`,
+                                style: "defaultFont",
+                                alignment: "left",
+                            },
+                            {},
+                            {},
+                            { text: `$ ${incomeReport.totalIncome}`, fontSize: 14, bold: true, colSpan: 2, rowSpan: 2, alignment: 'right' },
+                            {},
+                            {}
+                        ],
+                        [
+                            {},
+                            [
+                                {},
+                                {},
+                                {}
+                            ],
+                            [{}, {}],
+
+                            {},
+                            {},
+                            {},
+                            {},
+                            {}
+                        ],
+                        [
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {}
+                        ],
+                        [
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {}
+                        ],
+                        [
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {}
+                        ],
+                    ],
+                },
+                fillColor: '#EAECF3',
+                layout: 'noBorders'
+            },
+
+            {
+                table: {
+                    // headers are automatically repeated if the table spans over multiple pages
+                    // you can declare how many rows should be treated as headers
+                    headerRows: 2,
+                    widths: [48, 85, 110, 70, 63, 50, 74, 70],
+                    body: [
+                        [
+                            {},
+                            [{
+                                //   border: [false, false, false, false],
+                                text: "INVOICED",
+                                style: "smallFont",
+                            }, {
+                                text: `$${incomeReport.totalIncome}`, style: "lineFontBold", align: "left"
+                            }],
+                            [{
+                                text: "CUSTOMERS",
+                                style: "smallFont",
+                                alignment: "left",
+                            }, {
+                                text: `${incomeReport.customerCount}`,
+                                style: "lineFontBold",
+                                alignment: "left",
+                            }],
+                            [{
+                                text: "JOBS",
+                                style: "smallFont",
+                                alignment: "left"
+
+                            }, {
+                                text: `${incomeReport.jobCount}`,
+                                style: "lineFontBold",
+                                alignment: "left",
+                            }],
+                            {},
+                            {},
+                            {},
+                            {}
+                        ],
+                        [
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {},
+                            {}
+                        ],
+                    ],
+                },
+                layout: {
+                    hLineWidth: function (i: number, node: { table: { body: string | any[]; }; }) {
+                        return i === 0 || i === node.table.body.length ? 0 : 1;
+                    },
+                    vLineWidth: function (i: number, node: { table: { widths: string | any[]; }; }) {
+                        return i === 0 || i === node.table.widths.length ? 0 : 1;
+                    },
+                    vLineColor: function (i: number, node: { table: { widths: string | any[]; }; }) {
+                        return i === 0 || i === node.table.widths.length ? "black" : "white";
+                    },
+                    hLineColor: function (i: number, node: { table: { body: string | any[]; }; }) {
+                        return i === 0 || i === node.table.body.length
+                            ? "#d0d3dc"
+                            : "#eeeeee";
+                    },
+                },
+            },
+            {
+                table,
+                layout: {
+                    hLineWidth: function (i: number, node: { table: { body: string | any[]; }; }) {
+                        return i === 0 || i === node.table.body.length ? 0 : 1;
+                    },
+                    vLineWidth: function (i: number, node: { table: { widths: string | any[]; }; }) {
+                        return i === 0 || i === node.table.widths.length ? 0 : 1;
+                    },
+                    vLineColor: function (i: number, node: { table: { widths: string | any[]; }; }) {
+                        return i === 0 || i === node.table.widths.length ? "black" : "white";
+                    },
+                    hLineColor: function (i: number, node: { table: { body: string | any[]; }; }) {
+                        return i === 0 || i === node.table.body.length
+                            ? "#d0d3dc"
+                            : "#eeeeee";
+                    },
+                },
+            }
+        ],
+        styles: {
+            header: {
+                fontSize: 18,
+                bold: true,
+            },
+            bigger: {
+                fontSize: 15,
+                italics: true,
+            },
+            subheader: {
+                fontSize: 15,
+                bold: true,
+            },
+            quote: {
+                italics: true,
+            },
+            smallFont: {
+                italics: true,
+                fontSize: 7,
+                lineHeight: 1.2,
+            },
+            smallFontBold: {
+                bold: true,
+                italics: true,
+                fontSize: 7,
+                lineHeight: 1.2,
+            },
+            defaultFont: {
+                bold: false,
+                fontSize: 8,
+                weight: 100,
+                lineHeight: 1.2,
+            },
+            defaultFontBold: {
+                bold: true,
+                fontSize: 8,
+                weight: 100,
+                lineHeight: 1.2,
+            },
+            lineFont: {
+                bold: false,
+                fontSize: 10,
+                weight: 100,
+                lineHeight: 1.2,
+            },
+            lineFontBold: {
+                bold: true,
+                fontSize: 10,
+                weight: 100,
+                lineHeight: 1.2,
+            },
+            tableFont: {
+                bold: false,
+                fontSize: 16,
+                weight: 100,
+                lineHeight: 1.2,
+            },
+            tableHeader: {
+                bold: true,
+                fontSize: 13,
+                color: "black",
+            },
+        },
+        defaultStyle: {
+            columnGap: 10,
+            font: "Roboto",
+        },
+        images: {
+            companyLogo: `${INVOICE_IMAGE_PATH}/${company.info.companyName.replace(/\s+/g, '').toLowerCase()}.jpg`
+        },
+    };
+
+    return docDefinition;
 }

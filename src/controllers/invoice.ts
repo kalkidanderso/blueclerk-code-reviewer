@@ -27,7 +27,7 @@ import { IPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
 import { Payment, PaymentCustomer } from '../models/Payment';
 import { IInvoice, IQBInvoice, Invoice } from '../models/Invoice';
 import { IScan, Scan } from '../models/Scan';
-import { EmailDefault } from '../models/EmailDefault';
+import { EmailDefault, EmailTypes } from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer, uploadFileInS3 } from '../services/aws';
 import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer';
@@ -1899,12 +1899,12 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     const customer = <ICustomer>invoice.customer;
 
     // Retrieve company email default
-    let emailDefault = await EmailDefault.findOne({ company });
+    let emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
 
     // Create email default if company doesn't have one yet
     if (!emailDefault) {
-        await _createCompanyDefaultEmail(company);
-        emailDefault = await EmailDefault.findOne({ company });
+        await _createCompanyDefaultEmail(company, EmailTypes.INVOICE);
+        emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
     }
 
     /**
@@ -1980,7 +1980,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
     // Retrieve company email default
     const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
-    const emailDefault = await EmailDefault.findOne({ company });
+    const emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
 
     // Generate Invoice PDF
     await _generateInvoicePdf(company, invoice);
