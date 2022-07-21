@@ -33,7 +33,19 @@ export const validate = (validations: ValidationChain[]) => {
 
 export const Validations = {
   //Auth
-  signUp: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('password').exists(), check('companyName').exists(), check('industryId').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
+  signUp: [
+    check('accountType').optional().isInt().toInt().withMessage('has to be interger'),
+    check('email').exists().withMessage(Messages.Required),
+    check('email').isEmail().withMessage('not in email format'),
+    check('password').exists().withMessage(Messages.Required),
+    check('firstName').exists().withMessage(Messages.Required),
+    check('lastName').exists().withMessage(Messages.Required),
+    check('phone').exists().withMessage(Messages.Required),
+    check('industryId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })
+  ],
 
   login: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
@@ -91,7 +103,7 @@ export const Validations = {
   getCompanyCustomer: [
     check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
     check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('status').optional().isInt({ min: 0, max: 4}).toInt().withMessage('status has to be number with value between 0 and 4'),
+    check('status').optional().isInt({ min: 0, max: 4 }).toInt().withMessage('status has to be number with value between 0 and 4'),
     check('isPreferred').optional().isBoolean().toBoolean()
   ],
 
@@ -532,9 +544,20 @@ export const Validations = {
 
   // REPORT
   generateIncomeReport: [
+    check('reportData').exists().withMessage(Messages.Required),
+    check('reportData').isInt().toInt().withMessage('has to be number'),
+    check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+  ],
+
+  createMemorizedReport: [
     check('reportType').exists().withMessage(Messages.Required),
     check('reportType').isInt().toInt().withMessage('has to be number'),
     check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+  ],
+
+  updateMemorizedReport: [
+    check('memorizedReportId').exists().withMessage(Messages.Required),
+    check('memorizedReportId').isMongoId().withMessage(Messages.WrongId)
   ],
 
   // Code Location

@@ -3351,8 +3351,10 @@ export const voidInvoice = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Invoice already voided.' });
     }
 
-    const payment = await Payment.findOne({ invoice: invoice._id });
-    if (payment || invoice.status !== InvoiceStatus.UNPAID) {
+    // TODO: Check more properly for all possible payments ?
+    // const payment = await Payment.findOne({ invoice: invoice._id });
+    // if (payment || invoice.status !== InvoiceStatus.UNPAID) {
+    if (invoice.status !== InvoiceStatus.UNPAID) {
         return res.json({ status: Status.Error, message: 'Invoice already paid or partially paid, cannot void this invoice.' });
     }
 
@@ -3391,7 +3393,38 @@ export const voidInvoice = async (req: Request, res: Response) => {
 export const generateInvoicePdf = async (req: Request, res: Response) => {
     const params = req.query;
     const company = <ICompany>req.company;
-    const invoice = await Invoice.findOne({ _id: params.invoiceId, customer: params.customerId, company: company._id });
+    const invoice = await Invoice
+        .findOne({ _id: params.invoiceId, customer: params.customerId, company: company._id })
+        .populate({
+            path: 'job',
+            populate: [
+                { path: 'type', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+                { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
+                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
+                { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
+                { path: 'jobLocation', select: 'name location address' },
+                { path: 'jobSite', select: 'name location address' }
+            ],
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address contact contactName'
+        })
+        .populate({
+            path: 'customerContactId',
+            select: '-__v'
+        })
+        .populate({
+            path: 'paymentTerm',
+            select: '-company -__v'
+        })
+        .populate({
+            path: 'items.item',
+            select: 'name description sku isJobType isFixed charges tax',
+            populate: [{ path: 'jobType' }]
+        })
 
     if (!invoice) {
         return res.json({ status: Status.NotFound, message: 'Invoice not found' });

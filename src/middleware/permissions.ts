@@ -223,7 +223,7 @@ export const checkUserPermissions = (permissionId : number) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
-                    if(employee.extraPermissions != undefined ){
+                    if (employee?.extraPermissions) {
 
                         if(employee.extraPermissions.on.includes(permissionId)) {
                             next()

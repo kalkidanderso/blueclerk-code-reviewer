@@ -1,11 +1,13 @@
 import mongoose, {Document, Mongoose, Schema} from 'mongoose'
+import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken'
-import { Role } from '../common/constants'
+import { Role, AccountTypes } from '../common/constants'
 import bcrypt from "bcrypt-nodejs"
 import moment from 'moment'
 
 export interface IUser extends Document {
 
+    accountType?: AccountTypes
     auth: {
         email: string
         password: string
@@ -49,12 +51,16 @@ export interface IUser extends Document {
 
     hashPassword: (password: string, next: (err?: any, hash?: string)=>void)=>void
     comparePassword: (password: string, next: (isMatch: boolean)=>void)=>void
-    jwt: ()=>string
+    jwt: (req: Request) => string
 
 }
 
 const UserSchema = new Schema({
 
+    accountType: {
+        type: Number,
+        enum: Object.values(AccountTypes)
+    },
     auth: {
         email: { type: String, unique: true },
         password: { type: String },
@@ -130,7 +136,7 @@ const UserSchema = new Schema({
     commission: {
         type: Number,
         default: null
-    }
+    },
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
 UserSchema.pre('save', async function(next) {
@@ -197,14 +203,15 @@ UserSchema.methods.comparePassword = function(password: string, next: (isMatch: 
 
 }
 
-UserSchema.methods.jwt = function() {
+UserSchema.methods.jwt = function(req: Request) {
 
     const user = this as IUser
-
+    console.log('sessionID', req.sessionID);
     const token = jwt.sign(
         {
             iss: "http://api.blueclerk.com",
             id: user._id,
+            sessionID: req.sessionID
         },
         process.env.jwt_encryption,
         {

@@ -3,13 +3,9 @@
   "info": {
     "title": "BlueClerk",
     "description": "APIs for both app and website",
-    "version": "1.0.1"
+    "version": "2.2.1"
   },
-  "servers": [
-    {
-      "url": "https://blueclerk-node-api.deploy.blueclerk.com/api/v1"
-    }
-  ],
+  "servers": [],
   "tags": [
     {
       "name": "Auth",
@@ -257,41 +253,69 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "companyName",
+                  "accountType",
                   "email",
-                  "firstName",
-                  "industryId",
-                  "lastName",
                   "password",
+                  "firstName",
+                  "lastName",
                   "phone"
                 ],
                 "properties": {
+                  "accountType": {
+                    "type": "string",
+                    "enum": [
+                      1,
+                      2,
+                      4,
+                      5
+                    ],
+                    "description": "1 => SERVICE PROVIDER, 2 => BUILDER, 4 => INDEPENDENT CONTRACTOR, 5 => COMPANY (old company signup)"
+                  },
                   "email": {
                     "type": "string",
-                    "description": "email address of admin of a company"
+                    "description": "Email address of the user login"
                   },
                   "password": {
                     "type": "string",
-                    "description": "password for company admin login"
+                    "description": "Password for the user login"
                   },
                   "firstName": {
                     "type": "string",
-                    "description": "first Name of admin of company"
+                    "description": "First name of the user"
                   },
                   "lastName": {
                     "type": "string",
-                    "description": "last Name of admin of company"
+                    "description": "Last name of the user"
                   },
                   "phone": {
                     "type": "string",
-                    "description": "phone number of admin of company"
+                    "description": "Phone number of the user"
                   },
                   "companyName": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "**REQUIRED when** accountType is 5 (COMPANY) for old company signup"
                   },
                   "industryId": {
                     "type": "string",
-                    "description": "Id of the selected industry from the industries fetched with /getIndustries api"
+                    "description": "Id of the selected industry from the industries fetched with /getIndustries API"
+                  },
+                  "companyId": {
+                    "type": "string",
+                    "description": "**REQUIRED when** accountType is 1 (SERVICE PROVIDER)"
+                  },
+                  "customerId": {
+                    "type": "string",
+                    "description": "**REQUIRED when** accountType is 2 (BUILDER)"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "OfficeAdmin",
+                      "Technician",
+                      "Manager",
+                      "Admin"
+                    ],
+                    "description": "Used for Company's employee role"
                   },
                   "isci": {
                     "type": "boolean",
@@ -319,6 +343,89 @@
             }
           }
         }
+      }
+    },
+    "/getAllCompanies": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Search for companies",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/getAllCustomers": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Search for customers",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout for all kind user",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
       }
     },
     "/searchContractor": {
@@ -10758,7 +10865,7 @@
         "summary": "To generate standard and custom income report",
         "parameters": [
           {
-            "name": "reportType",
+            "name": "reportData",
             "in": "query",
             "required": true,
             "description": "1 => Standard Report; 2 => Custom Report",
@@ -10798,6 +10905,203 @@
             "description": "Filter report by end of invoice's issued date"
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getMemorizedReports": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "Returns list of all memorized reports that the company saved",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getMemorizedReport": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "Return detail of one memorized report",
+        "parameters": [
+          {
+            "name": "memorizedReportId",
+            "in": "query",
+            "description": "ID of the memorized report",
+            "scema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createMemorizedReport": {
+      "post": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To memorized a custom report",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reportType"
+                ],
+                "properties": {
+                  "reportType": {
+                    "type": "number",
+                    "description": "1 => Income Report",
+                    "enum": [1]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "reportData": {
+                    "type": "number",
+                    "description": "1 => Standard Report; 2 => Custom Report",
+                    "enum": [1, 2]
+                  },
+                  "reportSource": {
+                    "type": "number",
+                    "description": "1 => Invoice; 2 => Job",
+                    "enum": [1, 2]
+                  },
+                  "customerIds": {
+                    "type": "string",
+                    "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]"
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter report by start of invoice's issued date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter report by end of invoice's issued date"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateMemorizedReport": {
+      "put": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To update a memorized custom report",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "memorizedReportId"
+                ],
+                "properties": {
+                  "memorizedReportId": {
+                    "type": "string",
+                    "description": "ID of memorized report to be updated"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "reportData": {
+                    "type": "number",
+                    "description": "1 => Standard Report; 2 => Custom Report",
+                    "enum": [1, 2]
+                  },
+                  "reportSource": {
+                    "type": "number",
+                    "description": "1 => Invoice; 2 => Job",
+                    "enum": [1, 2]
+                  },
+                  "customerIds": {
+                    "type": "string",
+                    "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]"
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter report by start of invoice's issued date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter report by end of invoice's issued date"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Success",

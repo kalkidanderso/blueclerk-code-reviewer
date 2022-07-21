@@ -52,7 +52,8 @@ export const enum Role {
     ADMIN_EMPLOYEE,
     GLOBAL_ADMIN,
     CUSTOMER,
-    CUSTOMER_CONTACT
+    CUSTOMER_CONTACT,
+    CONTRACTOR
 }
 
 export const enum OrderStatus {
@@ -143,6 +144,14 @@ export const enum EmployeeStatus {
 export const enum CompanyType {
     SUBSCRIBED,
     FREE,
+}
+
+export enum AccountTypes {
+    SERVICE_PROVIDER = 1, // Company Employee
+    BUILDER = 2, // Customer Contact
+    SUPPLIER = 3, // Window Supplier, BFS, Throphy
+    CONTRACTOR = 4, // Independent Contractor
+    COMPANY = 5
 }
 
 export enum NotificationTypes {

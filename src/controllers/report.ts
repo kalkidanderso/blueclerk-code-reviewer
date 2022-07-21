@@ -5,30 +5,35 @@ import moment from 'moment';
 import { Status } from '../common/constants';
 import { Invoice } from '../models/Invoice';
 import { ICustomer } from '../models/Customer';
-import { ReportTypes, ReportSources } from '../models/Report';
+import { ReportTypes, ReportData, ReportSources, IncomeReport, MemorizedReport, IIncomeReport, IMemorizedReport, IAllReport } from '../models/Report';
 
+
+/**
+ * Generate Report with reportType 1 (INCOME)
+ */
 export const generateIncomeReport = async (req: Request, res: Response) => {
 
     const params = req.query;
     const companyId = req.companyId;
-    let reportData;
+    let incomeReport;
 
     // Generate the income report based on which that requests by user
-    switch (params.reportType) {
-        case ReportTypes.CUSTOM:
-            reportData = await _customIncomeReport(companyId, params);
+    switch (params.reportData) {
+        case ReportData.CUSTOM:
+            incomeReport = await _customIncomeReport(companyId, params);
             break;
 
-        case ReportTypes.STANDARD:
+        case ReportData.STANDARD:
         default:
-            reportData = await _standartIncomeReport(companyId, params);
+            incomeReport = await _standartIncomeReport(companyId, params);
             break;
     }
 
     return res.json({
         status: Status.Success,
-        reportType: params.reportType,
-        report: reportData,
+        reportType: ReportTypes.INCOME,
+        reportData: params.reportData,
+        report: incomeReport,
         filter: {
             ...params,
             customerIds: params.customerIds && JSON.parse(params.customerIds)
@@ -36,6 +41,123 @@ export const generateIncomeReport = async (req: Request, res: Response) => {
     });
 
 }
+
+/**
+ * Retrieve all Memorized Reports by the Company
+ */
+export const getMemorizedReports = async (req: Request, res: Response) => {
+
+    const companyId = req.companyId;
+
+    const memorizedReports = await MemorizedReport.find({ company: companyId });
+
+    return res.json({ status: Status.Success, memorizedReports });
+
+}
+
+/**
+ * Retrieve one detail Memorized Report by the ID
+ */
+export const getMemorizedReport = async (req: Request, res: Response) => {
+
+    const params = req.query;
+    const companyId = req.companyId;
+
+    const memorizedReport = await MemorizedReport.findOne({ _id: params.memorizedReportId, company: companyId });
+
+    if (!memorizedReport) {
+        return res.json({ status: Status.Error, message: 'Memorized report not found' });
+    }
+
+    return res.json({ status: Status.Success, memorizedReport });
+
+}
+
+/**
+ * Memorized a new Custom Report
+ */
+export const createMemorizedReport = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const companyId = req.companyId;
+
+    // Use params name or generate a default report name
+    const reportName = await _generateDefaultReportName(companyId, params.name, null);
+
+    let memorizedReport;
+
+    // Memorized the report by the Report Type
+    switch (params.reportType) {
+        case ReportTypes.INCOME:
+        default:
+            // INCOME REPORT TYPE
+            memorizedReport = await new IncomeReport({
+                company: companyId,
+                reportType: ReportTypes.INCOME,
+                name: reportName,
+                ...params
+            }).save();
+            break;
+    }
+
+    return res.json({
+        status: Status.Success,
+        message: 'Custom report memorized successfully.',
+        reportType: params.reportType,
+        memorizedReport
+    });
+
+}
+
+/**
+ * Update one Memorized Report by the ID
+ */
+export const updateMemorizedReport = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const companyId = req.companyId;
+
+    // Find and check the memorized report
+    let memorizedReport: IAllReport = await MemorizedReport.findOne({ company: companyId, _id: params.memorizedReportId });
+    if (!memorizedReport) {
+        return res.json({ status: Status.Error, message: 'Memorized report not found' });
+    }
+
+    // Use params name or generate a default report name
+    const reportName = await _generateDefaultReportName(companyId, params.name, memorizedReport._id);
+
+    // Memorized the report by the Report Type
+    switch (memorizedReport.reportType) {
+        case ReportTypes.INCOME:
+        default:
+            // INCOME REPORT TYPE
+            const memorizedIncomeReport = <IIncomeReport>memorizedReport;
+
+            memorizedIncomeReport.name = reportName;
+            memorizedIncomeReport.reportData = params.reportData;
+            memorizedIncomeReport.reportSource = params.reportSource;
+            memorizedIncomeReport.customerIds = params.customerIds;
+            memorizedIncomeReport.startDate = params.startDate;
+            memorizedIncomeReport.endDate = params.endDate;
+            await memorizedIncomeReport.save();
+
+            break;
+    }
+
+    return res.json({
+        status: Status.Success,
+        message: 'Memorized report updated successfully.',
+        reportType: memorizedReport.reportType,
+        memorizedReport
+    });
+
+}
+
+
+// ==================================
+//     [ PARTIAL METHODS BELOW ]
+// ==================================
+
 
 /**
  * Generate standard income report,
@@ -194,5 +316,27 @@ const _generateIncomeReport = async (companyId: string, params: any) => {
         customersAggregate,
         jobsAggregate
     }
+
+}
+
+/**
+ * Generate default report name,
+ * when params.name is not provided
+ */
+const _generateDefaultReportName = async (companyId: string, name: string, memorizedReportId: string): Promise<string> => {
+
+    const defaultNameFormat = 'Memorized Report #';
+    let reportName = name;
+
+    if (!name) {
+        const existingReportCount = await MemorizedReport.find({
+            company: companyId,
+            name: { $regex: defaultNameFormat },
+            _id: { $nin: [memorizedReportId] }
+        }).countDocuments();
+        reportName = `${defaultNameFormat}${existingReportCount + 1}`;
+    }
+
+    return reportName;
 
 }
