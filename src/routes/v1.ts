@@ -887,6 +887,16 @@ export default function (sio: any) {
         jobController.editJob
     )
 
+    router.put(
+        '/updateJobRequestStatus',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Update),
+        validate(Validations.updateJoBRequestStatus),
+        jobController.updateJobRequestStatus
+    )
+
     router.post(
         '/updateJobTechnicianStatus',
         passport.authenticate('jwt', { session: false }),

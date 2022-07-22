@@ -8473,6 +8473,64 @@
         ]
       }
     },
+    "/updateJobRequestStatus": {
+      "put": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "To edit job request status",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "jobRequestId",
+                  "status"
+                ],
+                "properties": {
+                  "jobRequestId": {
+                    "type": "string",
+                    "description": "Id of job request to edit"
+                  },
+                  "status": {
+                    "type": "number",
+                    "enum": [
+                      4,
+                      5
+                    ],
+                    "description": "Id of job status as number from one of these (ACCEPTED => 4, REJECTED => 5)."
+                  },
+                  "note": {
+                    "type": "string",
+                    "description": "**Required** when status is REJECTED => 5"
+                  }
+                }
+              }
+            }
+          },
+          "required": true,
+          "allowEmptyValue": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/updateJobTechnicianStatus": {
       "post": {
         "tags": [
@@ -10871,7 +10929,10 @@
             "description": "1 => Standard Report; 2 => Custom Report",
             "schema": {
               "type": "number",
-              "enum": [1, 2]
+              "enum": [
+                1,
+                2
+              ]
             }
           },
           {
@@ -10880,7 +10941,10 @@
             "description": "1 => Invoice; 2 => Job",
             "schema": {
               "type": "number",
-              "enum": [1, 2]
+              "enum": [
+                1,
+                2
+              ]
             }
           },
           {
@@ -11002,7 +11066,9 @@
                   "reportType": {
                     "type": "number",
                     "description": "1 => Income Report",
-                    "enum": [1]
+                    "enum": [
+                      1
+                    ]
                   },
                   "name": {
                     "type": "string"
@@ -11010,12 +11076,18 @@
                   "reportData": {
                     "type": "number",
                     "description": "1 => Standard Report; 2 => Custom Report",
-                    "enum": [1, 2]
+                    "enum": [
+                      1,
+                      2
+                    ]
                   },
                   "reportSource": {
                     "type": "number",
                     "description": "1 => Invoice; 2 => Job",
-                    "enum": [1, 2]
+                    "enum": [
+                      1,
+                      2
+                    ]
                   },
                   "customerIds": {
                     "type": "string",
@@ -11078,12 +11150,18 @@
                   "reportData": {
                     "type": "number",
                     "description": "1 => Standard Report; 2 => Custom Report",
-                    "enum": [1, 2]
+                    "enum": [
+                      1,
+                      2
+                    ]
                   },
                   "reportSource": {
                     "type": "number",
                     "description": "1 => Invoice; 2 => Job",
-                    "enum": [1, 2]
+                    "enum": [
+                      1,
+                      2
+                    ]
                   },
                   "customerIds": {
                     "type": "string",

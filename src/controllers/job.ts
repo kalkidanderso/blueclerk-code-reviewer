@@ -30,7 +30,6 @@ import { _handleJobTypesJson } from '../controllers/item';
 import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
 import { _handleNotification } from '../controllers/notification';
 import { IJobRequest, JobRequest } from '../models/JobRequest';
-import { convertCompilerOptionsFromJson } from 'typescript';
 
 /**
  * 04-22-2022
@@ -2758,6 +2757,55 @@ export const editJob = async (req: Request, res: Response) => {
         }
     );
 }
+
+export const updateJobRequestStatus = async (req: Request, res: Response) => {
+    const params = req.body;
+    let companyId = req.companyId;
+    let jobRequestAction = '';
+
+    const user = <IUser>req.user;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+
+    const jobRequest = await JobRequest.findOne({ _id: params.jobRequestId, company: companyId });
+    if (!jobRequest) {
+        return res.json({ status: Status.NotFound, message: 'Job request not found' });
+    }
+
+    if (jobRequest.status !== JobRequestStatus.PENDING) {
+        return res.json({ status: Status.Error, message: 'Cannot update non pending job request' });
+    }
+
+    const job = await Job.findOne({ request: jobRequest._id });
+    switch (params.status) {
+        case JobRequestStatus.REJECTED:
+            if (job && jobRequest.jobCreated) {
+                return res.json({ status: Status.Error, message: 'Cannot reject job request when have active job' })
+            }
+
+            if (!params.note) {
+                return res.json({ status: Status.Error, message: 'Note is required when you rejected job request' });
+            }
+
+            jobRequestAction = `|Rejecting the job request by ${user.profile.displayName}|`;
+            jobRequest.status = params.status;
+            break;
+
+        case JobRequestStatus.ACCEPTED:
+            jobRequestAction = `|Accepting the job request by ${user.profile.displayName}|`;
+            jobRequest.status = params.status;
+            break;
+        default:
+            return res.json({ status: Status.Error, message: 'Type is required' })
+    }
+
+    jobRequest.track.push({ action: jobRequestAction, date: new Date(), note: params.note, user: user._id });
+    await jobRequest.save();
+
+    return res.json({ status: Status.Success, message: 'job request status updated', jobRequest });
+}
+
 
 export const getJobDetails = (req: Request, res: Response) => {
 
