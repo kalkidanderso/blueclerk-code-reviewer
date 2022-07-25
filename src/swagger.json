@@ -2753,6 +2753,7 @@
           {
             "name": "emailType",
             "in": "query",
+            "description": "Default to \"INVOICE\" if not provided",
             "schema": {
               "type": "string",
               "enum": [
@@ -10990,6 +10991,47 @@
             "name": "endDate",
             "in": "query",
             "description": "Filter report by end of invoice's issued date"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getIncomeReportEmailTemplate": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "Get the income report email template before send the email",
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

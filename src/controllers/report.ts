@@ -13,7 +13,7 @@ import { downloadFileToPath } from './invoice';
 import { sendIncomeReport, uploadFileInS3 } from '../services/aws';
 import { IUser } from '../models/User';
 import { EmailDefault, EmailTypes } from '../models/EmailDefault';
-import { transformPlaceholders, _createCompanyDefaultEmail } from './emailDefault';
+import { getPlaceholderValues, transformPlaceholders, _createCompanyDefaultEmail } from './emailDefault';
 
 
 /**
@@ -177,12 +177,42 @@ export const generateIncomeReportPdf = async (req: Request, res: Response) => {
         status: Status.Success,
         reportType: ReportTypes.INCOME,
         reportData: params.reportData,
+        incomeReportUrl: reportUrl,
         report: generatedIncomeReport.incomeReport,
         filter: {
             ...params,
             customerIds: params.customerIds && JSON.parse(params.customerIds)
         },
-        incomeReportUrl: reportUrl
+    });
+}
+
+export const getIncomeReportEmailTemplate = async (req: Request, res: Response) => {
+    const params = req.query;
+    const company = <ICompany>req.company;
+    let emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INCOME_REPORT });
+
+    // Create email default if company doesn't have one yet
+    if (!emailDefault) {
+        await _createCompanyDefaultEmail(company, EmailTypes.INCOME_REPORT);
+        emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INCOME_REPORT });
+    }
+
+    /**
+     * Transfrom the email default placeholder symbol to fit Javascript Template Literal,
+     * '{{' become '${' & '}}' become '}'
+     */
+    const dateRange = !(params.startDate && params.endDate) ? 'All Time' : `${moment(params.startDate).format('MMM. DD, YYYY')} - ${moment(params.endDate).format('MMM. DD, YYYY')}`
+    await transformPlaceholders(emailDefault);
+    // Get available placeholder values for Invoice email template
+    const { company_name, company_email, date_range } = await getPlaceholderValues({ company, dateRange });
+
+    return res.json({
+        status: Status.Success,
+        emailTemplate: {
+            from: company_email,
+            subject: eval('`' + emailDefault.subject + '`'),
+            message: eval('`' + emailDefault.message + '`')
+        },
     });
 }
 

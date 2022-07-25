@@ -70,17 +70,28 @@ export const transformPlaceholders = async (emailDefault: IEmailDefault): Promis
 /**
  * Get available placeholder values for Invoice email template
  */
-export const getPlaceholderValues = async (company: ICompany, invoice: IInvoice, customer: ICustomer): Promise<any> => {
+export const getPlaceholderValues = async ({
+    company,
+    invoice,
+    customer,
+    dateRange
+}: {
+    company: ICompany,
+    invoice?: IInvoice,
+    customer?: ICustomer,
+    dateRange?: string
+}): Promise<any> => {
 
     const company_name = company.info?.companyName ?? '';
     const company_email = company.info?.companyEmail ?? '';
-    const customer_name = customer.profile?.displayName ?? '';
-    const customer_email = customer.info?.email ?? '';
-    const invoice_number = invoice.invoiceId ?? '';
-    const invoice_amount = `$${invoice.total ?? ''}`;
-    const invoice_due_date = moment(invoice.dueDate ?? '').format('MMMM DD, YYYY');
+    const customer_name = customer?.profile?.displayName ?? '';
+    const customer_email = customer?.info?.email ?? '';
+    const invoice_number = invoice?.invoiceId ?? '';
+    const invoice_amount = `$${invoice?.total ?? ''}`;
+    const invoice_due_date = moment(invoice?.dueDate ?? '').format('MMMM DD, YYYY');
+    const date_range = dateRange ?? '';
 
-    return { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date };
+    return { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date, date_range };
 
 }
 
@@ -93,7 +104,7 @@ export const getPlaceholderValues = async (company: ICompany, invoice: IInvoice,
 
 export const _createCompanyDefaultEmail = async (company: ICompany, emailType: EmailTypes): Promise<void> => {
 
-    const emailDefault = await EmailDefault.findOne({ company });
+    const emailDefault = await EmailDefault.findOne({ company, emailType: emailType ?? EmailTypes.INVOICE });
 
     if (emailDefault) {
         return;

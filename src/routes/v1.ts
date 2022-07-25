@@ -2110,6 +2110,14 @@ export default function (sio: any) {
         reportController.generateIncomeReportPdf
     )
 
+    router.get(
+        '/getIncomeReportEmailTemplate',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        reportController.getIncomeReportEmailTemplate
+    )
+
     router.post(
         '/sendIncomeReport',
         passport.authenticate('jwt', { session: false }),

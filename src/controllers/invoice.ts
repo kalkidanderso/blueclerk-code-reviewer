@@ -1914,7 +1914,7 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     await transformPlaceholders(emailDefault);
 
     // Get available placeholder values for Invoice email template
-    const { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date } = await getPlaceholderValues(company, invoice, customer);
+    const { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date } = await getPlaceholderValues({ company, invoice, customer });
 
     return res.json({
         status: Status.Success,

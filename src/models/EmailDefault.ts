@@ -21,7 +21,7 @@ export const DefaultEmailTemplate = {
 
 export const DefaultIncomReportEmailTemplate = {
     subject: 'Income report of {{company_name}}',
-    message: 'Hello,\n\nPlease see your Income Report attached for this period: {{date_range}}.'
+    message: 'Hello,\n\nPlease see your Income Report attached for this period: {{date_range}}.\n\n{{small_company_logo}}'
 }
 
 export enum EmailTypes {
