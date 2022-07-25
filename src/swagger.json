@@ -11021,6 +11021,23 @@
                     "type": "string",
                     "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]"
                   },
+                  "periodOption": {
+                    "type": "string",
+                    "description": "Filter report by preset period option",
+                    "enum": [
+                      "recent",
+                      "lastWeek",
+                      "lastWeekToDate",
+                      "lastMonth",
+                      "lastMonthToDate",
+                      "thisQuarter",
+                      "thisQuarterToDate",
+                      "lastYear",
+                      "lastYearToDate",
+                      "thisYear",
+                      "thisYearToDate"
+                    ]
+                  },
                   "startDate": {
                     "type": "string",
                     "description": "Filter report by start of invoice's issued date"
@@ -11088,6 +11105,23 @@
                   "customerIds": {
                     "type": "string",
                     "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]"
+                  },
+                  "periodOption": {
+                    "type": "string",
+                    "description": "Filter report by preset period option",
+                    "enum": [
+                      "recent",
+                      "lastWeek",
+                      "lastWeekToDate",
+                      "lastMonth",
+                      "lastMonthToDate",
+                      "thisQuarter",
+                      "thisQuarterToDate",
+                      "lastYear",
+                      "lastYearToDate",
+                      "thisYear",
+                      "thisYearToDate"
+                    ]
                   },
                   "startDate": {
                     "type": "string",
