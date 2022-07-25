@@ -81,6 +81,21 @@ export const createMemorizedReport = async (req: Request, res: Response) => {
     const params = req.body;
     const companyId = req.companyId;
 
+    // To handle stringified params customerIds
+    params.customerIds = params.customerIds ?? [];
+    try {
+        if (!Array.isArray(params.customerIds)) {
+            params.customerIds = JSON.parse(params.customerIds);
+
+            // To handle any over-stringified strings
+            if (!Array.isArray(params.customerIds)) {
+                params.customerIds = JSON.parse(params.customerIds);
+            }
+        }
+    } catch (err) {
+        return res.json({ status: Status.Error, message: 'Params customerIds format is invalid' });
+    }
+
     // Use params name or generate a default report name
     const reportName = await _generateDefaultReportName(companyId, params.name, null);
 
@@ -123,6 +138,21 @@ export const updateMemorizedReport = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Memorized report not found' });
     }
 
+    // To handle stringified params customerIds
+    params.customerIds = params.customerIds ?? [];
+    try {
+        if (!Array.isArray(params.customerIds)) {
+            params.customerIds = JSON.parse(params.customerIds);
+
+            // To handle any over-stringified strings
+            if (!Array.isArray(params.customerIds)) {
+                params.customerIds = JSON.parse(params.customerIds);
+            }
+        }
+    } catch (err) {
+        return res.json({ status: Status.Error, message: 'Params customerIds format is invalid' });
+    }
+
     // Use params name or generate a default report name
     const reportName = await _generateDefaultReportName(companyId, params.name, memorizedReport._id);
 
@@ -137,6 +167,7 @@ export const updateMemorizedReport = async (req: Request, res: Response) => {
             memorizedIncomeReport.reportData = params.reportData;
             memorizedIncomeReport.reportSource = params.reportSource;
             memorizedIncomeReport.customerIds = params.customerIds;
+            memorizedIncomeReport.periodOption = params.periodOption;
             memorizedIncomeReport.startDate = params.startDate;
             memorizedIncomeReport.endDate = params.endDate;
             await memorizedIncomeReport.save();
