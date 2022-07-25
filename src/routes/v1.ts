@@ -60,6 +60,7 @@ import * as scriptController from '../controllers/script';
 
 import jobLocation from './jobLocation'
 import jobSite from './jobSite'
+import chat from './chat';
 import { isLogin } from '../middleware/session';
 
 export default function (sio: any) {
@@ -68,6 +69,7 @@ export default function (sio: any) {
 
     router.use('/jobLocation', jobLocation)
     router.use('/jobSite', jobSite)
+    router.use('/chats', chat);
 
     // Auth
     router.post(

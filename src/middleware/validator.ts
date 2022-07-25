@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { check, validationResult, ValidationChain, body } from 'express-validator'
+import { check, param, validationResult, ValidationChain, body } from 'express-validator'
 import { Status, Messages, JobStatus } from '../common/constants'
 
 
@@ -645,6 +645,18 @@ export const Validations = {
     check('state').exists().withMessage(Messages.Required),
     check('zipCode').exists().withMessage(Messages.Required),
     check('phone').exists().withMessage(Messages.Required)
+  ],
+
+  // Chat
+  getJobRequestChats: [
+    param('id').exists().withMessage(Messages.Required),
+    param('id').isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  createJobRequestChat: [
+    param('id').exists().withMessage(Messages.Required),
+    param('id').isMongoId().withMessage(Messages.WrongId),
+    check('message').exists().withMessage(Messages.Required)
   ],
 
 }
