@@ -3,17 +3,20 @@ import { ObjectId } from 'mongodb';
 import moment from 'moment';
 import fs from 'fs';
 import pdfmake from 'pdfmake';
+
+import { sendIncomeReport, uploadFileInS3 } from '../services/aws';
 import { Messages, Status } from '../common/constants';
+import { INCOME_REPORT_PDF_PATH, INVOICE_FONT_PATH, INVOICE_IMAGE_PATH } from '../common/config';
+
+import { IUser } from '../models/User';
+import { ICompany } from '../models/Company';
+import { EmailDefault, EmailTypes } from '../models/EmailDefault';
 import { Invoice } from '../models/Invoice';
 import { ICustomer } from '../models/Customer';
-import { ReportTypes, ReportData, ReportSources, IncomeReport, MemorizedReport, IIncomeReport, IMemorizedReport, IAllReport, IReport } from '../models/Report';
-import { ICompany } from '../models/Company';
-import { INCOME_REPORT_PDF_PATH, INVOICE_FONT_PATH, INVOICE_IMAGE_PATH } from '../common/config';
-import { downloadFileToPath } from './invoice';
-import { sendIncomeReport, uploadFileInS3 } from '../services/aws';
-import { IUser } from '../models/User';
-import { EmailDefault, EmailTypes } from '../models/EmailDefault';
-import { getPlaceholderValues, transformPlaceholders, _createCompanyDefaultEmail } from './emailDefault';
+import { ReportTypes, ReportData, ReportSources, IncomeReport, MemorizedReport, IIncomeReport, IMemorizedReport, IAllReport, IIncomeReportResponse } from '../models/Report';
+
+import { getPlaceholderValues, transformPlaceholders, _createCompanyDefaultEmail } from '../controllers/emailDefault';
+import { downloadFileToPath } from '../controllers/invoice';
 
 
 /**
@@ -89,6 +92,21 @@ export const createMemorizedReport = async (req: Request, res: Response) => {
     const params = req.body;
     const companyId = req.companyId;
 
+    // To handle stringified params customerIds
+    params.customerIds = params.customerIds ?? [];
+    try {
+        if (!Array.isArray(params.customerIds)) {
+            params.customerIds = JSON.parse(params.customerIds);
+
+            // To handle any over-stringified strings
+            if (!Array.isArray(params.customerIds)) {
+                params.customerIds = JSON.parse(params.customerIds);
+            }
+        }
+    } catch (err) {
+        return res.json({ status: Status.Error, message: 'Params customerIds format is invalid' });
+    }
+
     // Use params name or generate a default report name
     const reportName = await _generateDefaultReportName(companyId, params.name, null);
 
@@ -131,6 +149,21 @@ export const updateMemorizedReport = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Memorized report not found' });
     }
 
+    // To handle stringified params customerIds
+    params.customerIds = params.customerIds ?? [];
+    try {
+        if (!Array.isArray(params.customerIds)) {
+            params.customerIds = JSON.parse(params.customerIds);
+
+            // To handle any over-stringified strings
+            if (!Array.isArray(params.customerIds)) {
+                params.customerIds = JSON.parse(params.customerIds);
+            }
+        }
+    } catch (err) {
+        return res.json({ status: Status.Error, message: 'Params customerIds format is invalid' });
+    }
+
     // Use params name or generate a default report name
     const reportName = await _generateDefaultReportName(companyId, params.name, memorizedReport._id);
 
@@ -145,6 +178,7 @@ export const updateMemorizedReport = async (req: Request, res: Response) => {
             memorizedIncomeReport.reportData = params.reportData;
             memorizedIncomeReport.reportSource = params.reportSource;
             memorizedIncomeReport.customerIds = params.customerIds;
+            memorizedIncomeReport.periodOption = params.periodOption;
             memorizedIncomeReport.startDate = params.startDate;
             memorizedIncomeReport.endDate = params.endDate;
             await memorizedIncomeReport.save();
@@ -482,9 +516,9 @@ export const _generateIncomeReportPdf = async ({
     user: IUser,
     company: ICompany,
     params: any
-}): Promise<{ fullPath: string, incomeReport: IReport }> => {
+}): Promise<{ fullPath: string, incomeReport: IIncomeReportResponse }> => {
 
-    let incomeReport: IReport;
+    let incomeReport: IIncomeReportResponse;
     let reportType: string;
 
     if (params.reportSource === ReportSources.JOB) {
@@ -546,7 +580,7 @@ const _handleReportPdf = async ({
     endDate
 }: {
     company: ICompany,
-    incomeReport: IReport,
+    incomeReport: IIncomeReportResponse,
     user: IUser,
     reportType: string,
     startDate: string,

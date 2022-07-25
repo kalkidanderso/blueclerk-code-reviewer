@@ -345,6 +345,89 @@
         }
       }
     },
+    "/getAllCompanies": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Search for companies",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/getAllCustomers": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Search for customers",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout for all kind user",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/searchContractor": {
       "post": {
         "tags": [
@@ -2464,40 +2547,6 @@
         ]
       }
     },
-    "/getAllCompanies": {
-      "get": {
-        "tags": [
-          "Company"
-        ],
-        "summary": "Search for companies",
-        "parameters": [
-          {
-            "name": "keyword",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GeneralAPIResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
     "/updateCompanyCustomer": {
       "put": {
         "tags": [
@@ -3678,40 +3727,6 @@
                       }
                     }
                   }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
-    "/getAllCustomers": {
-      "get": {
-        "tags": [
-          "Customer"
-        ],
-        "summary": "Search for customers",
-        "parameters": [
-          {
-            "name": "keyword",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GeneralAPIResponse"
                 }
               }
             }
@@ -11247,6 +11262,23 @@
                     "type": "string",
                     "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]"
                   },
+                  "periodOption": {
+                    "type": "string",
+                    "description": "Filter report by preset period option",
+                    "enum": [
+                      "recent",
+                      "lastWeek",
+                      "lastWeekToDate",
+                      "lastMonth",
+                      "lastMonthToDate",
+                      "thisQuarter",
+                      "thisQuarterToDate",
+                      "lastYear",
+                      "lastYearToDate",
+                      "thisYear",
+                      "thisYearToDate"
+                    ]
+                  },
                   "startDate": {
                     "type": "string",
                     "description": "Filter report by start of invoice's issued date"
@@ -11320,6 +11352,23 @@
                   "customerIds": {
                     "type": "string",
                     "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]"
+                  },
+                  "periodOption": {
+                    "type": "string",
+                    "description": "Filter report by preset period option",
+                    "enum": [
+                      "recent",
+                      "lastWeek",
+                      "lastWeekToDate",
+                      "lastMonth",
+                      "lastMonthToDate",
+                      "thisQuarter",
+                      "thisQuarterToDate",
+                      "lastYear",
+                      "lastYearToDate",
+                      "thisYear",
+                      "thisYearToDate"
+                    ]
                   },
                   "startDate": {
                     "type": "string",

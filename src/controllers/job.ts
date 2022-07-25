@@ -1863,6 +1863,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             let trackLinked = linkedJob && linkedJob.track || [];
             let tasksLinked = linkedJob && linkedJob.tasks || [];
             let action = '';
+            let ticketAction = '';
 
             if (params.status && params.status != job.status) {
                 if (params.status == JobStatus.PENDING) {
@@ -1879,11 +1880,13 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 }
                 if (params.status == JobStatus.FINISHED) {
                     action = '|Finishing the job|';
+                    ticketAction = `|Job finished by ${user.profile.displayName}|`;
                 }
                 if (params.status == JobStatus.CANCELED) {
                     action = '|Canceling the job|';
-                    await ServiceTicket.findOneAndUpdate({ _id: job.ticket }, { jobCreated: false });
-                    await JobRequest.findOneAndUpdate({ _id: job.request }, { jobCreated: false });
+                    ticketAction = `|Job cancelled by ${user.profile.displayName}|`;
+                    await ServiceTicket.findOneAndUpdate({ _id: job.ticket }, { jobCreated: false })
+                    await JobRequest.findOneAndUpdate({ _id: job.request }, { jobCreated: false, status: JobRequestStatus.PENDING });
                 }
                 if (params.status == JobStatus.RESCHEDULED) {
                     action = '|Rescheduling the job|';
@@ -1895,6 +1898,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     action = '|Update the job to Incomplete|'
                 }
             }
+
             let userComment = '';
             if (params.comment !== 'undefined') {
                 userComment = params.comment;
@@ -2023,6 +2027,28 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 const updatedJob = await Job.findById(job.id);
                 if (linkedJob) {
                     await linkedJob.updateOne(dataLinked);
+                }
+
+                if (job?.ticket && ticketAction) {
+                    const serviceTicket = await ServiceTicket.findById(job.ticket);
+                    serviceTicket.track.push({
+                        user: user._id,
+                        action: ticketAction,
+                        date: new Date()
+                    });
+
+                    await serviceTicket.save();
+                }
+
+                if (job?.request && ticketAction) {
+                    const jobRequest = await JobRequest.findById(job.request);
+                    jobRequest.track.push({
+                        user: user._id,
+                        action: ticketAction,
+                        date: new Date()
+                    });
+
+                    await jobRequest.save();
                 }
 
                 let date = job.scheduleDate;
@@ -3462,29 +3488,29 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
          * Check if there no more PENDING, STARTED, or PAUSED technician statuses,
          * if it does, update job's status to CANCELED as well
          */
-         if (
+        if (
             allTechnicianStatus.includes(JobStatus.CANCELED)
             && !allTechnicianStatus.includes(JobStatus.PENDING)
             && !allTechnicianStatus.includes(JobStatus.STARTED)
             && !allTechnicianStatus.includes(JobStatus.PAUSED)
-         ) {
-             job.status = JobStatus.CANCELED;
-             action += `|Canceling the job|`;
-         }
+        ) {
+            job.status = JobStatus.CANCELED;
+            action += `|Canceling the job|`;
+        }
 
         /**
          * Check if there no more PENDING, STARTED, or PAUSED technician statuses,
          * if it does, update job's status to RESCHEDULED as well
          */
-         if (
+        if (
             allTechnicianStatus.includes(JobStatus.RESCHEDULED)
             && !allTechnicianStatus.includes(JobStatus.PENDING)
             && !allTechnicianStatus.includes(JobStatus.STARTED)
             && !allTechnicianStatus.includes(JobStatus.PAUSED)
-         ) {
+        ) {
             job.status = JobStatus.RESCHEDULED;
             action += `|Rescheduling the job|`;
-         }
+        }
     }
 
     job.track.push({ user: user._id, action, note: params.note, date: new Date() });

@@ -15,7 +15,21 @@ export enum ReportSources {
     JOB = 2
 }
 
-export interface IReport {
+export enum PeriodOptions {
+    RECENT = 'recent',
+    LAST_WEEK = 'lastWeek',
+    LAST_WEEK_TO_DATE = 'lastWeekToDate',
+    LAST_MONTH = 'lastMonth',
+    LAST_MONTH_TO_DATE = 'lastMonthToDate',
+    THIS_QUARTER = 'thisQuarter',
+    THIS_QUARTER_TO_DATE = 'thisQuarterToDate',
+    LAST_YEAR = 'lastYear',
+    LAST_YEAR_TO_DATE = 'lastYearToDate',
+    THIS_YEAR = 'thisYear',
+    THIS_YEAR_TO_DATE = 'thisYearToDate'
+}
+
+export interface IIncomeReportResponse {
     totalIncome: number,
     customerCount: number,
     jobCount: number,
@@ -27,6 +41,9 @@ export interface IMemorizedReport extends Document {
     company: Schema.Types.ObjectId | ICompany
     reportType: ReportTypes
     name: string
+    periodOption: PeriodOptions
+    startDate?: string
+    endDate?: string
 
 }
 
@@ -42,7 +59,13 @@ const MemorizedReportSchema = new Schema(
             enum: Object.values(ReportTypes),
             required: true
         },
-        name: String
+        name: String,
+        periodOption: {
+            type: String,
+            enum: Object.values(PeriodOptions),
+        },
+        startDate: String,
+        endDate: String
     },
     { timestamps: true }
 )
@@ -56,8 +79,6 @@ export interface IIncomeReport extends IMemorizedReport {
     reportData: ReportData
     reportSource: ReportSources
     customerIds?: string[]
-    startDate?: string
-    endDate?: string
 
 }
 
@@ -74,8 +95,6 @@ const IncomeReportSchema = new Schema({
         default: ReportSources.INVOICE
     },
     customerIds: [String],
-    startDate: String,
-    endDate: String
 
 })
 
