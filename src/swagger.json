@@ -3,7 +3,7 @@
   "info": {
     "title": "BlueClerk",
     "description": "APIs for both app and website",
-    "version": "2.2.0"
+    "version": "2.3.0"
   },
   "servers": [],
   "tags": [
@@ -2758,18 +2758,6 @@
               "enum": [
                 "INVOICE",
                 "INCOME_REPORT"
-              ]
-            }
-          },
-          {
-            "name": "isActive",
-            "in": "query",
-            "description": "If not provided will return ALL contacts",
-            "schema": {
-              "enum": [
-                "ALL",
-                "true",
-                "false"
               ]
             }
           }
