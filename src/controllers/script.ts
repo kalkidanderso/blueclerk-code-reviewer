@@ -18,10 +18,9 @@ import { InvoiceCommission } from '../models/InvoiceCommission';
 import { IContact } from '../common/contact';
 import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin';
 import { CustomerContact, ICustomerContact } from '../models/CustomerContact';
-import { CompanyCustomer } from '../models/CompanyCustomer';
-import { Contact } from '../models/Contact';
 import { JobLocation } from '../models/JobLocation';
 import { _updateQBCustomerJob } from '../controllers/quickbook.customer';
+import { EmailDefault, EmailTypes } from '../models/EmailDefault';
 
 /**
  * To sync and update all companies and customers to have Item Price Tier,
@@ -530,8 +529,8 @@ export const updateQBCustomerJob = async (req: Request, res: Response) => {
         companyId,
         quickbookId: { $ne: null }
     })
-        // .limit(300)
-        // .skip(300);
+    // .limit(300)
+    // .skip(300);
 
     res.json({
         ok: true,
@@ -551,5 +550,25 @@ export const updateQBCustomerJob = async (req: Request, res: Response) => {
     console.log('== done ==');
 
     return;
+
+}
+
+export const addDefaultEmailTypes = async (req: Request, res: Response) => {
+    const emailDefaults = await EmailDefault.find({ emailType: { $exists: false } });
+
+    try {
+        for (const emailDefault of emailDefaults) {
+            await EmailDefault.findByIdAndUpdate(emailDefault._id, { emailType: EmailTypes.INVOICE });
+        }
+
+        return res.json({
+            status: Status.Success,
+            message: 'Default email types added successfully',
+
+        });
+
+    } catch (err) {
+        return res.json({ status: Status.Error, messages: Messages.GenericError });
+    }
 
 }
