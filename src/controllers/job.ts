@@ -282,6 +282,11 @@ const _createJob = async (
 
     if (params.jobRequestId) {
         const jobRequest = await JobRequest.findById(params.jobRequestId);
+
+        if (jobRequest.status === JobRequestStatus.REJECTED) {
+            return res.json({ status: Status.Error, message: 'Cannot create this job using rejected job request' });
+        }
+
         if (jobRequest) {
             if (!jobRequest.jobLocation && params.jobLocation) {
                 jobRequest.jobLocation = params.jobLocation;
