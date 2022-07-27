@@ -111,6 +111,10 @@
       "description": "For creating and getting service tickets"
     },
     {
+      "name": "Job Request",
+      "description": "For job requests"
+    },
+    {
       "name": "Job",
       "description": "For scheduled jobs"
     },
@@ -8569,6 +8573,64 @@
                   "companyId": {
                     "type": "string",
                     "description": "Id of company if contractor is hitting for other company"
+                  }
+                }
+              }
+            }
+          },
+          "required": true,
+          "allowEmptyValue": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateJobRequestStatus": {
+      "put": {
+        "tags": [
+          "Job Request"
+        ],
+        "summary": "To edit job request status",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "jobRequestId",
+                  "status"
+                ],
+                "properties": {
+                  "jobRequestId": {
+                    "type": "string",
+                    "description": "Id of job request to edit"
+                  },
+                  "status": {
+                    "type": "number",
+                    "enum": [
+                      4,
+                      5
+                    ],
+                    "description": "Id of job status as number from one of these (ACCEPTED => 4, REJECTED => 5)."
+                  },
+                  "note": {
+                    "type": "string",
+                    "description": "**Required** when status is REJECTED => 5"
                   }
                 }
               }
