@@ -281,33 +281,35 @@ const _createJob = async (
     }
 
     if (params.jobRequestId) {
-        const jobRequest = await JobRequest.findById(params.jobRequestId);
+        const jobRequest = await JobRequest.findOne({ _id: params.jobRequestId, company: companyId });
+
+        if (!jobRequest) {
+            return res.json({ status: Status.NotFound, message: 'Job request not found' });
+        }
 
         if (jobRequest.status === JobRequestStatus.REJECTED) {
             return res.json({ status: Status.Error, message: 'Cannot create this job using rejected job request' });
         }
 
-        if (jobRequest) {
-            if (!jobRequest.jobLocation && params.jobLocation) {
-                jobRequest.jobLocation = params.jobLocation;
-            }
-
-            if (!jobRequest.jobSite && params.jobSite) {
-                jobRequest.jobSite = params.jobSite;
-            }
-
-            jobRequest.status = JobRequestStatus.SCHEDULED;
-            await jobRequest.save();
-            jobRequest?.requests.forEach(request => {
-                const requestImages = parentJob?.images?.length
-                    ? parentJob?.images
-                    : request.images?.length
-                        ? request?.images
-                        : []
-
-                images.push(...requestImages);
-            })
+        if (!jobRequest.jobLocation && params.jobLocation) {
+            jobRequest.jobLocation = params.jobLocation;
         }
+
+        if (!jobRequest.jobSite && params.jobSite) {
+            jobRequest.jobSite = params.jobSite;
+        }
+
+        jobRequest.status = JobRequestStatus.SCHEDULED;
+        await jobRequest.save();
+        jobRequest?.requests.forEach(request => {
+            const requestImages = parentJob?.images?.length
+                ? parentJob?.images
+                : request.images?.length
+                    ? request?.images
+                    : []
+
+            images.push(...requestImages);
+        })
     }
 
 
@@ -1890,7 +1892,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     action = '|Canceling the job|';
                     ticketAction = `|Job cancelled by ${user.profile.displayName}|`;
                     await ServiceTicket.findOneAndUpdate({ _id: job.ticket }, { jobCreated: false })
-                    await JobRequest.findOneAndUpdate({ _id: job.request }, { jobCreated: false, status: JobRequestStatus.PENDING });
+                    await JobRequest.findOneAndUpdate({ _id: job.request }, { jobCreated: false, status: JobRequestStatus.ACCEPTED });
                 }
                 if (params.status == JobStatus.RESCHEDULED) {
                     action = '|Rescheduling the job|';
@@ -2778,19 +2780,23 @@ export const updateJobRequestStatus = async (req: Request, res: Response) => {
         return res.json({ status: Status.NotFound, message: 'Job request not found' });
     }
 
-    if (jobRequest.status !== JobRequestStatus.PENDING) {
-        return res.json({ status: Status.Error, message: 'Cannot update non pending job request' });
-    }
+    // if (jobRequest.status !== JobRequestStatus.PENDING) {
+    //     return res.json({ status: Status.Error, message: 'Cannot update non pending job request' });
+    // }
 
     const job = await Job.findOne({ request: jobRequest._id });
+    if (job && jobRequest.jobCreated) {
+        return res.json({
+            status: Status.Error,
+            message: 'Cannot reject or accept again a job request that has been scheduled or finished.',
+            job
+        });
+    }
+
     switch (params.status) {
         case JobRequestStatus.REJECTED:
-            if (job && jobRequest.jobCreated) {
-                return res.json({ status: Status.Error, message: 'Cannot reject job request when have active job' })
-            }
-
             if (!params.note) {
-                return res.json({ status: Status.Error, message: 'Note is required when you rejected job request' });
+                return res.json({ status: Status.Error, message: 'Note is required when you reject job request' });
             }
 
             jobRequestAction = `|Rejecting the job request by ${user.profile.displayName}|`;
@@ -2802,7 +2808,7 @@ export const updateJobRequestStatus = async (req: Request, res: Response) => {
             jobRequest.status = params.status;
             break;
         default:
-            return res.json({ status: Status.Error, message: 'Type is required' })
+            return res.json({ status: Status.Error, message: 'Param status is required' })
     }
 
     jobRequest.track.push({ action: jobRequestAction, date: new Date(), note: params.note, user: user._id });
