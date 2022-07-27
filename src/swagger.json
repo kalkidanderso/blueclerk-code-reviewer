@@ -111,6 +111,10 @@
       "description": "For creating and getting service tickets"
     },
     {
+      "name": "Job Request",
+      "description": "For job requests"
+    },
+    {
       "name": "Job",
       "description": "For scheduled jobs"
     },
@@ -8476,7 +8480,7 @@
     "/updateJobRequestStatus": {
       "put": {
         "tags": [
-          "Job"
+          "Job Request"
         ],
         "summary": "To edit job request status",
         "requestBody": {

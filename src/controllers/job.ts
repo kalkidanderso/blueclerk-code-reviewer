@@ -2776,7 +2776,7 @@ export const updateJobRequestStatus = async (req: Request, res: Response) => {
     }
 
     const jobRequest = await JobRequest.findOne({ _id: params.jobRequestId, company: companyId });
-    if (!jobRequest) {
+    if (!jobRequest || jobRequest?.status === JobRequestStatus.CANCELLED) {
         return res.json({ status: Status.NotFound, message: 'Job request not found' });
     }
 
