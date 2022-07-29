@@ -206,7 +206,6 @@ UserSchema.methods.comparePassword = function(password: string, next: (isMatch: 
 UserSchema.methods.jwt = function(req: Request) {
 
     const user = this as IUser
-    console.log('sessionID', req.sessionID);
     const token = jwt.sign(
         {
             iss: "http://api.blueclerk.com",

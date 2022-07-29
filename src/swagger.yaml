@@ -1698,6 +1698,23 @@ paths:
       tags:
         - Email Default
       summary: To get company email default
+      parameters:
+        - name: emailType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - INVOICE
+              - INCOME_REPORT
+        - name: isActive
+          in: query
+          description: If not provided will return ALL contacts
+          schema:
+            enum:
+              - ALL
+              - 'true'
+              - 'false'
       responses:
         '200':
           description: Success
@@ -1723,6 +1740,11 @@ paths:
                   type: string
                 message:
                   type: string
+                emailType:
+                  type: string
+                  enum:
+                    - INVOICE
+                    - INCOME_REPORT
       responses:
         '200':
           description: Success
@@ -6752,6 +6774,111 @@ paths:
         - name: endDate
           in: query
           description: Filter report by end of invoice's issued date
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /generateIncomeReportPdf:
+    get:
+      tags:
+        - Report
+      summary: To generate standard and custom income report as pdf
+      parameters:
+        - name: reportData
+          in: query
+          required: true
+          description: 1 => Standard Report; 2 => Custom Report
+          schema:
+            type: number
+            enum:
+              - 1
+              - 2
+        - name: reportSource
+          in: query
+          description: 1 => Invoice; 2 => Job
+          schema:
+            type: number
+            enum:
+              - 1
+              - 2
+        - name: customerIds
+          in: query
+          description: 'To filter report by specific customers. Example: ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]'
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          description: Filter report by start of invoice's issued date
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          description: Filter report by end of invoice's issued date
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /sendIncomeReport:
+    post:
+      tags:
+        - Report
+      summary: To generate standard and custom income report as pdf
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - reportData
+              properties:
+                reportData:
+                  type: string
+                  description: 1 => Standard Report; 2 => Custom Report
+                  enum:
+                    - 1
+                    - 2
+                reportSource:
+                  type: string
+                  description: 1 => Invoice; 2 => Job
+                  enum:
+                    - 1
+                    - 2
+                startDate:
+                  type: string
+                  description: Filter report by start of invoice's issued date
+                endDate:
+                  type: string
+                  description: Filter report by end of invoice's issued date
+                customerIds:
+                  type: string
+                  description: 'To filter report by specific customers. Example: ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]'
+                recipients:
+                  type: string
+                  description: 'List of all recipients in array. Example: ["zyzorafu@abyssmail.com","tiboqama@boximail.com"]'
+                subject:
+                  type: string
+                  description: Subject of the email, if not provided will use company's email default
+                message:
+                  type: string
+                  description: Message of the email, if not provided will use company's email default
+                copyToMyself:
+                  type: boolean
+                  description: To send copy to user himself
+                incomeReportPdf:
+                  type: string
+                  description: PDF file of invoice
+                  format: binary
+        required: true
       responses:
         '200':
           description: Success

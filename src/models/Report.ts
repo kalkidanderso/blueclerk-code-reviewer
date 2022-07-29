@@ -29,6 +29,13 @@ export enum PeriodOptions {
     THIS_YEAR_TO_DATE = 'thisYearToDate'
 }
 
+export interface IIncomeReportResponse {
+    totalIncome: number,
+    customerCount: number,
+    jobCount: number,
+    customers?: any[]
+}
+
 export interface IMemorizedReport extends Document {
 
     company: Schema.Types.ObjectId | ICompany
