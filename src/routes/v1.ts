@@ -2388,6 +2388,15 @@ export default function (sio: any) {
         reportController.updateMemorizedReport
     )
 
+    router.delete(
+        '/deleteMemorizedReport',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.updateMemorizedReport),
+        reportController.deleteMemorizedReport
+    )
+
     // CODE LOCATION TAG
 
     router.post(

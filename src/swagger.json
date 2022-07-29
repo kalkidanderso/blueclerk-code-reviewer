@@ -11563,6 +11563,42 @@
         ]
       }
     },
+    "/deleteMemorizedReport": {
+      "delete": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To delete a memorized custom report",
+        "parameters": [
+          {
+            "name": "memorizedReportId",
+            "in": "query",
+            "description": "ID of memorized report to be deleted",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/uploadImage": {
       "post": {
         "tags": [
