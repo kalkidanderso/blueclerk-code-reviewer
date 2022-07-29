@@ -184,6 +184,27 @@ export const updateMemorizedReport = async (req: Request, res: Response) => {
 
 }
 
+export const deleteMemorizedReport = async (req: Request, res: Response) => {
+
+    const params = req.query;
+    const companyId = req.companyId;
+
+    // Find and check the memorized report
+    const memorizedReport: IAllReport = await MemorizedReport.findOne({ company: companyId, _id: params.memorizedReportId });
+    if (!memorizedReport) {
+        return res.json({ status: Status.Error, message: 'Memorized report not found' });
+    }
+
+    const deletedMemorizedReport = await MemorizedReport.findByIdAndDelete(memorizedReport._id);
+
+    return res.json({
+        status: Status.Success,
+        message: 'Memorized report deleted successfully.',
+        deletedMemorizedReport
+    })
+
+}
+
 
 // ==================================
 //     [ PARTIAL METHODS BELOW ]
