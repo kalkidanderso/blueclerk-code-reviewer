@@ -14,6 +14,7 @@ import { Employee } from '../models/Employee'
 import { Contract } from '../models/Contract'
 import { IJob, Job } from '../models/Job'
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission'
+import { AdvancePayment } from '../models/AdvancePayment';
 
 
 /**
@@ -856,7 +857,7 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
     const vendors: any = [];
     const employees: any = [];
-    let query;
+    let query, queryPayment;
 
     // Check when startDate and endDate is provided, offset must be required
     if (params.startDate && params.endDate) {
@@ -866,7 +867,8 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
 
         const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
         const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
-        query = { issuedDate: { $gte: startDate, $lte: endDate } }
+        query = { issuedDate: { $gte: startDate, $lte: endDate } };
+        queryPayment = { paidAt: { $gte: startDate, $lte: endDate } };
     }
 
     // get job with unpaid technician or contractor
@@ -887,6 +889,18 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
                     const contractor = await Company.findById(technicianCommission.contractor).exec();
                     const contractorEntry = vendors.find((v: any) => v.contractor._id?.toString() === technicianCommission.contractor?.toString());
 
+                    const advancePayments = await AdvancePayment.find({
+                        company: company._id,
+                        contractor: contractor._id,
+                        ...queryPayment
+                    });
+
+                    const payments = await PaymentVendor.find({
+                        company: company._id,
+                        contractor: contractor._id,
+                        ...queryPayment
+                    });
+
                     if (contractorEntry) {
                         contractorEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
                         contractorEntry?.invoiceIds?.push(invoice._id);
@@ -902,6 +916,18 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
                 if (technicianCommission.technician && !technicianCommission.contractor && !technicianCommission.paid) {
                     const technician = await User.findById(technicianCommission.technician).exec();
                     const technicianEntry = employees.find((t: any) => t.employee._id?.toString() === technicianCommission.technician?.toString());
+
+                    const advancePayments = await AdvancePayment.find({
+                        company: company._id,
+                        technician: technician._id,
+                        ...queryPayment
+                    });
+
+                    const payments = await PaymentVendor.find({
+                        company: company._id,
+                        technician: technician._id,
+                        ...queryPayment
+                    });
 
                     if (technicianEntry) {
                         technicianEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));

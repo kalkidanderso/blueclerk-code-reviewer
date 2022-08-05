@@ -542,6 +542,23 @@ export const Validations = {
     check('paymentId').isMongoId().withMessage(Messages.WrongId),
   ],
 
+  // ADVANCE PAYMENT
+  recordAdvancePayment: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('amount').exists().withMessage(Messages.Required),
+    check('amount').isFloat().toFloat().withMessage('has to be number/decimal'),
+  ],
+
+  getAdvancePayments: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+  ],
+
   // REPORT
   generateIncomeReport: [
     check('reportData').exists().withMessage(Messages.Required),
