@@ -836,3 +836,27 @@ export const getQBPayment = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }
+
+export const findQBPayment = async (req: Request, res: Response) => {
+    return new Promise((resolve, reject) => {
+        const params = req.query;
+        const company = <ICompany>req.company;
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.findPayments([
+            { field: 'PaymentRefNum', value: params.referenceNumber }
+        ], async (err: any, data: any) => {
+            if (err) {
+                reject(err)
+            } else {
+                resolve(data?.QueryResponse?.Payment);
+            }
+        });
+    })
+    .then((data: any) => {
+        return res.json({ status: Status.Success, data: data ?? null });
+    })
+    .catch((error: any) => {
+        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
+    })
+}

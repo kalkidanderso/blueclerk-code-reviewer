@@ -1154,3 +1154,27 @@ export const findQBInvoice = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }
+
+export const updateQBInvoice = async (req: Request, res: Response) => {
+    return new Promise((resolve, reject) => {
+        const params = req.body;
+        const company = <ICompany>req.company
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+        qbo.getInvoice(params.quickbookId, async (err: any, qbInvoice: IQBInvoice) => {
+            qbInvoice.CustomerRef = {
+                value: params.newCustQuickbookId
+            };
+
+            qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
+                resolve(qbInvoice);
+            })
+        })
+    })
+    .then((data: any) => {
+        return res.json({ status: Status.Success, data: data ?? null });
+    })
+    .catch((error: any) => {
+        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
+    })
+}

@@ -2369,6 +2369,15 @@ export default function (sio: any) {
         quickBookPaymentTermController.findQBAllTerms
     )
 
+    // QUICKBOOK DIRECT INVOICE API
+    router.put(
+        '/quickbook/updateQBInvoice',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookInvoiceController.updateQBInvoice
+    )
+
     // QUICKBOOK DIRECT PAYMENT API
 
     router.delete(
@@ -2377,6 +2386,14 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookPaymentController.deleteQBPayment
+    )
+
+    router.get(
+        '/quickbook/findQBPayment',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookPaymentController.findQBPayment
     )
 
     return router
