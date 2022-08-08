@@ -7474,7 +7474,6 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "message"
                 ],
                 "properties": {
                   "message": {
