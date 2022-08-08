@@ -680,7 +680,6 @@ export const Validations = {
   createJobRequestChat: [
     param('id').exists().withMessage(Messages.Required),
     param('id').isMongoId().withMessage(Messages.WrongId),
-    check('message').exists().withMessage(Messages.Required)
   ],
 
 }

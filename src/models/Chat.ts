@@ -58,10 +58,7 @@ const ChatSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: 'Chat'
         },
-        message: {
-            type: String,
-            required: true
-        },
+        message: String,
         images: [{
             imageUrl: String,
             uploadedBy: {

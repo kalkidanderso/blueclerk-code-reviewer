@@ -22,6 +22,11 @@ export const createChat = async (req: Request, res: Response) => {
         params.imagesFile = JSON.parse(JSON.stringify(req.files));
     }
 
+    // Check if there nothing to send
+    if (!params.message && !params.imagesFile?.images?.length) {
+        return res.json({ status: Status.Error, message: 'No message, no image, nothing to send' });
+    }
+
     try {
         switch (chatChannel) {
             case ChatChannels.JOB_REQUEST:
