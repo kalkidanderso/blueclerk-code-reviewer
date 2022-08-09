@@ -6509,6 +6509,9 @@ paths:
                 amount:
                   type: number
                   description: Amount how much vendor/employee to be paid
+                creditUsed:
+                  type: number
+                  description: Amount how much vendor/employee credit used
                 startDate:
                   type: string
                 endDate:

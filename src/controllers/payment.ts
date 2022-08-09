@@ -14,7 +14,7 @@ import { Employee } from '../models/Employee'
 import { Contract } from '../models/Contract'
 import { IJob, Job } from '../models/Job'
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission'
-import { AdvancePayment } from '../models/AdvancePayment';
+import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor } from '../models/AdvancePayment';
 
 
 /**
@@ -442,6 +442,7 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
         startDate: params.startDate ? moment(params.startDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
         endDate: params.endDate ? moment(params.endDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
         paidAt: params.paidAt ? moment(params.paidAt).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+        creditUsed: params.creditUsed,
         note: params.note,
         company,
         createdBy: user,
@@ -462,6 +463,10 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                 ...paymentEntry
             }).save();
 
+            // Deduct vendor credit
+            const contractorCredit = (contractor.credit ?? 0) - paymentVendor.creditUsed;
+            contractor.credit = contractorCredit < 0 ? 0 : contractorCredit;
+
             // Iterate all invoices to mark the commission as paid and deduct vendor balance
             for (const invoice of invoices) {
                 const invoiceCommission = <IInvoiceCommission>invoice.commission;
@@ -479,9 +484,9 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                     contractor.balance = contractorBalance < 0 ? 0 : contractorBalance;
 
                     await invoiceCommission.save();
-                    await contractor.save();
                 }
             }
+            await contractor.save();
 
             // Record payment for vendor is done, finish the request
             return res.json({ status: Status.Success, message: 'Payment successfully created.', payment: paymentVendor });
@@ -498,6 +503,10 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                 employee,
                 ...paymentEntry
             }).save();
+
+            // Deduct employee credit
+            const employeeCredit = (employee.credit ?? 0) - paymentEmployee.creditUsed;
+            employee.credit = employeeCredit < 0 ? 0 : employeeCredit;
 
             // Iterate all invoices to mark the commission as paid and deduct employee balance
             for (const invoice of invoices) {
@@ -516,9 +525,9 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                     employee.balance = employeeBalance < 0 ? 0 : employeeBalance;
 
                     await invoiceCommission.save();
-                    await employee.save();
                 }
             }
+            await employee.save();
 
             // Record payment for employee is done, finish the request
             return res.json({ status: Status.Success, message: 'Payment successfully created.', payment: paymentEmployee });
@@ -857,7 +866,7 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
     const vendors: any = [];
     const employees: any = [];
-    let query, queryPayment;
+    let query, queryPaymentVendor: any = {}, queryPaymentEmployee: any = {};
 
     // Check when startDate and endDate is provided, offset must be required
     if (params.startDate && params.endDate) {
@@ -868,7 +877,8 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
         const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
         const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
         query = { issuedDate: { $gte: startDate, $lte: endDate } };
-        queryPayment = { paidAt: { $gte: startDate, $lte: endDate } };
+        queryPaymentVendor = { paidAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
+        queryPaymentEmployee = { paidAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
     }
 
     // get job with unpaid technician or contractor
@@ -885,57 +895,39 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
 
         if (invoiceCommission?.technicians) {
             for (const technicianCommission of invoiceCommission.technicians) {
-                if (technicianCommission.contractor && !technicianCommission.paid) {
+                // if (technicianCommission.contractor && !technicianCommission.paid) {
+                if (technicianCommission.contractor) {
                     const contractor = await Company.findById(technicianCommission.contractor).exec();
                     const contractorEntry = vendors.find((v: any) => v.contractor._id?.toString() === technicianCommission.contractor?.toString());
 
-                    const advancePayments = await AdvancePayment.find({
-                        company: company._id,
-                        contractor: contractor._id,
-                        ...queryPayment
-                    });
-
-                    const payments = await PaymentVendor.find({
-                        company: company._id,
-                        contractor: contractor._id,
-                        ...queryPayment
-                    });
-
                     if (contractorEntry) {
                         contractorEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
+                        contractorEntry.balanceDue += Number(technicianCommission.commissionAmount.toFixed(2));
                         contractorEntry?.invoiceIds?.push(invoice._id);
                     } else {
                         vendors.push({
                             contractor,
                             commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
+                            balanceDue: Number(technicianCommission.commissionAmount.toFixed(2)),
                             invoiceIds: [invoice._id],
                         });
                     }
                 }
 
-                if (technicianCommission.technician && !technicianCommission.contractor && !technicianCommission.paid) {
+                // if (technicianCommission.technician && !technicianCommission.contractor && !technicianCommission.paid) {
+                if (technicianCommission.technician && !technicianCommission.contractor) {
                     const technician = await User.findById(technicianCommission.technician).exec();
                     const technicianEntry = employees.find((t: any) => t.employee._id?.toString() === technicianCommission.technician?.toString());
 
-                    const advancePayments = await AdvancePayment.find({
-                        company: company._id,
-                        technician: technician._id,
-                        ...queryPayment
-                    });
-
-                    const payments = await PaymentVendor.find({
-                        company: company._id,
-                        technician: technician._id,
-                        ...queryPayment
-                    });
-
                     if (technicianEntry) {
                         technicianEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
+                        technicianEntry.balanceDue += Number(technicianCommission.commissionAmount.toFixed(2));
                         technicianEntry.invoiceIds.push(invoice._id);
                     } else {
                         employees.push({
                             employee: technician,
                             commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
+                            balanceDue: Number(technicianCommission.commissionAmount.toFixed(2)),
                             invoiceIds: [invoice._id],
                         });
                     }
@@ -943,6 +935,9 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
             }
         }
     }
+
+    await _getVendorPayments(vendors, company, queryPaymentVendor);
+    await _getEmployeePayments(employees, company, queryPaymentEmployee);
 
     return res.json({
         status: Status.Success,
@@ -1271,4 +1266,84 @@ export const _handleVoidPayment = async (invoiceIds: string[], payment: IPayment
     }
 
     return;
+}
+
+const _getVendorPayments = async (vendors: any[], company: ICompany, queryPayment: any) => {
+    queryPayment.company = company._id;
+    queryPayment.isVoid = { $ne: true };
+    for (const vendor of vendors) {
+        queryPayment.contractor = vendor?.contractor?._id;
+
+        // Retrieve advance payments history and the total of it
+        const advancePayments = await AdvancePaymentVendor.find({ ...queryPayment });
+        const advancePayment = await AdvancePaymentVendor.aggregate([
+            { $match: { ...queryPayment } },
+            {
+                $group: {
+                    _id: { contractor: "$contractor", company: "$company" },
+                    totalAdvancePayment: { $sum: "$amount" }
+                }
+            }
+        ]);
+
+        // Retrieve payments history and the total of it
+        const payments = await PaymentVendor.find({ ...queryPayment });
+        const payment = await PaymentVendor.aggregate([
+            { $match: { ...queryPayment } },
+            {
+                $group: {
+                    _id: { contractor: "$contractor", company: "$company" },
+                    totalPayment: { $sum: "$amountPaid" }
+                }
+            }
+        ]);
+
+        // Put the retrieved history and total to each vendor
+        vendor.advancePayments = advancePayments;
+        vendor.payments = payments;
+        vendor.advancePaymentTotal = advancePayment[0]?.totalAdvancePayment ?? 0;
+        vendor.paymentTotal = payment[0]?.totalPayment ?? 0;
+        vendor.balanceDue -= vendor.advancePaymentTotal;
+        vendor.balanceDue -= vendor.paymentTotal;
+    }
+}
+
+const _getEmployeePayments = async (employees: any[], company: ICompany, queryPayment: any) => {
+    queryPayment.company = company._id;
+    queryPayment.isVoid = { $ne: true };
+    for (const employee of employees) {
+        queryPayment.employee = employee?.employee?._id;
+
+        // Retrieve advance payments history and the total of it
+        const advancePayments = await AdvancePaymentEmployee.find({ ...queryPayment });
+        const advancePayment = await AdvancePaymentEmployee.aggregate([
+            { $match: { ...queryPayment } },
+            {
+                $group: {
+                    _id: { employee: "$employee", company: "$company" },
+                    totalAdvancePayment: { $sum: "$amount" }
+                }
+            }
+        ]);
+
+        // Retrieve payments history and the total of it
+        const payments = await PaymentEmployee.find({ ...queryPayment });
+        const payment = await PaymentEmployee.aggregate([
+            { $match: { ...queryPayment } },
+            {
+                $group: {
+                    _id: { employee: "$employee", company: "$company" },
+                    totalPayment: { $sum: "$amountPaid" }
+                }
+            }
+        ]);
+
+        // Put the retrieved history and total to each employee
+        employee.advancePayments = advancePayments;
+        employee.payments = payments;
+        employee.advancePaymentTotal = advancePayment[0]?.totalAdvancePayment ?? 0;
+        employee.paymentTotal = payment[0]?.totalPayment ?? 0;
+        employee.balanceDue -= employee.advancePaymentTotal;
+        employee.balanceDue -= employee.paymentTotal;
+    }
 }
