@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { ObjectId } from 'mongodb';
 import { Status } from '../common/constants';
 
 import { IUser } from '../models/User';
@@ -20,6 +21,14 @@ export const createChat = async (req: Request, res: Response) => {
     // Handle images if exist
     if (req.files) {
         params.imagesFile = JSON.parse(JSON.stringify(req.files));
+    }
+
+    // Check if replyTo provided and exist or not
+    if (params.replyToId) {
+        const repliedChat = await Chat.findById(params.replyToId);
+        if (!repliedChat) {
+            return res.json({ status: Status.Error, message: 'Message to reply not found' });
+        }
     }
 
     // Check if there nothing to send
@@ -63,6 +72,8 @@ export const getChats = async (req: Request, res: Response) => {
 
             chats = await Chat.find({ chatChannel: ChatChannels.JOB_REQUEST, jobRequest: jobRequest._id })
                 .populate({ path: 'jobRequest', select: '-__v -track' })
+                .populate({ path: 'replyTo', select: '-__v' })
+                .populate({ path: 'readStatus.readBy', select: 'profile info contact location' })
                 .populate({ path: 'user', select: 'profile info contact location' })
                 .populate({ path: 'company', select: 'info address contact' })
                 .populate({ path: 'customer', select: 'profile info address contact' });
@@ -74,6 +85,45 @@ export const getChats = async (req: Request, res: Response) => {
     }
 
     return res.json({ status: Status.Success, chats });
+
+}
+
+export const markRead = async (req: Request, res: Response) => {
+
+    const { chatChannel, id } = req.params;
+    const params = req.body;
+    const company = <ICompany>req.company;
+    const user = <IUser>req.user;
+
+    // Retrieve and check if Job Request exist
+    const jobRequest = await JobRequest.findOne({ _id: id, company: company._id })
+    if (!jobRequest) {
+        return res.json({ status: Status.Error, message: 'Job Request not found' });
+    }
+
+    // Retrieve and check if last message 
+    const lastChat = await Chat.findById(params.lastReadChatId);
+    if (!lastChat) {
+        return res.json({ status: Status.Error, message: 'Last message not found' });
+    }
+
+    // Retrieve all chats to be read
+    const chatsToRead = await JobRequestChat.find({
+        jobRequest: jobRequest._id,
+        _id: { $lte: lastChat._id },
+        customer: { $exists: true },
+        'readStatus.isRead': false,
+    });
+
+    // Iterate all chats to be read and update the read status
+    for (const chat of chatsToRead) {
+        chat.readStatus.isRead = true;
+        chat.readStatus.readBy = user._id;
+        chat.readStatus.readAt = new Date;
+        await chat.save();
+    }
+
+    return res.json({ status: Status.Success, message: 'Chats marked as read successfully.', chatsToRead });
 
 }
 
@@ -97,6 +147,7 @@ const _createJobRequestChat = async (params: any, id: string, user: IUser, compa
         jobRequest,
         chatChannel: ChatChannels.JOB_REQUEST,
         user, company,
+        replyTo: params.replyToId,
         message: params.message
     });
 
