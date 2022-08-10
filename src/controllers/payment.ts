@@ -895,39 +895,37 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
 
         if (invoiceCommission?.technicians) {
             for (const technicianCommission of invoiceCommission.technicians) {
-                // if (technicianCommission.contractor && !technicianCommission.paid) {
-                if (technicianCommission.contractor) {
+                if (technicianCommission.contractor && !technicianCommission.paid) {
                     const contractor = await Company.findById(technicianCommission.contractor).exec();
                     const contractorEntry = vendors.find((v: any) => v.contractor._id?.toString() === technicianCommission.contractor?.toString());
 
                     if (contractorEntry) {
                         contractorEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
-                        contractorEntry.balanceDue += Number(technicianCommission.commissionAmount.toFixed(2));
+                        // contractorEntry.balanceDue += Number(technicianCommission.commissionAmount.toFixed(2));
                         contractorEntry?.invoiceIds?.push(invoice._id);
                     } else {
                         vendors.push({
                             contractor,
                             commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
-                            balanceDue: Number(technicianCommission.commissionAmount.toFixed(2)),
+                            // balanceDue: Number(technicianCommission.commissionAmount.toFixed(2)),
                             invoiceIds: [invoice._id],
                         });
                     }
                 }
 
-                // if (technicianCommission.technician && !technicianCommission.contractor && !technicianCommission.paid) {
-                if (technicianCommission.technician && !technicianCommission.contractor) {
+                if (technicianCommission.technician && !technicianCommission.contractor && !technicianCommission.paid) {
                     const technician = await User.findById(technicianCommission.technician).exec();
                     const technicianEntry = employees.find((t: any) => t.employee._id?.toString() === technicianCommission.technician?.toString());
 
                     if (technicianEntry) {
                         technicianEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
-                        technicianEntry.balanceDue += Number(technicianCommission.commissionAmount.toFixed(2));
+                        // technicianEntry.balanceDue += Number(technicianCommission.commissionAmount.toFixed(2));
                         technicianEntry.invoiceIds.push(invoice._id);
                     } else {
                         employees.push({
                             employee: technician,
                             commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
-                            balanceDue: Number(technicianCommission.commissionAmount.toFixed(2)),
+                            // balanceDue: Number(technicianCommission.commissionAmount.toFixed(2)),
                             invoiceIds: [invoice._id],
                         });
                     }
@@ -1269,15 +1267,21 @@ export const _handleVoidPayment = async (invoiceIds: string[], payment: IPayment
 }
 
 const _getVendorPayments = async (vendors: any[], company: ICompany, queryPayment: any) => {
-    queryPayment.company = company._id;
-    queryPayment.isVoid = { $ne: true };
+    const query: any = {
+        company: company._id,
+        isVoid: { $ne: true }
+    };
+    // queryPayment.company = company._id;
+    // queryPayment.isVoid = { $ne: true };
     for (const vendor of vendors) {
-        queryPayment.contractor = vendor?.contractor?._id;
+        // queryPayment.contractor = vendor?.contractor?._id;
+        query.contractor = vendor?.contractor?._id;
 
         // Retrieve advance payments history and the total of it
-        const advancePayments = await AdvancePaymentVendor.find({ ...queryPayment });
+        // const advancePayments = await AdvancePaymentVendor.find({ ...queryPayment });
         const advancePayment = await AdvancePaymentVendor.aggregate([
-            { $match: { ...queryPayment } },
+            // { $match: { ...queryPayment } },
+            { $match: { ...query } },
             {
                 $group: {
                     _id: { contractor: "$contractor", company: "$company" },
@@ -1287,37 +1291,48 @@ const _getVendorPayments = async (vendors: any[], company: ICompany, queryPaymen
         ]);
 
         // Retrieve payments history and the total of it
-        const payments = await PaymentVendor.find({ ...queryPayment });
+        // const payments = await PaymentVendor.find({ ...queryPayment });
         const payment = await PaymentVendor.aggregate([
-            { $match: { ...queryPayment } },
+            // { $match: { ...queryPayment } },
+            { $match: { ...query } },
             {
                 $group: {
                     _id: { contractor: "$contractor", company: "$company" },
-                    totalPayment: { $sum: "$amountPaid" }
+                    // totalPayment: { $sum: "$amountPaid" },
+                    creditUsed: { $sum: "$creditUsed" }
                 }
             }
         ]);
 
         // Put the retrieved history and total to each vendor
-        vendor.advancePayments = advancePayments;
-        vendor.payments = payments;
+        // vendor.advancePayments = advancePayments;
+        // vendor.payments = payments;
+        // vendor.paymentTotal = payment[0]?.totalPayment ?? 0;
+        // vendor.balanceDue -= vendor.advancePaymentTotal;
+        // vendor.balanceDue -= vendor.paymentTotal;
         vendor.advancePaymentTotal = advancePayment[0]?.totalAdvancePayment ?? 0;
-        vendor.paymentTotal = payment[0]?.totalPayment ?? 0;
-        vendor.balanceDue -= vendor.advancePaymentTotal;
-        vendor.balanceDue -= vendor.paymentTotal;
+        vendor.creditUsedTotal = payment[0]?.creditUsed ?? 0;
+        vendor.creditAvailable = vendor.advancePaymentTotal - vendor.creditUsedTotal;
+        vendor.creditAvailable = vendor.creditAvailable < 0 ? 0 : vendor.creditAvailable;
     }
 }
 
 const _getEmployeePayments = async (employees: any[], company: ICompany, queryPayment: any) => {
-    queryPayment.company = company._id;
-    queryPayment.isVoid = { $ne: true };
+    const query: any = {
+        company: company._id,
+        isVoid: { $ne: true }
+    };
+    // queryPayment.company = company._id;
+    // queryPayment.isVoid = { $ne: true };
     for (const employee of employees) {
-        queryPayment.employee = employee?.employee?._id;
+        // queryPayment.employee = employee?.employee?._id;
+        query.employee = employee?.employee?._id;
 
         // Retrieve advance payments history and the total of it
-        const advancePayments = await AdvancePaymentEmployee.find({ ...queryPayment });
+        // const advancePayments = await AdvancePaymentEmployee.find({ ...queryPayment });
         const advancePayment = await AdvancePaymentEmployee.aggregate([
-            { $match: { ...queryPayment } },
+            // { $match: { ...queryPayment } },
+            { $match: { ...query } },
             {
                 $group: {
                     _id: { employee: "$employee", company: "$company" },
@@ -1327,23 +1342,28 @@ const _getEmployeePayments = async (employees: any[], company: ICompany, queryPa
         ]);
 
         // Retrieve payments history and the total of it
-        const payments = await PaymentEmployee.find({ ...queryPayment });
+        // const payments = await PaymentEmployee.find({ ...queryPayment });
         const payment = await PaymentEmployee.aggregate([
-            { $match: { ...queryPayment } },
+            // { $match: { ...queryPayment } },
+            { $match: { ...query } },
             {
                 $group: {
                     _id: { employee: "$employee", company: "$company" },
-                    totalPayment: { $sum: "$amountPaid" }
+                    totalPayment: { $sum: "$amountPaid" },
+                    creditUsed: { $sum: "$creditUsed" }
                 }
             }
         ]);
 
         // Put the retrieved history and total to each employee
-        employee.advancePayments = advancePayments;
-        employee.payments = payments;
+        // employee.advancePayments = advancePayments;
+        // employee.payments = payments;
+        // employee.paymentTotal = payment[0]?.totalPayment ?? 0;
+        // employee.balanceDue -= employee.advancePaymentTotal;
+        // employee.balanceDue -= employee.paymentTotal;
         employee.advancePaymentTotal = advancePayment[0]?.totalAdvancePayment ?? 0;
-        employee.paymentTotal = payment[0]?.totalPayment ?? 0;
-        employee.balanceDue -= employee.advancePaymentTotal;
-        employee.balanceDue -= employee.paymentTotal;
+        employee.creditUsedTotal = payment[0]?.creditUsed ?? 0;
+        employee.creditAvailable = employee.advancePaymentTotal - employee.creditUsedTotal;
+        employee.creditAvailable = employee.creditAvailable < 0 ? 0 : employee.creditAvailable;
     }
 }
