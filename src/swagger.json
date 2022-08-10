@@ -7508,6 +7508,10 @@
                 "required": [
                 ],
                 "properties": {
+                  "replyToId": {
+                    "type": "string",
+                    "description": "ID of the replied message"
+                  },
                   "message": {
                     "type": "string",
                     "description": "The chat's message"
@@ -7518,6 +7522,60 @@
                       "type": "string",
                       "format": "binary"
                     }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/chats/jobRequest/{id}/markRead": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "To mark chats as read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of Job Request",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "lastReadChatId"
+                ],
+                "properties": {
+                  "lastReadChatId": {
+                    "type": "string",
+                    "description": "ID of the last chat message to be read"
                   }
                 }
               }

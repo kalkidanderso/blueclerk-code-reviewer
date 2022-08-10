@@ -72,7 +72,7 @@ const ChatSchema = new Schema(
             isRead: { type: Boolean, default: false },
             readBy: {
                 type: Schema.Types.ObjectId,
-                reaf: 'User'
+                ref: 'User'
             },
             readAt: Date
         }
