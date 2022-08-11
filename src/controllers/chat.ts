@@ -5,7 +5,7 @@ import { Status } from '../common/constants';
 import { IUser } from '../models/User';
 import { ICompany } from '../models/Company';
 import { JobRequest } from '../models/JobRequest';
-import { Chat, ChatChannels, IJobRequestChat, JobRequestChat } from '../models/Chat';
+import { IChat, Chat, ChatChannels, IJobRequestChat, JobRequestChat } from '../models/Chat';
 
 /**
  * To create new chat
@@ -16,6 +16,7 @@ export const createChat = async (req: Request, res: Response) => {
     const params = req.body;
     const user = <IUser>req.user;
     const company = <ICompany>req.company;
+    let repliedChat: IChat;
     let chat;
 
     // Handle images if exist
@@ -25,7 +26,7 @@ export const createChat = async (req: Request, res: Response) => {
 
     // Check if replyTo provided and exist or not
     if (params.replyToId) {
-        const repliedChat = await Chat.findById(params.replyToId);
+        repliedChat = await Chat.findById(params.replyToId);
         if (!repliedChat) {
             return res.json({ status: Status.Error, message: 'Message to reply not found' });
         }
@@ -39,7 +40,7 @@ export const createChat = async (req: Request, res: Response) => {
     try {
         switch (chatChannel) {
             case ChatChannels.JOB_REQUEST:
-                chat = await _createJobRequestChat(params, id, user, company);
+                chat = await _createJobRequestChat(params, id, user, company, repliedChat);
                 break;
 
             default:
@@ -134,7 +135,7 @@ export const markRead = async (req: Request, res: Response) => {
 /**
  * Partial method to create Job Request Chat
  */
-const _createJobRequestChat = async (params: any, id: string, user: IUser, company: ICompany): Promise<IJobRequestChat> => {
+const _createJobRequestChat = async (params: any, id: string, user: IUser, company: ICompany, repliedChat: IChat): Promise<IJobRequestChat> => {
 
     // Check if Job Request exist
     const jobRequest = await JobRequest.findOne({ _id: id, company: company._id });
@@ -147,7 +148,7 @@ const _createJobRequestChat = async (params: any, id: string, user: IUser, compa
         jobRequest,
         chatChannel: ChatChannels.JOB_REQUEST,
         user, company,
-        replyTo: params.replyToId,
+        replyTo: repliedChat,
         message: params.message
     });
 
