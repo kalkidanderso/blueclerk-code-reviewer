@@ -73,7 +73,7 @@ export const getChats = async (req: Request, res: Response) => {
 
             chats = await Chat.find({ chatChannel: ChatChannels.JOB_REQUEST, jobRequest: jobRequest._id })
                 .populate({ path: 'jobRequest', select: '-__v -track' })
-                .populate({ path: 'replyTo', select: '-__v' })
+                .populate({ path: 'replyTo', select: '-__v', populate: [{ path: 'user', select: 'profile info contact' }] })
                 .populate({ path: 'readStatus.readBy', select: 'profile info contact location' })
                 .populate({ path: 'user', select: 'profile info contact location' })
                 .populate({ path: 'company', select: 'info address contact' })
@@ -161,6 +161,16 @@ const _createJobRequestChat = async (params: any, id: string, user: IUser, compa
         jobRequestChat.images.push(...images);
     }
 
-    return await jobRequestChat.save();
+    await jobRequestChat.save();
+    await jobRequestChat
+        .populate({ path: 'jobRequest', select: '-__v -track' })
+        .populate({ path: 'replyTo', select: '-__v', populate: [{ path: 'user', select: 'profile info contact' }] })
+        .populate({ path: 'readStatus.readBy', select: 'profile info contact location' })
+        .populate({ path: 'user', select: 'profile info contact location' })
+        .populate({ path: 'company', select: 'info address contact' })
+        .populate({ path: 'customer', select: 'profile info address contact' })
+        .execPopulate();
+
+    return jobRequestChat;
 
 }
