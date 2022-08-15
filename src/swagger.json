@@ -10661,6 +10661,10 @@
                   "endDate": {
                     "type": "string"
                   },
+                  "offset": {
+                    "type": "number",
+                    "description": "Number of hours a certain time zone is ahead of or behind GMT for the client"
+                  },
                   "dueDate": {
                     "type": "string"
                   },
@@ -11153,6 +11157,10 @@
                   "paidAt": {
                     "type": "string",
                     "description": "Date when the advance payment has been made, default to today if not provided"
+                  },
+                  "appliedAt": {
+                    "type": "string",
+                    "description": "Date when the advance payment is applied on, default to today if not provided"
                   },
                   "referenceNumber": {
                     "type": "string"

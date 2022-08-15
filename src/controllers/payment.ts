@@ -415,8 +415,11 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
         return res.json({ statstus: Status.Error, message: 'Either invoiceIds or startDate endDate is required.' });
     }
 
-    const startDate = moment(params.startDate).startOf('day').utc().format();
-    const endDate = moment(params.endDate).endOf('day').utc().format();
+    // const startDate = moment(params.startDate).startOf('day').utc().format();
+    // const endDate = moment(params.endDate).endOf('day').utc().format();
+    const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
+    const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
+    let creditUsed = params.creditUsed ?? 0;
 
     if (paramsInvoiceIds.length) {
         query = { _id: { $in: paramsInvoiceIds } }
@@ -441,8 +444,9 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
         referenceNumber: params.referenceNumber,
         startDate: params.startDate ? moment(params.startDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
         endDate: params.endDate ? moment(params.endDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+        offset: params.offset,
         paidAt: params.paidAt ? moment(params.paidAt).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
-        creditUsed: params.creditUsed,
+        creditUsed,
         note: params.note,
         company,
         createdBy: user,
@@ -463,9 +467,37 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                 ...paymentEntry
             }).save();
 
-            // Deduct vendor credit
-            const contractorCredit = (contractor.credit ?? 0) - paymentVendor.creditUsed;
-            contractor.credit = contractorCredit < 0 ? 0 : contractorCredit;
+            if (creditUsed > 0) {
+                // Deduct vendor credit
+                const contractorCredit = (contractor.credit ?? 0) - creditUsed;
+                contractor.credit = contractorCredit < 0 ? 0 : contractorCredit;
+
+                // Deduct advance payment's balance
+                // let creditUsed = params.creditUsed;
+                const vendorAdvancePayments = await AdvancePayment.find({
+                    company: company._id,
+                    isVoid: { $ne: true },
+                    contractor: contractor._id,
+                    appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) }
+                });
+                // Iterate advance payments and deduct their balance
+                for (const advancePayment of vendorAdvancePayments) {
+                    if (creditUsed > advancePayment.balance) {
+                        creditUsed -= advancePayment.balance;
+                        advancePayment.balance = 0;
+                    } else {
+                        advancePayment.balance -= creditUsed;
+                        creditUsed = 0;
+                    }
+
+                    await advancePayment.save();
+
+                    if (creditUsed <= 0) {
+                        break;
+                    }
+                };
+            }
+
 
             // Iterate all invoices to mark the commission as paid and deduct vendor balance
             for (const invoice of invoices) {
@@ -504,9 +536,37 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                 ...paymentEntry
             }).save();
 
-            // Deduct employee credit
-            const employeeCredit = (employee.credit ?? 0) - paymentEmployee.creditUsed;
-            employee.credit = employeeCredit < 0 ? 0 : employeeCredit;
+            if (creditUsed > 0) {
+                // Deduct employee credit
+                const employeeCredit = (employee.credit ?? 0) - creditUsed;
+                employee.credit = employeeCredit < 0 ? 0 : employeeCredit;
+
+                // Deduct advance payment's balance
+                // let creditUsed = params.creditUsed;
+                const employeeAdvancePayments = await AdvancePayment.find({
+                    company: company._id,
+                    isVoid: { $ne: true },
+                    employee: employee._id,
+                    appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) }
+                });
+                // Iterate advance payments and deduct their balance
+                for (const advancePayment of employeeAdvancePayments) {
+                    if (creditUsed > advancePayment.balance) {
+                        creditUsed -= advancePayment.balance;
+                        advancePayment.balance = 0;
+                    } else {
+                        advancePayment.balance -= creditUsed;
+                        creditUsed = 0;
+                    }
+
+                    await advancePayment.save();
+
+                    if (creditUsed <= 0) {
+                        break;
+                    }
+                };
+            }
+
 
             // Iterate all invoices to mark the commission as paid and deduct employee balance
             for (const invoice of invoices) {
@@ -866,7 +926,7 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
     const vendors: any = [];
     const employees: any = [];
-    let query, queryPaymentVendor: any = {}, queryPaymentEmployee: any = {};
+    let query, queryPaymentVendor: any = {}, queryPaymentEmployee: any = {}, queryAdvancePaymentVendor: any = {}, queryAdvancePaymentEmployee: any = {};
 
     // Check when startDate and endDate is provided, offset must be required
     if (params.startDate && params.endDate) {
@@ -878,7 +938,9 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
         const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
         query = { issuedDate: { $gte: startDate, $lte: endDate } };
         queryPaymentVendor = { paidAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
+        queryAdvancePaymentVendor = { appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
         queryPaymentEmployee = { paidAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
+        queryAdvancePaymentEmployee = { appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
     }
 
     // get job with unpaid technician or contractor
@@ -934,8 +996,10 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
         }
     }
 
-    await _getVendorPayments(vendors, company, queryPaymentVendor);
-    await _getEmployeePayments(employees, company, queryPaymentEmployee);
+    // await _getVendorPayments(vendors, company, queryPaymentVendor);
+    await _getVendorPayments(vendors, company, queryPaymentVendor, queryAdvancePaymentVendor);
+    // await _getEmployeePayments(employees, company, queryPaymentEmployee);
+    await _getEmployeePayments(employees, company, queryPaymentEmployee, queryAdvancePaymentEmployee);
 
     return res.json({
         status: Status.Success,
@@ -1062,11 +1126,14 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
     const params = req.body;
     const company = <ICompany>req.company;
     let payment: IPayment;
+    let paymentVendor: IPaymentVendor;
+    let paymentEmployee: IPaymentEmployee;
     let customer: ICustomer;
 
     switch (params.type) {
         case 'vendor':
             payment = await Payment.findOne({ _id: params.paymentId, company, __t: 'PaymentVendor' }).exec();
+            paymentVendor = <IPaymentVendor>payment;
 
             if (!payment) {
                 return res.json({ status: Status.Error, message: `Payment with type ${params.type} is Not Found` });
@@ -1117,7 +1184,8 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
         }
 
         try {
-            await _handleVoidPayment(invoiceIds, payment, customer);
+            await _handleVoidPayment(params.type, invoiceIds, payment, customer);
+            await _handleVoidPaymentContractor(params.type, paymentVendor, company._id);
         } catch (err) {
             return res.json({ status: Status.Error, message: err.message });
         }
@@ -1213,7 +1281,7 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
     return invoices;
 }
 
-export const _handleVoidPayment = async (invoiceIds: string[], payment: IPayment, customer: ICustomer) => {
+export const _handleVoidPayment = async (paymentType: string, invoiceIds: string[], payment: IPayment, customer: ICustomer) => {
 
     const invoices = await Invoice.find({ _id: { $in: [...new Set(invoiceIds)] } })
 
@@ -1224,40 +1292,45 @@ export const _handleVoidPayment = async (invoiceIds: string[], payment: IPayment
 
     if (invoices?.length) {
         for (const invoice of invoices) {
-            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id }).exec();
-            if (invoiceCommission?.technicians) {
-                for (const technicianCommission of invoiceCommission.technicians) {
-                    if (technicianCommission.contractor) {
-                        const contractor = await Company.findById(technicianCommission.contractor).exec();
-                        contractor.balance += technicianCommission.commissionAmount;
-                        await contractor.save();
-                    }
+            if (['vendor', 'employee'].includes(paymentType)) {
+                // TODO: To review and check for void customer payment, should have nothing to do with invoice commission
+                const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id }).exec();
+                if (invoiceCommission?.technicians) {
+                    for (const technicianCommission of invoiceCommission.technicians) {
+                        if (technicianCommission.contractor) {
+                            const contractor = await Company.findById(technicianCommission.contractor).exec();
+                            contractor.balance += technicianCommission.commissionAmount;
+                            await contractor.save();
+                        }
 
-                    if (technicianCommission.technician && !technicianCommission.contractor) {
-                        const technician = await User.findById(technicianCommission.technician).exec();
-                        technician.balance += technicianCommission.commissionAmount;
-                        await technician.save();
-                    }
+                        if (technicianCommission.technician && !technicianCommission.contractor) {
+                            const technician = await User.findById(technicianCommission.technician).exec();
+                            technician.balance += technicianCommission.commissionAmount;
+                            await technician.save();
+                        }
 
-                    technicianCommission.paid = false;
+                        technicianCommission.paid = false;
+                    }
                     await invoiceCommission.save();
                 }
             }
 
-            // Find invoice in line for multiple invoices
-            const paymentLine = payment?.line?.find(line => line.invoice.toString() === invoice._id.toString());
-            invoice.balanceDue += paymentLine?.amountPaid ?? payment.amountPaid;
-            invoice.paymentApplied -= paymentLine?.amountPaid ?? payment.amountPaid;
+            if (paymentType === 'customer') {
+                // Find invoice in line for multiple invoices
+                const paymentLine = payment?.line?.find(line => line.invoice.toString() === invoice._id.toString());
+                invoice.balanceDue += paymentLine?.amountPaid ?? payment.amountPaid;
+                invoice.paymentApplied -= paymentLine?.amountPaid ?? payment.amountPaid;
 
-            if (invoice.balanceDue > 0) {
-                invoice.status = InvoiceStatus.PARTIALLY_PAID;
+                if (invoice.balanceDue > 0) {
+                    invoice.status = InvoiceStatus.PARTIALLY_PAID;
+                }
+
+                if (invoice.paymentApplied <= 0) {
+                    invoice.status = InvoiceStatus.UNPAID;
+                }
+
+                await invoice.save();
             }
-
-            if (invoice.paymentApplied <= 0) {
-                invoice.status = InvoiceStatus.UNPAID;
-            }
-
-            await invoice.save();
         }
     } else {
         throw new Error('Invoice not found');
@@ -1266,26 +1339,101 @@ export const _handleVoidPayment = async (invoiceIds: string[], payment: IPayment
     return;
 }
 
-const _getVendorPayments = async (vendors: any[], company: ICompany, queryPayment: any) => {
-    const query: any = {
-        company: company._id,
-        isVoid: { $ne: true }
-    };
-    // queryPayment.company = company._id;
-    // queryPayment.isVoid = { $ne: true };
+/**
+ * Partial method called by voidPaymentContractor,
+ * to handle reverting back the advance payment's balance,
+ * and to revert back the contractor's credit
+ */
+const _handleVoidPaymentContractor = async (paymentType: string, paymentVendor: IPaymentVendor, companyId: string) => {
+
+    // This method only serve for voiding payment vendor/contractor
+    if (paymentType !== 'vendor') {
+        return;
+    }
+
+    // Find contractor and construct startDate endDate for query
+    const contractor = await Company.findById(paymentVendor.contractor);
+    const startDate = moment(paymentVendor.startDate).startOf('day').utcOffset(paymentVendor.offset ?? '', true).utc().format();
+    const endDate = moment(paymentVendor.endDate).endOf('day').utcOffset(paymentVendor.offset ?? '', true).utc().format();
+
+    // Revert deducted contractor credit
+    contractor.credit += paymentVendor.creditUsed;
+
+    /**
+     * REVERT DEDUCTED ADVANCE PAYMENT'S BALANCE
+     */
+
+    /**
+     * Find the advance payments of vendor, in reverse order,
+     * to revert to the latest advance payment first
+     */
+    const vendorAdvancePayments = await AdvancePayment.find({
+        company: companyId,
+        isVoid: { $ne: true },
+        contractor: contractor._id,
+        appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) }
+    }).sort({ _id: -1 });
+
+    // Get the credit used to be reverted
+    let creditUsed = paymentVendor.creditUsed;
+
+    if (!creditUsed) {
+        return;
+    }
+
+    for (const advancePayment of vendorAdvancePayments) {
+        if (advancePayment.balance + creditUsed > advancePayment.amount) {
+            /**
+             * Credit used is bigger than the balance to be reverted,
+             * only reverted as much as the advance payment amount
+             */
+            creditUsed -= (advancePayment.amount - advancePayment.balance);
+            advancePayment.balance = advancePayment.amount;
+        } else {
+            // Credit used is smaller or same with the balance, revert directly
+            advancePayment.balance += creditUsed;
+            creditUsed = 0;
+        }
+
+        await advancePayment.save();
+
+        // No more credit used to be reverted
+        if (creditUsed <= 0) {
+            break;
+        }
+    }
+
+    return;
+
+}
+
+const _getVendorPayments = async (vendors: any[], company: ICompany, queryPayment: any, queryAdvancePayment: any) => {
+    // const query: any = {
+    //     company: company._id,
+    //     isVoid: { $ne: true }
+    // };
+    queryPayment.company = company._id;
+    queryPayment.isVoid = { $ne: true };
+    queryAdvancePayment.company = company._id;
+    queryAdvancePayment.isVoid = { $ne: true };
     for (const vendor of vendors) {
-        // queryPayment.contractor = vendor?.contractor?._id;
-        query.contractor = vendor?.contractor?._id;
+        queryPayment.contractor = vendor?.contractor?._id;
+        queryAdvancePayment.contractor = vendor?.contractor?._id;
+
+        console.log('== queryAdvancePayment:', queryAdvancePayment);
+        // query.contractor = vendor?.contractor?._id;
 
         // Retrieve advance payments history and the total of it
         // const advancePayments = await AdvancePaymentVendor.find({ ...queryPayment });
         const advancePayment = await AdvancePaymentVendor.aggregate([
             // { $match: { ...queryPayment } },
-            { $match: { ...query } },
+            { $match: { ...queryAdvancePayment } },
+            // { $match: { ...query } },
             {
                 $group: {
                     _id: { contractor: "$contractor", company: "$company" },
-                    totalAdvancePayment: { $sum: "$amount" }
+                    totalAdvancePayment: { $sum: "$amount" },
+                    creditAvailable: { $sum: '$balance' }
                 }
             }
         ]);
@@ -1293,8 +1441,8 @@ const _getVendorPayments = async (vendors: any[], company: ICompany, queryPaymen
         // Retrieve payments history and the total of it
         // const payments = await PaymentVendor.find({ ...queryPayment });
         const payment = await PaymentVendor.aggregate([
-            // { $match: { ...queryPayment } },
-            { $match: { ...query } },
+            { $match: { ...queryPayment } },
+            // { $match: { ...query } },
             {
                 $group: {
                     _id: { contractor: "$contractor", company: "$company" },
@@ -1311,32 +1459,38 @@ const _getVendorPayments = async (vendors: any[], company: ICompany, queryPaymen
         // vendor.balanceDue -= vendor.advancePaymentTotal;
         // vendor.balanceDue -= vendor.paymentTotal;
         vendor.advancePaymentTotal = advancePayment[0]?.totalAdvancePayment ?? 0;
+        vendor.creditAvailable = advancePayment[0]?.creditAvailable ?? 0;
         vendor.creditUsedTotal = payment[0]?.creditUsed ?? 0;
-        vendor.creditAvailable = vendor.advancePaymentTotal - vendor.creditUsedTotal;
-        vendor.creditAvailable = vendor.creditAvailable < 0 ? 0 : vendor.creditAvailable;
+        // vendor.creditAvailable = vendor.advancePaymentTotal - vendor.creditUsedTotal;
+        // vendor.creditAvailable = vendor.creditAvailable < 0 ? 0 : vendor.creditAvailable;
     }
 }
 
-const _getEmployeePayments = async (employees: any[], company: ICompany, queryPayment: any) => {
-    const query: any = {
-        company: company._id,
-        isVoid: { $ne: true }
-    };
-    // queryPayment.company = company._id;
-    // queryPayment.isVoid = { $ne: true };
+const _getEmployeePayments = async (employees: any[], company: ICompany, queryPayment: any, queryAdvancePayment: any) => {
+    // const query: any = {
+    //     company: company._id,
+    //     isVoid: { $ne: true }
+    // };
+    queryPayment.company = company._id;
+    queryPayment.isVoid = { $ne: true };
+    queryAdvancePayment.company = company._id;
+    queryAdvancePayment.isVoid = { $ne: true };
     for (const employee of employees) {
-        // queryPayment.employee = employee?.employee?._id;
-        query.employee = employee?.employee?._id;
+        queryPayment.employee = employee?.employee?._id;
+        queryAdvancePayment.employee = employee?.employee?._id;
+        // query.employee = employee?.employee?._id;
 
         // Retrieve advance payments history and the total of it
         // const advancePayments = await AdvancePaymentEmployee.find({ ...queryPayment });
         const advancePayment = await AdvancePaymentEmployee.aggregate([
             // { $match: { ...queryPayment } },
-            { $match: { ...query } },
+            { $match: { ...queryAdvancePayment } },
+            // { $match: { ...query } },
             {
                 $group: {
                     _id: { employee: "$employee", company: "$company" },
-                    totalAdvancePayment: { $sum: "$amount" }
+                    totalAdvancePayment: { $sum: "$amount" },
+                    creditAvailable: { $sum: '$balance' }
                 }
             }
         ]);
@@ -1344,8 +1498,8 @@ const _getEmployeePayments = async (employees: any[], company: ICompany, queryPa
         // Retrieve payments history and the total of it
         // const payments = await PaymentEmployee.find({ ...queryPayment });
         const payment = await PaymentEmployee.aggregate([
-            // { $match: { ...queryPayment } },
-            { $match: { ...query } },
+            { $match: { ...queryPayment } },
+            // { $match: { ...query } },
             {
                 $group: {
                     _id: { employee: "$employee", company: "$company" },
@@ -1362,8 +1516,9 @@ const _getEmployeePayments = async (employees: any[], company: ICompany, queryPa
         // employee.balanceDue -= employee.advancePaymentTotal;
         // employee.balanceDue -= employee.paymentTotal;
         employee.advancePaymentTotal = advancePayment[0]?.totalAdvancePayment ?? 0;
+        employee.creditAvailable = advancePayment[0]?.creditAvailable ?? 0;
         employee.creditUsedTotal = payment[0]?.creditUsed ?? 0;
-        employee.creditAvailable = employee.advancePaymentTotal - employee.creditUsedTotal;
-        employee.creditAvailable = employee.creditAvailable < 0 ? 0 : employee.creditAvailable;
+        // employee.creditAvailable = employee.advancePaymentTotal - employee.creditUsedTotal;
+        // employee.creditAvailable = employee.creditAvailable < 0 ? 0 : employee.creditAvailable;
     }
 }

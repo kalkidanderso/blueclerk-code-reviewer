@@ -5,9 +5,11 @@ import { ICompany } from '../models/Company';
 export interface IAdvancePayment extends Document {
     company: Schema.Types.ObjectId | ICompany
     amount: number
+    balance: number
+    referenceNumber: string
     paymentType: string
     paidAt: Date
-    referenceNumber: string
+    appliedAt: Date
     note?: string
     isVoid: boolean
     voidedAt: Date
@@ -34,9 +36,14 @@ const AdvancePaymentSchema = new Schema({
         type: Number,
         default: 0
     },
+    balance: {
+        type: Number,
+        default: 0
+    },
     referenceNumber: String,
     paymentType: String,
     paidAt: Date,
+    appliedAt: Date,
     note: String,
     isVoid: {
         type: Boolean,
