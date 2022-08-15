@@ -15,7 +15,9 @@ export const createAdvancePaymentContractor = async (req: Request, res: Response
         company: company._id,
         referenceNumber: params.referenceNumber,
         paidAt: params.paidAt ?? new Date(),
+        appliedAt: params.appliedAt ?? new Date(),
         amount: params.amount,
+        balance: params.amount,
         paymentType: params.paymentType,
         note: params.note,
         createdBy: user._id

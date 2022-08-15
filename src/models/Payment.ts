@@ -45,6 +45,7 @@ export interface IPaymentVendor extends IPayment {
     invoices: [Schema.Types.ObjectId | IInvoice]
     startDate: Date
     endDate: Date
+    offset: number
     creditUsed: number
 }
 
@@ -54,6 +55,7 @@ export interface IPaymentEmployee extends IPayment {
     invoices: [Schema.Types.ObjectId | IInvoice]
     startDate: Date
     endDate: Date
+    offset: number
     creditUsed: number
 }
 
@@ -197,6 +199,7 @@ const PaymentVendorSchema = new Schema({
     }],
     startDate: Date,
     endDate: Date,
+    offset: Number,
     creditUsed: {
         type: Number,
         default: 0
@@ -215,6 +218,7 @@ const PaymentEmployeeSchema = new Schema({
     }],
     startDate: Date,
     endDate: Date,
+    offset: Number,
     creditUsed: {
         type: Number,
         default: 0
