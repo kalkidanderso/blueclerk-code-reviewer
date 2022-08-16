@@ -266,10 +266,11 @@
                     "enum": [
                       1,
                       2,
+                      3,
                       4,
                       5
                     ],
-                    "description": "1 => SERVICE PROVIDER, 2 => BUILDER, 4 => INDEPENDENT CONTRACTOR, 5 => COMPANY (old company signup)"
+                    "description": "1 => SERVICE PROVIDER, 2 => BUILDER, 3 => SUPPLIER, 4 => INDEPENDENT CONTRACTOR, 5 => COMPANY (old company signup)"
                   },
                   "email": {
                     "type": "string",
@@ -294,6 +295,10 @@
                   "companyName": {
                     "type": "string",
                     "description": "**REQUIRED when** accountType is 5 (COMPANY) for old company signup"
+                  },
+                  "supplierName": {
+                    "type": "string",
+                    "description": "**REQUIRED when** accountType is 3 (SUPPLIER) for supplier signup"
                   },
                   "industryId": {
                     "type": "string",
