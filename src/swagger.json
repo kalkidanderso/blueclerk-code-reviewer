@@ -3875,6 +3875,47 @@
         ]
       }
     },
+    "/getSupplierBuilders": {
+      "get": {
+        "tags": [
+          "Customer"
+        ],
+        "summary": "To get builders of a supplier",
+        "parameters": [
+          {
+            "name": "isActive",
+            "in": "query",
+            "description": "To filter the builders by isActive. If not provided will return only the Active Builders",
+            "schema": {
+              "enum": [
+                "ALL",
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContactSchemaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/createCustomerEquipment": {
       "post": {
         "tags": [

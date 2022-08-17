@@ -9,6 +9,7 @@ import {
 } from '../middleware/permissions'
 import { uploadInvoices, uploadImageInS3 } from '../middleware/multer';
 import { getCompanyId } from '../middleware/company'
+import { getSupplierId } from '../middleware/supplier';
 import { refreshQBToken } from '../middleware/quickbook';
 import { getTechnicianContractor } from '../middleware/job'
 
@@ -528,6 +529,15 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Customer_Update),
         validate(Validations.mergeCustomers),
         customerController.mergeCustomers
+    )
+
+    router.get(
+        '/getSupplierBuilders',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getSupplierId(),
+        // checkUserPermissions(Permissions.Customer_Get_All),
+        customerController.getSupplierBuilders
     )
 
     //Customer equipments
