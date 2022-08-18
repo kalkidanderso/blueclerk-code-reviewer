@@ -1420,7 +1420,6 @@ const _getVendorPayments = async (vendors: any[], company: ICompany, queryPaymen
         queryPayment.contractor = vendor?.contractor?._id;
         queryAdvancePayment.contractor = vendor?.contractor?._id;
 
-        console.log('== queryAdvancePayment:', queryAdvancePayment);
         // query.contractor = vendor?.contractor?._id;
 
         // Retrieve advance payments history and the total of it
