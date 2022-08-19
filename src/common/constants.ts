@@ -855,3 +855,8 @@ export const UserPermissions = {
         off: [Permissions.None],
     }
 }
+
+export const payrollPaymentTypes = {
+    PayrollPayments : 'Payroll Payments',
+    AdvancePayments : 'Advance Payments',
+}
