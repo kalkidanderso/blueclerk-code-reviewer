@@ -2,8 +2,7 @@ import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb'
 import moment from 'moment'
 import * as _ from 'lodash';
-
-import { Status, Messages, InvoiceStatus, DefaultCommission, payrollPaymentTypes } from '../common/constants'
+import { Status, Messages, InvoiceStatus, payrollPaymentTypes } from '../common/constants'
 import { Company, ICompany } from '../models/Company'
 import { IUser, User } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
@@ -11,13 +10,8 @@ import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer, IPa
 import { Customer, ICustomer } from '../models/Customer'
 import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer'
 import { _createQBPayment, _deleteQBPayment, _updateQBPayment, _voidPayment } from './quickbook.payment'
-import { Employee } from '../models/Employee'
-import { Contract } from '../models/Contract'
-import { IJob, Job } from '../models/Job'
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission'
 import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor } from '../models/AdvancePayment';
-
-
 
 /**
  * To calculate invoice and customer payment amount related,
