@@ -10529,6 +10529,20 @@
             }
           },
           {
+            "name": "payrollPaymentType",
+            "in": "query",
+            "description": "Payroll Payment Type",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Payroll Payments",
+                "Advance Payments",
+                "All"
+              ]              
+            }
+          },          
+          {
             "name": "startDate",
             "in": "query",
             "description": "Filter of start paid date",
@@ -10568,9 +10582,17 @@
                       "$ref": "#/components/schemas/GeneralAPIResponse"
                     },
                     "payments": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Payment"
+                      "payrollPayments": {
+                        "type" : "array",
+                        "items": {
+                          "$ref": "#/components/schemas/Payment"
+                        }
+                      },
+                      "advancePayments":{
+                        "type" : "array",
+                        "items": {
+                          "$ref": "#/components/schemas/Payment"
+                        }                        
                       }
                     }
                   }

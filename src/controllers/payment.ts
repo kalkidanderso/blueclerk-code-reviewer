@@ -175,7 +175,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
 
     let query;
     let voidQuery;
-    let result;
+    let payments;
     const params = req.query;
     const company = <ICompany>req.company;
     const payrollPaymentType = params.payrollPaymentType;
@@ -203,10 +203,8 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
     switch (params.type) {
         case 'vendor':
             const vendorQuery = { company: company._id, contractor: params.id, ...query, ...voidQuery }
-            result = _.extend({ status: Status.Success });
-
             if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
-                const contractorPayments = await PaymentVendor.find(vendorQuery)
+                const payrollPayments = await PaymentVendor.find(vendorQuery)
                     .populate({
                         path: 'company',
                         select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -227,11 +225,11 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                     .catch((error: any) => {
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
-                result = _.extend(result, { payments: contractorPayments });
+                payments = _.extend(payments, { payrollPayments });
             }
 
             if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
-                const contractorAdvancePayments = await AdvancePaymentVendor.find(vendorQuery)
+                const advancePayments = await AdvancePaymentVendor.find(vendorQuery)
                     .populate({
                         path: 'company',
                         select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -252,15 +250,14 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                     .catch((error: any) => {
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
-                result = _.extend(result, { advancePayments: contractorAdvancePayments });
+                payments = _.extend(payments, { advancePayments });
             }
-            return res.json(result);
+            return res.json({status: Status.Success, payments});
 
         case 'employee':
             const employeeQuery = { company, employee: params.id, ...query, ...voidQuery }
-            result = _.extend({ status: Status.Success });
             if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
-                const employeePayments = await PaymentEmployee.find(employeeQuery)
+                const payrollPayments = await PaymentEmployee.find(employeeQuery)
                     .populate({
                         path: 'company',
                         select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -280,11 +277,11 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                     .catch((error: any) => {
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
-                result = _.extend(result, { payments: employeePayments });
+                payments = _.extend(payments, { payrollPayments });
             }
 
             if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
-                const employeeAdvancePayments = await AdvancePaymentEmployee.find(employeeQuery)
+                const advancePayments = await AdvancePaymentEmployee.find(employeeQuery)
                     .populate({
                         path: 'company',
                         select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -304,13 +301,13 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                     .catch((error: any) => {
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
-                result = _.extend(result, { advancePayments: employeeAdvancePayments });
+                    payments = _.extend(payments, { advancePayments });
             }
-            return res.json(result);
+            return res.json({status: Status.Success, payments});
 
         default:
             if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
-                const payments = await Payment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery })
+                const payrollPayments = await Payment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery })
                     .populate({
                         path: 'company',
                         select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -335,7 +332,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                     .catch((error: any) => {
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
-                result = _.extend(result, { payments: payments });
+                payments = _.extend(payments, { payrollPayments });
             }
 
             if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
@@ -364,9 +361,9 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                     .catch((error: any) => {
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
-                result = _.extend(result, { advancePayments: advancePayments });
+                payments = _.extend(payments, { advancePayments });
             }
-            return res.json(result);
+            return res.json({status: Status.Success, payments});
     }
 
 }
