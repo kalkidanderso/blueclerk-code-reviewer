@@ -184,6 +184,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
     const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
     const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
 
+    console.log('testing');
     if (params.startDate && params.endDate) {
         query = { paidAt: { $gte: startDate, $lte: endDate } }
     }
@@ -230,7 +231,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
 
-                result = _.extend({ payments: contractorPayments });
+                result = _.extend(result, { payments: contractorPayments });
 
             } 
 
@@ -257,7 +258,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
 
-                result = _.extend({ advancePayments: contractorAdvancePayments });
+                result = _.extend(result, { advancePayments: contractorAdvancePayments });
 
             }
             
@@ -287,7 +288,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                 .catch((error: any) => {
                     return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                 });
-                result = _.extend({ payments: employeePayments });
+                result = _.extend(result, { payments: employeePayments });
             }
 
             if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
@@ -311,7 +312,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                 .catch((error: any) => {
                     return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                 });                
-                result = _.extend({ advancePayments: employeeAdvancePayments });
+                result = _.extend(result, { advancePayments: employeeAdvancePayments });
             }
             return res.json(result);
 
@@ -342,7 +343,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                 .catch((error: any) => {
                     return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                 });
-                result = _.extend({ payments: payments });
+                result = _.extend(result, { payments: payments });
             }
 
             if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
@@ -371,7 +372,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                 .catch((error: any) => {
                     return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                 });
-                result = _.extend({ advancePayments: advancePayments });
+                result = _.extend(result, { advancePayments: advancePayments });
             }
 
             return res.json(result);

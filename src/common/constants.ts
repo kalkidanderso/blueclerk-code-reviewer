@@ -859,4 +859,5 @@ export const UserPermissions = {
 export const payrollPaymentTypes = {
     PayrollPayments : 'Payroll Payments',
     AdvancePayments : 'Advance Payments',
+    All : 'All',
 }
