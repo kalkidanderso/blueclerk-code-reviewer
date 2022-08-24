@@ -80,7 +80,7 @@ export const getChats = async (req: Request, res: Response) => {
                 .populate({ path: 'user', select: 'profile info contact location' })
                 .populate({ path: 'company', select: 'info address contact' })
                 .populate({ path: 'customer', select: 'profile info address contact' });
-            
+
             // TODO: get chats unread count
 
             break;
@@ -161,7 +161,7 @@ const _createJobRequestChat = async (params: any, id: string, user: IUser, compa
         const images = params.imagesFile?.images.map((image: any) => {
             return { imageUrl: image.location, uploadedBy: user.id, createdAt: new Date(), updatedAt: new Date() };
         });
-    
+
         jobRequestChat.images.push(...images);
     }
 
