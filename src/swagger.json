@@ -10582,18 +10582,16 @@
                       "$ref": "#/components/schemas/GeneralAPIResponse"
                     },
                     "payments": {
-                      "payrollPayments": {
-                        "type" : "array",
-                        "items": {
-                          "$ref": "#/components/schemas/Payment"
-                        }
-                      },
-                      "advancePayments":{
-                        "type" : "array",
-                        "items": {
-                          "$ref": "#/components/schemas/Payment"
-                        }                        
+                      "type" : "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Payment"
                       }
+                    },
+                    "advancePayments":{
+                      "type" : "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Payment"
+                      }                        
                     }
                   }
                 }
