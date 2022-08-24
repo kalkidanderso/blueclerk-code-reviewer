@@ -6400,6 +6400,16 @@ paths:
           required: false
           schema:
             type: string
+        - name: payrollPaymentType
+          in: query
+          description: Payroll Payment Type
+          required: false
+          schema:
+          type: string
+          enum:
+              - Payroll Payments
+              - Advance Payments
+              - All
         - name: startDate
           in: query
           description: Filter of start paid date
@@ -6431,7 +6441,11 @@ paths:
                   payments:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Payment'
+                    $ref: '#/components/schemas/Payment'
+                  advancePayments:
+                    type: array
+                    items:
+                    $ref: '#/components/schemas/Payment'                   
       security:
         - Bearer: []
   /recordPayment:
