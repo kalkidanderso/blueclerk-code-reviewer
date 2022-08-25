@@ -1194,7 +1194,7 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
     return invoices;
 }
 
-export const _handleVoidPayment = async (paramsType: string, invoiceIds: string[], payment: IPayment, customer: ICustomer) => {
+export const _handleVoidPayment = async (paymentType: string, invoiceIds: string[], payment: IPayment, customer: ICustomer) => {
 
     const invoices = await Invoice.find({ _id: { $in: [...new Set(invoiceIds)] } })
 
@@ -1205,7 +1205,7 @@ export const _handleVoidPayment = async (paramsType: string, invoiceIds: string[
 
     if (invoices?.length) {
         for (const invoice of invoices) {
-            if (paramsType === 'vendor' || paramsType === 'employee') {
+            if (['vendor', 'employee'].includes(paymentType)) {
                 // Find commissions of vendor or employee
                 const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id }).exec();
                 if (invoiceCommission?.technicians) {
@@ -1229,7 +1229,7 @@ export const _handleVoidPayment = async (paramsType: string, invoiceIds: string[
                 }
             }
 
-            if (paramsType === 'customer') {
+            if (paymentType === 'customer') {
                 // Find invoice in line for multiple invoices
                 const paymentLine = payment?.line?.find(line => line.invoice.toString() === invoice._id.toString());
 
