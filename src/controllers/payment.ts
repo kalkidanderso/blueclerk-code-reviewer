@@ -1098,7 +1098,7 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
         }
 
         try {
-            await _handleVoidPayment(invoiceIds, payment, customer);
+            await _handleVoidPayment(params.type, invoiceIds, payment, customer);
         } catch (err) {
             return res.json({ status: Status.Error, message: err.message });
         }
@@ -1194,7 +1194,7 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
     return invoices;
 }
 
-export const _handleVoidPayment = async (invoiceIds: string[], payment: IPayment, customer: ICustomer) => {
+export const _handleVoidPayment = async (paramsType: string, invoiceIds: string[], payment: IPayment, customer: ICustomer) => {
 
     const invoices = await Invoice.find({ _id: { $in: [...new Set(invoiceIds)] } })
 
@@ -1205,40 +1205,54 @@ export const _handleVoidPayment = async (invoiceIds: string[], payment: IPayment
 
     if (invoices?.length) {
         for (const invoice of invoices) {
-            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id }).exec();
-            if (invoiceCommission?.technicians) {
-                for (const technicianCommission of invoiceCommission.technicians) {
-                    if (technicianCommission.contractor) {
-                        const contractor = await Company.findById(technicianCommission.contractor).exec();
-                        contractor.balance += technicianCommission.commissionAmount;
-                        await contractor.save();
-                    }
+            if (paramsType === 'vendor' || paramsType === 'employee') {
+                // Find commissions of vendor or employee
+                const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id }).exec();
+                if (invoiceCommission?.technicians) {
+                    // Iterate and revert back commission balance
+                    for (const technicianCommission of invoiceCommission.technicians) {
+                        if (technicianCommission.contractor) {
+                            const contractor = await Company.findById(technicianCommission.contractor).exec();
+                            contractor.balance += technicianCommission.commissionAmount;
+                            await contractor.save();
+                        }
 
-                    if (technicianCommission.technician && !technicianCommission.contractor) {
-                        const technician = await User.findById(technicianCommission.technician).exec();
-                        technician.balance += technicianCommission.commissionAmount;
-                        await technician.save();
-                    }
+                        if (technicianCommission.technician && !technicianCommission.contractor) {
+                            const technician = await User.findById(technicianCommission.technician).exec();
+                            technician.balance += technicianCommission.commissionAmount;
+                            await technician.save();
+                        }
 
-                    technicianCommission.paid = false;
-                    await invoiceCommission.save();
+                        technicianCommission.paid = false;
+                        await invoiceCommission.save();
+                    }
                 }
             }
 
-            // Find invoice in line for multiple invoices
-            const paymentLine = payment?.line?.find(line => line.invoice.toString() === invoice._id.toString());
-            invoice.balanceDue += paymentLine?.amountPaid ?? payment.amountPaid;
-            invoice.paymentApplied -= paymentLine?.amountPaid ?? payment.amountPaid;
+            if (paramsType === 'customer') {
+                // Find invoice in line for multiple invoices
+                const paymentLine = payment?.line?.find(line => line.invoice.toString() === invoice._id.toString());
 
-            if (invoice.balanceDue > 0) {
-                invoice.status = InvoiceStatus.PARTIALLY_PAID;
+                // Set default paymentApplied and balanceDue if not exist on old invoice
+                invoice.paymentApplied = invoice.paymentApplied ? invoice.paymentApplied : 0;
+                invoice.balanceDue = invoice.balanceDue ? invoice.balanceDue : invoice.total - invoice.paymentApplied;
+
+                // Revert back invoice balanceDue and paymentApplied for PaymentCustomer
+                invoice.balanceDue += paymentLine?.amountPaid ?? payment.amountPaid;
+                invoice.paymentApplied -= paymentLine?.amountPaid ?? payment.amountPaid;
+
+                if (invoice.balanceDue > 0) {
+                    invoice.paid = false;
+                    invoice.status = InvoiceStatus.PARTIALLY_PAID;
+                }
+
+                if (invoice.paymentApplied <= 0) {
+                    invoice.paid = false;
+                    invoice.status = InvoiceStatus.UNPAID;
+                }
+
+                await invoice.save();
             }
-
-            if (invoice.paymentApplied <= 0) {
-                invoice.status = InvoiceStatus.UNPAID;
-            }
-
-            await invoice.save();
         }
     } else {
         throw new Error('Invoice not found');
