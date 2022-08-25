@@ -1,9 +1,13 @@
 import { Request, Response } from 'express';
 import moment from 'moment';
-import { Messages, Status } from '../common/constants';
-import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor } from '../models/AdvancePayment';
+import { Customer, ICustomer } from 'src/models/Customer';
+import { Invoice } from 'src/models/Invoice';
+import { IPaymentEmployee } from 'src/models/Payment';
+import { InvoiceStatus, Messages, Status } from '../common/constants';
+import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor, IAdvancePayment, IAdvancePaymentVendor } from '../models/AdvancePayment';
 import { Company, ICompany } from '../models/Company';
 import { IUser, User } from '../models/User';
+import { _voidPayment } from './quickbook.payment';
 
 export const createAdvancePaymentContractor = async (req: Request, res: Response) => {
 
@@ -123,5 +127,147 @@ export const getAdvancePaymentsByContractor = async (req: Request, res: Response
         default:
             return res.json({ status: Status.Error, message: 'Type not supported. Available Type to be used: vendor or employee.' });
     }
+
+}
+
+export const voidAdvancePaymentContractor = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const company = <ICompany>req.company;
+    let advancePayment: IAdvancePayment;
+    let advancePaymentVendor: IAdvancePaymentVendor;
+    const user = <IUser>req.user;
+    // let customer: ICustomer;
+
+    switch (params.type) {
+        case 'vendor':
+            advancePayment = await AdvancePayment.findOne({ _id: params.paymentId, company, __t: 'AdvancePaymentVendor' }).exec();
+            advancePaymentVendor = <IAdvancePaymentVendor>advancePayment;
+
+            if (!advancePayment) {
+                return res.json({ status: Status.Error, message: `Payment with type ${params.type} is Not Found` });
+            }
+            break;
+
+        case 'employee':
+            advancePayment = await AdvancePayment.findOne({ _id: params.paymentId, company, __t: 'AdvancePaymentEmployee' }).exec();
+
+            if (!advancePayment) {
+                return res.json({ status: Status.Error, message: `Payment with type ${params.type} is Not Found` });
+            }
+            break;
+
+        case 'customer':
+            advancePayment = await AdvancePayment.findOne({ _id: params.paymentId, company, __t: { $nin: ['AdvancePaymentVendor', 'AdvancePaymentEmployee'] } }).exec();
+
+            if (!advancePayment) {
+                return res.json({ status: Status.Error, message: `Advance Payment with type ${params.type} is Not Found` });
+            }
+            // customer = await Customer.findById(advancePayment.customer);
+            break;
+
+        default:
+            return res.json({ status: Status.Error, message: 'Type is required' });
+    }
+
+    const invoiceIds: string[] = [];
+    if (advancePayment) {
+        if (advancePayment.isVoid) {
+            return res.json({ status: Status.Error, message: 'Advance Payment already voided' });
+        }
+
+        advancePayment.isVoid = true;
+        advancePayment.voidedAt = new Date();
+        advancePayment.voidedBy = user;
+        advancePayment.updatedBy = user;
+        await advancePayment.save();
+
+        // if (advancePayment?.line?.length) {
+        //     advancePayment.line.forEach(line => invoiceIds.push(line.invoice.toString()));
+        // }
+
+        // if (advancePayment?.invoices?.length) {
+        //     advancePayment.invoices.forEach(invoice => invoiceIds.push(invoice.toString()));
+        // }
+
+        // if (advancePayment?.invoice) {
+        //     invoiceIds.push(advancePayment.invoice.toString());
+        // }
+
+        // try {
+        //     await _handleVoidAdvancePayment(params.type, invoiceIds, advancePayment, customer);
+        //     await _handleVoidPaymentContractor(params.type, advancePaymentVendor, company._id);
+        // } catch (err) {
+        //     return res.json({ status: Status.Error, message: err.message });
+        // }
+
+        // // Delete payment in quickbook
+        // if (company.qbAuthorized && advancePayment.quickbookId) {
+        //     _voidPayment(req, res, company, advancePayment);
+        // }
+
+    }
+
+    return res.json({ status: Status.Success, message: 'Advance Payment void successfully', advancePayment });
+
+}
+
+export const updateAdvancePaymentContractor = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const company = <ICompany>req.company;
+    const user = <IUser>req.user;
+    let advancePayment: IAdvancePayment;
+
+    switch (params.type) {
+        case 'vendor':
+            const contractor = await Company.findById(params.id);
+            if (!contractor) {
+                return res.json({ status: Status.Error, message: 'Vendor not found.' });
+            }
+
+            advancePayment = await AdvancePaymentVendor.findOne({
+                _id: params.paymentId,
+                contractor: contractor._id,
+                company: company._id
+            }).populate({ path: 'invoices' });
+
+            if (!advancePayment) {
+                return res.json({ status: Status.Error, message: 'Advance Payment not found or does not belong to the contractor.' });
+            }
+            break;
+
+        case 'employee':
+            const employee = await User.findById(params.id);
+            if (!employee) {
+                return res.json({ status: Status.Error, message: 'Employee not found.' });
+            }
+
+            advancePayment = await AdvancePaymentEmployee.findOne({
+                _id: params.paymentId,
+                employee: employee._id,
+                company: company._id
+            }).populate({ path: 'invoices' });
+
+            if (!advancePayment) {
+                return res.json({ status: Status.Error, message: 'Advance Payment not found or does not belong to the employee.' });
+            }
+            break;
+
+        default:
+            return res.json({ status: Status.Error, message: 'Type not supported. Available Type to be used: vendor or employee.' });
+    }
+
+    advancePayment.amount = params.amount ? Number(params.amount) : advancePayment.amount;
+    advancePayment.referenceNumber = params.referenceNumber ?? advancePayment.referenceNumber;
+    advancePayment.paymentType = params.paymentType ?? advancePayment.paymentType;
+    advancePayment.paidAt = params.paidAt ? new Date(moment(params.paidAt).format('YYYY-MM-DD')) : advancePayment.paidAt;
+    advancePayment.appliedAt = params.appliedAt ?? advancePayment.appliedAt;
+    advancePayment.note = params.note ?? advancePayment.note;
+    advancePayment.balance = params.balance ?? advancePayment.balance;
+    advancePayment.updatedBy = user;
+    advancePayment.save();
+
+    return res.json({ status: Status.Success, advancePayment });
 
 }

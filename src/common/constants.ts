@@ -55,7 +55,9 @@ export const enum Role {
     CUSTOMER,
     CUSTOMER_CONTACT,
     CONTRACTOR,
-    SUPPLIER_ADMIN
+    SUPPLIER_ADMIN,
+    ACCOUNT_MANAGER,
+    ACCOUNTS_PAYABLE
 }
 
 export const enum OrderStatus {

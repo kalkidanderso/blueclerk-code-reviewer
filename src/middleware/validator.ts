@@ -567,6 +567,20 @@ export const Validations = {
     check('id').isMongoId().withMessage(Messages.WrongId),
   ],
 
+  updateAdvancePaymentContractor: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('paymentId').exists().withMessage(Messages.Required),
+    check('paymentId').isMongoId().withMessage(Messages.WrongId),
+  ],  
+
+  voidAdvancePaymentContractor: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('paymentId').exists().withMessage(Messages.Required),
+    check('paymentId').isMongoId().withMessage(Messages.WrongId),
+  ],  
+
   // REPORT
   generateIncomeReport: [
     check('reportData').exists().withMessage(Messages.Required),
