@@ -23,6 +23,18 @@ export const fromCursorHash = (str: string): string => {
 }
 
 /**
+ * @description Convert number to a two decimals place
+ * @param num
+ */
+export const roundTwoDecimal = (num: number): number => {
+
+    if (!num) { return; }
+
+    return Math.round(num * 100) / 100;
+
+}
+
+/**
  * @description Check if password good or not, password must be have at least: 8 characters long, 1 uppercase, 1 number, & 1 special character
  * @param password
  */
