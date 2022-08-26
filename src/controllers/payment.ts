@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb'
 import moment from 'moment'
+import { roundTwoDecimal } from '../services/helper';
 
 import { Status, Messages, InvoiceStatus, DefaultCommission } from '../common/constants'
 import { Company, ICompany } from '../models/Company'
@@ -63,6 +64,11 @@ export const _calculateInvoiceBalance = async (invoice: IInvoice, customer: ICus
             invoice.status = InvoiceStatus.UNPAID;
         }
     }
+
+    // Round the numbers
+    customer.balance = roundTwoDecimal(customer.balance);
+    invoice.balanceDue = roundTwoDecimal(invoice.balanceDue);
+    invoice.paymentApplied = roundTwoDecimal(invoice.paymentApplied);
 
     // Save the customer's changes
     await customer.save();
@@ -351,7 +357,7 @@ export const createPayment = async (req: Request, res: Response) => {
         }
 
         // Save the new payment
-        payment.amountPaid = Math.round(payment.amountPaid * 100) / 100;
+        payment.amountPaid = roundTwoDecimal(payment.amountPaid);
         await payment.save();
 
         if (company.qbAuthorized) {
@@ -434,7 +440,7 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
     // Construct the base payment entry
     const paymentEntry = {
         invoices: invoiceIds,
-        amountPaid: params.amount,
+        amountPaid: roundTwoDecimal(params.amount),
         paymentType: params.paymentType,
         // referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
         referenceNumber: params.referenceNumber,
@@ -566,7 +572,7 @@ export const createPaymentMultipleInvoices = async (req: Request, res: Response)
 
     const payment = new Payment({
         customer,
-        amountPaid: params.amount,
+        amountPaid: roundTwoDecimal(params.amount),
         referenceNumber: params.referenceNumber,
         paymentType: params.paymentType,
         paidAt: params.paidAt ? new Date(params.paidAt) : Date.now(),
@@ -582,6 +588,7 @@ export const createPaymentMultipleInvoices = async (req: Request, res: Response)
 
         // Deduct the customer balance
         customer.balance -= payment.amountPaid;
+        customer.balance = roundTwoDecimal(customer.balance);
         await customer.save();
 
         // Update all invoices status to paid=true
@@ -657,6 +664,7 @@ export const updatePayment = async (req: Request, res: Response) => {
     }
 
     payment.amountPaid = newAmountPaid ?? payment.amountPaid;
+    payment.amountPaid = roundTwoDecimal(payment.amountPaid);
     payment.referenceNumber = params.referenceNumber ?? payment.referenceNumber;
     payment.paymentType = params.paymentType;
     payment.paidAt = params.paidAt ? new Date(moment(params.paidAt).format('YYYY-MM-DD')) : payment.paidAt;
@@ -666,8 +674,8 @@ export const updatePayment = async (req: Request, res: Response) => {
 
     try {
         if (payment?.line.length && paramsInvoices.length) {
-            const invoiceLIne = await _handleUpdateMultipleInvoices(paramsInvoices, payment, customer, company);
-            invoices.push(...invoiceLIne);
+            const invoiceLine = await _handleUpdateMultipleInvoices(paramsInvoices, payment, customer, company);
+            invoices.push(...invoiceLine);
         }
 
         // If amount changed, recalculate invoice & customer balance
@@ -773,6 +781,7 @@ export const updatePaymentContractor = async (req: Request, res: Response) => {
     }
 
     payment.amountPaid = params.amount ? Number(params.amount) : payment.amountPaid;
+    payment.amountPaid = roundTwoDecimal(payment.amountPaid);
     payment.referenceNumber = params.referenceNumber ?? payment.referenceNumber;
     payment.paymentType = params.paymentType ?? payment.paymentType;
     payment.paidAt = params.paidAt ? new Date(moment(params.paidAt).format('YYYY-MM-DD')) : payment.paidAt;
@@ -809,7 +818,7 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
                 throw new Error('Invalid payment Id.')
             } else {
                 previousDedeuctedBalance = payment.amountPaid
-                return payment.updateOne({ amountPaid: params.amount, referenceNumber: params.referenceNumber, paymentType: params.paymentType, paidAt: params.paidAt, invoices: invoiceIds, udpatedBy: user._id, udpatedAt: Date.now() })
+                return payment.updateOne({ amountPaid: roundTwoDecimal(params.amount), referenceNumber: params.referenceNumber, paymentType: params.paymentType, paidAt: params.paidAt, invoices: invoiceIds, udpatedBy: user._id, udpatedAt: Date.now() })
             }
         })
         .then((response: any) => {
@@ -822,7 +831,7 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
                         let newBalance = customer.balance + previousDedeuctedBalance
                         newBalance = newBalance - params.amount
 
-                        customer.updateOne({ balance: newBalance })
+                        customer.updateOne({ balance: roundTwoDecimal(newBalance) })
                             .then((res: any) => {
                                 resolve()
                             })
@@ -1138,7 +1147,7 @@ export const _handleMultipleInvoices = async (
 
     payment.line.push({
         invoice: invoice,
-        amountPaid: paramInvoice.amountPaid
+        amountPaid: roundTwoDecimal(paramInvoice.amountPaid)
     });
 
     payment.amountPaid = payment.amountPaid ?? 0;
@@ -1178,6 +1187,7 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
 
         if (invoiceLine.balanceDue === 0 && diffAmountPaid < 0 && newAmountPaid >= invoiceLine.total) {
             customer.credit += diffAmountPaid;
+            customer.credit = roundTwoDecimal(customer.credit);
             await customer.save();
         } else {
             await _calculateInvoiceBalance(invoiceLine, customer, diffAmountPaid);
@@ -1190,7 +1200,7 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
         paymentAmountPaid += paymentLine.amountPaid;
     });
 
-    payment.amountPaid = Math.round(paymentAmountPaid * 100) / 100;
+    payment.amountPaid = roundTwoDecimal(paymentAmountPaid);
     return invoices;
 }
 
@@ -1200,6 +1210,7 @@ export const _handleVoidPayment = async (paymentType: string, invoiceIds: string
 
     if (customer) {
         customer.balance += payment.amountPaid;
+        customer.balance = roundTwoDecimal(customer.balance);
         await customer.save();
     }
 
@@ -1214,12 +1225,14 @@ export const _handleVoidPayment = async (paymentType: string, invoiceIds: string
                         if (technicianCommission.contractor) {
                             const contractor = await Company.findById(technicianCommission.contractor).exec();
                             contractor.balance += technicianCommission.commissionAmount;
+                            contractor.balance = roundTwoDecimal(contractor.balance);
                             await contractor.save();
                         }
 
                         if (technicianCommission.technician && !technicianCommission.contractor) {
                             const technician = await User.findById(technicianCommission.technician).exec();
                             technician.balance += technicianCommission.commissionAmount;
+                            technician.balance = roundTwoDecimal(technician.balance);
                             await technician.save();
                         }
 
@@ -1250,6 +1263,10 @@ export const _handleVoidPayment = async (paymentType: string, invoiceIds: string
                     invoice.paid = false;
                     invoice.status = InvoiceStatus.UNPAID;
                 }
+
+                // Round the numbers
+                invoice.paymentApplied = roundTwoDecimal(invoice.paymentApplied);
+                invoice.balanceDue = roundTwoDecimal(invoice.balanceDue);
 
                 await invoice.save();
             }
