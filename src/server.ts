@@ -114,7 +114,7 @@ app.use('/api-docs', (req: any, res: any, next: any) => {
 const httpServer = require('http').createServer(app);
 const sio = require("socket.io")(httpServer, {
   cors: true,
-  origins: ["https://blueclerk-frontend-react.deploy.blueclerk.com", 'http://testing.blueclerk.com', 'https://app.blueclerk.com'],
+  origins: ["https://blueclerk-frontend-react.deploy.blueclerk.com", 'http://testing.blueclerk.com', 'https://app.blueclerk.com', 'https://staging-suppliers.blueclerk.com'],
   transport: ['websocket']
 
 });

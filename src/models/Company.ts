@@ -97,6 +97,7 @@ export interface ICompany extends Document{
     paymentTerm?: Schema.Types.ObjectId | IPaymentTerm
     companyInvoices: ICompanyInvoice[];
     balance: number;
+    credit: number;
     commission: number;
 }
 
@@ -294,6 +295,10 @@ const CompanySchema = new Schema({
         ref: 'PaymentTerm'
     },
     balance: {
+        type: Number,
+        default: 0
+    },
+    credit: {
         type: Number,
         default: 0
     },

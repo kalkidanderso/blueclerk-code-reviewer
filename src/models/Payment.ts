@@ -45,6 +45,8 @@ export interface IPaymentVendor extends IPayment {
     invoices: [Schema.Types.ObjectId | IInvoice]
     startDate: Date
     endDate: Date
+    offset: number
+    creditUsed: number
 }
 
 export interface IPaymentEmployee extends IPayment {
@@ -53,6 +55,8 @@ export interface IPaymentEmployee extends IPayment {
     invoices: [Schema.Types.ObjectId | IInvoice]
     startDate: Date
     endDate: Date
+    offset: number
+    creditUsed: number
 }
 
 export interface IQBPayment {
@@ -194,7 +198,12 @@ const PaymentVendorSchema = new Schema({
         ref: 'Invoice'
     }],
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    offset: Number,
+    creditUsed: {
+        type: Number,
+        default: 0
+    }
 });
 
 
@@ -208,7 +217,12 @@ const PaymentEmployeeSchema = new Schema({
         ref: 'Invoice'
     }],
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    offset: Number,
+    creditUsed: {
+        type: Number,
+        default: 0
+    }
 })
 
 export const Payment = mongoose.model<IPayment>('Payment', PaymentSchema)

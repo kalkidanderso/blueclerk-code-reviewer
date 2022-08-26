@@ -3,7 +3,7 @@ import { Messages, NotificationTypes, SocketEvents, Status } from '../common/con
 
 import { IUser } from '../models/User';
 import { Notification, INotification, INotificationQuery } from '../models/Notification';
-import { NotificationContract, NotificationServiceTicket, NotificationJob, NotificationJobRequest } from '../models/NotificationDiscriminator';
+import { NotificationContract, NotificationServiceTicket, NotificationJob, NotificationJobRequest, NotificationChat } from '../models/NotificationDiscriminator';
 
 /**
  * Construct and get query for notification,
@@ -75,6 +75,10 @@ export const _handleNotification = async ({ sio, companyId, notificationType, me
         case NotificationTypes.JOB_REQUEST_CREATED:
         case NotificationTypes.JOB_REQUEST_STATUS_UPDATED:
             notification = new NotificationJobRequest(notificationEntry);
+            break;
+
+        case NotificationTypes.NEW_CHAT:
+            notification = new NotificationChat(notificationEntry);
             break;
 
         default:

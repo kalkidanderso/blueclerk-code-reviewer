@@ -9,6 +9,7 @@ import {
 } from '../middleware/permissions'
 import { uploadInvoices, uploadImageInS3 } from '../middleware/multer';
 import { getCompanyId } from '../middleware/company'
+import { getSupplierId } from '../middleware/supplier';
 import { refreshQBToken } from '../middleware/quickbook';
 import { getTechnicianContractor } from '../middleware/job'
 
@@ -46,6 +47,7 @@ import * as quickBookPaymentController from '../controllers/quickbook.payment'
 import * as companyController from '../controllers/company'
 import * as emailDefaultController from '../controllers/emailDefault'
 import * as invoiceController from '../controllers/invoice'
+import * as paymentAdvanceController from '../controllers/advancePayment'
 import * as partController from '../controllers/part'
 import * as purchaseOrderController from '../controllers/purchaseOrder'
 import * as estimateController from '../controllers/estimate'
@@ -532,6 +534,15 @@ export default function (sio: any) {
         customerController.mergeCustomers
     )
 
+    router.get(
+        '/getSupplierBuilders',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getSupplierId(),
+        // checkUserPermissions(Permissions.Customer_Get_All),
+        customerController.getSupplierBuilders
+    )
+
     //Customer equipments
     router.post(
         '/createCustomerEquipment',
@@ -887,6 +898,16 @@ export default function (sio: any) {
         uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
         validate(Validations.editJob),
         jobController.editJob
+    )
+
+    router.put(
+        '/updateJobRequestStatus',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Update),
+        validate(Validations.updateJoBRequestStatus),
+        jobController.updateJobRequestStatus
     )
 
     router.post(
@@ -2305,6 +2326,27 @@ export default function (sio: any) {
         paymentController.getPayrollReport
     )
 
+    // Advance Payment
+    router.post(
+        '/recordAdvancePaymentContractor',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.recordAdvancePayment),
+        paymentAdvanceController.createAdvancePaymentContractor
+    )
+
+    router.get(
+        '/getAdvancePaymentsByContractor',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.getAdvancePayments),
+        paymentAdvanceController.getAdvancePaymentsByContractor
+    )
+
     // REPORT
 
     router.get(
@@ -2315,6 +2357,33 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.generateIncomeReport),
         reportController.generateIncomeReport
+    )
+
+    router.get(
+        '/generateIncomeReportPdf',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateIncomeReport),
+        reportController.generateIncomeReportPdf
+    )
+
+    router.get(
+        '/getIncomeReportEmailTemplate',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        reportController.getIncomeReportEmailTemplate
+    )
+
+    router.post(
+        '/sendIncomeReport',
+        passport.authenticate('jwt', { session: false }),
+        uploadInvoices.single('incomeReportPdf'),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateIncomeReport),
+        reportController.sendIncomeReportEmail
     )
 
     router.get(
@@ -2349,6 +2418,15 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.updateMemorizedReport),
         reportController.updateMemorizedReport
+    )
+
+    router.delete(
+        '/deleteMemorizedReport',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.updateMemorizedReport),
+        reportController.deleteMemorizedReport
     )
 
     // CODE LOCATION TAG
@@ -2564,6 +2642,12 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         scriptController.updateQBCustomerJob
+    )
+
+    router.post(
+        '/script/addDefaultEmailTypes',
+        passport.authenticate('jwt', {session: false}),
+        scriptController.addDefaultEmailTypes
     )
 
     router.get(
