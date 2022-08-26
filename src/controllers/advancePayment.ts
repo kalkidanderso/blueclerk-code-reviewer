@@ -181,31 +181,6 @@ export const voidAdvancePaymentContractor = async (req: Request, res: Response) 
         advancePayment.voidedBy = user;
         advancePayment.updatedBy = user;
         await advancePayment.save();
-
-        // if (advancePayment?.line?.length) {
-        //     advancePayment.line.forEach(line => invoiceIds.push(line.invoice.toString()));
-        // }
-
-        // if (advancePayment?.invoices?.length) {
-        //     advancePayment.invoices.forEach(invoice => invoiceIds.push(invoice.toString()));
-        // }
-
-        // if (advancePayment?.invoice) {
-        //     invoiceIds.push(advancePayment.invoice.toString());
-        // }
-
-        // try {
-        //     await _handleVoidAdvancePayment(params.type, invoiceIds, advancePayment, customer);
-        //     await _handleVoidPaymentContractor(params.type, advancePaymentVendor, company._id);
-        // } catch (err) {
-        //     return res.json({ status: Status.Error, message: err.message });
-        // }
-
-        // // Delete payment in quickbook
-        // if (company.qbAuthorized && advancePayment.quickbookId) {
-        //     _voidPayment(req, res, company, advancePayment);
-        // }
-
     }
 
     return res.json({ status: Status.Success, message: 'Advance Payment void successfully', advancePayment });
