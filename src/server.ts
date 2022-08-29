@@ -28,6 +28,7 @@ import { sendScheduledJobEmailToAssignee } from './services/aws';
 import { Company } from './models/Company';
 import { Customer } from './models/Customer';
 import { Status, Messages, JobStatus } from './common/constants';
+import { _initializeFirebase } from './services/firebase';
 const timeout = require('connect-timeout');
 const MongoStore = require('connect-mongo');
 
@@ -118,6 +119,9 @@ const sio = require("socket.io")(httpServer, {
   transport: ['websocket']
 
 });
+
+// Initialize Firebase
+_initializeFirebase();
 
 // Authenticate Socket client by its Authorization token
 sio.use(socketioJwt.authorize({

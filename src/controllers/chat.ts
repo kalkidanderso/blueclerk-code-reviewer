@@ -6,6 +6,7 @@ import { IUser } from '../models/User';
 import { ICompany } from '../models/Company';
 import { JobRequest } from '../models/JobRequest';
 import { IChat, Chat, ChatChannels, IJobRequestChat, JobRequestChat } from '../models/Chat';
+import { _handleNotification } from '../controllers/notification.firebase';
 
 /**
  * To create new chat
@@ -62,6 +63,7 @@ export const getChats = async (req: Request, res: Response) => {
     const { chatChannel, id } = req.params;
     const company = <ICompany>req.company;
     let chats;
+    let unreadChat = 0;
 
     switch (chatChannel) {
         case ChatChannels.JOB_REQUEST:
@@ -87,7 +89,7 @@ export const getChats = async (req: Request, res: Response) => {
             break;
     }
 
-    return res.json({ status: Status.Success, chats });
+    return res.json({ status: Status.Success, unreadChat: 0, chats });
 
 }
 
@@ -172,6 +174,15 @@ const _createJobRequestChat = async (params: any, id: string, user: IUser, compa
         .populate({ path: 'company', select: 'info address contact' })
         .populate({ path: 'customer', select: 'profile info address contact' })
         .execPopulate();
+
+    // Send notification over Firebase to Customer Contact
+    await _handleNotification({
+        recipientId: jobRequest.customerContact,
+        messageTitle: `You have new message for Job Request #${jobRequest.requestId}`,
+        messageBody: jobRequestChat.message,
+        dataObj: jobRequest,
+        chat: jobRequestChat
+    });
 
     return jobRequestChat;
 
