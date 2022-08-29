@@ -79,6 +79,7 @@ export const _handleNotification = async ({ sio, companyId, notificationType, me
 
         case NotificationTypes.NEW_CHAT:
             notification = new NotificationChat(notificationEntry);
+            break;
 
         default:
             notification = new Notification(notificationEntry);

@@ -3,4 +3,3 @@ node_modules/
 .idea/
 dist/
 tmp/
-firebase_service_accounts/
