@@ -28,25 +28,6 @@ export const createAdvancePaymentContractor = async (req: Request, res: Response
     };
 
     switch (params.type) {
-        case 'vendor':
-            // Check if vendor exist
-            const contractor = await Company.findById(params.id).exec();
-            if (!contractor) {
-                return res.json({ status: Status.Error, message: 'Vendor not found' });
-            }
-
-            // Save the Advance Payment Vendor entry
-            const advancePaymentVendor = await new AdvancePaymentVendor({
-                contractor,
-                ...advancePaymentEntry
-            }).save();
-
-            contractor.credit += params.amount;
-            await contractor.save();
-
-            // Record advance payment for vendor is done, finish the request
-            return res.json({ status: Status.Success, message: 'Advance Payment successfully created.', advancePayment: advancePaymentVendor });
-
         case 'employee':
             // CHeck if employee exist
             const employee = await User.findById(params.id).exec();
@@ -137,7 +118,6 @@ export const voidAdvancePaymentContractor = async (req: Request, res: Response) 
     let advancePayment: IAdvancePayment;
     let advancePaymentVendor: IAdvancePaymentVendor;
     const user = <IUser>req.user;
-    // let customer: ICustomer;
 
     switch (params.type) {
         case 'vendor':
@@ -157,20 +137,10 @@ export const voidAdvancePaymentContractor = async (req: Request, res: Response) 
             }
             break;
 
-        case 'customer':
-            advancePayment = await AdvancePayment.findOne({ _id: params.paymentId, company, __t: { $nin: ['AdvancePaymentVendor', 'AdvancePaymentEmployee'] } }).exec();
-
-            if (!advancePayment) {
-                return res.json({ status: Status.Error, message: `Advance Payment with type ${params.type} is Not Found` });
-            }
-            // customer = await Customer.findById(advancePayment.customer);
-            break;
-
         default:
             return res.json({ status: Status.Error, message: 'Type is required' });
     }
 
-    const invoiceIds: string[] = [];
     if (advancePayment) {
         if (advancePayment.isVoid) {
             return res.json({ status: Status.Error, message: 'Advance Payment already voided' });
@@ -222,7 +192,7 @@ export const updateAdvancePaymentContractor = async (req: Request, res: Response
                 _id: params.paymentId,
                 employee: employee._id,
                 company: company._id
-            }).populate({ path: 'invoices' });
+            });
 
             if (!advancePayment) {
                 return res.json({ status: Status.Error, message: 'Advance Payment not found or does not belong to the employee.' });
@@ -239,7 +209,6 @@ export const updateAdvancePaymentContractor = async (req: Request, res: Response
     advancePayment.paidAt = params.paidAt ? new Date(moment(params.paidAt).format('YYYY-MM-DD')) : advancePayment.paidAt;
     advancePayment.appliedAt = params.appliedAt ?? advancePayment.appliedAt;
     advancePayment.note = params.note ?? advancePayment.note;
-    advancePayment.balance = params.balance ?? advancePayment.balance;
     advancePayment.updatedBy = user;
     advancePayment.save();
 
