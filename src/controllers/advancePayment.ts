@@ -203,7 +203,7 @@ export const updateAdvancePaymentContractor = async (req: Request, res: Response
             return res.json({ status: Status.Error, message: 'Type not supported. Available Type to be used: vendor or employee.' });
     }
 
-    advancePayment.amount = params.amount ? Number(params.amount) : advancePayment.amount;
+    advancePayment.amount = params.amount ?? advancePayment.amount;
     advancePayment.referenceNumber = params.referenceNumber ?? advancePayment.referenceNumber;
     advancePayment.paymentType = params.paymentType ?? advancePayment.paymentType;
     advancePayment.paidAt = params.paidAt ? new Date(moment(params.paidAt).format('YYYY-MM-DD')) : advancePayment.paidAt;
