@@ -11326,14 +11326,13 @@
         ]
       }
     },
-    "/voidAdvancePaymentContractor": {
+    "/updateAdvancePaymentContractor": {
       "put": {
-        "deprecated": true,
         "tags": [
           "Advance Payment"
         ],
-        "summary": "To void advance payment contractor",
-        "description": "To void advance payment contractor",
+        "summary": "To update advance payment contractor record",
+        "description": "To update advance payment contractor record",
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
@@ -11341,20 +11340,55 @@
                 "type": "object",
                 "required": [
                   "type",
-                  "paymentId"
+                  "id",
+                  "advancePaymentId",
+                  "amount"
                 ],
                 "properties": {
                   "type": {
                     "type": "string",
-                    "description": "type of payment (PaymentVendor or PaymentEmployee)",
+                    "description": "type of payment",
                     "enum": [
                       "vendor",
                       "employee"
                     ]
                   },
-                  "paymentId": {
+                  "id": {
                     "type": "string",
-                    "description": "Id of advance ayment to void"
+                    "description": "Id of vendor or employee"
+                  },
+                  "advancePaymentId": {
+                    "type": "string",
+                    "description": "Id of advance payment to edit"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "description": "Amount how much vendor/employee has paid"
+                  },
+                  "paymentType": {
+                    "type": "string",
+                    "description": "Method name how vendor/employee has paid",
+                    "enum": [
+                      "ACH",
+                      "Bank Wire",
+                      "Credit Card/Debit Card",
+                      "Check",
+                      "Cash"
+                    ]
+                  },
+                  "paidAt": {
+                    "type": "string",
+                    "description": "Date when the vendor/employee has made the payment"
+                  },
+                  "appliedAt": {
+                    "type": "string",
+                    "description": "Date when the advance payment is applied on, default to today if not provided"
+                  },
+                  "referenceNumber": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": "string"
                   }
                 }
               }
@@ -11381,13 +11415,13 @@
         ]
       }
     },
-    "/updateAdvancePaymentContractor": {
-      "put": {
+    "/voidAdvancePaymentContractor": {
+      "delete": {
         "tags": [
           "Advance Payment"
         ],
-        "summary": "To update payment contractor record",
-        "description": "To update payment contractor record",
+        "summary": "To void advance payment contractor",
+        "description": "To void advance payment contractor",
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
@@ -11395,52 +11429,20 @@
                 "type": "object",
                 "required": [
                   "type",
-                  "id",
-                  "paymentId",
-                  "amount"
+                  "advancePaymentId"
                 ],
                 "properties": {
                   "type": {
                     "type": "string",
-                    "description": "type of payment",
+                    "description": "type of payment (PaymentVendor or PaymentEmployee)",
                     "enum": [
                       "vendor",
                       "employee"
                     ]
                   },
-                  "id": {
+                  "advancePaymentId": {
                     "type": "string",
-                    "description": "Id of vendor or employee"
-                  },
-                  "paymentId": {
-                    "type": "string",
-                    "description": "Id of payment to edit"
-                  },
-                  "amount": {
-                    "type": "number",
-                    "description": "Amount how much vendor/employee has paid"
-                  },
-                  "referenceNumber": {
-                    "type": "string",
-                    "description": "Reference number of the payment made by client"
-                  },
-                  "paymentType": {
-                    "type": "string",
-                    "description": "Method name how vendor/employee has paid",
-                    "enum": [
-                      "ACH",
-                      "Bank Wire",
-                      "Credit Card/Debit Card",
-                      "Check",
-                      "Cash"
-                    ]
-                  },
-                  "paidAt": {
-                    "type": "string",
-                    "description": "Date when the vendor/employee has made the payment"
-                  },
-                  "note": {
-                    "type": "string"
+                    "description": "Id of advance payment to void"
                   }
                 }
               }

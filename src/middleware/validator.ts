@@ -570,15 +570,19 @@ export const Validations = {
   updateAdvancePaymentContractor: [
     check('type').exists().withMessage(Messages.Required),
     check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
-    check('paymentId').exists().withMessage(Messages.Required),
-    check('paymentId').isMongoId().withMessage(Messages.WrongId),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('advancePaymentId').exists().withMessage(Messages.Required),
+    check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
+    check('amount').exists().withMessage(Messages.Required),
+    check('amount').isInt().toInt().withMessage('has to be number'),
   ],  
 
   voidAdvancePaymentContractor: [
     check('type').exists().withMessage(Messages.Required),
     check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
-    check('paymentId').exists().withMessage(Messages.Required),
-    check('paymentId').isMongoId().withMessage(Messages.WrongId),
+    check('advancePaymentId').exists().withMessage(Messages.Required),
+    check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
   ],  
 
   // REPORT

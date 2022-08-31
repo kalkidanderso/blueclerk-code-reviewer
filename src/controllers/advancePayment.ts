@@ -111,52 +111,6 @@ export const getAdvancePaymentsByContractor = async (req: Request, res: Response
 
 }
 
-export const voidAdvancePaymentContractor = async (req: Request, res: Response) => {
-
-    const params = req.body;
-    const company = <ICompany>req.company;
-    let advancePayment: IAdvancePayment;
-    let advancePaymentVendor: IAdvancePaymentVendor;
-    const user = <IUser>req.user;
-
-    switch (params.type) {
-        case 'vendor':
-            advancePayment = await AdvancePayment.findOne({ _id: params.paymentId, company, __t: 'AdvancePaymentVendor' }).exec();
-            advancePaymentVendor = <IAdvancePaymentVendor>advancePayment;
-
-            if (!advancePayment) {
-                return res.json({ status: Status.Error, message: `Payment with type ${params.type} is Not Found` });
-            }
-            break;
-
-        case 'employee':
-            advancePayment = await AdvancePayment.findOne({ _id: params.paymentId, company, __t: 'AdvancePaymentEmployee' }).exec();
-
-            if (!advancePayment) {
-                return res.json({ status: Status.Error, message: `Payment with type ${params.type} is Not Found` });
-            }
-            break;
-
-        default:
-            return res.json({ status: Status.Error, message: 'Type is required' });
-    }
-
-    if (advancePayment) {
-        if (advancePayment.isVoid) {
-            return res.json({ status: Status.Error, message: 'Advance Payment already voided' });
-        }
-
-        advancePayment.isVoid = true;
-        advancePayment.voidedAt = new Date();
-        advancePayment.voidedBy = user;
-        advancePayment.updatedBy = user;
-        await advancePayment.save();
-    }
-
-    return res.json({ status: Status.Success, message: 'Advance Payment void successfully', advancePayment });
-
-}
-
 export const updateAdvancePaymentContractor = async (req: Request, res: Response) => {
 
     const params = req.body;
@@ -172,10 +126,10 @@ export const updateAdvancePaymentContractor = async (req: Request, res: Response
             }
 
             advancePayment = await AdvancePaymentVendor.findOne({
-                _id: params.paymentId,
+                _id: params.advancePaymentId,
                 contractor: contractor._id,
                 company: company._id
-            }).populate({ path: 'invoices' });
+            });
 
             if (!advancePayment) {
                 return res.json({ status: Status.Error, message: 'Advance Payment not found or does not belong to the contractor.' });
@@ -189,7 +143,7 @@ export const updateAdvancePaymentContractor = async (req: Request, res: Response
             }
 
             advancePayment = await AdvancePaymentEmployee.findOne({
-                _id: params.paymentId,
+                _id: params.advancePaymentId,
                 employee: employee._id,
                 company: company._id
             });
@@ -203,6 +157,12 @@ export const updateAdvancePaymentContractor = async (req: Request, res: Response
             return res.json({ status: Status.Error, message: 'Type not supported. Available Type to be used: vendor or employee.' });
     }
 
+    if (advancePayment.isVoid) {
+        return res.json({ status: Status.Error, message: 'Advance Payment already voided' });
+    }
+
+    // TODO: to handle if balance goes negative
+    advancePayment.balance += params.amount - advancePayment.amount;
     advancePayment.amount = params.amount ?? advancePayment.amount;
     advancePayment.referenceNumber = params.referenceNumber ?? advancePayment.referenceNumber;
     advancePayment.paymentType = params.paymentType ?? advancePayment.paymentType;
@@ -213,5 +173,56 @@ export const updateAdvancePaymentContractor = async (req: Request, res: Response
     advancePayment.save();
 
     return res.json({ status: Status.Success, advancePayment });
+
+}
+
+export const voidAdvancePaymentContractor = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const company = <ICompany>req.company;
+    let advancePayment: IAdvancePayment;
+    let advancePaymentVendor: IAdvancePaymentVendor;
+    const user = <IUser>req.user;
+
+    switch (params.type) {
+        case 'vendor':
+            advancePayment = await AdvancePayment.findOne({ _id: params.advancePaymentId, company, __t: 'AdvancePaymentVendor' }).exec();
+            advancePaymentVendor = <IAdvancePaymentVendor>advancePayment;
+
+            if (!advancePayment) {
+                return res.json({ status: Status.Error, message: `Advance Payment not found or does not belong to the contractor.` });
+            }
+            break;
+
+        case 'employee':
+            advancePayment = await AdvancePayment.findOne({ _id: params.advancePaymentId, company, __t: 'AdvancePaymentEmployee' }).exec();
+
+            if (!advancePayment) {
+                return res.json({ status: Status.Error, message: `Advance Payment not found or does not belong to the employee.` });
+            }
+            break;
+
+        default:
+            return res.json({ status: Status.Error, message: 'Type not supported. Available Type to be used: vendor or employee.' });
+    }
+
+    if (advancePayment.isVoid) {
+        return res.json({ status: Status.Error, message: 'Advance Payment already voided' });
+    }
+
+        // TODO: Check if advance payment used
+    if (advancePayment.balance < advancePayment.amount) {
+        return res.json({ status: Status.Error, message: 'Advance Payment is already used, cannot void it.' });
+    }
+
+    advancePayment.isVoid = true;
+    advancePayment.voidedAt = new Date();
+    advancePayment.voidedBy = user;
+    advancePayment.updatedBy = user;
+    await advancePayment.save();
+
+    // TODO: handle any changes on payment or invoice commission?
+
+    return res.json({ status: Status.Success, message: 'Advance Payment void successfully', advancePayment });
 
 }

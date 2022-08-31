@@ -2352,18 +2352,18 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        validate(Validations.updateAdvancePaymentContractor),
         checkUserPermissions(Permissions.Update_Payment),
+        validate(Validations.updateAdvancePaymentContractor),
         paymentAdvanceController.updateAdvancePaymentContractor
     )
 
-    router.put(
+    router.delete(
         '/voidAdvancePaymentContractor',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        validate(Validations.voidAdvancePaymentContractor),
         checkUserPermissions(Permissions.Update_Payment),
+        validate(Validations.voidAdvancePaymentContractor),
         paymentAdvanceController.voidAdvancePaymentContractor
     )    
 
