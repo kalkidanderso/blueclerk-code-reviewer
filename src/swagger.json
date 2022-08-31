@@ -11346,6 +11346,149 @@
         ]
       }
     },
+    "/updateAdvancePaymentContractor": {
+      "put": {
+        "tags": [
+          "Advance Payment"
+        ],
+        "summary": "To update advance payment contractor record",
+        "description": "To update advance payment contractor record",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "id",
+                  "advancePaymentId",
+                  "amount"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "type of payment",
+                    "enum": [
+                      "vendor",
+                      "employee"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "description": "Id of vendor or employee"
+                  },
+                  "advancePaymentId": {
+                    "type": "string",
+                    "description": "Id of advance payment to edit"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "description": "Amount how much vendor/employee has paid"
+                  },
+                  "paymentType": {
+                    "type": "string",
+                    "description": "Method name how vendor/employee has paid",
+                    "enum": [
+                      "ACH",
+                      "Bank Wire",
+                      "Credit Card/Debit Card",
+                      "Check",
+                      "Cash"
+                    ]
+                  },
+                  "paidAt": {
+                    "type": "string",
+                    "description": "Date when the vendor/employee has made the payment"
+                  },
+                  "appliedAt": {
+                    "type": "string",
+                    "description": "Date when the advance payment is applied on, default to today if not provided"
+                  },
+                  "referenceNumber": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/voidAdvancePaymentContractor": {
+      "delete": {
+        "tags": [
+          "Advance Payment"
+        ],
+        "summary": "To void advance payment contractor",
+        "description": "To void advance payment contractor",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "advancePaymentId"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "type of payment (PaymentVendor or PaymentEmployee)",
+                    "enum": [
+                      "vendor",
+                      "employee"
+                    ]
+                  },
+                  "advancePaymentId": {
+                    "type": "string",
+                    "description": "Id of advance payment to void"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/generateIncomeReport": {
       "get": {
         "tags": [

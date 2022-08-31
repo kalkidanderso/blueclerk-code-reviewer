@@ -2347,6 +2347,26 @@ export default function (sio: any) {
         paymentAdvanceController.getAdvancePaymentsByContractor
     )
 
+    router.put(
+        '/updateAdvancePaymentContractor',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Payment),
+        validate(Validations.updateAdvancePaymentContractor),
+        paymentAdvanceController.updateAdvancePaymentContractor
+    )
+
+    router.delete(
+        '/voidAdvancePaymentContractor',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Payment),
+        validate(Validations.voidAdvancePaymentContractor),
+        paymentAdvanceController.voidAdvancePaymentContractor
+    )    
+
     // REPORT
 
     router.get(
