@@ -1,13 +1,10 @@
 import { Request, Response } from 'express';
 import moment from 'moment';
-import { Customer, ICustomer } from 'src/models/Customer';
-import { Invoice } from 'src/models/Invoice';
-import { IPaymentEmployee } from 'src/models/Payment';
-import { InvoiceStatus, Messages, Status } from '../common/constants';
+import { Messages, Status } from '../common/constants';
 import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor, IAdvancePayment, IAdvancePaymentVendor } from '../models/AdvancePayment';
 import { Company, ICompany } from '../models/Company';
 import { IUser, User } from '../models/User';
-import { _voidPayment } from './quickbook.payment';
+import { _voidPayment } from '../controllers/quickbook.payment';
 
 export const createAdvancePaymentContractor = async (req: Request, res: Response) => {
 
@@ -28,6 +25,25 @@ export const createAdvancePaymentContractor = async (req: Request, res: Response
     };
 
     switch (params.type) {
+        case 'vendor':
+            // Check if vendor exist
+            const contractor = await Company.findById(params.id).exec();
+            if (!contractor) {
+                return res.json({ status: Status.Error, message: 'Vendor not found' });
+            }
+
+            // Save the Advance Payment Vendor entry
+            const advancePaymentVendor = await new AdvancePaymentVendor({
+                contractor,
+                ...advancePaymentEntry
+            }).save();
+
+            contractor.credit += params.amount;
+            await contractor.save();
+
+            // Record advance payment for vendor is done, finish the request
+            return res.json({ status: Status.Success, message: 'Advance Payment successfully created.', advancePayment: advancePaymentVendor });
+
         case 'employee':
             // CHeck if employee exist
             const employee = await User.findById(params.id).exec();
