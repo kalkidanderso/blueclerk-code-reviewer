@@ -23,13 +23,27 @@ export const _initializeFirebase = async () => {
  * Send the notification over Firebase to one device,
  * based on the fbToken aka user device registration token
  */
-export const sendNotification = async ({ fbToken, title, body, chatChannel,  dataObj, chat }: { fbToken: string, title: string, body: string, chatChannel: ChatChannels, dataObj: any, chat: IChat }) => {
-
-    // Deep clone of chat/message object and remove unused data
-    const minimizedChat = JSON.parse(JSON.stringify(chat));
-    delete minimizedChat.jobRequest;
-    delete minimizedChat.company;
-    delete minimizedChat.customer;
+export const sendNotification = async ({
+    fbToken,
+    notificationType,
+    title,
+    body,
+    chatChannel,
+    chatId,
+    minimizedChat,
+    jobRequestId,
+    lastReadChatId,
+}: {
+    fbToken: string,
+    notificationType: string,
+    title?: string,
+    body?: string,
+    chatChannel: ChatChannels,
+    chatId: string,
+    minimizedChat: IChat,
+    jobRequestId?: string
+    lastReadChatId?: string,
+}) => {
 
     // Construct Firebase's message entry
     const message: any = {
@@ -42,10 +56,11 @@ export const sendNotification = async ({ fbToken, title, body, chatChannel,  dat
         },
         data: {
             appTitle: 'BlueClerk',
-            type: 'chat',
+            type: notificationType,
             chatChannel,
-            messageId: chat?._id?.toString(),
-            message: JSON.stringify(minimizedChat),
+            messageId: chatId,
+            message: minimizedChat && JSON.stringify(minimizedChat),
+            lastReadMessageId: lastReadChatId,
             color: '#00aaff',
             sound: 'default'
         },
@@ -53,9 +68,9 @@ export const sendNotification = async ({ fbToken, title, body, chatChannel,  dat
     };
 
     // Identify the Chat Channel and add the corresponding data
-    switch (chat.chatChannel) {
+    switch (chatChannel) {
         case ChatChannels.JOB_REQUEST:
-            message.data.jobRequestId = dataObj?._id?.toString();
+            message.data.jobRequestId = jobRequestId;
             break;
     
         default:
