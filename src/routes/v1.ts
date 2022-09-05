@@ -2650,6 +2650,11 @@ export default function (sio: any) {
         scriptController.addDefaultEmailTypes
     )
 
+    router.post(
+        '/script/revertBackInvoices',
+        scriptController.revertBackInvoices
+    )
+
     router.get(
         '/quickbook/invoiceCheck',
         passport.authenticate('jwt', { session: false }),
