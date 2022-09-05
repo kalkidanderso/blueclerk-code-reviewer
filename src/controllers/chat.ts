@@ -81,7 +81,12 @@ export const getChats = async (req: Request, res: Response) => {
                 .populate({ path: 'company', select: 'info address contact' })
                 .populate({ path: 'customer', select: 'profile info address contact' });
 
-            // TODO: get chats unread count
+            // Retrieve unread chat count
+            unreadChat = await JobRequestChat.find({
+                jobRequest: jobRequest._id,
+                company: { $ne: company._id },
+                'readStatus.isRead': false
+            })?.countDocuments();
 
             break;
     
@@ -89,7 +94,7 @@ export const getChats = async (req: Request, res: Response) => {
             break;
     }
 
-    return res.json({ status: Status.Success, unreadChat: 0, chats });
+    return res.json({ status: Status.Success, unreadChat, chats });
 
 }
 
@@ -127,6 +132,16 @@ export const markRead = async (req: Request, res: Response) => {
         chat.readStatus.readAt = new Date;
         await chat.save();
     }
+
+    // Send simple notification to mobile through Firebase,
+    // for mobile internal usage
+    await _handleNotification({
+        recipientId: jobRequest.customerContact,
+        notificationType: 'chatRead',
+        chat: lastChat,
+        jobRequest,
+        lastReadChatId: lastChat._id
+    })
 
     return res.json({ status: Status.Success, message: 'Chats marked as read successfully.', chatsToRead });
 
@@ -178,10 +193,11 @@ const _createJobRequestChat = async (params: any, id: string, user: IUser, compa
     // Send notification over Firebase to Customer Contact
     await _handleNotification({
         recipientId: jobRequest.customerContact,
+        notificationType: 'chat',
         messageTitle: `You have new message for Job Request #${jobRequest.requestId}`,
         messageBody: jobRequestChat.message,
-        dataObj: jobRequest,
-        chat: jobRequestChat
+        chat: jobRequestChat,
+        jobRequest
     });
 
     return jobRequestChat;
