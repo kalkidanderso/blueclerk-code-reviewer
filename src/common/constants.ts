@@ -92,6 +92,7 @@ export const enum JobRequestStatus {
     SCHEDULED,
     FINISHED,
     CANCELLED,
+    ACCEPTED,
     REJECTED,
 }
 

@@ -18,11 +18,8 @@ import { InvoiceCommission } from '../models/InvoiceCommission';
 import { IContact } from '../common/contact';
 import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin';
 import { CustomerContact, ICustomerContact } from '../models/CustomerContact';
-import { CompanyCustomer } from '../models/CompanyCustomer';
-import { Contact } from '../models/Contact';
 import { JobLocation } from '../models/JobLocation';
 import { _updateQBCustomerJob } from '../controllers/quickbook.customer';
-import { EmailDefault } from 'src/models/EmailDefault';
 
 /**
  * To sync and update all companies and customers to have Item Price Tier,
@@ -531,8 +528,8 @@ export const updateQBCustomerJob = async (req: Request, res: Response) => {
         companyId,
         quickbookId: { $ne: null }
     })
-        // .limit(300)
-        // .skip(300);
+    // .limit(300)
+    // .skip(300);
 
     res.json({
         ok: true,

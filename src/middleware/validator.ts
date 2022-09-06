@@ -286,6 +286,13 @@ export const Validations = {
     check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
+  updateJoBRequestStatus: [
+    check('jobRequestId').exists().withMessage(Messages.Required),
+    check('jobRequestId').isMongoId().withMessage(Messages.WrongId),
+    check('status').exists().withMessage(Messages.Required),
+    check('status').isInt({ min: 4, max: 5 }).toInt().withMessage('has to be 4 (Accepted) or 5 (Rejected)'),
+  ],
+
   editJob: [
     check('jobId').exists().withMessage(Messages.Required),
     check('jobId').isMongoId().withMessage(Messages.WrongId),

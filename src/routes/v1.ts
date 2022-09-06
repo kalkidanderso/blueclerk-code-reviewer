@@ -889,6 +889,16 @@ export default function (sio: any) {
         jobController.editJob
     )
 
+    router.put(
+        '/updateJobRequestStatus',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Update),
+        validate(Validations.updateJoBRequestStatus),
+        jobController.updateJobRequestStatus
+    )
+
     router.post(
         '/updateJobTechnicianStatus',
         passport.authenticate('jwt', { session: false }),
@@ -2318,6 +2328,33 @@ export default function (sio: any) {
     )
 
     router.get(
+        '/generateIncomeReportPdf',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateIncomeReport),
+        reportController.generateIncomeReportPdf
+    )
+
+    router.get(
+        '/getIncomeReportEmailTemplate',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        reportController.getIncomeReportEmailTemplate
+    )
+
+    router.post(
+        '/sendIncomeReport',
+        passport.authenticate('jwt', { session: false }),
+        uploadInvoices.single('incomeReportPdf'),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateIncomeReport),
+        reportController.sendIncomeReportEmail
+    )
+
+    router.get(
         '/getMemorizedReports',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
@@ -2349,6 +2386,15 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.updateMemorizedReport),
         reportController.updateMemorizedReport
+    )
+
+    router.delete(
+        '/deleteMemorizedReport',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.updateMemorizedReport),
+        reportController.deleteMemorizedReport
     )
 
     // CODE LOCATION TAG

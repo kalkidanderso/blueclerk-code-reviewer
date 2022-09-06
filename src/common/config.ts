@@ -19,3 +19,4 @@ export const privateKey = {
 export const INVOICE_FONT_PATH = 'assets/fonts';
 export const INVOICE_IMAGE_PATH = 'tmp/images';
 export const INVOICE_PDF_PATH = 'tmp/invoices';
+export const INCOME_REPORT_PDF_PATH = 'tmp/incomeReports';
