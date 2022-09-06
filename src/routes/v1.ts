@@ -2613,12 +2613,6 @@ export default function (sio: any) {
     )
 
     router.post(
-        '/script/addDefaultEmailTypes',
-        passport.authenticate('jwt', {session: false}),
-        scriptController.addDefaultEmailTypes
-    )
-
-    router.post(
         '/script/revertBackInvoices',
         scriptController.revertBackInvoices
     )
