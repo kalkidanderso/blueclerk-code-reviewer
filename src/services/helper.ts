@@ -21,3 +21,15 @@ export const fromCursorHash = (str: string): string => {
     return Buffer.from(str, 'base64').toString();
 
 }
+
+/**
+ * @description Convert number to a two decimals place
+ * @param num
+ */
+export const roundTwoDecimal = (num: number): number => {
+
+    if (!num) { return; }
+
+    return Math.round(num * 100) / 100;
+
+}
