@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
+import { ObjectId } from 'mongodb';
 import { Status } from '../common/constants';
 
 import { IUser } from '../models/User';
 import { ICompany } from '../models/Company';
 import { JobRequest } from '../models/JobRequest';
-import { Chat, ChatChannels, IJobRequestChat, JobRequestChat } from '../models/Chat';
+import { IChat, Chat, ChatChannels, IJobRequestChat, JobRequestChat } from '../models/Chat';
 
 /**
  * To create new chat
@@ -15,6 +16,7 @@ export const createChat = async (req: Request, res: Response) => {
     const params = req.body;
     const user = <IUser>req.user;
     const company = <ICompany>req.company;
+    let repliedChat: IChat;
     let chat;
 
     // Handle images if exist
@@ -22,10 +24,23 @@ export const createChat = async (req: Request, res: Response) => {
         params.imagesFile = JSON.parse(JSON.stringify(req.files));
     }
 
+    // Check if replyTo provided and exist or not
+    if (params.replyToId) {
+        repliedChat = await Chat.findById(params.replyToId);
+        if (!repliedChat) {
+            return res.json({ status: Status.Error, message: 'Message to reply not found' });
+        }
+    }
+
+    // Check if there nothing to send
+    if (!params.message && !params.imagesFile?.images?.length) {
+        return res.json({ status: Status.Error, message: 'No message, no image, nothing to send' });
+    }
+
     try {
         switch (chatChannel) {
             case ChatChannels.JOB_REQUEST:
-                chat = await _createJobRequestChat(params, id, user, company);
+                chat = await _createJobRequestChat(params, id, user, company, repliedChat);
                 break;
 
             default:
@@ -58,9 +73,13 @@ export const getChats = async (req: Request, res: Response) => {
 
             chats = await Chat.find({ chatChannel: ChatChannels.JOB_REQUEST, jobRequest: jobRequest._id })
                 .populate({ path: 'jobRequest', select: '-__v -track' })
+                .populate({ path: 'replyTo', select: '-__v', populate: [{ path: 'user', select: 'profile info contact' }] })
+                .populate({ path: 'readStatus.readBy', select: 'profile info contact location' })
                 .populate({ path: 'user', select: 'profile info contact location' })
                 .populate({ path: 'company', select: 'info address contact' })
                 .populate({ path: 'customer', select: 'profile info address contact' });
+
+            // TODO: get chats unread count
 
             break;
     
@@ -72,6 +91,45 @@ export const getChats = async (req: Request, res: Response) => {
 
 }
 
+export const markRead = async (req: Request, res: Response) => {
+
+    const { chatChannel, id } = req.params;
+    const params = req.body;
+    const company = <ICompany>req.company;
+    const user = <IUser>req.user;
+
+    // Retrieve and check if Job Request exist
+    const jobRequest = await JobRequest.findOne({ _id: id, company: company._id })
+    if (!jobRequest) {
+        return res.json({ status: Status.Error, message: 'Job Request not found' });
+    }
+
+    // Retrieve and check if last message 
+    const lastChat = await Chat.findById(params.lastReadChatId);
+    if (!lastChat) {
+        return res.json({ status: Status.Error, message: 'Last message not found' });
+    }
+
+    // Retrieve all chats to be read
+    const chatsToRead = await JobRequestChat.find({
+        jobRequest: jobRequest._id,
+        _id: { $lte: lastChat._id },
+        customer: { $exists: true },
+        'readStatus.isRead': false,
+    });
+
+    // Iterate all chats to be read and update the read status
+    for (const chat of chatsToRead) {
+        chat.readStatus.isRead = true;
+        chat.readStatus.readBy = user._id;
+        chat.readStatus.readAt = new Date;
+        await chat.save();
+    }
+
+    return res.json({ status: Status.Success, message: 'Chats marked as read successfully.', chatsToRead });
+
+}
+
 // =======================================
 // ===== [ PARTIAL METHODS BELOW] ========
 // =======================================
@@ -79,7 +137,7 @@ export const getChats = async (req: Request, res: Response) => {
 /**
  * Partial method to create Job Request Chat
  */
-const _createJobRequestChat = async (params: any, id: string, user: IUser, company: ICompany): Promise<IJobRequestChat> => {
+const _createJobRequestChat = async (params: any, id: string, user: IUser, company: ICompany, repliedChat: IChat): Promise<IJobRequestChat> => {
 
     // Check if Job Request exist
     const jobRequest = await JobRequest.findOne({ _id: id, company: company._id });
@@ -92,6 +150,7 @@ const _createJobRequestChat = async (params: any, id: string, user: IUser, compa
         jobRequest,
         chatChannel: ChatChannels.JOB_REQUEST,
         user, company,
+        replyTo: repliedChat,
         message: params.message
     });
 
@@ -100,10 +159,20 @@ const _createJobRequestChat = async (params: any, id: string, user: IUser, compa
         const images = params.imagesFile?.images.map((image: any) => {
             return { imageUrl: image.location, uploadedBy: user.id, createdAt: new Date(), updatedAt: new Date() };
         });
-    
+
         jobRequestChat.images.push(...images);
     }
 
-    return await jobRequestChat.save();
+    await jobRequestChat.save();
+    await jobRequestChat
+        .populate({ path: 'jobRequest', select: '-__v -track' })
+        .populate({ path: 'replyTo', select: '-__v', populate: [{ path: 'user', select: 'profile info contact' }] })
+        .populate({ path: 'readStatus.readBy', select: 'profile info contact location' })
+        .populate({ path: 'user', select: 'profile info contact location' })
+        .populate({ path: 'company', select: 'info address contact' })
+        .populate({ path: 'customer', select: 'profile info address contact' })
+        .execPopulate();
+
+    return jobRequestChat;
 
 }

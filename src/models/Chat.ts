@@ -58,10 +58,7 @@ const ChatSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: 'Chat'
         },
-        message: {
-            type: String,
-            required: true
-        },
+        message: String,
         images: [{
             imageUrl: String,
             uploadedBy: {
@@ -75,7 +72,7 @@ const ChatSchema = new Schema(
             isRead: { type: Boolean, default: false },
             readBy: {
                 type: Schema.Types.ObjectId,
-                reaf: 'User'
+                ref: 'User'
             },
             readAt: Date
         }

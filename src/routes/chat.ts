@@ -26,4 +26,12 @@ router.post(
     chatController.createChat
 )
 
+router.post(
+    '/:chatChannel/:id/markRead',
+    passport.authenticate('jwt', { session: false }),
+    getCompanyId(),
+    validate(Validations.markReadJobRequestChat),
+    chatController.markRead
+)
+
 export default router;
