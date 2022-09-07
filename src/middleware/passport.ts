@@ -24,8 +24,7 @@ export default (passport: PassportStatic) => {
                             return done(err, false)
                         }
 
-                        done(null, user)
-            
+                        done(null, user, payload.sessionID)
                     }
                 )
 

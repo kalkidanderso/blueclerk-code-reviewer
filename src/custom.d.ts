@@ -3,7 +3,11 @@ declare namespace Express {
        companyId?: string,
        otherCompanyId?: string,
        company?: any,
+       supplierId?: string,
+       supplier?: any,
        technician?: any,
-       contractor?: any
+       contractor?: any,
+       userSession?: any,
+       sessionId?: any
     }
  }

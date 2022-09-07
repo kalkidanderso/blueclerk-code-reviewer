@@ -24,6 +24,7 @@ import { _getQBPayments, _updateQBPayment, _transferQBPayments, _countQBPayments
 import { _refreshToken } from './quickbook'
 import { createCustomerContact } from './contact'
 import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin'
+import { SupplierBuilder } from '../models/SupplierBuilder'
 
 /**
  * To reset Customer quickbookId,
@@ -322,6 +323,79 @@ export const getCustomers = (req: Request, res: Response) => {
                 })
 
         })
+}
+
+/**
+ * To retrieve the builders of the supplier,
+ * based on the supplier builders document as the 'contract' between them
+ */
+export const getSupplierBuilders = async (req: Request, res: Response) => {
+
+    const params = req.query;
+    const supplier = req.supplier;
+
+    // Get all the 'contract' of the supplier
+    const supplierBuilders = await SupplierBuilder.find({ supplier: supplier._id });
+
+    // Extract only the ID of all the 'contract'
+    const builderIds = supplierBuilders.map((obj: any) => {
+        return obj.builder;
+    });
+
+    // Initialize filter for additional query
+    const filter: any = { $and: [] };
+
+    // Construct isActive filter query
+    switch (params.isActive) {
+        case false:
+        case 'false':
+            filter['$and'].push({ isActive: false });
+            break;
+
+        case 'all':
+            break;
+
+        case true:
+        default:
+            filter['$and'].push({ isActive: { $ne: false } });
+            break;
+    }
+
+    // Finally, get the builder aka customer information
+    const builders = await Customer.find({ _id: { $in: builderIds }, ...filter });
+
+    return res.json({ status: Status.Success, builders });
+
+}
+
+export const getAllCustomers = async (req: Request, res: Response) => {
+    const { ENVIRONMENT } = process.env;
+    const params = req.query;
+    const query: any = {};
+    const customerName = ["Westin Homes", "Shea Homes", "Perry Homes", "Toll Brothers, Inc."]
+    const customerIds = ['615365a5cae446268ec35c07', '60244e3a9b846d6018bfdd99', '615365a3cae446a8bbc35b5f', '615365a4cae4462e66c35bdd'];
+
+    switch (ENVIRONMENT) {
+        case 'production':
+            // query['$or'] = [{ 'profile.displayName': { $in: customerName } }];
+            query['$or'] = [{ _id: { $in: customerIds } }];
+            break;
+
+        case 'staging':
+        default:
+            if (params.keyword) {
+                const keywordRegex = { $regex: params.keyword, $options: '$i' };
+                query['$or'] = [
+                    { 'profile.displayName': keywordRegex },
+                    { 'info.email': keywordRegex },
+                ]
+            }
+
+            break;
+    }
+
+    const customers = await Customer.find({ ...query }, 'profile info contact address').sort({ 'profile.displayName': 1 });
+    return res.json({ status: Status.Success, customers })
 }
 
 export const updateCustomer = (req: Request, res: Response) => {

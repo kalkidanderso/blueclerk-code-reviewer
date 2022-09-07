@@ -24,11 +24,12 @@ export const Messages = {
     MissingParams: 'Parameters are missing',
     InvalidEmailPassword: 'Invalid email/password.',
     InvalidEmail: 'invalid format (not email format)',
+    PasswordNotStrong: 'Your password must be have at least: 8 characters long, 1 uppercase, 1 number, & 1 special character',
     GenericError: 'Can\'t process now. Please try again later.',
     DuplicateEmail: 'Email address already registered. Please try with some other email address',
     CompanyDuplicateEmail: 'Company Email address already registered. Please try with some other email address',
     UnAuthorized: 'You are not authorized for this action. Please contact admin for more details.',
-    AccountDeleted: 'You account has been deleted. Please contact admin for more details.',
+    AccountDeleted: 'Your account has been deleted. Please contact admin for more details.',
     AgreeToTermAndConditions: 'You must agree to terms and conditions of blueclerk.',
     UserExists: 'User already exists.',
     TagAssociated: 'Tag is associated with customer',
@@ -53,7 +54,10 @@ export const enum Role {
     GLOBAL_ADMIN,
     CUSTOMER,
     CUSTOMER_CONTACT,
-    CONTRACTOR
+    CONTRACTOR,
+    SUPPLIER_ADMIN,
+    ACCOUNT_MANAGER,
+    ACCOUNTS_PAYABLE
 }
 
 export const enum OrderStatus {
@@ -92,6 +96,7 @@ export const enum JobRequestStatus {
     SCHEDULED,
     FINISHED,
     CANCELLED,
+    ACCEPTED,
     REJECTED,
 }
 
@@ -146,10 +151,10 @@ export const enum CompanyType {
     FREE,
 }
 
-export const enum UserType {
-    BUILDER = 1, // Customer Contact
-    SUPPLIER = 2, // Company Employee
-    SERVICE_PROVIDER = 3,
+export enum AccountTypes {
+    SERVICE_PROVIDER = 1, // Company Employee
+    BUILDER = 2, // Customer Contact
+    SUPPLIER = 3, // Window Supplier, BFS, Throphy
     CONTRACTOR = 4, // Independent Contractor
     COMPANY = 5
 }
@@ -165,6 +170,7 @@ export enum NotificationTypes {
     COMPANY_INVOICE_FAILED = 'CompanyInvoiceFailed',
     JOB_REQUEST_CREATED = 'JobRequestCreated',
     JOB_REQUEST_STATUS_UPDATED = 'JobRequestStatusUpdated',
+    NEW_CHAT = 'NewChat',
 }
 
 export enum PaymentTermNames {
@@ -851,4 +857,10 @@ export const UserPermissions = {
         ],
         off: [Permissions.None],
     }
+}
+
+export const payrollPaymentTypes = {
+    PayrollPayments : 'Payroll Payments',
+    AdvancePayments : 'Advance Payments',
+    All : 'All',
 }

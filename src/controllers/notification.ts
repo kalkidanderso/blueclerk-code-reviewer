@@ -3,7 +3,7 @@ import { Messages, NotificationTypes, SocketEvents, Status } from '../common/con
 
 import { IUser } from '../models/User';
 import { Notification, INotification, INotificationQuery } from '../models/Notification';
-import { NotificationContract, NotificationServiceTicket, NotificationJob, NotificationJobRequest } from '../models/NotificationDiscriminator';
+import { NotificationContract, NotificationServiceTicket, NotificationJob, NotificationJobRequest, NotificationChat } from '../models/NotificationDiscriminator';
 
 /**
  * Construct and get query for notification,
@@ -77,6 +77,10 @@ export const _handleNotification = async ({ sio, companyId, notificationType, me
             notification = new NotificationJobRequest(notificationEntry);
             break;
 
+        case NotificationTypes.NEW_CHAT:
+            notification = new NotificationChat(notificationEntry);
+            break;
+
         default:
             notification = new Notification(notificationEntry);
             break;
@@ -108,7 +112,8 @@ export const getNotifications = (req: Request, res: Response) => {
             select: 'profile.displayName'
         })
         .populate({
-            path: 'metadata'
+            path: 'metadata',
+            populate: [{ path: 'jobRequest' }]
         })
         .exec((err: any, notifications: INotification[]) => {
             if (err) {

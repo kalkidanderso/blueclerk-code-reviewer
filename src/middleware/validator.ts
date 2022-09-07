@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { check, validationResult, ValidationChain, body } from 'express-validator'
+import { check, param, validationResult, ValidationChain, body } from 'express-validator'
 import { Status, Messages, JobStatus } from '../common/constants'
 
 
@@ -34,7 +34,7 @@ export const validate = (validations: ValidationChain[]) => {
 export const Validations = {
   //Auth
   signUp: [
-    check('userType').optional().isInt().toInt().withMessage('has to be interger'),
+    check('accountType').optional().isInt().toInt().withMessage('has to be interger'),
     check('email').exists().withMessage(Messages.Required),
     check('email').isEmail().withMessage('not in email format'),
     check('password').exists().withMessage(Messages.Required),
@@ -286,6 +286,13 @@ export const Validations = {
     check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
+  updateJoBRequestStatus: [
+    check('jobRequestId').exists().withMessage(Messages.Required),
+    check('jobRequestId').isMongoId().withMessage(Messages.WrongId),
+    check('status').exists().withMessage(Messages.Required),
+    check('status').isInt({ min: 4, max: 5 }).toInt().withMessage('has to be 4 (Accepted) or 5 (Rejected)'),
+  ],
+
   editJob: [
     check('jobId').exists().withMessage(Messages.Required),
     check('jobId').isMongoId().withMessage(Messages.WrongId),
@@ -523,6 +530,7 @@ export const Validations = {
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId),
     check('amount').exists().withMessage(Messages.Required),
+    check('creditUsed').optional().isFloat().toFloat().withMessage('has to be number/decimal'),
   ],
 
   updatePaymentContractor: [
@@ -542,10 +550,57 @@ export const Validations = {
     check('paymentId').isMongoId().withMessage(Messages.WrongId),
   ],
 
+  // ADVANCE PAYMENT
+  recordAdvancePayment: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('amount').exists().withMessage(Messages.Required),
+    check('amount').isFloat().toFloat().withMessage('has to be number/decimal'),
+  ],
+
+  getAdvancePayments: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  updateAdvancePaymentContractor: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('advancePaymentId').exists().withMessage(Messages.Required),
+    check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
+    check('amount').exists().withMessage(Messages.Required),
+    check('amount').isInt().toInt().withMessage('has to be number'),
+  ],  
+
+  voidAdvancePaymentContractor: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('advancePaymentId').exists().withMessage(Messages.Required),
+    check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
+  ],  
+
   // REPORT
   generateIncomeReport: [
+    check('reportData').exists().withMessage(Messages.Required),
+    check('reportData').isInt().toInt().withMessage('has to be number'),
+    check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+  ],
+
+  createMemorizedReport: [
     check('reportType').exists().withMessage(Messages.Required),
-    check('reportType').isInt().toInt().withMessage('has to be number')
+    check('reportType').isInt().toInt().withMessage('has to be number'),
+    check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+  ],
+
+  updateMemorizedReport: [
+    check('memorizedReportId').exists().withMessage(Messages.Required),
+    check('memorizedReportId').isMongoId().withMessage(Messages.WrongId)
   ],
 
   // Code Location
@@ -634,6 +689,25 @@ export const Validations = {
     check('zipCode').exists().withMessage(Messages.Required),
     check('phone').exists().withMessage(Messages.Required)
   ],
+
+  // Chat
+  getJobRequestChats: [
+    param('id').exists().withMessage(Messages.Required),
+    param('id').isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  createJobRequestChat: [
+    param('id').exists().withMessage(Messages.Required),
+    param('id').isMongoId().withMessage(Messages.WrongId),
+    param('replyTo').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  markReadJobRequestChat: [
+    param('id').exists().withMessage(Messages.Required),
+    param('id').isMongoId().withMessage(Messages.WrongId),
+    check('lastReadChatId').exists().withMessage(Messages.Required),
+    check('lastReadChatId').isMongoId().withMessage(Messages.WrongId),
+  ]
 
 }
 

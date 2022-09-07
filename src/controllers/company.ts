@@ -1325,6 +1325,36 @@ export const getCompanyCustomer = async (req: Request, res: Response) => {
 
 }
 
+export const getAllCompanies = async (req: Request, res: Response) => {
+    const { ENVIRONMENT } = process.env;
+    const params = req.query;
+    const query: any = { __t: { $ne: 'CompanyCustomer' } };
+    const companyName = ["Norton Fitness", "Lance Dahse, Inc."];
+
+    switch (ENVIRONMENT) {
+        case 'staging':
+            query['$or'] = [{ 'info.companyName': companyName[0] }];
+            break;
+
+        case 'production':
+            query['$or'] = [{ 'info.companyName': { $in: companyName } }];
+            break;
+
+        default:
+            if (params.keyword) {
+                const keywordRegex = { $regex: params.keyword, $options: 'i' };
+                query['$or'] = [
+                    { 'info.companyName': keywordRegex },
+                    { 'info.companyEmail': keywordRegex }
+                ];
+            }
+            break;
+    }
+
+    const companies = await Company.find({ ...query }, 'info contact address').sort({ 'info.companyName': 1 })
+    return res.json({ status: Status.Success, companies });
+}
+
 export const updateCompanyCustomer = async (req: Request, res: Response) => {
     const params = req.body;
     const companyCustomer = await CompanyCustomer.findById(params.companyCustomerId);

@@ -30,7 +30,6 @@ import { _handleJobTypesJson } from '../controllers/item';
 import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
 import { _handleNotification } from '../controllers/notification';
 import { IJobRequest, JobRequest } from '../models/JobRequest';
-import { convertCompilerOptionsFromJson } from 'typescript';
 
 /**
  * 04-22-2022
@@ -282,28 +281,35 @@ const _createJob = async (
     }
 
     if (params.jobRequestId) {
-        const jobRequest = await JobRequest.findById(params.jobRequestId);
-        if (jobRequest) {
-            if (!jobRequest.jobLocation && params.jobLocation) {
-                jobRequest.jobLocation = params.jobLocation;
-            }
+        const jobRequest = await JobRequest.findOne({ _id: params.jobRequestId, company: companyId });
 
-            if (!jobRequest.jobSite && params.jobSite) {
-                jobRequest.jobSite = params.jobSite;
-            }
-
-            jobRequest.status = JobRequestStatus.SCHEDULED;
-            await jobRequest.save();
-            jobRequest?.requests.forEach(request => {
-                const requestImages = parentJob?.images?.length
-                    ? parentJob?.images
-                    : request.images?.length
-                        ? request?.images
-                        : []
-
-                images.push(...requestImages);
-            })
+        if (!jobRequest) {
+            return res.json({ status: Status.NotFound, message: 'Job request not found' });
         }
+
+        if (jobRequest.status === JobRequestStatus.REJECTED) {
+            return res.json({ status: Status.Error, message: 'Cannot create this job using rejected job request' });
+        }
+
+        if (!jobRequest.jobLocation && params.jobLocation) {
+            jobRequest.jobLocation = params.jobLocation;
+        }
+
+        if (!jobRequest.jobSite && params.jobSite) {
+            jobRequest.jobSite = params.jobSite;
+        }
+
+        jobRequest.status = JobRequestStatus.SCHEDULED;
+        await jobRequest.save();
+        jobRequest?.requests.forEach(request => {
+            const requestImages = parentJob?.images?.length
+                ? parentJob?.images
+                : request.images?.length
+                    ? request?.images
+                    : []
+
+            images.push(...requestImages);
+        })
     }
 
 
@@ -962,7 +968,7 @@ export const getJobs = async (req: Request, res: Response) => {
 
     // Construct aggreate lookups here to be used multiple times
     const aggregateLookups = [
-        { $lookup: { from: 'users', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
+        { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
         { $lookup: { from: 'joblocations', localField: 'jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
         { $lookup: { from: 'jobsites', localField: 'jobSite', foreignField: '_id', as: 'jobSiteObj' } },
         { $lookup: { from: 'users', localField: 'tasks.technician', foreignField: '_id', as: 'technicianObj' } },
@@ -1515,7 +1521,7 @@ export const getAllJobReports = async (req: Request, res: Response) => {
     // Construct aggreate lookups here to be used multiple times
     const aggregateLookups = [
         { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
-        { $lookup: { from: 'users', localField: 'jobObj.customer', foreignField: '_id', as: 'customerObj' } },
+        { $lookup: { from: 'customers', localField: 'jobObj.customer', foreignField: '_id', as: 'customerObj' } },
         { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
         { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
         { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
@@ -1863,6 +1869,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             let trackLinked = linkedJob && linkedJob.track || [];
             let tasksLinked = linkedJob && linkedJob.tasks || [];
             let action = '';
+            let ticketAction = '';
 
             if (params.status && params.status != job.status) {
                 if (params.status == JobStatus.PENDING) {
@@ -1879,11 +1886,13 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 }
                 if (params.status == JobStatus.FINISHED) {
                     action = '|Finishing the job|';
+                    ticketAction = `|Job finished by ${user.profile.displayName}|`;
                 }
                 if (params.status == JobStatus.CANCELED) {
                     action = '|Canceling the job|';
-                    await ServiceTicket.findOneAndUpdate({ _id: job.ticket }, { jobCreated: false });
-                    await JobRequest.findOneAndUpdate({ _id: job.request }, { jobCreated: false });
+                    ticketAction = `|Job cancelled by ${user.profile.displayName}|`;
+                    await ServiceTicket.findOneAndUpdate({ _id: job.ticket }, { jobCreated: false })
+                    await JobRequest.findOneAndUpdate({ _id: job.request }, { jobCreated: false, status: JobRequestStatus.ACCEPTED });
                 }
                 if (params.status == JobStatus.RESCHEDULED) {
                     action = '|Rescheduling the job|';
@@ -1895,6 +1904,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     action = '|Update the job to Incomplete|'
                 }
             }
+
             let userComment = '';
             if (params.comment !== 'undefined') {
                 userComment = params.comment;
@@ -2023,6 +2033,28 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 const updatedJob = await Job.findById(job.id);
                 if (linkedJob) {
                     await linkedJob.updateOne(dataLinked);
+                }
+
+                if (job?.ticket && ticketAction) {
+                    const serviceTicket = await ServiceTicket.findById(job.ticket);
+                    serviceTicket.track.push({
+                        user: user._id,
+                        action: ticketAction,
+                        date: new Date()
+                    });
+
+                    await serviceTicket.save();
+                }
+
+                if (job?.request && ticketAction) {
+                    const jobRequest = await JobRequest.findById(job.request);
+                    jobRequest.track.push({
+                        user: user._id,
+                        action: ticketAction,
+                        date: new Date()
+                    });
+
+                    await jobRequest.save();
                 }
 
                 let date = job.scheduleDate;
@@ -2732,6 +2764,59 @@ export const editJob = async (req: Request, res: Response) => {
         }
     );
 }
+
+export const updateJobRequestStatus = async (req: Request, res: Response) => {
+    const params = req.body;
+    let companyId = req.companyId;
+    let jobRequestAction = '';
+
+    const user = <IUser>req.user;
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+
+    const jobRequest = await JobRequest.findOne({ _id: params.jobRequestId, company: companyId });
+    if (!jobRequest || jobRequest?.status === JobRequestStatus.CANCELLED) {
+        return res.json({ status: Status.NotFound, message: 'Job request not found' });
+    }
+
+    // if (jobRequest.status !== JobRequestStatus.PENDING) {
+    //     return res.json({ status: Status.Error, message: 'Cannot update non pending job request' });
+    // }
+
+    const job = await Job.findOne({ request: jobRequest._id });
+    if (job && jobRequest.jobCreated) {
+        return res.json({
+            status: Status.Error,
+            message: 'Cannot reject or accept again a job request that has been scheduled or finished.',
+            job
+        });
+    }
+
+    switch (params.status) {
+        case JobRequestStatus.REJECTED:
+            if (!params.note) {
+                return res.json({ status: Status.Error, message: 'Note is required when you reject job request' });
+            }
+
+            jobRequestAction = `|Rejecting the job request by ${user.profile.displayName}|`;
+            jobRequest.status = params.status;
+            break;
+
+        case JobRequestStatus.ACCEPTED:
+            jobRequestAction = `|Accepting the job request by ${user.profile.displayName}|`;
+            jobRequest.status = params.status;
+            break;
+        default:
+            return res.json({ status: Status.Error, message: 'Param status is required' })
+    }
+
+    jobRequest.track.push({ action: jobRequestAction, date: new Date(), note: params.note, user: user._id });
+    await jobRequest.save();
+
+    return res.json({ status: Status.Success, message: 'job request status updated', jobRequest });
+}
+
 
 export const getJobDetails = (req: Request, res: Response) => {
 
@@ -3462,29 +3547,29 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
          * Check if there no more PENDING, STARTED, or PAUSED technician statuses,
          * if it does, update job's status to CANCELED as well
          */
-         if (
+        if (
             allTechnicianStatus.includes(JobStatus.CANCELED)
             && !allTechnicianStatus.includes(JobStatus.PENDING)
             && !allTechnicianStatus.includes(JobStatus.STARTED)
             && !allTechnicianStatus.includes(JobStatus.PAUSED)
-         ) {
-             job.status = JobStatus.CANCELED;
-             action += `|Canceling the job|`;
-         }
+        ) {
+            job.status = JobStatus.CANCELED;
+            action += `|Canceling the job|`;
+        }
 
         /**
          * Check if there no more PENDING, STARTED, or PAUSED technician statuses,
          * if it does, update job's status to RESCHEDULED as well
          */
-         if (
+        if (
             allTechnicianStatus.includes(JobStatus.RESCHEDULED)
             && !allTechnicianStatus.includes(JobStatus.PENDING)
             && !allTechnicianStatus.includes(JobStatus.STARTED)
             && !allTechnicianStatus.includes(JobStatus.PAUSED)
-         ) {
+        ) {
             job.status = JobStatus.RESCHEDULED;
             action += `|Rescheduling the job|`;
-         }
+        }
     }
 
     job.track.push({ user: user._id, action, note: params.note, date: new Date() });

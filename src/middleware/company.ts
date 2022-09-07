@@ -38,7 +38,7 @@ export const getCompanyId = () => {
                     //     return
                     // }
                     req.company = company
-                    req.companyId = company._id
+                    req.companyId = company?._id
                     next()
                     return
                 }
@@ -53,7 +53,7 @@ export const getCompanyId = () => {
                     }
 
                     req.company = company
-                    req.companyId = company._id
+                    req.companyId = company?._id
 
                     next()
                     return

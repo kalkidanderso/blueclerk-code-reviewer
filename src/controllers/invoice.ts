@@ -27,7 +27,7 @@ import { IPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
 import { Payment, PaymentCustomer } from '../models/Payment';
 import { IInvoice, IQBInvoice, Invoice } from '../models/Invoice';
 import { IScan, Scan } from '../models/Scan';
-import { EmailDefault } from '../models/EmailDefault';
+import { EmailDefault, EmailTypes } from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer, uploadFileInS3 } from '../services/aws';
 import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer';
@@ -1799,8 +1799,10 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                 { path: 'type', select: 'title description sku' },
                 { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
-                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.technician', select: 'profile auth.email address contact permissions.role' },
                 { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
+                { path: 'technicianImages.uploadedBy', select: 'profile auth.email address contact permissions.role' },
+                { path: 'track.user', select: 'profile auth.email address contact permissions.role'},
                 { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
                 { path: 'jobLocation', select: 'name location address' },
                 { path: 'jobSite', select: 'name location address' }
@@ -1899,12 +1901,12 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     const customer = <ICustomer>invoice.customer;
 
     // Retrieve company email default
-    let emailDefault = await EmailDefault.findOne({ company });
+    let emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
 
     // Create email default if company doesn't have one yet
     if (!emailDefault) {
-        await _createCompanyDefaultEmail(company);
-        emailDefault = await EmailDefault.findOne({ company });
+        await _createCompanyDefaultEmail(company, EmailTypes.INVOICE);
+        emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
     }
 
     /**
@@ -1914,7 +1916,7 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     await transformPlaceholders(emailDefault);
 
     // Get available placeholder values for Invoice email template
-    const { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date } = await getPlaceholderValues(company, invoice, customer);
+    const { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date } = await getPlaceholderValues({ company, invoice, customer });
 
     return res.json({
         status: Status.Success,
@@ -1980,7 +1982,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
     // Retrieve company email default
     const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
-    const emailDefault = await EmailDefault.findOne({ company });
+    const emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
 
     // Generate Invoice PDF
     await _generateInvoicePdf(company, invoice);
@@ -2176,7 +2178,7 @@ export const getInvoices = async (req: Request, res: Response) => {
     // Construct aggreate lookups here to be used multiple times
     const aggregateLookups = [
         { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
-        { $lookup: { from: 'users', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
+        { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
         { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
         { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
         { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
@@ -3495,7 +3497,38 @@ export const voidInvoice = async (req: Request, res: Response) => {
 export const generateInvoicePdf = async (req: Request, res: Response) => {
     const params = req.query;
     const company = <ICompany>req.company;
-    const invoice = await Invoice.findOne({ _id: params.invoiceId, customer: params.customerId, company: company._id });
+    const invoice = await Invoice
+        .findOne({ _id: params.invoiceId, customer: params.customerId, company: company._id })
+        .populate({
+            path: 'job',
+            populate: [
+                { path: 'type', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+                { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
+                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
+                { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
+                { path: 'jobLocation', select: 'name location address' },
+                { path: 'jobSite', select: 'name location address' }
+            ],
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address contact contactName'
+        })
+        .populate({
+            path: 'customerContactId',
+            select: '-__v'
+        })
+        .populate({
+            path: 'paymentTerm',
+            select: '-company -__v'
+        })
+        .populate({
+            path: 'items.item',
+            select: 'name description sku isJobType isFixed charges tax',
+            populate: [{ path: 'jobType' }]
+        })
 
     if (!invoice) {
         return res.json({ status: Status.NotFound, message: 'Invoice not found' });

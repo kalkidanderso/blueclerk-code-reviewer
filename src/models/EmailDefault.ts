@@ -10,16 +10,27 @@ export interface IEmailDefault extends Document {
     createdAt?: Date
     updatedAt?: Date
     updatedBy?: Schema.Types.ObjectId | IUser
+    emailType?: EmailTypes
 
 }
 
 export const DefaultEmailTemplate = {
     subject: '{{invoice_number}} from {{company_name}}',
     message: 'Dear {{customer_name}},\n\nPlease see your invoice {{invoice_number}} attached with {{invoice_amount}} due on {{invoice_due_date}}.\n\nThank you for doing business with {{company_name}}\n{{small_company_logo}}'
-  }
+}
+
+export const DefaultIncomReportEmailTemplate = {
+    subject: 'Income report of {{company_name}}',
+    message: 'Hello,\n\nPlease see your Income Report attached for this period: {{date_range}}.\n\n{{small_company_logo}}'
+}
+
+export enum EmailTypes {
+    INVOICE = 'INVOICE',
+    INCOME_REPORT = 'INCOME_REPORT'
+}
 
 const EmailDefaultSchema = new Schema(
-    
+
     {
         subject: String,
         message: {
@@ -34,10 +45,15 @@ const EmailDefaultSchema = new Schema(
         updatedBy: {
             type: Schema.Types.ObjectId,
             ref: 'User'
+        },
+        emailType: {
+            type: String,
+            enum: Object.values(EmailTypes),
+            required: true,
         }
     },
     { timestamps: { createdAt: true, updatedAt: true } }
-    
+
 )
 
 export const EmailDefault = mongoose.model<IEmailDefault>('EmailDefault', EmailDefaultSchema);
