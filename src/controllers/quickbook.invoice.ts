@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { ObjectId } from 'mongodb';
 import axios from 'axios';
 import moment from 'moment';
 import { Status, Messages, InvoiceStatus } from '../common/constants';
@@ -17,6 +18,7 @@ import { _transferQBPayments } from './quickbook.payment';
 import { JobReport } from '../models/JobReport';
 import { InvoiceCommission } from '../models/InvoiceCommission';
 import { Payment } from '../models/Payment';
+import { waitTimer } from '../services/helper';
 
 // ===================================
 // =======[ QUICKBOOK INVOICE ]=======
@@ -162,30 +164,61 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
         }
     }
 
+    // // Create QB Invoice
+    // qbo.createInvoice(qbInvoiceEntry, async (err: any, qbInvoice: IQBInvoice) => {
+    //     if (err) {
+    //         console.log('== _createQBInvoice > qbo.createInvoice > ERROR ==');
+    //         console.log('== err.Fault:', err.Fault);
+    //         console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+    //         console.log('== err.fault:', err.fault);
+    //         console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+    //         console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+    //         console.log('== invoiceId:', invoice._id);
+
+    //         return next(
+    //             Status.Error,
+    //             err.Fault?.Error[0]?.Detail
+    //             || err.Fault?.Error[0]?.Message
+    //             || err.fault?.error[0]?.detail
+    //             || err.fault?.error[0]?.message
+    //             || Messages.GenericError,
+    //             null
+    //         );
+    //     }
+
+    //     return next(null, null, qbInvoice);
+    // });
+
     // Create QB Invoice
-    qbo.createInvoice(qbInvoiceEntry, async (err: any, qbInvoice: IQBInvoice) => {
-        if (err) {
-            console.log('== _createQBInvoice > qbo.createInvoice > ERROR ==');
-            console.log('== err.Fault:', err.Fault);
-            console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
-            console.log('== err.fault:', err.fault);
-            console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
-            console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
-            console.log('== invoiceId:', invoice._id);
+    return new Promise((resolve, reject) => {
+        qbo.createInvoice(qbInvoiceEntry, (err: any, qbInvoice: IQBInvoice) => {
 
-            return next(
-                Status.Error,
-                err.Fault?.Error[0]?.Detail
-                || err.Fault?.Error[0]?.Message
-                || err.fault?.error[0]?.detail
-                || err.fault?.error[0]?.message
-                || Messages.GenericError,
-                null
-            );
-        }
+            if (err) {
+                console.log('== _createQBInvoice > qbo.createInvoice > ERROR ==');
+                console.log('== err.Fault:', err.Fault);
+                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                console.log('== err.fault:', err.fault);
+                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                console.log('== invoiceId:', invoice._id);
 
+                reject(err.Fault?.Error[0]?.Detail
+                    || err.Fault?.Error[0]?.Message
+                    || err.fault?.error[0]?.detail
+                    || err.fault?.error[0]?.message
+                    || Messages.GenericError);
+            }
+
+            resolve(qbInvoice);
+        })
+
+    }).then((qbInvoice: IQBInvoice) => {
+        // QBooks Invoice sync successfully
         return next(null, null, qbInvoice);
-    });
+    }).catch((errMsg) => {
+        // QBooks Invoice sync failed
+        return next(Status.Error, errMsg, null);
+    })
 
 }
 
@@ -456,6 +489,65 @@ export const createQBInvoice = async (req: Request, res: Response) => {
 
         return res.json({ status: Status.Success, message: 'QuickBooks Invoice successfully created', invoice, quickbookInvoice: qbInvoice });
     })
+
+}
+
+/**
+ * To manually create multiple BClerk Invoices to QBooks
+ */
+export const createQBInvoices = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const company = <ICompany>req.company;
+    const invoiceSynced: any[] = [];
+    const invoiceUnsynced: any[] = [];
+    let paramInvoiceIds: any = []
+
+    try {
+        paramInvoiceIds = params.invoiceIds;
+
+        // To handle any over-stringified strings
+        if (!Array.isArray(paramInvoiceIds)) {
+            paramInvoiceIds = JSON.parse(paramInvoiceIds);
+        }
+    } catch (error) {
+        return res.json({ 'status': Status.Error, 'message': 'invoiceIds is invalid' });
+    }
+
+    const invoices = await Invoice.find({ _id: { $in: paramInvoiceIds }, company: company._id });
+
+    if (!invoices?.length) {
+        return res.json({ status: Status.Error, message: 'Invoices not found' });
+    }
+
+    for (const invoice of invoices) {
+        await _createQBInvoice(req, res, company, invoice, async (err, errMsg, qbInvoice) => {
+            if (err || !qbInvoice) {
+                invoiceUnsynced.push({
+                    errorMessage: errMsg,
+                    invoice,
+                });
+            }
+
+            if (qbInvoice) {
+                invoice.quickbookId = qbInvoice.Id;
+                await invoice.save();
+
+                invoiceSynced.push(invoice);
+            }
+        })
+
+        // Wait for one second for each transaction
+        await waitTimer(1000);
+    }
+
+    return res.json({
+        status: Status.Success,
+        totalInvoiceSynced: invoiceSynced.length,
+        invoiceSynced,
+        totalInvoiceUnsynced: invoiceUnsynced.length,
+        invoiceUnsynced
+    });
 
 }
 

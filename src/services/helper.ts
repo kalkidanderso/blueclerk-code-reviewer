@@ -31,5 +31,8 @@ export const roundTwoDecimal = (num: number): number => {
     if (!num) { return; }
 
     return Math.round(num * 100) / 100;
+}
 
+export const waitTimer = (ms: any) => {
+    return new Promise(res => setTimeout(res, ms));
 }

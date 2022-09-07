@@ -9505,6 +9505,86 @@
         ]
       }
     },
+    "/getUnsyncedInvoices": {
+      "get": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To get non-draft active unsynced invoices",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "Filter invoices by search keyword to Job Id, Customer's name, Job's Subdivision name address, Job's Job Address name address, Job's Technician name, and Job's Contractor name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "description": "Filter invoices by Customer ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter invoices by multiple status. Format example: [\"UNPAID\", \"PARTIALLY PAID\", \"PAID\"]",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dueDate",
+            "in": "query",
+            "description": "Filter invoices by dueDate or before",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Filter invoices by start of the created date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "Filter invoices by end of the created date",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getCompanyInvoices": {
       "get": {
         "tags": [
@@ -13184,6 +13264,51 @@
                   "invoiceId": {
                     "type": "string",
                     "description": "Id of an invoice to be associated"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createQBInvoices": {
+      "post": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "Manually syncing MULTIPLE invoices",
+        "description": "Manually syncing MULTIPLE invoices from BlueClerk to QuickBooks and associate it with BlueClerk invoices",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "invoiceIds"
+                ],
+                "properties": {
+                  "invoiceIds": {
+                    "type": "string",
+                    "description": "Id of an invoices to be associated. Example: [\"62c5e0ee199181255411190e\",\"62aa1c7c4a9dbd07597df225\"]"
                   }
                 }
               }
