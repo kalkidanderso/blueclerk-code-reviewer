@@ -21,3 +21,7 @@ export const fromCursorHash = (str: string): string => {
     return Buffer.from(str, 'base64').toString();
 
 }
+
+export const waitTimer = (ms: any) => {
+    return new Promise(res => setTimeout(res, ms));
+}

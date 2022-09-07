@@ -1348,6 +1348,14 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/createQBInvoices',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookInvoiceController.createQBInvoices
+    )
+
+    router.post(
         '/syncQBInvoices',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
@@ -1722,6 +1730,14 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.getInvoices),
         invoiceController.getInvoices
+    )
+
+    router.get(
+        '/getUnsyncedInvoices',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        invoiceController.getUnsyncedInvoices
     )
 
     router.get(
