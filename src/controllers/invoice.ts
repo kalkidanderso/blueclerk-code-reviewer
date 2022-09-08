@@ -2324,7 +2324,7 @@ export const getInvoices = async (req: Request, res: Response) => {
                 isDraft: { $ne: true },
                 isVoid: { $ne: true },
                 quickbookId: null
-            });
+            })?.countDocuments();
 
             return res.json({
                 status: Status.Success,
