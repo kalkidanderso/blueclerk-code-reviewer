@@ -58,9 +58,9 @@ export const sendNotification = async ({
             appTitle: 'BlueClerk',
             type: notificationType,
             chatChannel,
-            messageId: chatId,
-            message: minimizedChat && JSON.stringify(minimizedChat),
-            lastReadMessageId: lastReadChatId,
+            messageId: chatId ?? '',
+            message: (minimizedChat && JSON.stringify(minimizedChat)) ?? '',
+            lastReadMessageId: lastReadChatId ?? '',
             color: '#00aaff',
             sound: 'default'
         },
