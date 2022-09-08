@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
-import { Status } from '../common/constants';
+import { Messages, Status } from '../common/constants';
 
 import { IUser } from '../models/User';
 import { ICompany } from '../models/Company';
@@ -47,8 +47,8 @@ export const createChat = async (req: Request, res: Response) => {
             default:
                 break;
         }
-    } catch (error) {
-        return res.json({ status: Status.Error, message: error });
+    } catch (err) {
+        return res.json({ status: Status.Error, message: err?.message ?? Messages.GenericError });
     }
 
     return res.json({ status: Status.Success, message: 'Message sent successfully', chat });
