@@ -259,7 +259,7 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
 
     if (!company) {
         // No company tied with this quickbook action, do nothing
-        res.status(200).json({});
+        return res.status(200).json({});
     }
 
     for (const eventEntity of eventEntities) {
@@ -356,6 +356,6 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
         }
     }
 
-    res.status(200).json({});
+    return res.status(200).json({});
 
 }
