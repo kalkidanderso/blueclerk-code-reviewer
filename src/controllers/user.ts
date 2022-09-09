@@ -40,7 +40,10 @@ export const login = (req: Request, res: Response, sio: any) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
             }
 
-            if ([AccountTypes.BUILDER, AccountTypes.CONTRACTOR].includes(Number(user.accountType))) {
+            if (
+                [AccountTypes.BUILDER, AccountTypes.CONTRACTOR].includes(Number(user.accountType))
+                || [Role.CUSTOMER, Role.CUSTOMER_CONTACT, Role.CONTRACTOR].includes(Number(user.permissions.role))
+            ) {
                 return res.json({ status: Status.Error, message: 'Your account type does not have web access' });
             }
 

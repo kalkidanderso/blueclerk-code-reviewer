@@ -257,6 +257,11 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
     // Get BC Company based on the realmId
     const company = await Company.findOne({ realmId: eventNotification?.realmId });
 
+    if (!company) {
+        // No company tied with this quickbook action, do nothing
+        res.status(200).json({});
+    }
+
     for (const eventEntity of eventEntities) {
 
         // Handle Entity Event Trigger

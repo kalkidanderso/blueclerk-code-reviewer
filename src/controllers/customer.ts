@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb'
-import { Status, Messages, Role } from '../common/constants'
+import { Status, Messages, Role, AccountTypes } from '../common/constants'
 
 import { Company, ICompany } from '../models/Company'
 import { User, IUser } from '../models/User'
@@ -137,7 +137,8 @@ export const createCustomer = async (req: Request, res: Response) => {
                             emailPreferences: customer?.emailPreferences,
                             balance: customer?.balance,
                             commission: customer?.commission,
-                            customer: customer._id
+                            customer: customer._id,
+                            accountType: AccountTypes.BUILDER,
                         }).save();
 
                         customer.admin = customerAdmin._id;
