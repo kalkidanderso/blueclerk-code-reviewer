@@ -2682,19 +2682,58 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         // Save customer credit
         customer.save()
 
-        if (company.qbAuthorized && invoice.quickbookId) {
-            // Update Invoice in QuickBooks
-            _updateQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
-                if (qbInvoice) {
-                    // If company's invoices already synced, update the synced date
-                    if (company.qbSync?.invoicesSynced) {
-                        company.qbSync.invoicesSyncedAt = new Date();
-                        company.save();
-                    }
-                }
+        if (company.qbAuthorized) {
 
-                return next(invoice, qbInvoice);
-            })
+            if (invoice.quickbookId) {
+                // Update Invoice in QuickBooks
+                _updateQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                    if (err || errMsg) {
+                        return next(invoice, null);
+                    }
+
+                    if (qbInvoice) {
+                        // If company's invoices already synced, update the synced date
+                        if (company.qbSync?.invoicesSynced) {
+                            company.qbSync.invoicesSyncedAt = new Date();
+                            company.save();
+                        }
+                    }
+
+                    return next(invoice, qbInvoice);
+                })
+            } else {
+                /**
+                 * Check Customer & Job Locations data on QBooks,
+                 * if not found, create them on QBooks
+                 */
+                _checkQBCustomerJobLocation(req, res, company, customer._id, (err, errMsg, qbCustomer) => {
+                    if (err || errMsg) {
+                        return next(invoice, null);
+                    }
+
+                    if (qbCustomer) {
+                        // Create new Invoice in QuickBooks
+                        _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                            if (err || errMsg) {
+                                return next(invoice, null);
+                            }
+
+                            if (qbInvoice) {
+                                invoice.quickbookId = qbInvoice.Id;
+                                invoice.save();
+
+                                // If company's invoices already synced, update the synced date
+                                if (company.qbSync?.invoicesSynced) {
+                                    company.qbSync.invoicesSyncedAt = new Date();
+                                    company.save();
+                                }
+                            }
+
+                            return next(invoice, qbInvoice);
+                        });
+                    }
+                });
+            }
         } else {
             return next(invoice, null);
         }

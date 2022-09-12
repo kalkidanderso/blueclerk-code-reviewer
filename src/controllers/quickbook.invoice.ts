@@ -322,6 +322,14 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
 
             qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
                 if (err) {
+                    console.log('== _updateQBInvoice > qbo.updateInvoice > ERROR ==');
+                    console.log('== err.Fault:', err.Fault);
+                    console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                    console.log('== err.fault:', err.fault);
+                    console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                    console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                    console.log('== invoiceId:', invoice._id);
+
                     return next(
                         Status.Error,
                         err.Fault?.Error[0]?.Detail
