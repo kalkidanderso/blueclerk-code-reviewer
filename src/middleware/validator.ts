@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { check, validationResult, ValidationChain, body } from 'express-validator'
+import { check, param, validationResult, ValidationChain, body } from 'express-validator'
 import { Status, Messages, JobStatus } from '../common/constants'
 
 
@@ -284,6 +284,13 @@ export const Validations = {
     check('status').exists().withMessage(Messages.Required),
     check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
     check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId)
+  ],
+
+  updateJoBRequestStatus: [
+    check('jobRequestId').exists().withMessage(Messages.Required),
+    check('jobRequestId').isMongoId().withMessage(Messages.WrongId),
+    check('status').exists().withMessage(Messages.Required),
+    check('status').isInt({ min: 4, max: 5 }).toInt().withMessage('has to be 4 (Accepted) or 5 (Rejected)'),
   ],
 
   editJob: [
@@ -664,6 +671,25 @@ export const Validations = {
     check('zipCode').exists().withMessage(Messages.Required),
     check('phone').exists().withMessage(Messages.Required)
   ],
+
+  // Chat
+  getJobRequestChats: [
+    param('id').exists().withMessage(Messages.Required),
+    param('id').isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  createJobRequestChat: [
+    param('id').exists().withMessage(Messages.Required),
+    param('id').isMongoId().withMessage(Messages.WrongId),
+    param('replyTo').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  markReadJobRequestChat: [
+    param('id').exists().withMessage(Messages.Required),
+    param('id').isMongoId().withMessage(Messages.WrongId),
+    check('lastReadChatId').exists().withMessage(Messages.Required),
+    check('lastReadChatId').isMongoId().withMessage(Messages.WrongId),
+  ]
 
 }
 

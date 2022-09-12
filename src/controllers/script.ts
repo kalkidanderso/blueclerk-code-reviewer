@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { Request, Response } from 'express';
 
-import { DefaultCommission, JobStatus, Messages, Role, Status } from '../common/constants';
+import { DefaultCommission, InvoiceStatus, JobStatus, Messages, Role, Status } from '../common/constants';
 
 import { Company, ICompany } from '../models/Company';
 import { Customer, ICustomer } from '../models/Customer';
@@ -18,8 +18,6 @@ import { InvoiceCommission } from '../models/InvoiceCommission';
 import { IContact } from '../common/contact';
 import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin';
 import { CustomerContact, ICustomerContact } from '../models/CustomerContact';
-import { CompanyCustomer } from '../models/CompanyCustomer';
-import { Contact } from '../models/Contact';
 import { JobLocation } from '../models/JobLocation';
 import { _updateQBCustomerJob } from '../controllers/quickbook.customer';
 
@@ -530,8 +528,8 @@ export const updateQBCustomerJob = async (req: Request, res: Response) => {
         companyId,
         quickbookId: { $ne: null }
     })
-        // .limit(300)
-        // .skip(300);
+    // .limit(300)
+    // .skip(300);
 
     res.json({
         ok: true,
@@ -551,5 +549,52 @@ export const updateQBCustomerJob = async (req: Request, res: Response) => {
     console.log('== done ==');
 
     return;
+
+}
+
+export const revertBackInvoices = async (req: Request, res: Response) => {
+    const params = req.body;
+
+    const invoices = await Invoice.find({ _id: { $in: params.invoiceIds } });
+
+    for (const invoice of invoices) {
+        console.log('== invoice._id:', invoice._id);
+        console.log('===== BEFORE ====');
+        console.log('== invoice.total:', invoice.total);
+        console.log('== invoice.paymentApplied:', invoice.paymentApplied);
+        console.log('== invoice.balanceDue:', invoice.balanceDue);
+        console.log('== invoice.paid:', invoice.paid);
+        console.log('== invoice.status:', invoice.status);
+
+        invoice.paymentApplied += 2000;
+        invoice.balanceDue -= 2000;
+
+        if (invoice.balanceDue > 0) {
+            invoice.paid = false;
+
+            if (invoice.paymentApplied > 0) {
+                invoice.status = InvoiceStatus.PARTIALLY_PAID;
+            } else {
+                invoice.status = InvoiceStatus.UNPAID;
+            }
+        } else {
+            invoice.paid = true;
+            invoice.status = InvoiceStatus.PAID;
+        }
+
+        if (params.saveNow) {
+            await invoice.save();
+        }
+
+        console.log('===== AFTER ====');
+        console.log('== invoice.total:', invoice.total);
+        console.log('== invoice.paymentApplied:', invoice.paymentApplied);
+        console.log('== invoice.balanceDue:', invoice.balanceDue);
+        console.log('== invoice.paid:', invoice.paid);
+        console.log('== invoice.status:', invoice.status);
+        console.log('===== \n');
+    }
+
+    return res.json({ ok: true, invoices });
 
 }

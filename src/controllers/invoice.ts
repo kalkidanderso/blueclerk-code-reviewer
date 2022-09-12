@@ -27,7 +27,7 @@ import { IPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
 import { Payment, PaymentCustomer } from '../models/Payment';
 import { IInvoice, IQBInvoice, Invoice } from '../models/Invoice';
 import { IScan, Scan } from '../models/Scan';
-import { EmailDefault } from '../models/EmailDefault';
+import { EmailDefault, EmailTypes } from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer, uploadFileInS3 } from '../services/aws';
 import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer';
@@ -1799,8 +1799,10 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                 { path: 'type', select: 'title description sku' },
                 { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
-                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.technician', select: 'profile auth.email address contact permissions.role' },
                 { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
+                { path: 'technicianImages.uploadedBy', select: 'profile auth.email address contact permissions.role' },
+                { path: 'track.user', select: 'profile auth.email address contact permissions.role'},
                 { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
                 { path: 'jobLocation', select: 'name location address' },
                 { path: 'jobSite', select: 'name location address' }
@@ -1899,12 +1901,12 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     const customer = <ICustomer>invoice.customer;
 
     // Retrieve company email default
-    let emailDefault = await EmailDefault.findOne({ company });
+    let emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
 
     // Create email default if company doesn't have one yet
     if (!emailDefault) {
-        await _createCompanyDefaultEmail(company);
-        emailDefault = await EmailDefault.findOne({ company });
+        await _createCompanyDefaultEmail(company, EmailTypes.INVOICE);
+        emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
     }
 
     /**
@@ -1914,7 +1916,7 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     await transformPlaceholders(emailDefault);
 
     // Get available placeholder values for Invoice email template
-    const { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date } = await getPlaceholderValues(company, invoice, customer);
+    const { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date } = await getPlaceholderValues({ company, invoice, customer });
 
     return res.json({
         status: Status.Success,
@@ -1980,7 +1982,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
     // Retrieve company email default
     const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
-    const emailDefault = await EmailDefault.findOne({ company });
+    const emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
 
     // Generate Invoice PDF
     await _generateInvoicePdf(company, invoice);
@@ -2316,10 +2318,19 @@ export const getInvoices = async (req: Request, res: Response) => {
                 { $limit: 1 }
             ]);
 
+            // Retrieve number of the unsynced invoices
+            const unsyncedInvoices = await Invoice.find({
+                company: companyId,
+                isDraft: { $ne: true },
+                isVoid: { $ne: true },
+                quickbookId: null
+            })?.countDocuments();
+
             return res.json({
                 status: Status.Success,
-                invoices,
                 total: totalInvoices[0]?.count,
+                unsyncedInvoices,
+                invoices,
                 pagination: {
                     nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)) : null,
                     previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null,
@@ -2331,6 +2342,99 @@ export const getInvoices = async (req: Request, res: Response) => {
                 // }
             });
         })
+
+}
+
+/**
+ * To retrieve unsynced invoices that not draft and active
+ */
+export const getUnsyncedInvoices = async (req: Request, res: Response) => {
+
+    const params = req.query;
+    const companyId = req.companyId;
+
+    // Data query that used to search unsynced Invoices
+    const filterQuery: any = {
+        $and: [
+            { company: companyId },
+            { isDraft: { $ne: true } },
+            { isVoid: { $ne: true } },
+            { quickbookId: null }
+        ]
+    }
+
+    // Check and add if params filter provided
+    if (params.keyword) {
+        const keywordRegex = { $regex: params.keyword, $options: 'i' };
+        filterQuery['$and'].push({
+            $or: [
+                { invoiceId: keywordRegex },
+                { status: keywordRegex },
+                { customerPO: keywordRegex },
+                { vendorId: keywordRegex },
+                { 'jobObj.jobId': keywordRegex },
+                { 'customerObj.profile.displayName': keywordRegex },
+                { 'jobLocationObj.name': keywordRegex },
+                { 'jobLocationObj.address.street': keywordRegex },
+                { 'jobLocationObj.address.city': keywordRegex },
+                { 'jobSiteObj.name': keywordRegex },
+                { 'jobSiteObj.address.street': keywordRegex },
+                { 'jobSiteObj.address.city': keywordRegex },
+                { 'technicianObj.profile.displayName': keywordRegex },
+                { 'contractorsObj.info.companyName': keywordRegex },
+            ]
+        })
+    }
+    if (params.customerId) {
+        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+    }
+    if (params.dueDate) {
+        const dueDate = moment(params.dueDate).endOf('day').format();
+        filterQuery['$and'].push({ dueDate: { $lte: new Date(dueDate) } });
+    }
+    if (params.status) {
+        filterQuery['$and'].push({ status: { $in: JSON.parse(params.status) } });
+    }
+
+    const invoices = await Invoice.find(filterQuery)
+        .populate({
+            path: 'job',
+            populate: [
+                { path: 'type', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+                { path: 'customer', select: 'info auth.email profile address contact vendorId contactName contactEmail' },
+                { path: 'tasks.technician', select: 'profile auth.email contact permissions.role' },
+                { path: 'tasks.contractor', select: 'info address contact', populate: { path: 'admin', select: 'profile auth.email contact permissions.role' } },
+                { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
+                { path: 'jobLocation', select: 'name location address' },
+                { path: 'jobSite', select: 'name location address' }
+            ],
+        })
+        .populate({
+            path: 'purchaseOrder',
+            select: 'purchaseOrderId items equipment status estimate note total',
+            populate: [
+                { path: 'equipment', select: 'info maintenance type brand', populate: [{ path: 'type', select: 'title' }, { path: 'brand', select: 'title' }] },
+                { path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price' }
+            ]
+        })
+        .populate({
+            path: 'items.item',
+            select: 'name description sku isFixed charges tax',
+            populate: [{ path: 'jobType' }]
+        })
+        .populate({ path: 'paymentTerm', select: '-company -__v' })
+        .populate({ path: 'customerContactId', select: '-__v' })
+        .populate({ path: 'company', select: 'info address contact' })
+        .populate({ path: 'customer', select: 'info auth.email profile address contact vendorId contactName contactEmail' })
+        .populate({ path: 'estimate', select: 'total items note status customer company createdAt createdBy' })
+        .populate({ path: 'createdBy', select: 'info auth.email profile permissions.role address contact' });
+
+    return res.json({
+        status: Status.Success,
+        total: invoices.length,
+        invoices
+    });
 
 }
 

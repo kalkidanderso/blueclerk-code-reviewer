@@ -92,6 +92,7 @@ export const enum JobRequestStatus {
     SCHEDULED,
     FINISHED,
     CANCELLED,
+    ACCEPTED,
     REJECTED,
 }
 
@@ -165,6 +166,7 @@ export enum NotificationTypes {
     COMPANY_INVOICE_FAILED = 'CompanyInvoiceFailed',
     JOB_REQUEST_CREATED = 'JobRequestCreated',
     JOB_REQUEST_STATUS_UPDATED = 'JobRequestStatusUpdated',
+    NEW_CHAT = 'NewChat',
 }
 
 export enum PaymentTermNames {
