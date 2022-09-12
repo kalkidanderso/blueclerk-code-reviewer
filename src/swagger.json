@@ -155,6 +155,10 @@
       "description": "For payments of invoices"
     },
     {
+      "name": "Advance Payment",
+      "description": "For advance payments"
+    },
+    {
       "name": "Report",
       "description": "For all reports"
     },
@@ -10725,13 +10729,21 @@
                   },
                   "amount": {
                     "type": "number",
-                    "description": "Amount how much customer has paid"
+                    "description": "Amount how much vendor/employee to be paid"
+                  },
+                  "creditUsed": {
+                    "type": "number",
+                    "description": "Amount how much vendor/employee credit used"
                   },
                   "startDate": {
                     "type": "string"
                   },
                   "endDate": {
                     "type": "string"
+                  },
+                  "offset": {
+                    "type": "number",
+                    "description": "Number of hours a certain time zone is ahead of or behind GMT for the client"
                   },
                   "dueDate": {
                     "type": "string"
@@ -10749,7 +10761,7 @@
                   },
                   "paidAt": {
                     "type": "string",
-                    "description": "Date when the customer has made the payment"
+                    "description": "Date when the customer has made the payment, default to today if not provided"
                   },
                   "note": {
                     "type": "string"
@@ -11157,6 +11169,175 @@
             "required": false,
             "schema": {
               "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/recordAdvancePaymentContractor": {
+      "post": {
+        "tags": [
+          "Advance Payment"
+        ],
+        "summary": "To record an advance payment for vendor",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "id",
+                  "amount"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "vendor",
+                      "employee"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "description": "Id of vendor or employee"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "description": "Amount how much vendor/employee to be paid"
+                  },
+                  "paymentType": {
+                    "type": "string",
+                    "description": "Method name how vendor/employee to be paid",
+                    "enum": [
+                      "ACH",
+                      "Bank Wire",
+                      "Credit Card/Debit Card",
+                      "Check",
+                      "Cash"
+                    ]
+                  },
+                  "paidAt": {
+                    "type": "string",
+                    "description": "Date when the advance payment has been made, default to today if not provided"
+                  },
+                  "appliedAt": {
+                    "type": "string",
+                    "description": "Date when the advance payment is applied on, default to today if not provided"
+                  },
+                  "referenceNumber": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getAdvancePaymentsByContractor": {
+      "get": {
+        "tags": [
+          "Advance Payment"
+        ],
+        "summary": "Get the advance payments history for particular vendor or employee",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "vendor",
+                "employee"
+              ]
+            }
+          },
+          {
+            "name": "isActive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ALL",
+                "active",
+                "void"
+              ]
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Id of Vendor or Employee",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Filter of start paid date",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "Filter of end paid date",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Number of hours a certain time zone is ahead of or behind GMT for the client",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],

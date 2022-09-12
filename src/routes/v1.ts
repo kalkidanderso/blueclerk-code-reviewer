@@ -46,6 +46,7 @@ import * as quickBookPaymentController from '../controllers/quickbook.payment'
 import * as companyController from '../controllers/company'
 import * as emailDefaultController from '../controllers/emailDefault'
 import * as invoiceController from '../controllers/invoice'
+import * as paymentAdvanceController from '../controllers/advancePayment'
 import * as partController from '../controllers/part'
 import * as purchaseOrderController from '../controllers/purchaseOrder'
 import * as estimateController from '../controllers/estimate'
@@ -2329,6 +2330,27 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Payments),
         paymentController.getPayrollReport
+    )
+
+    // Advance Payment
+    router.post(
+        '/recordAdvancePaymentContractor',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.recordAdvancePayment),
+        paymentAdvanceController.createAdvancePaymentContractor
+    )
+
+    router.get(
+        '/getAdvancePaymentsByContractor',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.getAdvancePayments),
+        paymentAdvanceController.getAdvancePaymentsByContractor
     )
 
     // REPORT

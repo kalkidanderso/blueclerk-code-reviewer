@@ -530,6 +530,7 @@ export const Validations = {
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId),
     check('amount').exists().withMessage(Messages.Required),
+    check('creditUsed').optional().isFloat().toFloat().withMessage('has to be number/decimal'),
   ],
 
   updatePaymentContractor: [
@@ -547,6 +548,23 @@ export const Validations = {
     check('type').isIn(['vendor', 'employee', 'customer']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
     check('paymentId').exists().withMessage(Messages.Required),
     check('paymentId').isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  // ADVANCE PAYMENT
+  recordAdvancePayment: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('amount').exists().withMessage(Messages.Required),
+    check('amount').isFloat().toFloat().withMessage('has to be number/decimal'),
+  ],
+
+  getAdvancePayments: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
   ],
 
   // REPORT
