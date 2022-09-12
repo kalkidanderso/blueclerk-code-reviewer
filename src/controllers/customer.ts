@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb'
-import { Status, Messages, Role } from '../common/constants'
+import { Status, Messages, Role, AccountTypes } from '../common/constants'
 
 import { Company, ICompany } from '../models/Company'
 import { User, IUser } from '../models/User'
@@ -136,7 +136,8 @@ export const createCustomer = async (req: Request, res: Response) => {
                             emailPreferences: customer?.emailPreferences,
                             balance: customer?.balance,
                             commission: customer?.commission,
-                            customer: customer._id
+                            customer: customer._id,
+                            accountType: AccountTypes.BUILDER,
                         }).save();
 
                         customer.admin = customerAdmin._id;
@@ -322,6 +323,34 @@ export const getCustomers = (req: Request, res: Response) => {
                 })
 
         })
+}
+
+export const getAllCustomers = async (req: Request, res: Response) => {
+    const { ENVIRONMENT } = process.env;
+    const params = req.query;
+    const query: any = {};
+    const customerName = ["Westin Homes", "Shea Homes", "Perry Homes", "Toll Brothers, Inc."]
+
+    switch (ENVIRONMENT) {
+        case 'production':
+            query['$or'] = [{ 'profile.displayName': { $in: customerName } }];
+            break;
+
+        case 'staging':
+        default:
+            if (params.keyword) {
+                const keywordRegex = { $regex: params.keyword, $options: '$i' };
+                query['$or'] = [
+                    { 'profile.displayName': keywordRegex },
+                    { 'info.email': keywordRegex },
+                ]
+            }
+
+            break;
+    }
+
+    const customers = await Customer.find({ ...query }, 'profile info contact address').sort({ 'profile.displayName': 1 });
+    return res.json({ status: Status.Success, customers })
 }
 
 export const updateCustomer = (req: Request, res: Response) => {

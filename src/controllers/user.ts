@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import moment from 'moment-timezone';
 
-import { CompanyType, ContractStatus, Messages, NotificationTypes, Role, Status, UserPermissions, UserType } from '../common/constants';
+import { CompanyType, ContractStatus, Messages, NotificationTypes, Role, Status, UserPermissions, AccountTypes } from '../common/constants';
 import { sendEmail, sendEmployeeEmail, sendPasswordEmail, uploadImageInS3 } from '../services/aws';
 import { chargeSubscription, createStripeInvoiceItem } from '../services/stripe';
 
@@ -18,6 +18,7 @@ import { _getProRatedAmount } from '../controllers/vendor';
 import { CustomerContact } from '../models/CustomerContact';
 import { Customer } from '../models/Customer';
 import { IndependentContractor } from '../models/IndependentContractor';
+import { ISession, Session } from '../models/Session';
 
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
@@ -35,6 +36,13 @@ export const login = (req: Request, res: Response, sio: any) => {
 
             if (!user) {
                 return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
+            }
+
+            if (
+                [AccountTypes.BUILDER, AccountTypes.CONTRACTOR, AccountTypes.SUPPLIER].includes(Number(user.accountType))
+                || [Role.CUSTOMER, Role.CUSTOMER_CONTACT, Role.CONTRACTOR].includes(Number(user.permissions.role))
+            ) {
+                return res.json({ status: Status.Error, message: 'Your account type does not have web access' });
             }
 
             if ((user.permissions.role != Role.COMPANY_ADMIN && user.permissions.role != Role.ADMIN_EMPLOYEE && user.permissions.role != Role.GLOBAL_ADMIN && user.permissions.role != Role.CUSTOMER_CONTACT)) {
@@ -60,10 +68,13 @@ export const login = (req: Request, res: Response, sio: any) => {
                                 return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
                             }
 
+                            req.session.save();
+
                             return res.json({
                                 status: Status.Success,
-                                token: user.jwt(),
+                                token: user.jwt(req),
                                 userType: user.permissions.role,
+                                accountType: user.accountType,
                                 user,
                             });
                         })
@@ -97,10 +108,13 @@ export const login = (req: Request, res: Response, sio: any) => {
                             company.socketId = undefined
                             company.realmId = undefined
 
+                            req.session.save();
+
                             return res.json({
                                 status: Status.Success,
-                                token: user.jwt(),
+                                token: user.jwt(req),
                                 userType: user.permissions.role,
+                                accountType: user.accountType,
                                 user, company
                             });
                         }
@@ -115,10 +129,13 @@ export const login = (req: Request, res: Response, sio: any) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
                     }
 
+                    req.session.save();
+
                     return res.json({
                         status: Status.Success,
-                        token: user.jwt(),
+                        token: user.jwt(req),
                         userType: user.permissions.role,
+                        accountType: user.accountType,
                         user,
                     });
                 })
@@ -126,6 +143,16 @@ export const login = (req: Request, res: Response, sio: any) => {
         }
     )
 
+}
+
+export const logout = async (req: Request, res: Response) => {
+    const session = <ISession>req.userSession;
+    try {
+        await Session.findByIdAndRemove(session._id);
+        return res.json({ status: Status.Success, message: 'Logout Successfully' });
+    } catch (err) {
+        return res.json({ status: Status.Error, message: Messages.GenericError });
+    }
 }
 
 export const createGlobalAdmin = (req: Request, res: Response, sio: any) => {
@@ -214,32 +241,10 @@ export const signup = async (req: Request, res: Response, sio: any) => {
             info: params.email,
         }
 
-        switch (params.userType) {
-            case UserType.BUILDER:
-                if (!params.customerId) {
-                    return res.json({ status: Status.Error, message: 'customerId is required for Builder userType' })
-                }
-
-                const customer = await Customer.findById(params.customerId);
-                if (!customer) {
-                    return res.json({ status: Status.Error, message: 'Customer not found' })
-                }
-
-                userEntry.customer = customer;
-                userEntry.userType = UserType.BUILDER;
-                userEntry.permissions.role = Role.CUSTOMER_CONTACT;
-
-                const customerContact = await new CustomerContact(userEntry).save();
-                customer.contacts.push(customerContact._id);
-                await customer.save();
-
-                sendEmail({ to: params?.email });
-                login(req, res, sio);
-                break;
-
-            case UserType.SUPPLIER:
+        switch (params.accountType) {
+            case AccountTypes.SERVICE_PROVIDER:
                 if (!params.companyId) {
-                    return res.json({ status: Status.Error, message: 'companyId is required for Supplier userType' })
+                    return res.json({ status: Status.Error, message: 'companyId is required for Service Provider accountType' })
                 }
 
                 const company = await Company.findById(params.companyId);
@@ -253,46 +258,75 @@ export const signup = async (req: Request, res: Response, sio: any) => {
 
                 checkNoOfUsers(req, res, role > 0 ? role : Role.ADMIN_EMPLOYEE, async (req: Request, res: Response) => {
                     userEntry.permissions.role = role > 0 ? role : Role.ADMIN_EMPLOYEE;
-                    userEntry.userType = UserType.SUPPLIER;
+                    userEntry.accountType = AccountTypes.SERVICE_PROVIDER;
                     userEntry.company = company._id;
-                    const supplier = await new Employee(userEntry).save();
-                    company.employees.push(supplier._id);
+                    const companyEmployee = await new Employee(userEntry).save();
+                    company.employees.push(companyEmployee._id);
                     company.save();
 
                     sendEmployeeEmail({
                         to: params.email,
                         company: company.info.companyName,
                         replyTo: company.info.companyEmail,
-                        role: roles[supplier.permissions.role],
+                        role: roles[companyEmployee.permissions.role],
                         password: params.password
                     });
 
                     login(req, res, sio);
                 });
-
                 break;
 
-            case UserType.CONTRACTOR:
+            case AccountTypes.BUILDER:
+                if (!params.customerId) {
+                    return res.json({ status: Status.Error, message: 'customerId is required for Builder accountType' })
+                }
+
+                const customer = await Customer.findById(params.customerId);
+                if (!customer) {
+                    return res.json({ status: Status.Error, message: 'Customer not found' })
+                }
+
+                userEntry.customer = customer;
+                userEntry.accountType = AccountTypes.BUILDER;
+                userEntry.permissions.role = Role.CUSTOMER_CONTACT;
+
+                const customerContact = await new CustomerContact(userEntry).save();
+                customer.contacts.push(customerContact._id);
+                await customer.save();
+
+                sendEmail({ to: params?.email });
+                return res.json({
+                    status: Status.Success,
+                    userType: customerContact.permissions.role,
+                    accountType: customerContact.accountType,
+                    user: customerContact,
+                });
+
+            case AccountTypes.CONTRACTOR:
                 const { BC_COMPANY_ID } = process.env;
                 const bcCompany = await Company.findById(BC_COMPANY_ID);
 
                 if (!bcCompany) {
-                    return res.json({ status: Status.Error, message: 'Company not found' });
+                    return res.json({ status: Status.Error, message: 'Generic company not found, please contact our team' });
                 }
 
                 userEntry.company = bcCompany;
                 userEntry.permissions.role = Role.CONTRACTOR;
-                userEntry.userType = UserType.CONTRACTOR;
+                userEntry.accountType = AccountTypes.CONTRACTOR;
 
                 const independentContractor = await new IndependentContractor(userEntry).save();
                 bcCompany.employees.push(independentContractor._id);
                 await bcCompany.save();
 
                 sendEmail({ to: params?.email });
-                login(req, res, sio);
-                break;
+                return res.json({
+                    status: Status.Success,
+                    userType: independentContractor.permissions.role,
+                    accountType: independentContractor.accountType,
+                    user: independentContractor,
+                });
 
-            case UserType.COMPANY:
+            case AccountTypes.COMPANY:
             default:
                 if (!params.companyName) {
                     return res.json({ status: Status.Error, message: 'companyName is required for Company Signup.' })
@@ -317,20 +351,13 @@ export const createCompany = (req: Request, res: Response, sio: any) => {
             return res.json({ status: Status.Error, message: 'Your password must be have at least: 8 characters long, 1 uppercase, 1 number, & 1 special character' });
         }
 
-        if (!params.industryId) {
-            return res.json({ status: Status.Error, message: 'industryId is required for Company Signup' });
-        }
-
-        const industry = await Industry.findById(params.industryId);
-        if (!industry) {
-            return res.json({ status: Status.NotFound, message: 'Industry not found' });
-        }
+        const industry = params.industryId && await Industry.findById(params.industryId);
 
         const company = new Company(
             {
                 info: {
                     companyName: params.companyName,
-                    industry: industry._id,
+                    industry: industry?._id,
                     logoUrl: '',
                     companyEmail: params.email,
                 },
@@ -370,6 +397,7 @@ export const createCompany = (req: Request, res: Response, sio: any) => {
                         displayName: `${params.firstName} ${params.lastName}`,
                         imageUrl: '',
                     },
+                    accountType: AccountTypes.COMPANY,
                     address: {
                         street: '',
                         city: '',
@@ -543,29 +571,28 @@ export const updateEmployeeRole = (req: Request, res: Response) => {
 
 }
 
-export const _createHubSpotContact = (company: ICompany, companyAdmin: ICompanyAdmin) => {
+export const _createHubSpotContact = async (company: ICompany, companyAdmin: ICompanyAdmin) => {
 
     const hubspot = new Hubspot({
         apiKey: '163d5d65-83c0-4d5f-9dcf-55b052f9ef4d'
     })
 
-    Industry.findById(company.info.industry).exec((err: any, industry: IIndustry) => {
-        const contactObj = {
-            "properties": [
-                { "property": 'email', "value": company.info.companyEmail },
-                { "property": 'firstname', "value": companyAdmin.profile.firstName },
-                { "property": 'lastname', "value": companyAdmin.profile.lastName },
-                { "property": 'company', "value": company.info.companyName },
-                { "property": 'phone', "value": company.contact.phone },
-                { "property": 'industry', "value": industry.title },
-                { "property": 'lifecyclestage', "value": 'customer' },
-                { "property": 'customer_type', "value": 'Free' },
-            ]
-        };
+    const industry = company?.info?.industry && await Industry.findById(company?.info?.industry);
 
-        hubspot.contacts.create(contactObj)
+    const contactObj = {
+        "properties": [
+            { "property": 'email', "value": company.info.companyEmail },
+            { "property": 'firstname', "value": companyAdmin.profile.firstName },
+            { "property": 'lastname', "value": companyAdmin.profile.lastName },
+            { "property": 'company', "value": company.info.companyName },
+            { "property": 'phone', "value": company.contact.phone },
+            { "property": 'industry', "value": industry?.title },
+            { "property": 'lifecyclestage', "value": 'customer' },
+            { "property": 'customer_type', "value": 'Free' },
+        ]
+    };
 
-    })
+    hubspot.contacts.create(contactObj)
 }
 
 export const createManager = (req: Request, res: Response) => {
@@ -1282,7 +1309,7 @@ export const checkAndGetUser = (req: Request, res: Response) => {
                             return res.json({ 'status': Status.Error, 'message': Messages.AccountDeleted })
                         }
 
-                        return res.json({ 'status': Status.Success, 'user': user, 'token': user.jwt() })
+                        return res.json({ 'status': Status.Success, 'user': user, 'token': user.jwt(req) })
                     })
 
             } else {
@@ -1302,7 +1329,7 @@ export const checkAndGetUser = (req: Request, res: Response) => {
                         company.maxAdmins = undefined
                         company.maxManagers = undefined
                         company.maxOfficeAdmins = undefined
-                        return res.json({ 'status': Status.Success, 'user': user, 'company': company, 'token': user.jwt() })
+                        return res.json({ 'status': Status.Success, 'user': user, 'company': company, 'token': user.jwt(req) })
                     }
                 )
             }
@@ -1398,7 +1425,7 @@ export const createCompanySocial = (req: Request, res: Response) => {
 
                         sendEmail({ to: params.email })
 
-                        return res.json({ 'status': Status.Success, 'user': companyAdmin, 'token': companyAdmin.jwt() })
+                        return res.json({ 'status': Status.Success, 'user': companyAdmin, 'token': companyAdmin.jwt(req) })
                     })
 
                 })
@@ -1497,7 +1524,7 @@ export const createContractorSocial = (req: Request, res: Response) => {
 
                         sendEmail({ to: params.email })
 
-                        return res.json({ 'status': Status.Success, 'user': companyAdmin, 'token': companyAdmin.jwt() })
+                        return res.json({ 'status': Status.Success, 'user': companyAdmin, 'token': companyAdmin.jwt(req) })
 
                     })
                 })

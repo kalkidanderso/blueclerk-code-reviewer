@@ -3,6 +3,7 @@ import mongoose from 'mongoose'
 import logger from 'morgan'
 import compression from 'compression'
 import cookieParser from 'cookie-parser'
+import session from 'express-session'
 import bodyParser from 'body-parser'
 import cors from 'cors'
 import passport from 'passport'
@@ -28,16 +29,18 @@ import { Company } from './models/Company';
 import { Customer } from './models/Customer';
 import { Status, Messages, JobStatus } from './common/constants';
 const timeout = require('connect-timeout');
+const MongoStore = require('connect-mongo');
 
 dotenv.config()
 process.env.TZ = 'America/Chicago';
 //Database connection
-const { DB_USER, DB_PASS, DB_HOST, DB_NAME } = process.env
+const { DB_USER, DB_PASS, DB_HOST, DB_NAME, session_secret, jwt_encryption } = process.env
+// const dbConnect = `mongodb://${DB_HOST}/${DB_NAME}`;
+const dbConnect = `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`;
 
 mongoose.set('useCreateIndex', true)
 mongoose.connect(
-  // `mongodb://${DB_HOST}/${DB_NAME}`,
-  `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`,
+  dbConnect,
   { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false },
   (err: MongoError) => {
 
@@ -62,6 +65,26 @@ function haltOnTimeout(req: any, res: any, next: any) {
   }
 }
 
+// Handle session
+app.use(
+  session({
+      secret: session_secret || jwt_encryption,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+          maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+          secure: true,
+      },
+
+      // Database settings to session
+      store: MongoStore.create({
+          mongoUrl: dbConnect,
+          mongoOptions: { useNewUrlParser: true, useUnifiedTopology: true },
+          collectionName: 'sessions',
+          autoRemove: 'native' // Remove session when expired
+      }),
+  })
+);
 
 app.set('port', process.env.PORT || 3000)
 app.use(compression())
@@ -76,12 +99,17 @@ app.options('*', cors());
 
 //Auth middleware
 app.use(passport.initialize())
+app.use(passport.session());
 passportMiddleWare(passport)
 
 //Logger
 app.use(logger('dev'))
 //Swagger
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/api-docs', (req: any, res: any, next: any) => {
+  swaggerDocument.servers.push({ url: process.env.BASE_URL || "https://blueclerk-node-api.deploy.blueclerk.com/api/v1" });
+  req.swaggerDoc = swaggerDocument;
+  next();
+}, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const httpServer = require('http').createServer(app);
 const sio = require("socket.io")(httpServer, {

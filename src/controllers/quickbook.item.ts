@@ -437,7 +437,7 @@ export const createBCItem = async (req: Request, res: Response, company: ICompan
                         title: qbItem.Name,
                         description: qbItem.Description,
                         sku: qbItem.Sku,
-                        industry: company?.info?.industry,
+                        // industry: company?.info?.industry,
                         createdBy: company.admin,
                         quickbookId: qbItem.Id,
                     }

@@ -92,6 +92,7 @@ export const enum JobRequestStatus {
     SCHEDULED,
     FINISHED,
     CANCELLED,
+    ACCEPTED,
     REJECTED,
 }
 
@@ -146,10 +147,10 @@ export const enum CompanyType {
     FREE,
 }
 
-export const enum UserType {
-    BUILDER = 1, // Customer Contact
-    SUPPLIER = 2, // Company Employee
-    SERVICE_PROVIDER = 3,
+export enum AccountTypes {
+    SERVICE_PROVIDER = 1, // Company Employee
+    BUILDER = 2, // Customer Contact
+    SUPPLIER = 3, // Window Supplier, BFS, Throphy
     CONTRACTOR = 4, // Independent Contractor
     COMPANY = 5
 }
@@ -165,6 +166,7 @@ export enum NotificationTypes {
     COMPANY_INVOICE_FAILED = 'CompanyInvoiceFailed',
     JOB_REQUEST_CREATED = 'JobRequestCreated',
     JOB_REQUEST_STATUS_UPDATED = 'JobRequestStatusUpdated',
+    NEW_CHAT = 'NewChat',
 }
 
 export enum PaymentTermNames {

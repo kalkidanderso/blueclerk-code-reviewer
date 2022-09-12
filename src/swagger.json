@@ -3,13 +3,9 @@
   "info": {
     "title": "BlueClerk",
     "description": "APIs for both app and website",
-    "version": "1.0.1"
+    "version": "2.3.0"
   },
-  "servers": [
-    {
-      "url": "https://blueclerk-node-api.deploy.blueclerk.com/api/v1"
-    }
-  ],
+  "servers": [],
   "tags": [
     {
       "name": "Auth",
@@ -115,6 +111,10 @@
       "description": "For creating and getting service tickets"
     },
     {
+      "name": "Job Request",
+      "description": "For job requests"
+    },
+    {
       "name": "Job",
       "description": "For scheduled jobs"
     },
@@ -172,6 +172,10 @@
     },
     {
       "name": "Subscription"
+    },
+    {
+      "name": "Chat",
+      "description": "For create and retrieving chats"
     },
     {
       "name": "Notification",
@@ -257,7 +261,7 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "userType",
+                  "accountType",
                   "email",
                   "password",
                   "firstName",
@@ -265,7 +269,7 @@
                   "phone"
                 ],
                 "properties": {
-                  "userType": {
+                  "accountType": {
                     "type": "string",
                     "enum": [
                       1,
@@ -273,7 +277,7 @@
                       4,
                       5
                     ],
-                    "description": "1 => BUILDER, 2 => SUPPLIER, 4 => CONTRACTOR, 5 => COMPANY"
+                    "description": "1 => SERVICE PROVIDER, 2 => BUILDER, 4 => INDEPENDENT CONTRACTOR, 5 => COMPANY (old company signup)"
                   },
                   "email": {
                     "type": "string",
@@ -297,19 +301,19 @@
                   },
                   "companyName": {
                     "type": "string",
-                    "description": "**REQUIRED when** userType is 5 (COMPANY)"
+                    "description": "**REQUIRED when** accountType is 5 (COMPANY) for old company signup"
                   },
                   "industryId": {
                     "type": "string",
-                    "description": "**REQUIRED when** userType is 5 (COMPANY). Id of the selected industry from the industries fetched with /getIndustries API"
-                  },
-                  "customerId": {
-                    "type": "string",
-                    "description": "**REQUIRED when** userType is 2 (BUILDER)"
+                    "description": "Id of the selected industry from the industries fetched with /getIndustries API"
                   },
                   "companyId": {
                     "type": "string",
-                    "description": "**REQUIRED when** userType is 3 (SUPPLIER)"
+                    "description": "**REQUIRED when** accountType is 1 (SERVICE PROVIDER)"
+                  },
+                  "customerId": {
+                    "type": "string",
+                    "description": "**REQUIRED when** accountType is 2 (BUILDER)"
                   },
                   "role": {
                     "type": "string",
@@ -347,6 +351,89 @@
             }
           }
         }
+      }
+    },
+    "/getAllCompanies": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Search for companies",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/getAllCustomers": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Search for customers",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout for all kind user",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
       }
     },
     "/searchContractor": {
@@ -2719,6 +2806,20 @@
           "Email Default"
         ],
         "summary": "To get company email default",
+        "parameters": [
+          {
+            "name": "emailType",
+            "in": "query",
+            "description": "Default to \"INVOICE\" if not provided",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "INVOICE",
+                "INCOME_REPORT"
+              ]
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2750,12 +2851,22 @@
             "application/x-www-form-urlencoded": {
               "schema": {
                 "type": "object",
+                "required": [
+                  "emailType"
+                ],
                 "properties": {
                   "subject": {
                     "type": "string"
                   },
                   "message": {
                     "type": "string"
+                  },
+                  "emailType": {
+                    "type": "string",
+                    "enum": [
+                      "INVOICE",
+                      "INCOME_REPORT"
+                    ]
                   }
                 }
               }
@@ -7334,6 +7445,158 @@
         ]
       }
     },
+    "/chats/jobRequest/{id}": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "To retrieve chats for Job Request by the given ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of Job Request",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/jobLocation"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "To create chat for Job Request",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of Job Request",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                ],
+                "properties": {
+                  "replyToId": {
+                    "type": "string",
+                    "description": "ID of the replied message"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "The chat's message"
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/chats/jobRequest/{id}/markRead": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "To mark chats as read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of Job Request",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "lastReadChatId"
+                ],
+                "properties": {
+                  "lastReadChatId": {
+                    "type": "string",
+                    "description": "ID of the last chat message to be read"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getNotifications": {
       "get": {
         "tags": [
@@ -8367,6 +8630,64 @@
                   "companyId": {
                     "type": "string",
                     "description": "Id of company if contractor is hitting for other company"
+                  }
+                }
+              }
+            }
+          },
+          "required": true,
+          "allowEmptyValue": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateJobRequestStatus": {
+      "put": {
+        "tags": [
+          "Job Request"
+        ],
+        "summary": "To edit job request status",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "jobRequestId",
+                  "status"
+                ],
+                "properties": {
+                  "jobRequestId": {
+                    "type": "string",
+                    "description": "Id of job request to edit"
+                  },
+                  "status": {
+                    "type": "number",
+                    "enum": [
+                      4,
+                      5
+                    ],
+                    "description": "Id of job status as number from one of these (ACCEPTED => 4, REJECTED => 5)."
+                  },
+                  "note": {
+                    "type": "string",
+                    "description": "**Required** when status is REJECTED => 5"
                   }
                 }
               }
@@ -10786,13 +11107,28 @@
         "summary": "To generate standard and custom income report",
         "parameters": [
           {
-            "name": "reportType",
+            "name": "reportData",
             "in": "query",
             "required": true,
             "description": "1 => Standard Report; 2 => Custom Report",
             "schema": {
               "type": "number",
-              "enum": [ 1, 2]
+              "enum": [
+                1,
+                2
+              ]
+            }
+          },
+          {
+            "name": "reportSource",
+            "in": "query",
+            "description": "1 => Invoice; 2 => Job",
+            "schema": {
+              "type": "number",
+              "enum": [
+                1,
+                2
+              ]
             }
           },
           {
@@ -10815,6 +11151,490 @@
             "name": "endDate",
             "in": "query",
             "description": "Filter report by end of invoice's issued date"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/generateIncomeReportPdf": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To generate standard and custom income report as pdf",
+        "parameters": [
+          {
+            "name": "reportData",
+            "in": "query",
+            "required": true,
+            "description": "1 => Standard Report; 2 => Custom Report",
+            "schema": {
+              "type": "number",
+              "enum": [
+                1,
+                2
+              ]
+            }
+          },
+          {
+            "name": "reportSource",
+            "in": "query",
+            "description": "1 => Invoice; 2 => Job",
+            "schema": {
+              "type": "number",
+              "enum": [
+                1,
+                2
+              ]
+            }
+          },
+          {
+            "name": "customerIds",
+            "in": "query",
+            "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Filter report by start of invoice's issued date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "Filter report by end of invoice's issued date"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getIncomeReportEmailTemplate": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "Get the income report email template before send the email",
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/sendIncomeReport": {
+      "post": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To generate standard and custom income report as pdf",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reportData"
+                ],
+                "properties": {
+                  "reportData": {
+                    "type": "string",
+                    "description": "1 => Standard Report; 2 => Custom Report",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "reportSource": {
+                    "type": "string",
+                    "description": "1 => Invoice; 2 => Job",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter report by start of invoice's issued date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter report by end of invoice's issued date"
+                  },
+                  "customerIds": {
+                    "type": "string",
+                    "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]"
+                  },
+                  "recipients": {
+                    "type": "string",
+                    "description": "List of all recipients in array. Example: [\"zyzorafu@abyssmail.com\",\"tiboqama@boximail.com\"]"
+                  },
+                  "subject": {
+                    "type": "string",
+                    "description": "Subject of the email, if not provided will use company's email default"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Message of the email, if not provided will use company's email default"
+                  },
+                  "copyToMyself": {
+                    "type": "boolean",
+                    "description": "To send copy to user himself"
+                  },
+                  "incomeReportPdf": {
+                    "type": "string",
+                    "description": "PDF file of invoice",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getMemorizedReports": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "Returns list of all memorized reports that the company saved",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getMemorizedReport": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "Return detail of one memorized report",
+        "parameters": [
+          {
+            "name": "memorizedReportId",
+            "in": "query",
+            "description": "ID of the memorized report",
+            "scema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createMemorizedReport": {
+      "post": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To memorized a custom report",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reportType"
+                ],
+                "properties": {
+                  "reportType": {
+                    "type": "number",
+                    "description": "1 => Income Report",
+                    "enum": [
+                      1
+                    ]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "reportData": {
+                    "type": "number",
+                    "description": "1 => Standard Report; 2 => Custom Report",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "reportSource": {
+                    "type": "number",
+                    "description": "1 => Invoice; 2 => Job",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "customerIds": {
+                    "type": "string",
+                    "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]"
+                  },
+                  "periodOption": {
+                    "type": "string",
+                    "description": "Filter report by preset period option",
+                    "enum": [
+                      "recent",
+                      "lastWeek",
+                      "lastWeekToDate",
+                      "lastMonth",
+                      "lastMonthToDate",
+                      "thisQuarter",
+                      "thisQuarterToDate",
+                      "lastYear",
+                      "lastYearToDate",
+                      "thisYear",
+                      "thisYearToDate"
+                    ]
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter report by start of invoice's issued date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter report by end of invoice's issued date"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateMemorizedReport": {
+      "put": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To update a memorized custom report",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "memorizedReportId"
+                ],
+                "properties": {
+                  "memorizedReportId": {
+                    "type": "string",
+                    "description": "ID of memorized report to be updated"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "reportData": {
+                    "type": "number",
+                    "description": "1 => Standard Report; 2 => Custom Report",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "reportSource": {
+                    "type": "number",
+                    "description": "1 => Invoice; 2 => Job",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "customerIds": {
+                    "type": "string",
+                    "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]"
+                  },
+                  "periodOption": {
+                    "type": "string",
+                    "description": "Filter report by preset period option",
+                    "enum": [
+                      "recent",
+                      "lastWeek",
+                      "lastWeekToDate",
+                      "lastMonth",
+                      "lastMonthToDate",
+                      "thisQuarter",
+                      "thisQuarterToDate",
+                      "lastYear",
+                      "lastYearToDate",
+                      "thisYear",
+                      "thisYearToDate"
+                    ]
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter report by start of invoice's issued date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter report by end of invoice's issued date"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/deleteMemorizedReport": {
+      "delete": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To delete a memorized custom report",
+        "parameters": [
+          {
+            "name": "memorizedReportId",
+            "in": "query",
+            "description": "ID of memorized report to be deleted",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

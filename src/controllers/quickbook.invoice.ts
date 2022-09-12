@@ -975,16 +975,16 @@ export const updateBCInvoice = async (req: Request, res: Response, company: ICom
                     InvoiceStatus.PAID;
                 }
 
-                let taxAmount = 0;
                 let subTotal = 0;
+                let taxAmount = 8.25;
                 const items: any = [];
                 if (qbInvoice?.Line?.length) {
                     if (qbInvoice?.TxnTaxDetail) {
-                        qbo.getTaxRate(qbInvoice?.TxnTaxDetail?.TaxLine[0]?.TaxLineDetail?.TaxRateRef, async (err: any, taxRate: any) => {
+                        qbo.getTaxRate(qbInvoice?.TxnTaxDetail?.TaxLine[0]?.TaxLineDetail?.TaxRateRef?.value, async (err: any, taxRate: any) => {
                             if (taxRate) {
                                 taxAmount = taxRate.RateValue;
                             }
-                        })
+                        });
                     }
 
                     for (const qbInvoiceLine of qbInvoice.Line) {
@@ -1002,7 +1002,7 @@ export const updateBCInvoice = async (req: Request, res: Response, company: ICom
                                 subTotal += subTotalLine;
 
                                 if (qbInvoiceLine?.SalesItemLineDetail?.TaxCodeRef.value === 'TAX') {
-                                    itemEntry.taxAmount = subTotalLine * 8.25 / 100;
+                                    itemEntry.taxAmount = subTotalLine * taxAmount / 100;
                                 }
 
                                 items.push(itemEntry);
