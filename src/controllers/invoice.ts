@@ -493,7 +493,7 @@ export const createInvoice = (req: Request, res: Response) => {
                             // Create new Invoice in QuickBooks
                             _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                                 if (err || errMsg) {
-                                    return res.json({ status: Status.Success, message: 'Job invoice created successfully.', invoice });
+                                    return res.json({ status: Status.Success, message: 'Job invoice created successfully.', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
                                 }
 
                                 if (qbInvoice) {
@@ -600,8 +600,8 @@ export const createInvoice = (req: Request, res: Response) => {
                         if (qbCustomer) {
                             // Create new Invoice in QuickBooks
                             _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
-                                if (err) {
-                                    return res.json({ status: Status.Success, message: 'Purchase order invoice created successfully.', invoice });
+                                if (err || errMsg) {
+                                    return res.json({ status: Status.Success, message: 'Purchase order invoice created successfully.', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
                                 }
 
                                 if (qbInvoice) {
@@ -768,8 +768,8 @@ export const createInvoice = (req: Request, res: Response) => {
                         if (qbCustomer) {
                             // Create new Invoice in QuickBooks
                             _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
-                                if (err) {
-                                    return res.json({ status: Status.Success, message: 'Estimate invoice created successfully.', invoice });
+                                if (err || errMsg) {
+                                    return res.json({ status: Status.Success, message: 'Estimate invoice created successfully.', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
                                 }
 
                                 if (qbInvoice) {
@@ -898,8 +898,8 @@ export const createInvoice = (req: Request, res: Response) => {
                                 if (qbCustomer) {
                                     // Create new Invoice in QuickBooks
                                     _createQBInvoice(req, res, company, newInvoice, (err, errMsg, qbInvoice) => {
-                                        if (err) {
-                                            return res.json({ status: Status.Success, message: 'Invoice created successfully.', invoice: newInvoice });
+                                        if (err || errMsg) {
+                                            return res.json({ status: Status.Success, message: 'Invoice created successfully.', invoice: newInvoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
                                         }
 
                                         if (qbInvoice) {
@@ -1624,7 +1624,10 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 }
 
                                 // To handle the switch of Invoice isDraft
-                                _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (invoice, qbInvoice) => {
+                                _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
+                                    if (errMsg) {
+                                        return res.json({ status: Status.Success, message: 'Invoice updated successfully.', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
+                                    }
 
                                     return res.json({ status: Status.Success, message: "Invoice updated successfully.", invoice, quickbookInvoice: qbInvoice });
                                 });
@@ -1780,7 +1783,10 @@ export const updateInvoice = (req: Request, res: Response) => {
                         }
 
                         // To handle the switch of Invoice isDraft
-                        _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (invoice, qbInvoice) => {
+                        _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
+                            if (errMsg) {
+                                return res.json({ status: Status.Success, message: 'Invoice updated successfully.', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
+                            }
 
                             return res.json({ status: Status.Success, message: "Invoice updated successfully.", invoice, quickbookInvoice: qbInvoice });
                         });
@@ -2473,7 +2479,7 @@ export const getCompanyInvoiceDetails = (req: Request, res: Response) => {
  * Add or deduct customer balance,
  * Create, update, or remove QB Invoice
  */
-const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company: ICompany, customer: ICustomer, invoice: IInvoice, oldIsDraft: boolean, next: (invoice: IInvoice, qbInvoice: IQBInvoice) => void) => {
+const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company: ICompany, customer: ICustomer, invoice: IInvoice, oldIsDraft: boolean, next: (errMsg: string, invoice: IInvoice, qbInvoice: IQBInvoice) => void) => {
 
     // Retrieve the latest invoice
     invoice = await Invoice.findById(invoice._id);
@@ -2579,14 +2585,14 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
              */
             _checkQBCustomerJobLocation(req, res, company, customer._id, (err, errMsg, qbCustomer) => {
                 if (err || errMsg) {
-                    return next(invoice, null);
+                    return next(errMsg, invoice, null);
                 }
 
                 if (qbCustomer) {
                     // Create new Invoice in QuickBooks
                     _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                         if (err || errMsg) {
-                            return next(invoice, null);
+                            return next(errMsg, invoice, null);
                         }
 
                         if (qbInvoice) {
@@ -2600,13 +2606,13 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                             }
                         }
 
-                        return next(invoice, qbInvoice);
+                        return next(errMsg, invoice, qbInvoice);
                     });
                 }
             });
 
         } else {
-            return next(invoice, null);
+            return next(null, invoice, null);
         }
 
     } else if (!oldIsDraft && invoice.isDraft) {
@@ -2655,6 +2661,10 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         if (company.qbAuthorized && invoice.quickbookId) {
             // Delete Invoice in QuickBooks
             _deleteQBInvoice(req, res, company, invoice, (err, errMsg, status) => {
+                if (err || errMsg) {
+                    return next(errMsg, invoice, null);
+                }
+
                 if (status === 'Deleted') {
                     invoice.quickbookId = null;
                     invoice.save();
@@ -2666,10 +2676,10 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                     }
                 }
 
-                return next(invoice, null);
+                return next(null, invoice, null);
             })
         } else {
-            return next(invoice, null);
+            return next(null, invoice, null);
         }
 
     } else if (!oldIsDraft && !invoice.isDraft) {
@@ -2688,7 +2698,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                 // Update Invoice in QuickBooks
                 _updateQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                     if (err || errMsg) {
-                        return next(invoice, null);
+                        return next(errMsg, invoice, null);
                     }
 
                     if (qbInvoice) {
@@ -2699,7 +2709,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                         }
                     }
 
-                    return next(invoice, qbInvoice);
+                    return next(null, invoice, qbInvoice);
                 })
             } else {
                 /**
@@ -2708,14 +2718,14 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                  */
                 _checkQBCustomerJobLocation(req, res, company, customer._id, (err, errMsg, qbCustomer) => {
                     if (err || errMsg) {
-                        return next(invoice, null);
+                        return next(errMsg, invoice, null);
                     }
 
                     if (qbCustomer) {
                         // Create new Invoice in QuickBooks
                         _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                             if (err || errMsg) {
-                                return next(invoice, null);
+                                return next(errMsg, invoice, null);
                             }
 
                             if (qbInvoice) {
@@ -2729,13 +2739,13 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                                 }
                             }
 
-                            return next(invoice, qbInvoice);
+                            return next(null, invoice, qbInvoice);
                         });
                     }
                 });
             }
         } else {
-            return next(invoice, null);
+            return next(null, invoice, null);
         }
 
     } else {
@@ -2744,7 +2754,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
          * nothing to do
          */
 
-        return next(invoice, null);
+        return next(null, invoice, null);
     }
 
 }
