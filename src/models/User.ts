@@ -49,6 +49,11 @@ export interface IUser extends Document {
     balance: number,
     credit: number,
     commission: number,
+    firebaseTokens: {
+        token: string,
+        createdAt: Date,
+        updatedAt: Date
+    }[],
 
     hashPassword: (password: string, next: (err?: any, hash?: string)=>void)=>void
     comparePassword: (password: string, next: (isMatch: boolean)=>void)=>void
@@ -142,6 +147,11 @@ const UserSchema = new Schema({
         type: Number,
         default: null
     },
+    firebaseTokens: [{
+        token: String,
+        createdAt: Date,
+        updatedAt: Date
+    }],
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
 UserSchema.pre('save', async function(next) {

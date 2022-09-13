@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: BlueClerk
   description: APIs for both app and website
-  version: 2.2.1
+  version: 2.3.0
 servers: []
 tags:
   - name: Auth
@@ -56,6 +56,8 @@ tags:
     description: For job charges
   - name: Service Ticket
     description: For creating and getting service tickets
+  - name: Job Request
+    description: For job requests
   - name: Job
     description: For scheduled jobs
   - name: Job Route
@@ -153,9 +155,10 @@ paths:
                   enum:
                     - 1
                     - 2
+                    - 3
                     - 4
                     - 5
-                  description: 1 => SERVICE PROVIDER, 2 => BUILDER, 4 => INDEPENDENT CONTRACTOR, 5 => COMPANY (old company signup)
+                  description: 1 => SERVICE PROVIDER, 2 => BUILDER, 3 => SUPPLIER, 4 => INDEPENDENT CONTRACTOR, 5 => COMPANY (old company signup)
                 email:
                   type: string
                   description: Email address of the user login
@@ -174,6 +177,9 @@ paths:
                 companyName:
                   type: string
                   description: '**REQUIRED when** accountType is 5 (COMPANY) for old company signup'
+                supplierName:
+                  type: string
+                  description: '**REQUIRED when** accountType is 3 (SUPPLIER) for supplier signup'
                 industryId:
                   type: string
                   description: Id of the selected industry from the industries fetched with /getIndustries API
@@ -1705,20 +1711,12 @@ paths:
       parameters:
         - name: emailType
           in: query
-          required: true
+          description: Default to "INVOICE" if not provided
           schema:
             type: string
             enum:
               - INVOICE
               - INCOME_REPORT
-        - name: isActive
-          in: query
-          description: If not provided will return ALL contacts
-          schema:
-            enum:
-              - ALL
-              - 'true'
-              - 'false'
       responses:
         '200':
           description: Success
@@ -1739,6 +1737,8 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               type: object
+              required:
+                - emailType
               properties:
                 subject:
                   type: string
@@ -2375,6 +2375,30 @@ paths:
                     $ref: '#/components/schemas/GeneralAPIResponse'
                   customer:
                     $ref: '#/components/schemas/Customer'
+      security:
+        - Bearer: []
+  /getSupplierBuilders:
+    get:
+      tags:
+        - Customer
+      summary: To get builders of a supplier
+      parameters:
+        - name: isActive
+          in: query
+          description: To filter the builders by isActive. If not provided will return only the Active Builders
+          schema:
+            enum:
+              - ALL
+              - 'true'
+              - 'false'
+      responses:
+        '200':
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ContactSchemaResponse'
       security:
         - Bearer: []
   /createCustomerEquipment:
@@ -4602,6 +4626,9 @@ paths:
               type: object
               required: []
               properties:
+                replyToId:
+                  type: string
+                  description: ID of the replied message
                 message:
                   type: string
                   description: The chat's message
@@ -4610,6 +4637,38 @@ paths:
                   items:
                     type: string
                     format: binary
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /chats/jobRequest/{id}/markRead:
+    post:
+      tags:
+        - Chat
+      summary: To mark chats as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of Job Request
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - lastReadChatId
+              properties:
+                lastReadChatId:
+                  type: string
+                  description: ID of the last chat message to be read
       responses:
         '200':
           description: Success
@@ -5285,6 +5344,43 @@ paths:
                 companyId:
                   type: string
                   description: Id of company if contractor is hitting for other company
+        required: true
+        allowEmptyValue: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateJobRequestStatus:
+    put:
+      tags:
+        - Job Request
+      summary: To edit job request status
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - jobRequestId
+                - status
+              properties:
+                jobRequestId:
+                  type: string
+                  description: Id of job request to edit
+                status:
+                  type: number
+                  enum:
+                    - 4
+                    - 5
+                  description: Id of job status as number from one of these (ACCEPTED => 4, REJECTED => 5).
+                note:
+                  type: string
+                  description: '**Required** when status is REJECTED => 5'
         required: true
         allowEmptyValue: true
       responses:
@@ -6396,6 +6492,16 @@ paths:
           required: false
           schema:
             type: string
+        - name: payrollPaymentType
+          in: query
+          description: Payroll Payment Type
+          required: false
+          schema:
+          type: string
+          enum:
+              - Payroll Payments
+              - Advance Payments
+              - All
         - name: startDate
           in: query
           description: Filter of start paid date
@@ -6427,7 +6533,11 @@ paths:
                   payments:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Payment'
+                    $ref: '#/components/schemas/Payment'
+                  advancePayments:
+                    type: array
+                    items:
+                    $ref: '#/components/schemas/Payment'                   
       security:
         - Bearer: []
   /recordPayment:
@@ -6516,6 +6626,9 @@ paths:
                   type: string
                 endDate:
                   type: string
+                offset:
+                  type: number
+                  description: Number of hours a certain time zone is ahead of or behind GMT for the client
                 dueDate:
                   type: string
                 paymentType:
@@ -6839,6 +6952,9 @@ paths:
                 paidAt:
                   type: string
                   description: Date when the advance payment has been made, default to today if not provided
+                appliedAt:
+                  type: string
+                  description: Date when the advance payment is applied on, default to today if not provided
                 referenceNumber:
                   type: string
                 note:
@@ -6899,6 +7015,101 @@ paths:
           required: false
           schema:
             type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /updateAdvancePaymentContractor:
+    put:
+      tags:
+        - Advance Payment
+      summary: To update advance payment contractor record
+      description: To update advance payment contractor record
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - type
+                - id
+                - advancePaymentId
+                - amount
+              properties:
+                type:
+                  type: string
+                  description: type of payment
+                  enum:
+                    - vendor
+                    - employee
+                id:
+                  type: string
+                  description: Id of vendor or employee
+                advancePaymentId:
+                  type: string
+                  description: Id of advance payment to edit
+                amount:
+                  type: number
+                  description: Amount how much vendor/employee has paid
+                paymentType:
+                  type: string
+                  description: Method name how vendor/employee has paid
+                  enum:
+                    - ACH
+                    - Bank Wire
+                    - Credit Card/Debit Card
+                    - Check
+                    - Cash
+                paidAt:
+                  type: string
+                  description: Date when the vendor/employee has made the payment
+                appliedAt:
+                  type: string
+                  description: Date when the advance payment is applied on, default to today if not provided
+                referenceNumber:
+                  type: string
+                note:
+                  type: string
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /voidAdvancePaymentContractor:
+    delete:
+      tags:
+        - Advance Payment
+      summary: To void advance payment contractor
+      description: To void advance payment contractor
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - type
+                - advancePaymentId
+              properties:
+                type:
+                  type: string
+                  description: type of payment (PaymentVendor or PaymentEmployee)
+                  enum:
+                    - vendor
+                    - employee
+                advancePaymentId:
+                  type: string
+                  description: Id of advance payment to void
+        required: true
       responses:
         '200':
           description: Success
@@ -6989,6 +7200,29 @@ paths:
         - name: endDate
           in: query
           description: Filter report by end of invoice's issued date
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getIncomeReportEmailTemplate:
+    get:
+      tags:
+        - Report
+      summary: Get the income report email template before send the email
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
       responses:
         '200':
           description: Success
@@ -7127,6 +7361,21 @@ paths:
                 customerIds:
                   type: string
                   description: 'To filter report by specific customers. Example: ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]'
+                periodOption:
+                  type: string
+                  description: Filter report by preset period option
+                  enum:
+                    - recent
+                    - lastWeek
+                    - lastWeekToDate
+                    - lastMonth
+                    - lastMonthToDate
+                    - thisQuarter
+                    - thisQuarterToDate
+                    - lastYear
+                    - lastYearToDate
+                    - thisYear
+                    - thisYearToDate
                 startDate:
                   type: string
                   description: Filter report by start of invoice's issued date
@@ -7175,12 +7424,48 @@ paths:
                 customerIds:
                   type: string
                   description: 'To filter report by specific customers. Example: ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]'
+                periodOption:
+                  type: string
+                  description: Filter report by preset period option
+                  enum:
+                    - recent
+                    - lastWeek
+                    - lastWeekToDate
+                    - lastMonth
+                    - lastMonthToDate
+                    - thisQuarter
+                    - thisQuarterToDate
+                    - lastYear
+                    - lastYearToDate
+                    - thisYear
+                    - thisYearToDate
                 startDate:
                   type: string
                   description: Filter report by start of invoice's issued date
                 endDate:
                   type: string
                   description: Filter report by end of invoice's issued date
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /deleteMemorizedReport:
+    delete:
+      tags:
+        - Report
+      summary: To delete a memorized custom report
+      parameters:
+        - name: memorizedReportId
+          in: query
+          description: ID of memorized report to be deleted
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Success
@@ -10180,6 +10465,265 @@ components:
             charges:
               type: number
               description: Charges amount from job or if you have customized while creating invoice
+            taxPercentage:
+              type: number
+              description: Tax percentage applied to invoice default will be 0
+            tax:
+              type: number
+              description: Tax amount to be added in charges to caculate the total invoice
+            total:
+              type: number
+              description: Total amount to be charged to customer
+    GeneralAPIResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          description: Status of operation, 0 -> failure 1 -> success
+          format: int32
+          enum:
+            - 0
+            - 1
+        message:
+          type: string
+          description: Error message in case of operation failure
+    CheckTagResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          description: Status of operation, 0 -> failure 1 -> success
+          format: int32
+          enum:
+            - 0
+            - 1
+        tagStatus:
+          type: integer
+          description: Status of tag, 2 -> associated 3 -> not associated
+          format: int32
+          enum:
+            - 2
+            - 3
+        message:
+          type: string
+          description: Error message in case of operation failure
+    WorkOrderNumberResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          description: Status of operation, 0 -> failure 1 -> success
+          format: int32
+          enum:
+            - 0
+            - 1
+        currentWorkOrderNumber:
+          type: integer
+          description: The lastest work order number
+          format: int32
+        prefix:
+          type: string
+          description: This will be returned if the company has set the prefix
+        message:
+          type: string
+          description: Error message in case of operation failure
+    InvoiceNumberResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          description: Status of operation, 0 -> failure 1 -> success
+          format: int32
+          enum:
+            - 0
+            - 1
+        currentInvoiceNumber:
+          type: integer
+          description: The lastest invoice number
+          format: int32
+        invoicePrefix:
+          type: string
+          description: This will be returned if the company has set the invoicePrefix
+        message:
+          type: string
+          description: Error message in case of operation failure
+    AuthAPIResponse:
+      allOf:
+        - $ref: '#/components/schemas/GeneralAPIResponse'
+        - type: object
+          properties:
+            token:
+              type: string
+              description: Auth token to be used in next apis
+            user:
+              $ref: '#/components/schemas/User'
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      name: Authorization
+      in: header
+tle of job type
+        company:
+          type: object
+          properties:
+            auth:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: Email address of company
+            info:
+              type: object
+              properties:
+                companyName:
+                  type: string
+                  description: Name of company
+                logoUrl:
+                  type: string
+                  description: Logo of company
+            contact:
+              type: object
+              properties:
+                phone:
+                  type: string
+                  description: Phone number of company
+            permissions:
+              type: object
+              properties:
+                role:
+                  type: string
+            address:
+              type: object
+              properties:
+                street:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+                zipCode:
+                  type: string
+        createdBy:
+          type: object
+          properties:
+            auth:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: Email address of person who created job
+            info:
+              type: object
+              properties:
+                companyName:
+                  type: string
+                  description: Name of company
+            profile:
+              type: object
+              properties:
+                displayName:
+                  type: string
+            contact:
+              type: object
+              properties:
+                phone:
+                  type: string
+            permissions:
+              type: object
+              properties:
+                role:
+                  type: string
+                  description: Role of person who created job in his company/organization
+            address:
+              type: object
+              properties:
+                street:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+                zipCode:
+                  type: string
+        scans:
+          type: object
+          properties:
+            comment:
+              type: string
+              description: comment added by person who scanned the equipment
+            timeOfScan:
+              type: string
+              format: date-time
+            equipment:
+              type: object
+              properties:
+                info:
+                  type: object
+                  properties:
+                    model:
+                      type: string
+                      description: model number of equipment scanned
+                    serialNumber:
+                      type: string
+                      description: serialNumber number of equipment scanned
+                    nfcTag:
+                      type: string
+                      description: nfcTag of equipment scanned
+                    location:
+                      type: string
+                      description: location of equipment
+                images:
+                  type: array
+                  items:
+                    type: string
+                type:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                brand:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+        invoiceCreated:
+          type: boolean
+        invoice:
+          type: object
+          properties:
+            _id:
+              type: string
+            invoiceId:
+              type: string
+              description: Custom invoice id to be shown on invoice
+            invoiceType:
+              type: number
+              description: >-
+                0 for the invoice for job and 1 for the invoice of purchase
+                order
+            purchaseOrder:
+              type: string
+              description: >-
+                Id of the purchase order if the invoic is for purchase order
+                only
+            issuedDate:
+              type: string
+              description: Issued date of the invoice
+            dueDate:
+              type: string
+              description: Due date of the invoice
+            estimate:
+              type: string
+              description: Id of the estimate if the invoic is for estimate only
+            jobPurchaseOrders:
+              type: array
+              items:
+                type: string
+            charges:
+              type: number
+              description: >-
+                Charges amount from job or if you have customized while creating
+                invoice
             taxPercentage:
               type: number
               description: Tax percentage applied to invoice default will be 0

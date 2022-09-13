@@ -278,10 +278,11 @@
                     "enum": [
                       1,
                       2,
+                      3,
                       4,
                       5
                     ],
-                    "description": "1 => SERVICE PROVIDER, 2 => BUILDER, 4 => INDEPENDENT CONTRACTOR, 5 => COMPANY (old company signup)"
+                    "description": "1 => SERVICE PROVIDER, 2 => BUILDER, 3 => SUPPLIER, 4 => INDEPENDENT CONTRACTOR, 5 => COMPANY (old company signup)"
                   },
                   "email": {
                     "type": "string",
@@ -306,6 +307,10 @@
                   "companyName": {
                     "type": "string",
                     "description": "**REQUIRED when** accountType is 5 (COMPANY) for old company signup"
+                  },
+                  "supplierName": {
+                    "type": "string",
+                    "description": "**REQUIRED when** accountType is 3 (SUPPLIER) for supplier signup"
                   },
                   "industryId": {
                     "type": "string",
@@ -3893,6 +3898,47 @@
                     "customer": {
                       "$ref": "#/components/schemas/Customer"
                     }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getSupplierBuilders": {
+      "get": {
+        "tags": [
+          "Customer"
+        ],
+        "summary": "To get builders of a supplier",
+        "parameters": [
+          {
+            "name": "isActive",
+            "in": "query",
+            "description": "To filter the builders by isActive. If not provided will return only the Active Builders",
+            "schema": {
+              "enum": [
+                "ALL",
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContactSchemaResponse"
                   }
                 }
               }
@@ -10563,6 +10609,20 @@
             }
           },
           {
+            "name": "payrollPaymentType",
+            "in": "query",
+            "description": "Payroll Payment Type",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Payroll Payments",
+                "Advance Payments",
+                "All"
+              ]              
+            }
+          },          
+          {
             "name": "startDate",
             "in": "query",
             "description": "Filter of start paid date",
@@ -10602,10 +10662,16 @@
                       "$ref": "#/components/schemas/GeneralAPIResponse"
                     },
                     "payments": {
-                      "type": "array",
+                      "type" : "array",
                       "items": {
                         "$ref": "#/components/schemas/Payment"
                       }
+                    },
+                    "advancePayments":{
+                      "type" : "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Payment"
+                      }                        
                     }
                   }
                 }
@@ -11341,6 +11407,149 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateAdvancePaymentContractor": {
+      "put": {
+        "tags": [
+          "Advance Payment"
+        ],
+        "summary": "To update advance payment contractor record",
+        "description": "To update advance payment contractor record",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "id",
+                  "advancePaymentId",
+                  "amount"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "type of payment",
+                    "enum": [
+                      "vendor",
+                      "employee"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "description": "Id of vendor or employee"
+                  },
+                  "advancePaymentId": {
+                    "type": "string",
+                    "description": "Id of advance payment to edit"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "description": "Amount how much vendor/employee has paid"
+                  },
+                  "paymentType": {
+                    "type": "string",
+                    "description": "Method name how vendor/employee has paid",
+                    "enum": [
+                      "ACH",
+                      "Bank Wire",
+                      "Credit Card/Debit Card",
+                      "Check",
+                      "Cash"
+                    ]
+                  },
+                  "paidAt": {
+                    "type": "string",
+                    "description": "Date when the vendor/employee has made the payment"
+                  },
+                  "appliedAt": {
+                    "type": "string",
+                    "description": "Date when the advance payment is applied on, default to today if not provided"
+                  },
+                  "referenceNumber": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/voidAdvancePaymentContractor": {
+      "delete": {
+        "tags": [
+          "Advance Payment"
+        ],
+        "summary": "To void advance payment contractor",
+        "description": "To void advance payment contractor",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "advancePaymentId"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "type of payment (PaymentVendor or PaymentEmployee)",
+                    "enum": [
+                      "vendor",
+                      "employee"
+                    ]
+                  },
+                  "advancePaymentId": {
+                    "type": "string",
+                    "description": "Id of advance payment to void"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Success",
