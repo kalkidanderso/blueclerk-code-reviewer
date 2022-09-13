@@ -31,7 +31,6 @@ export const roundTwoDecimal = (num: number): number => {
     if (!num) { return; }
 
     return Math.round(num * 100) / 100;
-
 }
 
 /**

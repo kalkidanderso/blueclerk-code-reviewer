@@ -2681,9 +2681,8 @@ export default function (sio: any) {
     )
 
     router.post(
-        '/script/addDefaultEmailTypes',
-        passport.authenticate('jwt', {session: false}),
-        scriptController.addDefaultEmailTypes
+        '/script/revertBackInvoices',
+        scriptController.revertBackInvoices
     )
 
     router.post(
