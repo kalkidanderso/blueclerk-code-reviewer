@@ -115,9 +115,16 @@ export const getPayments = (req: Request, res: Response) => {
             path: 'createdBy',
             select: 'profile.displayName auth.email'
         })
-        .then((payments: IPayment[] | null) => {
+        .then(async (payments: IPayment[] | null) => {
 
-            return res.json({ 'status': Status.Success, 'payment': payments })
+            // Retrieve number of the unsynced invoices
+            const unsyncedPayments = await Payment.find({
+                company: req.companyId,
+                isVoid: { $ne: true },
+                quickbookId: null
+            })?.countDocuments();
+
+            return res.json({ status: Status.Success, unsyncedPayments, payment: payments });
         })
         .catch((error: any) => {
             if (error.message != undefined) {
@@ -126,6 +133,71 @@ export const getPayments = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
         })
+
+}
+
+/**
+ * To retrieve unsynced payments that active
+ */
+export const getUnsyncedPayments = async (req: Request, res: Response) => {
+
+    const params = req.query;
+    const companyId = req.companyId;
+
+    // Data query that used to search unsynced Invoices
+    const filterQuery: any = {
+        $and: [
+            { company: companyId },
+            { isVoid: { $ne: true } },
+            { quickbookId: null }
+        ]
+    }
+
+    // Check and add if params filter provided
+    if (params.keyword) {
+        const keywordRegex = { $regex: params.keyword, $options: 'i' };
+        filterQuery['$and'].push({
+            $or: [
+                { referenceNumber: keywordRegex },
+                { paymentType: keywordRegex },
+                { 'invoice.invoiceId': keywordRegex },
+                { 'invoice.customerPO': keywordRegex },
+                { 'line.invoice.invoiceId': keywordRegex },
+                { 'line.invoice.customerPO': keywordRegex },
+            ]
+        })
+    }
+    if (params.customerId) {
+        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+    }
+
+    const payments = await Payment.find(filterQuery)
+        .populate({
+            path: 'company',
+            select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+        })
+        .populate({
+            path: 'invoice',
+            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+        })
+        .populate({
+            path: 'line.invoice',
+            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'profile.displayName auth.email'
+        });
+
+    return res.json({
+        status: Status.Success,
+        total: payments.length,
+        payments
+    });
 
 }
 
@@ -460,8 +532,8 @@ export const createPayment = async (req: Request, res: Response) => {
                 if (qbCustomer) {
                     // Create new Payment in QuickBooks
                     _createQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
-                        if (err) {
-                            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
+                        if (err || errMsg) {
+                            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, quickbookPayment: null, quickbookPaymentError: errMsg, customer, invoice });
                         }
 
                         if (qbPayment) {
@@ -857,8 +929,8 @@ export const updatePayment = async (req: Request, res: Response) => {
         if (company.qbAuthorized && payment.quickbookId) {
             // Sync the update to Payment in QuickBooks
             _updateQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
-                if (err) {
-                    return res.json({ status: err, message: errMsg });
+                if (err || errMsg) {
+                    return res.json({ status: Status.Success, message: 'Payment successfully updated.', payment, quickbookPayment: null, quickbookPaymentError: errMsg, customer, invoices });
                 }
 
                 if (qbPayment) {
