@@ -1541,6 +1541,15 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/createQBPayments',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookPaymentController.createQBPayments
+    )
+
+    router.post(
         '/syncQBPayments',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
@@ -2242,6 +2251,15 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Payments),
         paymentController.getPayments
+    )
+
+    router.get(
+        '/getUnsyncedPayments',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Payments),
+        paymentController.getUnsyncedPayments
     )
 
     router.get(
