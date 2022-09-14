@@ -53,11 +53,3 @@ export const checkPasswordRegex = async (password: string): Promise<boolean> => 
 export const waitTimer = (ms: any) => {
     return new Promise(res => setTimeout(res, ms));
 }
-
-/**
- * @description To wait with a custom time
- * @param ms (milisecond)
- */
- export const waitTimer = (ms: any) => {
-    return new Promise(res => setTimeout(res, ms));
-}
