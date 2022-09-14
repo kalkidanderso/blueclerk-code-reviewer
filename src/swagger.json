@@ -10390,6 +10390,54 @@
         ]
       }
     },
+    "/getUnsyncedPayments": {
+      "get": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "To get active unsynced payments",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "Filter payments by search keyword to Reference Number, Payment Type, Invoice's ID, and Invoice's Customer PO",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "description": "Filter payments by Customer ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getPaymentsByCustomerId": {
       "get": {
         "tags": [
@@ -13217,6 +13265,96 @@
         ],
         "summary": "Manually syncing UNSYNCED payments",
         "description": "Manually syncing UNSYNCED payments **from BlueClerk to QuickBooks only**",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createQBPayment": {
+      "post": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "Manually syncing SINGLE payment",
+        "description": "Manually syncing SINGLE payment from BlueClerk to QuickBooks and associate it with BlueClerk payment",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "paymentId"
+                ],
+                "properties": {
+                  "paymentId": {
+                    "type": "string",
+                    "description": "Id of an payment to be associated"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/createQBPayments": {
+      "post": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "Manually syncing MULTIPLE payments",
+        "description": "Manually syncing MULTIPLE payments from BlueClerk to QuickBooks and associate it with BlueClerk payments",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "paymentIds"
+                ],
+                "properties": {
+                  "paymentIds": {
+                    "type": "string",
+                    "description": "Id of an payments to be associated. Example: [\"6309227fe1bec921989b3e5a\",\"630917ba9dfb1c06a05426ac\"]"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Success",

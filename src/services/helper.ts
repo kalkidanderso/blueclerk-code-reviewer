@@ -33,3 +33,11 @@ export const roundTwoDecimal = (num: number): number => {
     return Math.round(num * 100) / 100;
 
 }
+
+/**
+ * @description To wait with a custom time
+ * @param ms (milisecond)
+ */
+ export const waitTimer = (ms: any) => {
+    return new Promise(res => setTimeout(res, ms));
+}
