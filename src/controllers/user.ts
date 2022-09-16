@@ -44,7 +44,13 @@ export const login = (req: Request, res: Response, sio: any) => {
                 [AccountTypes.BUILDER, AccountTypes.CONTRACTOR].includes(Number(user.accountType))
                 || [Role.CUSTOMER, Role.CUSTOMER_CONTACT, Role.CONTRACTOR].includes(Number(user.permissions.role))
             ) {
-                return res.json({ status: Status.Error, message: 'Your account type does not have web access' });
+                return res.json({
+                    status: Status.Unauthorized,
+                    message: 'Your account type does not have web access',
+                    userType: user.permissions.role,
+                    accountType: user.accountType,
+                    user: null
+                });
             }
 
             if (

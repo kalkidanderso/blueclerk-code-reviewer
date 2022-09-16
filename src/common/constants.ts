@@ -6,6 +6,7 @@ export const Status = {
     Forbidden: 403,
     NotFound: 404,
     InternalError: 500,
+    Unauthorized: -1,
     Error: 0,
     Success: 1,
     TagAssociated: 2,
