@@ -1876,7 +1876,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Invoice_Detail),
-        validate(Validations.sendInvoice),
+        validate(Validations.getInvoiceEmailTemplate),
         invoiceController.getInvoiceEmailTemplate
     )
 
@@ -1889,6 +1889,16 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Invoice_Detail),
         validate(Validations.sendInvoice),
         invoiceController.sendInvoiceEmail
+    )
+
+    router.post(
+        '/sendInvoices',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoice_Detail),
+        validate(Validations.sendInvoices),
+        invoiceController.sendInvoicesEmail
     )
 
     router.get(
