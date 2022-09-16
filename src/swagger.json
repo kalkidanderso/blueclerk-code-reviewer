@@ -9992,10 +9992,29 @@
         "summary": "Get the invoice email template before send the email",
         "parameters": [
           {
+            "name": "emailType",
+            "in": "query",
+            "description": "Email type to be retrieve. Available values: \"INVOICE\" (To send one invoice), \"INVOICES\" (To send multiple invoices at once)",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "INVOICE",
+                "INVOICES"
+              ]
+            }
+          },
+          {
             "name": "invoiceId",
             "in": "query",
-            "description": "Id of invoice",
-            "required": true,
+            "description": "(REQUIRED for emailType: INVOICE) Id of invoice",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceIds",
+            "in": "query",
+            "description": "(REQUIRED for emailType: INVOICES) Ids of invoices. Example: [\"6320f952cada9f16fffba0c6\", \"6320f933cada9f16fffba0c5\"]",
             "schema": {
               "type": "string"
             }
@@ -10059,6 +10078,70 @@
                     "type": "string",
                     "description": "PDF file of invoice",
                     "format": "binary"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/sendInvoices": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "Send an email about the multiple invoices",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "invoiceIds"
+                ],
+                "properties": {
+                  "customerId": {
+                    "type": "string",
+                    "description": "ID of customer"
+                  },
+                  "invoiceIds": {
+                    "type": "string",
+                    "description": "Ids of invoice"
+                  },
+                  "recipients": {
+                    "type": "string",
+                    "description": "List of all recipients in array. Example: [\"zyzorafu@abyssmail.com\",\"tiboqama@boximail.com\"]"
+                  },
+                  "subject": {
+                    "type": "string",
+                    "description": "Subject of the email, if not provided will use company's email default"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Message of the email, if not provided will use company's email default"
+                  },
+                  "copyToMyself": {
+                    "type": "boolean",
+                    "description": "To send copy to user himself"
                   }
                 }
               }

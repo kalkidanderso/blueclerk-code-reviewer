@@ -1885,28 +1885,61 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
 
     const params = req.query;
     const company = <ICompany>req.company;
+    let invoice, invoices, customer;
 
-    // Retrieve invoice and populate customer and paymentTerm info
-    const invoice = await Invoice
-        .findOne({ company, _id: params.invoiceId })
-        .populate({
-            path: 'customer',
-            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
-        })
+    switch (params.emailType) {
+        case EmailTypes.INVOICES:
+            if (!params.invoiceIds) {
+                return res.json({ status: Status.Error, message: 'Param invoiceIds is required for emailType INVOICES' });
+            }
 
-    if (!invoice) {
-        return res.json({ status: Status.Error, message: 'Invoice not found.' });
+            const invoiceIds = JSON.parse(params.invoiceIds)?.map((id: string) => new ObjectId(id));
+            invoices = await Invoice
+                .find({ company, _id: { $in: invoiceIds } })
+                .populate({
+                    path: 'customer',
+                    select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+                })
+
+            if (!invoices?.length) {
+                return res.json({ status: Status.Error, message: 'Invoices not found.' });
+            }
+
+            customer = <ICustomer>invoices[0]?.customer;
+            break;
+
+        case EmailTypes.INVOICE:
+            if (!params.invoiceId) {
+                return res.json({ status: Status.Error, message: 'Param invoiceId is required for emailType INVOICE' });
+            }
+
+        default:
+            // Retrieve invoice and populate customer and paymentTerm info
+            invoice = await Invoice
+                .findOne({ company, _id: params.invoiceId })
+                .populate({
+                    path: 'customer',
+                    select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+                });
+
+            if (!invoice) {
+                return res.json({ status: Status.Error, message: 'Invoice not found.' });
+            }
+
+            customer = <ICustomer>invoice?.customer;
+            break;
     }
 
-    const customer = <ICustomer>invoice.customer;
+    // const customer = <ICustomer>invoice?.customer;
+    const emailType = params.emailType ?? EmailTypes.INVOICE;
 
     // Retrieve company email default
-    let emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
+    let emailDefault = await EmailDefault.findOne({ company, emailType });
 
     // Create email default if company doesn't have one yet
     if (!emailDefault) {
-        await _createCompanyDefaultEmail(company, EmailTypes.INVOICE);
-        emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
+        await _createCompanyDefaultEmail(company, emailType);
+        emailDefault = await EmailDefault.findOne({ company, emailType });
     }
 
     /**
@@ -1916,21 +1949,25 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     await transformPlaceholders(emailDefault);
 
     // Get available placeholder values for Invoice email template
-    const { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date } = await getPlaceholderValues({ company, invoice, customer });
+    const { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_total_amount, invoice_due_date } = await getPlaceholderValues({ company, invoice, invoices, customer });
 
     return res.json({
         status: Status.Success,
+        emailType,
         emailTemplate: {
             from: company_email,
             to: customer_email,
             subject: eval('`' + emailDefault.subject + '`'),
             message: eval('`' + emailDefault.message + '`')
         },
-        invoice
+        invoice, invoices
     });
 
 }
 
+/**
+ * To send email with one invoice as the attachment
+ */
 export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
     const params = req.body;
@@ -1982,6 +2019,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
     // Retrieve company email default
     const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
+    const invoicePdfs = [{ invoice, filepath }];
     const emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
 
     // Generate Invoice PDF
@@ -1992,8 +2030,12 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     let copyToMyself: boolean;
     try {
         // Handle the stringify array of recipients value
-        if (params.recipients && !Array.isArray(params.recipients)) {
-            paramRecipients = JSON.parse(params.recipients);
+        if (params.recipients) {
+            if (Array.isArray(params.recipients)) {
+                paramRecipients = params.recipients;
+            } else {
+                paramRecipients = JSON.parse(params.recipients);
+            }
         }
 
         // Handle the stringify boolean value
@@ -2034,8 +2076,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         invoice_number: invoice.invoiceId,
         invoice_amount: invoice.total,
         invoice_due_date: moment(invoice.dueDate).format('MMMM DD, YYYY'),
-        invoice_pdf: filepath,
-        invoice_pdf_name: req.file?.originalname ?? `${invoice.invoiceId}.pdf`,
+        invoice_pdfs: invoicePdfs,
         term_name: paymentTerm?.name,
         term_due_days: paymentTerm?.dueDays
     });
@@ -2048,6 +2089,158 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     });
     invoice.lastEmailSent = sendingDate;
     await invoice.save();
+
+    return res.json({ status: Status.Success, message: 'Invoice has been sent successfully.' });
+
+}
+
+/**
+ * To send email with multiple invoices as the attachments
+ */
+export const sendInvoicesEmail = async (req: Request, res: Response) => {
+
+    // const { INVOICE_PDF_PATH } = process.env;
+    const params = req.body;
+    const user = <IUser>req.user;
+    const company = <ICompany>req.company;
+
+    // Retrieve and check if customer exist
+    const customer = await Customer.findById(params.customerId);
+    if (!customer) {
+        return res.json({ Status: Status.Error, message: 'Customer not found' });
+    }
+
+    // Handle the stringify array of invoice IDs value
+    let invoiceIds: any[] = [];
+    try {
+        if (Array.isArray(invoiceIds)) {
+            invoiceIds = params.invoiceIds;
+        } else {
+            invoiceIds = JSON.parse(invoiceIds);
+        }
+
+        // To handle any over-stringified strings
+        if (!Array.isArray(invoiceIds)) {
+            invoiceIds = JSON.parse(invoiceIds);
+        }
+
+        // Convert all string ID to Object ID to be used in $in mongo query
+        invoiceIds = invoiceIds.map((id: string) => new ObjectId(id));
+    } catch (error) {
+        return res.json({ 'status': Status.Error, 'message': 'Param Invoice IDs is invalid' })
+    }
+
+    // Retrieve invoices and populate customer and paymentTerm info
+    const invoices = await Invoice
+        .find({ company, _id: { $in: invoiceIds } })
+        .populate({
+            path: 'job',
+            populate: [
+                { path: 'type', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+                { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
+                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
+                { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
+                { path: 'jobLocation', select: 'name location address' },
+                { path: 'jobSite', select: 'name location address' }
+            ],
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address contact contactName'
+        })
+        .populate({ path: 'customerContactId', select: '-__v' })
+        .populate({ path: 'paymentTerm', select: '-company -__v' })
+        .populate({
+            path: 'items.item',
+            select: 'name description sku isJobType isFixed charges tax',
+            populate: [{ path: 'jobType' }]
+        });
+
+    if (!invoices?.length) {
+        return res.json({ status: Status.Error, message: 'Invoices not found.' });
+    }
+
+    let invoicePdfs = [];
+    let totalInvoiceAmount = 0;
+
+    // Iterate all invoices to generate their PDF and collect the filepath
+    for (const invoice of invoices) {
+
+        // Get the invoice filepath
+        const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
+
+        // Generate Invoice PDF
+        await _generateInvoicePdf(company, invoice);
+
+        // Sum the invoice amount
+        totalInvoiceAmount += invoice.total;
+
+        // Collect all invoices into one array
+        invoicePdfs.push({ invoice, filepath });
+
+        // Update email history and last email sent info
+        const sendingDate = new Date();
+        invoice.emailHistory.push({
+            sentTo: customer.info?.email,
+            sentAt: sendingDate
+        });
+        invoice.lastEmailSent = sendingDate;
+        await invoice.save();
+    }
+
+    // Retrieve company email default
+    const emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICES });
+
+    let paramRecipients: string[];
+    let recipientEmails: string[];
+    let copyToMyself: boolean;
+    try {
+        // Handle the stringify array of recipients value
+        if (params.recipients) {
+            if (Array.isArray(params.recipients)) {
+                paramRecipients = params.recipients;
+            } else {
+                paramRecipients = JSON.parse(params.recipients);
+            }
+        }
+
+        // Handle the stringify boolean value
+        copyToMyself = params.copyToMyself
+            ? params.copyToMyself === 'false' || params.copyToMyself === false
+                ? false
+                : !!params.copyToMyself
+            : false;
+
+        /**
+         * Construct list of recipients if providef from FE,
+         * othwerwise using customerContact or customer
+         */
+        recipientEmails = paramRecipients?.length > 0
+            ? paramRecipients
+            : [customer?.info?.email];
+
+        // Add the user's email himself if he want to receive copy email
+        if (copyToMyself) {
+            recipientEmails.push(user.auth?.email);
+        }
+    } catch (error) {
+        return res.json({ status: Status.Error, message: Messages.GenericError });
+    }
+
+    // Call AWS SES method
+    sendInvoiceEmailToCustomer({
+        subject: params.subject ?? emailDefault?.subject,
+        message: params.message ?? emailDefault?.message,
+        sender_email: user.auth?.email,
+        company_name: company.info?.companyName,
+        company_email: company.info?.companyEmail,
+        company_logo: company.info?.logoUrl,
+        recipient_emails: recipientEmails,
+        invoice_total_amount: totalInvoiceAmount,
+        invoice_pdfs: invoicePdfs,
+    });
 
     return res.json({ status: Status.Success, message: 'Invoice has been sent successfully.' });
 
