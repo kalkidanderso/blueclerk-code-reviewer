@@ -419,9 +419,18 @@ export const Validations = {
     check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
+  getInvoiceEmailTemplate: [
+    // check('emailType').exists().withMessage(Messages.Required),
+    check('invoiceId').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
+
   sendInvoice: [
     check('invoiceId').exists().withMessage(Messages.Required),
-    check('invoiceId').isMongoId().withMessage(Messages.WrongId),
+    check('invoiceId').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  sendInvoices: [
+    check('invoiceIds').exists().withMessage(Messages.Required),
   ],
 
   generateInvoicePdf: [
