@@ -581,8 +581,8 @@ export const customerDetail = (req: Request, res: Response) => {
             populate: [{ path: 'jobLocations', populate: { path: 'jobSites' } }, { path: 'equipments' }, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
         })
         .exec().then((companyCustomer: ICompanyCustomer) => {
-            const customer: any = companyCustomer.customer;
-            if (!companyCustomer || customer.permissions.role != Role.CUSTOMER) {
+            const customer: any = companyCustomer?.customer;
+            if (!companyCustomer || customer?.permissions?.role != Role.CUSTOMER) {
                 return res.json({ 'status': Status.Error, 'message': 'No customer found' })
             }
             return res.json({ 'status': Status.Success, 'customer': customer })
