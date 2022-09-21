@@ -122,6 +122,7 @@ export const getPayments = (req: Request, res: Response) => {
             // Retrieve number of the unsynced invoices
             const unsyncedPayments = await Payment.find({
                 company: req.companyId,
+                __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] },
                 isVoid: { $ne: true },
                 quickbookId: null
             })?.countDocuments();
@@ -150,6 +151,7 @@ export const getUnsyncedPayments = async (req: Request, res: Response) => {
     const filterQuery: any = {
         $and: [
             { company: companyId },
+            { __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] } },
             { isVoid: { $ne: true } },
             { quickbookId: null }
         ]
