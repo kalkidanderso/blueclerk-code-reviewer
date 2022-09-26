@@ -19,6 +19,11 @@ export const DefaultEmailTemplate = {
     message: 'Dear {{customer_name}},\n\nPlease see your invoice {{invoice_number}} attached with {{invoice_amount}} due on {{invoice_due_date}}.\n\nThank you for doing business with {{company_name}}\n{{small_company_logo}}'
 }
 
+export const DefaultInvoicesEmailTemplate = {
+    subject: 'Invoices from {{company_name}}',
+    message: 'Dear {{customer_name}},\n\nPlease see your open invoices attached with a total of {{invoice_total_amount}}.\n\nThank you for doing business with {{company_name}}\n{{small_company_logo}}'
+}
+
 export const DefaultIncomReportEmailTemplate = {
     subject: 'Income report of {{company_name}}',
     message: 'Hello,\n\nPlease see your Income Report attached for this period: {{date_range}}.\n\n{{small_company_logo}}'
@@ -26,6 +31,7 @@ export const DefaultIncomReportEmailTemplate = {
 
 export enum EmailTypes {
     INVOICE = 'INVOICE',
+    INVOICES = 'INVOICES',
     INCOME_REPORT = 'INCOME_REPORT'
 }
 

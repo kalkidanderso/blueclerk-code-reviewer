@@ -269,7 +269,7 @@ export const sendInvoiceEmailToCustomer = async function (options: any) {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
 
-  let { subject, message, sender_email, company_name, company_email, company_logo, customer_name, customer_email, recipient_emails, invoice_number, invoice_amount, invoice_due_date, invoice_pdf, invoice_pdf_name, term_name, term_due_days } = options;
+  let { subject, message, sender_email, company_name, company_email, company_logo, customer_name, customer_email, recipient_emails, invoice_number, invoice_amount, invoice_due_date, invoice_pdf, invoice_pdfs, invoice_pdf_name, term_name, term_due_days } = options;
 
   AWS.config.update({
     region: AWS_REGION,
@@ -293,7 +293,7 @@ export const sendInvoiceEmailToCustomer = async function (options: any) {
                       <p><strong>${company_name}</strong></p>
                     </div>
                     <div style=\"font-family:roboto; padding:10px; text-align:center\">
-                      <h2>${invoice_number}</h2>
+                      <h2>${invoice_number ?? 'Invoices'}</h2>
                     </div>
                     <div style=\"font-family:roboto; padding:10px\">
                       ${eval('`' + message + '`')}
@@ -316,15 +316,21 @@ export const sendInvoiceEmailToCustomer = async function (options: any) {
   ];
 
   // Attachment PDF if provided
-  if (invoice_pdf) {
-    const pdfFile = fs.readFileSync(invoice_pdf);
+  for (const invoice_pdf of invoice_pdfs) {
+    const pdfFile = fs.readFileSync(invoice_pdf.filepath);
     const ATTACHMENT = pdfFile.toString("base64").replace(/([^\0]{76})/g, "$1\n");
 
-    rawMessage.push(`Content-Type: application/octet-stream; name=\"${invoice_pdf_name}\"`);
+    rawMessage.push(`Content-Type: application/octet-stream; name=\"${invoice_pdf.invoice?.invoiceId}.pdf\"`);
     rawMessage.push(`Content-Transfer-Encoding: base64`);
-    rawMessage.push(`Content-Disposition: attachment\n`);
+    rawMessage.push(`Content-Disposition: attachment;filename=\"${invoice_pdf.invoice?.invoiceId}.pdf\"`);
+    rawMessage.push(`Content-ID:<${invoice_pdf.invoice?.invoiceId}.pdf>\n`);
     rawMessage.push(`${ATTACHMENT}\n`);
-    rawMessage.push(`--${boundary}--`);
+
+    if (invoice_pdfs.findIndex((pdf: any) => pdf.invoice._id === invoice_pdf.invoice._id) === invoice_pdfs.length - 1) {
+      rawMessage.push(`--${boundary}--`);
+    } else {
+      rawMessage.push(`--${boundary}`);
+    }
   }
 
   try {
