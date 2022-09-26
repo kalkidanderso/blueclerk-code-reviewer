@@ -2980,7 +2980,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                                 alignment: "right",
                             },
                             {
-                                text: `${moment(invoice.createdAt).format('MMM. DD, YYYY')}`,
+                                text: `${moment(invoice.issuedDate ?? invoice.createdAt).format('MMM. DD, YYYY')}`,
                                 style: "defaultFont",
                                 alignment: "right",
                             },
