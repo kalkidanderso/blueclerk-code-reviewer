@@ -310,7 +310,7 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
                 switch (eventEntity?.operation) {
                     case QBEntityOperations.UPDATE:
                         // Update BC Invoice here
-                        updateBCInvoice(req, res, company, eventEntity?.id);
+                        // updateBCInvoice(req, res, company, eventEntity?.id);
                         break;
 
                     case QBEntityOperations.VOID:

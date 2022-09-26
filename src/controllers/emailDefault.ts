@@ -6,7 +6,7 @@ import { ICompany } from '../models/Company';
 import { IUser } from '../models/User';
 import { ICustomer } from '../models/Customer';
 import { IInvoice } from '../models/Invoice';
-import { IEmailDefault, DefaultEmailTemplate, EmailDefault, EmailTypes, DefaultIncomReportEmailTemplate } from '../models/EmailDefault';
+import { IEmailDefault, DefaultEmailTemplate, DefaultInvoicesEmailTemplate, EmailDefault, EmailTypes, DefaultIncomReportEmailTemplate } from '../models/EmailDefault';
 
 
 export const getCompanyEmailDefault = async (req: Request, res: Response) => {
@@ -73,11 +73,13 @@ export const transformPlaceholders = async (emailDefault: IEmailDefault): Promis
 export const getPlaceholderValues = async ({
     company,
     invoice,
+    invoices,
     customer,
     dateRange
 }: {
     company: ICompany,
     invoice?: IInvoice,
+    invoices?: IInvoice[],
     customer?: ICustomer,
     dateRange?: string
 }): Promise<any> => {
@@ -91,7 +93,16 @@ export const getPlaceholderValues = async ({
     const invoice_due_date = moment(invoice?.dueDate ?? '').format('MMMM DD, YYYY');
     const date_range = dateRange ?? '';
 
-    return { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date, date_range };
+    let invoice_total_amount = '';
+    if (invoices?.length) {
+        let invoiceTotalAmount = 0;
+        for (const invoice of invoices) {
+            invoiceTotalAmount += invoice?.total;
+        }
+        invoice_total_amount = `$${invoiceTotalAmount || ''}`;
+    }
+
+    return { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_total_amount, invoice_due_date, date_range };
 
 }
 
@@ -117,8 +128,18 @@ export const _createCompanyDefaultEmail = async (company: ICompany, emailType: E
                 message: DefaultIncomReportEmailTemplate.message,
                 emailType: EmailTypes.INCOME_REPORT,
                 company
-            }).save()
+            }).save();
             break;
+
+        case EmailTypes.INVOICES:
+            await new EmailDefault({
+                subject: DefaultInvoicesEmailTemplate.subject,
+                message: DefaultInvoicesEmailTemplate.message,
+                emailType: EmailTypes.INVOICES,
+                company
+            }).save();
+            break;
+
         case EmailTypes.INVOICE:
         default:
             await new EmailDefault({
