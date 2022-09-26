@@ -13,6 +13,7 @@ import { IJobLocation, JobLocation } from '../models/JobLocation';
 import { IPayment, IQBPayment, IQBPaymentMethod, IQBPaymentTxnTypes, Payment, PaymentCustomer } from '../models/Payment';
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
 import { _calculateInvoiceBalance } from '../controllers/payment';
+import { waitTimer } from '../services/helper';
 
 // ===================================
 // =======[ QUICKBOOK PAYMENT ]=======
@@ -86,29 +87,62 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
         }
     }
 
-    qbo.createPayment(qbPaymentEntry, async (err: any, qbPayment: IQBPayment) => {
-        if (err) {
-            console.log('== _createQBPayment > qbo.createPayment > ERROR ==');
-            console.log('== err.Fault:', err.Fault);
-            console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
-            console.log('== err.fault:', err.fault);
-            console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
-            console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
-            console.log('== paymentId:', payment._id);
+    // // Create QB Payment
+    // qbo.createPayment(qbPaymentEntry, async (err: any, qbPayment: IQBPayment) => {
+    //     if (err) {
+    //         console.log('== _createQBPayment > qbo.createPayment > ERROR ==');
+    //         console.log('== err.Fault:', err.Fault);
+    //         console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+    //         console.log('== err.fault:', err.fault);
+    //         console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+    //         console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+    //         console.log('== paymentId:', payment._id);
 
-            return next(
-                Status.Error,
-                err.Fault?.Error[0]?.Detail
-                || err.Fault?.Error[0]?.Message
-                || err.fault?.error[0]?.detail
-                || err.fault?.error[0]?.message
-                || Messages.GenericError,
-                null
-            );
-        }
+    //         return next(
+    //             Status.Error,
+    //             err.Fault?.Error[0]?.Detail
+    //             || err.Fault?.Error[0]?.Message
+    //             || err.fault?.error[0]?.detail
+    //             || err.fault?.error[0]?.message
+    //             || Messages.GenericError,
+    //             null
+    //         );
+    //     }
 
+    //     return next(null, null, qbPayment);
+    // });
+
+    // Create QB Payment
+    return new Promise((resolve, reject) => {
+        qbo.createPayment(qbPaymentEntry, async (err: any, qbPayment: IQBPayment) => {
+
+            if (err) {
+                console.log('== _createQBPayment > qbo.createPayment > ERROR ==');
+                console.log('== err.Fault:', err.Fault);
+                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                console.log('== err.fault:', err.fault);
+                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                console.log('== paymentId:', payment._id);
+
+                reject(err.Fault?.Error[0]?.Detail
+                    || err.Fault?.Error[0]?.Message
+                    || err.fault?.error[0]?.detail
+                    || err.fault?.error[0]?.message
+                    || Messages.GenericError);
+            }
+
+            resolve(qbPayment);
+        })
+
+    }).then((qbPayment: IQBPayment) => {
+        // QBooks Payment sync successfully
         return next(null, null, qbPayment);
-    });
+    }).catch((errMsg) => {
+        // QBooks Payment sync failed
+        return next(Status.Error, errMsg, null);
+    })
+
 }
 
 /**
@@ -176,6 +210,14 @@ export const _updateQBPayment = async (req: Request, res: Response, company: ICo
             // Update QB Payment
             qbo.updatePayment(qbPayment, async (err: any, qbPayment: IQBPayment) => {
                 if (err) {
+                    console.log('== _updateQBPayment > qbo.updatePayment > ERROR ==');
+                    console.log('== err.Fault:', err.Fault);
+                    console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                    console.log('== err.fault:', err.fault);
+                    console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                    console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                    console.log('== paymentId:', payment._id);
+
                     return next(
                         Status.Error,
                         err?.Fault?.Error[0]?.Detail
@@ -234,6 +276,62 @@ export const createQBPayment = async (req: Request, res: Response) => {
             payment
         });
     })
+
+}
+
+export const createQBPayments = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const company = <ICompany>req.company;
+    const paymentSynced: any[] = [];
+    const paymentUnsynced: any[] = [];
+    let paramPaymentIds: any = [];
+
+    try {
+        paramPaymentIds = params.paymentIds;
+
+        // To handle any over-stringified strings
+        if (!Array.isArray(paramPaymentIds)) {
+            paramPaymentIds = JSON.parse(paramPaymentIds);
+        }
+    } catch (error) {
+        return res.json({ status: Status.Error, message: 'paymentIds is invalid' });
+    }
+
+    const payments = await Payment.find({ _id: { $in: paramPaymentIds }, company: company._id });
+
+    if (!payments?.length) {
+        return res.json({ status: Status.Error, message: 'Payments not found' });
+    }
+
+    for (const payment of payments) {
+        await _createQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
+            if (err || !qbPayment) {
+                paymentUnsynced.push({
+                    errorMessage: errMsg,
+                    payment,
+                });
+            }
+
+            if (qbPayment) {
+                payment.quickbookId = qbPayment.Id;
+                await payment.save();
+
+                paymentSynced.push(payment);
+            }
+        })
+
+        // Wait for one second for each transaction
+        await waitTimer(1000);
+    }
+
+    return res.json({
+        status: Status.Success,
+        totalPaymentSynced: paymentSynced.length,
+        paymentSynced,
+        totalPaymentUnsynced: paymentUnsynced.length,
+        paymentUnsynced
+    });
 
 }
 
