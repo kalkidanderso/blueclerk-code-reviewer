@@ -2470,25 +2470,26 @@ export const getInvoices = async (req: Request, res: Response) => {
             const allInvoices = await Invoice.aggregate([
                 ...aggregateLookups,
                 { $match: { ...filterQuery } },
-                { $sort: sortQuery }
+                { $count: 'count' }
+                // { $sort: sortQuery }
             ])
 
             /**
              * Get last page cursor
              */
-            const lastDivider = (params.pageSize || DefaultPageSize);
-            const lastModulo = allInvoices?.length % lastDivider;
-            const lastIndex = allInvoices?.length - ((lastModulo == 0) ? lastDivider : lastModulo);
+            // const lastDivider = (params.pageSize || DefaultPageSize);
+            // const lastModulo = allInvoices?.length % lastDivider;
+            // const lastIndex = allInvoices?.length - ((lastModulo == 0) ? lastDivider : lastModulo);
 
-            let lastPageCursor;
-            if (lastIndex) {
-                if (params.previousCursor) {
-                    let reverseAllInv = allInvoices.reverse();
-                    lastPageCursor = { createdAt: reverseAllInv[lastIndex - 1]?.createdAt, _id: reverseAllInv[lastIndex - 1]?._id };
-                } else {
-                    lastPageCursor = { createdAt: allInvoices[lastIndex - 1]?.createdAt, _id: allInvoices[lastIndex - 1]?._id };
-                }
-            }
+            // let lastPageCursor;
+            // if (lastIndex) {
+            //     if (params.previousCursor) {
+            //         let reverseAllInv = allInvoices.reverse();
+            //         lastPageCursor = { createdAt: reverseAllInv[lastIndex - 1]?.createdAt, _id: reverseAllInv[lastIndex - 1]?._id };
+            //     } else {
+            //         lastPageCursor = { createdAt: allInvoices[lastIndex - 1]?.createdAt, _id: allInvoices[lastIndex - 1]?._id };
+            //     }
+            // }
 
             /**
              * Check if next page is available
@@ -2544,13 +2545,14 @@ export const getInvoices = async (req: Request, res: Response) => {
 
             return res.json({
                 status: Status.Success,
-                total: allInvoices?.length ?? 0,
+                // total: allInvoices?.length ?? 0,
+                total: allInvoices[0]?.count,
                 unsyncedInvoices,
                 invoices,
                 pagination: {
                     nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)) : null,
                     previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null,
-                    lastPageCursor: lastPageCursor ? helper.toCursorHash(JSON.stringify(lastPageCursor)) : null,
+                    // lastPageCursor: lastPageCursor ? helper.toCursorHash(JSON.stringify(lastPageCursor)) : null,
                     pageSize: params.pageSize || null
                 },
                 // sort: {
