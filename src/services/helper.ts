@@ -28,7 +28,7 @@ export const fromCursorHash = (str: string): string => {
  */
 export const roundTwoDecimal = (num: number): number => {
 
-    if (!num) { return; }
+    if (!num) { return 0; }
 
     return Math.round(num * 100) / 100;
 }
