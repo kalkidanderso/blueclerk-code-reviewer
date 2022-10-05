@@ -405,6 +405,9 @@ export const Validations = {
 
   getInvoices: [
     check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
     check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
     check('isVoid').optional().isBoolean().toBoolean().withMessage('isVoid has to be boolean'),
     check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')

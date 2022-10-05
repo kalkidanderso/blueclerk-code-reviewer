@@ -9476,17 +9476,89 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "pageSize": {
+                    "type": "number",
+                    "description": "The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default"
+                  },
+                  "nextCursor": {
+                    "type": "string",
+                    "description": "Cursor to go to next page. Use the nextCursor value from the previous response"
+                  },
+                  "previousCursor": {
+                    "type": "string",
+                    "description": "Cursor to go to previous page. Use the previousCursor value from the previous response"
+                  },
                   "keyword": {
                     "type": "string",
                     "description": "Filter invoices by search keyword to Job Id, Customer's name, Job's Subdivision name address, Job's Job Address name address, Job's Technician name, and Job's Contractor name"
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter invoices by start of the issued date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter invoices by end of the issued date"
+                  },
+                  "jobId": {
+                    "type": "string",
+                    "description": "Filter invoices by Job ID"
+                  },
+                  "customerPO": {
+                    "type": "string",
+                    "description": "Filter invoices by P.O. Number"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "Filter invoices by multiple status. Format example: [\"UNPAID\", \"PARTIALLY PAID\", \"PAID\"]"
                   },
                   "customerId": {
                     "type": "string",
                     "description": "Filter invoices by Customer ID"
                   },
-                  "status": {
+                  "customerContactId": {
                     "type": "string",
-                    "description": "Filter invoices by multiple status. Format example: [\"UNPAID\", \"PARTIALLY PAID\", \"PAID\"]"
+                    "description": "Filter invoices by Customer Contact ID"
+                  },
+                  "jobLocationId": {
+                    "type": "string",
+                    "description": "Filter invoices by Subdivision/Job Location ID"
+                  },
+                  "jobAddress": {
+                    "type": "string",
+                    "description": "Filter invoices by Job Address' address"
+                  },
+                  "jobCity": {
+                    "type": "string",
+                    "description": "Filter invoices by Job Address' city"
+                  },
+                  "jobState": {
+                    "type": "string",
+                    "description": "Filter invoices by Job Address' state"
+                  },
+                  "jobZip": {
+                    "type": "string",
+                    "description": "Filter invoices by Job Address' Zip"
+                  },
+                  "technicianId": {
+                    "type": "string",
+                    "description": "Filter invoices by Job's technician"
+                  },
+                  "startAmount": {
+                    "type": "string",
+                    "description": "Filter invoices by Start Amount range"
+                  },
+                  "endAmount": {
+                    "type": "string",
+                    "description": "Filter invoices by End Amount range"
+                  },
+                  "lastEmailStartDate": {
+                    "type": "string",
+                    "description": "Filter invoices by Last Email Send start range"
+                  },
+                  "lastEmailEndDate": {
+                    "type": "string",
+                    "description": "Filter invoices by Last Email Send end range"
                   },
                   "isDraft": {
                     "type": "boolean",
@@ -9499,26 +9571,6 @@
                   "dueDate": {
                     "type": "string",
                     "description": "Filter invoices by dueDate or before"
-                  },
-                  "startDate": {
-                    "type": "string",
-                    "description": "Filter invoices by start of the created date"
-                  },
-                  "endDate": {
-                    "type": "string",
-                    "description": "Filter invoices by end of the created date"
-                  },
-                  "nextCursor": {
-                    "type": "string",
-                    "description": "Cursor to go to next page. Use the nextCursor value from the previous response"
-                  },
-                  "previousCursor": {
-                    "type": "string",
-                    "description": "Cursor to go to previous page. Use the previousCursor value from the previous response"
-                  },
-                  "pageSize": {
-                    "type": "number",
-                    "description": "The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default"
                   }
                 }
               }
