@@ -2257,6 +2257,11 @@ export const getInvoices = async (req: Request, res: Response) => {
     const params = req.body;
     let companyId = req.otherCompanyId || req.companyId;
 
+    // Check if any filter provided to decide whether return all records or not
+    let isAllRecords = await _getIsAllRecordsByParams(params);
+    // Get the date of the last 90 days
+    const last90days = moment().subtract(90, 'days').format();
+
     // Return error when all cursors are provided
     if (params.nextCursor && params.previousCursor) {
         return res.json({ status: Status.Error, message: 'Provided cursor could only be one of either nextCursor or previousCursor.' });
@@ -2264,17 +2269,17 @@ export const getInvoices = async (req: Request, res: Response) => {
 
     // Data query that used to search Invoices and available previous/next page
     const filterQuery: any = {
-        $and: [{
-            $or: [
-                // { contractor: companyId },
-                { company: companyId }
-            ]
-        }]
+        $and: [{ $or: [{ company: companyId }] }]
     };
+
+    // Add the last 90 days filter if need to return all records
+    if (!isAllRecords) {
+        filterQuery['$and'].push({ issuedDate: { $gte: new Date(last90days) } });
+    }
 
     // Check and add if params filter provided
     if (params.keyword) {
-        const keywordRegex = { $regex: params.keyword, $options: 'i' };
+        const keywordRegex = helper.getRegex(params.keyword, 'i');
         filterQuery['$and'].push({
             $or: [
                 { invoiceId: keywordRegex },
@@ -2294,8 +2299,9 @@ export const getInvoices = async (req: Request, res: Response) => {
             ]
         })
     }
-    if (params.customerId) {
-        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+    if (params.invoiceId) {
+        const invoiceIdRegex = helper.getRegex(params.invoiceId, 'i');
+        filterQuery['$and'].push({ invoiceId: invoiceIdRegex });
     }
     if (params.dueDate) {
         const dueDate = moment(params.dueDate).endOf('day').format();
@@ -2304,7 +2310,48 @@ export const getInvoices = async (req: Request, res: Response) => {
     if (params.status) {
         filterQuery['$and'].push({ status: { $in: JSON.parse(params.status) } });
     }
-    // if (params.isDraft !== undefined || params.isDraft !== null) {
+    if (params.startAmount) {
+        filterQuery['$and'].push({ total: { $gte: params.startAmount } });
+    }
+    if (params.endAmount) {
+        filterQuery['$and'].push({ total: { $lte: params.endAmount } });
+    }
+    if (params.customerPO) {
+        const customerPORegex = helper.getRegex(params.customerPO, 'i');
+        filterQuery['$and'].push({ customerPO: customerPORegex });
+    }
+    if (params.customerId) {
+        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+    }
+    if (params.customerContactId) {
+        filterQuery['$and'].push({ customerContactId: new ObjectId(params.customerContactId) });
+    }
+    if (params.jobId) {
+        const jobIdRegex = helper.getRegex(params.jobId, 'i');
+        filterQuery['$and'].push({ 'jobObj.jobId': jobIdRegex });
+    }
+    if (params.jobLocationId) {
+        filterQuery['$and'].push({ 'jobLocationObj._id': new ObjectId(params.jobLocationId) });
+    }
+    if (params.jobAddress) {
+        const jobAddressRegex = helper.getRegex(params.jobAddress, 'i');
+        filterQuery['$and'].push({ 'jobSiteObj.address.street': jobAddressRegex });
+    }
+    if (params.jobCity) {
+        const jobCityRegex = helper.getRegex(params.jobCity, 'i');
+        filterQuery['$and'].push({ 'jobSiteObj.address.city': jobCityRegex });
+    }
+    if (params.jobState) {
+        const jobStateRegex = helper.getRegex(params.jobState, 'i');
+        filterQuery['$and'].push({ 'jobSiteObj.address.state': jobStateRegex });
+    }
+    if (params.jobZip) {
+        const jobZipRegex = helper.getRegex(params.jobZip, 'i');
+        filterQuery['$and'].push({ 'jobSiteObj.address.zipcode': jobZipRegex });
+    }
+    if (params.technicianId) {
+        filterQuery['$and'].push({ 'jobObj.tasks.technician': new ObjectId(params.technicianId) });
+    }
     switch (params.isDraft) {
         case true:
             filterQuery['$and'].push({ isDraft: params.isDraft });
@@ -2318,7 +2365,6 @@ export const getInvoices = async (req: Request, res: Response) => {
             filterQuery['$and'].push({ isDraft: { $ne: true } });
             break;
     }
-
     switch (params.isVoid) {
         case true:
             filterQuery['$and'].push({ isVoid: params.isVoid });
@@ -2332,11 +2378,15 @@ export const getInvoices = async (req: Request, res: Response) => {
             filterQuery['$and'].push({ isVoid: { $ne: true } });
             break;
     }
-    // }
     if (params.startDate && params.endDate) {
         const startDate = moment(params.startDate).format('YYYY-MM-DD');
         const endDate = moment(params.endDate).format('YYYY-MM-DD');
-        filterQuery['$and'].push({ createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) } });
+        filterQuery['$and'].push({ issuedDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
+    }
+    if (params.lastEmailStartDate && params.lastEmailEndDate) {
+        const lastEmailStartDate = moment(params.lastEmailStartDate).format('YYYY-MM-DD');
+        const lastEmailEndDate = moment(params.lastEmailEndDate).format('YYYY-MM-DD');
+        filterQuery['$and'].push({ lastEmailSent: { $gtw: new Date(lastEmailStartDate), $ltw: new Date(lastEmailEndDate) } });
     }
 
     // Deep clone filterQuery
@@ -2375,192 +2425,198 @@ export const getInvoices = async (req: Request, res: Response) => {
     }
 
     // Construct aggreate lookups here to be used multiple times
-    const aggregateLookups = [
-        { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
-        { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
-        { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
-        { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
-        { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
-        { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } }
-    ]
+    let aggregateLookups: any[] = [];
+    if (isAllRecords) {
+        aggregateLookups = [
+            { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
+            { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
+            { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
+            { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
+            { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
+            { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } }
+        ]
+    }
 
     // Filter jobs using aggregate to be search to another collection
-    const invoicesAggregate: IInvoice[] = await Invoice.aggregate([
+    let invoices: IInvoice[] = await Invoice.aggregate([
         ...aggregateLookups,
         { $match: { ...query } },
-        { $project: { _id: 1, createdAt: 1 } },
         { $sort: sortQuery },
-        { $limit: params.pageSize || DefaultPageSize }
+        { $limit: params.pageSize || DefaultPageSize },
+        { $project: { jobObj: 0, customerObj: 0, jobLocationObj: 0, jobSiteObj: 0, technicianObj: 0, contractorsObj: 0 } },
     ]);
-    // Map the Invoice IDs filtered
-    const invoiceIds = invoicesAggregate.map((invoice) => invoice._id);
 
-    Invoice.find({ _id: { $in: invoiceIds } })
-        .sort({ ...sortQuery })
-        .populate({
-            path: 'job',
-            populate: [
-                { path: 'type', select: 'title description sku' },
-                // TODO: To be deprecated
-                { path: 'tasks.jobType', select: 'title description sku' },
-                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
-                { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
-                // TODO: To be deprecated
-                { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
-                // TODO: To be deprecated
-                { path: 'contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
-                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
-                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
-                { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
-                { path: 'jobLocation', select: 'name location address' },
-                { path: 'jobSite', select: 'name location address' }
-            ],
-        })
-        .populate({
-            path: 'purchaseOrder',
-            select: 'purchaseOrderId items equipment status estimate note total',
-            populate: [
-                { path: 'equipment', select: 'info maintenance type brand', populate: [{ path: 'type', select: 'title' }, { path: 'brand', select: 'title' }] },
-                { path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price' }
-            ]
-        })
-        .populate({
-            path: 'paymentTerm',
-            select: '-company -__v'
-        })
-        .populate({
-            path: 'customerContactId',
-            select: '-__v'
-        })
-        .populate({
-            path: 'items.item',
-            select: 'name description sku isFixed charges tax',
-            populate: [{ path: 'jobType' }]
-        })
-        .populate({
-            path: 'company',
-            select: 'info.companyName info.logoUrl info.companyEmail permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax'
-        })
-        .populate({
-            path: 'customer',
-            select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail'
-        })
-        .populate({
-            path: 'estimate',
-            select: 'total items note status customer company createdAt createdBy'
-        })
-        .populate({
-            path: 'createdBy',
-            select: 'info.companyName auth.email profile.displayName permissions.role address contact.phone'
-        })
-        .exec(async (err: any, invoices: IInvoice[]) => {
+    // Populate the invoices from aggregate
+    await Invoice.populate(invoices, [
+        { path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks' },
+        { path: 'paymentTerm', select: 'name dueDays' },
+        { path: 'customer', select: 'info.email auth.email profile address contact vendorId contactName contactEmail' },
+    ]);
 
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            }
+    // // Filter jobs using aggregate to be search to another collection
+    // const invoicesAggregate: IInvoice[] = await Invoice.aggregate([
+    //     ...aggregateLookups,
+    //     { $match: { ...query } },
+    //     { $project: { _id: 1, createdAt: 1 } },
+    //     { $sort: sortQuery },
+    //     { $limit: params.pageSize || DefaultPageSize }
+    // ]);
+    // // Map the Invoice IDs filtered
+    // const invoiceIds = invoicesAggregate.map((invoice) => invoice._id);
 
-            // Because we reverse sort for previous page, we need to revert it back
-            if (params.previousCursor) {
-                invoices = invoices.reverse();
-            }
+    // Invoice.find({ _id: { $in: invoiceIds } })
+    //     .sort({ ...sortQuery })
+    //     .populate({
+    //         path: 'job',
+    //         populate: [
+    //             { path: 'type', select: 'title description sku' },
+    //             // TODO: To be deprecated
+    //             // { path: 'tasks.jobType', select: 'title description sku' },
+    //             { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+    //             { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
+    //             // TODO: To be deprecated
+    //             // { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+    //             // TODO: To be deprecated
+    //             // { path: 'contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
+    //             { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+    //             { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
+    //             { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
+    //             { path: 'jobLocation', select: 'name location address' },
+    //             { path: 'jobSite', select: 'name location address' }
+    //         ],
+    //     })
+    //     .populate({
+    //         path: 'purchaseOrder',
+    //         select: 'purchaseOrderId items equipment status estimate note total',
+    //         populate: [
+    //             { path: 'equipment', select: 'info maintenance type brand', populate: [{ path: 'type', select: 'title' }, { path: 'brand', select: 'title' }] },
+    //             { path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price' }
+    //         ]
+    //     })
+    //     .populate({ path: 'paymentTerm', select: 'name dueDays' })
+    //     .populate({ path: 'customerContactId', select: 'name phone email' })
+    //     .populate({
+    //         path: 'items.item',
+    //         select: 'name description sku isFixed charges tax',
+    //         populate: [{ path: 'jobType', select: 'title description sku' }]
+    //     })
+    //     .populate({
+    //         path: 'company',
+    //         select: 'info.companyName info.logoUrl info.companyEmail permissions.role address contact'
+    //     })
+    //     .populate({
+    //         path: 'customer',
+    //         select: 'info.email auth.email profile address contact vendorId contactName contactEmail'
+    //     })
+    //     .populate({
+    //         path: 'estimate',
+    //         select: 'total items note status customer company createdAt createdBy'
+    //     })
+    //     .populate({
+    //         path: 'createdBy',
+    //         select: 'info.companyName auth.email profile.displayName permissions.role address contact.phone'
+    //     })
+    //     .exec(async (err: any, invoices: IInvoice[]) => {
 
-            /**
-             * Get all total invoices
-             */
-            const allInvoices = await Invoice.aggregate([
-                ...aggregateLookups,
-                { $match: { ...filterQuery } },
-                { $count: 'count' }
-                // { $sort: sortQuery }
-            ])
+    // Because we reverse sort for previous page, we need to revert it back
+    if (params.previousCursor) {
+        invoices = invoices.reverse();
+    }
 
-            /**
-             * Get last page cursor
-             */
-            // const lastDivider = (params.pageSize || DefaultPageSize);
-            // const lastModulo = allInvoices?.length % lastDivider;
-            // const lastIndex = allInvoices?.length - ((lastModulo == 0) ? lastDivider : lastModulo);
+    /**
+     * Get all total invoices
+     */
+    const allInvoices = await Invoice.aggregate([
+        ...aggregateLookups,
+        { $match: { ...filterQuery } },
+        { $count: 'count' }
+        // { $sort: sortQuery }
+    ])
 
-            // let lastPageCursor;
-            // if (lastIndex) {
-            //     if (params.previousCursor) {
-            //         let reverseAllInv = allInvoices.reverse();
-            //         lastPageCursor = { createdAt: reverseAllInv[lastIndex - 1]?.createdAt, _id: reverseAllInv[lastIndex - 1]?._id };
-            //     } else {
-            //         lastPageCursor = { createdAt: allInvoices[lastIndex - 1]?.createdAt, _id: allInvoices[lastIndex - 1]?._id };
-            //     }
-            // }
+    /**
+     * Get last page cursor
+     */
+    // const lastDivider = (params.pageSize || DefaultPageSize);
+    // const lastModulo = allInvoices?.length % lastDivider;
+    // const lastIndex = allInvoices?.length - ((lastModulo == 0) ? lastDivider : lastModulo);
 
-            /**
-             * Check if next page is available
-             */
-            let nextCursor = { createdAt: invoices[invoices.length - 1]?.createdAt, _id: invoices[invoices.length - 1]?._id };
-            // Deep clone filterQuery
-            const nextPageQuery: any = { $and: [] };
-            filterQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
-            // To be added with the pagination for the previous page
-            nextPageQuery['$and'].push({
-                $or: [
-                    { createdAt: { $lt: new Date(nextCursor.createdAt) } },
-                    { createdAt: new Date(nextCursor.createdAt), _id: { $lt: nextCursor._id } }
-                ]
-            });
-            const isNextPage = await Invoice.aggregate([
-                ...aggregateLookups,
-                { $match: { ...nextPageQuery } },
-                { $project: { _id: 1, createdAt: 1 } },
-                { $sort: { createdAt: -1, _id: -1 } },
-                { $limit: 1 }
-            ]);
+    // let lastPageCursor;
+    // if (lastIndex) {
+    //     if (params.previousCursor) {
+    //         let reverseAllInv = allInvoices.reverse();
+    //         lastPageCursor = { createdAt: reverseAllInv[lastIndex - 1]?.createdAt, _id: reverseAllInv[lastIndex - 1]?._id };
+    //     } else {
+    //         lastPageCursor = { createdAt: allInvoices[lastIndex - 1]?.createdAt, _id: allInvoices[lastIndex - 1]?._id };
+    //     }
+    // }
 
-            /**
-             * Check if previous page is availabe
-             */
-            let previousCursor = { createdAt: invoices[0]?.createdAt, _id: invoices[0]?._id };
-            // Deep clone filterQuery
-            const previousPageQuery: any = { $and: [] };
-            filterQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
-            // To be added with the pagination for the previous page
-            previousPageQuery['$and'].push({
-                $or: [
-                    { createdAt: { $gt: new Date(previousCursor.createdAt) } },
-                    { createdAt: new Date(previousCursor.createdAt), _id: { $gt: previousCursor._id } }
-                ]
-            });
-            const isPreviousPage = await Invoice.aggregate([
-                ...aggregateLookups,
-                { $match: { ...previousPageQuery } },
-                { $project: { _id: 1, createdAt: 1 } },
-                { $sort: { createdAt: 1, _id: 1 } },
-                { $limit: 1 }
-            ]);
+    /**
+     * Check if next page is available
+     */
+    let nextCursor = { createdAt: invoices[invoices.length - 1]?.createdAt, _id: invoices[invoices.length - 1]?._id };
+    // Deep clone filterQuery
+    const nextPageQuery: any = { $and: [] };
+    filterQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
+    // To be added with the pagination for the previous page
+    nextPageQuery['$and'].push({
+        $or: [
+            { createdAt: { $lt: new Date(nextCursor.createdAt) } },
+            { createdAt: new Date(nextCursor.createdAt), _id: { $lt: nextCursor._id } }
+        ]
+    });
+    const isNextPage = await Invoice.aggregate([
+        ...aggregateLookups,
+        { $match: { ...nextPageQuery } },
+        { $sort: { createdAt: -1, _id: -1 } },
+        { $limit: 1 }
+    ]);
 
-            // Retrieve number of the unsynced invoices
-            const unsyncedInvoices = await Invoice.find({
-                company: companyId,
-                isDraft: { $ne: true },
-                isVoid: { $ne: true },
-                quickbookId: null
-            })?.countDocuments();
+    /**
+     * Check if previous page is availabe
+     */
+    let previousCursor = { createdAt: invoices[0]?.createdAt, _id: invoices[0]?._id };
+    // Deep clone filterQuery
+    const previousPageQuery: any = { $and: [] };
+    filterQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
+    // To be added with the pagination for the previous page
+    previousPageQuery['$and'].push({
+        $or: [
+            { createdAt: { $gt: new Date(previousCursor.createdAt) } },
+            { createdAt: new Date(previousCursor.createdAt), _id: { $gt: previousCursor._id } }
+        ]
+    });
+    const isPreviousPage = await Invoice.aggregate([
+        ...aggregateLookups,
+        { $match: { ...previousPageQuery } },
+        { $sort: { createdAt: 1, _id: 1 } },
+        { $limit: 1 }
+    ]);
 
-            return res.json({
-                status: Status.Success,
-                // total: allInvoices?.length ?? 0,
-                total: allInvoices[0]?.count,
-                unsyncedInvoices,
-                invoices,
-                pagination: {
-                    nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)) : null,
-                    previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null,
-                    // lastPageCursor: lastPageCursor ? helper.toCursorHash(JSON.stringify(lastPageCursor)) : null,
-                    pageSize: params.pageSize || null
-                },
-                // sort: {
-                //     by: params.sortBy,
-                //     order: params.sortOrder
-                // }
-            });
-        })
+    // Retrieve number of the unsynced invoices
+    const unsyncedInvoices = await Invoice.find({
+        company: companyId,
+        isDraft: { $ne: true },
+        isVoid: { $ne: true },
+        quickbookId: null
+    })?.countDocuments();
+
+    return res.json({
+        status: Status.Success,
+        // total: allInvoices?.length ?? 0,
+        total: allInvoices[0]?.count,
+        unsyncedInvoices,
+        invoices,
+        pagination: {
+            nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)) : null,
+            previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null,
+            // lastPageCursor: lastPageCursor ? helper.toCursorHash(JSON.stringify(lastPageCursor)) : null,
+            pageSize: params.pageSize || null
+        },
+        // sort: {
+        //     by: params.sortBy,
+        //     order: params.sortOrder
+        // }
+    });
 
 }
 
@@ -3802,4 +3858,42 @@ export const generateInvoicePdf = async (req: Request, res: Response) => {
     await _generateInvoicePdf(company, invoice);
     const invoiceUrl = await uploadFileInS3(filepath, 'pdf');
     return res.json({ status: Status.Success, message: 'Invoice Successfully Generated', invoiceUrl: invoiceUrl });
+}
+
+// PARTIAL METHODS
+
+/**
+ * Partial method to check whether or not need to retrieve all record,
+ * if no filter provided, BE will return the last 90 days records,
+ * otherwise, all records shall be returned
+ */
+const _getIsAllRecordsByParams = async (params: any): Promise<boolean> => {
+    // Default is only send the last 90 days records
+    let isAllRecords = false;
+
+    if (
+        params.keyword ||
+        params.invoiceId ||
+        params.dueDate ||
+        // params.status ||
+        (params.startAmount && params.endAmount) ||
+        params.customerPO ||
+        params.customerId ||
+        params.customerContactId ||
+        params.jobId ||
+        params.jobLocationId ||
+        params.jobAddress ||
+        params.jobCity ||
+        params.jobState ||
+        params.jobZip ||
+        params.technicianId ||
+        // (params.isDraft !== undefined && params.isDraft !== null) ||
+        // (params.isVoid !== undefined && params.isVoid !== null) ||
+        (params.startDate && params.endDate) ||
+        (params.lastEmailStartDate && params.lastEmailEndDate)
+    ) {
+        isAllRecords = true;
+    }
+
+    return isAllRecords;
 }

@@ -40,3 +40,12 @@ export const roundTwoDecimal = (num: number): number => {
  export const waitTimer = (ms: any) => {
     return new Promise(res => setTimeout(res, ms));
 }
+
+/**
+ * @description To construct regex syntax for database query usage
+ * @param str
+ * @param regexOption optional additional regex option
+ */
+export const getRegex = (str: string, regexOption: string): { $regex: string, $options: string } => {
+    return { $regex: str, $options: regexOption };
+}
