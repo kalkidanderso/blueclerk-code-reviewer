@@ -1434,8 +1434,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                         let taxAmount: number = 0;
                         let subTotalBeforeTax: number = 0;
                         let total: number = 0;
-                        let balanceDue = invoice.balanceDue ?? invoice.total;
                         let paymentApplied = invoice.paymentApplied ?? 0;
+                        let balanceDue = invoice.balanceDue ?? (invoice.total - paymentApplied) ?? invoice.total;
                         let paid = invoice.paid;
                         let status = invoice.status;
                         const oldTotal = invoice.total;
@@ -1519,7 +1519,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                         balanceDue += (total - oldTotal);
 
                         // Check if invoice updated and several conditions met
-                        if (balanceDue <= 0) {
+                        if (balanceDue <= 0 || (paymentApplied >= invoice.total)) {
                             /**
                              * Invoice updated to the point balanceDue paid off or even minus,
                              * if minus, will put the extra payment to cust's credit,
@@ -1660,8 +1660,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                 let taxAmount: number = 0;
                 let subTotalBeforeTax: number = 0;
                 let total: number = 0;
-                let balanceDue = invoice.balanceDue ?? invoice.total;
                 let paymentApplied = invoice.paymentApplied ?? 0;
+                let balanceDue = invoice.balanceDue ?? (invoice.total - paymentApplied) ?? invoice.total;
                 let paid = invoice.paid;
                 let status = invoice.status;
                 const oldTotal = invoice.total;
@@ -1729,7 +1729,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                 balanceDue += (total - oldTotal);
 
                 // Check if invoice updated and several conditions met
-                if (balanceDue <= 0) {
+                if (balanceDue <= 0 || (paymentApplied >= invoice.total)) {
                     /**
                      * Invoice updated to the point balanceDue paid off or even minus,
                      * if minus, will put the extra payment to cust's credit,
