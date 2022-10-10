@@ -21,8 +21,9 @@ import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor } from '..
  * customer's balance and credit
  */
 export const _calculateInvoiceBalance = async (invoice: IInvoice, customer: ICustomer, amountPaid: number): Promise<void> => {
+
     // Check and set invoice balanceDue if not found
-    invoice.balanceDue = invoice.balanceDue ?? invoice.total;
+    invoice.balanceDue = invoice.balanceDue ?? (invoice.total - invoice.paymentApplied) ?? invoice.total;
 
     // Handle invoice balance due, underpayment, and overpayment
     if (amountPaid >= invoice.balanceDue) {
@@ -1495,11 +1496,15 @@ export const _handleVoidPayment = async (paymentType: string, invoiceIds: string
 
                 // Set default paymentApplied and balanceDue if not exist on old invoice
                 invoice.paymentApplied = invoice.paymentApplied ? invoice.paymentApplied : 0;
-                invoice.balanceDue = invoice.balanceDue ? invoice.balanceDue : invoice.total - invoice.paymentApplied;
+                invoice.balanceDue = invoice.balanceDue ?? (invoice.total - invoice.paymentApplied) ?? invoice.total;
 
                 // Revert back invoice balanceDue and paymentApplied for PaymentCustomer
                 invoice.balanceDue += paymentLine?.amountPaid ?? payment.amountPaid;
                 invoice.paymentApplied -= paymentLine?.amountPaid ?? payment.amountPaid;
+
+                // Set limit to balance due and payment applied
+                invoice.paymentApplied = invoice.paymentApplied < 0 ? 0 : invoice.paymentApplied;
+                invoice.balanceDue = invoice.balanceDue > invoice.total ? invoice.total : invoice.balanceDue;
 
                 if (invoice.balanceDue > 0) {
                     invoice.paid = false;
