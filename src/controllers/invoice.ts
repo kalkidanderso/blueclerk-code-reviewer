@@ -1891,7 +1891,7 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
 
     const params = req.query;
     const company = <ICompany>req.company;
-    let invoice, invoices, customer;
+    let invoice, invoices, customer, job;
 
     switch (params.emailType) {
         case EmailTypes.INVOICES:
@@ -1926,6 +1926,12 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
                 .populate({
                     path: 'customer',
                     select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+                })
+                .populate({ path: 'customerContactId', select: 'name email phone' })
+                .populate({
+                    path: 'job',
+                    select: 'customerContactId',
+                    populate: [{ path: 'customerContactId', select: 'name email phone'}]
                 });
 
             if (!invoice) {
@@ -1933,6 +1939,7 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
             }
 
             customer = <ICustomer>invoice?.customer;
+            job = <IJob>invoice?.job;
             break;
     }
 
@@ -1955,7 +1962,7 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     await transformPlaceholders(emailDefault);
 
     // Get available placeholder values for Invoice email template
-    const { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_total_amount, invoice_due_date } = await getPlaceholderValues({ company, invoice, invoices, customer });
+    const { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_total_amount, invoice_due_date } = await getPlaceholderValues({ company, invoice, invoices, customer, job });
 
     return res.json({
         status: Status.Success,

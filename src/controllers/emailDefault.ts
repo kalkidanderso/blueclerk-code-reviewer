@@ -7,6 +7,8 @@ import { IUser } from '../models/User';
 import { ICustomer } from '../models/Customer';
 import { IInvoice } from '../models/Invoice';
 import { IEmailDefault, DefaultEmailTemplate, DefaultInvoicesEmailTemplate, EmailDefault, EmailTypes, DefaultIncomReportEmailTemplate } from '../models/EmailDefault';
+import { IJob } from 'src/models/Job';
+import { IContact } from 'src/common/contact';
 
 
 export const getCompanyEmailDefault = async (req: Request, res: Response) => {
@@ -75,19 +77,25 @@ export const getPlaceholderValues = async ({
     invoice,
     invoices,
     customer,
+    job,
     dateRange
 }: {
     company: ICompany,
     invoice?: IInvoice,
     invoices?: IInvoice[],
     customer?: ICustomer,
+    job?: IJob,
     dateRange?: string
 }): Promise<any> => {
+
+    // Get invoice and job contact if exist for the recipient
+    const invoiceContact = <IContact>invoice?.customerContactId;
+    const jobContact = <IContact>job?.customerContactId;
 
     const company_name = company.info?.companyName ?? '';
     const company_email = company.info?.companyEmail ?? '';
     const customer_name = customer?.profile?.displayName ?? '';
-    const customer_email = customer?.info?.email ?? '';
+    const customer_email = invoiceContact?.email ?? jobContact?.email ?? customer?.info?.email ?? '';
     const invoice_number = invoice?.invoiceId ?? '';
     const invoice_amount = `$${invoice?.total ?? ''}`;
     const invoice_due_date = moment(invoice?.dueDate ?? '').format('MMMM DD, YYYY');
