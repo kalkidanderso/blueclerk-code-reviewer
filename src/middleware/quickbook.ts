@@ -9,6 +9,10 @@ export const refreshQBToken = () => {
     return async (req: Request, res: Response, next: NextFunction) => {
         const company = <ICompany>req.company;
         const { QB_ENVIRONMENT, QB_CLIENT_ID, QB_CLIENT_SECRET, QB_REDIRECT_URI } = process.env;
+
+        if (!company.qbAuthorized) {
+            return next();
+        }
     
         var oauthClient = new OAuthClient({
             clientId: QB_CLIENT_ID,
