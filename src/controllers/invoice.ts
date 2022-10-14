@@ -1519,7 +1519,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                         balanceDue += (total - oldTotal);
 
                         // Check if invoice updated and several conditions met
-                        if (balanceDue <= 0 || (paymentApplied >= invoice.total)) {
+                        if (balanceDue <= 0 || (paymentApplied >= total)) {
                             /**
                              * Invoice updated to the point balanceDue paid off or even minus,
                              * if minus, will put the extra payment to cust's credit,
@@ -1721,7 +1721,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                 balanceDue += (total - oldTotal);
 
                 // Check if invoice updated and several conditions met
-                if (balanceDue <= 0 || (paymentApplied >= invoice.total)) {
+                if (balanceDue <= 0 || (paymentApplied >= total)) {
                     /**
                      * Invoice updated to the point balanceDue paid off or even minus,
                      * if minus, will put the extra payment to cust's credit,
