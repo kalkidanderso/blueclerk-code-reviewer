@@ -2,7 +2,8 @@ import mongoose, { Document, Schema } from "mongoose";
 import { ICompany } from "../models/Company";
 
 export enum ReportTypes {
-    INCOME = 1
+    INCOME = 1,
+    ACCOUNT_RECEIVABLE = 2
 }
 
 export enum ReportData {
