@@ -17,6 +17,7 @@ import { ReportTypes, ReportData, ReportSources, IncomeReport, MemorizedReport, 
 
 import { getPlaceholderValues, transformPlaceholders, _createCompanyDefaultEmail } from '../controllers/emailDefault';
 import { downloadFileToPath } from '../controllers/invoice';
+import { _standardAccountReceivableReport } from '../controllers/report.ar';
 
 
 /**
@@ -36,7 +37,7 @@ export const generateIncomeReport = async (req: Request, res: Response) => {
 
         case ReportData.STANDARD:
         default:
-            incomeReport = await _standartIncomeReport(companyId, params);
+            incomeReport = await _standardIncomeReport(companyId, params);
             break;
     }
 
@@ -45,6 +46,37 @@ export const generateIncomeReport = async (req: Request, res: Response) => {
         reportType: ReportTypes.INCOME,
         reportData: params.reportData,
         report: incomeReport,
+        filter: {
+            ...params,
+            customerIds: params.customerIds && JSON.parse(params.customerIds)
+        }
+    });
+
+}
+
+/**
+ * Generate Report with reportType 2 (ACCOUNT_RECEIVABLE)
+ */
+export const generateAccountReceivableReport = async (req: Request, res: Response) => {
+
+    const params = req.query;
+    const companyId = req.companyId;
+    let accountReceivableReport;
+
+    // Generate the income report based on which that requests by user
+    switch (params.reportData) {
+        case ReportData.CUSTOM:
+        case ReportData.STANDARD:
+        default:
+            accountReceivableReport = await _standardAccountReceivableReport(companyId, params);
+            break;
+    }
+
+    return res.json({
+        status: Status.Success,
+        reportType: ReportTypes.ACCOUNT_RECEIVABLE,
+        reportData: params.reportData,
+        report: accountReceivableReport,
         filter: {
             ...params,
             customerIds: params.customerIds && JSON.parse(params.customerIds)
@@ -351,7 +383,7 @@ export const sendIncomeReportEmail = async (req: Request, res: Response) => {
  * Generate standard income report,
  * where only return the total amount, customers count, and jobs count
  */
-const _standartIncomeReport = async (companyId: string, params: any): Promise<{ totalIncome: number, customerCount: number, jobCount: number }> => {
+const _standardIncomeReport = async (companyId: string, params: any): Promise<{ totalIncome: number, customerCount: number, jobCount: number }> => {
 
     // Call the generic function to generate the basic income report
     const { totalIncomeAggregate, customersAggregate, jobsAggregate } = await _generateIncomeReport(companyId, params);
@@ -554,7 +586,7 @@ export const _generateIncomeReportPdf = async ({
 
         case ReportData.STANDARD:
         default:
-            incomeReport = await _standartIncomeReport(company._id, params);
+            incomeReport = await _standardIncomeReport(company._id, params);
             break;
     }
 
