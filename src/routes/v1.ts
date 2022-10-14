@@ -2451,6 +2451,16 @@ export default function (sio: any) {
     )
 
     router.get(
+        '/generateAccountReceivableReport',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateAccountReceivableReport),
+        reportController.generateAccountReceivableReport
+    )
+
+    router.get(
         '/getMemorizedReports',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),

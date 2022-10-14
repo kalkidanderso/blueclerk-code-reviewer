@@ -12028,6 +12028,54 @@
         ]
       }
     },
+    "/generateAccountReceivableReport": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To generate standard and custom account receivable report",
+        "parameters": [
+          {
+            "name": "reportData",
+            "in": "query",
+            "required": true,
+            "description": "1 => Standard Report; 2 => Custom Report",
+            "schema": {
+              "type": "number",
+              "enum": [
+                1,
+                2
+              ]
+            }
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "description": "To generate A/R Report as of certain date",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getMemorizedReports": {
       "get": {
         "tags": [
