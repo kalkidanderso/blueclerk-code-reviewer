@@ -17,7 +17,7 @@ import { ReportTypes, ReportData, ReportSources, IncomeReport, MemorizedReport, 
 
 import { getPlaceholderValues, transformPlaceholders, _createCompanyDefaultEmail } from '../controllers/emailDefault';
 import { downloadFileToPath } from '../controllers/invoice';
-import { _standardAccountReceivableReport } from '../controllers/report.ar';
+import { _customAccountReceivableReport, _standardAccountReceivableReport } from '../controllers/report.ar';
 
 
 /**
@@ -66,6 +66,9 @@ export const generateAccountReceivableReport = async (req: Request, res: Respons
     // Generate the income report based on which that requests by user
     switch (params.reportData) {
         case ReportData.CUSTOM:
+            accountReceivableReport = await _customAccountReceivableReport(companyId, params);
+            break;
+
         case ReportData.STANDARD:
         default:
             accountReceivableReport = await _standardAccountReceivableReport(companyId, params);
