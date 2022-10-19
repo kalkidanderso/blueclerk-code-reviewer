@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import { Role, AccountTypes } from '../common/constants'
 import bcrypt from "bcrypt-nodejs"
 import moment from 'moment'
+import { ICommissionHistoryItems } from './Company';
 
 export interface IUser extends Document {
 
@@ -49,6 +50,8 @@ export interface IUser extends Document {
     balance: number,
     credit: number,
     commission: number,
+    commissionEffectiveDate?: Date,
+    commissionHistory?: ICommissionHistoryItems[]
 
     hashPassword: (password: string, next: (err?: any, hash?: string)=>void)=>void
     comparePassword: (password: string, next: (isMatch: boolean)=>void)=>void
@@ -141,6 +144,33 @@ const UserSchema = new Schema({
     commission: {
         type: Number,
         default: null
+    },
+    commissionHistory: [
+      {
+        editDate: {
+          type: Date,
+          default: null,
+        },
+        effectiveDate: {
+          type: Date,
+          default: null,
+        },
+        commission: {
+          type: Number,
+          default: null,
+        },
+        editedBy: {
+          id: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+          },
+          displayName: String,
+        },
+      },
+    ],
+    commissionEffectiveDate: {
+      type: Date,
+      default: null,
     },
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
