@@ -2003,16 +2003,13 @@ export default function (sio: any) {
     )
 
      router.get(
-        '/updateCommissionCron',
-        // getCompanyId(),
-        invoiceController.updateCommissionCron
-    )
-    router.get(
-        '/finalizeStripeInvoices',
-        (req, res) => {
-            subscriptionController.finalizeCompanyInvoices(req, res, sio)
+        '/updateCommissionCron',        
+        
+         (req, res) => {
+            invoiceController.updateCommissionCron(req, res)
         }
     )
+   
 
    
 
