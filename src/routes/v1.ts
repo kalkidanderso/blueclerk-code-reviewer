@@ -2007,6 +2007,14 @@ export default function (sio: any) {
         // getCompanyId(),
         invoiceController.updateCommissionCron
     )
+    router.get(
+        '/finalizeStripeInvoices',
+        (req, res) => {
+            subscriptionController.finalizeCompanyInvoices(req, res, sio)
+        }
+    )
+
+   
 
     router.get(
         '/getInvoicesByContractor',

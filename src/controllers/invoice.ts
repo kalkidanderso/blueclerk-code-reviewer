@@ -3749,20 +3749,9 @@ export const updateCommission = async (req: Request, res: Response) => {
 
 export const updateCommissionCron = async (req: Request, res: Response) => {
 
-    const params = req.body;
+    
     let commissionBalance = 0;
-    const today = new Date()
-    // const user = <IUser>req.user
-
-    // const historyObject = {
-    //     editDate: new Date(),
-    //     effectiveDate: params.commission_effective_date,
-    //     commission: params.commission,
-    //     editedBy: {
-    //     id: user._id,
-    //     displayName: user.profile.displayName,
-    //     },
-    // }
+    
     let start = new Date();
     start.setHours(0,0,0,0);
 
@@ -3827,9 +3816,9 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
                      * If invoice commission is not been paid,
                      * update the amount with the new rate
                      */
-                    contractorCommission.commission = params.commission ?? null
+                    contractorCommission.commission = newCommissionObj.commission ?? null
                     const commissionAmount =
-                        ((invoice.total / totalTechnician) * (params.commission ?? 0)) /
+                        ((invoice.total / totalTechnician) * (newCommissionObj.commission ?? 0)) /
                         100
                     contractorCommission.commissionAmount = Number(
                         commissionAmount.toFixed(2),
@@ -3908,9 +3897,9 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
                      * If invoice commission is not been paid,
                      * update the amount with the new rate
                      */
-                    employeeCommission.commission = params.commission ?? null
+                    employeeCommission.commission = newCommissionObj.commission ?? null
                     const commissionAmount =
-                        ((invoice.total / totalTechnician) * (params.commission ?? 0)) /
+                        ((invoice.total / totalTechnician) * (newCommissionObj.commission ?? 0)) /
                         100
                     employeeCommission.commissionAmount = Number(
                         commissionAmount.toFixed(2),
