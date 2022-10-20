@@ -2002,6 +2002,12 @@ export default function (sio: any) {
         invoiceController.updateCommission
     )
 
+     router.get(
+        '/updateCommissionCron',
+        // getCompanyId(),
+        invoiceController.updateCommissionCron
+    )
+
     router.get(
         '/getInvoicesByContractor',
         passport.authenticate('jwt', { session: false }),
