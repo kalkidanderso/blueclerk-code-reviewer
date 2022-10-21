@@ -2393,7 +2393,7 @@ export const getInvoices = async (req: Request, res: Response) => {
     if (params.lastEmailStartDate && params.lastEmailEndDate) {
         const lastEmailStartDate = moment(params.lastEmailStartDate).format('YYYY-MM-DD');
         const lastEmailEndDate = moment(params.lastEmailEndDate).format('YYYY-MM-DD');
-        filterQuery['$and'].push({ lastEmailSent: { $gtw: new Date(lastEmailStartDate), $ltw: new Date(lastEmailEndDate) } });
+        filterQuery['$and'].push({ lastEmailSent: { $gte: new Date(lastEmailStartDate), $lte: new Date(lastEmailEndDate) } });
     }
 
     // Deep clone filterQuery
@@ -3878,11 +3878,15 @@ const _getIsAllRecordsByParams = async (params: any): Promise<boolean> => {
     // Default is only send the last 90 days records
     let isAllRecords = false;
 
+    if (params.recentOnly) {
+        return isAllRecords;
+    }
+
     if (
         params.keyword ||
         params.invoiceId ||
         params.dueDate ||
-        // params.status ||
+        params.status ||
         (params.startAmount && params.endAmount) ||
         params.customerPO ||
         params.customerId ||
@@ -3894,8 +3898,8 @@ const _getIsAllRecordsByParams = async (params: any): Promise<boolean> => {
         params.jobState ||
         params.jobZip ||
         params.technicianId ||
-        // (params.isDraft !== undefined && params.isDraft !== null) ||
-        // (params.isVoid !== undefined && params.isVoid !== null) ||
+        (params.isDraft !== undefined && params.isDraft !== null) ||
+        (params.isVoid !== undefined && params.isVoid !== null) ||
         (params.startDate && params.endDate) ||
         (params.lastEmailStartDate && params.lastEmailEndDate)
     ) {
