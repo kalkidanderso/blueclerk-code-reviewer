@@ -3599,7 +3599,7 @@ export const updateCommission = async (req: Request, res: Response) => {
 
     const historyObject = {
         editDate: new Date(),
-        effectiveDate: params.commission_effective_date,
+        effectiveDate: params.commissionEffectiveDate,
         commission: params.commission,
         editedBy: {
         id: user._id,
@@ -3615,11 +3615,11 @@ export const updateCommission = async (req: Request, res: Response) => {
             }
 
            // Update vendor's commission effective date
-            contractor.commissionEffectiveDate = params.commission_effective_date
+            contractor.commissionEffectiveDate = params.commissionEffectiveDate
 
             //chack if the date is greater than today, if so, do nothing... else, do as you used to..
             if (
-                new Date(params.commission_effective_date).getTime() <= today.getTime()
+                new Date(params.commissionEffectiveDate).getTime() <= today.getTime()
             ) {
                 // Update vendor's commission rate
                 contractor.commission = params.commission ?? null
@@ -3683,10 +3683,10 @@ export const updateCommission = async (req: Request, res: Response) => {
             }
 
             //update employee effective date
-            employee.commissionEffectiveDate = params.commission_effective_date;
+            employee.commissionEffectiveDate = params.commissionEffectiveDate;
             //chack if the date is greater than today, if so, do not update commision... else, do as you used to..
             if (
-                new Date(params.commission_effective_date).getTime() <= today.getTime()
+                new Date(params.commissionEffectiveDate).getTime() <= today.getTime()
             ) {
                 // Update employee's commission rate
                 employee.commission = params.commission ?? null
@@ -3764,9 +3764,9 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
     
     if (contractors?.length > 0) {
         for (const contractor of contractors) {
-            const commission_history = contractor.commissionHistory; 
+            const commissionHistory = contractor.commissionHistory; 
             
-            const newCommissionObj = commission_history.find(item => {
+            const newCommissionObj = commissionHistory.find(item => {
             const itemDate = new Date(item.effectiveDate).setHours(0, 0, 0, 0)
             const today = new Date().setHours(0, 0, 0, 0)
             if (itemDate.valueOf() === today.valueOf()) {
@@ -3781,7 +3781,7 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
             //check if there is any future effective date-->very minimal chance of occurring
 
 
-            const newEffectiveDateObj = commission_history.find(item => {
+            const newEffectiveDateObj = commissionHistory.find(item => {
                 const itemDate = new Date(item.effectiveDate).setHours(0, 0, 0, 0)
                 const today = new Date().setHours(0, 0, 0, 0)
                 if (itemDate.valueOf() > today.valueOf()) {
@@ -3846,9 +3846,9 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
     const employees = await User.find({ commissionEffectiveDate: { $gte: start, $lt: end } }, { commissionEffectiveDate: 1, commission: 1, commissionHistory: 1 });
     if (employees?.length > 0) {
         for (const employee of employees) {
-            const commission_history = employee.commissionHistory; 
+            const commissionHistory = employee.commissionHistory; 
             
-            const newCommissionObj = commission_history.find(item => {
+            const newCommissionObj = commissionHistory.find(item => {
             const itemDate = new Date(item.effectiveDate).setHours(0, 0, 0, 0)
             const today = new Date().setHours(0, 0, 0, 0)
             if (itemDate.valueOf() === today.valueOf()) {
@@ -3863,7 +3863,7 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
             //check if there is any future effective date-->very minimal chance of occurring
 
 
-            const newEffectiveDateObj = commission_history.find(item => {
+            const newEffectiveDateObj = commissionHistory.find(item => {
                 const itemDate = new Date(item.effectiveDate).setHours(0, 0, 0, 0)
                 const today = new Date().setHours(0, 0, 0, 0)
                 if (itemDate.valueOf() > today.valueOf()) {

@@ -635,7 +635,7 @@ paths:
               required:
                 - type
                 - id
-                - commission_effective_date
+                - commissionEffectiveDate
               properties:
                 type:
                   type: string
@@ -648,7 +648,7 @@ paths:
                 commission:
                   type: number
                   description: Send a blank value to make the commission null on database
-                commission_effective_date:
+                commissionEffectiveDate:
                   type: date
                   description: Effective date that the commission will apply
         required: true

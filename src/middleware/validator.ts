@@ -462,7 +462,7 @@ export const Validations = {
 
   updateCommission: [
     check('type').exists().withMessage(Messages.Required),
-    check('commission_effective_date').exists().withMessage(Messages.Required),
+    check('commissionEffectiveDate').exists().withMessage(Messages.Required),
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId),
     check('commission').optional().isInt().withMessage('invalid format')
