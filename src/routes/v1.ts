@@ -2008,10 +2008,7 @@ export default function (sio: any) {
          (req, res) => {
             invoiceController.updateCommissionCron(req, res)
         }
-    )
-   
-
-   
+    )  
 
     router.get(
         '/getInvoicesByContractor',
