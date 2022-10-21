@@ -39,7 +39,7 @@ export const _standardAccountReceivableReport = async (companyId: string, params
  */
 export const _customAccountReceivableReport = async (companyId: string, params: any) => {
 
-    const customers: any[] = [];
+    const customerAgingBuckets: any[] = [];
 
     // Call the generic function to generate the basic AR report
     const { query, totalUnpaid, agingCurrent, aging130, aging3160, aging6190, aging91over } = await _generateAccountReceivableReport(companyId, params);
@@ -51,59 +51,72 @@ export const _customAccountReceivableReport = async (companyId: string, params: 
     const aging130Date = moment.utc(params.asOf).subtract(1, 'days').endOf('day').format();
     const agingCurrentDate = moment.utc(params.asOf).startOf('day').format();
 
+    // To get invoice's total if no balanceDue found for old invoices
+    const balanceDue = { $ifNull: ['$balanceDue', '$total', 0] };
+
     // Get the list of customer that included on the A/R report
     const customerListAggregate = await Invoice.aggregate([
+        { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
         { $match: { ...query } },
         { $sort: { customer: -1, dueDate: 1 } },
-        { $group: {
-            _id: {
-                customer: '$customer',
-                dueDate: { $let: {
-                        vars: { dueDate: "$dueDate" },
-                        in: {
-                            $switch: {
-                                branches: [
-                                    { case: { $lte: [ '$$dueDate', new Date(aging91overDate) ] }, then: '91 and Over Past Due' },
-                                    { case: { $lte: [ '$$dueDate', new Date(aging6190Date) ] }, then: '61 - 90' },
-                                    { case: { $lte: [ '$$dueDate', new Date(aging3160Date) ] }, then: '31 - 60' },
-                                    { case: { $lte: [ "$$dueDate", new Date(aging130Date) ] }, then: '1 - 30' },
-                                    { case: { $gte: [ "$$dueDate", new Date(agingCurrentDate) ] }, then: 'Current' },
-                                ]
+        {
+            $group: {
+                _id: {
+                    customer: '$customer',
+                    dueDate: {
+                        $let: {
+                            vars: { dueDate: "$dueDate" },
+                            in: {
+                                $switch: {
+                                    branches: [
+                                        { case: { $lte: ['$$dueDate', new Date(aging91overDate)] }, then: '91 and Over Past Due' },
+                                        { case: { $lte: ['$$dueDate', new Date(aging6190Date)] }, then: '61 - 90' },
+                                        { case: { $lte: ['$$dueDate', new Date(aging3160Date)] }, then: '31 - 60' },
+                                        { case: { $lte: ["$$dueDate", new Date(aging130Date)] }, then: '1 - 30' },
+                                        { case: { $gte: ["$$dueDate", new Date(agingCurrentDate)] }, then: 'Current' },
+                                    ]
+                                }
                             }
                         }
                     }
-                }
-            },
-            count: { $sum: 1 },
-            totalUnpaid: { $sum: '$balanceDue' },
-            invoices: {
-                $push: {
-                    invoice: '$invoiceId',
-                    dueDate: '$dueDate'
+                },
+                totalUnpaid: { $sum: balanceDue },
+                customer: { $first: '$customerObj' },
+                invoices: {
+                    $push: {
+                        _id: '$_id',
+                        invoiceId: '$invoiceId',
+                        isDraft: '$isDraft',
+                        isVoid: '$isVoid',
+                        issuedDate: '$issuedDate',
+                        dueDate: '$dueDate',
+                        total: { $round: ['$total', 2] },
+                        balanceDue: { $round: [balanceDue, 2] },
+                    }
                 }
             }
-        }}
-    ])
+        }
+    ]);
 
     // Iterate all invoices from customer aggregate
     for (const customerInvoice of customerListAggregate) {
         // Find if the customer already on the customers list
-        const existingCustomer = customers.find(customer => customer?._id?.toString() === customerInvoice?._id?.customer?.toString());
+        const existingCustAB = customerAgingBuckets.find(customerAB => customerAB?.customer._id?.toString() === customerInvoice?._id?.customer?.toString());
 
         // Construct the generic aging bucket content
         const agingBucket = {
             label: customerInvoice?._id?.dueDate,
-            totalUnpaid: customerInvoice?.totalUnpaid,
-            invoices: customerInvoice?.invoices
+            totalUnpaid: roundTwoDecimal(customerInvoice?.totalUnpaid),
+            invoices: customerInvoice?.invoices,
         };
 
-        if (!existingCustomer) {
-            customers.push({
-                _id: customerInvoice?._id?.customer,
+        if (!existingCustAB) {
+            customerAgingBuckets.push({
+                customer: customerInvoice?.customer[0],
                 agingBuckets: [{ ...agingBucket }]
             });
         } else {
-            existingCustomer?.agingBuckets?.push({ ...agingBucket });
+            existingCustAB?.agingBuckets?.push({ ...agingBucket });
         }
     }
 
@@ -116,8 +129,8 @@ export const _customAccountReceivableReport = async (companyId: string, params: 
             aging6190,
             aging91over,
         },
-        customerCount: customers?.length,
-        customers
+        customerCount: customerAgingBuckets?.length,
+        customerAgingBuckets
     };
 
 }
@@ -164,13 +177,16 @@ const _generateAccountReceivableReport = async (companyId: string, params: any) 
     // Aging bucket over 91
     const aging91over = await _getAgingBucket({ id: 5, label: '91 and Over Past Due', asOf, start: 91, query });
 
+    // To get invoice's total if no balanceDue found for old invoices
+    const balanceDue = { $ifNull: ['$balanceDue', '$total'] };
+
     // Get the total unpaid based on filter
     const totalUnpaidAggregate = await Invoice.aggregate([
         { $match: { ...query } },
         {
             $group: {
                 _id: { company: '$company' },
-                totalUnpaid: { $sum: '$balanceDue' }
+                totalUnpaid: { $sum: balanceDue }
             }
         }
     ]);
@@ -209,12 +225,15 @@ const _getAgingBucket = async (
         agingQuery.dueDate['$gte'] = new Date(endDate);
     }
 
+    // To get invoice's total if no balanceDue found for old invoices
+    const balanceDue = { $ifNull: ['$balanceDue', '$total'] };
+
     const agingBucketAggregate = await Invoice.aggregate([
         { $match: { ...agingQuery } },
         {
             $group: {
                 _id: { company: '$company' },
-                totalUnpaid: { $sum: '$balanceDue' }
+                totalUnpaid: { $sum: balanceDue }
             }
         }
     ]);
