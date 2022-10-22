@@ -1,6 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-
 export interface ICommissionHistory extends Document {
     technicianOrContractor: string    
     commission: number
@@ -10,8 +9,6 @@ export interface ICommissionHistory extends Document {
     }
     effectiveDate: Date
 }
-
-
 
 const CommissionHistorySchema = new Schema({
 
@@ -27,7 +24,7 @@ const CommissionHistorySchema = new Schema({
         enum: ['User', 'Company']
     },
 
-     effectiveDate: {
+    effectiveDate: {
         type: Date,
         default: null,
     },
@@ -41,8 +38,7 @@ const CommissionHistorySchema = new Schema({
         ref: 'User',
         },
         displayName: String,
-    },
-   
+    },   
     
 }, { timestamps: { createdAt: true} })
 
