@@ -36,6 +36,7 @@ import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail
 import { IJobSite } from '../models/JobSite';
 import { IJobLocation } from '../models/JobLocation';
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission';
+import { ICommissionHistory, CommissionHistory } from '../models/CommissionHistory';
 import { getDatesFilterQuery } from 'src/services/pagination';
 
 /**
@@ -3597,15 +3598,20 @@ export const updateCommission = async (req: Request, res: Response) => {
     const today = new Date()
     const user = <IUser>req.user
 
-    const historyObject = {
-        editDate: new Date(),
+    
+
+    //insert into commissionHistory
+    const commissionHistory = new CommissionHistory({
+        technicianOrContractor: params.id,
         effectiveDate: params.commissionEffectiveDate,
         commission: params.commission,
         editedBy: {
-        id: user._id,
-        displayName: user.profile.displayName,
+            id: user._id,
+            displayName: user.profile.displayName,
         },
-    }
+    })
+
+    await commissionHistory.save()
 
     switch (params.type) {
         case 'vendor':
@@ -3666,12 +3672,7 @@ export const updateCommission = async (req: Request, res: Response) => {
                 // Update vendor balance and save vendor object
                 contractor.balance = commissionBalance
             } //else part here for commission processing if date is in future
-            /* @TODO
-                commision needs to be updated when the date gets there-- in the else part
-            */
-
-            contractor.commissionHistory.push(historyObject)
-            // contractor.commissionHistory =[]
+            
             await contractor.save();
 
             return res.json({ status: Status.Success, message: 'Commission updated successfully', contractor });
@@ -3732,11 +3733,7 @@ export const updateCommission = async (req: Request, res: Response) => {
                 // Update employee balance and save employee object
                 employee.balance = commissionBalance
             } //else part here for commission processing if date is in future
-            /* @TODO
-                commision needs to be updated when the date gets there-- in the else part
-            */
-
-            employee.commissionHistory.push(historyObject)
+            
             await employee.save();
 
             return res.json({ status: Status.Success, message: 'Commission updated successfully', employee });
