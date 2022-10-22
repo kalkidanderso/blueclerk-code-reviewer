@@ -1,7 +1,8 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ICommissionHistory extends Document {
-    technicianOrContractor: string    
+    technicianOrContractor: string 
+    type:string
     commission: number
     editedBy: {
         id: string
@@ -22,6 +23,10 @@ const CommissionHistorySchema = new Schema({
         type: String,
         required: false,
         enum: ['User', 'Company']
+    },
+    type: {
+        type: String,
+        required: true 
     },
 
     effectiveDate: {
