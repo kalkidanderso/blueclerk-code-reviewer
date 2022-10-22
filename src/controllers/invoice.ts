@@ -3596,9 +3596,7 @@ export const updateCommission = async (req: Request, res: Response) => {
     const params = req.body;
     let commissionBalance = 0;
     const today = new Date()
-    const user = <IUser>req.user
-
-    
+    const user = <IUser>req.user    
 
     //insert into commissionHistory
     const commissionHistory = new CommissionHistory({
@@ -3745,9 +3743,6 @@ export const updateCommission = async (req: Request, res: Response) => {
 }
 
 export const updateCommissionCron = async (req: Request, res: Response) => {
-
-    
-    let commissionBalance = 0;
     
     let start = new Date();
     start.setHours(0,0,0,0);
@@ -3755,83 +3750,63 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
     let end = new Date();
     end.setHours(23, 59, 59, 999);
     
-    // get contractors whole effective date is today
-
-    const contractors = await Company.find({ commissionEffectiveDate: { $gte: start, $lt: end } }, { commissionEffectiveDate: 1, commission: 1, commissionHistory: 1 });
+    // get commission_ histories whole effective date is today
     
-    if (contractors?.length > 0) {
-        for (const contractor of contractors) {
-            const commissionHistory = contractor.commissionHistory; 
-            
-            const newCommissionObj = commissionHistory.find(item => {
-            const itemDate = new Date(item.effectiveDate).setHours(0, 0, 0, 0)
-            const today = new Date().setHours(0, 0, 0, 0)
-            if (itemDate.valueOf() === today.valueOf()) {
-                return item
-            }
+    const commissionHistories = await CommissionHistory.find({ effectiveDate: { $gte: start, $lt: end } })
+    if (commissionHistories?.length > 0) {
+        for (const history of commissionHistories) {
+            let commissionBalance = 0;
+        //    if type is contractor
+            const contractor = await Company.findById(history.technicianOrContractor).exec();
+            if (contractor) {
+                //update that commision
+                contractor.commission = history.commission
+                 // Find if vendor already have invoice commission
+                const contractorInvoiceCommissions = await InvoiceCommission.find({
+                    'technicians.contractor': contractor._id,
+                }).populate('invoice').exec()
+                if (contractorInvoiceCommissions.length) {
+                    // Iterate all invoice commissions
+                    for (const invoiceCommission of contractorInvoiceCommissions) {
+                        const invoice = <IInvoice>invoiceCommission.invoice
+                        const totalTechnician = invoiceCommission?.technicians?.length
+                        const contractorCommission = invoiceCommission?.technicians?.find(
+                        (technician) =>
+                            technician?.contractor?.toString() ===
+                            contractor._id?.toString(),
+                        )
+                        if (!contractorCommission) {
+                        continue
+                        }
 
-            });
-            
-            //update that commision
-            contractor.commission = newCommissionObj.commission;
+                        if (!contractorCommission.paid) {
+                        /**
+                         * If invoice commission is not been paid,
+                         * update the amount with the new rate
+                         */
+                        contractorCommission.commission = history.commission ?? null
+                        const commissionAmount =
+                            ((invoice.total / totalTechnician) * (history.commission ?? 0)) /
+                            100
+                        contractorCommission.commissionAmount = Number(
+                            commissionAmount.toFixed(2),
+                        )
+                        }
 
-            //check if there is any future effective date-->very minimal chance of occurring
-
-
-            const newEffectiveDateObj = commissionHistory.find(item => {
-                const itemDate = new Date(item.effectiveDate).setHours(0, 0, 0, 0)
-                const today = new Date().setHours(0, 0, 0, 0)
-                if (itemDate.valueOf() > today.valueOf()) {
-                    return item
-                }
-
-             });
-
-            if(typeof newEffectiveDateObj !== 'undefined') contractor.commissionEffectiveDate = newEffectiveDateObj?.effectiveDate //UPDATE IF FOUND
-             // Find if vendor already have invoice commission
-            const contractorInvoiceCommissions = await InvoiceCommission.find({
-                'technicians.contractor': contractor._id,
-            })
-                .populate('invoice')
-                .exec()
-            if (contractorInvoiceCommissions.length) {
-                // Iterate all invoice commissions
-                for (const invoiceCommission of contractorInvoiceCommissions) {
-                    const invoice = <IInvoice>invoiceCommission.invoice
-                    const totalTechnician = invoiceCommission?.technicians?.length
-                    const contractorCommission = invoiceCommission?.technicians?.find(
-                    (technician) =>
-                        technician?.contractor?.toString() ===
-                        contractor._id?.toString(),
-                    )
-                    if (!contractorCommission) {
-                    continue
+                        // Recalculate vendor open balance
+                        commissionBalance += contractorCommission.commissionAmount
+                        await invoiceCommission.save()
                     }
-
-                    if (!contractorCommission.paid) {
-                    /**
-                     * If invoice commission is not been paid,
-                     * update the amount with the new rate
-                     */
-                    contractorCommission.commission = newCommissionObj.commission ?? null
-                    const commissionAmount =
-                        ((invoice.total / totalTechnician) * (newCommissionObj.commission ?? 0)) /
-                        100
-                    contractorCommission.commissionAmount = Number(
-                        commissionAmount.toFixed(2),
-                    )
-                    }
-
-                    // Recalculate vendor open balance
-                    commissionBalance += contractorCommission.commissionAmount
-                    await invoiceCommission.save()
-                }
                 }
 
                 // Update vendor balance and save vendor object
                 contractor.balance = commissionBalance
 
-            await contractor.save()
+                await contractor.save()
+            }
+            
+                     
+            
         }
     }
 
@@ -3841,6 +3816,7 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
 
     //do the same for employees
     const employees = await User.find({ commissionEffectiveDate: { $gte: start, $lt: end } }, { commissionEffectiveDate: 1, commission: 1, commissionHistory: 1 });
+    let commissionBalance = 0;
     if (employees?.length > 0) {
         for (const employee of employees) {
             const commissionHistory = employee.commissionHistory; 
@@ -3878,7 +3854,8 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
                 .exec()
                 if (employeeInvoiceCommissions.length) {
                 // Iterate all invoice commissions
-                for (const invoiceCommission of employeeInvoiceCommissions) {
+                    for (const invoiceCommission of employeeInvoiceCommissions) {
+                    
                     const invoice = <IInvoice>invoiceCommission.invoice
                     const totalTechnician = invoiceCommission?.technicians?.length
                     const employeeCommission = invoiceCommission.technicians?.find(
