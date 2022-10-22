@@ -20,7 +20,7 @@ const CommissionHistorySchema = new Schema({
        
     onCollection: {
         type: String,
-        required: true,
+        required: false,
         enum: ['User', 'Company']
     },
 
