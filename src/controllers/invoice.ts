@@ -3743,6 +3743,12 @@ export const updateCommission = async (req: Request, res: Response) => {
 
 }
 
+export const getCommissionHistory = async (req: Request, res: Response) => {
+    const { beneficiaryId } = req.params;
+    const commissionHistories = await CommissionHistory.find({ technicianOrContractor: beneficiaryId })
+    return res.json({ 'status': Status.OK, 'history': commissionHistories })
+}
+
 export const updateCommissionCron = async (req: Request, res: Response) => {
     
     let start = new Date();
