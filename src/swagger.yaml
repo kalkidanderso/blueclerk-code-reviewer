@@ -104,9 +104,7 @@ tags:
   - name: Integration
     description: For creating service ticket via web
   - name: Script
-    description: >-
-      To run script, not to be run frequently. Only use these API if you know
-      what you are doing.
+    description: To run script, not to be run frequently. Only use these API if you know what you are doing.
 paths:
   /login:
     post:
@@ -159,9 +157,7 @@ paths:
                     - 2
                     - 4
                     - 5
-                  description: >-
-                    1 => SERVICE PROVIDER, 2 => BUILDER, 4 => INDEPENDENT
-                    CONTRACTOR, 5 => COMPANY (old company signup)
+                  description: 1 => SERVICE PROVIDER, 2 => BUILDER, 4 => INDEPENDENT CONTRACTOR, 5 => COMPANY (old company signup)
                 email:
                   type: string
                   description: Email address of the user login
@@ -179,14 +175,10 @@ paths:
                   description: Phone number of the user
                 companyName:
                   type: string
-                  description: >-
-                    **REQUIRED when** accountType is 5 (COMPANY) for old company
-                    signup
+                  description: '**REQUIRED when** accountType is 5 (COMPANY) for old company signup'
                 industryId:
                   type: string
-                  description: >-
-                    Id of the selected industry from the industries fetched with
-                    /getIndustries API
+                  description: Id of the selected industry from the industries fetched with /getIndustries API
                 companyId:
                   type: string
                   description: '**REQUIRED when** accountType is 1 (SERVICE PROVIDER)'
@@ -203,15 +195,10 @@ paths:
                   description: Used for Company's employee role
                 isci:
                   type: boolean
-                  description: >-
-                    Abbreviation of 'isContractInvitation', boolean value to
-                    trigger BE to create notification and vendor contract after
-                    the sign up
+                  description: Abbreviation of 'isContractInvitation', boolean value to trigger BE to create notification and vendor contract after the sign up
                 cid:
                   type: string
-                  description: >-
-                    Abbreviation of 'companyId', company that hiring/inviting
-                    the contractor
+                  description: Abbreviation of 'companyId', company that hiring/inviting the contractor
         required: true
       responses:
         '200':
@@ -538,9 +525,7 @@ paths:
       tags:
         - Vendor
       summary: This API used to update contractor email preferences
-      description: >-
-        0 for email everytime a job is scheduled, 1 for once a day at night and
-        2 for no emails. Needs to be logged in as company admin first
+      description: 0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails. Needs to be logged in as company admin first
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -661,6 +646,46 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
+  /getCommissionHistory/{beneficiaryId}:
+    get:
+      tags:
+        - Vendor
+      summary: Retrieve commission history for vendor or employee
+      description: Returns a commission history for the specified vendor/employee id
+      parameters:
+        - name: beneficiaryId
+          in: path
+          description: The id of the vendor or employee to retrieve from the database
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  history:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CommissionHistoryResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  history:
+                    type: array
+      security:
+        - Bearer: []
   /changeContractorPermission:
     post:
       tags:
@@ -755,9 +780,7 @@ paths:
                   type: string
                 industryId:
                   type: string
-                  description: >-
-                    Id of the selected industry from the industries fetched with
-                    /getIndustries api
+                  description: Id of the selected industry from the industries fetched with /getIndustries api
                 socialId:
                   type: string
                   description: Social id from Facebook or Google sdk
@@ -804,9 +827,7 @@ paths:
                   type: string
                 industryId:
                   type: string
-                  description: >-
-                    Id of the selected industry from the industries fetched with
-                    /getIndustries api
+                  description: Id of the selected industry from the industries fetched with /getIndustries api
                 socialId:
                   type: string
                   description: Social id from Facebook or Google sdk
@@ -1261,9 +1282,7 @@ paths:
       tags:
         - Users
       summary: This API used to update employees roles
-      description: >-
-        0 => OFFICE_ADMIN, 1 => TECHNICIAN, 2 => MANAGER, 3 => COMPANY_ADMIN, 4
-        => ADMIN_EMPLOYEE
+      description: 0 => OFFICE_ADMIN, 1 => TECHNICIAN, 2 => MANAGER, 3 => COMPANY_ADMIN, 4 => ADMIN_EMPLOYEE
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -1292,9 +1311,7 @@ paths:
       tags:
         - Users
       summary: This API used to update employee email preferences
-      description: >-
-        0 for email everytime a job is scheduled, 1 for once a day at night and
-        2 for no emails
+      description: 0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -1393,9 +1410,7 @@ paths:
     post:
       tags:
         - Job
-      summary: >-
-        To get all employees other then office admins (technician and manager)
-        and super admin of company
+      summary: To get all employees other then office admins (technician and manager) and super admin of company
       responses:
         '200':
           description: Success
@@ -1553,9 +1568,7 @@ paths:
             type: string
         - name: status
           in: query
-          description: >-
-            Filter by status for the "contract" between Company and Customer
-            (0=PENDING, 1=ACCEPTED, 2=CANCELED, 3=REJECTED, 4=FINISHED)
+          description: Filter by status for the "contract" between Company and Customer (0=PENDING, 1=ACCEPTED, 2=CANCELED, 3=REJECTED, 4=FINISHED)
           schema:
             type: number
             enum:
@@ -1595,9 +1608,7 @@ paths:
                   description: Id of company customer
                 status:
                   type: integer
-                  description: >-
-                    Status for the "contract" (PENDING => 0, ACCEPTED/ACTIVE =>
-                    1, CANCELED => 2, REJECTED => 3, FINISHED => 4)
+                  description: Status for the "contract" (PENDING => 0, ACCEPTED/ACTIVE => 1, CANCELED => 2, REJECTED => 3, FINISHED => 4)
                   enum:
                     - 0
                     - 1
@@ -1818,10 +1829,7 @@ paths:
     post:
       tags:
         - Equipment Type
-      summary: >-
-        To get all equipment types created by a company or company of employee.
-        It will also contain types created by global admin according to
-        industry.
+      summary: To get all equipment types created by a company or company of employee. It will also contain types created by global admin according to industry.
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -1878,9 +1886,7 @@ paths:
     post:
       tags:
         - Equipment Brand
-      summary: >-
-        To get all equipment brands created by a company or company of employee.
-        It will also contain brands created by global admin.
+      summary: To get all equipment brands created by a company or company of employee. It will also contain brands created by global admin.
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -1933,9 +1939,7 @@ paths:
                   type: string
                 contactId:
                   type: string
-                  description: >-
-                    ContactId reference while adding an existing contact to the
-                    job location
+                  description: ContactId reference while adding an existing contact to the job location
                 authorization:
                   type: string
       responses:
@@ -1984,9 +1988,7 @@ paths:
     get:
       tags:
         - Contact
-      summary: >-
-        Returns list of all contacts for the Customer along with Customer's
-        email
+      summary: Returns list of all contacts for the Customer along with Customer's email
       parameters:
         - name: customerId
           in: query
@@ -2150,11 +2152,7 @@ paths:
                   type: string
                 isCustomPrice:
                   type: boolean
-                  description: >-
-                    Toggle for customer to use Item's Tier or Custom Price. This
-                    will be default to false for new customer. Set to false to
-                    let customer use the Item's Tier, set to true to let
-                    customer use the custom price.
+                  description: Toggle for customer to use Item's Tier or Custom Price. This will be default to false for new customer. Set to false to let customer use the Item's Tier, set to true to let customer use the custom price.
                 street:
                   type: string
                 unit:
@@ -2204,11 +2202,7 @@ paths:
                   type: string
                 customPrices:
                   type: string
-                  description: >-
-                    "Json string of the customPrices e.g
-                    [{\"quantity\":1,\"price\":45},{\"quantity\":2,\"price\":85},{\"quantity\":3,\"price\":125},{\"quantity\":4,\"price\":165},{\"quantity\":5,\"price\":206},{\"quantity\":6,\"price\":245}].
-                    The the quantities have to be sufficient, no missing
-                    sequence."
+                  description: '"Json string of the customPrices e.g [{\"quantity\":1,\"price\":45},{\"quantity\":2,\"price\":85},{\"quantity\":3,\"price\":125},{\"quantity\":4,\"price\":165},{\"quantity\":5,\"price\":206},{\"quantity\":6,\"price\":245}]. The the quantities have to be sufficient, no missing sequence."'
         required: true
       responses:
         '200':
@@ -2224,9 +2218,7 @@ paths:
       tags:
         - Customer
       summary: This API used to update customer email preferences
-      description: >-
-        0 for email everytime a job is scheduled, 1 for once a day at night and
-        2 for no emails
+      description: 0 for email everytime a job is scheduled, 1 for once a day at night and 2 for no emails
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -2273,14 +2265,10 @@ paths:
               properties:
                 includeActive:
                   type: boolean
-                  description: >-
-                    Should include active clients in the response. true->include
-                    false->don't include
+                  description: Should include active clients in the response. true->include false->don't include
                 includeNonActive:
                   type: boolean
-                  description: >-
-                    Should include non-active clients in the response.
-                    true->include false->don't include
+                  description: Should include non-active clients in the response. true->include false->don't include
                 companyId:
                   type: string
                   description: Id of company if contractor is hitting for other company
@@ -2380,9 +2368,7 @@ paths:
                   type: string
                 unusedCustomerIds:
                   type: string
-                  description: >-
-                    format: ["6179104d040ff5218f9ca97a",
-                    "6179104d040ff5218f9ca97a"]
+                  description: 'format: ["6179104d040ff5218f9ca97a", "6179104d040ff5218f9ca97a"]'
                 firstName:
                   type: string
                 lastName:
@@ -2406,21 +2392,15 @@ paths:
                   type: string
                 equipments:
                   type: string
-                  description: >-
-                    format: ["617658f41f4688324cb93aa0",
-                    "617658f41f4688324cb93aa1"]
+                  description: 'format: ["617658f41f4688324cb93aa0", "617658f41f4688324cb93aa1"]'
                 jobLocations:
                   type: string
-                  description: >-
-                    format: ["615aa9caa36144102d21bc30",
-                    "615aa9caa36144102d21bc32"]
+                  description: 'format: ["615aa9caa36144102d21bc30", "615aa9caa36144102d21bc32"]'
                 isCustomPrice:
                   type: boolean
                 contacts:
                   type: string
-                  description: >-
-                    format: ["6179104d040ff5218f9ca97a",
-                    "6179104d040ff5218f9ca97a"]
+                  description: 'format: ["6179104d040ff5218f9ca97a", "6179104d040ff5218f9ca97a"]'
                 phone:
                   type: number
       responses:
@@ -2469,19 +2449,13 @@ paths:
                   description: comma seprated image Urls
                 equipmentTypeId:
                   type: string
-                  description: >-
-                    Id of the selected equipment type from the list received in
-                    /getEquipmentTypes api
+                  description: Id of the selected equipment type from the list received in /getEquipmentTypes api
                 equipmentBrandId:
                   type: string
-                  description: >-
-                    Id of the selected equipment brand from the list received in
-                    /getEquipmentBrands api
+                  description: Id of the selected equipment brand from the list received in /getEquipmentBrands api
                 customerId:
                   type: string
-                  description: >-
-                    Id of the selected customer from the list received in
-                    /getCustomers api
+                  description: Id of the selected customer from the list received in /getCustomers api
                 companyId:
                   type: string
                   description: Id of company if contractor is hitting for other company
@@ -2961,9 +2935,7 @@ paths:
                   type: string
                 contact:
                   type: string
-                  description: >-
-                    Example: {name: "Georgianna Streich", phone: "6713291523",
-                    email: "clustertest@getnada.com"}
+                  description: 'Example: {name: "Georgianna Streich", phone: "6713291523", email: "clustertest@getnada.com"}'
                 locationLat:
                   type: string
                 locationLong:
@@ -3180,9 +3152,7 @@ paths:
                   type: string
                 industryId:
                   type: string
-                  description: >-
-                    pass indutry id if you are global admin and make this job
-                    type available for that industry
+                  description: pass indutry id if you are global admin and make this job type available for that industry
         required: true
       responses:
         '200':
@@ -3259,9 +3229,7 @@ paths:
     post:
       tags:
         - Job Type
-      summary: >-
-        To get all job types created by a company or employee of company. It
-        will also contain types created by global admin.
+      summary: To get all job types created by a company or employee of company. It will also contain types created by global admin.
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -3388,11 +3356,7 @@ paths:
       tags:
         - Items
       summary: To update multiple item tier's charge at once
-      description: >-
-        Will update charges for multiple item tier's charge at once or even
-        update one full item. When there are some troubled itemId and/or tierId,
-        BE will return it to the response, showing that those IDs are not being
-        updated and have some problem on it
+      description: Will update charges for multiple item tier's charge at once or even update one full item. When there are some troubled itemId and/or tierId, BE will return it to the response, showing that those IDs are not being updated and have some problem on it
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -3401,15 +3365,7 @@ paths:
               properties:
                 items:
                   type: string
-                  description: >-
-                    Json string of multiple items and only price tiers e.g
-                    [{"itemId":"60884105898eb7068283bfc4","tiers":[{"tierId":"60b7dd9643d3717e9a325c9f","charge":10},{"tierId":"60b7e0598529b3041b284628","charge":20}]},{"itemId":"60b90c8438045631806b8e6d","tiers":[{"tierId":"60b7dd9643d3717e9a325c9f","charge":40}]}].
-                    For updating a single full item, you can do using same
-                    format but with a more complete payload e.g
-                    [{"itemId":"61eafa0a4dab7678023d4989","name":"Plastering
-                    Large","description":"Wall Plastering
-                    (Large)","isJobType":true,"isActive":true,"tax":0,"tiers":[{"tierId":"60b7dd9643d3717e9a325c9f","charge":45},{"tierId":"60b7e0598529b3041b284628","charge":50},{"tierId":"60b7e0a68529b3041b284629","charge":60},{"tierId":"60b8f99ab1dd5f232f9214a4","charge":100},{"tierId":
-                    "60b900152fe90a252dff18fe","charge":300}]}].
+                  description: 'Json string of multiple items and only price tiers e.g [{"itemId":"60884105898eb7068283bfc4","tiers":[{"tierId":"60b7dd9643d3717e9a325c9f","charge":10},{"tierId":"60b7e0598529b3041b284628","charge":20}]},{"itemId":"60b90c8438045631806b8e6d","tiers":[{"tierId":"60b7dd9643d3717e9a325c9f","charge":40}]}]. For updating a single full item, you can do using same format but with a more complete payload e.g [{"itemId":"61eafa0a4dab7678023d4989","name":"Plastering Large","description":"Wall Plastering (Large)","isJobType":true,"isActive":true,"tax":0,"tiers":[{"tierId":"60b7dd9643d3717e9a325c9f","charge":45},{"tierId":"60b7e0598529b3041b284628","charge":50},{"tierId":"60b7e0a68529b3041b284629","charge":60},{"tierId":"60b8f99ab1dd5f232f9214a4","charge":100},{"tierId": "60b900152fe90a252dff18fe","charge":300}]}].'
       responses:
         '200':
           description: Success
@@ -3467,9 +3423,7 @@ paths:
                   type: string
                 unusedItemIds:
                   type: string
-                  description: >-
-                    format: ["6179104d040ff5218f9ca97a",
-                    "6179104d040ff5218f9ca97a"]
+                  description: 'format: ["6179104d040ff5218f9ca97a", "6179104d040ff5218f9ca97a"]'
                 name:
                   type: string
                 description:
@@ -3521,9 +3475,7 @@ paths:
       tags:
         - Item Pricing Tiers
       summary: Add new tier to the company
-      description: >-
-        To add new item tier to the company then will add the new tier to all
-        items belong to the company
+      description: To add new item tier to the company then will add the new tier to all items belong to the company
       responses:
         '200':
           description: Success
@@ -3538,10 +3490,7 @@ paths:
       tags:
         - Item Pricing Tiers
       summary: To update item tier of company
-      description: >-
-        Update item tier name and isActive. When a tier is being inactivated, BE
-        will return the conflict customers if any, customer that still use the
-        updated tier
+      description: Update item tier name and isActive. When a tier is being inactivated, BE will return the conflict customers if any, customer that still use the updated tier
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -3556,9 +3505,8 @@ paths:
                   type: string
                 isActive:
                   type: integer
-                  description: >
-                    Status of company item tier. **0** => false/inactive, **1**
-                    => true/active
+                  description: |
+                    Status of company item tier. **0** => false/inactive, **1** => true/active
                   format: int32
                   enum:
                     - '0'
@@ -3578,9 +3526,7 @@ paths:
       tags:
         - Discount Item
       summary: To retrieve all discount items of the company
-      description: >-
-        When the `isActive` query is not provided, it will return all discount
-        items by default.
+      description: When the `isActive` query is not provided, it will return all discount items by default.
       parameters:
         - name: isActive
           in: query
@@ -3632,9 +3578,7 @@ paths:
                   description: To apply this discount item to specific customer
                 noOfItems:
                   type: integer
-                  description: >-
-                    Number of items for the discount to be active to the
-                    specific customer
+                  description: Number of items for the discount to be active to the specific customer
         required: true
       responses:
         '200':
@@ -3678,9 +3622,7 @@ paths:
                   description: To apply this discount item to specific customer
                 noOfItems:
                   type: integer
-                  description: >-
-                    Number of items for the discount to be active to the
-                    specific customer
+                  description: Number of items for the discount to be active to the specific customer
         required: true
       responses:
         '200':
@@ -3711,9 +3653,7 @@ paths:
                   description: pass job type id fetched from getjobtypes api
                 isFixed:
                   type: boolean
-                  description: >-
-                    Either the job is fixed price or hourly. true->if fixed
-                    false->is hourly
+                  description: Either the job is fixed price or hourly. true->if fixed false->is hourly
                 charges:
                   type: number
                 sales_tax_id:
@@ -3770,9 +3710,7 @@ paths:
                   description: Id of job charges you want to edit
                 isFixed:
                   type: boolean
-                  description: >-
-                    Either the job is fixed price or hourly. true->if fixed
-                    false->is hourly
+                  description: Either the job is fixed price or hourly. true->if fixed false->is hourly
                 charges:
                   type: number
                 sales_tax_id:
@@ -4085,12 +4023,7 @@ paths:
               properties:
                 items:
                   type: string
-                  description: >-
-                    Json string of the items e.g [{"name": "test part2",
-                    "itemCode": "23423", "quantity":2, "cost": 250, "tax": 25,
-                    "taxPercentage": 10, "price": 275}] OR [{"part": "part id
-                    from listParts api", "quantity":2, "cost": 250, "tax": 25,
-                    "taxPercentage": 10, "price": 275}] optional
+                  description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] OR [{"part": "part id from listParts api", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] optional'
                 job:
                   type: string
                   description: Id of the job purchase order is linked to. (Optional)
@@ -4099,9 +4032,7 @@ paths:
                   description: customer equipment id to which PO is linked (optional)
                 note:
                   type: string
-                  description: >-
-                    add note for the required item if items is not added
-                    (required if items not added)
+                  description: add note for the required item if items is not added (required if items not added)
                 customer:
                   type: string
                   description: Id of the customer purchase order is linked to
@@ -4218,17 +4149,10 @@ paths:
                   description: Id of purchase order you want to update
                 items:
                   type: string
-                  description: >-
-                    Json string of the items e.g [{"name": "test part2",
-                    "itemCode": "23423", "quantity":2, "cost": 250, "tax": 25,
-                    "taxPercentage": 10, "price": 275}] OR [{"part": "part id
-                    from listParts api", "quantity":2, "cost": 250, "tax": 25,
-                    "taxPercentage": 10, "price": 275}] optional
+                  description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] OR [{"part": "part id from listParts api", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] optional'
                 note:
                   type: string
-                  description: >-
-                    add note for the required item if items is not added
-                    (required if items not added)
+                  description: add note for the required item if items is not added (required if items not added)
                 equipmentId:
                   type: string
                   description: customer equipment id to which PO is linked (optional)
@@ -4264,12 +4188,7 @@ paths:
                   description: Id of the purchase order to create estimate from
                 items:
                   type: string
-                  description: >-
-                    Json string of the items e.g [{"name": "test part2",
-                    "itemCode": "23423", "quantity":2, "cost": 250, "tax": 25,
-                    "taxPercentage": 10, "price": 275}] OR [{"part": "part id
-                    from listParts api", "quantity":2, "cost": 250, "tax": 25,
-                    "taxPercentage": 10, "price": 275}] optional
+                  description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] OR [{"part": "part id from listParts api", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] optional'
                 note:
                   type: string
                   description: note for the estimate.
@@ -4339,12 +4258,7 @@ paths:
                   description: Id of estimate you want to update
                 items:
                   type: string
-                  description: >-
-                    Json string of the items e.g [{"name": "test part2",
-                    "itemCode": "23423", "quantity":2, "cost": 250, "tax": 25,
-                    "taxPercentage": 10, "price": 275}] OR [{"part": "part id
-                    from listParts api", "quantity":2, "cost": 250, "tax": 25,
-                    "taxPercentage": 10, "price": 275}] optional
+                  description: 'Json string of the items e.g [{"name": "test part2", "itemCode": "23423", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] OR [{"part": "part id from listParts api", "quantity":2, "cost": 250, "tax": 25, "taxPercentage": 10, "price": 275}] optional'
                 note:
                   type: string
                   description: note for the job
@@ -4411,9 +4325,7 @@ paths:
                     - web
                 customerId:
                   type: string
-                  description: >-
-                    Id of a customer selected from the list received by
-                    /getCustomers api (Required for platform users)
+                  description: Id of a customer selected from the list received by /getCustomers api (Required for platform users)
                 note:
                   type: string
                 customerContactId:
@@ -4438,11 +4350,7 @@ paths:
                   description: Id of job site
                 jobTypes:
                   type: string
-                  description: >-
-                    Json string of the jobTypes e.g [{"jobTypeId":
-                    "608ae3aeffe3cf17946a08b1"},{"jobTypeId":
-                    "60b90cf138045631806b8e6e"}]. Id of a job type from the list
-                    received by /getJobTypes api
+                  description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]. Id of a job type from the list received by /getJobTypes api'
                 images:
                   type: array
                   items:
@@ -4547,13 +4455,8 @@ paths:
     get:
       tags:
         - Service Ticket
-      summary: >-
-        To get all open service tickets and job requests of a company and return
-        the result progressively via socket.io
-      description: >-
-        All service tickets and job requests will be send progressively via
-        socket.io, **make sure FE connects using the right company's token and
-        listen to event: 'all_open_service_tickets'**.
+      summary: To get all open service tickets and job requests of a company and return the result progressively via socket.io
+      description: 'All service tickets and job requests will be send progressively via socket.io, **make sure FE connects using the right company''s token and listen to event: ''all_open_service_tickets''**.'
       parameters:
         - name: actionId
           in: query
@@ -4651,16 +4554,10 @@ paths:
                   description: Id of job site
                 jobTypeId:
                   type: string
-                  description: >-
-                    Id of a job type selected from the list received by
-                    /getJobTypes api
+                  description: Id of a job type selected from the list received by /getJobTypes api
                 jobTypes:
                   type: string
-                  description: >-
-                    Json string of the jobTypes e.g [{"jobTypeId":
-                    "608ae3aeffe3cf17946a08b1"},{"jobTypeId":
-                    "60b90cf138045631806b8e6e"}]. Id of a job type from the list
-                    received by /getJobTypes api
+                  description: 'Json string of the jobTypes e.g [{"jobTypeId": "608ae3aeffe3cf17946a08b1"},{"jobTypeId": "60b90cf138045631806b8e6e"}]. Id of a job type from the list received by /getJobTypes api'
                 images:
                   type: array
                   items:
@@ -4695,9 +4592,7 @@ paths:
                   description: Id of ticket to update
                 status:
                   type: string
-                  description: >-
-                    default status is 0=> active, you can set status 1 =>
-                    canceled 2 => reactivated ticket
+                  description: default status is 0=> active, you can set status 1 => canceled 2 => reactivated ticket
         required: true
       responses:
         '200':
@@ -4804,10 +4699,7 @@ paths:
       tags:
         - Notification
       summary: To retrieve all notifications by the company of the logged in user
-      description: >-
-        When the `isDismissed` query is not provided, it will returns
-        notifications that not dismissed by default. The notifications will be
-        sort by the recent ones
+      description: When the `isDismissed` query is not provided, it will returns notifications that not dismissed by default. The notifications will be sort by the recent ones
       parameters:
         - name: isRead
           in: query
@@ -4847,9 +4739,7 @@ paths:
       tags:
         - Notification
       summary: Update a notification to read or to dismiss it
-      description: >-
-        (Had to make this using json as the body to avoid boolean value being
-        converted to string, you can use only one of them or even none of them)
+      description: (Had to make this using json as the body to avoid boolean value being converted to string, you can use only one of them or even none of them)
       parameters:
         - name: notificationId
           in: path
@@ -4914,18 +4804,10 @@ paths:
                   description: Id of a equipment for single scan
                 tasks:
                   type: string
-                  description: >-
-                    Json string of the technicians e.g
-                    [{"employeeType":"0","contractorId":"","technicianId":"6156b2af9d728306909553ef","jobTypes":[{"jobTypeId":
-                    "617a6362558d3631b4d80c1e"},{"jobTypeId":
-                    "617a6362558d3631b4d80c21"}]},{"employeeType":"1","contractorId":"61554237278b8615ac410493","technicianId":"","jobTypes":[{"jobTypeId":
-                    "615417d264da190a5c3f757e"}, {"jobTypeId":
-                    "617a6362558d3631b4d80c1e"}]}]
+                  description: 'Json string of the technicians e.g [{"employeeType":"0","contractorId":"","technicianId":"6156b2af9d728306909553ef","jobTypes":[{"jobTypeId": "617a6362558d3631b4d80c1e"},{"jobTypeId": "617a6362558d3631b4d80c21"}]},{"employeeType":"1","contractorId":"61554237278b8615ac410493","technicianId":"","jobTypes":[{"jobTypeId": "615417d264da190a5c3f757e"}, {"jobTypeId": "617a6362558d3631b4d80c1e"}]}]'
                 customerId:
                   type: string
-                  description: >-
-                    Id of a customer selected from the list received by
-                    /getCustomers api
+                  description: Id of a customer selected from the list received by /getCustomers api
                 jobLocationId:
                   type: string
                   description: Id of job location
@@ -4964,9 +4846,7 @@ paths:
       tags:
         - Job
       summary: To create a sub job
-      description: >-
-        For Vendor to be able to create a job to their sub vendor, based on job
-        that they assigned to
+      description: For Vendor to be able to create a job to their sub vendor, based on job that they assigned to
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -4981,39 +4861,25 @@ paths:
                   description: Id of Parent Job
                 scheduledStartTime:
                   type: string
-                  description: >-
-                    scheduled start time of job. e.g. 13:05:00 (will use parent
-                    job's scheduledStartTime when not provided)
+                  description: scheduled start time of job. e.g. 13:05:00 (will use parent job's scheduledStartTime when not provided)
                 scheduledEndTime:
                   type: string
-                  description: >-
-                    scheduled end time of job. e.g. 15:05:00 (will use parent
-                    job's scheduledEndTime when not provided)
+                  description: scheduled end time of job. e.g. 15:05:00 (will use parent job's scheduledEndTime when not provided)
                 equipmentId:
                   type: string
-                  description: >-
-                    Id of a equipment for single scan (will use parent job's
-                    equipmentId when not provided)
+                  description: Id of a equipment for single scan (will use parent job's equipmentId when not provided)
                 employeeType:
                   type: number
-                  description: >-
-                    0 for assigning job to employee/admin of company and 1 for
-                    assigning job to a contractor/vendor
+                  description: 0 for assigning job to employee/admin of company and 1 for assigning job to a contractor/vendor
                 technicianId:
                   type: string
-                  description: >-
-                    Required when employeeType = 0. Id of a technician selected
-                    from the list received by /getEmployeesForJob api
+                  description: Required when employeeType = 0. Id of a technician selected from the list received by /getEmployeesForJob api
                 contractorId:
                   type: string
-                  description: >-
-                    Required when employeeType = 1. Id of a contractor selected
-                    from the list received by /getCompanyContracts api
+                  description: Required when employeeType = 1. Id of a contractor selected from the list received by /getCompanyContracts api
                 description:
                   type: string
-                  description: >-
-                    Description of the job (will use parent job's description
-                    when not provided)
+                  description: Description of the job (will use parent job's description when not provided)
                 companyId:
                   type: string
                   description: Id of company if contractor is hitting for other company
@@ -5040,16 +4906,10 @@ paths:
               properties:
                 keyword:
                   type: string
-                  description: >-
-                    Filter jobs by search keyword to Job Id, Customer's name,
-                    Subdivision's name address, Job Address's name address,
-                    Technician's name, and Contractor's name
+                  description: Filter jobs by search keyword to Job Id, Customer's name, Subdivision's name address, Job Address's name address, Technician's name, and Contractor's name
                 status:
                   type: integer
-                  description: >-
-                    Filter jobs by status (PENDING => 0, STARTED => 1, FINISHED
-                    => 2, CANCELED => 3, RESCHEDULED => 4, PAUSED => 5,
-                    INCOMPLETE => 6)
+                  description: Filter jobs by status (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4, PAUSED => 5, INCOMPLETE => 6)
                   enum:
                     - 0
                     - 1
@@ -5069,19 +4929,13 @@ paths:
                   description: Filter jobs by customer
                 nextCursor:
                   type: string
-                  description: >-
-                    Cursor to go to next page. Use the nextCursor value from the
-                    previous response
+                  description: Cursor to go to next page. Use the nextCursor value from the previous response
                 previousCursor:
                   type: string
-                  description: >-
-                    Cursor to go to previous page. Use the previousCursor value
-                    from the previous response
+                  description: Cursor to go to previous page. Use the previousCursor value from the previous response
                 pageSize:
                   type: number
-                  description: >-
-                    The numbers of jobs to return per page e.g. 10. When not
-                    provided, will return 30 jobs by default
+                  description: The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default
                 companyId:
                   type: string
                   description: Id of company if contractor is hitting for other company
@@ -5105,13 +4959,8 @@ paths:
     get:
       tags:
         - Job
-      summary: >-
-        To get all jobs of a company and return the result progressively via
-        socket.io
-      description: >-
-        All jobs will be send progressively via socket.io, **make sure FE
-        connects using the right company's token and listen to event:
-        'all_jobs'**.
+      summary: To get all jobs of a company and return the result progressively via socket.io
+      description: 'All jobs will be send progressively via socket.io, **make sure FE connects using the right company''s token and listen to event: ''all_jobs''**.'
       parameters:
         - name: actionId
           in: query
@@ -5160,9 +5009,7 @@ paths:
                   description: true for getting today's jobs
                 customerNames:
                   type: array
-                  description: >-
-                    List of customer's displayNames in comma separated strings.
-                    eg. name1,name2
+                  description: List of customer's displayNames in comma separated strings. eg. name1,name2
                   items:
                     type: string
                 jobId:
@@ -5389,15 +5236,10 @@ paths:
                   description: Id of task/job type to start
                 status:
                   type: number
-                  description: >-
-                    Id of job task status as number from one of these (FINISHED
-                    => 2, PAUSED => 5).
+                  description: Id of job task status as number from one of these (FINISHED => 2, PAUSED => 5).
                 endTime:
                   type: string
-                  description: >-
-                    To update task's endTime. Only able to update endTime for a
-                    FINISHED task. Manual end time for the task. e.g.
-                    2021-12-20T21:30:00
+                  description: To update task's endTime. Only able to update endTime for a FINISHED task. Manual end time for the task. e.g. 2021-12-20T21:30:00
                 companyId:
                   type: string
                   description: Id of company if contractor is hitting for other company
@@ -5430,15 +5272,10 @@ paths:
                   description: Id of job to update
                 status:
                   type: number
-                  description: >-
-                    Id of job status as number from one of these (PENDING => 0,
-                    STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED =>
-                    4, PAUSED => 5, INCOMPLETE => 6).
+                  description: Id of job status as number from one of these (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4, PAUSED => 5, INCOMPLETE => 6).
                 note:
                   type: string
-                  description: >-
-                    **Required** when status is RESCHEDULED => 4 or INCOMPLETE
-                    => 6
+                  description: '**Required** when status is RESCHEDULED => 4 or INCOMPLETE => 6'
                 comment:
                   type: string
                 jobLocationId:
@@ -5502,13 +5339,7 @@ paths:
                   description: Id of job site
                 tasks:
                   type: string
-                  description: >-
-                    Json string of the technicians e.g
-                    [{"employeeType":"0","contractorId":"","technicianId":"6156b2af9d728306909553ef","jobTypes":[{"jobTypeId":
-                    "617a6362558d3631b4d80c1e"},{"jobTypeId":
-                    "617a6362558d3631b4d80c21"}]},{"employeeType":"1","contractorId":"61554237278b8615ac410493","technicianId":"","jobTypes":[{"jobTypeId":
-                    "615417d264da190a5c3f757e"}, {"jobTypeId":
-                    "617a6362558d3631b4d80c1e"}]}]
+                  description: 'Json string of the technicians e.g [{"employeeType":"0","contractorId":"","technicianId":"6156b2af9d728306909553ef","jobTypes":[{"jobTypeId": "617a6362558d3631b4d80c1e"},{"jobTypeId": "617a6362558d3631b4d80c21"}]},{"employeeType":"1","contractorId":"61554237278b8615ac410493","technicianId":"","jobTypes":[{"jobTypeId": "615417d264da190a5c3f757e"}, {"jobTypeId": "617a6362558d3631b4d80c1e"}]}]'
                 startTime:
                   type: string
                   description: Job start time if you want to change it
@@ -5562,9 +5393,7 @@ paths:
                   enum:
                     - 4
                     - 5
-                  description: >-
-                    Id of job status as number from one of these (ACCEPTED => 4,
-                    REJECTED => 5).
+                  description: Id of job status as number from one of these (ACCEPTED => 4, REJECTED => 5).
                 note:
                   type: string
                   description: '**Required** when status is REJECTED => 5'
@@ -5601,9 +5430,7 @@ paths:
                   description: Id of the job technician to edit
                 status:
                   type: number
-                  description: >-
-                    Id of job task status as number from one of these (FINISHED
-                    => 2, CANCELED => 3, RESCHEDULED => 4).
+                  description: Id of job task status as number from one of these (FINISHED => 2, CANCELED => 3, RESCHEDULED => 4).
                 note:
                   type: string
                   description: '**Required** when status is RESCHEDULED => 4'
@@ -5701,9 +5528,7 @@ paths:
       parameters:
         - name: scheduleDate
           in: query
-          description: >-
-            Filter job routes by schedule date, if not provided will search all
-            job routes for today. Example: "2021-10-30".
+          description: 'Filter job routes by schedule date, if not provided will search all job routes for today. Example: "2021-10-30".'
           schema:
             type: string
       responses:
@@ -5729,9 +5554,7 @@ paths:
             type: string
         - name: employeeType
           in: query
-          description: >-
-            0 to search job route of an employee/admin of company and 1 to
-            search job route of a contractor/vendor
+          description: 0 to search job route of an employee/admin of company and 1 to search job route of a contractor/vendor
           required: true
           schema:
             type: number
@@ -5740,16 +5563,12 @@ paths:
               - 1
         - name: technicianId
           in: query
-          description: >-
-            **Required when employeeType = 0**. Id of a technician selected from
-            the list received by /getEmployeesForJob api
+          description: '**Required when employeeType = 0**. Id of a technician selected from the list received by /getEmployeesForJob api'
           schema:
             type: string
         - name: contractorId
           in: query
-          description: >-
-            **Required when employeeType = 1**. Id of a contractor selected from
-            the list received by /getCompanyContracts api
+          description: '**Required when employeeType = 1**. Id of a contractor selected from the list received by /getCompanyContracts api'
           schema:
             type: string
       responses:
@@ -5781,25 +5600,16 @@ paths:
                   description: Schedule date of the job route
                 employeeType:
                   type: number
-                  description: >-
-                    0 to create job route to an employee/admin of company and 1
-                    to create job route to a contractor/vendor
+                  description: 0 to create job route to an employee/admin of company and 1 to create job route to a contractor/vendor
                 technicianId:
                   type: string
-                  description: >-
-                    Id of a technician selected from the list received by
-                    /getEmployeesForJob api
+                  description: Id of a technician selected from the list received by /getEmployeesForJob api
                 contractorId:
                   type: string
-                  description: >-
-                    Id of a contractor selected from the list received by
-                    /getCompanyContracts api
+                  description: Id of a contractor selected from the list received by /getCompanyContracts api
                 routes:
                   type: string
-                  description: >-
-                    Json string of the routes e.g
-                    ["608c26d58397bc206669870f","608c21ec125ed4202189d6e9"]. The
-                    order of array will determine the order of job route.
+                  description: Json string of the routes e.g ["608c26d58397bc206669870f","608c21ec125ed4202189d6e9"]. The order of array will determine the order of job route.
         required: true
       responses:
         '200':
@@ -5829,10 +5639,7 @@ paths:
                   description: Job Route Id to be updated
                 routes:
                   type: string
-                  description: >-
-                    Json string of the routes e.g
-                    ["608c26d58397bc206669870f","608c21ec125ed4202189d6e9"]. The
-                    order of array will determine the order of job route.
+                  description: Json string of the routes e.g ["608c26d58397bc206669870f","608c21ec125ed4202189d6e9"]. The order of array will determine the order of job route.
         required: true
       responses:
         '200':
@@ -5851,10 +5658,7 @@ paths:
       parameters:
         - name: keyword
           in: query
-          description: >-
-            Filter job reports by search keyword to Job Id, Customer's name,
-            Subdivision's name address, Job Address's name address, Technician's
-            name, and Contractor's name
+          description: Filter job reports by search keyword to Job Id, Customer's name, Subdivision's name address, Job Address's name address, Technician's name, and Contractor's name
           schema:
             type: string
         - name: startDate
@@ -5869,23 +5673,17 @@ paths:
             type: string
         - name: nextCursor
           in: query
-          description: >-
-            Cursor to go to next page. Use the nextCursor value from the
-            previous response
+          description: Cursor to go to next page. Use the nextCursor value from the previous response
           schema:
             type: string
         - name: previousCursor
           in: query
-          description: >-
-            Cursor to go to previous page. Use the previousCursor value from the
-            previous response
+          description: Cursor to go to previous page. Use the previousCursor value from the previous response
           schema:
             type: string
         - name: pageSize
           in: query
-          description: >-
-            The numbers of jobs to return per page e.g. 10. When not provided,
-            will return 30 jobs by default
+          description: The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default
           schema:
             type: number
       responses:
@@ -5957,9 +5755,7 @@ paths:
                   description: Id of the job report
                 recipients:
                   type: string
-                  description: >-
-                    List of all recipients in array. Example:
-                    ["zyzorafu@abyssmail.com","tiboqama@boximail.com"]
+                  description: 'List of all recipients in array. Example: ["zyzorafu@abyssmail.com","tiboqama@boximail.com"]'
                 copyToMyself:
                   type: boolean
                   description: To send copy to user himself
@@ -5986,13 +5782,7 @@ paths:
               properties:
                 items:
                   type: string
-                  description: >-
-                    Json string of the items e.g [{"name": "repair",
-                    "description": "repair description", "price": 100, "tax": 0,
-                    "quantity": 2},{"name": "service", "description": "repair
-                    description", "price": 50, "tax": 0, "quantity": 1}]  OR
-                    [{"item": "5f23240a3a68041ee95d6800", "price": 1000, "tax":
-                    0, "quantity": 2}]
+                  description: 'Json string of the items e.g [{"name": "repair", "description": "repair description", "price": 100, "tax": 0, "quantity": 2},{"name": "service", "description": "repair description", "price": 50, "tax": 0, "quantity": 1}]  OR [{"item": "5f23240a3a68041ee95d6800", "price": 1000, "tax": 0, "quantity": 2}]'
                 jobId:
                   type: string
                   description: Pass job id to create job invoice (optional)
@@ -6001,9 +5791,7 @@ paths:
                   description: Custom invoice number for this invoice only
                 purchaseOrderId:
                   type: string
-                  description: >-
-                    Pass purchase order id to create purchase order invoice
-                    (optional)
+                  description: Pass purchase order id to create purchase order invoice (optional)
                 issuedDate:
                   type: string
                   description: Issued date of the invoice
@@ -6024,19 +5812,13 @@ paths:
                   description: Pass estimate id to create estimate invoice (optional)
                 customerPO:
                   type: string
-                  description: >-
-                    Pass customer PO to replace ticket's customer PO if any
-                    (optional)
+                  description: Pass customer PO to replace ticket's customer PO if any (optional)
                 customerContactId:
                   type: string
-                  description: >-
-                    Pass customer contact id to replace ticket's customer
-                    contact id if any (optional)
+                  description: Pass customer contact id to replace ticket's customer contact id if any (optional)
                 vendorId:
                   type: string
-                  description: >-
-                    Pass customer vendor id to replace the default customer's
-                    vendor id (optional)
+                  description: Pass customer vendor id to replace the default customer's vendor id (optional)
                 customerId:
                   type: string
                   description: Pass customer id to create invoice
@@ -6048,19 +5830,13 @@ paths:
                   description: Shipping cost (optional)
                 charges:
                   type: number
-                  description: >-
-                    Charges if you want to change the charge amount for the
-                    invoice
+                  description: Charges if you want to change the charge amount for the invoice
                 timeSpent:
                   type: number
-                  description: >-
-                    No of hours spend on that job pass default from finished job
-                    if you dont want to change
+                  description: No of hours spend on that job pass default from finished job if you dont want to change
                 includePO:
                   type: boolean
-                  description: >-
-                    select if you want to include purchase orders linked to this
-                    job in this invoice
+                  description: select if you want to include purchase orders linked to this job in this invoice
       responses:
         '200':
           description: Success
@@ -6083,25 +5859,16 @@ paths:
               properties:
                 pageSize:
                   type: number
-                  description: >-
-                    The numbers of jobs to return per page e.g. 10. When not
-                    provided, will return 30 jobs by default
+                  description: The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default
                 nextCursor:
                   type: string
-                  description: >-
-                    Cursor to go to next page. Use the nextCursor value from the
-                    previous response
+                  description: Cursor to go to next page. Use the nextCursor value from the previous response
                 previousCursor:
                   type: string
-                  description: >-
-                    Cursor to go to previous page. Use the previousCursor value
-                    from the previous response
+                  description: Cursor to go to previous page. Use the previousCursor value from the previous response
                 keyword:
                   type: string
-                  description: >-
-                    Filter invoices by search keyword to Job Id, Customer's
-                    name, Job's Subdivision name address, Job's Job Address name
-                    address, Job's Technician name, and Job's Contractor name
+                  description: Filter invoices by search keyword to Job Id, Customer's name, Job's Subdivision name address, Job's Job Address name address, Job's Technician name, and Job's Contractor name
                 startDate:
                   type: string
                   description: Filter invoices by start of the issued date
@@ -6116,9 +5883,7 @@ paths:
                   description: Filter invoices by P.O. Number
                 status:
                   type: string
-                  description: >-
-                    Filter invoices by multiple status. Format example:
-                    ["UNPAID", "PARTIALLY PAID", "PAID"]
+                  description: 'Filter invoices by multiple status. Format example: ["UNPAID", "PARTIALLY PAID", "PAID"]'
                 customerId:
                   type: string
                   description: Filter invoices by Customer ID
@@ -6188,10 +5953,7 @@ paths:
       parameters:
         - name: keyword
           in: query
-          description: >-
-            Filter invoices by search keyword to Job Id, Customer's name, Job's
-            Subdivision name address, Job's Job Address name address, Job's
-            Technician name, and Job's Contractor name
+          description: Filter invoices by search keyword to Job Id, Customer's name, Job's Subdivision name address, Job's Job Address name address, Job's Technician name, and Job's Contractor name
           schema:
             type: string
         - name: customerId
@@ -6201,9 +5963,7 @@ paths:
             type: string
         - name: status
           in: query
-          description: >-
-            Filter invoices by multiple status. Format example: ["UNPAID",
-            "PARTIALLY PAID", "PAID"]
+          description: 'Filter invoices by multiple status. Format example: ["UNPAID", "PARTIALLY PAID", "PAID"]'
           schema:
             type: string
         - name: dueDate
@@ -6299,13 +6059,7 @@ paths:
                   description: Id of invoice you want to edit
                 items:
                   type: string
-                  description: >-
-                    Json string of the items e.g [{"name": "repair",
-                    "description": "repair description", "price": 100, "tax": 0,
-                    "quantity": 2},{"name": "service", "description": "repair
-                    description", "price": 50, "tax": 0, "quantity": 1}]  OR
-                    [{"item": "5f23240a3a68041ee95d6800", "price": 1000, "tax":
-                    0, "quantity": 2}]
+                  description: 'Json string of the items e.g [{"name": "repair", "description": "repair description", "price": 100, "tax": 0, "quantity": 2},{"name": "service", "description": "repair description", "price": 50, "tax": 0, "quantity": 1}]  OR [{"item": "5f23240a3a68041ee95d6800", "price": 1000, "tax": 0, "quantity": 2}]'
                 invoiceNumber:
                   type: string
                   description: Custom invoice number for this invoice only
@@ -6326,47 +6080,31 @@ paths:
                   description: Pass payment term id
                 customerPO:
                   type: string
-                  description: >-
-                    Pass customer PO to replace ticket's customer PO if any
-                    (optional)
+                  description: Pass customer PO to replace ticket's customer PO if any (optional)
                 customerContactId:
                   type: string
-                  description: >-
-                    Pass customer contact id to replace ticket's customer
-                    contact id if any (optional)
+                  description: Pass customer contact id to replace ticket's customer contact id if any (optional)
                 vendorId:
                   type: string
-                  description: >-
-                    Pass customer vendor id to replace the default customer's
-                    vendor id (optional)
+                  description: Pass customer vendor id to replace the default customer's vendor id (optional)
                 charges:
                   type: number
-                  description: >-
-                    Charges if you want to change the charge amount for the
-                    invoice
+                  description: Charges if you want to change the charge amount for the invoice
                 note:
                   type: string
-                  description: >-
-                    Pass note if update manual invoice (required in manual
-                    invoice)
+                  description: Pass note if update manual invoice (required in manual invoice)
                 timeSpent:
                   type: number
-                  description: >-
-                    No of hours spend on that job pass default from finished job
-                    if you dont want to change
+                  description: No of hours spend on that job pass default from finished job if you dont want to change
                 hourlyRate:
                   type: number
-                  description: >-
-                    Hourly rate to be charges to customer pass default from
-                    finished job if you dont want to change
+                  description: Hourly rate to be charges to customer pass default from finished job if you dont want to change
                 shippingCost:
                   type: number
                   description: Shipping cost (optional)
                 includePO:
                   type: boolean
-                  description: >-
-                    select if you want to include purchase orders linked to this
-                    job in this invoice
+                  description: select if you want to include purchase orders linked to this job in this invoice
         required: true
       responses:
         '200':
@@ -6416,9 +6154,7 @@ paths:
             type: string
         - name: offset
           in: query
-          description: >-
-            Number of hours a certain time zone is ahead of or behind GMT for
-            the client
+          description: Number of hours a certain time zone is ahead of or behind GMT for the client
           required: false
           schema:
             type: string
@@ -6514,9 +6250,7 @@ paths:
       parameters:
         - name: emailType
           in: query
-          description: >-
-            Email type to be retrieve. Available values: "INVOICE" (To send one
-            invoice), "INVOICES" (To send multiple invoices at once)
+          description: 'Email type to be retrieve. Available values: "INVOICE" (To send one invoice), "INVOICES" (To send multiple invoices at once)'
           schema:
             type: string
             enum:
@@ -6529,9 +6263,7 @@ paths:
             type: string
         - name: invoiceIds
           in: query
-          description: >-
-            (REQUIRED for emailType: INVOICES) Ids of invoices. Example:
-            ["6320f952cada9f16fffba0c6", "6320f933cada9f16fffba0c5"]
+          description: '(REQUIRED for emailType: INVOICES) Ids of invoices. Example: ["6320f952cada9f16fffba0c6", "6320f933cada9f16fffba0c5"]'
           schema:
             type: string
       responses:
@@ -6561,19 +6293,13 @@ paths:
                   description: Id of invoice
                 recipients:
                   type: string
-                  description: >-
-                    List of all recipients in array. Example:
-                    ["zyzorafu@abyssmail.com","tiboqama@boximail.com"]
+                  description: 'List of all recipients in array. Example: ["zyzorafu@abyssmail.com","tiboqama@boximail.com"]'
                 subject:
                   type: string
-                  description: >-
-                    Subject of the email, if not provided will use company's
-                    email default
+                  description: Subject of the email, if not provided will use company's email default
                 message:
                   type: string
-                  description: >-
-                    Message of the email, if not provided will use company's
-                    email default
+                  description: Message of the email, if not provided will use company's email default
                 copyToMyself:
                   type: boolean
                   description: To send copy to user himself
@@ -6612,19 +6338,13 @@ paths:
                   description: Ids of invoice
                 recipients:
                   type: string
-                  description: >-
-                    List of all recipients in array. Example:
-                    ["zyzorafu@abyssmail.com","tiboqama@boximail.com"]
+                  description: 'List of all recipients in array. Example: ["zyzorafu@abyssmail.com","tiboqama@boximail.com"]'
                 subject:
                   type: string
-                  description: >-
-                    Subject of the email, if not provided will use company's
-                    email default
+                  description: Subject of the email, if not provided will use company's email default
                 message:
                   type: string
-                  description: >-
-                    Message of the email, if not provided will use company's
-                    email default
+                  description: Message of the email, if not provided will use company's email default
                 copyToMyself:
                   type: boolean
                   description: To send copy to user himself
@@ -6879,9 +6599,7 @@ paths:
       parameters:
         - name: keyword
           in: query
-          description: >-
-            Filter payments by search keyword to Reference Number, Payment Type,
-            Invoice's ID, and Invoice's Customer PO
+          description: Filter payments by search keyword to Reference Number, Payment Type, Invoice's ID, and Invoice's Customer PO
           schema:
             type: string
         - name: customerId
@@ -6972,9 +6690,7 @@ paths:
             type: string
         - name: offset
           in: query
-          description: >-
-            Number of hours a certain time zone is ahead of or behind GMT for
-            the client
+          description: Number of hours a certain time zone is ahead of or behind GMT for the client
           required: false
           schema:
             type: string
@@ -7015,10 +6731,7 @@ paths:
                   description: Id of invoice to be paid
                 line:
                   type: string
-                  description: >-
-                    Json string of the payment line e.g
-                    [{"invoiceId":"6268ef3234370b4364a45a69","amountPaid":250},
-                    {"invoiceId":"6268e21b9f94c709789abac9","amountPaid":20}]
+                  description: Json string of the payment line e.g [{"invoiceId":"6268ef3234370b4364a45a69","amountPaid":250}, {"invoiceId":"6268e21b9f94c709789abac9","amountPaid":20}]
                 amount:
                   type: number
                   description: Amount how much customer has paid
@@ -7072,9 +6785,7 @@ paths:
                   description: Id of vendor or employee
                 invoiceIds:
                   type: string
-                  description: >-
-                    Id of invoices to be paid. Example:
-                    ["621f9865b084345f2c60904b","61e9b92963a18c3e74b37922"]
+                  description: 'Id of invoices to be paid. Example: ["621f9865b084345f2c60904b","61e9b92963a18c3e74b37922"]'
                 amount:
                   type: number
                   description: Amount how much vendor/employee to be paid
@@ -7087,9 +6798,7 @@ paths:
                   type: string
                 offset:
                   type: number
-                  description: >-
-                    Number of hours a certain time zone is ahead of or behind
-                    GMT for the client
+                  description: Number of hours a certain time zone is ahead of or behind GMT for the client
                 dueDate:
                   type: string
                 paymentType:
@@ -7103,9 +6812,7 @@ paths:
                     - Cash
                 paidAt:
                   type: string
-                  description: >-
-                    Date when the customer has made the payment, default to
-                    today if not provided
+                  description: Date when the customer has made the payment, default to today if not provided
                 note:
                   type: string
         required: true
@@ -7141,10 +6848,7 @@ paths:
                   description: Id of payment to edit
                 line:
                   type: string
-                  description: >-
-                    Json string of the payment line e.g
-                    [{"invoiceId":"6268ef3234370b4364a45a69","amountPaid":250},
-                    {"invoiceId":"6268e21b9f94c709789abac9","amountPaid":20}]
+                  description: Json string of the payment line e.g [{"invoiceId":"6268ef3234370b4364a45a69","amountPaid":250}, {"invoiceId":"6268e21b9f94c709789abac9","amountPaid":20}]
                 amount:
                   type: number
                   description: Amount how much customer has paid
@@ -7322,9 +7026,7 @@ paths:
             type: string
         - name: offset
           in: query
-          description: >-
-            Number of hours a certain time zone is ahead of or behind GMT for
-            the client
+          description: Number of hours a certain time zone is ahead of or behind GMT for the client
           required: false
           schema:
             type: number
@@ -7369,9 +7071,7 @@ paths:
             type: string
         - name: offset
           in: query
-          description: >-
-            Number of hours a certain time zone is ahead of or behind GMT for
-            the client
+          description: Number of hours a certain time zone is ahead of or behind GMT for the client
           required: false
           schema:
             type: number
@@ -7421,14 +7121,10 @@ paths:
                     - Cash
                 paidAt:
                   type: string
-                  description: >-
-                    Date when the advance payment has been made, default to
-                    today if not provided
+                  description: Date when the advance payment has been made, default to today if not provided
                 appliedAt:
                   type: string
-                  description: >-
-                    Date when the advance payment is applied on, default to
-                    today if not provided
+                  description: Date when the advance payment is applied on, default to today if not provided
                 referenceNumber:
                   type: string
                 note:
@@ -7485,9 +7181,7 @@ paths:
             type: string
         - name: offset
           in: query
-          description: >-
-            Number of hours a certain time zone is ahead of or behind GMT for
-            the client
+          description: Number of hours a certain time zone is ahead of or behind GMT for the client
           required: false
           schema:
             type: string
@@ -7525,9 +7219,7 @@ paths:
               - 2
         - name: customerIds
           in: query
-          description: >-
-            To filter report by specific customers. Example:
-            ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]
+          description: 'To filter report by specific customers. Example: ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]'
           schema:
             type: string
         - name: startDate
@@ -7572,9 +7264,7 @@ paths:
               - 2
         - name: customerIds
           in: query
-          description: >-
-            To filter report by specific customers. Example:
-            ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]
+          description: 'To filter report by specific customers. Example: ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]'
           schema:
             type: string
         - name: startDate
@@ -7650,24 +7340,16 @@ paths:
                   description: Filter report by end of invoice's issued date
                 customerIds:
                   type: string
-                  description: >-
-                    To filter report by specific customers. Example:
-                    ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]
+                  description: 'To filter report by specific customers. Example: ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]'
                 recipients:
                   type: string
-                  description: >-
-                    List of all recipients in array. Example:
-                    ["zyzorafu@abyssmail.com","tiboqama@boximail.com"]
+                  description: 'List of all recipients in array. Example: ["zyzorafu@abyssmail.com","tiboqama@boximail.com"]'
                 subject:
                   type: string
-                  description: >-
-                    Subject of the email, if not provided will use company's
-                    email default
+                  description: Subject of the email, if not provided will use company's email default
                 message:
                   type: string
-                  description: >-
-                    Message of the email, if not provided will use company's
-                    email default
+                  description: Message of the email, if not provided will use company's email default
                 copyToMyself:
                   type: boolean
                   description: To send copy to user himself
@@ -7753,9 +7435,7 @@ paths:
                     - 2
                 customerIds:
                   type: string
-                  description: >-
-                    To filter report by specific customers. Example:
-                    ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]
+                  description: 'To filter report by specific customers. Example: ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]'
                 periodOption:
                   type: string
                   description: Filter report by preset period option
@@ -7818,9 +7498,7 @@ paths:
                     - 2
                 customerIds:
                   type: string
-                  description: >-
-                    To filter report by specific customers. Example:
-                    ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]
+                  description: 'To filter report by specific customers. Example: ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]'
                 periodOption:
                   type: string
                   description: Filter report by preset period option
@@ -7930,14 +7608,10 @@ paths:
                     - Technician
                 id:
                   type: string
-                  description: >-
-                    Id of job for Job and Technician type, or id of
-                    serviceTicket for serviceTicket type
+                  description: Id of job for Job and Technician type, or id of serviceTicket for serviceTicket type
                 imageId:
                   type: string
-                  description: >-
-                    Id of image in job images, technician images, or service
-                    ticket images
+                  description: Id of image in job images, technician images, or service ticket images
         required: true
       responses:
         '200':
@@ -8253,14 +7927,10 @@ paths:
                   type: string
                 nfcTags:
                   type: string
-                  description: >-
-                    Comma seprated nfcTags (if there is no nfcTag scaned send
-                    empty)
+                  description: Comma seprated nfcTags (if there is no nfcTag scaned send empty)
                 qrCodes:
                   type: string
-                  description: >-
-                    Comma seprated qrCodes (if there is no qrCode scaned send
-                    empty)
+                  description: Comma seprated qrCodes (if there is no qrCode scaned send empty)
         required: true
       responses:
         '200':
@@ -8424,9 +8094,7 @@ paths:
                   type: string
                 cardId:
                   type: string
-                  description: >-
-                    Id of company card for transaction fetched by
-                    /getCompanyCards.
+                  description: Id of company card for transaction fetched by /getCompanyCards.
                 street:
                   type: string
                 city:
@@ -8484,27 +8152,16 @@ paths:
               properties:
                 noOfOfficeAdmins:
                   type: string
-                  description: >-
-                    No of office admins company wants to buy or add more
-                    subscriptions, if there is none to buy just send 0 otherwise
-                    (1,2,3,...)
+                  description: No of office admins company wants to buy or add more subscriptions, if there is none to buy just send 0 otherwise (1,2,3,...)
                 noOfManagers:
                   type: string
-                  description: >-
-                    No of managers company wants to buy or add more
-                    subscriptions, if there is none to buy just send 0 otherwise
-                    (1,2,3,...)
+                  description: No of managers company wants to buy or add more subscriptions, if there is none to buy just send 0 otherwise (1,2,3,...)
                 noOfTechnicians:
                   type: string
-                  description: >-
-                    No of technicians company wants to buy or add more
-                    subscriptions, if there is none to buy just send 0 otherwise
-                    (1,2,3,...)
+                  description: No of technicians company wants to buy or add more subscriptions, if there is none to buy just send 0 otherwise (1,2,3,...)
                 nbOfAdmins:
                   type: string
-                  description: >-
-                    No of admins company wants to buy or add more subscriptions,
-                    if there is none to buy just send 0 otherwise (1,2,3,...)
+                  description: No of admins company wants to buy or add more subscriptions, if there is none to buy just send 0 otherwise (1,2,3,...)
         required: true
       responses:
         '200':
@@ -8544,9 +8201,7 @@ paths:
               properties:
                 employeeId:
                   type: string
-                  description: >-
-                    Id of the Employee That Will be Removed From The Company
-                    Subscription
+                  description: Id of the Employee That Will be Removed From The Company Subscription
         required: true
       responses:
         '200':
@@ -8606,14 +8261,10 @@ paths:
                   description: role id of employee type for which permissions updating
                 onPermissions:
                   type: string
-                  description: >-
-                    Comma seprated string of integers for permissions to allow
-                    like (1,2,3,...)
+                  description: Comma seprated string of integers for permissions to allow like (1,2,3,...)
                 offPermissions:
                   type: string
-                  description: >-
-                    Comma seprated string of integers for permissions to allow
-                    like (1,2,3,...)...)
+                  description: Comma seprated string of integers for permissions to allow like (1,2,3,...)...)
         required: true
       responses:
         '200':
@@ -8688,14 +8339,10 @@ paths:
                   type: string
                 onPermissions:
                   type: string
-                  description: >-
-                    Comma seprated string of integers for permissions to allow
-                    like (1,2,3,...)
+                  description: Comma seprated string of integers for permissions to allow like (1,2,3,...)
                 offPermissions:
                   type: string
-                  description: >-
-                    Comma seprated string of integers for permissions to allow
-                    like (1,2,3,...)...)
+                  description: Comma seprated string of integers for permissions to allow like (1,2,3,...)...)
         required: true
       responses:
         '200':
@@ -8737,9 +8384,7 @@ paths:
       tags:
         - Quickbooks Integration
       summary: Manually syncing ALL customers
-      description: >-
-        Manually syncing ALL customers from BlueClerk to QuickBooks and vice
-        versa
+      description: Manually syncing ALL customers from BlueClerk to QuickBooks and vice versa
       responses:
         '200':
           description: Success
@@ -8754,9 +8399,7 @@ paths:
       tags:
         - Quickbooks Integration
       summary: Manual syncing SINGLE customer
-      description: >-
-        Manually syncing SINGLE customer from BlueClerk to QuickBooks and
-        associate it with BlueClerk customer
+      description: Manually syncing SINGLE customer from BlueClerk to QuickBooks and associate it with BlueClerk customer
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -8798,9 +8441,7 @@ paths:
       tags:
         - Quickbooks Integration
       summary: Manually syncing ALL payment terms
-      description: >-
-        Manually syncing ALL payment terms from BlueClerk to QuickBooks and vice
-        versa
+      description: Manually syncing ALL payment terms from BlueClerk to QuickBooks and vice versa
       responses:
         '200':
           description: Success
@@ -8830,9 +8471,7 @@ paths:
       tags:
         - Quickbooks Integration
       summary: Manually syncing SINGLE invoice
-      description: >-
-        Manually syncing SINGLE invoice from BlueClerk to QuickBooks and
-        associate it with BlueClerk invoice
+      description: Manually syncing SINGLE invoice from BlueClerk to QuickBooks and associate it with BlueClerk invoice
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -8859,9 +8498,7 @@ paths:
       tags:
         - Quickbooks Integration
       summary: Manually syncing MULTIPLE invoices
-      description: >-
-        Manually syncing MULTIPLE invoices from BlueClerk to QuickBooks and
-        associate it with BlueClerk invoices
+      description: Manually syncing MULTIPLE invoices from BlueClerk to QuickBooks and associate it with BlueClerk invoices
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -8872,9 +8509,7 @@ paths:
               properties:
                 invoiceIds:
                   type: string
-                  description: >-
-                    Id of an invoices to be associated. Example:
-                    ["62c5e0ee199181255411190e","62aa1c7c4a9dbd07597df225"]
+                  description: 'Id of an invoices to be associated. Example: ["62c5e0ee199181255411190e","62aa1c7c4a9dbd07597df225"]'
         required: true
       responses:
         '200':
@@ -8905,9 +8540,7 @@ paths:
       tags:
         - Quickbooks Integration
       summary: Manually syncing SINGLE payment
-      description: >-
-        Manually syncing SINGLE payment from BlueClerk to QuickBooks and
-        associate it with BlueClerk payment
+      description: Manually syncing SINGLE payment from BlueClerk to QuickBooks and associate it with BlueClerk payment
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -8934,9 +8567,7 @@ paths:
       tags:
         - Quickbooks Integration
       summary: Manually syncing MULTIPLE payments
-      description: >-
-        Manually syncing MULTIPLE payments from BlueClerk to QuickBooks and
-        associate it with BlueClerk payments
+      description: Manually syncing MULTIPLE payments from BlueClerk to QuickBooks and associate it with BlueClerk payments
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -8947,9 +8578,7 @@ paths:
               properties:
                 paymentIds:
                   type: string
-                  description: >-
-                    Id of an payments to be associated. Example:
-                    ["6309227fe1bec921989b3e5a","630917ba9dfb1c06a05426ac"]
+                  description: 'Id of an payments to be associated. Example: ["6309227fe1bec921989b3e5a","630917ba9dfb1c06a05426ac"]'
         required: true
       responses:
         '200':
@@ -9027,9 +8656,7 @@ paths:
       tags:
         - Quickbooks Integration
       summary: Disconnect from QuickBooks integration
-      description: >-
-        Disconnect from QB and will **reset QB synced status** for: Customer,
-        Job Type, Item, Payment Term, Invoice, and Payment
+      description: 'Disconnect from QB and will **reset QB synced status** for: Customer, Job Type, Item, Payment Term, Invoice, and Payment'
       responses:
         '200':
           description: Success
@@ -9093,9 +8720,7 @@ paths:
                   description: Service ticket warranty
                 itemId:
                   type: string
-                  description: >-
-                    Id of job type selected from the list received by
-                    /getJobTypes api
+                  description: Id of job type selected from the list received by /getJobTypes api
                 workToBeDone:
                   type: string
                   description: What work to be done
@@ -9125,12 +8750,9 @@ paths:
       tags:
         - Script
       summary: To update all companies and customers to have Item Price Tier
-      description: >-
+      description: |-
         **WARNING: Only do this when you know what you are doing.**
-
-        This will update all companies and customers those don't have Item Price
-        Tier. Will create 1 new Item Tier for the company to be the default tier
-        and update all customers of that company to use the default tier.
+        This will update all companies and customers those don't have Item Price Tier. Will create 1 new Item Tier for the company to be the default tier and update all customers of that company to use the default tier.
       responses:
         '200':
           description: Success
@@ -9144,14 +8766,10 @@ paths:
     post:
       tags:
         - Script
-      summary: >-
-        To migrate all old jobs to have new tasks structure and backup old task
-        to tasks backup
-      description: >-
+      summary: To migrate all old jobs to have new tasks structure and backup old task to tasks backup
+      description: |-
         **WARNING: Only do this when you know what you are doing.**
-
-        To migrate all old jobs to have new tasks structure and backup old task
-        to tasks backup.
+        To migrate all old jobs to have new tasks structure and backup old task to tasks backup.
       responses:
         '200':
           description: Success
@@ -9165,14 +8783,10 @@ paths:
     post:
       tags:
         - Script
-      summary: >-
-        To migrate all Service Ticket and Job old image to images (in array
-        format)
-      description: >-
+      summary: To migrate all Service Ticket and Job old image to images (in array format)
+      description: |-
         **WARNING: Only do this when you know what you are doing.**
-
-        To migrate all Service Ticket and Job old image to images (in array
-        format).
+        To migrate all Service Ticket and Job old image to images (in array format).
       responses:
         '200':
           description: Success
@@ -9187,10 +8801,8 @@ paths:
       tags:
         - Script
       summary: To migrate all Job to every tasks to have a status
-      description: >-
-        **WARNING: - Only do this when you know what you are doing. Run
-        migrateJobTask first before run this script.**
-
+      description: |-
+        **WARNING: - Only do this when you know what you are doing. Run migrateJobTask first before run this script.**
         To migrate all job tasks(in array format).
       responses:
         '200':
@@ -9491,9 +9103,7 @@ components:
           $ref: '#/components/schemas/company'
         charges:
           type: number
-          description: >-
-            Charges amount from job or if you have customized while creating
-            invoice
+          description: Charges amount from job or if you have customized while creating invoice
         tax:
           type: number
           description: Tax amount to be added in charges to calculate the total invoice
@@ -9562,9 +9172,7 @@ components:
           properties:
             role:
               type: integer
-              description: >-
-                0->OFFICE_ADMIN 1->TECHNICIAN 2->MANAGER 3->COMPANY_ADMIN
-                4->Admin_Employee 5->GLOBAL_ADMIN 6->Customer
+              description: 0->OFFICE_ADMIN 1->TECHNICIAN 2->MANAGER 3->COMPANY_ADMIN 4->Admin_Employee 5->GLOBAL_ADMIN 6->Customer
         info:
           type: object
           properties:
@@ -9577,9 +9185,7 @@ components:
           description: Company data, returned only if the user type is company
         company:
           type: string
-          description: >-
-            Company id who created this user, returned if the user is an
-            employee like a technician, manager or office admin
+          description: Company id who created this user, returned if the user is an employee like a technician, manager or office admin
     EquipmentType:
       type: object
       properties:
@@ -9592,9 +9198,7 @@ components:
           description: Id of industry to which this type belongs.
         createdBy:
           type: string
-          description: >-
-            Id of the company who created it, or null if the global admin
-            created it.
+          description: Id of the company who created it, or null if the global admin created it.
     EquipmentBrand:
       type: object
       properties:
@@ -9604,9 +9208,7 @@ components:
           type: string
         createdBy:
           type: string
-          description: >-
-            Id of the company who created it, or null if the global admin
-            created it.
+          description: Id of the company who created it, or null if the global admin created it.
     MergeCustomer:
       type: object
       properties:
@@ -9783,9 +9385,7 @@ components:
           description: industry id for whome the job type was created
         createdBy:
           type: string
-          description: >-
-            Id of the company who created it, or null if the global admin
-            created it.
+          description: Id of the company who created it, or null if the global admin created it.
     Item:
       type: object
       properties:
@@ -9816,9 +9416,7 @@ components:
           description: If the job is fixed or hourly
         charges:
           type: number
-          description: >-
-            Charges form job type or if entered custom charges while creating a
-            job
+          description: Charges form job type or if entered custom charges while creating a job
         jobType:
           type: object
           properties:
@@ -9863,9 +9461,7 @@ components:
           description: Id of company to whom this invoice belongs
         charges:
           type: number
-          description: >-
-            Charges amount from job or if you have customized while creating
-            invoice
+          description: Charges amount from job or if you have customized while creating invoice
         taxPercentage:
           type: number
           description: Tax percentage applied to invoice default will be 0
@@ -9904,9 +9500,7 @@ components:
           description: Custom invoice id to be shown on invoice
         charges:
           type: number
-          description: >-
-            Charges amount from job or if you have customized while creating
-            invoice
+          description: Charges amount from job or if you have customized while creating invoice
         taxPercentage:
           type: number
           description: Tax percentage applied to invoice default will be 0
@@ -10066,9 +9660,7 @@ components:
               description: Status of job if it is finshed or not
             employeeType:
               type: boolean
-              description: >-
-                If false that means assigned to employee if true that means job
-                is assigned to vendor or vendors employee
+              description: If false that means assigned to employee if true that means job is assigned to vendor or vendors employee
             dateTime:
               type: string
               description: Time when job was scheduled
@@ -10300,9 +9892,7 @@ components:
           description: Id of the customer equipment if linked any
         status:
           type: string
-          description: >-
-            status of purchase order 0 => pending, 1 => approved by customer, 2
-            => cancelled by customer
+          description: status of purchase order 0 => pending, 1 => approved by customer, 2 => cancelled by customer
         total:
           type: number
           description: total amount of the purchase order
@@ -10355,9 +9945,7 @@ components:
           description: Note fot the estimate
         status:
           type: string
-          description: >-
-            status of estimate 0 => pending, 1 => approved by customer, 2 =>
-            cancelled by customer
+          description: status of estimate 0 => pending, 1 => approved by customer, 2 => cancelled by customer
         total:
           type: number
           description: total amount of the estimate
@@ -10784,9 +10372,7 @@ components:
           description: Status of job if it is finshed or not
         employeeType:
           type: boolean
-          description: >-
-            If false that means assigned to employee if true that means job is
-            assigned to vendor or vendors employee
+          description: If false that means assigned to employee if true that means job is assigned to vendor or vendors employee
         dateTime:
           type: string
           description: Time when job was scheduled
@@ -11015,14 +10601,10 @@ components:
               description: Custom invoice id to be shown on invoice
             invoiceType:
               type: number
-              description: >-
-                0 for the invoice for job and 1 for the invoice of purchase
-                order
+              description: 0 for the invoice for job and 1 for the invoice of purchase order
             purchaseOrder:
               type: string
-              description: >-
-                Id of the purchase order if the invoic is for purchase order
-                only
+              description: Id of the purchase order if the invoic is for purchase order only
             issuedDate:
               type: string
               description: Issued date of the invoice
@@ -11038,9 +10620,7 @@ components:
                 type: string
             charges:
               type: number
-              description: >-
-                Charges amount from job or if you have customized while creating
-                invoice
+              description: Charges amount from job or if you have customized while creating invoice
             taxPercentage:
               type: number
               description: Tax percentage applied to invoice default will be 0
@@ -11133,6 +10713,28 @@ components:
               description: Auth token to be used in next apis
             user:
               $ref: '#/components/schemas/User'
+    CommissionHistoryResponse:
+      type: object
+      properties:
+        _id:
+          type: string
+        technicianOrContractor:
+          type: string
+        effectiveDate:
+          type: string
+        commission:
+          type: number
+        editedBy:
+          type: object
+          properties:
+            _id:
+              type: string
+            displayName:
+              type: string
+        createdAt:
+          type: string
+        updateAt:
+          type: string
   securitySchemes:
     Bearer:
       type: apiKey
