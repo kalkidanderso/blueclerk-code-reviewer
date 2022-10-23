@@ -3760,6 +3760,7 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
                            
                 const contractor = await Company.findById(history.technicianOrContractor).exec();
                 if (contractor) {
+                    console.log('there is a contractor', contractor)
                     //update that commision
                     contractor.commission = history.commission
                     // Find if vendor already have invoice commission
@@ -3858,7 +3859,7 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
             }                     
             
         }
-    }
+    } 
     return res.json({ status: Status.OK });
 }
 
