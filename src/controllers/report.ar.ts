@@ -141,9 +141,7 @@ export const _customAccountReceivableReport = async (companyId: string, params: 
  */
 const _generateAccountReceivableReport = async (companyId: string, params: any) => {
 
-    let asOf = params.asOf ? params.asOf : new Date();
-    asOf = moment.utc(asOf).endOf('day').format();
-
+    // Construct the basic filter query
     const query: any = {
         company: new ObjectId(companyId),
         paid: { $ne: true },
@@ -151,16 +149,20 @@ const _generateAccountReceivableReport = async (companyId: string, params: any) 
         isVoid: { $ne: true }
     };
 
-    // TODO: params customer ids
-    // if (params.customerIds) {
-    //     const customerIds = [];
-    //     for (const customerId of JSON.parse(params.customerIds)) {
-    //         if (ObjectId.isValid(customerId)) {
-    //             customerIds.push(new ObjectId(customerId));
-    //         }
-    //     }
-    //     query.customer = { $in: customerIds };
-    // }
+    // Handle if there asOf params provided, otherwise using today as default
+    let asOf = params.asOf ? params.asOf : new Date();
+    asOf = moment.utc(asOf).endOf('day').format();
+
+    // Handle if there multiple customers to be filtered
+    if (params.customerIds) {
+        const customerIds = [];
+        for (const customerId of JSON.parse(params.customerIds)) {
+            if (ObjectId.isValid(customerId)) {
+                customerIds.push(new ObjectId(customerId));
+            }
+        }
+        query.customer = { $in: customerIds };
+    }
 
     // Aging bucket current (-999 to 0)
     const agingCurrent = await _getAgingBucket({ id: 1, label: 'Current', asOf, end: 0, query });
