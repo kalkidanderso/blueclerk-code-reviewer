@@ -99,8 +99,6 @@ export interface ICompany extends Document{
     balance: number;
     credit: number;
     commission: number;
-    commissionEffectiveDate?: Date;
-    commissionHistory?: ICommissionHistoryItems[];
 }
 
 export interface IQBCompany {
@@ -319,33 +317,7 @@ const CompanySchema = new Schema({
         type: Number,
         default: null
     },
-     commissionHistory: [
-      {
-        editDate: {
-          type: Date,
-          default: null,
-        },
-        effectiveDate: {
-          type: Date,
-          default: null,
-        },
-        commission: {
-          type: Number,
-          default: null,
-        },
-        editedBy: {
-          id: {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
-          },
-          displayName: String,
-        },
-      },
-    ],
-    commissionEffectiveDate: {
-      type: Date,
-      default: null,
-    },
+     
     companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
 }, { timestamps: { createdAt: true, updatedAt: true } })
 

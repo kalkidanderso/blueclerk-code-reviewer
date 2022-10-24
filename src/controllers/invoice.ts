@@ -3619,8 +3619,7 @@ export const updateCommission = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'Vendor not found' });
             }
 
-           // Update vendor's commission effective date
-            contractor.commissionEffectiveDate = params.commissionEffectiveDate
+          
 
             //chack if the date is greater than today, if so, do nothing... else, do as you used to..
             if (
@@ -3682,8 +3681,7 @@ export const updateCommission = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'Employee not found' });
             }
 
-            //update employee effective date
-            employee.commissionEffectiveDate = params.commissionEffectiveDate;
+            
             //chack if the date is greater than today, if so, do not update commision... else, do as you used to..
             if (
                 new Date(params.commissionEffectiveDate).getTime() <= today.getTime()
