@@ -119,16 +119,7 @@ export interface IQBCompany {
     }
 }
 
-export interface ICommissionHistoryItems {
-  editDate: Date
-  effectiveDate: Date
-  commission: number
 
-  editedBy: {
-    id: string
-    displayName: string
-  }
-}
 
 const CompanySchema = new Schema({
 

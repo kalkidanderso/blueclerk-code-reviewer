@@ -4,7 +4,6 @@ import jwt from 'jsonwebtoken'
 import { Role, AccountTypes } from '../common/constants'
 import bcrypt from "bcrypt-nodejs"
 import moment from 'moment'
-import { ICommissionHistoryItems } from './Company';
 
 export interface IUser extends Document {
 
