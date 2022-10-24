@@ -9510,7 +9510,7 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "Filter invoices by multiple status. Format example: [\"UNPAID\", \"PARTIALLY PAID\", \"PAID\"]"
+                    "description": "Filter invoices by multiple status. Format example: [\"UNPAID\", \"PARTIALLY_PAID\", \"PAID\"]"
                   },
                   "customerId": {
                     "type": "string",
@@ -9571,6 +9571,11 @@
                   "dueDate": {
                     "type": "string",
                     "description": "Filter invoices by dueDate or before"
+                  },
+                  "recentOnly": {
+                    "type": "boolean",
+                    "description": "To force API to return only last 90 days even with any filter applied. Be default, when any filter applied, API will return all data so user could search through all invoices",
+                    "enum": [true, false]
                   }
                 }
               }
