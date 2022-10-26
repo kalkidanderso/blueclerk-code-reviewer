@@ -587,6 +587,12 @@ export const Validations = {
     check('reportSource').optional().isInt().toInt().withMessage('has to be number')
   ],
 
+  generateAccountReceivableReport: [
+    check('reportData').exists().withMessage(Messages.Required),
+    check('reportData').isInt().toInt().withMessage('has to be number'),
+    check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+  ],
+
   createMemorizedReport: [
     check('reportType').exists().withMessage(Messages.Required),
     check('reportType').isInt().toInt().withMessage('has to be number'),
