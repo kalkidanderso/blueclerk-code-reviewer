@@ -3628,48 +3628,60 @@ export const updateCommission = async (req: Request, res: Response) => {
                 // Update vendor's commission rate
                 contractor.commission = params.commission ?? null
                 // Find if vendor already have invoice commission
+                //--should only happen if the invoice issued date is greater than the effective date
                 const contractorInvoiceCommissions = await InvoiceCommission.find({
                 'technicians.contractor': contractor._id,
                 })
                 .populate('invoice')
                 .exec()
                 if (contractorInvoiceCommissions.length) {
-                // Iterate all invoice commissions
-                for (const invoiceCommission of contractorInvoiceCommissions) {
-                    const invoice = <IInvoice>invoiceCommission.invoice
-                    const totalTechnician = invoiceCommission?.technicians?.length
-                    const contractorCommission = invoiceCommission?.technicians?.find(
-                    (technician) =>
-                        technician?.contractor?.toString() ===
-                        contractor._id?.toString(),
-                    )
-                    if (!contractorCommission) {
-                    continue
+                    // Iterate all invoice commissions
+                    for (const invoiceCommission of contractorInvoiceCommissions) {
+                        const invoice = <IInvoice>invoiceCommission.invoice
+                        
+                        const totalTechnician = invoiceCommission?.technicians?.length
+                        const contractorCommission = invoiceCommission?.technicians?.find(
+                        (technician) =>
+                            technician?.contractor?.toString() ===
+                            contractor._id?.toString(),
+                        )
+                        if (!contractorCommission) {
+                        continue
+                        }
+
+                        if (!contractorCommission.paid) {
+                        /**
+                         * If invoice commission is not been paid,
+                         * update the amount with the new rate
+                         * now for this invoice- let's get the issuedDate and compare it to params effective date
+                         * if the issued date is less than effective date-- don't update, else update
+                         **/
+                            //get the individual invoice object
+                            const invoiceObject = await Invoice.findById(invoice).exec();
+
+                            if (new Date(invoiceObject.issuedDate).getTime() >= new Date(params.commissionEffectiveDate).getTime()) {
+                                contractorCommission.commission = params.commission ?? null;
+                                const commissionAmount =
+                                ((invoice.total / totalTechnician) * (params.commission ?? 0)) /
+                                100;
+                                contractorCommission.commissionAmount = Number(
+                                    commissionAmount.toFixed(2),
+                                );
+                            }          
+                           
+                            
+                        }
+
+                        // Recalculate vendor open balance
+                        commissionBalance += contractorCommission.commissionAmount
+                        await invoiceCommission.save()
                     }
-
-                    if (!contractorCommission.paid) {
-                    /**
-                     * If invoice commission is not been paid,
-                     * update the amount with the new rate
-                     */
-                    contractorCommission.commission = params.commission ?? null
-                    const commissionAmount =
-                        ((invoice.total / totalTechnician) * (params.commission ?? 0)) /
-                        100
-                    contractorCommission.commissionAmount = Number(
-                        commissionAmount.toFixed(2),
-                    )
-                    }
-
-                    // Recalculate vendor open balance
-                    commissionBalance += contractorCommission.commissionAmount
-                    await invoiceCommission.save()
-                }
+                    // Update vendor balance and save vendor object
+                    contractor.balance = commissionBalance
                 }
 
-                // Update vendor balance and save vendor object
-                contractor.balance = commissionBalance
-            } //else part here for commission processing if date is in future
+                
+            }
             
             await contractor.save();
 
@@ -3689,6 +3701,7 @@ export const updateCommission = async (req: Request, res: Response) => {
                 // Update employee's commission rate
                 employee.commission = params.commission ?? null
                 // Find if employee already have invoice commission
+                //--should only happen if the invoice issued date is greater than the effective date
                 const employeeInvoiceCommissions = await InvoiceCommission.find({
                 'technicians.technician': employee._id,
                 })
@@ -3711,14 +3724,21 @@ export const updateCommission = async (req: Request, res: Response) => {
                     /**
                      * If invoice commission is not been paid,
                      * update the amount with the new rate
-                     */
-                    employeeCommission.commission = params.commission ?? null
-                    const commissionAmount =
+                     * now for this invoice- let's get the issuedDate and compare it to params effective date
+                     * if the issued date is less than effective date-- don't update, else update
+                     **/
+                    const invoiceObject = await Invoice.findById(invoice).exec();
+                    if (new Date(invoiceObject.issuedDate).getTime() >= new Date(params.commissionEffectiveDate).getTime()) {
+                        employeeCommission.commission = params.commission ?? null
+                        const commissionAmount =
                         ((invoice.total / totalTechnician) * (params.commission ?? 0)) /
                         100
-                    employeeCommission.commissionAmount = Number(
+                        employeeCommission.commissionAmount = Number(
                         commissionAmount.toFixed(2),
-                    )
+                        )
+                    } 
+                        
+                    
                     }
 
                     // Recalculate employee open balance
