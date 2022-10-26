@@ -410,7 +410,8 @@ export const Validations = {
     check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
     check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
     check('isVoid').optional().isBoolean().toBoolean().withMessage('isVoid has to be boolean'),
-    check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')
+    check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided'),
+    check('recentOnly').optional().isBoolean().toBoolean().withMessage('recentOnly has to be boolean')
   ],
 
   createInvoice: [
@@ -581,6 +582,12 @@ export const Validations = {
 
   // REPORT
   generateIncomeReport: [
+    check('reportData').exists().withMessage(Messages.Required),
+    check('reportData').isInt().toInt().withMessage('has to be number'),
+    check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+  ],
+
+  generateAccountReceivableReport: [
     check('reportData').exists().withMessage(Messages.Required),
     check('reportData').isInt().toInt().withMessage('has to be number'),
     check('reportSource').optional().isInt().toInt().withMessage('has to be number')
