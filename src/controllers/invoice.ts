@@ -2357,7 +2357,7 @@ export const getInvoices = async (req: Request, res: Response) => {
         filterQuery['$and'].push({ 'jobSiteObj.address.zipcode': jobZipRegex });
     }
     if (params.technicianId) {
-        filterQuery['$and'].push({ 'jobObj.tasks.technician': new ObjectId(params.technicianId) });
+        filterQuery['$and'].push({ $or: [{ 'jobObj.tasks.technician': new ObjectId(params.technicianId) }, { 'jobObj.tasks.contractor': new ObjectId(params.technicianId) }] });
     }
     switch (params.isDraft) {
         case true:
