@@ -3758,56 +3758,13 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
     const commissionHistories = await CommissionHistory.find({ effectiveDate: { $gte: start, $lt: end } })
     if (commissionHistories?.length > 0) {
         for (const history of commissionHistories) {
-            let commissionBalance = 0;
             //    if type is contractor
             if (history?.type === 'vendor') {
-                           
+                
                 const contractor = await Company.findById(history.technicianOrContractor).exec();
                 if (contractor) {
-                    console.log('there is a contractor', contractor)
                     //update that commision
                     contractor.commission = history.commission
-                    // Find if vendor already have invoice commission
-                    const contractorInvoiceCommissions = await InvoiceCommission.find({
-                        'technicians.contractor': contractor._id,
-                    }).populate('invoice').exec()
-                    if (contractorInvoiceCommissions.length) {
-                        // Iterate all invoice commissions
-                        for (const invoiceCommission of contractorInvoiceCommissions) {
-                            const invoice = <IInvoice>invoiceCommission.invoice
-                            const totalTechnician = invoiceCommission?.technicians?.length
-                            const contractorCommission = invoiceCommission?.technicians?.find(
-                                (technician) =>
-                                    technician?.contractor?.toString() ===
-                                    contractor._id?.toString(),
-                            )
-                            if (!contractorCommission) {
-                                continue
-                            }
-
-                            if (!contractorCommission.paid) {
-                                /**
-                                 * If invoice commission is not been paid,
-                                 * update the amount with the new rate
-                                 */
-                                contractorCommission.commission = history.commission ?? null
-                                const commissionAmount =
-                                    ((invoice.total / totalTechnician) * (history.commission ?? 0)) /
-                                    100
-                                contractorCommission.commissionAmount = Number(
-                                    commissionAmount.toFixed(2),
-                                )
-                            }
-
-                            // Recalculate vendor open balance
-                            commissionBalance += contractorCommission.commissionAmount
-                            await invoiceCommission.save()
-                        }
-                    }
-
-                    // Update vendor balance and save vendor object
-                    contractor.balance = commissionBalance
-
                     await contractor.save()
                 }
             } else if (history?.type === 'employee') {
@@ -3815,47 +3772,6 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
                 if (employee) {
                   // update employee
                     employee.commission = history.commission
-                    // Find if employee already have invoice commission
-                    const employeeInvoiceCommissions = await InvoiceCommission.find({
-                    'technicians.technician': employee._id,
-                    })
-                    .populate('invoice')
-                    .exec()
-                    if (employeeInvoiceCommissions.length) {
-                        // Iterate all invoice commissions
-                        for (const invoiceCommission of employeeInvoiceCommissions) {
-                            const invoice = <IInvoice>invoiceCommission.invoice
-                            const totalTechnician = invoiceCommission?.technicians?.length
-                            const employeeCommission = invoiceCommission.technicians?.find(
-                            (technician) =>
-                                technician?.technician?.toString() === employee._id?.toString(),
-                            )
-                            if (!employeeCommission) {
-                            continue
-                            }
-
-                            if (!employeeCommission.paid) {
-                            /**
-                             * If invoice commission is not been paid,
-                             * update the amount with the new rate
-                             */
-                            employeeCommission.commission = history.commission ?? null
-                            const commissionAmount =
-                                ((invoice.total / totalTechnician) * (history.commission ?? 0)) /
-                                100
-                            employeeCommission.commissionAmount = Number(
-                                commissionAmount.toFixed(2),
-                            )
-                            }
-
-                            // Recalculate employee open balance
-                            commissionBalance += employeeCommission.commissionAmount
-                            await invoiceCommission.save()
-                        }
-                    }
-                    // Update employee balance and save employee object
-                    employee.balance = commissionBalance
-
                     await employee.save()
                     
                 }
