@@ -2357,7 +2357,7 @@ export const getInvoices = async (req: Request, res: Response) => {
         filterQuery['$and'].push({ 'jobSiteObj.address.zipcode': jobZipRegex });
     }
     if (params.technicianId) {
-        filterQuery['$and'].push({ 'jobObj.tasks.technician': new ObjectId(params.technicianId) });
+        filterQuery['$and'].push({ $or: [{ 'jobObj.tasks.technician': new ObjectId(params.technicianId) }, { 'jobObj.tasks.contractor': new ObjectId(params.technicianId) }] });
     }
     switch (params.isDraft) {
         case true:
@@ -2393,7 +2393,7 @@ export const getInvoices = async (req: Request, res: Response) => {
     if (params.lastEmailStartDate && params.lastEmailEndDate) {
         const lastEmailStartDate = moment(params.lastEmailStartDate).format('YYYY-MM-DD');
         const lastEmailEndDate = moment(params.lastEmailEndDate).format('YYYY-MM-DD');
-        filterQuery['$and'].push({ lastEmailSent: { $gtw: new Date(lastEmailStartDate), $ltw: new Date(lastEmailEndDate) } });
+        filterQuery['$and'].push({ lastEmailSent: { $gte: new Date(lastEmailStartDate), $lte: new Date(lastEmailEndDate) } });
     }
 
     // Deep clone filterQuery
@@ -2440,9 +2440,14 @@ export const getInvoices = async (req: Request, res: Response) => {
             { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
             { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
             { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
-            { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } }
+            { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } },
+            
         ]
     }
+
+    aggregateLookups.push({ $lookup: { from: 'contacts', localField: 'customerContactId', foreignField: '_id', as: 'contactsObj' } })
+
+
 
     // Filter jobs using aggregate to be search to another collection
     let invoices: IInvoice[] = await Invoice.aggregate([
@@ -3878,11 +3883,15 @@ const _getIsAllRecordsByParams = async (params: any): Promise<boolean> => {
     // Default is only send the last 90 days records
     let isAllRecords = false;
 
+    if (params.recentOnly) {
+        return isAllRecords;
+    }
+
     if (
         params.keyword ||
         params.invoiceId ||
         params.dueDate ||
-        // params.status ||
+        params.status ||
         (params.startAmount && params.endAmount) ||
         params.customerPO ||
         params.customerId ||
@@ -3894,8 +3903,8 @@ const _getIsAllRecordsByParams = async (params: any): Promise<boolean> => {
         params.jobState ||
         params.jobZip ||
         params.technicianId ||
-        // (params.isDraft !== undefined && params.isDraft !== null) ||
-        // (params.isVoid !== undefined && params.isVoid !== null) ||
+        (params.isDraft !== undefined && params.isDraft !== null) ||
+        (params.isVoid !== undefined && params.isVoid !== null) ||
         (params.startDate && params.endDate) ||
         (params.lastEmailStartDate && params.lastEmailEndDate)
     ) {
