@@ -2440,9 +2440,14 @@ export const getInvoices = async (req: Request, res: Response) => {
             { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
             { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
             { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
-            { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } }
+            { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } },
+            
         ]
     }
+
+    aggregateLookups.push({ $lookup: { from: 'contacts', localField: 'customerContactId', foreignField: '_id', as: 'contactsObj' } })
+
+
 
     // Filter jobs using aggregate to be search to another collection
     let invoices: IInvoice[] = await Invoice.aggregate([
