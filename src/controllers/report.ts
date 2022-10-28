@@ -13,11 +13,11 @@ import { ICompany } from '../models/Company';
 import { EmailDefault, EmailTypes } from '../models/EmailDefault';
 import { Invoice } from '../models/Invoice';
 import { ICustomer } from '../models/Customer';
-import { ReportTypes, ReportData, ReportSources, IncomeReport, MemorizedReport, IIncomeReport, IMemorizedReport, IAllReport, IIncomeReportResponse } from '../models/Report';
+import { ReportTypes, ReportData, ReportSources, IncomeReport, MemorizedReport, IIncomeReport, IMemorizedReport, IAllReport, IIncomeReportResponse, ReportTypesString } from '../models/Report';
 
 import { getPlaceholderValues, transformPlaceholders, _createCompanyDefaultEmail } from '../controllers/emailDefault';
 import { downloadFileToPath } from '../controllers/invoice';
-import { _customAccountReceivableReport, _standardAccountReceivableReport } from '../controllers/report.ar';
+import { _customAccountReceivableReport, _generateAccountReceivableReportPdf, _standardAccountReceivableReport } from '../controllers/report.ar';
 
 
 /**
@@ -274,6 +274,60 @@ export const generateIncomeReportPdf = async (req: Request, res: Response) => {
             customerIds: params.customerIds && JSON.parse(params.customerIds)
         },
     });
+}
+
+/**
+ * General Generate Report PDF Endpoint,
+ * available report type:
+ * 1) Income Report (Not been tested)
+ * 2) A/R Report
+ */
+export const generateReportPdf = async (req: Request, res: Response) => {
+
+    const { reportType } = req.params;
+    const params = req.query;
+    const company = req.company;
+
+    let generatedReport;
+    let report;
+
+    // Generate and retrieve the report data PDF by the report type
+    switch (reportType) {
+        case ReportTypesString.ACCOUNT_RECEIVABLE:
+            generatedReport = await _generateAccountReceivableReportPdf({
+                user: <IUser>req.user,
+                company,
+                params
+            });
+            report = generatedReport.accountReceivableReport;
+            break;
+
+        case ReportTypesString.INCOME:
+        default:
+            generatedReport = await _generateIncomeReportPdf({
+                user: <IUser>req.user,
+                company,
+                params
+            });
+            report = generatedReport.incomeReport;
+            break;
+    }
+
+    // Upload the PDF to the AWS
+    const reportUrl = await uploadFileInS3(generatedReport.fullPath, 'pdf');
+
+    return res.json({
+        status: Status.Success,
+        reportType: reportType ?? ReportTypes.INCOME,
+        reportData: params.reportData,
+        reportUrl,
+        report,
+        filter: {
+            ...params,
+            customerIds: params.customerIds && JSON.parse(params.customerIds)
+        }
+    });
+
 }
 
 export const getIncomeReportEmailTemplate = async (req: Request, res: Response) => {
