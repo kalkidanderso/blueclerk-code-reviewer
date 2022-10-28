@@ -33,6 +33,13 @@ export const roundTwoDecimal = (num: number): number => {
     return Math.round(num * 100) / 100;
 }
 
+export const delimiterEnUs = (num: number): string => {
+
+    if (num === undefined || num === null) { return '0' };
+
+    return roundTwoDecimal(num)?.toLocaleString('en-US');
+}
+
 /**
  * @description Check if password good or not, password must be have at least: 8 characters long, 1 uppercase, 1 number, & 1 special character
  * @param password

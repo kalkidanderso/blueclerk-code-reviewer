@@ -12089,6 +12089,62 @@
         ]
       }
     },
+    "/generateReportPdf/accountReceivableReport": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To generate Account Receivable Report as PDF",
+        "parameters": [
+          {
+            "name": "reportData",
+            "in": "query",
+            "required": true,
+            "description": "1 => Standard Report; 2 => Custom Report",
+            "schema": {
+              "type": "number",
+              "enum": [
+                1,
+                2
+              ]
+            }
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "description": "To filter report as of a certain date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerIds",
+            "in": "query",
+            "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/jobLocation"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getMemorizedReports": {
       "get": {
         "tags": [
