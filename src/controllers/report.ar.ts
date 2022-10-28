@@ -1,8 +1,19 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import moment from 'moment';
+import fs from 'fs';
+import pdfmake from 'pdfmake';
+import * as _ from 'lodash';
+
+import { FONT_SETS, ACCOUNT_RECEIVABLE_REPORT_PDF_PATH } from '../common/config';
+import { Layouts, Styles } from '../common/constants.pdf';
+import { delimiterEnUs, roundTwoDecimal } from '../services/helper';
+
+import { IUser } from '../models/User';
+import { ICompany } from '../models/Company';
+import { Customer } from '../models/Customer';
 import { Invoice } from '../models/Invoice';
-import { roundTwoDecimal } from '../services/helper';
+import { AgingBuckets, IAccountReceivableReportResponse, ReportData } from '../models/Report';
 
 /**
  * Generate standard account receivable report,
@@ -39,7 +50,7 @@ export const _standardAccountReceivableReport = async (companyId: string, params
  */
 export const _customAccountReceivableReport = async (companyId: string, params: any) => {
 
-    const customerAgingBuckets: any[] = [];
+    let customerAgingBuckets: any[] = [];
 
     // Call the generic function to generate the basic AR report
     const { query, totalUnpaid, agingCurrent, aging130, aging3160, aging6190, aging91over } = await _generateAccountReceivableReport(companyId, params);
@@ -119,6 +130,9 @@ export const _customAccountReceivableReport = async (companyId: string, params: 
             existingCustAB?.agingBuckets?.push({ ...agingBucket });
         }
     }
+
+    // Sort the customer list by display name
+    customerAgingBuckets = _.sortBy(customerAgingBuckets, [(cab: any) => { return cab?.customer?.profile?.displayName?.toUpperCase(); }]);
 
     return {
         totalUnpaid,
@@ -247,5 +261,289 @@ const _getAgingBucket = async (
         endPeriod: end,
         totalUnpaid: roundTwoDecimal(agingBucketAggregate[0]?.totalUnpaid),
     };
+
+}
+
+// Partial method to generate A/R Report PDF
+export const _generateAccountReceivableReportPdf = async({
+    user,
+    company,
+    params
+}: {
+    user: IUser,
+    company: ICompany,
+    params: any
+}): Promise<{ fullPath: string, accountReceivableReport: IAccountReceivableReportResponse }> => {
+
+    let accountReceivableReport: IAccountReceivableReportResponse;
+    let reportType: string;
+
+    // Retrieve the report data based, either standard or custom
+    switch (params.reportData) {
+        case ReportData.CUSTOM:
+            accountReceivableReport = await _customAccountReceivableReport(company._id, params);
+            break;
+
+        case ReportData.STANDARD:
+        default:
+            accountReceivableReport = await _standardAccountReceivableReport(company._id, params);
+            break;
+    }
+
+    // Initialize PDF Make
+    const pdfMake = new pdfmake(FONT_SETS.ROBOTO);
+    // Generate the PDF content
+    const generatePdf = await _handleReportPdf({ company, accountReceivableReport, user, params });
+    // Construct the PDF full path
+    const fullPath = `${ACCOUNT_RECEIVABLE_REPORT_PDF_PATH}/${Date.now()}.pdf`;
+
+    return new Promise((resolve) => {
+        // Check if folder path exist, create if not
+        if (!fs.existsSync(ACCOUNT_RECEIVABLE_REPORT_PDF_PATH)) {
+            fs.mkdirSync(ACCOUNT_RECEIVABLE_REPORT_PDF_PATH);
+        }
+        // Check if existing Invoice PDF exist, remove if any
+        if (fs.existsSync(fullPath)) {
+            fs.unlinkSync(fullPath);
+        }
+
+        const pdfDoc = pdfMake.createPdfKitDocument(generatePdf);
+        const writeStream = fs.createWriteStream(fullPath);
+        pdfDoc.pipe(writeStream);
+        pdfDoc.end();
+        writeStream.on('finish', resolve);
+    }).then(() => {
+        return { fullPath, accountReceivableReport }
+    })
+
+}
+
+// Partial method to generate the PDF content of A/R Report
+const _handleReportPdf = async({
+    company,
+    accountReceivableReport,
+    user,
+    params,
+}: {
+    company: ICompany,
+    accountReceivableReport: IAccountReceivableReportResponse,
+    user: IUser,
+    params: any,
+}): Promise<any> => {
+
+    // Handle As Of information if there asOf params provided, otherwise using today as default
+    let asOf = params.asOf ? params.asOf : moment().format("YYYY-MM-DD");
+    asOf = moment.utc(asOf).format('MMM. DD, YYYY');
+
+    // Handle Customer filter information if there customers param provided
+    let customerNames: string[];
+    let customerNamesStr = 'All';
+    if (params.customerIds) {
+        const customerIds = [];
+        for (const customerId of JSON.parse(params.customerIds)) {
+            if (ObjectId.isValid(customerId)) {
+                customerIds.push(new ObjectId(customerId));
+            }
+        }
+        const customers = await Customer.find({ _id: { $in: customerIds } }).sort({ 'profile.displayName': 1 });
+        customerNames = customers.map(cust => cust.profile?.displayName);
+        customerNamesStr = customerNames.join(', ');
+    }
+
+    // Construct empty table object for the customer and its aging list
+    const customerAgingTable: any = {
+        headerRows: 1,
+        widths: [55, 165, 60, 60, 60, 60, 60, 55],
+        height: 10,
+        body: [],
+    }
+
+    // Add AR Report's customer aging buckets to table object
+    const bodyTable: any = [];
+    if (accountReceivableReport?.customerAgingBuckets?.length) {
+        bodyTable.push([
+            {},
+            { text: 'Customer', style: 'defaultFontBold' },
+            { text: AgingBuckets.CURRENT, style: 'defaultFontBold', alignment: 'right' },
+            { text: AgingBuckets.AGING_1_30, style: 'defaultFontBold', alignment: 'right' },
+            { text: AgingBuckets.AGING_31_60, style: 'defaultFontBold', alignment: 'right' },
+            { text: AgingBuckets.AGING_61_90, style: 'defaultFontBold', alignment: 'right' },
+            { text: AgingBuckets.AGING_91_OVER, style: 'defaultFontBold', alignment: 'right' },
+            {}
+        ]);
+
+        /**
+         * Iterate all customer aging buckets,
+         * and push them to the customer aging table
+         */
+        for (const customerAgingBucket of accountReceivableReport?.customerAgingBuckets) {
+            const customer = customerAgingBucket?.customer;
+            const customerAging = customerAgingBucket?.agingBuckets;
+
+            const customerName = { text: `${customer?.profile?.displayName ?? ''}`, style: 'lineFontBold' };
+            const agingCurrent = { text: `$${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.CURRENT)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
+            const aging130 = { text: `$${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_1_30)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
+            const aging3160 = { text: `$${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_31_60)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
+            const aging6190 = { text: `$${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_61_90)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
+            const aging91over = { text: `$${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_91_OVER)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
+
+            bodyTable.push([
+                {},
+                customerName,
+                agingCurrent,
+                aging130,
+                aging3160,
+                aging6190,
+                aging91over,
+                {}
+            ]);
+        }
+    }
+
+    bodyTable.push([{}, {}, {}, {}, {}, {}, {}, {}]);
+    for (let i = 0; i < bodyTable.length; i++) {
+        customerAgingTable.body.push(bodyTable[i]);
+    }
+
+    // ===================================
+    // ===[ INITIALIZE PDF TEMPLATE ]=====
+    // ===================================
+    const docDefinition: any = {
+        pageSize: 'A4',
+        pageMargins: [0, 0, 70, 30],
+        content: [
+            {
+                // HEADER FIRST LINE: COMPANY NAME & AR REPORT TITLE
+                table: {
+                    widths: [44, 352, 120, 44],
+                    body: [
+                        [
+                            {},
+                            {
+                                text: `${company.info?.companyName?.toUpperCase()}`,
+                                style: 'title',
+                                border: undefined
+                            },
+                            {
+                                text: 'A/R REPORT',
+                                style: 'title',
+                                alignment: 'right',
+                                border: undefined
+                            },
+                            {}
+                        ],
+                    ],
+                },
+                layout: {
+                    ...Layouts.noBorders,
+                    paddingTop: (i: number, node: any) => { return 35; },
+                    paddingBottom: (i: number, node: any) => { return 15; },
+                },
+                style: 'titleTable'
+            },
+            {
+                // HEADER SECOND LINE: FILTERS & TOTAL OUTSTANDING
+                table: {
+                    widths: [44, 100, 263, 100, 44],
+                    body: [
+                        [
+                            {},
+                            { text: 'As Of', style: 'smallFont' },
+                            { text: 'Customer(s)', style: "smallFont", },
+                            { text: 'TOTAL OUTSTANDING', style: 'smallFontGray', alignment: 'right' },
+                            {}
+                        ],
+                        [
+                            {},
+                            { text: `${asOf}`, style: 'reportFilter' },
+                            { text: `${customerNamesStr}`, style: 'reportFilter' },
+                            { text: `$${delimiterEnUs(accountReceivableReport.totalUnpaid)}`, style: 'totalOutstanding', margin: [0, 0, 0, 20] },
+                            {}
+                        ],
+                    ]
+                },
+                layout: { ...Layouts.noBorders },
+                style: 'titleTable'
+            },
+            {
+                // GLOBAL AGING BUCKETS
+                table: {
+                    widths: [44, 94, 94, 94, 94, 94, 44],
+                    body: [
+                        [
+                            {},
+                            [
+                                { text: `${AgingBuckets.CURRENT}`, style: 'globalAgingTitle', },
+                                { text: `$${delimiterEnUs(accountReceivableReport.globalAgingBuckets?.agingCurrent?.totalUnpaid)}`, style: 'globalAgingOutstanding' }
+                            ],
+                            [
+                                { text: `${AgingBuckets.AGING_1_30}`, style: 'globalAgingTitle' },
+                                { text: `$${delimiterEnUs(accountReceivableReport.globalAgingBuckets?.aging130?.totalUnpaid)}`, style: 'globalAgingOutstanding' }
+                            ],
+                            [
+                                { text: `${AgingBuckets.AGING_31_60}`, style: 'globalAgingTitle' },
+                                { text: `$${delimiterEnUs(accountReceivableReport.globalAgingBuckets?.aging3160?.totalUnpaid)}`, style: 'globalAgingOutstanding' }
+                            ],
+                            [
+                                { text: `${AgingBuckets.AGING_61_90}`, style: 'globalAgingTitle' },
+                                { text: `$${delimiterEnUs(accountReceivableReport.globalAgingBuckets?.aging6190?.totalUnpaid)}`, style: 'globalAgingOutstanding' }
+                            ],
+                            [
+                                { text: `${AgingBuckets.AGING_91_OVER}`, style: 'globalAgingTitle' },
+                                { text: `$${delimiterEnUs(accountReceivableReport.globalAgingBuckets?.aging91over?.totalUnpaid)}`, style: 'globalAgingOutstanding' }
+                            ],
+                            {}
+                        ],
+                        [{}, {}, {}, {}, {}, {}, {}],
+                    ]
+                },
+                layout: { ...Layouts.custom },
+            },
+            {
+                // CUSTOMER LIST AGING BUCKETS
+                table: customerAgingTable,
+                layout: {
+                    ...Layouts.custom,
+                    paddingLeft: (i: number, node: any) => { return 1; },
+                    paddingRight: (i: number, node: any) => { return 1; },
+                    paddingTop: (i: number, node: any) => { return 15; },
+                    paddingBottom: (i: number, node: any) => { return 5; },
+                },
+            }
+        ],
+        footer: (currentPage: number, pageCount: number) => {
+            return [{
+                table: {
+                    widths: [44, 387, 85, 44],
+                    body: [
+                        [
+                            {},
+                            {
+                                text: `Generated for ${company.info?.companyName} by ${user.profile?.displayName} on ${moment(new Date()).format('MMM. DD, YYYY, hh:mm A')}`,
+                                style: 'smallFontGray',
+                                margin: [0, 10]
+                            },
+                            {
+                                text: `Page ${currentPage} of ${pageCount}`,
+                                style: 'smallFontGray',
+                                alignment: 'right',
+                                margin: [0, 10]
+                            },
+                            {}
+                        ],
+                    ],
+                },
+                fillColor: '#EAECF3',
+                layout: { ...Layouts.noBorders, },
+            }]
+        },
+        styles: Styles.default,
+        defaultStyle: {
+            columnGap: 10,
+            font: 'Roboto',
+        },
+    };
+
+    return docDefinition;
 
 }

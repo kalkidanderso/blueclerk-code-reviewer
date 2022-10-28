@@ -1,9 +1,15 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { ICompany } from "../models/Company";
+import { ICustomer } from "./Customer";
 
 export enum ReportTypes {
     INCOME = 1,
     ACCOUNT_RECEIVABLE = 2
+}
+
+export enum ReportTypesString {
+    INCOME = 'incomeReport',
+    ACCOUNT_RECEIVABLE = 'accountReceivableReport'
 }
 
 export enum ReportData {
@@ -30,11 +36,29 @@ export enum PeriodOptions {
     THIS_YEAR_TO_DATE = 'thisYearToDate'
 }
 
+export enum AgingBuckets {
+    CURRENT = 'Current',
+    AGING_1_30 = '1 - 30',
+    AGING_31_60 = '31 - 60',
+    AGING_61_90 = '61 - 90',
+    AGING_91_OVER = '91 and Over Past Due'
+}
+
 export interface IIncomeReportResponse {
     totalIncome: number,
     customerCount: number,
     jobCount: number,
     customers?: any[]
+}
+
+export interface IAccountReceivableReportResponse {
+    totalUnpaid: number,
+    globalAgingBuckets: any,
+    customerCount?: number,
+    customerAgingBuckets?: {
+        customer: ICustomer,
+        agingBuckets: any[]
+    }[]
 }
 
 export interface IMemorizedReport extends Document {

@@ -2431,6 +2431,16 @@ export default function (sio: any) {
     )
 
     router.get(
+        '/generateReportPdf/:reportType',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateReportPdf),
+        reportController.generateReportPdf
+    )
+
+    router.get(
         '/getMemorizedReports',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),

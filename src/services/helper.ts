@@ -33,6 +33,13 @@ export const roundTwoDecimal = (num: number): number => {
     return Math.round(num * 100) / 100;
 }
 
+export const delimiterEnUs = (num: number): string => {
+
+    if (num === undefined || num === null) { return '0' };
+
+    return roundTwoDecimal(num)?.toLocaleString('en-US');
+}
+
 /**
  * @description To wait with a custom time
  * @param ms (milisecond)
