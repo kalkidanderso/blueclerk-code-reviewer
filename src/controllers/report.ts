@@ -4,9 +4,10 @@ import moment from 'moment';
 import fs from 'fs';
 import pdfmake from 'pdfmake';
 
-import { sendIncomeReport, uploadFileInS3 } from '../services/aws';
+import { sendReportPdf, uploadFileInS3 } from '../services/aws';
 import { Messages, Status } from '../common/constants';
 import { INCOME_REPORT_PDF_PATH, INVOICE_FONT_PATH, INVOICE_IMAGE_PATH } from '../common/config';
+import { delimiterEnUs } from '../services/helper';
 
 import { IUser } from '../models/User';
 import { ICompany } from '../models/Company';
@@ -330,6 +331,12 @@ export const generateReportPdf = async (req: Request, res: Response) => {
 
 }
 
+// TODO: To be deprecated
+/**
+ * Kris' remark (Nov 1st, 2022):
+ * Already moved to generic getReportEmailTemplate,
+ * New API: /getReportEmailTemplate/:reportType
+ */
 export const getIncomeReportEmailTemplate = async (req: Request, res: Response) => {
     const params = req.query;
     const company = <ICompany>req.company;
@@ -360,6 +367,12 @@ export const getIncomeReportEmailTemplate = async (req: Request, res: Response) 
     });
 }
 
+// TODO: To be deprecated
+/**
+ * Kris' remark (Nov 1st, 2022):
+ * Already moved to generic sendReportEmail,
+ * New API: /sendReport/:reportType
+ */
 export const sendIncomeReportEmail = async (req: Request, res: Response) => {
     const params = req.body;
     const user = <IUser>req.user;
@@ -412,7 +425,7 @@ export const sendIncomeReportEmail = async (req: Request, res: Response) => {
     }
 
     // Call AWS SES method
-    await sendIncomeReport({
+    await sendReportPdf({
         subject: params.subject ?? emailDefault?.subject,
         message: params.message ?? emailDefault?.message,
         sender_email: user.auth?.email,
@@ -420,13 +433,135 @@ export const sendIncomeReportEmail = async (req: Request, res: Response) => {
         company_email: company.info?.companyEmail,
         company_logo: company.info?.logoUrl,
         recipient_emails: recipientEmails,
-        date_range: !(params.startDate && params.endDate) ? 'All Time' : `${moment(params.startDate).format('MMM. DD, YYYY')} - ${moment(params.endDate).format('MMM. DD, YYYY')}`,
-        income_pdf: filePath,
-        income_pdf_name: req.file?.originalname ?? filePath.replace(/^.*[\\\/]/, '')
+        report_pdf: filePath,
+        report_pdf_name: req.file?.originalname ?? filePath.replace(/^.*[\\\/]/, '')
     });
 
     // Update email history and last email sent info
     return res.json({ status: Status.Success, message: 'Report has been sent successfully.' });
+}
+
+export const getReportEmailTemplate = async (req: Request, res: Response) => {
+
+    const { reportType } = req.params;
+    const params = req.query;
+    const company = <ICompany>req.company;
+    let emailType, dateRange = 'All Time';
+
+    switch (reportType) {
+        case ReportTypesString.ACCOUNT_RECEIVABLE:
+            emailType = EmailTypes.ACCOUNT_RECEIVABLE_REPORT;
+            break;
+
+        case ReportTypesString.INCOME:
+        default:
+            emailType = EmailTypes.INCOME_REPORT;
+            dateRange = !(params.startDate && params.endDate) ? 'All Time' : `${moment(params.startDate).format('MMM. DD, YYYY')} - ${moment(params.endDate).format('MMM. DD, YYYY')}`
+            break;
+    }
+
+    // Retrieve company email default
+    let emailDefault = await EmailDefault.findOne({ company, emailType });
+    // Create email default if company coesn't have one yet
+    if (!emailDefault) {
+        await _createCompanyDefaultEmail(company, emailType);
+        emailDefault = await EmailDefault.findOne({ company, emailType });
+    }
+
+    /**
+     * Transfrom the email default placeholder symbol to fit Javascript Template Literal,
+     * '{{' become '${' & '}}' become '}'
+     */
+    await transformPlaceholders(emailDefault);
+    // Get available placeholder values for report email template
+    const { company_name, company_email, date_range } = await getPlaceholderValues({ company, dateRange });
+
+    return res.json({
+        status: Status.Success,
+        emailTemplate: {
+            from: company_email,
+            subject: eval('`' + emailDefault.subject + '`'),
+            message: eval('`' + emailDefault.message + '`')
+        }
+    });
+
+}
+
+export const sendReportEmail = async (req: Request, res: Response) => {
+
+    const { reportType } = req.params;
+    const params = req.body;
+    const user = <IUser>req.user;
+    const company = <ICompany>req.company;
+    let generatedReport, report, emailType;
+
+    // Generate and retrieve the report data PDF by the report type
+    switch (reportType) {
+        case ReportTypesString.ACCOUNT_RECEIVABLE:
+            generatedReport = await _generateAccountReceivableReportPdf({
+                user, company, params
+            });
+            report = generatedReport.accountReceivableReport;
+            emailType = EmailTypes.ACCOUNT_RECEIVABLE_REPORT;
+            break;
+
+        case ReportTypesString.INCOME:
+        default:
+            generatedReport = await _generateIncomeReportPdf({
+                user, company, params
+            });
+            report = generatedReport.incomeReport;
+            emailType = EmailTypes.INCOME_REPORT;
+            break;
+    }
+
+    const filePath = req.file?.path ?? generatedReport.fullPath;
+    let paramRecipients: string[];
+    let recipientEmails: string[];
+    let copyToMyself: boolean = params.copyToMyself;
+    try {
+        // Handle the stringify array of recipients value
+        if (params.recipients && !Array.isArray(params.recipients)) {
+            paramRecipients = JSON.parse(params.recipients);
+        }
+
+        recipientEmails = paramRecipients?.length > 0
+            ? paramRecipients
+            : [user?.auth?.email];
+
+        // Add the user's email himself if he wants to receive copy email
+        if (copyToMyself) {
+            recipientEmails.push(user.auth?.email);
+        }
+    } catch (error) {
+        console.log(error);
+        return res.json({ status: Status.Error, message: Messages.GenericError });
+    }
+
+    // Retrieve company email default
+    let emailDefault = await EmailDefault.findOne({ company, emailType });
+    // Create email default if company doesn't have one yet
+    if (!emailDefault) {
+        await _createCompanyDefaultEmail(company, emailType);
+        emailDefault = await EmailDefault.findOne({ company, emailType });
+    }
+    await transformPlaceholders(emailDefault);
+
+    // Call AWS SES method
+    await sendReportPdf({
+        subject: params.subject ?? emailDefault?.subject,
+        message: params.message ?? emailDefault?.message,
+        sender_email: user.auth?.email,
+        company_name: company.info?.companyName,
+        company_email: company.info?.companyEmail,
+        company_logo: company.info?.logoUrl,
+        recipient_emails: recipientEmails,
+        report_pdf: filePath,
+        report_pdf_name: req.file?.originalname ?? filePath.replace(/^.*[\\\/]/, '')
+    });
+
+    return res.json({ status: Status.Success, message: 'Report has been sent successfully.' });
+
 }
 
 
@@ -734,7 +869,7 @@ const _handleReportPdf = async ({
     if (incomeReport?.customers?.length) {
         for (const customer of incomeReport.customers) {
             const customerName = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `${customer.customer?.profile?.displayName ?? ''}`, style: "lineFontBold", alignment: "left" }];
-            const incomeTotal = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `$${customer.total}`, style: "lineFont", alignment: "right" }];
+            const incomeTotal = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `$${delimiterEnUs(customer.total)}`, style: "lineFont", alignment: "right" }];
             bodyTable.push([
                 {},
                 customerName,
@@ -812,36 +947,9 @@ const _handleReportPdf = async ({
                     widths: [48, 85, 110, 70, 63, 50, 74, 70],
                     body: [
 
-                        [
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {}
-                        ],
-                        [
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {}
-                        ],
-                        [
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {}
-                        ],
+                        [{}, {}, {}, {}, {}, {}, {}, {}],
+                        [{}, {}, {}, {}, {}, {}, {}, {}],
+                        [{}, {}, {}, {}, {}, {}, {}, {}],
                         [
                             {},
                             {
@@ -872,55 +980,14 @@ const _handleReportPdf = async ({
                             },
                             {},
                             {},
-                            { text: `$ ${incomeReport.totalIncome}`, fontSize: 14, bold: true, colSpan: 2, rowSpan: 2, alignment: 'right' },
+                            { text: `$ ${delimiterEnUs(incomeReport.totalIncome)}`, fontSize: 14, bold: true, colSpan: 2, rowSpan: 2, alignment: 'right' },
                             {},
                             {}
                         ],
-                        [
-                            {},
-                            [
-                                {},
-                                {},
-                                {}
-                            ],
-                            [{}, {}],
-
-                            {},
-                            {},
-                            {},
-                            {},
-                            {}
-                        ],
-                        [
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {}
-                        ],
-                        [
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {}
-                        ],
-                        [
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {}
-                        ],
+                        [{}, [{}, {}, {}], [{}, {}], {}, {}, {}, {}, {}],
+                        [{}, {}, {}, {}, {}, {}, {}, {}],
+                        [{}, {}, {}, {}, {}, {}, {}, {}],
+                        [{}, {}, {}, {}, {}, {}, {}, {}],
                     ],
                 },
                 fillColor: '#EAECF3',
@@ -941,7 +1008,7 @@ const _handleReportPdf = async ({
                                 text: "INVOICED",
                                 style: "smallFont",
                             }, {
-                                text: `$${incomeReport.totalIncome}`, style: "lineFontBold", align: "left"
+                                text: `$${delimiterEnUs(incomeReport.totalIncome)}`, style: "lineFontBold", align: "left"
                             }],
                             [{
                                 text: "CUSTOMERS",
@@ -962,21 +1029,9 @@ const _handleReportPdf = async ({
                                 style: "lineFontBold",
                                 alignment: "left",
                             }],
-                            {},
-                            {},
-                            {},
-                            {}
+                            {}, {}, {}, {}
                         ],
-                        [
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {}
-                        ],
+                        [{}, {}, {}, {}, {}, {}, {}, {}],
                     ],
                 },
                 layout: {

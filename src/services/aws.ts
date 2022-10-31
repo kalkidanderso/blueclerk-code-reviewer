@@ -348,11 +348,11 @@ export const sendInvoiceEmailToCustomer = async function (options: any) {
 
 }
 
-export const sendIncomeReport = async (options: any) => {
+export const sendReportPdf = async (options: any) => {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
 
-  let { subject, message, sender_email, company_name, company_email, company_logo, recipient_emails, date_range, income_pdf, income_pdf_name } = options;
+  let { subject, message, sender_email, company_name, company_email, company_logo, recipient_emails, date_range, income_pdf, income_pdf_name, report_pdf, report_pdf_name } = options;
 
   AWS.config.update({
     region: AWS_REGION,
@@ -398,11 +398,11 @@ export const sendIncomeReport = async (options: any) => {
   ];
 
   // Attachment PDF if provided
-  if (income_pdf) {
-    const pdfFile = fs.readFileSync(income_pdf);
+  if (report_pdf) {
+    const pdfFile = fs.readFileSync(report_pdf);
     const ATTACHMENT = pdfFile.toString("base64").replace(/([^\0]{76})/g, "$1\n");
 
-    rawMessage.push(`Content-Type: application/octet-stream; name=\"${income_pdf_name}\"`);
+    rawMessage.push(`Content-Type: application/octet-stream; name=\"${report_pdf_name}\"`);
     rawMessage.push(`Content-Transfer-Encoding: base64`);
     rawMessage.push(`Content-Disposition: attachment\n`);
     rawMessage.push(`${ATTACHMENT}\n`);
