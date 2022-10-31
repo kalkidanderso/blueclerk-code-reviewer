@@ -163,6 +163,10 @@
       "description": "For all reports"
     },
     {
+      "name": "Memorized Report",
+      "description": "For all memorized reports"
+    },
+    {
       "name": "Image",
       "description": "For images"
     },
@@ -11905,10 +11909,11 @@
     },
     "/getIncomeReportEmailTemplate": {
       "get": {
+        "deprecated": true,
         "tags": [
           "Report"
         ],
-        "summary": "Get the income report email template before send the email",
+        "summary": "[Use the new GET /getReportEmailTemplate/incomeReport] Get the income report email template before send the email",
         "parameters": [
           {
             "name": "startDate",
@@ -11946,10 +11951,11 @@
     },
     "/sendIncomeReport": {
       "post": {
+        "deprecated": true,
         "tags": [
           "Report"
         ],
-        "summary": "To generate standard and custom income report as pdf",
+        "summary": "[Use the new POST /sendReport/incomeReport] To generate standard and custom income report as pdf",
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -12007,6 +12013,131 @@
                     "type": "string",
                     "description": "PDF file of invoice",
                     "format": "binary"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getReportEmailTemplate/incomeReport": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "Get the income report email template before send the email",
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/sendReport/incomeReport": {
+      "post": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To generate Income Report and send as attached email",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reportData"
+                ],
+                "properties": {
+                  "reportData": {
+                    "type": "string",
+                    "description": "1 => Standard Report; 2 => Custom Report",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "reportSource": {
+                    "type": "string",
+                    "description": "1 => Invoice; 2 => Job",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter report by start of invoice's issued date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter report by end of invoice's issued date"
+                  },
+                  "customerIds": {
+                    "type": "string",
+                    "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]"
+                  },
+                  "recipients": {
+                    "type": "string",
+                    "description": "List of all recipients in array. Example: [\"zyzorafu@abyssmail.com\",\"tiboqama@boximail.com\"]"
+                  },
+                  "subject": {
+                    "type": "string",
+                    "description": "Subject of the email, if not provided will use company's email default"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Message of the email, if not provided will use company's email default"
+                  },
+                  "copyToMyself": {
+                    "type": "boolean",
+                    "description": "To send copy to user himself"
                   }
                 }
               }
@@ -12145,10 +12276,108 @@
         ]
       }
     },
-    "/getMemorizedReports": {
+    "/getReportEmailTemplate/accountReceivableReport": {
       "get": {
         "tags": [
           "Report"
+        ],
+        "summary": "Get the report email template before send the email",
+        "parameters": [ ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/sendReport/accountReceivableReport": {
+      "post": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To generate A/R Report and send as attached email",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reportData"
+                ],
+                "properties": {
+                  "reportData": {
+                    "type": "number",
+                    "description": "1 => Standard Report; 2 => Custom Report",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "asOf": {
+                    "type": "string",
+                    "description": "To filter report as of a certain date",
+                  },
+                  "customerIds": {
+                    "type": "string",
+                    "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]"
+                  },
+                  "recipients": {
+                    "type": "string",
+                    "description": "List of all recipients in array. Example: [\"zyzorafu@abyssmail.com\",\"tiboqama@boximail.com\"]"
+                  },
+                  "subject": {
+                    "type": "string",
+                    "description": "Subject of the email, if not provided will use company's email default"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Message of the email, if not provided will use company's email default"
+                  },
+                  "copyToMyself": {
+                    "type": "boolean",
+                    "description": "To send copy to user himself"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getMemorizedReports": {
+      "get": {
+        "tags": [
+          "Memorized Report"
         ],
         "summary": "Returns list of all memorized reports that the company saved",
         "responses": {
@@ -12173,7 +12402,7 @@
     "/getMemorizedReport": {
       "get": {
         "tags": [
-          "Report"
+          "Memorized Report"
         ],
         "summary": "Return detail of one memorized report",
         "parameters": [
@@ -12208,7 +12437,7 @@
     "/createMemorizedReport": {
       "post": {
         "tags": [
-          "Report"
+          "Memorized Report"
         ],
         "summary": "To memorized a custom report",
         "requestBody": {
@@ -12302,7 +12531,7 @@
     "/updateMemorizedReport": {
       "put": {
         "tags": [
-          "Report"
+          "Memorized Report"
         ],
         "summary": "To update a memorized custom report",
         "requestBody": {
@@ -12393,7 +12622,7 @@
     "/deleteMemorizedReport": {
       "delete": {
         "tags": [
-          "Report"
+          "Memorized Report"
         ],
         "summary": "To delete a memorized custom report",
         "parameters": [
