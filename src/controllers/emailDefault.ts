@@ -6,7 +6,7 @@ import { ICompany } from '../models/Company';
 import { IUser } from '../models/User';
 import { ICustomer } from '../models/Customer';
 import { IInvoice } from '../models/Invoice';
-import { IEmailDefault, DefaultEmailTemplate, DefaultInvoicesEmailTemplate, EmailDefault, EmailTypes, DefaultIncomReportEmailTemplate } from '../models/EmailDefault';
+import { IEmailDefault, DefaultEmailTemplate, DefaultInvoicesEmailTemplate, EmailDefault, EmailTypes, DefaultIncomeReportEmailTemplate, DefaultARReportEmailTemplate } from '../models/EmailDefault';
 import { IJob } from 'src/models/Job';
 import { IContact } from 'src/common/contact';
 
@@ -132,9 +132,18 @@ export const _createCompanyDefaultEmail = async (company: ICompany, emailType: E
     switch (emailType) {
         case EmailTypes.INCOME_REPORT:
             await new EmailDefault({
-                subject: DefaultIncomReportEmailTemplate.subject,
-                message: DefaultIncomReportEmailTemplate.message,
+                subject: DefaultIncomeReportEmailTemplate.subject,
+                message: DefaultIncomeReportEmailTemplate.message,
                 emailType: EmailTypes.INCOME_REPORT,
+                company
+            }).save();
+            break;
+
+        case EmailTypes.ACCOUNT_RECEIVABLE_REPORT:
+            await new EmailDefault({
+                subject: DefaultARReportEmailTemplate.subject,
+                message: DefaultARReportEmailTemplate.message,
+                emailType: EmailTypes.ACCOUNT_RECEIVABLE_REPORT,
                 company
             }).save();
             break;

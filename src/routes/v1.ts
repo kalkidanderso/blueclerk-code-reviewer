@@ -2421,6 +2421,25 @@ export default function (sio: any) {
     )
 
     router.get(
+        '/getReportEmailTemplate/:reportType',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        reportController.getReportEmailTemplate
+    )
+
+    router.post(
+        '/sendReport/:reportType',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.sendReportEmail),
+        reportController.sendReportEmail
+    )
+
+    router.get(
         '/generateAccountReceivableReport',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
