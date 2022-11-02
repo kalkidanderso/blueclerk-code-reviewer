@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import moment from 'moment';
-import { Invoice } from '../models/Invoice';
 import { roundTwoDecimal } from '../services/helper';
+import { Customer } from '../models/Customer';
+import { Invoice } from '../models/Invoice';
 
 /**
  * Generate standard account receivable report,
@@ -39,10 +40,27 @@ export const _standardAccountReceivableReport = async (companyId: string, params
  */
 export const _customAccountReceivableReport = async (companyId: string, params: any) => {
 
-    const customerAgingBuckets: any[] = [];
+    let customerAgingBuckets: any[] = [];
+    let customers;
 
     // Call the generic function to generate the basic AR report
-    const { query, totalUnpaid, agingCurrent, aging130, aging3160, aging6190, aging91over } = await _generateAccountReceivableReport(companyId, params);
+    const { customerIds, query, totalUnpaid, agingCurrent, aging130, aging3160, aging6190, aging91over } = await _generateAccountReceivableReport(companyId, params);
+
+    /**
+     * Construct the global aging bucket,
+     * when there is only one customer filtered,
+     * global aging bucket is not necessary
+     */
+    let globalAgingBuckets;
+    if (customerIds.length !== 1) {
+        globalAgingBuckets = {
+            agingCurrent,
+            aging130,
+            aging3160,
+            aging6190,
+            aging91over,
+        };
+    }
 
     // Get the dates for aging bucket
     const aging91overDate = moment.utc(params.asOf).subtract(91, 'days').endOf('day').format();
@@ -98,6 +116,24 @@ export const _customAccountReceivableReport = async (companyId: string, params: 
         }
     ]);
 
+    // Prepare the customer list when customer filter is provided
+    if (customerIds.length > 0) {
+        // Retrieve all customers information
+        customers = await Customer.find({ _id: { $in: customerIds } });
+
+        /**
+         * Iterate all customers and put them into aging buckets.
+         * so even the customer don't have any amount owed,
+         * they still will be on the list with empty aging bucket
+         */
+        for (const customer of customers) {
+            customerAgingBuckets.push({
+                customer,
+                agingBuckets: []
+            });
+        }
+    }
+
     // Iterate all invoices from customer aggregate
     for (const customerInvoice of customerListAggregate) {
         // Find if the customer already on the customers list
@@ -120,15 +156,12 @@ export const _customAccountReceivableReport = async (companyId: string, params: 
         }
     }
 
+    // Sort the customer list by display name
+    customerAgingBuckets = _.sortBy(customerAgingBuckets, [(cab: any) => { return cab?.customer?.profile?.displayName?.toUpperCase(); }]);
+
     return {
         totalUnpaid,
-        globalAgingBuckets: {
-            agingCurrent,
-            aging130,
-            aging3160,
-            aging6190,
-            aging91over,
-        },
+        globalAgingBuckets,
         customerCount: customerAgingBuckets?.length,
         customerAgingBuckets
     };
@@ -154,8 +187,8 @@ const _generateAccountReceivableReport = async (companyId: string, params: any) 
     asOf = moment.utc(asOf).endOf('day').format();
 
     // Handle if there multiple customers to be filtered
+    const customerIds = [];
     if (params.customerIds) {
-        const customerIds = [];
         for (const customerId of JSON.parse(params.customerIds)) {
             if (ObjectId.isValid(customerId)) {
                 customerIds.push(new ObjectId(customerId));
@@ -194,6 +227,7 @@ const _generateAccountReceivableReport = async (companyId: string, params: any) 
     ]);
 
     return {
+        customerIds,
         query,
         totalUnpaid: roundTwoDecimal(totalUnpaidAggregate[0]?.totalUnpaid),
         agingCurrent,
