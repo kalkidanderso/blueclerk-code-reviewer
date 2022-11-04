@@ -293,8 +293,8 @@ export const generateReportPdf = async (req: Request, res: Response) => {
     let report;
 
     // Generate and retrieve the report data PDF by the report type
-    switch (reportType) {
-        case ReportTypesString.ACCOUNT_RECEIVABLE:
+    switch (reportType.toUpperCase()) {
+        case ReportTypesString.ACCOUNT_RECEIVABLE.toUpperCase():
             generatedReport = await _generateAccountReceivableReportPdf({
                 user: <IUser>req.user,
                 company,
@@ -303,7 +303,7 @@ export const generateReportPdf = async (req: Request, res: Response) => {
             report = generatedReport.accountReceivableReport;
             break;
 
-        case ReportTypesString.INCOME:
+        case ReportTypesString.INCOME.toUpperCase():
         default:
             generatedReport = await _generateIncomeReportPdf({
                 user: <IUser>req.user,
@@ -448,12 +448,12 @@ export const getReportEmailTemplate = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
     let emailType, dateRange = 'All Time';
 
-    switch (reportType) {
-        case ReportTypesString.ACCOUNT_RECEIVABLE:
+    switch (reportType.toUpperCase()) {
+        case ReportTypesString.ACCOUNT_RECEIVABLE.toUpperCase():
             emailType = EmailTypes.ACCOUNT_RECEIVABLE_REPORT;
             break;
 
-        case ReportTypesString.INCOME:
+        case ReportTypesString.INCOME.toUpperCase():
         default:
             emailType = EmailTypes.INCOME_REPORT;
             dateRange = !(params.startDate && params.endDate) ? 'All Time' : `${moment(params.startDate).format('MMM. DD, YYYY')} - ${moment(params.endDate).format('MMM. DD, YYYY')}`
