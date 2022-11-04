@@ -35,9 +35,9 @@ export const roundTwoDecimal = (num: number): number => {
 
 export const delimiterEnUs = (num: number): string => {
 
-    if (num === undefined || num === null) { return '0' };
+    if (num === undefined || num === null) { return '' };
 
-    return roundTwoDecimal(num)?.toLocaleString('en-US');
+    return `$${roundTwoDecimal(num)?.toLocaleString('en-US')}`;
 }
 
 /**

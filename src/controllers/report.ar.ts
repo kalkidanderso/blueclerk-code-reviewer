@@ -411,11 +411,11 @@ const _handleReportPdf = async({
             const customerAging = customerAgingBucket?.agingBuckets;
 
             const customerName = { text: `${customer?.profile?.displayName ?? ''}`, style: 'lineFontBold' };
-            const agingCurrent = { text: `$${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.CURRENT)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
-            const aging130 = { text: `$${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_1_30)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
-            const aging3160 = { text: `$${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_31_60)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
-            const aging6190 = { text: `$${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_61_90)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
-            const aging91over = { text: `$${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_91_OVER)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
+            const agingCurrent = { text: `${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.CURRENT)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
+            const aging130 = { text: `${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_1_30)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
+            const aging3160 = { text: `${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_31_60)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
+            const aging6190 = { text: `${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_61_90)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
+            const aging91over = { text: `${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_91_OVER)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
 
             bodyTable.push([
                 {},
@@ -487,7 +487,7 @@ const _handleReportPdf = async({
                             {},
                             { text: `${asOf}`, style: 'reportFilter' },
                             { text: `${customerNamesStr}`, style: 'reportFilter' },
-                            { text: `$${delimiterEnUs(accountReceivableReport.totalUnpaid)}`, style: 'totalOutstanding', margin: [0, 0, 0, 20] },
+                            { text: `${delimiterEnUs(accountReceivableReport.totalUnpaid)}`, style: 'totalOutstanding', margin: [0, 0, 0, 20] },
                             {}
                         ],
                     ]
@@ -504,23 +504,23 @@ const _handleReportPdf = async({
                             {},
                             [
                                 { text: `${AgingBuckets.CURRENT}`, style: 'globalAgingTitle', },
-                                { text: `$${delimiterEnUs(accountReceivableReport.globalAgingBuckets?.agingCurrent?.totalUnpaid)}`, style: 'globalAgingOutstanding' }
+                                { text: `${delimiterEnUs(accountReceivableReport.globalAgingBuckets?.agingCurrent?.totalUnpaid)}`, style: 'globalAgingOutstanding' }
                             ],
                             [
                                 { text: `${AgingBuckets.AGING_1_30}`, style: 'globalAgingTitle' },
-                                { text: `$${delimiterEnUs(accountReceivableReport.globalAgingBuckets?.aging130?.totalUnpaid)}`, style: 'globalAgingOutstanding' }
+                                { text: `${delimiterEnUs(accountReceivableReport.globalAgingBuckets?.aging130?.totalUnpaid)}`, style: 'globalAgingOutstanding' }
                             ],
                             [
                                 { text: `${AgingBuckets.AGING_31_60}`, style: 'globalAgingTitle' },
-                                { text: `$${delimiterEnUs(accountReceivableReport.globalAgingBuckets?.aging3160?.totalUnpaid)}`, style: 'globalAgingOutstanding' }
+                                { text: `${delimiterEnUs(accountReceivableReport.globalAgingBuckets?.aging3160?.totalUnpaid)}`, style: 'globalAgingOutstanding' }
                             ],
                             [
                                 { text: `${AgingBuckets.AGING_61_90}`, style: 'globalAgingTitle' },
-                                { text: `$${delimiterEnUs(accountReceivableReport.globalAgingBuckets?.aging6190?.totalUnpaid)}`, style: 'globalAgingOutstanding' }
+                                { text: `${delimiterEnUs(accountReceivableReport.globalAgingBuckets?.aging6190?.totalUnpaid)}`, style: 'globalAgingOutstanding' }
                             ],
                             [
                                 { text: `${AgingBuckets.AGING_91_OVER}`, style: 'globalAgingTitle' },
-                                { text: `$${delimiterEnUs(accountReceivableReport.globalAgingBuckets?.aging91over?.totalUnpaid)}`, style: 'globalAgingOutstanding' }
+                                { text: `${delimiterEnUs(accountReceivableReport.globalAgingBuckets?.aging91over?.totalUnpaid)}`, style: 'globalAgingOutstanding' }
                             ],
                             {}
                         ],
