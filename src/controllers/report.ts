@@ -869,7 +869,7 @@ const _handleReportPdf = async ({
     if (incomeReport?.customers?.length) {
         for (const customer of incomeReport.customers) {
             const customerName = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `${customer.customer?.profile?.displayName ?? ''}`, style: "lineFontBold", alignment: "left" }];
-            const incomeTotal = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `$${delimiterEnUs(customer.total)}`, style: "lineFont", alignment: "right" }];
+            const incomeTotal = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `${delimiterEnUs(customer.total)}`, style: "lineFont", alignment: "right" }];
             bodyTable.push([
                 {},
                 customerName,
@@ -980,7 +980,7 @@ const _handleReportPdf = async ({
                             },
                             {},
                             {},
-                            { text: `$ ${delimiterEnUs(incomeReport.totalIncome)}`, fontSize: 14, bold: true, colSpan: 2, rowSpan: 2, alignment: 'right' },
+                            { text: `${delimiterEnUs(incomeReport.totalIncome)}`, fontSize: 14, bold: true, colSpan: 2, rowSpan: 2, alignment: 'right' },
                             {},
                             {}
                         ],
@@ -1008,7 +1008,7 @@ const _handleReportPdf = async ({
                                 text: "INVOICED",
                                 style: "smallFont",
                             }, {
-                                text: `$${delimiterEnUs(incomeReport.totalIncome)}`, style: "lineFontBold", align: "left"
+                                text: `${delimiterEnUs(incomeReport.totalIncome)}`, style: "lineFontBold", align: "left"
                             }],
                             [{
                                 text: "CUSTOMERS",
