@@ -3656,10 +3656,9 @@ export const updateCommission = async (req: Request, res: Response) => {
                          * now for this invoice- let's get the issuedDate and compare it to params effective date
                          * if the issued date is less than effective date-- don't update, else update
                          **/
-                            //get the individual invoice object
-                            const invoiceObject = await Invoice.findById(invoice).exec();
+                            
 
-                            if (new Date(invoiceObject.issuedDate).getTime() >= new Date(params.commissionEffectiveDate).getTime()) {
+                            if (new Date(invoice.issuedDate).getTime() >= new Date(params.commissionEffectiveDate).getTime()) {
                                 contractorCommission.commission = params.commission ?? null;
                                 const commissionAmount =
                                 ((invoice.total / totalTechnician) * (params.commission ?? 0)) /
@@ -3727,8 +3726,7 @@ export const updateCommission = async (req: Request, res: Response) => {
                      * now for this invoice- let's get the issuedDate and compare it to params effective date
                      * if the issued date is less than effective date-- don't update, else update
                      **/
-                    const invoiceObject = await Invoice.findById(invoice).exec();
-                    if (new Date(invoiceObject.issuedDate).getTime() >= new Date(params.commissionEffectiveDate).getTime()) {
+                    if (new Date(invoice.issuedDate).getTime() >= new Date(params.commissionEffectiveDate).getTime()) {
                         employeeCommission.commission = params.commission ?? null
                         const commissionAmount =
                         ((invoice.total / totalTechnician) * (params.commission ?? 0)) /
