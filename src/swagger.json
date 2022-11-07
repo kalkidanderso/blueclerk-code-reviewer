@@ -163,6 +163,10 @@
       "description": "For all reports"
     },
     {
+      "name": "Memorized Report",
+      "description": "For all memorized reports"
+    },
+    {
       "name": "Image",
       "description": "For images"
     },
@@ -278,10 +282,11 @@
                     "enum": [
                       1,
                       2,
+                      3,
                       4,
                       5
                     ],
-                    "description": "1 => SERVICE PROVIDER, 2 => BUILDER, 4 => INDEPENDENT CONTRACTOR, 5 => COMPANY (old company signup)"
+                    "description": "1 => SERVICE PROVIDER, 2 => BUILDER, 3 => SUPPLIER, 4 => INDEPENDENT CONTRACTOR, 5 => COMPANY (old company signup)"
                   },
                   "email": {
                     "type": "string",
@@ -306,6 +311,10 @@
                   "companyName": {
                     "type": "string",
                     "description": "**REQUIRED when** accountType is 5 (COMPANY) for old company signup"
+                  },
+                  "supplierName": {
+                    "type": "string",
+                    "description": "**REQUIRED when** accountType is 3 (SUPPLIER) for supplier signup"
                   },
                   "industryId": {
                     "type": "string",
@@ -3964,6 +3973,47 @@
                     "customer": {
                       "$ref": "#/components/schemas/Customer"
                     }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getSupplierBuilders": {
+      "get": {
+        "tags": [
+          "Customer"
+        ],
+        "summary": "To get builders of a supplier",
+        "parameters": [
+          {
+            "name": "isActive",
+            "in": "query",
+            "description": "To filter the builders by isActive. If not provided will return only the Active Builders",
+            "schema": {
+              "enum": [
+                "ALL",
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContactSchemaResponse"
                   }
                 }
               }
@@ -9535,7 +9585,7 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "Filter invoices by multiple status. Format example: [\"UNPAID\", \"PARTIALLY PAID\", \"PAID\"]"
+                    "description": "Filter invoices by multiple status. Format example: [\"UNPAID\", \"PARTIALLY_PAID\", \"PAID\"]"
                   },
                   "customerId": {
                     "type": "string",
@@ -9596,6 +9646,11 @@
                   "dueDate": {
                     "type": "string",
                     "description": "Filter invoices by dueDate or before"
+                  },
+                  "recentOnly": {
+                    "type": "boolean",
+                    "description": "To force API to return only last 90 days even with any filter applied. Be default, when any filter applied, API will return all data so user could search through all invoices",
+                    "enum": [true, false]
                   }
                 }
               }
@@ -10817,6 +10872,20 @@
             }
           },
           {
+            "name": "payrollPaymentType",
+            "in": "query",
+            "description": "Payroll Payment Type",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Payroll Payments",
+                "Advance Payments",
+                "All"
+              ]              
+            }
+          },          
+          {
             "name": "startDate",
             "in": "query",
             "description": "Filter of start paid date",
@@ -10856,10 +10925,16 @@
                       "$ref": "#/components/schemas/GeneralAPIResponse"
                     },
                     "payments": {
-                      "type": "array",
+                      "type" : "array",
                       "items": {
                         "$ref": "#/components/schemas/Payment"
                       }
+                    },
+                    "advancePayments":{
+                      "type" : "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Payment"
+                      }                        
                     }
                   }
                 }
@@ -11614,6 +11689,149 @@
         ]
       }
     },
+    "/updateAdvancePaymentContractor": {
+      "put": {
+        "tags": [
+          "Advance Payment"
+        ],
+        "summary": "To update advance payment contractor record",
+        "description": "To update advance payment contractor record",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "id",
+                  "advancePaymentId",
+                  "amount"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "type of payment",
+                    "enum": [
+                      "vendor",
+                      "employee"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "description": "Id of vendor or employee"
+                  },
+                  "advancePaymentId": {
+                    "type": "string",
+                    "description": "Id of advance payment to edit"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "description": "Amount how much vendor/employee has paid"
+                  },
+                  "paymentType": {
+                    "type": "string",
+                    "description": "Method name how vendor/employee has paid",
+                    "enum": [
+                      "ACH",
+                      "Bank Wire",
+                      "Credit Card/Debit Card",
+                      "Check",
+                      "Cash"
+                    ]
+                  },
+                  "paidAt": {
+                    "type": "string",
+                    "description": "Date when the vendor/employee has made the payment"
+                  },
+                  "appliedAt": {
+                    "type": "string",
+                    "description": "Date when the advance payment is applied on, default to today if not provided"
+                  },
+                  "referenceNumber": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/voidAdvancePaymentContractor": {
+      "delete": {
+        "tags": [
+          "Advance Payment"
+        ],
+        "summary": "To void advance payment contractor",
+        "description": "To void advance payment contractor",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "advancePaymentId"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "type of payment (PaymentVendor or PaymentEmployee)",
+                    "enum": [
+                      "vendor",
+                      "employee"
+                    ]
+                  },
+                  "advancePaymentId": {
+                    "type": "string",
+                    "description": "Id of advance payment to void"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/generateIncomeReport": {
       "get": {
         "tags": [
@@ -11762,10 +11980,11 @@
     },
     "/getIncomeReportEmailTemplate": {
       "get": {
+        "deprecated": true,
         "tags": [
           "Report"
         ],
-        "summary": "Get the income report email template before send the email",
+        "summary": "[Use the new GET /getReportEmailTemplate/incomeReport] Get the income report email template before send the email",
         "parameters": [
           {
             "name": "startDate",
@@ -11803,10 +12022,11 @@
     },
     "/sendIncomeReport": {
       "post": {
+        "deprecated": true,
         "tags": [
           "Report"
         ],
-        "summary": "To generate standard and custom income report as pdf",
+        "summary": "[Use the new POST /sendReport/incomeReport] To generate standard and custom income report as pdf",
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -11890,10 +12110,345 @@
         ]
       }
     },
-    "/getMemorizedReports": {
+    "/getReportEmailTemplate/incomeReport": {
       "get": {
         "tags": [
           "Report"
+        ],
+        "summary": "Get the income report email template before send the email",
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/sendReport/incomeReport": {
+      "post": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To generate Income Report and send as attached email",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reportData"
+                ],
+                "properties": {
+                  "reportData": {
+                    "type": "string",
+                    "description": "1 => Standard Report; 2 => Custom Report",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "reportSource": {
+                    "type": "string",
+                    "description": "1 => Invoice; 2 => Job",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter report by start of invoice's issued date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter report by end of invoice's issued date"
+                  },
+                  "customerIds": {
+                    "type": "string",
+                    "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]"
+                  },
+                  "recipients": {
+                    "type": "string",
+                    "description": "List of all recipients in array. Example: [\"zyzorafu@abyssmail.com\",\"tiboqama@boximail.com\"]"
+                  },
+                  "subject": {
+                    "type": "string",
+                    "description": "Subject of the email, if not provided will use company's email default"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Message of the email, if not provided will use company's email default"
+                  },
+                  "copyToMyself": {
+                    "type": "boolean",
+                    "description": "To send copy to user himself"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/generateAccountReceivableReport": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To generate standard and custom account receivable report",
+        "parameters": [
+          {
+            "name": "reportData",
+            "in": "query",
+            "required": true,
+            "description": "1 => Standard Report; 2 => Custom Report",
+            "schema": {
+              "type": "number",
+              "enum": [
+                1,
+                2
+              ]
+            }
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "description": "To generate A/R Report as of certain date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerIds",
+            "in": "query",
+            "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/generateReportPdf/accountReceivableReport": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To generate Account Receivable Report as PDF",
+        "parameters": [
+          {
+            "name": "reportData",
+            "in": "query",
+            "required": true,
+            "description": "1 => Standard Report; 2 => Custom Report",
+            "schema": {
+              "type": "number",
+              "enum": [
+                1,
+                2
+              ]
+            }
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "description": "To filter report as of a certain date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerIds",
+            "in": "query",
+            "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/jobLocation"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getReportEmailTemplate/accountReceivableReport": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "Get the report email template before send the email",
+        "parameters": [ ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/sendReport/accountReceivableReport": {
+      "post": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To generate A/R Report and send as attached email",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reportData"
+                ],
+                "properties": {
+                  "reportData": {
+                    "type": "number",
+                    "description": "1 => Standard Report; 2 => Custom Report",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "asOf": {
+                    "type": "string",
+                    "description": "To filter report as of a certain date",
+                  },
+                  "customerIds": {
+                    "type": "string",
+                    "description": "To filter report by specific customers. Example: [\"62b4a51a6135175bbfbe79d0\",\"62a8cae104d1d70697ad6f4a\"]"
+                  },
+                  "recipients": {
+                    "type": "string",
+                    "description": "List of all recipients in array. Example: [\"zyzorafu@abyssmail.com\",\"tiboqama@boximail.com\"]"
+                  },
+                  "subject": {
+                    "type": "string",
+                    "description": "Subject of the email, if not provided will use company's email default"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Message of the email, if not provided will use company's email default"
+                  },
+                  "copyToMyself": {
+                    "type": "boolean",
+                    "description": "To send copy to user himself"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getMemorizedReports": {
+      "get": {
+        "tags": [
+          "Memorized Report"
         ],
         "summary": "Returns list of all memorized reports that the company saved",
         "responses": {
@@ -11918,7 +12473,7 @@
     "/getMemorizedReport": {
       "get": {
         "tags": [
-          "Report"
+          "Memorized Report"
         ],
         "summary": "Return detail of one memorized report",
         "parameters": [
@@ -11953,7 +12508,7 @@
     "/createMemorizedReport": {
       "post": {
         "tags": [
-          "Report"
+          "Memorized Report"
         ],
         "summary": "To memorized a custom report",
         "requestBody": {
@@ -12047,7 +12602,7 @@
     "/updateMemorizedReport": {
       "put": {
         "tags": [
-          "Report"
+          "Memorized Report"
         ],
         "summary": "To update a memorized custom report",
         "requestBody": {
@@ -12138,7 +12693,7 @@
     "/deleteMemorizedReport": {
       "delete": {
         "tags": [
-          "Report"
+          "Memorized Report"
         ],
         "summary": "To delete a memorized custom report",
         "parameters": [

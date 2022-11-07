@@ -1,9 +1,10 @@
 import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb'
 import moment from 'moment'
+import * as _ from 'lodash';
 import { roundTwoDecimal } from '../services/helper';
 
-import { Status, Messages, InvoiceStatus, DefaultCommission } from '../common/constants'
+import { Status, Messages, InvoiceStatus, payrollPaymentTypes } from '../common/constants'
 import { Company, ICompany } from '../models/Company'
 import { IUser, User } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
@@ -11,12 +12,8 @@ import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer, IPa
 import { Customer, ICustomer } from '../models/Customer'
 import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer'
 import { _createQBPayment, _deleteQBPayment, _updateQBPayment, _voidPayment } from './quickbook.payment'
-import { Employee } from '../models/Employee'
-import { Contract } from '../models/Contract'
-import { IJob, Job } from '../models/Job'
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission'
 import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor } from '../models/AdvancePayment';
-
 
 /**
  * To calculate invoice and customer payment amount related,
@@ -254,8 +251,10 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
 
     let query;
     let voidQuery;
+    let result;
     const params = req.query;
     const company = <ICompany>req.company;
+    const payrollPaymentType = params.payrollPaymentType;
     const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
     const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
 
@@ -279,84 +278,171 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
 
     switch (params.type) {
         case 'vendor':
+            result = _.extend({status: Status.Success});
             const vendorQuery = { company: company._id, contractor: params.id, ...query, ...voidQuery }
-            const contractorPayments = await PaymentVendor.find(vendorQuery)
-                .populate({
-                    path: 'company',
-                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-                })
-                .populate({
-                    path: 'contractor',
-                    select: 'info address contact',
-                    populate: [{ path: 'admin', select: 'profile auth.email contact' }]
-                })
-                .populate({
-                    path: 'invoices',
-                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
-                })
-                .populate({
-                    path: 'createdBy',
-                    select: 'profile.displayName auth.email'
-                })
-                .catch((error: any) => {
-                    return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
-                });
+            if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
+                const payments = await PaymentVendor.find(vendorQuery)
+                    .populate({
+                        path: 'company',
+                        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                    })
+                    .populate({
+                        path: 'contractor',
+                        select: 'info address contact',
+                        populate: [{ path: 'admin', select: 'profile auth.email contact' }]
+                    })
+                    .populate({
+                        path: 'invoices',
+                        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+                    })
+                    .populate({
+                        path: 'createdBy',
+                        select: 'profile.displayName auth.email'
+                    })
+                    .catch((error: any) => {
+                        return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+                    });
+                result = _.extend(result, { payments });
+            }
 
-            return res.json({ status: Status.Success, payments: contractorPayments, payment: contractorPayments });
+            if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
+                const advancePayments = await AdvancePaymentVendor.find(vendorQuery)
+                    .populate({
+                        path: 'company',
+                        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                    })
+                    .populate({
+                        path: 'contractor',
+                        select: 'info address contact',
+                        populate: [{ path: 'admin', select: 'profile auth.email contact' }]
+                    })
+                    .populate({
+                        path: 'invoices',
+                        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+                    })
+                    .populate({
+                        path: 'createdBy',
+                        select: 'profile.displayName auth.email'
+                    })
+                    .catch((error: any) => {
+                        return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+                    });
+                result = _.extend(result, { advancePayments });
+            }
+            return res.json(result);
 
         case 'employee':
+            result = _.extend({status: Status.Success});
             const employeeQuery = { company, employee: params.id, ...query, ...voidQuery }
-            const employeePayments = await PaymentEmployee.find(employeeQuery)
-                .populate({
-                    path: 'company',
-                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-                })
-                .populate({
-                    path: 'employee',
-                    select: 'profile auth.email address contact'
-                })
-                .populate({
-                    path: 'invoices',
-                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
-                })
-                .populate({
-                    path: 'createdBy',
-                    select: 'profile.displayName auth.email'
-                })
-                .catch((error: any) => {
-                    return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
-                });
+            if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
+                const payments = await PaymentEmployee.find(employeeQuery)
+                    .populate({
+                        path: 'company',
+                        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                    })
+                    .populate({
+                        path: 'employee',
+                        select: 'profile auth.email address contact'
+                    })
+                    .populate({
+                        path: 'invoices',
+                        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+                    })
+                    .populate({
+                        path: 'createdBy',
+                        select: 'profile.displayName auth.email'
+                    })
+                    .catch((error: any) => {
+                        return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+                    });
+                result = _.extend(result, { payments });
+            }
 
-            return res.json({ status: Status.Success, payments: employeePayments, payment: employeePayments });
+            if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
+                const advancePayments = await AdvancePaymentEmployee.find(employeeQuery)
+                    .populate({
+                        path: 'company',
+                        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                    })
+                    .populate({
+                        path: 'employee',
+                        select: 'profile auth.email address contact'
+                    })
+                    .populate({
+                        path: 'invoices',
+                        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+                    })
+                    .populate({
+                        path: 'createdBy',
+                        select: 'profile.displayName auth.email'
+                    })
+                    .catch((error: any) => {
+                        return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+                    });
+                result = _.extend(result, { advancePayments });
+            }
+            return res.json(result);
 
         default:
-            const payments = await Payment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery })
-                .populate({
-                    path: 'company',
-                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-                })
-                .populate({
-                    path: 'contractor',
-                    select: 'info address contact',
-                    populate: [{ path: 'admin', select: 'profile auth.email contact' }]
-                })
-                .populate({
-                    path: 'employee',
-                    select: 'profile auth.email address contact'
-                })
-                .populate({
-                    path: 'invoices',
-                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
-                })
-                .populate({
-                    path: 'createdBy',
-                    select: 'profile.displayName auth.email'
-                })
-                .catch((error: any) => {
-                    return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
-                });
+            result = _.extend({status: Status.Success});
+            if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
+                const payments = await Payment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery })
+                    .populate({
+                        path: 'company',
+                        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                    })
+                    .populate({
+                        path: 'contractor',
+                        select: 'info address contact',
+                        populate: [{ path: 'admin', select: 'profile auth.email contact' }]
+                    })
+                    .populate({
+                        path: 'employee',
+                        select: 'profile auth.email address contact'
+                    })
+                    .populate({
+                        path: 'invoices',
+                        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+                    })
+                    .populate({
+                        path: 'createdBy',
+                        select: 'profile.displayName auth.email'
+                    })
+                    .catch((error: any) => {
+                        return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+                    });
+                result = _.extend(result, { payments });
+            }
 
-            return res.json({ status: Status.Success, payments, payment: payments });
+            if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
+                const advancePayments = await AdvancePayment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery })
+                    .populate({
+                        path: 'company',
+                        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                    })
+                    .populate({
+                        path: 'contractor',
+                        select: 'info address contact',
+                        populate: [{ path: 'admin', select: 'profile auth.email contact' }]
+                    })
+                    .populate({
+                        path: 'employee',
+                        select: 'profile auth.email address contact'
+                    })
+                    .populate({
+                        path: 'invoices',
+                        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+                    })
+                    .populate({
+                        path: 'createdBy',
+                        select: 'profile.displayName auth.email'
+                    })
+                    .catch((error: any) => {
+                        return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+                    });
+                result = _.extend(result, { advancePayments });
+            }
+            return res.json(result);
     }
 
 }
@@ -1525,7 +1611,6 @@ const _getVendorPayments = async (vendors: any[], company: ICompany, queryPaymen
         queryPayment.contractor = vendor?.contractor?._id;
         queryAdvancePayment.contractor = vendor?.contractor?._id;
 
-        console.log('== queryAdvancePayment:', queryAdvancePayment);
         // query.contractor = vendor?.contractor?._id;
 
         // Retrieve advance payments history and the total of it

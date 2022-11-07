@@ -10,7 +10,7 @@ import { Company, ICompany } from '../models/Company';
 import { IUser, User } from '../models/User';
 import { Employee, IEmployee } from '../models/Employee';
 import { Contract } from '../models/Contract';
-import { CompanyAdmin, ICompanyAdmin } from '../models/CompanyAdmin';
+import { CompanyAdmin, ICompanyAdmin, ISupplierAdmin } from '../models/CompanyAdmin';
 import { IIndustry, Industry } from '../models/Industry';
 import { NotificationContract, INotificationContract } from '../models/NotificationDiscriminator';
 import { CompanyInvoice } from '../models/CompanyInvoice';
@@ -19,6 +19,8 @@ import { CustomerContact } from '../models/CustomerContact';
 import { Customer } from '../models/Customer';
 import { IndependentContractor } from '../models/IndependentContractor';
 import { ISession, Session } from '../models/Session';
+import { Supplier } from '../models/Supplier';
+import { createSupplier } from '../controllers/supplier';
 
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
@@ -39,7 +41,7 @@ export const login = (req: Request, res: Response, sio: any) => {
             }
 
             if (
-                [AccountTypes.BUILDER, AccountTypes.CONTRACTOR, AccountTypes.SUPPLIER].includes(Number(user.accountType))
+                [AccountTypes.BUILDER, AccountTypes.CONTRACTOR].includes(Number(user.accountType))
                 || [Role.CUSTOMER, Role.CUSTOMER_CONTACT, Role.CONTRACTOR].includes(Number(user.permissions.role))
             ) {
                 return res.json({
@@ -51,7 +53,13 @@ export const login = (req: Request, res: Response, sio: any) => {
                 });
             }
 
-            if ((user.permissions.role != Role.COMPANY_ADMIN && user.permissions.role != Role.ADMIN_EMPLOYEE && user.permissions.role != Role.GLOBAL_ADMIN && user.permissions.role != Role.CUSTOMER_CONTACT)) {
+            if (
+                user.permissions.role != Role.COMPANY_ADMIN &&
+                user.permissions.role != Role.SUPPLIER_ADMIN &&
+                user.permissions.role != Role.ADMIN_EMPLOYEE &&
+                user.permissions.role != Role.GLOBAL_ADMIN &&
+                user.permissions.role != Role.CUSTOMER_CONTACT
+            ) {
                 const employee = <IEmployee>user
 
                 Company.findById(employee.company,
@@ -86,7 +94,11 @@ export const login = (req: Request, res: Response, sio: any) => {
                         })
                     })
 
-            } else if (user.permissions.role == Role.GLOBAL_ADMIN || user.permissions.role == Role.COMPANY_ADMIN || user.permissions.role == Role.ADMIN_EMPLOYEE || user.permissions.role != Role.CUSTOMER_CONTACT) {
+            } else if (
+                user.permissions.role == Role.GLOBAL_ADMIN ||
+                user.permissions.role == Role.COMPANY_ADMIN ||
+                user.permissions.role == Role.ADMIN_EMPLOYEE
+            ) {
 
                 user.comparePassword(params.password, (isMatching: Boolean) => {
 
@@ -127,6 +139,25 @@ export const login = (req: Request, res: Response, sio: any) => {
                     )
 
 
+                })
+            } else if (user.permissions.role == Role.SUPPLIER_ADMIN) {
+                user.comparePassword(params.password, async (isMatching: Boolean) => {
+                    if (!isMatching) {
+                        return res.json({ status: Status.Error, message: Messages.InvalidEmailPassword });
+                    }
+
+                    const admin = <ISupplierAdmin>user;
+                    const supplier = await Supplier.findById(admin.supplier);
+
+                    req.session.save();
+
+                    return res.json({
+                        status: Status.Success,
+                        token: user.jwt(req),
+                        userType: user.permissions.role,
+                        AccountTypes: user.accountType,
+                        user, supplier
+                    });
                 })
             } else {
                 user.comparePassword(params.password, (isMatching: Boolean) => {
@@ -331,6 +362,13 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                     accountType: independentContractor.accountType,
                     user: independentContractor,
                 });
+
+            case AccountTypes.SUPPLIER:
+                if (!params.supplierName) {
+                    return res.json({ status: Status.Error, message: 'supplierName is required for Supplier Signup.' });
+                }
+                createSupplier(req, res, sio);
+                break;
 
             case AccountTypes.COMPANY:
             default:
@@ -927,7 +965,7 @@ const checkEmailExists = (req: Request, res: Response, next: (req: Request, res:
     // Validate against a password string
 
     if (params.password && !schema.validate(params.password)) {
-        return res.json({ 'status': Status.Error, 'message': "Your passsword is weak choose strong." })
+        return res.json({ status: Status.Error, message: Messages.PasswordNotStrong })
     }
 
     User.findOne(

@@ -28,6 +28,7 @@ import { sendScheduledJobEmailToAssignee } from './services/aws';
 import { Company } from './models/Company';
 import { Customer } from './models/Customer';
 import { Status, Messages, JobStatus } from './common/constants';
+import { _initializeFirebase } from './services/firebase';
 const timeout = require('connect-timeout');
 const MongoStore = require('connect-mongo');
 
@@ -114,10 +115,13 @@ app.use('/api-docs', (req: any, res: any, next: any) => {
 const httpServer = require('http').createServer(app);
 const sio = require("socket.io")(httpServer, {
   cors: true,
-  origins: ["https://blueclerk-frontend-react.deploy.blueclerk.com", 'http://testing.blueclerk.com', 'https://app.blueclerk.com'],
+  origins: ["https://blueclerk-frontend-react.deploy.blueclerk.com", 'http://testing.blueclerk.com', 'https://app.blueclerk.com', 'https://staging-suppliers.blueclerk.com'],
   transport: ['websocket']
 
 });
+
+// Initialize Firebase
+_initializeFirebase();
 
 // Authenticate Socket client by its Authorization token
 sio.use(socketioJwt.authorize({

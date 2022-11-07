@@ -36,8 +36,8 @@ import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail
 import { IJobSite } from '../models/JobSite';
 import { IJobLocation } from '../models/JobLocation';
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission';
-import { ICommissionHistory, CommissionHistory } from '../models/CommissionHistory';
-import { getDatesFilterQuery } from 'src/services/pagination';
+import { getDatesFilterQuery } from '../services/pagination';
+import { CommissionHistory } from 'src/models/CommissionHistory';
 
 /**
  * To reset Invoice quickbookId,
@@ -1603,16 +1603,15 @@ export const updateInvoice = (req: Request, res: Response) => {
                         invoice.updateOne({
                             jobPurchaseOrders: purchaseOrderIds,
                             items: invoiceItems,
-                            shippingCost: Math.round(shippingCost * 100) / 100,
-                            taxAmount: Math.round(taxAmount * 100) / 100,
-                            subTotal: Math.round(subTotalBeforeTax * 100) / 100,
-                            total: Math.round(total * 100) / 100,
-                            balanceDue: Math.round(balanceDue * 100) / 100,
-                            paymentApplied: Math.round(paymentApplied * 100) / 100,
+                            shippingCost: helper.roundTwoDecimal(shippingCost),
+                            taxAmount: helper.roundTwoDecimal(taxAmount),
+                            subTotal: helper.roundTwoDecimal(subTotalBeforeTax),
+                            total: helper.roundTwoDecimal(total),
+                            balanceDue: helper.roundTwoDecimal(balanceDue),
+                            paymentApplied: helper.roundTwoDecimal(paymentApplied),
                             status, paid,
                             charges, issuedDate, dueDate, note: params.note,
                             isDraft,
-                            paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                             customerPO: params.customerPO,
                             customerContactId: customerContact,
                             vendorId: params.vendorId,
@@ -1623,6 +1622,15 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 if (err) {
                                     return res.json({ status: Status.Error, message: Messages.GenericError });
                                 }
+
+                                /**
+                                 * Kris' remark (Sept 27th, 2022):
+                                 * Add additional update for payment term,
+                                 * to not update too many code for now,
+                                 * because the one above have omitUndefined true.
+                                 */
+                                invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
+                                await invoice.save();
 
                                 // To handle the switch of Invoice isDraft
                                 _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
@@ -1762,17 +1770,16 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                 invoice.updateOne({
                     items: invoiceItems,
-                    charges: Math.round(charges * 100) / 100,
-                    shippingCost: Math.round(shippingCost * 100) / 100,
-                    taxAmount: Math.round(taxAmount * 100) / 100,
-                    subTotal: Math.round(subTotalBeforeTax * 100) / 100,
-                    total: Math.round(total * 100) / 100,
-                    balanceDue: Math.round(balanceDue * 100) / 100,
-                    paymentApplied: Math.round(paymentApplied * 100) / 100,
+                    charges: helper.roundTwoDecimal(charges),
+                    shippingCost: helper.roundTwoDecimal(shippingCost),
+                    taxAmount: helper.roundTwoDecimal(taxAmount),
+                    subTotal: helper.roundTwoDecimal(subTotalBeforeTax),
+                    total: helper.roundTwoDecimal(total),
+                    balanceDue: helper.roundTwoDecimal(balanceDue),
+                    paymentApplied: helper.roundTwoDecimal(paymentApplied),
                     status, paid,
                     issuedDate, dueDate, note: params.note,
                     isDraft,
-                    paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                     customerPO: params.customerPO,
                     customerContactId: customerContact,
                     vendorId: params.vendorId,
@@ -1782,6 +1789,15 @@ export const updateInvoice = (req: Request, res: Response) => {
                         if (err) {
                             return res.json({ status: Status.Error, message: Messages.GenericError });
                         }
+
+                        /**
+                         * Kris' remark (Sept 27th, 2022):
+                         * Add additional update for payment term,
+                         * to not update too many code for now,
+                         * because the one above have omitUndefined true.
+                         */
+                        invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
+                        await invoice.save();
 
                         // To handle the switch of Invoice isDraft
                         _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
@@ -2358,7 +2374,7 @@ export const getInvoices = async (req: Request, res: Response) => {
         filterQuery['$and'].push({ 'jobSiteObj.address.zipcode': jobZipRegex });
     }
     if (params.technicianId) {
-        filterQuery['$and'].push({ 'jobObj.tasks.technician': new ObjectId(params.technicianId) });
+        filterQuery['$and'].push({ $or: [{ 'jobObj.tasks.technician': new ObjectId(params.technicianId) }, { 'jobObj.tasks.contractor': new ObjectId(params.technicianId) }] });
     }
     switch (params.isDraft) {
         case true:
@@ -2394,7 +2410,7 @@ export const getInvoices = async (req: Request, res: Response) => {
     if (params.lastEmailStartDate && params.lastEmailEndDate) {
         const lastEmailStartDate = moment(params.lastEmailStartDate).format('YYYY-MM-DD');
         const lastEmailEndDate = moment(params.lastEmailEndDate).format('YYYY-MM-DD');
-        filterQuery['$and'].push({ lastEmailSent: { $gtw: new Date(lastEmailStartDate), $ltw: new Date(lastEmailEndDate) } });
+        filterQuery['$and'].push({ lastEmailSent: { $gte: new Date(lastEmailStartDate), $lte: new Date(lastEmailEndDate) } });
     }
 
     // Deep clone filterQuery
@@ -2441,9 +2457,14 @@ export const getInvoices = async (req: Request, res: Response) => {
             { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
             { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
             { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
-            { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } }
+            { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } },
+            
         ]
     }
+
+    aggregateLookups.push({ $lookup: { from: 'contacts', localField: 'customerContactId', foreignField: '_id', as: 'contactsObj' } })
+
+
 
     // Filter jobs using aggregate to be search to another collection
     let invoices: IInvoice[] = await Invoice.aggregate([
@@ -3991,11 +4012,15 @@ const _getIsAllRecordsByParams = async (params: any): Promise<boolean> => {
     // Default is only send the last 90 days records
     let isAllRecords = false;
 
+    if (params.recentOnly) {
+        return isAllRecords;
+    }
+
     if (
         params.keyword ||
         params.invoiceId ||
         params.dueDate ||
-        // params.status ||
+        params.status ||
         (params.startAmount && params.endAmount) ||
         params.customerPO ||
         params.customerId ||
@@ -4007,8 +4032,8 @@ const _getIsAllRecordsByParams = async (params: any): Promise<boolean> => {
         params.jobState ||
         params.jobZip ||
         params.technicianId ||
-        // (params.isDraft !== undefined && params.isDraft !== null) ||
-        // (params.isVoid !== undefined && params.isVoid !== null) ||
+        (params.isDraft !== undefined && params.isDraft !== null) ||
+        (params.isVoid !== undefined && params.isVoid !== null) ||
         (params.startDate && params.endDate) ||
         (params.lastEmailStartDate && params.lastEmailEndDate)
     ) {

@@ -9,6 +9,7 @@ import {
 } from '../middleware/permissions'
 import { uploadInvoices, uploadImageInS3 } from '../middleware/multer';
 import { getCompanyId } from '../middleware/company'
+import { getSupplierId } from '../middleware/supplier';
 import { refreshQBToken } from '../middleware/quickbook';
 import { getTechnicianContractor } from '../middleware/job'
 
@@ -531,6 +532,15 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Customer_Update),
         validate(Validations.mergeCustomers),
         customerController.mergeCustomers
+    )
+
+    router.get(
+        '/getSupplierBuilders',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getSupplierId(),
+        // checkUserPermissions(Permissions.Customer_Get_All),
+        customerController.getSupplierBuilders
     )
 
     //Customer equipments
@@ -2396,6 +2406,26 @@ export default function (sio: any) {
         paymentAdvanceController.getAdvancePaymentsByContractor
     )
 
+    router.put(
+        '/updateAdvancePaymentContractor',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Payment),
+        validate(Validations.updateAdvancePaymentContractor),
+        paymentAdvanceController.updateAdvancePaymentContractor
+    )
+
+    router.delete(
+        '/voidAdvancePaymentContractor',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Payment),
+        validate(Validations.voidAdvancePaymentContractor),
+        paymentAdvanceController.voidAdvancePaymentContractor
+    )    
+
     // REPORT
 
     router.get(
@@ -2433,6 +2463,45 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.generateIncomeReport),
         reportController.sendIncomeReportEmail
+    )
+
+    router.get(
+        '/getReportEmailTemplate/:reportType',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        reportController.getReportEmailTemplate
+    )
+
+    router.post(
+        '/sendReport/:reportType',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.sendReportEmail),
+        reportController.sendReportEmail
+    )
+
+    router.get(
+        '/generateAccountReceivableReport',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateAccountReceivableReport),
+        reportController.generateAccountReceivableReport
+    )
+
+    router.get(
+        '/generateReportPdf/:reportType',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateReportPdf),
+        reportController.generateReportPdf
     )
 
     router.get(
@@ -2691,6 +2760,11 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         scriptController.updateQBCustomerJob
+    )
+
+    router.post(
+        '/script/revertBackInvoices',
+        scriptController.revertBackInvoices
     )
 
     router.post(

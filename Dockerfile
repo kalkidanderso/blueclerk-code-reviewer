@@ -1,10 +1,10 @@
-FROM node:12.3-alpine
+FROM node:14.20-alpine3.15
 
 ENV NODE_ENV development
 
 RUN apk update && apk upgrade && \
     apk --no-cache --virtual build-dependencies add \
-    bash git openssh g++ make gcc python build-base
+    bash git openssh g++ make gcc python2 build-base
 
 WORKDIR /usr/src/app
 COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "tsconfig.json", "./"]

@@ -410,7 +410,8 @@ export const Validations = {
     check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
     check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
     check('isVoid').optional().isBoolean().toBoolean().withMessage('isVoid has to be boolean'),
-    check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')
+    check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided'),
+    check('recentOnly').optional().isBoolean().toBoolean().withMessage('recentOnly has to be boolean')
   ],
 
   createInvoice: [
@@ -580,11 +581,50 @@ export const Validations = {
     check('id').isMongoId().withMessage(Messages.WrongId),
   ],
 
+  updateAdvancePaymentContractor: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('advancePaymentId').exists().withMessage(Messages.Required),
+    check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
+    check('amount').exists().withMessage(Messages.Required),
+    check('amount').isInt().toInt().withMessage('has to be number'),
+  ],  
+
+  voidAdvancePaymentContractor: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('advancePaymentId').exists().withMessage(Messages.Required),
+    check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
+  ],  
+
   // REPORT
   generateIncomeReport: [
     check('reportData').exists().withMessage(Messages.Required),
     check('reportData').isInt().toInt().withMessage('has to be number'),
     check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+  ],
+
+  generateAccountReceivableReport: [
+    check('reportData').exists().withMessage(Messages.Required),
+    check('reportData').isInt().toInt().withMessage('has to be number'),
+    check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+  ],
+
+  generateReportPdf: [
+    check('reportType').exists().withMessage(Messages.Required),
+    check('reportData').exists().withMessage(Messages.Required),
+    check('reportData').isInt().toInt().withMessage('has to be number'),
+    check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+  ],
+
+  sendReportEmail: [
+    check('reportType').exists().withMessage(Messages.Required),
+    check('reportData').exists().withMessage(Messages.Required),
+    check('reportData').isInt().toInt().withMessage('has to be number'),
+    check('reportSource').optional().isInt().toInt().withMessage('has to be number'),
+    check('copyToMyself').optional().isBoolean().toBoolean().withMessage('has to be boolean'),
   ],
 
   createMemorizedReport: [

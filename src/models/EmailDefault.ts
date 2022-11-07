@@ -2,6 +2,8 @@ import mongoose, { Document, Schema } from 'mongoose';
 import { ICompany } from './Company';
 import { IUser } from './User';
 
+// INTERFACE & ENUM
+
 export interface IEmailDefault extends Document {
 
     subject?: string
@@ -14,6 +16,15 @@ export interface IEmailDefault extends Document {
 
 }
 
+export enum EmailTypes {
+    INVOICE = 'INVOICE',
+    INVOICES = 'INVOICES',
+    INCOME_REPORT = 'INCOME_REPORT',
+    ACCOUNT_RECEIVABLE_REPORT = 'ACCOUNT_RECEIVABLE_REPORT',
+}
+
+// DEFAULT EMAIL TEMPLATES
+
 export const DefaultEmailTemplate = {
     subject: '{{invoice_number}} from {{company_name}}',
     message: 'Dear {{customer_name}},\n\nPlease see your invoice {{invoice_number}} attached with {{invoice_amount}} due on {{invoice_due_date}}.\n\nThank you for doing business with {{company_name}}\n{{small_company_logo}}'
@@ -24,16 +35,17 @@ export const DefaultInvoicesEmailTemplate = {
     message: 'Dear {{customer_name}},\n\nPlease see your open invoices attached with a total of {{invoice_total_amount}}.\n\nThank you for doing business with {{company_name}}\n{{small_company_logo}}'
 }
 
-export const DefaultIncomReportEmailTemplate = {
+export const DefaultIncomeReportEmailTemplate = {
     subject: 'Income report of {{company_name}}',
     message: 'Hello,\n\nPlease see your Income Report attached for this period: {{date_range}}.\n\n{{small_company_logo}}'
 }
 
-export enum EmailTypes {
-    INVOICE = 'INVOICE',
-    INVOICES = 'INVOICES',
-    INCOME_REPORT = 'INCOME_REPORT'
+export const DefaultARReportEmailTemplate = {
+    subject: 'Account Receivable report of {{company_name}}',
+    message: 'Hello,\n\nPlease see your Account Receivable Report attached.\n\n{{small_company_logo}}'
 }
+
+// MONGOOSE SCHEMA
 
 const EmailDefaultSchema = new Schema(
 

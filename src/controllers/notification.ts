@@ -112,7 +112,8 @@ export const getNotifications = (req: Request, res: Response) => {
             select: 'profile.displayName'
         })
         .populate({
-            path: 'metadata'
+            path: 'metadata',
+            populate: [{ path: 'jobRequest' }]
         })
         .exec((err: any, notifications: INotification[]) => {
             if (err) {

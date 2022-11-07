@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
-import { Status } from '../common/constants';
+import { Messages, Status } from '../common/constants';
 
 import { IUser } from '../models/User';
 import { ICompany } from '../models/Company';
 import { JobRequest } from '../models/JobRequest';
 import { IChat, Chat, ChatChannels, IJobRequestChat, JobRequestChat } from '../models/Chat';
+import { _handleNotification } from '../controllers/notification.firebase';
 
 /**
  * To create new chat
@@ -46,8 +47,8 @@ export const createChat = async (req: Request, res: Response) => {
             default:
                 break;
         }
-    } catch (error) {
-        return res.json({ status: Status.Error, message: error });
+    } catch (err) {
+        return res.json({ status: Status.Error, message: err?.message ?? Messages.GenericError });
     }
 
     return res.json({ status: Status.Success, message: 'Message sent successfully', chat });
@@ -62,6 +63,7 @@ export const getChats = async (req: Request, res: Response) => {
     const { chatChannel, id } = req.params;
     const company = <ICompany>req.company;
     let chats;
+    let unreadChat = 0;
 
     switch (chatChannel) {
         case ChatChannels.JOB_REQUEST:
@@ -79,7 +81,12 @@ export const getChats = async (req: Request, res: Response) => {
                 .populate({ path: 'company', select: 'info address contact' })
                 .populate({ path: 'customer', select: 'profile info address contact' });
 
-            // TODO: get chats unread count
+            // Retrieve unread chat count
+            unreadChat = await JobRequestChat.find({
+                jobRequest: jobRequest._id,
+                company: { $ne: company._id },
+                'readStatus.isRead': false
+            })?.countDocuments();
 
             break;
     
@@ -87,7 +94,7 @@ export const getChats = async (req: Request, res: Response) => {
             break;
     }
 
-    return res.json({ status: Status.Success, chats });
+    return res.json({ status: Status.Success, unreadChat, chats });
 
 }
 
@@ -125,6 +132,16 @@ export const markRead = async (req: Request, res: Response) => {
         chat.readStatus.readAt = new Date;
         await chat.save();
     }
+
+    // Send simple notification to mobile through Firebase,
+    // for mobile internal usage
+    await _handleNotification({
+        recipientId: jobRequest.customerContact,
+        notificationType: 'chatRead',
+        chat: lastChat,
+        jobRequest,
+        lastReadChatId: lastChat._id
+    })
 
     return res.json({ status: Status.Success, message: 'Chats marked as read successfully.', chatsToRead });
 
@@ -172,6 +189,16 @@ const _createJobRequestChat = async (params: any, id: string, user: IUser, compa
         .populate({ path: 'company', select: 'info address contact' })
         .populate({ path: 'customer', select: 'profile info address contact' })
         .execPopulate();
+
+    // Send notification over Firebase to Customer Contact
+    await _handleNotification({
+        recipientId: jobRequest.customerContact,
+        notificationType: 'chat',
+        messageTitle: `You have new message for Job Request #${jobRequest.requestId}`,
+        messageBody: jobRequestChat.message,
+        chat: jobRequestChat,
+        jobRequest
+    });
 
     return jobRequestChat;
 
