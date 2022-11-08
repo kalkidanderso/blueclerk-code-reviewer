@@ -37,7 +37,7 @@ import { IJobSite } from '../models/JobSite';
 import { IJobLocation } from '../models/JobLocation';
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission';
 import { getDatesFilterQuery } from '../services/pagination';
-import { CommissionHistory } from 'src/models/CommissionHistory';
+import { CommissionHistory } from '../models/CommissionHistory';
 
 /**
  * To reset Invoice quickbookId,
@@ -3679,10 +3679,10 @@ export const updateCommission = async (req: Request, res: Response) => {
                          **/
                             
 
-                            if (new Date(invoice.issuedDate).getTime() >= new Date(params.commissionEffectiveDate).getTime()) {
+                            if (new Date(invoice?.issuedDate).getTime() >= new Date(params.commissionEffectiveDate).getTime()) {
                                 contractorCommission.commission = params.commission ?? null;
                                 const commissionAmount =
-                                ((invoice.total / totalTechnician) * (params.commission ?? 0)) /
+                                ((invoice?.total / totalTechnician) * (params.commission ?? 0)) /
                                 100;
                                 contractorCommission.commissionAmount = Number(
                                     commissionAmount.toFixed(2),
@@ -3747,10 +3747,10 @@ export const updateCommission = async (req: Request, res: Response) => {
                      * now for this invoice- let's get the issuedDate and compare it to params effective date
                      * if the issued date is less than effective date-- don't update, else update
                      **/
-                    if (new Date(invoice.issuedDate).getTime() >= new Date(params.commissionEffectiveDate).getTime()) {
+                    if (new Date(invoice?.issuedDate).getTime() >= new Date(params.commissionEffectiveDate).getTime()) {
                         employeeCommission.commission = params.commission ?? null
                         const commissionAmount =
-                        ((invoice.total / totalTechnician) * (params.commission ?? 0)) /
+                        ((invoice?.total / totalTechnician) * (params.commission ?? 0)) /
                         100
                         employeeCommission.commissionAmount = Number(
                         commissionAmount.toFixed(2),
