@@ -624,6 +624,7 @@ paths:
               required:
                 - type
                 - id
+                - commissionEffectiveDate
               properties:
                 type:
                   type: string
@@ -636,6 +637,9 @@ paths:
                 commission:
                   type: number
                   description: Send a blank value to make the commission null on database
+                commissionEffectiveDate:
+                  type: date
+                  description: Effective date that the commission will apply
         required: true
       responses:
         '200':
@@ -644,6 +648,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getCommissionHistory/{beneficiaryId}:
+    get:
+      tags:
+        - Vendor
+      summary: Retrieve commission history for vendor or employee
+      description: Returns a commission history for the specified vendor/employee id
+      parameters:
+        - name: beneficiaryId
+          in: path
+          description: The id of the vendor or employee to retrieve from the database
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  history:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CommissionHistoryResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  history:
+                    type: array
       security:
         - Bearer: []
   /changeContractorPermission:
@@ -5841,15 +5885,69 @@ paths:
             schema:
               type: object
               properties:
+                pageSize:
+                  type: number
+                  description: The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default
+                nextCursor:
+                  type: string
+                  description: Cursor to go to next page. Use the nextCursor value from the previous response
+                previousCursor:
+                  type: string
+                  description: Cursor to go to previous page. Use the previousCursor value from the previous response
                 keyword:
                   type: string
                   description: Filter invoices by search keyword to Job Id, Customer's name, Job's Subdivision name address, Job's Job Address name address, Job's Technician name, and Job's Contractor name
-                customerId:
+                startDate:
                   type: string
-                  description: Filter invoices by Customer ID
+                  description: Filter invoices by start of the issued date
+                endDate:
+                  type: string
+                  description: Filter invoices by end of the issued date
+                jobId:
+                  type: string
+                  description: Filter invoices by Job ID
+                customerPO:
+                  type: string
+                  description: Filter invoices by P.O. Number
                 status:
                   type: string
                   description: 'Filter invoices by multiple status. Format example: ["UNPAID", "PARTIALLY PAID", "PAID"]'
+                customerId:
+                  type: string
+                  description: Filter invoices by Customer ID
+                customerContactId:
+                  type: string
+                  description: Filter invoices by Customer Contact ID
+                jobLocationId:
+                  type: string
+                  description: Filter invoices by Subdivision/Job Location ID
+                jobAddress:
+                  type: string
+                  description: Filter invoices by Job Address' address
+                jobCity:
+                  type: string
+                  description: Filter invoices by Job Address' city
+                jobState:
+                  type: string
+                  description: Filter invoices by Job Address' state
+                jobZip:
+                  type: string
+                  description: Filter invoices by Job Address' Zip
+                technicianId:
+                  type: string
+                  description: Filter invoices by Job's technician
+                startAmount:
+                  type: string
+                  description: Filter invoices by Start Amount range
+                endAmount:
+                  type: string
+                  description: Filter invoices by End Amount range
+                lastEmailStartDate:
+                  type: string
+                  description: Filter invoices by Last Email Send start range
+                lastEmailEndDate:
+                  type: string
+                  description: Filter invoices by Last Email Send end range
                 isDraft:
                   type: boolean
                   description: Filter invoices by draft
@@ -5859,21 +5957,6 @@ paths:
                 dueDate:
                   type: string
                   description: Filter invoices by dueDate or before
-                startDate:
-                  type: string
-                  description: Filter invoices by start of the created date
-                endDate:
-                  type: string
-                  description: Filter invoices by end of the created date
-                nextCursor:
-                  type: string
-                  description: Cursor to go to next page. Use the nextCursor value from the previous response
-                previousCursor:
-                  type: string
-                  description: Cursor to go to previous page. Use the previousCursor value from the previous response
-                pageSize:
-                  type: number
-                  description: The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default
       responses:
         '200':
           description: Success
@@ -5888,6 +5971,54 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Invoice'
+      security:
+        - Bearer: []
+  /getUnsyncedInvoices:
+    get:
+      tags:
+        - Invoice
+      summary: To get non-draft active unsynced invoices
+      parameters:
+        - name: keyword
+          in: query
+          description: Filter invoices by search keyword to Job Id, Customer's name, Job's Subdivision name address, Job's Job Address name address, Job's Technician name, and Job's Contractor name
+          schema:
+            type: string
+        - name: customerId
+          in: query
+          description: Filter invoices by Customer ID
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: 'Filter invoices by multiple status. Format example: ["UNPAID", "PARTIALLY PAID", "PAID"]'
+          schema:
+            type: string
+        - name: dueDate
+          in: query
+          description: Filter invoices by dueDate or before
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          description: Filter invoices by start of the created date
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          description: Filter invoices by end of the created date
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
   /getCompanyInvoices:
@@ -6145,10 +6276,22 @@ paths:
         - Invoice
       summary: Get the invoice email template before send the email
       parameters:
+        - name: emailType
+          in: query
+          description: 'Email type to be retrieve. Available values: "INVOICE" (To send one invoice), "INVOICES" (To send multiple invoices at once)'
+          schema:
+            type: string
+            enum:
+              - INVOICE
+              - INVOICES
         - name: invoiceId
           in: query
-          description: Id of invoice
-          required: true
+          description: '(REQUIRED for emailType: INVOICE) Id of invoice'
+          schema:
+            type: string
+        - name: invoiceIds
+          in: query
+          description: '(REQUIRED for emailType: INVOICES) Ids of invoices. Example: ["6320f952cada9f16fffba0c6", "6320f933cada9f16fffba0c5"]'
           schema:
             type: string
       responses:
@@ -6192,6 +6335,47 @@ paths:
                   type: string
                   description: PDF file of invoice
                   format: binary
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /sendInvoices:
+    post:
+      tags:
+        - Invoice
+      summary: Send an email about the multiple invoices
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - invoiceIds
+              properties:
+                customerId:
+                  type: string
+                  description: ID of customer
+                invoiceIds:
+                  type: string
+                  description: Ids of invoice
+                recipients:
+                  type: string
+                  description: 'List of all recipients in array. Example: ["zyzorafu@abyssmail.com","tiboqama@boximail.com"]'
+                subject:
+                  type: string
+                  description: Subject of the email, if not provided will use company's email default
+                message:
+                  type: string
+                  description: Message of the email, if not provided will use company's email default
+                copyToMyself:
+                  type: boolean
+                  description: To send copy to user himself
         required: true
       responses:
         '200':
@@ -6433,6 +6617,34 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Payment'
+      security:
+        - Bearer: []
+  /getUnsyncedPayments:
+    get:
+      tags:
+        - Payment
+      summary: To get active unsynced payments
+      parameters:
+        - name: keyword
+          in: query
+          description: Filter payments by search keyword to Reference Number, Payment Type, Invoice's ID, and Invoice's Customer PO
+          schema:
+            type: string
+        - name: customerId
+          in: query
+          description: Filter payments by Customer ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  GeneralAPIResponse:
+                    $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
   /getPaymentsByCustomerId:
@@ -8418,12 +8630,93 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
+  /createQBInvoices:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Manually syncing MULTIPLE invoices
+      description: Manually syncing MULTIPLE invoices from BlueClerk to QuickBooks and associate it with BlueClerk invoices
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - invoiceIds
+              properties:
+                invoiceIds:
+                  type: string
+                  description: 'Id of an invoices to be associated. Example: ["62c5e0ee199181255411190e","62aa1c7c4a9dbd07597df225"]'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
   /syncQBPayments:
     post:
       tags:
         - Quickbooks Integration
       summary: Manually syncing UNSYNCED payments
       description: Manually syncing UNSYNCED payments **from BlueClerk to QuickBooks only**
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /createQBPayment:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Manually syncing SINGLE payment
+      description: Manually syncing SINGLE payment from BlueClerk to QuickBooks and associate it with BlueClerk payment
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - paymentId
+              properties:
+                paymentId:
+                  type: string
+                  description: Id of an payment to be associated
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /createQBPayments:
+    post:
+      tags:
+        - Quickbooks Integration
+      summary: Manually syncing MULTIPLE payments
+      description: Manually syncing MULTIPLE payments from BlueClerk to QuickBooks and associate it with BlueClerk payments
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - paymentIds
+              properties:
+                paymentIds:
+                  type: string
+                  description: 'Id of an payments to be associated. Example: ["6309227fe1bec921989b3e5a","630917ba9dfb1c06a05426ac"]'
+        required: true
       responses:
         '200':
           description: Success
@@ -10557,6 +10850,28 @@ components:
               description: Auth token to be used in next apis
             user:
               $ref: '#/components/schemas/User'
+    CommissionHistoryResponse:
+      type: object
+      properties:
+        _id:
+          type: string
+        technicianOrContractor:
+          type: string
+        effectiveDate:
+          type: string
+        commission:
+          type: number
+        editedBy:
+          type: object
+          properties:
+            _id:
+              type: string
+            displayName:
+              type: string
+        createdAt:
+          type: string
+        updateAt:
+          type: string
   securitySchemes:
     Bearer:
       type: apiKey
