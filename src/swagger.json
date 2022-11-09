@@ -12011,6 +12011,110 @@
         ]
       }
     },
+    "/generateAccountReceivableDetail": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To generate account receivable detail",
+        "parameters": [
+          {
+            "name": "asOf",
+            "in": "query",
+            "description": "To generate A/R Report detail as of certain date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "required": true,
+            "description": "Get detail of A/R Report for the customer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "jobLocationIds",
+            "in": "query",
+            "description": "To filter detail report by specific subdivisions. Example: [\"60884d85f7b64106c9da250d\",\"611d63643150ef2a3196b959\"]",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/generateAccountReceivableInvoices": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To generate account receivable invoices",
+        "parameters": [
+          {
+            "name": "asOf",
+            "in": "query",
+            "description": "To generate A/R Report detail as of certain date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "required": true,
+            "description": "Get invoices of A/R Report detail for the customer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "jobLocationId",
+            "in": "query",
+            "description": "Get invoices of A/R Report detail for the customer's subdisivion",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/generateReportPdf/accountReceivableReport": {
       "get": {
         "tags": [
