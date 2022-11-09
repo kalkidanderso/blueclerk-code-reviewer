@@ -612,6 +612,15 @@ export const Validations = {
     check('reportSource').optional().isInt().toInt().withMessage('has to be number')
   ],
 
+  generateAccountReceivableDetail: [
+    check('customerId').isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  generateAccountReceivableInvoices: [
+    check('customerId').isMongoId().withMessage(Messages.WrongId),
+    check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
+
   generateReportPdf: [
     check('reportType').exists().withMessage(Messages.Required),
     check('reportData').exists().withMessage(Messages.Required),
