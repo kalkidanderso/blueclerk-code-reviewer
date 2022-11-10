@@ -82,6 +82,8 @@ tags:
     description: For advance payments
   - name: Report
     description: For all reports
+  - name: Memorized Report
+    description: For all memorized reports
   - name: Image
     description: For images
   - name: Group
@@ -5911,7 +5913,7 @@ paths:
                   description: Filter invoices by P.O. Number
                 status:
                   type: string
-                  description: 'Filter invoices by multiple status. Format example: ["UNPAID", "PARTIALLY PAID", "PAID"]'
+                  description: 'Filter invoices by multiple status. Format example: ["UNPAID", "PARTIALLY_PAID", "PAID"]'
                 customerId:
                   type: string
                   description: Filter invoices by Customer ID
@@ -5957,6 +5959,12 @@ paths:
                 dueDate:
                   type: string
                   description: Filter invoices by dueDate or before
+                recentOnly:
+                  type: boolean
+                  description: To force API to return only last 90 days even with any filter applied. Be default, when any filter applied, API will return all data so user could search through all invoices
+                  enum:
+                    - true
+                    - false
       responses:
         '200':
           description: Success
@@ -6709,8 +6717,8 @@ paths:
           description: Payroll Payment Type
           required: false
           schema:
-          type: string
-          enum:
+            type: string
+            enum:
               - Payroll Payments
               - Advance Payments
               - All
@@ -6745,11 +6753,11 @@ paths:
                   payments:
                     type: array
                     items:
-                    $ref: '#/components/schemas/Payment'
+                      $ref: '#/components/schemas/Payment'
                   advancePayments:
                     type: array
                     items:
-                    $ref: '#/components/schemas/Payment'                   
+                      $ref: '#/components/schemas/Payment'
       security:
         - Bearer: []
   /recordPayment:
@@ -7423,9 +7431,10 @@ paths:
         - Bearer: []
   /getIncomeReportEmailTemplate:
     get:
+      deprecated: true
       tags:
         - Report
-      summary: Get the income report email template before send the email
+      summary: '[Use the new GET /getReportEmailTemplate/incomeReport] Get the income report email template before send the email'
       parameters:
         - name: startDate
           in: query
@@ -7446,9 +7455,10 @@ paths:
         - Bearer: []
   /sendIncomeReport:
     post:
+      deprecated: true
       tags:
         - Report
-      summary: To generate standard and custom income report as pdf
+      summary: '[Use the new POST /sendReport/incomeReport] To generate standard and custom income report as pdf'
       requestBody:
         content:
           multipart/form-data:
@@ -7504,10 +7514,291 @@ paths:
                 $ref: '#/components/schemas/GeneralAPIResponse'
       security:
         - Bearer: []
-  /getMemorizedReports:
+  /getReportEmailTemplate/incomeReport:
     get:
       tags:
         - Report
+      summary: Get the income report email template before send the email
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /sendReport/incomeReport:
+    post:
+      tags:
+        - Report
+      summary: To generate Income Report and send as attached email
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - reportData
+              properties:
+                reportData:
+                  type: string
+                  description: 1 => Standard Report; 2 => Custom Report
+                  enum:
+                    - 1
+                    - 2
+                reportSource:
+                  type: string
+                  description: 1 => Invoice; 2 => Job
+                  enum:
+                    - 1
+                    - 2
+                startDate:
+                  type: string
+                  description: Filter report by start of invoice's issued date
+                endDate:
+                  type: string
+                  description: Filter report by end of invoice's issued date
+                customerIds:
+                  type: string
+                  description: 'To filter report by specific customers. Example: ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]'
+                recipients:
+                  type: string
+                  description: 'List of all recipients in array. Example: ["zyzorafu@abyssmail.com","tiboqama@boximail.com"]'
+                subject:
+                  type: string
+                  description: Subject of the email, if not provided will use company's email default
+                message:
+                  type: string
+                  description: Message of the email, if not provided will use company's email default
+                copyToMyself:
+                  type: boolean
+                  description: To send copy to user himself
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /generateAccountReceivableReport:
+    get:
+      tags:
+        - Report
+      summary: To generate standard and custom account receivable report
+      parameters:
+        - name: reportData
+          in: query
+          required: true
+          description: 1 => Standard Report; 2 => Custom Report
+          schema:
+            type: number
+            enum:
+              - 1
+              - 2
+        - name: asOf
+          in: query
+          description: To generate A/R Report as of certain date
+          schema:
+            type: string
+        - name: customerIds
+          in: query
+          description: 'To filter report by specific customers. Example: ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /generateAccountReceivableReport/subdivisions:
+    get:
+      tags:
+        - Report
+      summary: To generate account receivable detail
+      parameters:
+        - name: asOf
+          in: query
+          description: To generate A/R Report detail as of certain date
+          schema:
+            type: string
+        - name: customerId
+          in: query
+          required: true
+          description: Get detail of A/R Report for the customer
+          schema:
+            type: string
+        - name: jobLocationIds
+          in: query
+          description: 'To filter detail report by specific subdivisions. Example: ["60884d85f7b64106c9da250d","611d63643150ef2a3196b959"]'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /generateAccountReceivableReport/invoices:
+    get:
+      tags:
+        - Report
+      summary: To generate account receivable invoices
+      parameters:
+        - name: asOf
+          in: query
+          description: To generate A/R Report detail as of certain date
+          schema:
+            type: string
+        - name: customerId
+          in: query
+          required: true
+          description: Get invoices of A/R Report detail for the customer
+          schema:
+            type: string
+        - name: jobLocationId
+          in: query
+          description: Get invoices of A/R Report detail for the customer's subdisivion. Leave this blank when user clicks on "No Subdivision" aging.
+          schema:
+            type: string
+        - name: invoiceId
+          in: query
+          description: To filter/search by Invoice ID
+          schema:
+            type: string
+        - name: jobSiteIds
+          in: query
+          description: 'To filter detail report by specific job address. Example: ["614df4bf200eb556e0ba4ac0","6269a5160365d2310af626e9"]'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /generateReportPdf/accountReceivableReport:
+    get:
+      tags:
+        - Report
+      summary: To generate Account Receivable Report as PDF
+      parameters:
+        - name: reportData
+          in: query
+          required: true
+          description: 1 => Standard Report; 2 => Custom Report
+          schema:
+            type: number
+            enum:
+              - 1
+              - 2
+        - name: asOf
+          in: query
+          description: To filter report as of a certain date
+          schema:
+            type: string
+        - name: customerIds
+          in: query
+          description: 'To filter report by specific customers. Example: ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/jobLocation'
+      security:
+        - Bearer: []
+  /getReportEmailTemplate/accountReceivableReport:
+    get:
+      tags:
+        - Report
+      summary: Get the report email template before send the email
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /sendReport/accountReceivableReport:
+    post:
+      tags:
+        - Report
+      summary: To generate A/R Report and send as attached email
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - reportData
+              properties:
+                reportData:
+                  type: number
+                  description: 1 => Standard Report; 2 => Custom Report
+                  enum:
+                    - 1
+                    - 2
+                asOf:
+                  type: string
+                  description: To filter report as of a certain date
+                customerIds:
+                  type: string
+                  description: 'To filter report by specific customers. Example: ["62b4a51a6135175bbfbe79d0","62a8cae104d1d70697ad6f4a"]'
+                recipients:
+                  type: string
+                  description: 'List of all recipients in array. Example: ["zyzorafu@abyssmail.com","tiboqama@boximail.com"]'
+                subject:
+                  type: string
+                  description: Subject of the email, if not provided will use company's email default
+                message:
+                  type: string
+                  description: Message of the email, if not provided will use company's email default
+                copyToMyself:
+                  type: boolean
+                  description: To send copy to user himself
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAPIResponse'
+      security:
+        - Bearer: []
+  /getMemorizedReports:
+    get:
+      tags:
+        - Memorized Report
       summary: Returns list of all memorized reports that the company saved
       responses:
         '200':
@@ -7521,7 +7812,7 @@ paths:
   /getMemorizedReport:
     get:
       tags:
-        - Report
+        - Memorized Report
       summary: Return detail of one memorized report
       parameters:
         - name: memorizedReportId
@@ -7541,7 +7832,7 @@ paths:
   /createMemorizedReport:
     post:
       tags:
-        - Report
+        - Memorized Report
       summary: To memorized a custom report
       requestBody:
         content:
@@ -7606,7 +7897,7 @@ paths:
   /updateMemorizedReport:
     put:
       tags:
-        - Report
+        - Memorized Report
       summary: To update a memorized custom report
       requestBody:
         content:
@@ -7669,7 +7960,7 @@ paths:
   /deleteMemorizedReport:
     delete:
       tags:
-        - Report
+        - Memorized Report
       summary: To delete a memorized custom report
       parameters:
         - name: memorizedReportId
@@ -10872,265 +11163,6 @@ components:
           type: string
         updateAt:
           type: string
-  securitySchemes:
-    Bearer:
-      type: apiKey
-      name: Authorization
-      in: header
-tle of job type
-        company:
-          type: object
-          properties:
-            auth:
-              type: object
-              properties:
-                email:
-                  type: string
-                  description: Email address of company
-            info:
-              type: object
-              properties:
-                companyName:
-                  type: string
-                  description: Name of company
-                logoUrl:
-                  type: string
-                  description: Logo of company
-            contact:
-              type: object
-              properties:
-                phone:
-                  type: string
-                  description: Phone number of company
-            permissions:
-              type: object
-              properties:
-                role:
-                  type: string
-            address:
-              type: object
-              properties:
-                street:
-                  type: string
-                city:
-                  type: string
-                state:
-                  type: string
-                zipCode:
-                  type: string
-        createdBy:
-          type: object
-          properties:
-            auth:
-              type: object
-              properties:
-                email:
-                  type: string
-                  description: Email address of person who created job
-            info:
-              type: object
-              properties:
-                companyName:
-                  type: string
-                  description: Name of company
-            profile:
-              type: object
-              properties:
-                displayName:
-                  type: string
-            contact:
-              type: object
-              properties:
-                phone:
-                  type: string
-            permissions:
-              type: object
-              properties:
-                role:
-                  type: string
-                  description: Role of person who created job in his company/organization
-            address:
-              type: object
-              properties:
-                street:
-                  type: string
-                city:
-                  type: string
-                state:
-                  type: string
-                zipCode:
-                  type: string
-        scans:
-          type: object
-          properties:
-            comment:
-              type: string
-              description: comment added by person who scanned the equipment
-            timeOfScan:
-              type: string
-              format: date-time
-            equipment:
-              type: object
-              properties:
-                info:
-                  type: object
-                  properties:
-                    model:
-                      type: string
-                      description: model number of equipment scanned
-                    serialNumber:
-                      type: string
-                      description: serialNumber number of equipment scanned
-                    nfcTag:
-                      type: string
-                      description: nfcTag of equipment scanned
-                    location:
-                      type: string
-                      description: location of equipment
-                images:
-                  type: array
-                  items:
-                    type: string
-                type:
-                  type: object
-                  properties:
-                    title:
-                      type: string
-                brand:
-                  type: object
-                  properties:
-                    title:
-                      type: string
-        invoiceCreated:
-          type: boolean
-        invoice:
-          type: object
-          properties:
-            _id:
-              type: string
-            invoiceId:
-              type: string
-              description: Custom invoice id to be shown on invoice
-            invoiceType:
-              type: number
-              description: >-
-                0 for the invoice for job and 1 for the invoice of purchase
-                order
-            purchaseOrder:
-              type: string
-              description: >-
-                Id of the purchase order if the invoic is for purchase order
-                only
-            issuedDate:
-              type: string
-              description: Issued date of the invoice
-            dueDate:
-              type: string
-              description: Due date of the invoice
-            estimate:
-              type: string
-              description: Id of the estimate if the invoic is for estimate only
-            jobPurchaseOrders:
-              type: array
-              items:
-                type: string
-            charges:
-              type: number
-              description: >-
-                Charges amount from job or if you have customized while creating
-                invoice
-            taxPercentage:
-              type: number
-              description: Tax percentage applied to invoice default will be 0
-            tax:
-              type: number
-              description: Tax amount to be added in charges to caculate the total invoice
-            total:
-              type: number
-              description: Total amount to be charged to customer
-    GeneralAPIResponse:
-      type: object
-      properties:
-        status:
-          type: integer
-          description: Status of operation, 0 -> failure 1 -> success
-          format: int32
-          enum:
-            - 0
-            - 1
-        message:
-          type: string
-          description: Error message in case of operation failure
-    CheckTagResponse:
-      type: object
-      properties:
-        status:
-          type: integer
-          description: Status of operation, 0 -> failure 1 -> success
-          format: int32
-          enum:
-            - 0
-            - 1
-        tagStatus:
-          type: integer
-          description: Status of tag, 2 -> associated 3 -> not associated
-          format: int32
-          enum:
-            - 2
-            - 3
-        message:
-          type: string
-          description: Error message in case of operation failure
-    WorkOrderNumberResponse:
-      type: object
-      properties:
-        status:
-          type: integer
-          description: Status of operation, 0 -> failure 1 -> success
-          format: int32
-          enum:
-            - 0
-            - 1
-        currentWorkOrderNumber:
-          type: integer
-          description: The lastest work order number
-          format: int32
-        prefix:
-          type: string
-          description: This will be returned if the company has set the prefix
-        message:
-          type: string
-          description: Error message in case of operation failure
-    InvoiceNumberResponse:
-      type: object
-      properties:
-        status:
-          type: integer
-          description: Status of operation, 0 -> failure 1 -> success
-          format: int32
-          enum:
-            - 0
-            - 1
-        currentInvoiceNumber:
-          type: integer
-          description: The lastest invoice number
-          format: int32
-        invoicePrefix:
-          type: string
-          description: This will be returned if the company has set the invoicePrefix
-        message:
-          type: string
-          description: Error message in case of operation failure
-    AuthAPIResponse:
-      allOf:
-        - $ref: '#/components/schemas/GeneralAPIResponse'
-        - type: object
-          properties:
-            token:
-              type: string
-              description: Auth token to be used in next apis
-            user:
-              $ref: '#/components/schemas/User'
   securitySchemes:
     Bearer:
       type: apiKey
