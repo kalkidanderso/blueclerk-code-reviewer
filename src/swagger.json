@@ -12011,7 +12011,7 @@
         ]
       }
     },
-    "/generateAccountReceivableDetail": {
+    "/generateAccountReceivableReport/subdivisions": {
       "get": {
         "tags": [
           "Report"
@@ -12063,7 +12063,7 @@
         ]
       }
     },
-    "/generateAccountReceivableInvoices": {
+    "/generateAccountReceivableReport/invoices": {
       "get": {
         "tags": [
           "Report"
@@ -12090,7 +12090,23 @@
           {
             "name": "jobLocationId",
             "in": "query",
-            "description": "Get invoices of A/R Report detail for the customer's subdisivion",
+            "description": "Get invoices of A/R Report detail for the customer's subdisivion. Leave this blank when user clicks on \"No Subdivision\" aging.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "in": "query",
+            "description": "To filter/search by Invoice ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "jobSiteIds",
+            "in": "query",
+            "description": "To filter detail report by specific job address. Example: [\"614df4bf200eb556e0ba4ac0\",\"6269a5160365d2310af626e9\"]",
             "schema": {
               "type": "string"
             }

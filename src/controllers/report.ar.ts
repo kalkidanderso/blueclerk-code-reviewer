@@ -4,6 +4,7 @@ import moment from 'moment';
 import fs from 'fs';
 import pdfmake from 'pdfmake';
 import * as _ from 'lodash';
+import * as helper from '../services/helper';
 
 import { FONT_SETS, ACCOUNT_RECEIVABLE_REPORT_PDF_PATH } from '../common/config';
 import { Layouts, Styles } from '../common/constants.pdf';
@@ -476,6 +477,22 @@ export const _generateAccountReceivableInvoices = async (companyId: string, para
         isDraft: { $ne: true },
         isVoid: { $ne: true }
     };
+
+    // Check and add if params filter/search provided
+    if (params.invoiceId) {
+        const invoiceIdRegex = helper.getRegex(params.invoiceId, 'i');
+        query['invoiceId'] = invoiceIdRegex;
+    }
+    if (params.jobSiteIds?.length > 0) {
+        const jobSiteIds: any[] = [];
+        for (const jobSiteId of JSON.parse(params.jobSiteIds)) {
+            if (ObjectId.isValid(jobSiteId)) {
+                jobSiteIds.push(new ObjectId(jobSiteId));
+            }
+        }
+        console.log('== jobSiteIds:', jobSiteIds)
+        query['jobObj.jobSite'] = { $in: jobSiteIds };
+    }
 
     // Handle if there asOf params provided, otherwise using today as default
     let asOf = params.asOf ? params.asOf : new Date();
