@@ -2495,7 +2495,7 @@ export default function (sio: any) {
     )
 
     router.get(
-        '/generateAccountReceivableDetail',
+        '/generateAccountReceivableReport/subdivisions',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
@@ -2505,7 +2505,7 @@ export default function (sio: any) {
     )
 
     router.get(
-        '/generateAccountReceivableInvoices',
+        '/generateAccountReceivableReport/invoices',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
