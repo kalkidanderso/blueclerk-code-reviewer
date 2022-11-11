@@ -87,6 +87,10 @@ export const _customAccountReceivableReport = async (companyId: string, params: 
     // Get the list of customer that included on the A/R report
     const customerListAggregate = await Invoice.aggregate([
         { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
+        { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
+        { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
+        { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
+        { $lookup: { from: 'contacts', localField: 'jobObj.customerContactId', foreignField: '_id', as: 'customerContactObj' } },
         { $match: { ...query } },
         { $sort: { customer: -1, dueDate: 1 } },
         {
@@ -122,6 +126,9 @@ export const _customAccountReceivableReport = async (companyId: string, params: 
                         dueDate: '$dueDate',
                         total: { $round: ['$total', 2] },
                         balanceDue: { $round: [balanceDue, 2] },
+                        jobLocation: { $first: '$jobLocationObj' },
+                        jobSite: { $first: '$jobSiteObj' },
+                        customerContact: { $first: '$customerContactObj' }
                     }
                 }
             }
@@ -353,6 +360,8 @@ export const _generateAccountReceivableDetail = async (companyId: string, params
     const jobLocationListAggregate = await Invoice.aggregate([
         { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
         { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
+        { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
+        { $lookup: { from: 'contacts', localField: 'jobObj.customerContactId', foreignField: '_id', as: 'customerContactObj' } },
         { $match: { ...query } },
         { $sort: { customer: -1, dueDate: 1 } },
         {
@@ -388,6 +397,9 @@ export const _generateAccountReceivableDetail = async (companyId: string, params
                         dueDate: '$dueDate',
                         total: { $round: ['$total', 2] },
                         balanceDue: { $round: [balanceDue, 2] },
+                        jobLocation: { $first: '$jobLocationObj' },
+                        jobSite: { $first: '$jobSiteObj' },
+                        customerContact: { $first: '$customerContactObj' }
                     }
                 }
             }
@@ -693,7 +705,7 @@ const _handleReportPdf = async({
     // Construct empty table object for the customer and its aging list
     const customerAgingTable: any = {
         headerRows: 1,
-        widths: [55, 165, 60, 60, 60, 60, 60, 55],
+        widths: [35, 127, 63, 63, 63, 63, 63, 63, 35],
         height: 10,
         body: [],
     }
@@ -709,6 +721,7 @@ const _handleReportPdf = async({
             { text: AgingBuckets.AGING_31_60, style: 'defaultFontBold', alignment: 'right' },
             { text: AgingBuckets.AGING_61_90, style: 'defaultFontBold', alignment: 'right' },
             { text: AgingBuckets.AGING_91_OVER, style: 'defaultFontBold', alignment: 'right' },
+            { text: 'Total', style: 'defaultFontBold', alignment: 'right' },
             {}
         ]);
 
@@ -720,27 +733,28 @@ const _handleReportPdf = async({
             const customer = customerAgingBucket?.customer;
             const customerAging = customerAgingBucket?.agingBuckets;
 
-            const customerName = { text: `${customer?.profile?.displayName ?? ''}`, style: 'lineFontBold' };
-            const agingCurrent = { text: `${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.CURRENT)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
-            const aging130 = { text: `${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_1_30)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
-            const aging3160 = { text: `${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_31_60)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
-            const aging6190 = { text: `${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_61_90)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
-            const aging91over = { text: `${delimiterEnUs(customerAging?.find(ab => ab.label === AgingBuckets.AGING_91_OVER)?.totalUnpaid)}`, style: 'lineFontGrayBold' };
+            const agingCurrent = customerAging?.find(ab => ab.label === AgingBuckets.CURRENT)?.totalUnpaid;
+            const aging130 = customerAging?.find(ab => ab.label === AgingBuckets.AGING_1_30)?.totalUnpaid;
+            const aging3160 = customerAging?.find(ab => ab.label === AgingBuckets.AGING_31_60)?.totalUnpaid;
+            const aging6190 = customerAging?.find(ab => ab.label === AgingBuckets.AGING_61_90)?.totalUnpaid;
+            const aging91over = customerAging?.find(ab => ab.label === AgingBuckets.AGING_91_OVER)?.totalUnpaid;
+            const totalAging = (agingCurrent ?? 0) + (aging130 ?? 0) + (aging3160 ?? 0) + (aging6190 ?? 0) + (aging91over ?? 0);
 
             bodyTable.push([
                 {},
-                customerName,
-                agingCurrent,
-                aging130,
-                aging3160,
-                aging6190,
-                aging91over,
+                { text: `${customer?.profile?.displayName ?? ''}`, style: 'lineFontBold' },
+                { text: `${delimiterEnUs(agingCurrent)}`, style: 'lineFontGrayBold' },
+                { text: `${delimiterEnUs(aging130)}`, style: 'lineFontGrayBold' },
+                { text: `${delimiterEnUs(aging3160)}`, style: 'lineFontGrayBold' },
+                { text: `${delimiterEnUs(aging6190)}`, style: 'lineFontGrayBold' },
+                { text: `${delimiterEnUs(aging91over)}`, style: 'lineFontGrayBold' },
+                { text: `${delimiterEnUs(totalAging)}`, style: 'lineFontGrayBold' },
                 {}
             ]);
         }
     }
 
-    bodyTable.push([{}, {}, {}, {}, {}, {}, {}, {}]);
+    bodyTable.push([{}, {}, {}, {}, {}, {}, {}, {}, {}]);
     for (let i = 0; i < bodyTable.length; i++) {
         customerAgingTable.body.push(bodyTable[i]);
     }
@@ -755,7 +769,7 @@ const _handleReportPdf = async({
             {
                 // HEADER FIRST LINE: COMPANY NAME & AR REPORT TITLE
                 table: {
-                    widths: [44, 352, 120, 44],
+                    widths: [24, 397, 120, 24],
                     body: [
                         [
                             {},
@@ -784,7 +798,7 @@ const _handleReportPdf = async({
             {
                 // HEADER SECOND LINE: FILTERS & TOTAL OUTSTANDING
                 table: {
-                    widths: [44, 100, 263, 100, 44],
+                    widths: [24, 100, 308, 100, 24],
                     body: [
                         [
                             {},
@@ -808,7 +822,7 @@ const _handleReportPdf = async({
             {
                 // GLOBAL AGING BUCKETS
                 table: {
-                    widths: [44, 94, 94, 94, 94, 94, 44],
+                    widths: [24, 102, 102, 102, 102, 102, 24],
                     body: [
                         [
                             {},
@@ -854,7 +868,7 @@ const _handleReportPdf = async({
         footer: (currentPage: number, pageCount: number) => {
             return [{
                 table: {
-                    widths: [44, 387, 85, 44],
+                    widths: [24, 427, 85, 24],
                     body: [
                         [
                             {},
