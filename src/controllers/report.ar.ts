@@ -479,7 +479,7 @@ const _handleReportPdf = async({
                         [
                             {},
                             { text: 'As Of', style: 'smallFont' },
-                            { text: 'Customer(s)', style: "smallFont", },
+                            { text: 'Customer(s)', style: 'smallFont', },
                             { text: 'TOTAL OUTSTANDING', style: 'smallFontGray', alignment: 'right' },
                             {}
                         ],
@@ -567,7 +567,7 @@ const _handleReportPdf = async({
                 layout: { ...Layouts.noBorders, },
             }]
         },
-        styles: Styles.default,
+        styles: Styles.arReport,
         defaultStyle: {
             columnGap: 10,
             font: 'Roboto',
