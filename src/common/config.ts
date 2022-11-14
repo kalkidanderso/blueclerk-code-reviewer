@@ -30,5 +30,13 @@ export const FONT_SETS = {
             italics: `${INVOICE_FONT_PATH}/Roboto-Thin.ttf`,
             bolditalics: `${INVOICE_FONT_PATH}/Roboto-MediumItalic.ttf`,
         }
+    },
+    FONTELLO: {
+        Fontello: {
+            normal: `${INVOICE_FONT_PATH}/fontello.ttf`,
+            bold: `${INVOICE_FONT_PATH}/fontello.ttf`,
+            italics: `${INVOICE_FONT_PATH}/fontello.ttf`,
+            bolditalics: `${INVOICE_FONT_PATH}/fontello.ttf`,
+        }
     }
 }
