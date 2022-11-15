@@ -3078,7 +3078,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     // Construct Company Address object
     const companyAddress = {
         street: company.address?.street ? `${company.address?.street}` : '',
-        city: company.address?.city ? `, ${company.address?.city}` : '',
+        city: company.address?.city ? `${company.address?.city}` : '',
         state: company.address?.state ? `, ${company.address?.state}` : '',
         zipCode: company.address?.zipCode ? `, ${company.address?.zipCode}` : '',
     }
@@ -3238,7 +3238,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {},
                             {},
                             {
-                                text: `${company.contact?.phone ?? ''}\n${companyAddress.street}${companyAddress.city}${companyAddress.state}${companyAddress.zipCode}`,
+                                text: `${companyAddress.street}\n${companyAddress.city}${companyAddress.state}${companyAddress.zipCode}\n${company.contact?.phone ?? ''}`,
                                 style: 'invoiceHeader',
                                 margin: [0, 0, 0, 10],
                                 border: [false, false, false, true]
