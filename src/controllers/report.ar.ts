@@ -91,6 +91,7 @@ export const _customAccountReceivableReport = async (companyId: string, params: 
         { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
         { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
         { $lookup: { from: 'contacts', localField: 'jobObj.customerContactId', foreignField: '_id', as: 'customerContactObj' } },
+        { $lookup: { from: 'contacts', localField: 'customerContactId', foreignField: '_id', as: 'invoiceContactObj' } },
         { $match: { ...query } },
         { $sort: { customer: -1, dueDate: 1 } },
         {
@@ -128,7 +129,8 @@ export const _customAccountReceivableReport = async (companyId: string, params: 
                         balanceDue: { $round: [balanceDue, 2] },
                         jobLocation: { $first: '$jobLocationObj' },
                         jobSite: { $first: '$jobSiteObj' },
-                        customerContact: { $first: '$customerContactObj' }
+                        customerContact: { $first: '$customerContactObj' },
+                        invoiceContact: { $first: '$invoiceContactObj' }
                     }
                 }
             }
@@ -362,6 +364,7 @@ export const _generateAccountReceivableDetail = async (companyId: string, params
         { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
         { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
         { $lookup: { from: 'contacts', localField: 'jobObj.customerContactId', foreignField: '_id', as: 'customerContactObj' } },
+        { $lookup: { from: 'contacts', localField: 'customerContactId', foreignField: '_id', as: 'invoiceContactObj' } },
         { $match: { ...query } },
         { $sort: { customer: -1, dueDate: 1 } },
         {
@@ -399,7 +402,8 @@ export const _generateAccountReceivableDetail = async (companyId: string, params
                         balanceDue: { $round: [balanceDue, 2] },
                         jobLocation: { $first: '$jobLocationObj' },
                         jobSite: { $first: '$jobSiteObj' },
-                        customerContact: { $first: '$customerContactObj' }
+                        customerContact: { $first: '$customerContactObj' },
+                        invoiceContact: { $first: '$invoiceContactObj' }
                     }
                 }
             }
@@ -524,6 +528,7 @@ export const _generateAccountReceivableInvoices = async (companyId: string, para
         { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
         { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
         { $lookup: { from: 'contacts', localField: 'jobObj.customerContactId', foreignField: '_id', as: 'customerContactObj' } },
+        { $lookup: { from: 'contacts', localField: 'customerContactId', foreignField: '_id', as: 'invoiceContactObj' } },
         { $match: { ...query } },
         { $sort: { customer: -1, dueDate: 1 } },
         {
@@ -559,7 +564,8 @@ export const _generateAccountReceivableInvoices = async (companyId: string, para
                         balanceDue: { $round: [balanceDue, 2] },
                         jobLocation: { $first: '$jobLocationObj' },
                         jobSite: { $first: '$jobSiteObj' },
-                        customerContact: { $first: '$customerContactObj' }
+                        customerContact: { $first: '$customerContactObj' },
+                        invoiceContact: { $first: '$invoiceContactObj' }
                     }
                 }
             }
