@@ -190,6 +190,10 @@ export const Styles = {
             color: '#333333',
             alignment: 'right'
         },
+        smallFontGray: {
+            fontSize: 7,
+            color: '#4F4F4F'
+        },
         icon: {
             font: 'Fontello',
             fontSize: 12,

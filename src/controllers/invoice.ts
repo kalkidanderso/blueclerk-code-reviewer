@@ -3191,26 +3191,26 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     // INITIALIZE INVOICE PDF TEMPLATE
     const docDefinition: any = {
         pageSize: "A4",
-        pageMargins: [0, 0, 50, 0],
+        pageMargins: [0, 0, 50, 30],
         content: [
             {
                 // HEADER FIRST LINE: COMPANY LOGO, NAME, VENDOR, & INVOICE ID
                 table: {
                     headerRows: 1,
-                    widths: [10, 100, 159, 129, 139, 10],
+                    widths: [10, 90, 179, 119, 139, 10],
                     body: [
                         [
                             {},
                             companyImage,
                             {
-                                text: `${company.info?.companyName}`,
+                                text: `${company.info?.companyName ? company.info?.companyName.toUpperCase() : ''}`,
                                 style: 'companyName',
                                 margin: [0, 20, 0, 0],
                                 colSpan: 2,
                             },
                             {},
                             {
-                                text: `${invoice.invoiceId?.toUpperCase()}`,
+                                text: `${invoice.invoiceId ? invoice.invoiceId?.toUpperCase() : ''}`,
                                 style: 'invoiceId',
                                 alignment: 'right',
                                 margin: [0, 20, 0, 0]
@@ -3228,14 +3228,8 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             },
                             {
                                 stack: [
-                                    {
-                                        text: 'Vendor Number',
-                                        style: 'headerTitleBold',
-                                    },
-                                    {
-                                        text: invoice.vendorId,
-                                        style: 'invoiceHeader',
-                                    },
+                                    { text: 'Vendor Number', style: 'headerTitleBold' },
+                                    { text: invoice.vendorId ?? '', style: 'invoiceHeader' },
                                 ],
                                 margin: [0, -2, 0, 10],
                                 border: [false, false, false, true]
@@ -3262,11 +3256,11 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {
                                 stack: [
                                     { text: 'Bill To', style: 'headerTitle' },
-                                    { text: `${customer?.profile?.displayName}`, style: 'invoiceHeaderBold' },
+                                    { text: customer?.profile?.displayName ?? '', style: 'invoiceHeaderBold' },
                                     { text: 'Subdivision', style: 'headerTitle', margin: [0, 10, 0, 0] },
-                                    { text: `${jobAddress.name ?? ''}`, style: 'invoiceHeader' },
+                                    { text: jobAddress.name ?? '', style: 'invoiceHeader' },
                                     { text: 'Job Address', style: 'headerTitle', margin: [0, 10, 0, 0] },
-                                    { text: `${jobSiteAddress.street ?? ''}`, style: 'invoiceHeader' }
+                                    { text: jobSiteAddress.street ?? '', style: 'invoiceHeader' }
                                 ],
                                 margin: [0, 10, 0, 10],
                                 border: [false, false, false, true]
@@ -3274,9 +3268,9 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {
                                 stack: [
                                     { text: 'Contact Details', style: 'headerTitle' },
-                                    { text: `${customerContact?.name}`, style: 'invoiceHeader' },
-                                    { text: `${customerContact?.phone}`, style: 'invoiceHeader' },
-                                    { text: `${customerContact?.email}`, style: 'invoiceHeader' }
+                                    { text: customerContact?.name ?? '', style: 'invoiceHeader' },
+                                    { text: customerContact?.phone ?? '', style: 'invoiceHeader' },
+                                    { text: customerContact?.email ?? '', style: 'invoiceHeader' }
                                 ],
                                 margin: [0, 10, 0, 10],
                                 border: [false, false, false, true]
@@ -3295,7 +3289,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                                 stack: [
                                     { text: invoice.customerPO ?? '', style: 'invoiceMetadata' },
                                     { text: `${moment(invoice.issuedDate ?? invoice.createdAt).format('MMM. DD, YYYY')}`, style: 'invoiceMetadata' },
-                                    { text: moment(invoice.dueDate).format('MMM. DD, YYYY'), style: 'invoiceMetadata' },
+                                    { text: `${invoice.dueDate ? moment(invoice.dueDate).format('MMM. DD, YYYY') : ''}`, style: 'invoiceMetadata' },
                                     { text: paymentTerm?.name ?? '', style: 'invoiceMetadata' }
                                 ],
                                 margin: [0, 10, 0, 10],
@@ -3365,6 +3359,27 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                 },
             }
         ],
+        footer: (currentPage: number, pageCount: number) => {
+            return [{
+                table: {
+                    widths: [20, 535, 20],
+                    body: [
+                        [
+                            {},
+                            {
+                                text: `Page ${currentPage} of ${pageCount}`,
+                                style: 'smallFontGray',
+                                alignment: 'right',
+                                margin: [0, 10]
+                            },
+                            {}
+                        ],
+                    ],
+                },
+                fillColor: '#F9FDFF',
+                layout: { ...Layouts.noBorders },
+            }]
+        },
         styles: Styles.invoice,
         defaultStyle: {
             columnGap: 10,

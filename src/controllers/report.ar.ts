@@ -450,7 +450,7 @@ const _handleReportPdf = async({
                         [
                             {},
                             {
-                                text: `${company.info?.companyName?.toUpperCase()}`,
+                                text: `${company.info?.companyName ? company.info?.companyName.toUpperCase() : ''}`,
                                 style: 'title',
                                 border: undefined
                             },
@@ -549,7 +549,7 @@ const _handleReportPdf = async({
                         [
                             {},
                             {
-                                text: `Generated for ${company.info?.companyName} by ${user.profile?.displayName} on ${moment(new Date()).format('MMM. DD, YYYY, hh:mm A')}`,
+                                text: `Generated for ${company.info?.companyName ?? ''} by ${user.profile?.displayName ?? ''} on ${moment(new Date()).format('MMM. DD, YYYY, hh:mm A')}`,
                                 style: 'smallFontGray',
                                 margin: [0, 10]
                             },
@@ -564,7 +564,7 @@ const _handleReportPdf = async({
                     ],
                 },
                 fillColor: '#EAECF3',
-                layout: { ...Layouts.noBorders, },
+                layout: { ...Layouts.noBorders },
             }]
         },
         styles: Styles.arReport,
