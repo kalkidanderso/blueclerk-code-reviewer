@@ -3220,7 +3220,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {},
                             companyImage,
                             {
-                                text: `${company.info?.companyName ? company.info?.companyName.toUpperCase() : ''}`,
+                                text: `${company.info?.companyName ?? ''}`,
                                 style: 'companyName',
                                 margin: [0, 20, 0, 0],
                                 colSpan: 2,

@@ -774,7 +774,7 @@ const _handleReportPdf = async({
                         [
                             {},
                             {
-                                text: `${company.info?.companyName ? company.info?.companyName.toUpperCase() : ''}`,
+                                text: `${company.info?.companyName ?? ''}`,
                                 style: 'title',
                                 border: undefined
                             },
