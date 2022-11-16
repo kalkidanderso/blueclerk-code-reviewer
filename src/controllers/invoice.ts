@@ -3294,7 +3294,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             },
                             {
                                 stack: [
-                                    { text: `Job PO/Sales Order:${invoice.customerPO.length > 15 ? '\n\n' : ''}`, style: 'invoiceMetadataTitle' },
+                                    { text: `Job PO/Sales Order:${invoice.customerPO?.length > 15 ? '\n\n' : ''}`, style: 'invoiceMetadataTitle' },
                                     { text: 'Invoice Date:', style: 'invoiceMetadataTitle' },
                                     { text: 'Due Date:', style: 'invoiceMetadataTitle' },
                                     { text: 'Terms:', style: 'invoiceMetadataTitle' }
@@ -3304,10 +3304,10 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             },
                             {
                                 stack: [
-                                    { text: invoice.customerPO ?? '', style: 'invoiceMetadata' },
+                                    { text: invoice.customerPO ?? ' ', style: 'invoiceMetadata' },
                                     { text: `${moment(invoice.issuedDate ?? invoice.createdAt).format('MMM. DD, YYYY')}`, style: 'invoiceMetadata' },
-                                    { text: `${invoice.dueDate ? moment(invoice.dueDate).format('MMM. DD, YYYY') : ''}`, style: 'invoiceMetadata' },
-                                    { text: paymentTerm?.name ?? '', style: 'invoiceMetadata' }
+                                    { text: `${invoice.dueDate ? moment(invoice.dueDate).format('MMM. DD, YYYY') : ' '}`, style: 'invoiceMetadata' },
+                                    { text: paymentTerm?.name ?? ' ', style: 'invoiceMetadata' }
                                 ],
                                 margin: [0, 10, 0, 10],
                                 border: [false, false, false, true]
