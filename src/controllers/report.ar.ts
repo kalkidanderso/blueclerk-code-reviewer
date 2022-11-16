@@ -358,6 +358,9 @@ export const _generateAccountReceivableDetail = async (companyId: string, params
     // To get invoice's total if no balanceDue found for old invoices
     const balanceDue = { $ifNull: ['$balanceDue', '$total', 0] };
 
+    // Get the selected customer aging bucket
+    const customerAgingBucket = await _getCustomerAgingBucket(query, agingCurrentDate, aging130Date, aging3160Date, aging6190Date, aging91overDate);
+
     // Get the list of customer that included on the A/R report
     const jobLocationListAggregate = await Invoice.aggregate([
         { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
@@ -427,7 +430,7 @@ export const _generateAccountReceivableDetail = async (companyId: string, params
             jobLocationAgingBuckets.push({
                 jobLocation: jobLocationInvoice?.jobLocation?.[0] ?? {
                     _id: null,
-                    name: 'No subdivision'
+                    name: '(no subdivision)'
                 },
                 agingBuckets: [{ ...agingBucket }]
             });
@@ -439,16 +442,17 @@ export const _generateAccountReceivableDetail = async (companyId: string, params
     // Sort the job location list by name
     jobLocationAgingBuckets = _.sortBy(jobLocationAgingBuckets, [(jlab: any) => { return jlab?.jobLocation?.name?.toUpperCase(); }]);
 
-    // Move the 'No subdivision' aging to the bottom of list
-    const noSubdivisionGroup = jobLocationAgingBuckets.find(jlab => jlab.jobLocation?.name === 'No subdivision');
+    // Move the '(no subdivision)' aging to the bottom of list
+    const noSubdivisionGroup = jobLocationAgingBuckets.find(jlab => jlab.jobLocation?.name === '(no subdivision)');
     jobLocationAgingBuckets = [
-        ...jobLocationAgingBuckets.filter(jlab => jlab.jobLocation?.name !== 'No subdivision'),
+        ...jobLocationAgingBuckets.filter(jlab => jlab.jobLocation?.name !== '(no subdivision)'),
         noSubdivisionGroup
     ];
 
     return {
         totalUnpaid,
         customer,
+        customerAgingBucket,
         jobLocationCount: jobLocationAgingBuckets?.length,
         jobLocationAgingBuckets
     };
@@ -506,7 +510,6 @@ export const _generateAccountReceivableInvoices = async (companyId: string, para
                 jobSiteIds.push(new ObjectId(jobSiteId));
             }
         }
-        console.log('== jobSiteIds:', jobSiteIds)
         query['jobObj.jobSite'] = { $in: jobSiteIds };
     }
 
@@ -941,4 +944,53 @@ const _getAgingBucketDates = async (date: string): Promise<{ agingCurrentDate: s
     const aging91overDate = moment.utc(date).subtract(91, 'days').endOf('day').format();
 
     return { agingCurrentDate, aging130Date, aging3160Date, aging6190Date, aging91overDate };
+}
+
+/**
+ * Partial method to get selected customer aging bucket
+ */
+const _getCustomerAgingBucket = async (query: any, agingCurrentDate: string, aging130Date: string, aging3160Date: string, aging6190Date: string, aging91overDate: string): Promise<any> => {
+    // To get invoice's total if no balanceDue found for old invoices
+    const balanceDue = { $ifNull: ['$balanceDue', '$total', 0] };
+
+    const customerListAggregate = await Invoice.aggregate([
+        { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
+        { $match: { ...query } },
+        { $sort: { customer: -1, dueDate: 1 } },
+        {
+            $group: {
+                _id: {
+                    customer: '$customer',
+                    dueDate: {
+                        $let: {
+                            vars: { dueDate: '$dueDate' },
+                            in: {
+                                $switch: {
+                                    branches: [
+                                        { case: { $lte: ['$$dueDate', new Date(aging91overDate)] }, then: AgingBuckets.AGING_91_OVER },
+                                        { case: { $lte: ['$$dueDate', new Date(aging6190Date)] }, then: AgingBuckets.AGING_61_90 },
+                                        { case: { $lte: ['$$dueDate', new Date(aging3160Date)] }, then: AgingBuckets.AGING_31_60 },
+                                        { case: { $lte: ['$$dueDate', new Date(aging130Date)] }, then: AgingBuckets.AGING_1_30 },
+                                        { case: { $gte: ['$$dueDate', new Date(agingCurrentDate)] }, then: AgingBuckets.CURRENT },
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                totalUnpaid: { $sum: balanceDue },
+            }
+        }
+    ]);
+
+    const customerAgingBucket = [];
+    // Iterate all invoices from customer aggregate
+    for (const customerInvoice of customerListAggregate) {
+        customerAgingBucket.push({
+            label: customerInvoice?._id?.dueDate,
+            totalUnpaid: roundTwoDecimal(customerInvoice?.totalUnpaid),
+        });
+    }
+
+    return customerAgingBucket;
 }
