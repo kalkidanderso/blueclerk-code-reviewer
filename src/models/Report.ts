@@ -41,7 +41,7 @@ export enum AgingBuckets {
     AGING_1_30 = '1 - 30',
     AGING_31_60 = '31 - 60',
     AGING_61_90 = '61 - 90',
-    AGING_91_OVER = '91 and Over Past Due'
+    AGING_91_OVER = '91 and Over'
 }
 
 export interface IIncomeReportResponse {

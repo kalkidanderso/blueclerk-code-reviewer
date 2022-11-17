@@ -2450,6 +2450,26 @@ export default function (sio: any) {
     )
 
     router.get(
+        '/generateAccountReceivableReport/subdivisions',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateAccountReceivableDetail),
+        reportController.generateAccountReceivableDetail
+    )
+
+    router.get(
+        '/generateAccountReceivableReport/invoices',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateAccountReceivableInvoices),
+        reportController.generateAccountReceivableInvoices
+    )
+
+    router.get(
         '/generateReportPdf/:reportType',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
