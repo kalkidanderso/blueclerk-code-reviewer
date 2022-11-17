@@ -1042,7 +1042,8 @@
                 "type": "object",
                 "required": [
                   "type",
-                  "id"
+                  "id",
+                  "commissionEffectiveDate"
                 ],
                 "properties": {
                   "type": {
@@ -1059,6 +1060,10 @@
                   "commission": {
                     "type": "number",
                     "description": "Send a blank value to make the commission null on database"
+                  },
+                  "commissionEffectiveDate": {
+                    "type": "date",
+                    "description": "Effective date that the commission will apply"
                   }
                 }
               }
@@ -1073,6 +1078,72 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getCommissionHistory/{beneficiaryId}": {
+      "get": {
+        "tags": [
+          "Vendor"
+        ],
+        "summary": "Retrieve commission history for vendor or employee",
+        "description": "Returns a commission history for the specified vendor/employee id",
+        "parameters": [
+          {
+            "name": "beneficiaryId",
+            "in": "path",
+            "description": "The id of the vendor or employee to retrieve from the database",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "history": {
+                      "type": "array",
+                       "items": {
+                          "$ref": "#/components/schemas/CommissionHistoryResponse"
+                       }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "history": {
+                      "type": "array"
+                    }
+                  }
                 }
               }
             }
@@ -12238,7 +12309,7 @@
                   },
                   "asOf": {
                     "type": "string",
-                    "description": "To filter report as of a certain date",
+                    "description": "To filter report as of a certain date"
                   },
                   "customerIds": {
                     "type": "string",
@@ -17437,6 +17508,40 @@
             }
           }
         ]
+      },
+      "CommissionHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "technicianOrContractor": {
+            "type": "string"
+          },
+          "effectiveDate": {
+            "type": "string"
+          },
+          "commission": {
+            "type": "number"
+          },
+          "editedBy": {
+            "type": "object",
+            "properties": {
+              "_id":{
+                "type":"string"
+              },
+              "displayName":{
+                "type":"string"
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updateAt": {
+            "type": "string"
+          }
+        }
       }
     },
     "securitySchemes": {

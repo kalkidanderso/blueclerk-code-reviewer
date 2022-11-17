@@ -6,6 +6,8 @@ import { IInvoice } from '../models/Invoice';
 export interface IInvoiceCommission extends Document {
     invoice: Schema.Types.ObjectId | IInvoice
     technicians: IInvoiceCommissionTechnician[]
+    createdAt: Date
+    updatedAt: Date
 }
 
 export interface IInvoiceCommissionTechnician {

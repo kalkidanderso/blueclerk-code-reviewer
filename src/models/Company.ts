@@ -119,6 +119,8 @@ export interface IQBCompany {
     }
 }
 
+
+
 const CompanySchema = new Schema({
 
     info: {
@@ -306,6 +308,7 @@ const CompanySchema = new Schema({
         type: Number,
         default: null
     },
+     
     companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
 }, { timestamps: { createdAt: true, updatedAt: true } })
 

@@ -2002,6 +2002,21 @@ export default function (sio: any) {
         invoiceController.updateCommission
     )
 
+     router.get(
+        '/updateCommissionCron',       
+         (req, res) => {
+            invoiceController.updateCommissionCron(req, res)
+        }
+    )  
+
+    router.get(
+        '/getCommissionHistory/:beneficiaryId',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        checkUserPermissions(Permissions.Update_Invoice), //if has permission to update then can also view
+        invoiceController.getCommissionHistory
+    )
+
     router.get(
         '/getInvoicesByContractor',
         passport.authenticate('jwt', { session: false }),
