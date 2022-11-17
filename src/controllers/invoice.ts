@@ -3619,7 +3619,7 @@ export const updateCommission = async (req: Request, res: Response) => {
             }
 
             // Check if the date is greater than today, if so, do nothing... else, do as you used to..
-            if (moment(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day')) {
+            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day')) {
                 // Update vendor's commission rate
                 contractor.commission = params.commission ?? null;
 
@@ -3647,7 +3647,7 @@ export const updateCommission = async (req: Request, res: Response) => {
                              * now for this invoice- let's get the issuedDate and compare it to params effective date
                              * if the issued date is less than effective date-- don't update, else update
                              **/
-                            if (moment(params.commissionEffectiveDate).isSameOrBefore(moment.utc(invoice?.issuedDate ?? invoice?.createdAt), 'day')) {
+                            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment.utc(invoice?.issuedDate ?? invoice?.createdAt), 'day')) {
                                 contractorCommission.commission = params.commission ?? null;
                                 const commissionAmount = (((invoice?.total ?? 0) / totalTechnician) * Number(params.commission ?? 0)) / 100;
                                 contractorCommission.commissionAmount = Number(commissionAmount?.toFixed(2));
@@ -3674,7 +3674,7 @@ export const updateCommission = async (req: Request, res: Response) => {
             }
 
             // Check if the date is greater than today, if so, do not update commision... else, do as you used to..
-            if (moment(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day')) {
+            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day')) {
                 // Update employee's commission rate
                 employee.commission = params.commission ?? null;
 
