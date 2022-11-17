@@ -8,7 +8,8 @@ import * as https from 'https';
 import * as helper from '../services/helper';
 import { ContractorPermissions, DefaultCommission, DefaultPageSize, InvoiceStatus, Messages, Status } from '../common/constants';
 import { IContact } from '../common/contact';
-import { INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } from '../common/config';
+import { FONT_SETS, INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } from '../common/config';
+import { Layouts, Styles } from '../common/constants.pdf';
 import { Contact } from '../models/Contact';
 import { IUser, User } from '../models/User';
 import { Company, ICompany } from '../models/Company';
@@ -36,6 +37,7 @@ import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail
 import { IJobSite } from '../models/JobSite';
 import { IJobLocation } from '../models/JobLocation';
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission';
+import { ICommissionHistory, CommissionHistory } from '../models/CommissionHistory';
 import { getDatesFilterQuery } from 'src/services/pagination';
 
 /**
@@ -2001,7 +2003,8 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
                 { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
                 { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
                 { path: 'jobLocation', select: 'name location address' },
-                { path: 'jobSite', select: 'name location address' }
+                { path: 'jobSite', select: 'name location address' },
+                { path: 'customerContactId', select: '-__v' }
             ],
         })
         .populate({
@@ -2156,7 +2159,8 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
                 { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
                 { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
                 { path: 'jobLocation', select: 'name location address' },
-                { path: 'jobSite', select: 'name location address' }
+                { path: 'jobSite', select: 'name location address' },
+                { path: 'customerContactId', select: '-__v' }
             ],
         })
         .populate({
@@ -3042,32 +3046,23 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 
 export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) => {
 
-    // const { INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } = process.env;
-
-    // await downloadFontToPath(INVOICE_FONT_PATH);
-    const fonts = {
-        Roboto: {
-            normal: `${INVOICE_FONT_PATH}/Roboto-Regular.ttf`,
-            bold: `${INVOICE_FONT_PATH}/Roboto-Medium.ttf`,
-            italics: `${INVOICE_FONT_PATH}/Roboto-Thin.ttf`,
-            bolditalics: `${INVOICE_FONT_PATH}/Roboto-MediumItalic.ttf`,
-        }
-    };
-
     // Initialize PDF Make
-    const pdfMake = new pdfmake(fonts);
+    const pdfMake = new pdfmake({
+        ...FONT_SETS.ROBOTO,
+        ...FONT_SETS.FONTELLO
+    });
 
     // Retrieve invoice populated or detailed data
     const customer = <ICustomer>invoice.customer;
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
     const job = <IJob>invoice.job;
     const ticket = <IServiceTicket>job?.ticket;
-    const customerContact = <IContact>invoice.customerContactId;
+    const customerContact = <IContact>invoice.customerContactId ?? job?.customerContactId;
 
     // Construct Company Address object
     const companyAddress = {
         street: company.address?.street ? `${company.address?.street}` : '',
-        city: company.address?.city ? `, ${company.address?.city}` : '',
+        city: company.address?.city ? `${company.address?.city}` : '',
         state: company.address?.state ? `, ${company.address?.state}` : '',
         zipCode: company.address?.zipCode ? `, ${company.address?.zipCode}` : '',
     }
@@ -3084,20 +3079,11 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const jobAddress: any = { ...customerAddress };
     const jobSiteAddress: any = { ...customerAddress };
 
-    let serviceAddress = {
-        text: [
-            { text: "JOB ADDRESS", style: "smallFont", alignment: "left" },
-            { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
-        ],
-        rowSpan: 2
-    }
-    let jobSiteServiceAddress = {};
-
     if (job) {
         // Take Job Location address if any
         const jobLocation = <IJobLocation>job.jobLocation;
         if (jobLocation) {
-            jobAddress.name = `\n${jobLocation?.name}` ?? '';
+            jobAddress.name = jobLocation?.name ?? '';
             jobAddress.street = jobLocation?.address?.street ?? '';
             jobAddress.city = jobAddress.street && jobLocation?.address?.city ? ', ' : '';
             jobAddress.city += jobLocation?.address?.city ?? '';
@@ -3105,15 +3091,6 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             jobAddress.state += jobLocation?.address?.state ?? '';
             jobAddress.zipCode = (jobAddress.street || jobAddress.city || jobAddress.state) && jobLocation?.address?.zipcode ? ', ' : '';
             jobAddress.zipCode += jobLocation?.address?.zipcode ?? '';
-
-            serviceAddress = {
-                text: [
-                    { text: "JOB ADDRESS", style: "smallFont", alignment: "left" },
-                    { text: `${jobAddress.name}`, style: "defaultFontBold" },
-                    { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
-                ],
-                rowSpan: 2
-            }
         }
 
         // Take Job Site address if any
@@ -3127,26 +3104,6 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             jobSiteAddress.state += site?.address?.state ?? '';
             jobSiteAddress.zipCode = (jobSiteAddress.street || jobSiteAddress.city || jobSiteAddress.state) && site?.address?.zipcode ? ', ' : '';
             jobSiteAddress.zipCode += site?.address?.zipcode ?? '';
-
-            // If Job Site exist, add additional information for Job Location
-            serviceAddress = {
-                text: [
-                    { text: "SUBDIVISION", style: "smallFont", alignment: "left" },
-                    { text: `${jobAddress.name}`, style: "defaultFontBold" },
-                    { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
-                ],
-                rowSpan: 2
-            }
-
-            // Job Site Address still shown as Service Address but shifted below
-            jobSiteServiceAddress = {
-                text: [
-                    { text: "JOB ADDRESS", style: "smallFont", alignment: "left" },
-                    { text: `${jobSiteAddress.name}`, style: "defaultFontBold" },
-                    { text: `\n${jobSiteAddress.street}${jobSiteAddress.city}${jobSiteAddress.state}${jobSiteAddress.zipCode}`, style: "defaultFont" }
-                ],
-                rowSpan: 2
-            }
         }
     }
 
@@ -3164,53 +3121,44 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             image: 'companyLogo',
             width: 67,
             height: 52,
+            margin: [0, 20, 0, 10],
+            border: [false, false, false, true],
+            rowSpan: 2
         }
     }
-
-    // Construct Contact Details text
-    let contactDetails = {
-        text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 8, bold: true
-    };
 
     // Construct the header for the Invoice Items
     const table: any = {
         headerRows: 1,
-        widths: [44, 202, 40, 86, 40, 86, 35],
+        widths: [20, 220, 50, 110, 48, 110, 20],
         body: [
             [
-                { text: '', fillColor: "#eaecf3", lineColor: "#ffffff" },
+                { text: '', style: 'itemTitle' },
                 {
-                    text: "SERVICE/PRODUCT",
-                    style: "smallFont",
-                    fillColor: "#eaecf3",
-                    lineColor: "#ffffff",
-                    alignment: "left"
+                    text: "Service / Product",
+                    style: "itemTitle",
                 },
                 {
-                    text: 'QUANTITY',
-                    style: 'smallFont',
-                    fillColor: '#eaecf3',
+                    text: 'Quantity',
+                    style: 'itemTitle',
                     alignment: "center"
                 },
                 {
-                    text: 'PRICE',
-                    style: "smallFont",
-                    fillColor: '#eaecf3',
+                    text: 'Price',
+                    style: "itemTitle",
                     alignment: "center"
                 },
                 {
-                    text: "TAX",
-                    style: "smallFont",
-                    fillColor: "#eaecf3",
+                    text: "Taxable",
+                    style: "itemTitle",
                     alignment: "center",
                 },
                 {
-                    text: "AMOUNT",
-                    style: "smallFont",
-                    fillColor: "#eaecf3",
+                    text: "Amount",
+                    style: "itemTitle",
                     alignment: "right",
                 },
-                { fillColor: "#eaecf3", text: "" },
+                { text: '', style: 'itemTitle' },
             ],
         ],
     }
@@ -3219,19 +3167,19 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const bodyTable: any = [];
     invoice.items.forEach(item => {
         const itemPopulated = <IItem>item.item;
-        const itemName = [{ text: `${item.name ?? itemPopulated?.name ?? ''}`, style: "lineFontBold", alignment: "left" }, { text: `${item.description ?? itemPopulated?.description ?? ''}`, style: "lineFont", alignment: "left" }];
-        const itemQuantity = [{ text: " ", style: "lineFontBold", alignment: "center" }, { text: item.quantity, style: "lineFont", alignment: "center" }];
-        const itemPrice = [{ text: " ", style: "lineFontBold", alignment: "center" }, { text: `$${item.price}`, style: "lineFont", alignment: "center" }];
-        const itemTax = [{ text: " ", style: "lineFontBold", alignment: "center" }, { text: item.tax === 0 ? 'No' : `Yes`, style: "lineFont", alignment: "center" }];
-        const itemSubTotal = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `$${item.subTotal}`, style: "lineFont", alignment: "right" }];
 
         bodyTable.push([
             {},
-            itemName,
-            itemQuantity,
-            itemPrice,
-            itemTax,
-            itemSubTotal,
+            {
+                stack: [
+                    { text: `${item.name ?? itemPopulated?.name ?? ''}`, style: 'itemListBold' },
+                    { text: `${item.description ?? itemPopulated?.description ?? ''}`, style: 'itemList' }
+                ]
+            },
+            { text: item.quantity, style: 'itemListCenter' },
+            { text: `${helper.delimiterEnUs(item.price)}`, style: 'itemListCenter' },
+            { text: item.taxAmount === 0 ? '' : '', style: 'icon' },
+            { text: `${helper.delimiterEnUs(item.subTotal)}`, style: 'itemListRight' },
             {}
         ]);
     });
@@ -3244,294 +3192,199 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     // INITIALIZE INVOICE PDF TEMPLATE
     const docDefinition: any = {
         pageSize: "A4",
-        pageMargins: [0, 0, 50, 0],
+        pageMargins: [0, 0, 50, 30],
         content: [
             {
+                // HEADER FIRST LINE: COMPANY LOGO, NAME, VENDOR, & INVOICE ID
                 table: {
                     headerRows: 1,
-                    widths: [48, 67, 100, 370],
+                    widths: [10, 90, 179, 119, 139, 10],
                     body: [
-                        [{}, {}, {}, {}],
                         [
                             {},
                             companyImage,
-                            [{
-                                text: `${company.info?.companyName}`,
-                                fontSize: 8,
-                                alignment: "left",
-                                bold: true,
-                            }, {
-                                text: `\n${company.contact?.phone ?? ''}\n${company.info?.companyEmail ?? ''}\n${companyAddress.street}${companyAddress.city}${companyAddress.state}${companyAddress.zipCode}`,
-                                style: "defaultFont",
-                            }],
-                            [{ text: '\n\nVendor Number:', style: 'smallFont' }, { text: invoice.vendorId ?? 'No vendor found', style: 'defaultFont', bold: true }],
-                        ],
-                        [{}, {}, {}, {}],
-                    ],
-                },
-                fillColor: '#EAECF3',
-                layout: 'noBorders'
-            },
-            {
-                table: {
-                    headerRows: 2,
-                    widths: [48, 110, 85, 70, 63, 50, 74, 70],
-                    body: [
-                        [
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            { text: 'INVOICE', fontSize: 15, bold: true, colSpan: 2, alignment: 'right' },
-                            {},
-                            {}
-                        ],
-                        [{}, {}, {}, {}, {}, {}, {}, {}],
-                        [
-                            {},
                             {
-                                text: "BILL TO",
-                                style: "smallFont",
+                                text: `${company.info?.companyName ?? ''}`,
+                                style: 'companyName',
+                                margin: [0, 20, 0, 0],
+                                colSpan: 2,
                             },
                             {},
                             {
-                                text: "INVOICE #:",
-                                style: "smallFont",
-                                alignment: "right",
+                                text: `${invoice.invoiceId ? invoice.invoiceId?.toUpperCase() : ''}`,
+                                style: 'invoiceId',
+                                alignment: 'right',
+                                margin: [0, 20, 0, 0]
                             },
-                            {
-                                text: `${invoice.invoiceId}`,
-                                style: "defaultFont",
-                            },
-                            {
-                                text: "INVOICE DATE:",
-                                style: "smallFont",
-                                alignment: "right",
-                            },
-                            {
-                                text: `${moment(invoice.issuedDate ?? invoice.createdAt).format('MMM. DD, YYYY')}`,
-                                style: "defaultFont",
-                                alignment: "right",
-                            },
-                            {},
-                        ],
-                        [
-                            {},
-                            {
-                                text: customer?.profile?.displayName, fontSize: 8, bold: true
-                            },
-                            {},
-                            {
-                                text: "CUSTOMER PO: ",
-                                style: "smallFont",
-                                alignment: "right",
-                            },
-                            { text: invoice.customerPO ?? 'N/A', style: "defaultFont" },
-                            { text: "DUE DATE:", style: "smallFont", alignment: "right" },
-                            { text: moment(invoice.dueDate).format('MMM. DD, YYYY'), style: "defaultFont", alignment: "right" },
                             {}
                         ],
                         [
                             {},
-                            [
-                                { text: !customer?.contact?.phone ? '\n' : `\n${customer.contact.phone}`, style: "defaultFont" },
-                                { text: `${customerAddress.street}${customerAddress.city}${customerAddress.state}${customerAddress.zipCode}`, style: "defaultFont" }
-                            ],
-                            { ...serviceAddress },
                             {},
-                            {},
-                            { text: "TERMS:", style: "smallFont", alignment: "right" },
-                            { text: paymentTerm?.name ?? "", style: "defaultFont", alignment: "right" },
+                            {
+                                text: `${companyAddress.street}\n${companyAddress.city}${companyAddress.state}${companyAddress.zipCode}\n${company.contact?.phone ?? ''}`,
+                                style: 'invoiceHeader',
+                                margin: [0, 0, 0, 10],
+                                border: [false, false, false, true]
+                            },
+                            {
+                                stack: [
+                                    { text: 'Vendor Number', style: 'headerTitleBold' },
+                                    { text: invoice.vendorId ?? '', style: 'invoiceHeader' },
+                                ],
+                                margin: [0, -2, 0, 10],
+                                border: [false, false, false, true]
+                            },
+                            { text: '', margin: [0, 0, 0, 10], border: [false, false, false, true] },
                             {}
-                        ],
-                        [{}, {}, {}, {}, {}, {}, {}, {}],
-                        [
-                            {},
-                            [
-                                { text: "CONTACT DETAILS", style: "smallFont" },
-                                { text: `${customerContact?.name ?? ''}`, fontSize: 8, bold: true },
-                                { text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 8, bold: true },
-                            ],
-                            { ...jobSiteServiceAddress },
-                            { text: "\nTOTAL", fontSize: 5, rowSpan: 4, colSpan: 2, fillColor: "#D0D3DC" },
-                            {},
-                            { text: "", colSpan: 2, fillColor: "#D0D3DC" },
-                            {},
-                            {},
-                        ],
-                        [
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {
-                                text: `\n$${invoice.total}`,
-                                fontSize: 16, rowSpan: 3, colSpan: 2, fillColor: "#D0D3DC", alignment: 'right', lineHeight: 0.1
-                            },
-                            {},
-                            {}
-                        ],
-                        [
-                            {},
-                            [
-                                { text: "NOTE", style: "smallFont" },
-                                { text: `${ticket?.note ?? ''}`, fontSize: 8, bold: true },
-                            ],
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {}
-                        ],
-                        [{}, {}, {}, {}, {}, {}, {}, {}],
-                    ],
-                },
-                fillColor: '#EAECF3',
-                layout: 'noBorders'
-            },
-            {
-                table,
-                layout: {
-                    hLineWidth: function (i: number, node: { table: { body: string | any[]; }; }) {
-                        return i === 0 || i === node.table.body.length ? 0 : 1;
-                    },
-                    vLineWidth: function (i: number, node: { table: { widths: string | any[]; }; }) {
-                        return i === 0 || i === node.table.widths.length ? 0 : 1;
-                    },
-                    vLineColor: function (i: number, node: { table: { widths: string | any[]; }; }) {
-                        return i === 0 || i === node.table.widths.length ? "black" : "white";
-                    },
-                    hLineColor: function (i: number, node: { table: { body: string | any[]; }; }) {
-                        return i === 0 || i === node.table.body.length
-                            ? "#d0d3dc"
-                            : "#eeeeee";
-                    },
-                },
-            },
-            {
-                table: {
-                    headerRows: 1,
-                    widths: [48, 120, 10, 201, 137, 35],
-                    body: [
-                        [
-                            {},
-                            {
-                                text: "SUBTOTAL",
-                                style: "defaultFont",
-                                fillColor: "#eaecf3",
-                                lineColor: "#ffffff",
-                                alignment: "left"
-                            },
-                            {
-                                text: "",
-                                fillColor: "#eaecf3"
-                            },
-                            {
-                                text: "TAX",
-                                style: "defaultFont",
-                                fillColor: "#eaecf3",
-                                lineColor: "#ffffff",
-                                alignment: "left"
-                            },
-                            { fillColor: "#d0d3dc", text: 'TOTAL', style: "defaultFont", alignment: 'right' },
-                            {},
-                        ],
-                        [
-                            {},
-                            {
-                                text: `$${invoice.subTotal}`,
-                                fillColor: "#eaecf3",
-                                fontSize: 20,
-                                alignment: "left"
-                            },
-                            {
-                                text: `+`,
-                                fillColor: "#eaecf3",
-                                fontSize: 15,
-                                alignment: "left"
-                            },
-                            {
-                                text: `$${invoice.taxAmount}`,
-                                fillColor: "#eaecf3",
-                                fontSize: 20,
-                                alignment: "left"
-                            },
-                            {
-                                text: `$${invoice.total}`,
-                                fillColor: "#d0d3dc",
-                                fontSize: 20,
-                                alignment: "right"
-                            },
-                            {},
                         ]
                     ],
                 },
-                layout: 'noBorders'
+                fillColor: '#F9FDFF',
+                layout: {
+                    ...Layouts.noBorders,
+                    hLineColor: (i: number, node: any) => { return '#D0D3DC'; },
+                    hLineWidth: (i: number, node: any) => { return 1; }
+                },
+            },
+            {
+                // HEADER SECOND LINE: CUSTOMER & INVOICE INFORMATION
+                table: {
+                    widths: [10, 160, 160, 110, 97, 10],
+                    body: [
+                        [
+                            {},
+                            {
+                                stack: [
+                                    { text: 'Bill To', style: 'headerTitle' },
+                                    { text: customer?.profile?.displayName ?? '', style: 'invoiceHeaderBold' },
+                                    { text: 'Subdivision', style: 'headerTitle', margin: [0, 10, 0, 0] },
+                                    { text: jobAddress.name ?? '', style: 'invoiceHeader' },
+                                    { text: 'Job Address', style: 'headerTitle', margin: [0, 10, 0, 0] },
+                                    { text: jobSiteAddress.street ?? '', style: 'invoiceHeader' }
+                                ],
+                                margin: [0, 10, 0, 10],
+                                border: [false, false, false, true]
+                            },
+                            {
+                                stack: [
+                                    { text: 'Contact Details', style: 'headerTitle' },
+                                    { text: customerContact?.name ?? '', style: 'invoiceHeader' },
+                                    { text: customerContact?.phone ?? '', style: 'invoiceHeader' },
+                                    { text: customerContact?.email ?? '', style: 'invoiceHeader' }
+                                ],
+                                margin: [0, 10, 0, 10],
+                                border: [false, false, false, true]
+                            },
+                            {
+                                stack: [
+                                    { text: `Job PO/Sales Order:${invoice.customerPO?.length > 15 ? '\n\n' : ''}`, style: 'invoiceMetadataTitle' },
+                                    { text: 'Invoice Date:', style: 'invoiceMetadataTitle' },
+                                    { text: 'Due Date:', style: 'invoiceMetadataTitle' },
+                                    { text: 'Terms:', style: 'invoiceMetadataTitle' }
+                                ],
+                                margin: [0, 10, 0, 10],
+                                border: [false, false, false, true]
+                            },
+                            {
+                                stack: [
+                                    { text: invoice.customerPO ?? ' ', style: 'invoiceMetadata' },
+                                    { text: `${moment(invoice.issuedDate ?? invoice.createdAt).format('MMM. DD, YYYY')}`, style: 'invoiceMetadata' },
+                                    { text: `${invoice.dueDate ? moment(invoice.dueDate).format('MMM. DD, YYYY') : ' '}`, style: 'invoiceMetadata' },
+                                    { text: paymentTerm?.name ?? ' ', style: 'invoiceMetadata' }
+                                ],
+                                margin: [0, 10, 0, 10],
+                                border: [false, false, false, true]
+                            },
+                            {}
+                        ],
+                    ]
+                },
+                fillColor: '#F9FDFF',
+                layout: {
+                    ...Layouts.noBorders,
+                    hLineColor: (i: number, node: any) => { return '#D0D3DC'; },
+                    hLineWidth: (i: number, node: any) => { return 1; }
+                },
+            },
+            {
+                // INVOICE LINE
+                table,
+                layout: {
+                    ...Layouts.custom,
+                    paddingLeft: (i: number, node: any) => { return 1; },
+                    paddingRight: (i: number, node: any) => { return 1; },
+                    paddingTop: (i: number, node: any) => { return 5; },
+                    paddingBottom: (i: number, node: any) => { return 5; },
+                },
+            },
+            {
+                // INVOICE SUBTOTAL TOTAL AMOUNTDUE
+                table: {
+                    widths: [308, 148, 110, 20],
+                    body: [
+                        [
+                            {},
+                            { text: 'Subtotal:', style: 'itemListRight', border: [false, false, false, true] },
+                            { text: `${helper.delimiterEnUs(invoice.subTotal)}`, style: 'itemListRight', border: [false, false, false, true] },
+                            {}
+                        ],
+                        [
+                            {},
+                            { text: 'Tax:', style: 'itemListRight', border: [false, false, false, true] },
+                            { text: `${helper.delimiterEnUs(invoice.taxAmount)}`, style: 'itemListRight', border: [false, false, false, true] },
+                            {}
+                        ],
+                        [
+                            {},
+                            { text: 'Total:', style: 'itemListRight', border: [false, false, false, true] },
+                            { text: `${helper.delimiterEnUs(invoice.total)}`, style: 'itemListRight', border: [false, false, false, true] },
+                            {}
+                        ],
+                        [
+                            {},
+                            { text: 'AMOUNT DUE:', style: 'amountDueTitle', border: [false, false, false, true] },
+                            { text: `${helper.delimiterEnUs(invoice.balanceDue)}`, style: 'amountDue', border: [false, false, false, true] },
+                            {}
+                        ]
+                    ]
+                },
+                layout: {
+                    ...Layouts.noBorders,
+                    hLineColor: (i: number, node: any) => { return '#D0D3DC'; },
+                    hLineWidth: (i: number, node: any) => { return 1; },
+                    paddingLeft: (i: number, node: any) => { return 1; },
+                    paddingRight: (i: number, node: any) => { return 1; },
+                    paddingTop: (i: number, node: any) => { return 5; },
+                    paddingBottom: (i: number, node: any) => { return 5; },
+                },
             }
         ],
-        styles: {
-            header: {
-                fontSize: 18,
-                bold: true,
-            },
-            bigger: {
-                fontSize: 15,
-                italics: true,
-            },
-            subheader: {
-                fontSize: 15,
-                bold: true,
-            },
-            quote: {
-                italics: true,
-            },
-            smallFont: {
-                italics: true,
-                fontSize: 7,
-                lineHeight: 1.2,
-            },
-            defaultFont: {
-                bold: false,
-                fontSize: 8,
-                weight: 100,
-                lineHeight: 1.2,
-            },
-            defaultFontBold: {
-                bold: true,
-                fontSize: 8,
-                weight: 100,
-                lineHeight: 1.2,
-            },
-            lineFont: {
-                bold: false,
-                fontSize: 10,
-                weight: 100,
-                lineHeight: 1.2,
-            },
-            lineFontBold: {
-                bold: true,
-                fontSize: 10,
-                weight: 100,
-                lineHeight: 1.2,
-            },
-            tableFont: {
-                bold: false,
-                fontSize: 16,
-                weight: 100,
-                lineHeight: 1.2,
-            },
-            tableHeader: {
-                bold: true,
-                fontSize: 13,
-                color: "black",
-            },
+        footer: (currentPage: number, pageCount: number) => {
+            return [{
+                table: {
+                    widths: [20, 535, 20],
+                    body: [
+                        [
+                            {},
+                            {
+                                text: `Page ${currentPage} of ${pageCount}`,
+                                style: 'smallFontGray',
+                                alignment: 'right',
+                                margin: [0, 10]
+                            },
+                            {}
+                        ],
+                    ],
+                },
+                fillColor: '#F9FDFF',
+                layout: { ...Layouts.noBorders },
+            }]
         },
+        styles: Styles.invoice,
         defaultStyle: {
             columnGap: 10,
-            font: "Roboto",
+            font: 'Roboto',
         },
         images: {
             companyLogo: `${INVOICE_IMAGE_PATH}/${company.info.companyName.replace(/\s+/g, '').toLowerCase()}.jpg`
@@ -3598,7 +3451,22 @@ export const fileExists = async (absolutePath: string): Promise<boolean> => {
 export const updateCommission = async (req: Request, res: Response) => {
 
     const params = req.body;
+    const user = <IUser>req.user;
     let commissionBalance = 0;
+
+    // Insert into commissionHistory
+    const commissionHistory = new CommissionHistory({
+        technicianOrContractor: params.id,
+        effectiveDate: params.commissionEffectiveDate,
+        commission: params.commission,
+        type: params.type,
+        editedBy: {
+            id: user._id,
+            displayName: user.profile.displayName,
+        },
+    });
+
+    await commissionHistory.save();
 
     switch (params.type) {
         case 'vendor':
@@ -3607,41 +3475,53 @@ export const updateCommission = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'Vendor not found' });
             }
 
-            // Update vendor's commission rate
-            contractor.commission = params.commission ?? null;
+            // Check if the date is greater than today, if so, do nothing... else, do as you used to..
+            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day')) {
+                // Update vendor's commission rate
+                contractor.commission = params.commission ?? null;
 
-            // Find if vendor already have invoice commission
-            const contractorInvoiceCommissions = await InvoiceCommission.find({ 'technicians.contractor': contractor._id }).populate('invoice').exec();
-            if (contractorInvoiceCommissions.length) {
-                // Iterate all invoice commissions 
-                for (const invoiceCommission of contractorInvoiceCommissions) {
-                    const invoice = <IInvoice>invoiceCommission.invoice;
-                    const totalTechnician = invoiceCommission?.technicians?.length;
-                    const contractorCommission = invoiceCommission?.technicians?.find(technician => technician?.contractor?.toString() === contractor._id?.toString());
-                    if (!contractorCommission) {
-                        continue;
+                // Find if vendor already have invoice commission
+                // --should only happen if the invoice issued date is greater than the effective date
+                const contractorInvoiceCommissions = await InvoiceCommission.find({ 'technicians.contractor': contractor._id })
+                    .populate('invoice')
+                    .exec();
+
+                if (contractorInvoiceCommissions?.length) {
+                    // Iterate all invoice commissions
+                    for (const invoiceCommission of contractorInvoiceCommissions) {
+                        const invoice = <IInvoice>invoiceCommission.invoice;
+                        const totalTechnician = invoiceCommission?.technicians?.length ?? 0;
+                        const contractorCommission = invoiceCommission?.technicians?.find((technician) => technician?.contractor?.toString() === contractor._id?.toString());
+
+                        if (!contractorCommission) {
+                            continue;
+                        }
+
+                        if (!contractorCommission.paid) {
+                            /**
+                             * If invoice commission is not been paid,
+                             * update the amount with the new rate
+                             * now for this invoice- let's get the issuedDate and compare it to params effective date
+                             * if the issued date is less than effective date-- don't update, else update
+                             **/
+                            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment.utc(invoice?.issuedDate ?? invoice?.createdAt), 'day')) {
+                                contractorCommission.commission = params.commission ?? null;
+                                const commissionAmount = (((invoice?.total ?? 0) / totalTechnician) * Number(params.commission ?? 0)) / 100;
+                                contractorCommission.commissionAmount = Number(commissionAmount?.toFixed(2));
+                            }
+                        }
+
+                        // Recalculate vendor open balance
+                        commissionBalance += contractorCommission.commissionAmount ?? 0;
+                        await invoiceCommission.save();
                     }
 
-                    if (!contractorCommission.paid) {
-                        /**
-                         * If invoice commission is not been paid,
-                         * update the amount with the new rate
-                         */
-                        contractorCommission.commission = params.commission ?? null;
-                        const commissionAmount = (invoice.total / totalTechnician) * (params.commission ?? 0) / 100;
-                        contractorCommission.commissionAmount = Number(commissionAmount.toFixed(2));
-                    }
-
-                    // Recalculate vendor open balance
-                    commissionBalance += contractorCommission.commissionAmount;
-                    await invoiceCommission.save();
+                    // Update vendor balance and save vendor object
+                    contractor.balance = commissionBalance;
                 }
             }
 
-            // Update vendor balance and save vendor object
-            contractor.balance = commissionBalance;
             await contractor.save();
-
             return res.json({ status: Status.Success, message: 'Commission updated successfully', contractor });
 
         case 'employee':
@@ -3650,47 +3530,101 @@ export const updateCommission = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'Employee not found' });
             }
 
-            // Update employee's commission rate
-            employee.commission = params.commission ?? null;
+            // Check if the date is greater than today, if so, do not update commision... else, do as you used to..
+            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day')) {
+                // Update employee's commission rate
+                employee.commission = params.commission ?? null;
 
-            // Find if employee already have invoice commission
-            const employeeInvoiceCommissions = await InvoiceCommission.find({ 'technicians.technician': employee._id }).populate('invoice').exec();
-            if (employeeInvoiceCommissions.length) {
-                // Iterate all invoice commissions 
-                for (const invoiceCommission of employeeInvoiceCommissions) {
-                    const invoice = <IInvoice>invoiceCommission.invoice;
-                    const totalTechnician = invoiceCommission?.technicians?.length;
-                    const employeeCommission = invoiceCommission.technicians?.find(technician => technician?.technician?.toString() === employee._id?.toString());
-                    if (!employeeCommission) {
-                        continue;
+                // Find if employee already have invoice commission
+                // --should only happen if the invoice issued date is greater than the effective date
+                const employeeInvoiceCommissions = await InvoiceCommission.find({ 'technicians.technician': employee._id })
+                    .populate('invoice')
+                    .exec();
+
+                if (employeeInvoiceCommissions?.length) {
+                    // Iterate all invoice commissions
+                    for (const invoiceCommission of employeeInvoiceCommissions) {
+                        const invoice = <IInvoice>invoiceCommission.invoice;
+                        const totalTechnician = invoiceCommission?.technicians?.length ?? 0;
+                        const employeeCommission = invoiceCommission.technicians?.find((technician) => technician?.technician?.toString() === employee._id?.toString());
+
+                        if (!employeeCommission) {
+                            continue;
+                        }
+
+                        if (!employeeCommission.paid) {
+                            /**
+                             * If invoice commission is not been paid,
+                             * update the amount with the new rate
+                             * now for this invoice- let's get the issuedDate and compare it to params effective date
+                             * if the issued date is less than effective date-- don't update, else update
+                             **/
+                            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment.utc(invoice?.issuedDate ?? invoice?.createdAt), 'day')) {
+                                employeeCommission.commission = params.commission ?? null;
+                                const commissionAmount = (((invoice?.total ?? 0) / totalTechnician) * Number(params.commission ?? 0)) / 100;
+                                employeeCommission.commissionAmount = Number(commissionAmount?.toFixed(2));
+                            }
+                        }
+
+                        // Recalculate employee open balance
+                        commissionBalance += employeeCommission.commissionAmount ?? 0;
+                        await invoiceCommission.save();
                     }
-
-                    if (!employeeCommission.paid) {
-                        /**
-                         * If invoice commission is not been paid,
-                         * update the amount with the new rate
-                         */
-                        employeeCommission.commission = params.commission ?? null;
-                        const commissionAmount = (invoice.total / totalTechnician) * (params.commission ?? 0) / 100;
-                        employeeCommission.commissionAmount = Number(commissionAmount.toFixed(2));
-                    }
-
-                    // Recalculate employee open balance
-                    commissionBalance += employeeCommission.commissionAmount;
-                    await invoiceCommission.save();
                 }
-            }
 
-            // Update employee balance and save employee object
-            employee.balance = commissionBalance;
+                // Update employee balance and save employee object
+                employee.balance = commissionBalance;
+            } //else part here for commission processing if date is in future
+
             await employee.save();
-
             return res.json({ status: Status.Success, message: 'Commission updated successfully', employee });
 
         default:
             return res.json({ status: Status.Success, message: 'Type not supported. Available Type to be used: vendor or employee.' });
     }
 
+}
+
+export const getCommissionHistory = async (req: Request, res: Response) => {
+    const { beneficiaryId } = req.params;
+    const commissionHistories = await CommissionHistory.find({ technicianOrContractor: beneficiaryId })
+    return res.json({ 'status': Status.OK, 'history': commissionHistories })
+}
+
+export const updateCommissionCron = async (req: Request, res: Response) => {
+    
+    let start = new Date();
+    start.setHours(0,0,0,0);
+
+    let end = new Date();
+    end.setHours(23, 59, 59, 999);    
+    // get commission_ histories whole effective date is today    
+    const commissionHistories = await CommissionHistory.find({ effectiveDate: { $gte: start, $lt: end } })
+    if (commissionHistories?.length > 0) {
+        for (const history of commissionHistories) {
+            //    if type is contractor
+            if (history?.type === 'vendor') {
+                
+                const contractor = await Company.findById(history.technicianOrContractor).exec();
+                if (contractor) {
+                    //update that commision
+                    contractor.commission = history.commission
+                    await contractor.save()
+                }
+            } else if (history?.type === 'employee') {
+                const employee = await User.findById(history.technicianOrContractor).exec();
+                if (employee) {
+                  // update employee
+                    employee.commission = history.commission
+                    await employee.save()
+                    
+                }
+
+            }                     
+            
+        }
+    } 
+    return res.json({ status: Status.OK });
 }
 
 export const getInvoicesByContractor = async (req: Request, res: Response) => {
@@ -3839,7 +3773,8 @@ export const generateInvoicePdf = async (req: Request, res: Response) => {
                 { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
                 { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
                 { path: 'jobLocation', select: 'name location address' },
-                { path: 'jobSite', select: 'name location address' }
+                { path: 'jobSite', select: 'name location address' },
+                { path: 'customerContactId', select: '-__v' }
             ],
         })
         .populate({

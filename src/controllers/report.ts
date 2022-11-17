@@ -18,7 +18,7 @@ import { ReportTypes, ReportData, ReportSources, IncomeReport, MemorizedReport, 
 
 import { getPlaceholderValues, transformPlaceholders, _createCompanyDefaultEmail } from '../controllers/emailDefault';
 import { downloadFileToPath } from '../controllers/invoice';
-import { _customAccountReceivableReport, _generateAccountReceivableReportPdf, _standardAccountReceivableReport } from '../controllers/report.ar';
+import { _customAccountReceivableReport, _generateAccountReceivableDetail, _generateAccountReceivableInvoices, _generateAccountReceivableReportPdf, _standardAccountReceivableReport } from '../controllers/report.ar';
 
 
 /**
@@ -85,6 +85,56 @@ export const generateAccountReceivableReport = async (req: Request, res: Respons
             ...params,
             customerIds: params.customerIds && JSON.parse(params.customerIds)
         }
+    });
+
+}
+
+/**
+ * Generate Report with reportType 2 (ACCOUNT_RECEIVABLE),
+ * For all subdivisions of the customer selected
+ */
+export const generateAccountReceivableDetail = async (req: Request, res: Response) => {
+
+    const params = req.query;
+    const companyId = req.companyId;
+    let accountReceivableDetailReport;
+
+    try {
+        accountReceivableDetailReport = await _generateAccountReceivableDetail(companyId, params);
+    } catch (err) {
+        return res.json({ status: Status.Error, message: err.message });
+    }
+
+    return res.json({
+        status: Status.Success,
+        reportType: ReportTypes.ACCOUNT_RECEIVABLE,
+        report: accountReceivableDetailReport,
+        filter: { ...params }
+    });
+
+}
+
+/**
+ * Generate Report with reportType 2 (ACCOUNT_RECEIVABLE),
+ * For all invoices of the subdivisions of the customer selected
+ */
+export const generateAccountReceivableInvoices = async (req: Request, res: Response) => {
+
+    const params = req.query;
+    const companyId = req.companyId;
+    let accountReceivableInvoicesReport;
+
+    try {
+        accountReceivableInvoicesReport = await _generateAccountReceivableInvoices(companyId, params);
+    } catch (err) {
+        return res.json({ status: Status.Error, message: err.message });
+    }
+
+    return res.json({
+        status: Status.Success,
+        ReportTypes: ReportTypes.ACCOUNT_RECEIVABLE,
+        report: accountReceivableInvoicesReport,
+        filter: { ...params }
     });
 
 }
@@ -869,7 +919,7 @@ const _handleReportPdf = async ({
     if (incomeReport?.customers?.length) {
         for (const customer of incomeReport.customers) {
             const customerName = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `${customer.customer?.profile?.displayName ?? ''}`, style: "lineFontBold", alignment: "left" }];
-            const incomeTotal = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `$${delimiterEnUs(customer.total)}`, style: "lineFont", alignment: "right" }];
+            const incomeTotal = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `${delimiterEnUs(customer.total)}`, style: "lineFont", alignment: "right" }];
             bodyTable.push([
                 {},
                 customerName,
@@ -980,7 +1030,7 @@ const _handleReportPdf = async ({
                             },
                             {},
                             {},
-                            { text: `$ ${delimiterEnUs(incomeReport.totalIncome)}`, fontSize: 14, bold: true, colSpan: 2, rowSpan: 2, alignment: 'right' },
+                            { text: `${delimiterEnUs(incomeReport.totalIncome)}`, fontSize: 14, bold: true, colSpan: 2, rowSpan: 2, alignment: 'right' },
                             {},
                             {}
                         ],
@@ -1008,7 +1058,7 @@ const _handleReportPdf = async ({
                                 text: "INVOICED",
                                 style: "smallFont",
                             }, {
-                                text: `$${delimiterEnUs(incomeReport.totalIncome)}`, style: "lineFontBold", align: "left"
+                                text: `${delimiterEnUs(incomeReport.totalIncome)}`, style: "lineFontBold", align: "left"
                             }],
                             [{
                                 text: "CUSTOMERS",

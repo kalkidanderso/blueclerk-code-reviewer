@@ -21,7 +21,7 @@ export const Layouts = {
 }
 
 export const Styles = {
-    default: {
+    arReport: {
         title: {
             fontSize: 18,
             bold: true,
@@ -30,21 +30,6 @@ export const Styles = {
         titleTable: {
             fillColor: '#EAECF3',
             margin: [0, -1]
-        },
-        header: {
-            fontSize: 18,
-            bold: true,
-        },
-        bigger: {
-            fontSize: 15,
-            italics: true,
-        },
-        subheader: {
-            fontSize: 15,
-            bold: true,
-        },
-        quote: {
-            italics: true,
         },
         smallFont: {
             fontSize: 7,
@@ -122,6 +107,98 @@ export const Styles = {
             fontSize: 10,
             color: '#4F4F4F',
             margin: [0, 0, 0, 15]
+        }
+    },
+    invoice: {
+        headerTitle: {
+            fontSize: 11,
+            color: '#828282'
+        },
+        headerTitleBold: {
+            fontSize: 11,
+            bold: true,
+            color: '#828282'
+        },
+        companyName: {
+            fontSize: 16,
+            bold: true,
+            color: '#4F4F4F'
+        },
+        invoiceId: {
+            fontSize: 20,
+            bold: true,
+            color: '#00AAFF'
+        },
+        invoiceHeader: {
+            fontSize: 11,
+            color: '#333333'
+        },
+        invoiceHeaderBold: {
+            fontSize: 11,
+            bold: true,
+            color: '#4F4F4F'
+        },
+        invoiceMetadataTitle: {
+            fontSize: 11,
+            bold: true,
+            color: '#333333',
+            alignment: 'right',
+            rowSpan: 2
+        },
+        invoiceMetadata: {
+            fontSize: 11,
+            color: '#333333',
+            alignment: 'right',
+            rowSpan: 2
+        },
+        itemTitle: {
+            fontSize: 12,
+            bold: true,
+            color: '#828282',
+            fillColor: '#F9FDFF',
+            margin: [0, 10, 0, 5]
+        },
+        itemListBold: {
+            fontSize: 12,
+            bold: true,
+            color: '#4F4F4F',
+            margin: [0, 0, 0, 5]
+        },
+        itemList: {
+            fontSize: 12,
+            color: '#4F4F4F'
+        },
+        itemListCenter: {
+            fontSize: 12,
+            color: '#4F4F4F',
+            alignment: 'center'
+        },
+        itemListRight: {
+            fontSize: 12,
+            color: '#4F4F4F',
+            alignment: 'right'
+        },
+        amountDueTitle: {
+            fontSize: 12,
+            bold: true,
+            color: '#333333',
+            alignment: 'right'
+        },
+        amountDue: {
+            fontSize: 16,
+            bold: true,
+            color: '#333333',
+            alignment: 'right'
+        },
+        smallFontGray: {
+            fontSize: 7,
+            color: '#4F4F4F'
+        },
+        icon: {
+            font: 'Fontello',
+            fontSize: 12,
+            color: '#4F4F4F',
+            alignment: 'center'
         }
     }
 }

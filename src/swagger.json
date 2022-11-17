@@ -1042,7 +1042,8 @@
                 "type": "object",
                 "required": [
                   "type",
-                  "id"
+                  "id",
+                  "commissionEffectiveDate"
                 ],
                 "properties": {
                   "type": {
@@ -1059,6 +1060,10 @@
                   "commission": {
                     "type": "number",
                     "description": "Send a blank value to make the commission null on database"
+                  },
+                  "commissionEffectiveDate": {
+                    "type": "date",
+                    "description": "Effective date that the commission will apply"
                   }
                 }
               }
@@ -1073,6 +1078,72 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getCommissionHistory/{beneficiaryId}": {
+      "get": {
+        "tags": [
+          "Vendor"
+        ],
+        "summary": "Retrieve commission history for vendor or employee",
+        "description": "Returns a commission history for the specified vendor/employee id",
+        "parameters": [
+          {
+            "name": "beneficiaryId",
+            "in": "path",
+            "description": "The id of the vendor or employee to retrieve from the database",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "history": {
+                      "type": "array",
+                       "items": {
+                          "$ref": "#/components/schemas/CommissionHistoryResponse"
+                       }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "history": {
+                      "type": "array"
+                    }
+                  }
                 }
               }
             }
@@ -12011,6 +12082,126 @@
         ]
       }
     },
+    "/generateAccountReceivableReport/subdivisions": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To generate account receivable detail",
+        "parameters": [
+          {
+            "name": "asOf",
+            "in": "query",
+            "description": "To generate A/R Report detail as of certain date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "required": true,
+            "description": "Get detail of A/R Report for the customer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "jobLocationIds",
+            "in": "query",
+            "description": "To filter detail report by specific subdivisions. Example: [\"60884d85f7b64106c9da250d\",\"611d63643150ef2a3196b959\"]",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/generateAccountReceivableReport/invoices": {
+      "get": {
+        "tags": [
+          "Report"
+        ],
+        "summary": "To generate account receivable invoices",
+        "parameters": [
+          {
+            "name": "asOf",
+            "in": "query",
+            "description": "To generate A/R Report detail as of certain date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "required": true,
+            "description": "Get invoices of A/R Report detail for the customer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "jobLocationId",
+            "in": "query",
+            "description": "Get invoices of A/R Report detail for the customer's subdisivion. Leave this blank when user clicks on \"No Subdivision\" aging.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "in": "query",
+            "description": "To filter/search by Invoice ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "jobSiteIds",
+            "in": "query",
+            "description": "To filter detail report by specific job address. Example: [\"614df4bf200eb556e0ba4ac0\",\"6269a5160365d2310af626e9\"]",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/generateReportPdf/accountReceivableReport": {
       "get": {
         "tags": [
@@ -12118,7 +12309,7 @@
                   },
                   "asOf": {
                     "type": "string",
-                    "description": "To filter report as of a certain date",
+                    "description": "To filter report as of a certain date"
                   },
                   "customerIds": {
                     "type": "string",
@@ -17317,6 +17508,40 @@
             }
           }
         ]
+      },
+      "CommissionHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "technicianOrContractor": {
+            "type": "string"
+          },
+          "effectiveDate": {
+            "type": "string"
+          },
+          "commission": {
+            "type": "number"
+          },
+          "editedBy": {
+            "type": "object",
+            "properties": {
+              "_id":{
+                "type":"string"
+              },
+              "displayName":{
+                "type":"string"
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updateAt": {
+            "type": "string"
+          }
+        }
       }
     },
     "securitySchemes": {

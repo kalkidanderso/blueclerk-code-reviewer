@@ -34,11 +34,7 @@ export interface IInvoice extends Document {
     subTotal: number
     total: number
     taxPercentage: number // TODO: to be deprecated
-    createdBy: Schema.Types.ObjectId
-    createdAt: Date
     timeSpent: number
-    // isFixed: boolean
-    // hourlyRate: number
     items: [{
         item: Schema.Types.ObjectId | IItem
         name: string
@@ -63,6 +59,9 @@ export interface IInvoice extends Document {
     quickbookId?: string
     commission?: Schema.Types.ObjectId | IInvoiceCommission
     isVoid?: boolean
+    createdBy: Schema.Types.ObjectId
+    createdAt: Date
+    updatedAt: Date
 }
 
 export enum LineDetailTypes {
@@ -248,22 +247,10 @@ const InvoiceSchema = new Schema({
         ref: 'User',
         required: true
     },
-    createdAt: {
-        type: Date,
-        default: Date.now()
-    },
     timeSpent: {
         type: Number,
         default: 0
     },
-    // isFixed: {
-    //     type: Boolean,
-    //     default: false
-    // },
-    // hourlyRate: {
-    //     type: Number,
-    //     default: 0
-    // },
     items: [{
         _id: false,
         item: {
@@ -339,6 +326,7 @@ const InvoiceSchema = new Schema({
         type: Boolean,
         default: false
     }
-})
+
+}, { timestamps: { createdAt: true, updatedAt: true } });
 
 export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema)

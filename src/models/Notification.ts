@@ -28,6 +28,7 @@ export interface INotification extends Document {
         dismissedAt: Date
     }
     createdAt: Date
+    updatedAt: Date
 
 };
 
@@ -65,7 +66,7 @@ const NotificationSchema = new Schema(
             dismissedAt: Date
         }
     },
-    { timestamps: { createdAt: true, updatedAt: false } }
+    { timestamps: { createdAt: true, updatedAt: true } }
 
 );
 

@@ -176,6 +176,13 @@ new CronJob('59 23 * * *', () => {
   });
 }, null, true, 'America/Chicago');
 
+// Cron Job to update commisions for those set on future date at the beginning of each day
+new CronJob('1 0 * * *', () => {
+  request(`http://localhost:${app.get('port')}/api/v1/updateCommissionCron`, (response: any) => {
+    console.log('== response:', response);
+  });
+}, null, true, 'America/Chicago');
+
 // Cron Job to handle and update all incomplete job at the end of each day
 // new CronJob('59 23 * * *', async () => {
 //   try {

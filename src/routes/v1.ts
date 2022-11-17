@@ -2002,6 +2002,21 @@ export default function (sio: any) {
         invoiceController.updateCommission
     )
 
+     router.get(
+        '/updateCommissionCron',       
+         (req, res) => {
+            invoiceController.updateCommissionCron(req, res)
+        }
+    )  
+
+    router.get(
+        '/getCommissionHistory/:beneficiaryId',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        checkUserPermissions(Permissions.Update_Invoice), //if has permission to update then can also view
+        invoiceController.getCommissionHistory
+    )
+
     router.get(
         '/getInvoicesByContractor',
         passport.authenticate('jwt', { session: false }),
@@ -2447,6 +2462,26 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.generateAccountReceivableReport),
         reportController.generateAccountReceivableReport
+    )
+
+    router.get(
+        '/generateAccountReceivableReport/subdivisions',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateAccountReceivableDetail),
+        reportController.generateAccountReceivableDetail
+    )
+
+    router.get(
+        '/generateAccountReceivableReport/invoices',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateAccountReceivableInvoices),
+        reportController.generateAccountReceivableInvoices
     )
 
     router.get(

@@ -463,6 +463,7 @@ export const Validations = {
 
   updateCommission: [
     check('type').exists().withMessage(Messages.Required),
+    check('commissionEffectiveDate').exists().withMessage(Messages.Required),
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId),
     check('commission').optional().isInt().withMessage('invalid format')
@@ -591,6 +592,15 @@ export const Validations = {
     check('reportData').exists().withMessage(Messages.Required),
     check('reportData').isInt().toInt().withMessage('has to be number'),
     check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+  ],
+
+  generateAccountReceivableDetail: [
+    check('customerId').isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  generateAccountReceivableInvoices: [
+    check('customerId').isMongoId().withMessage(Messages.WrongId),
+    check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
   ],
 
   generateReportPdf: [
