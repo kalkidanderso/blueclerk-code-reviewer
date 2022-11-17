@@ -9,6 +9,8 @@ export interface ICommissionHistory extends Document {
         displayName: string
     }
     effectiveDate: Date
+    createdAt: Date
+    updatedAt: Date
 }
 
 const CommissionHistorySchema = new Schema({
@@ -17,8 +19,7 @@ const CommissionHistorySchema = new Schema({
         type: Schema.Types.ObjectId,
         required: true,
         refPath: 'onCollection',
-    },       
-       
+    },
     onCollection: {
         type: String,
         required: false,
@@ -28,7 +29,6 @@ const CommissionHistorySchema = new Schema({
         type: String,
         required: true 
     },
-
     effectiveDate: {
         type: Date,
         default: null,
@@ -39,12 +39,12 @@ const CommissionHistorySchema = new Schema({
     },
     editedBy: {
         id: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
+            type: Schema.Types.ObjectId,
+            ref: 'User',
         },
         displayName: String,
-    },   
-    
-}, { timestamps: { createdAt: true} })
+    },
 
-export const CommissionHistory = mongoose.model<ICommissionHistory>('CommissionHistory', CommissionHistorySchema)
+}, { timestamps: { createdAt: true, updatedAt: true } })
+
+export const CommissionHistory = mongoose.model<ICommissionHistory>('CommissionHistory', CommissionHistorySchema);
