@@ -12518,7 +12518,7 @@
                   },
                   "asOf": {
                     "type": "string",
-                    "description": "To filter report as of a certain date",
+                    "description": "To filter report as of a certain date"
                   },
                   "customerIds": {
                     "type": "string",
