@@ -3096,8 +3096,9 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
         // Take Job Site address if any
         const site = <IJobSite>job.jobSite;
         if (site) {
-            jobSiteAddress.name = `\n${site?.name}` ?? '';
-            jobSiteAddress.street = site?.address?.street ?? '';
+            jobSiteAddress.name = site?.name ?? '';
+            jobSiteAddress.street = jobSiteAddress.name ? '\n' : '';
+            jobSiteAddress.street += site?.address?.street ?? '';
             jobSiteAddress.city = jobSiteAddress.street && site?.address?.city ? ', ' : '';
             jobSiteAddress.city += site?.address?.city ?? '';
             jobSiteAddress.state = (jobSiteAddress.street || jobSiteAddress.city) && site?.address?.state ? ', ' : '';
@@ -3198,7 +3199,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                 // HEADER FIRST LINE: COMPANY LOGO, NAME, VENDOR, & INVOICE ID
                 table: {
                     headerRows: 1,
-                    widths: [10, 90, 179, 119, 139, 10],
+                    widths: [10, 80, 170, 110, 167, 10],
                     body: [
                         [
                             {},
@@ -3259,9 +3260,9 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                                     { text: 'Bill To', style: 'headerTitle' },
                                     { text: customer?.profile?.displayName ?? '', style: 'invoiceHeaderBold' },
                                     { text: 'Subdivision', style: 'headerTitle', margin: [0, 10, 0, 0] },
-                                    { text: jobAddress.name ?? '', style: 'invoiceHeader' },
+                                    { text: jobAddress.name, style: 'invoiceHeader' },
                                     { text: 'Job Address', style: 'headerTitle', margin: [0, 10, 0, 0] },
-                                    { text: jobSiteAddress.street ?? '', style: 'invoiceHeader' }
+                                    { text: `${jobSiteAddress.name}${jobSiteAddress.street}`, style: 'invoiceHeader' }
                                 ],
                                 margin: [0, 10, 0, 10],
                                 border: [false, false, false, true]
