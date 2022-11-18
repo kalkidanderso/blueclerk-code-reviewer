@@ -2406,13 +2406,13 @@ export const getInvoices = async (req: Request, res: Response) => {
             break;
     }
     if (params.startDate && params.endDate) {
-        const startDate = moment(params.startDate).format('YYYY-MM-DD');
-        const endDate = moment(params.endDate).format('YYYY-MM-DD');
+        const startDate = moment.utc(params.startDate).startOf('day').format();
+        const endDate = moment.utc(params.endDate).endOf('day').format();
         filterQuery['$and'].push({ issuedDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
     }
     if (params.lastEmailStartDate && params.lastEmailEndDate) {
-        const lastEmailStartDate = moment(params.lastEmailStartDate).format('YYYY-MM-DD');
-        const lastEmailEndDate = moment(params.lastEmailEndDate).format('YYYY-MM-DD');
+        const lastEmailStartDate = moment(params.lastEmailStartDate).startOf('day').format();
+        const lastEmailEndDate = moment(params.lastEmailEndDate).endOf('day').format();
         filterQuery['$and'].push({ lastEmailSent: { $gte: new Date(lastEmailStartDate), $lte: new Date(lastEmailEndDate) } });
     }
 
