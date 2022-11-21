@@ -444,10 +444,12 @@ export const _generateAccountReceivableDetail = async (companyId: string, params
 
     // Move the '(no subdivision)' aging to the bottom of list
     const noSubdivisionGroup = jobLocationAgingBuckets.find(jlab => jlab.jobLocation?.name === '(no subdivision)');
-    jobLocationAgingBuckets = [
-        ...jobLocationAgingBuckets.filter(jlab => jlab.jobLocation?.name !== '(no subdivision)'),
-        noSubdivisionGroup
-    ];
+    if (noSubdivisionGroup) {
+        jobLocationAgingBuckets = [
+            ...jobLocationAgingBuckets.filter(jlab => jlab.jobLocation?.name !== '(no subdivision)'),
+            noSubdivisionGroup
+        ];
+    }
 
     return {
         totalUnpaid,
