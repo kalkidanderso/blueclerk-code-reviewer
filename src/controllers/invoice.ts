@@ -3205,14 +3205,14 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {},
                             companyImage,
                             {
-                                text: `${company.info?.companyName ?? ''}`,
+                                text: `${company.info?.companyName ?? ' '}`,
                                 style: 'companyName',
                                 margin: [0, 20, 0, 0],
                                 colSpan: 2,
                             },
                             {},
                             {
-                                text: `${invoice.invoiceId ? invoice.invoiceId?.toUpperCase() : ''}`,
+                                text: `${invoice.invoiceId ? invoice.invoiceId?.toUpperCase() : ' '}`,
                                 style: 'invoiceId',
                                 alignment: 'right',
                                 margin: [0, 20, 0, 0]
@@ -3258,25 +3258,11 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {
                                 stack: [
                                     { text: 'Bill To', style: 'headerTitle' },
-                                    { text: customer?.profile?.displayName ?? '', style: 'invoiceHeaderBold' },
-                                    { text: 'Subdivision', style: 'headerTitle', margin: [0, 10, 0, 0] },
-                                    { text: jobAddress.name, style: 'invoiceHeader' },
-                                    { text: 'Job Address', style: 'headerTitle', margin: [0, 10, 0, 0] },
-                                    { text: `${jobSiteAddress.name}${jobSiteAddress.street}`, style: 'invoiceHeader' }
+                                    { text: customer?.profile?.displayName ?? ' ', style: 'invoiceHeaderBold' }
                                 ],
                                 margin: [0, 10, 0, 10],
-                                border: [false, false, false, true]
                             },
-                            {
-                                stack: [
-                                    { text: 'Contact Details', style: 'headerTitle' },
-                                    { text: customerContact?.name ?? '', style: 'invoiceHeader' },
-                                    { text: customerContact?.phone ?? '', style: 'invoiceHeader' },
-                                    { text: customerContact?.email ?? '', style: 'invoiceHeader' }
-                                ],
-                                margin: [0, 10, 0, 10],
-                                border: [false, false, false, true]
-                            },
+                            {},
                             {
                                 stack: [
                                     { text: `Job PO/Sales Order:${invoice.customerPO?.length > 15 ? '\n\n' : ''}`, style: 'invoiceMetadataTitle' },
@@ -3284,8 +3270,8 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                                     { text: 'Due Date:', style: 'invoiceMetadataTitle' },
                                     { text: 'Terms:', style: 'invoiceMetadataTitle' }
                                 ],
-                                margin: [0, 10, 0, 10],
-                                border: [false, false, false, true]
+                                rowSpan: 2,
+                                margin: [0, 10, 0, 0],
                             },
                             {
                                 stack: [
@@ -3294,11 +3280,51 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                                     { text: `${invoice.dueDate ? moment(invoice.dueDate).format('MMM. DD, YYYY') : ' '}`, style: 'invoiceMetadata' },
                                     { text: paymentTerm?.name ?? ' ', style: 'invoiceMetadata' }
                                 ],
-                                margin: [0, 10, 0, 10],
-                                border: [false, false, false, true]
+                                rowSpan: 2,
+                                margin: [0, 10, 0, 0],
                             },
                             {}
                         ],
+                        [
+                            // We put the Subdivision, Job Address, Contact name here,
+                            // so the Contact Title and Name could be in alignment
+                            {},
+                            {
+                                stack: [
+                                    { text: 'Subdivision', style: 'headerTitle' },
+                                    { text: jobAddress.name ?? ' ', style: 'invoiceHeader' },
+                                    { text: 'Job Address', style: 'headerTitle', margin: [0, 10, 0, 0] },
+                                    { text: `${jobSiteAddress.name ?? ' '}${jobSiteAddress.street ?? ' '}`, style: 'invoiceHeader' }
+                                ],
+                                rowSpan: 2,
+                                margin: [0, 0, 0, 10],
+                                border: [false, false, false, true]
+                            },
+                            {
+                                stack: [
+                                    { text: 'Contact Details', style: 'headerTitle' },
+                                    { text: customerContact?.name ?? ' ', style: 'invoiceHeader' }
+                                ],
+                                margin: [0, 0, 0, 5],
+                            },
+                            {}, {}, {}
+                        ],
+                        [
+                            // We put the contact phone and email here,
+                            // so it could be long to the right,
+                            // right under the Terms information
+                            {}, {},
+                            {
+                                stack: [
+                                    { text: customerContact?.phone ?? ' ', style: 'invoiceHeader' },
+                                    { text: customerContact?.email ?? ' ', style: 'invoiceHeader' }
+                                ],
+                                colSpan: 3,
+                                margin: [0, 0, 0, 10],
+                                border: [false, false, false, true]
+                            },
+                            {}, {}, {}
+                        ]
                     ]
                 },
                 fillColor: '#F9FDFF',
