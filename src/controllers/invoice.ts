@@ -3221,14 +3221,14 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {},
                             companyImage,
                             {
-                                text: `${company.info?.companyName ?? ''}`,
+                                text: `${company.info?.companyName ?? ' '}`,
                                 style: 'companyName',
                                 margin: [0, 20, 0, 0],
                                 colSpan: 2,
                             },
                             {},
                             {
-                                text: `${invoice.invoiceId ? invoice.invoiceId?.toUpperCase() : ''}`,
+                                text: `${invoice.invoiceId ? invoice.invoiceId?.toUpperCase() : ' '}`,
                                 style: 'invoiceId',
                                 alignment: 'right',
                                 margin: [0, 20, 0, 0]
@@ -3274,7 +3274,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {
                                 stack: [
                                     { text: 'Bill To', style: 'headerTitle' },
-                                    { text: customer?.profile?.displayName ?? '', style: 'invoiceHeaderBold' }
+                                    { text: customer?.profile?.displayName ?? ' ', style: 'invoiceHeaderBold' }
                                 ],
                                 margin: [0, 10, 0, 10],
                             },
@@ -3308,9 +3308,9 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {
                                 stack: [
                                     { text: 'Subdivision', style: 'headerTitle' },
-                                    { text: jobAddress.name, style: 'invoiceHeader' },
+                                    { text: jobAddress.name ?? ' ', style: 'invoiceHeader' },
                                     { text: 'Job Address', style: 'headerTitle', margin: [0, 10, 0, 0] },
-                                    { text: `${jobSiteAddress.name}${jobSiteAddress.street}`, style: 'invoiceHeader' }
+                                    { text: `${jobSiteAddress.name ?? ' '}${jobSiteAddress.street ?? ' '}`, style: 'invoiceHeader' }
                                 ],
                                 rowSpan: 2,
                                 margin: [0, 0, 0, 10],
@@ -3319,7 +3319,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {
                                 stack: [
                                     { text: 'Contact Details', style: 'headerTitle' },
-                                    { text: customerContact?.name ?? '', style: 'invoiceHeader' }
+                                    { text: customerContact?.name ?? ' ', style: 'invoiceHeader' }
                                 ],
                                 margin: [0, 0, 0, 5],
                             },
@@ -3332,8 +3332,8 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {}, {},
                             {
                                 stack: [
-                                    { text: customerContact?.phone ?? '', style: 'invoiceHeader' },
-                                    { text: customerContact?.email ?? '', style: 'invoiceHeader' }
+                                    { text: customerContact?.phone ?? ' ', style: 'invoiceHeader' },
+                                    { text: customerContact?.email ?? ' ', style: 'invoiceHeader' }
                                 ],
                                 colSpan: 3,
                                 margin: [0, 0, 0, 10],
