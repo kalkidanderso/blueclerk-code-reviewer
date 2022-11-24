@@ -34,11 +34,11 @@ import { sendInvoiceEmailToCustomer, uploadFileInS3 } from '../services/aws';
 import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer';
 import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice, _voidQBInvoice } from '../controllers/quickbook.invoice';
 import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from '../controllers/emailDefault';
-import { IJobSite } from '../models/JobSite';
-import { IJobLocation } from '../models/JobLocation';
+import { IJobSite, JobSite } from '../models/JobSite';
+import { IJobLocation, JobLocation } from '../models/JobLocation';
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission';
 import { ICommissionHistory, CommissionHistory } from '../models/CommissionHistory';
-import { getDatesFilterQuery } from 'src/services/pagination';
+import { getDatesFilterQuery } from '../services/pagination';
 
 /**
  * To reset Invoice quickbookId,
@@ -85,6 +85,9 @@ export const getInvoicesByCustomerId = (req: Request, res: Response) => {
             path: 'customer',
             select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
         })
+        .populate({ path: 'jobLocation', select: 'name address location' })
+        .populate({ path: 'jobSite', select: 'name address location' })
+        .populate({ path: 'customerContactId', select: 'name phone email' })
         .populate({
             path: 'estimate',
             select: 'total items note status customer company createdBy'
@@ -866,19 +869,20 @@ export const createInvoice = (req: Request, res: Response) => {
         // });
     }
     else {
+        // MANUAL CUSTOM INVOICE
 
         _populateInvoiceData(req, res, null, null, null, null, null, (req, res, invoiceData, currentInvoiceId) => {
 
             invoiceData.save((invoiceError: any, newInvoice: IInvoice,) => {
                 if (invoiceError) {
 
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    return res.json({ status: Status.Error, message: Messages.GenericError });
                 }
 
                 company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
                     .exec(async (companyError: any) => {
                         if (companyError) {
-                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            return res.json({ status: Status.Error, message: Messages.GenericError });
                         }
 
                         const customer = await Customer.findById(newInvoice.customer);
@@ -965,19 +969,19 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     let invoiceType: number = 0;
     let ticket: IServiceTicket;
     let customer: string
+    let jobLocation: string;
+    let jobSite: string;
     let jobId: string
-    // let hourlyRate: number = 0
     let timeSpent: number = 0
     let purchaseOrderId: string = null
     let estimateId: string = null
-    // let isFixed: boolean = false
-    // let taxPercentage: number = 0
-
 
     if (job) {
         charges = job.charges;
         invoiceType = 0
-        customer = job.customer
+        customer = job.customer;
+        jobLocation = job.jobLocation;
+        jobSite = job.jobSite;
         jobId = job._id
 
         await job.populate({ path: 'ticket' }).execPopulate();
@@ -1022,16 +1026,36 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
 
     if (job == null && purchaseOrder == null && estimate == null) {
 
-        if (params.customerId == undefined || params.customerId == null || params.customerId == '""') {
-            return res.json({ 'status': Status.Error, 'message': 'customer is required' })
+        if (!params.customerId) {
+            return res.json({ status: Status.Error, message: 'Customer ID is required' });
         }
 
         if (params.charges == undefined || params.charges == null || params.charges === '""') {
-            return res.json({ 'status': Status.Error, 'message': 'charges are required' })
+            return res.json({ status: Status.Error, message: 'Charges are required' });
         }
 
         invoiceType = 3
         customer = params.customerId
+    }
+
+    // Handle and overwrite Job Location if provided
+    if (params.jobLocationId) {
+        // const jobLocationObj = await JobLocation.findById(params.jobLocationId);
+        const jobLocationObj = await JobLocation.findOne({ _id: params.jobLocationId, customerId: customer, isActive: { $ne: false } });
+        if (!jobLocationObj) {
+            return res.json({ status: Status.Error, message: 'Subdivision not found' });
+        }
+        jobLocation = jobLocationObj._id;
+    }
+
+    // Handle and overwrite Job Site if provided
+    if (params.jobSiteId) {
+        // const jobSiteObj = await JobSite.findById(params.jobSiteId);
+        const jobSiteObj = await JobSite.findOne({ _id: params.jobSiteId, customerId: customer, isActive: { $ne: false } });
+        if (!jobSiteObj) {
+            return res.json({ status: Status.Error, message: 'Job Address not found' });
+        }
+        jobSite = jobSiteObj._id;
     }
 
     let purchaseOrderIds: any = []
@@ -1062,6 +1086,9 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     let invoiceItems: any[] = []
     // Find Customer object to see the itemTier, customPrice, & payment term info
     const customerObj = await Customer.findById(customer).populate({ path: 'paymentTerm' });
+    if (!customerObj) {
+        return res.json({ status: Status.Error, message: 'Customer not found' });
+    }
     // Populate payment term from the company
     await company.populate({ path: 'paymentTerm' }).execPopulate();
 
@@ -1254,6 +1281,8 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         customerContactId: params.customerContactId ?? ticket?.customerContactId,
         vendorId: params.vendorId ?? customerObj.vendorId,
         customer: customer,
+        jobLocation: jobLocation,
+        jobSite: jobSite,
         company: req.companyId,
         note: params.note,
         charges: Math.round(charges * 100) / 100,
@@ -1271,10 +1300,10 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         lastEmailSent: null
     })
 
-    next(req, res, invoice, currentInvoiceId)
-
+    next(req, res, invoice, currentInvoiceId);
 
 }
+
 // PO Invoices
 export const createPOInvoice = (req: Request, res: Response) => {
 
@@ -1351,21 +1380,14 @@ export const updateInvoice = (req: Request, res: Response) => {
     Invoice.findOne({ '_id': params.invoiceId, 'company': req.companyId },
         async (err: any, invoice: IInvoice) => {
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ status: Status.Error, message: Messages.GenericError });
             }
 
-            if (invoice == undefined || invoice == null) {
-                return res.json({ 'status': Status.Success, 'message': "Invalid invoice id." })
+            if (!invoice) {
+                return res.json({ status: Status.Error, message: 'Invoice not found' });
             }
 
-            // Handle the stringify boolean value
-            const isDraft = params.isDraft === undefined || params.isDraft === null
-                ? invoice.isDraft
-                : params.isDraft === 'false' || params.isDraft === '0'
-                    ? false
-                    : !!params.isDraft;
-
-            if (isDraft && invoice.status !== InvoiceStatus.UNPAID) {
+            if (params.isDraft && invoice.status !== InvoiceStatus.UNPAID) {
                 return res.json({ status: Status.Error, message: 'Cannot update a PAID/PARTIALLY PAID invoce to become draft.' });
             }
 
@@ -1381,12 +1403,36 @@ export const updateInvoice = (req: Request, res: Response) => {
             let paymentTerm: IPaymentTerm;
             if (params.paymentTermId) {
                 paymentTerm = await PaymentTerm.findOne({ _id: params.paymentTermId, isActive: true });
+                if (!paymentTerm) {
+                    return res.json({ status: Status.Error, message: 'Payment Term not found' });
+                }
             }
 
             // Retrieve customer contact for this invoice
             let customerContact: IContact;
             if (params.customerContactId) {
                 customerContact = await Contact.findById(params.customerContactId);
+                if (!customerContact) {
+                    return res.json({ status: Status.Error, message: 'Customer Contact not found' });
+                }
+            }
+
+            // Retrieve job location for this invoice
+            let jobLocation: IJobLocation;
+            if (params.jobLocationId) {
+                jobLocation = await JobLocation.findOne({ _id: params.jobLocationId, customerId: customerObj?._id, isActive: { $ne: false } });
+                if (!jobLocation) {
+                    return res.json({ status: Status.Error, message: 'Subdivision not found' });
+                }
+            }
+
+            // Retrieve job site for this invoice
+            let jobSite: IJobSite;
+            if (params.jobSiteId) {
+                jobSite = await JobSite.findOne({ _id: params.jobSiteId, customerId: customerObj?._id, isActive: { $ne: false } });
+                if (!jobSite) {
+                    return res.json({ status: Status.Error, message: 'Job Address not found' });
+                }
             }
 
             /**
@@ -1402,6 +1448,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                     : `Invoice ${params.invoiceNumber}`;
 
             if (invoice.invoiceType == 0) {
+
+                // INVOICE FROM JOB
 
                 Job.findById(invoice.job)
                     .then((job: any) => {
@@ -1612,10 +1660,12 @@ export const updateInvoice = (req: Request, res: Response) => {
                             paymentApplied: Math.round(paymentApplied * 100) / 100,
                             status, paid,
                             charges, issuedDate, dueDate, note: params.note,
-                            isDraft,
+                            isDraft: params.isDraft,
                             paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                             customerPO: params.customerPO,
                             customerContactId: customerContact,
+                            jobLocation: params.jobLocationId === null ? null : jobLocation?._id,
+                    jobSite: params.jobSiteId === null ? null : jobSite?._id,
                             vendorId: params.vendorId,
                             invoiceId
                         }, { omitUndefined: true },
@@ -1628,10 +1678,10 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 // To handle the switch of Invoice isDraft
                                 _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
                                     if (errMsg) {
-                                        return res.json({ status: Status.Success, message: 'Invoice updated successfully.', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
+                                        return res.json({ status: Status.Success, message: 'Invoice updated successfully', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
                                     }
 
-                                    return res.json({ status: Status.Success, message: "Invoice updated successfully.", invoice, quickbookInvoice: qbInvoice });
+                                    return res.json({ status: Status.Success, message: 'Invoice updated successfully', invoice, quickbookInvoice: qbInvoice });
                                 });
                             })
                     })
@@ -1639,6 +1689,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
                     })
             } else {
+
+                // MANUAL / CUSTOM INVOICE
 
                 if ((params.charges == undefined || params.charges == null || params.charges == '""') && (params.tax == undefined || params.tax == null || params.tax == '""')) {
                     return res.json({ 'status': Status.Error, 'message': 'Tax Percentage or charges are required' })
@@ -1772,10 +1824,12 @@ export const updateInvoice = (req: Request, res: Response) => {
                     paymentApplied: Math.round(paymentApplied * 100) / 100,
                     status, paid,
                     issuedDate, dueDate, note: params.note,
-                    isDraft,
+                    isDraft: params.isDraft,
                     paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                     customerPO: params.customerPO,
                     customerContactId: customerContact,
+                    jobLocation: params.jobLocationId === null ? null : jobLocation?._id,
+                    jobSite: params.jobSiteId === null ? null : jobSite?._id,
                     vendorId: params.vendorId,
                     invoiceId
                 }, { omitUndefined: true },
@@ -1787,10 +1841,10 @@ export const updateInvoice = (req: Request, res: Response) => {
                         // To handle the switch of Invoice isDraft
                         _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
                             if (errMsg) {
-                                return res.json({ status: Status.Success, message: 'Invoice updated successfully.', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
+                                return res.json({ status: Status.Success, message: 'Invoice updated successfully', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
                             }
 
-                            return res.json({ status: Status.Success, message: "Invoice updated successfully.", invoice, quickbookInvoice: qbInvoice });
+                            return res.json({ status: Status.Success, message: 'Invoice updated successfully', invoice, quickbookInvoice: qbInvoice });
                         });
                     })
             }
@@ -1798,7 +1852,7 @@ export const updateInvoice = (req: Request, res: Response) => {
 }
 
 export const getInvoiceDetail = (req: Request, res: Response) => {
-    const params = req.body
+    const params = req.body;
 
     Invoice.findOne({ _id: params.invoiceId, 'company': req.companyId })
         .populate({
@@ -1824,14 +1878,8 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                 { path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price' }
             ]
         })
-        .populate({
-            path: 'paymentTerm',
-            select: '-company -__v'
-        })
-        .populate({
-            path: 'customerContactId',
-            select: '-__v'
-        })
+        .populate({ path: 'paymentTerm', select: '-company -__v' })
+        .populate({ path: 'customerContactId', select: '-__v' })
         .populate({
             path: 'items.item',
             select: 'name description sku isFixed charges tax',
@@ -1845,6 +1893,8 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
             path: 'customer',
             select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail'
         })
+        .populate({ path: 'jobLocation', select: 'name address location' })
+        .populate({ path: 'jobSite', select: 'name address location' })
         .populate({
             path: 'estimate',
             select: 'total items note status customer company createdAt createdBy'
@@ -1856,11 +1906,12 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
         .exec((err: any, invoice: IInvoice) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ status: Status.Error, message: Messages.GenericError });
             }
 
-            if (invoice == undefined || invoice == null) {
-                return res.json({ 'status': Status.Error, 'message': 'Invalid invoice id' })
+            // if (invoice == undefined || invoice == null) {
+            if (!invoice) {
+                return res.json({ status: Status.Error, message: 'Invoice not found' });
             }
 
             Scan.find({ job: invoice.job }, 'comment timeOfScan')
@@ -2015,6 +2066,8 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
             path: 'customerContactId',
             select: '-__v'
         })
+        .populate({ path: 'jobLocation', select: 'name address location' })
+        .populate({ path: 'jobSite', select: 'name address location' })
         .populate({
             path: 'paymentTerm',
             select: '-company -__v'
@@ -2168,6 +2221,8 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
             select: 'info.email auth.email profile.displayName address contact contactName'
         })
         .populate({ path: 'customerContactId', select: '-__v' })
+        .populate({ path: 'jobLocation', select: 'name address location' })
+        .populate({ path: 'jobSite', select: 'name address location' })
         .populate({ path: 'paymentTerm', select: '-company -__v' })
         .populate({
             path: 'items.item',
@@ -2467,6 +2522,9 @@ export const getInvoices = async (req: Request, res: Response) => {
         { path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks' },
         { path: 'paymentTerm', select: 'name dueDays' },
         { path: 'customer', select: 'info.email auth.email profile address contact vendorId contactName contactEmail' },
+        { path: 'customerContactId', select: 'name phone email' },
+        { path: 'jobLocation', select: 'name address location' },
+        { path: 'jobSite', select: 'name address location' },
     ]);
 
     // // Filter jobs using aggregate to be search to another collection
@@ -2718,6 +2776,8 @@ export const getUnsyncedInvoices = async (req: Request, res: Response) => {
         .populate({ path: 'customerContactId', select: '-__v' })
         .populate({ path: 'company', select: 'info address contact' })
         .populate({ path: 'customer', select: 'info auth.email profile address contact vendorId contactName contactEmail' })
+        .populate({ path: 'jobLocation', select: 'name address location' })
+        .populate({ path: 'jobSite', select: 'name address location' })
         .populate({ path: 'estimate', select: 'total items note status customer company createdAt createdBy' })
         .populate({ path: 'createdBy', select: 'info auth.email profile permissions.role address contact' });
 
@@ -3720,6 +3780,9 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
             path: 'customer',
             select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
         })
+        .populate({ path: 'jobLocation', select: 'name address location' })
+        .populate({ path: 'jobSite', select: 'name address location' })
+        .populate({ path: 'customerContactId', select: 'name phone email' })
         .populate({
             path: 'estimate',
             select: 'total items note status customer company createdBy'
@@ -3812,6 +3875,8 @@ export const generateInvoicePdf = async (req: Request, res: Response) => {
             path: 'customerContactId',
             select: '-__v'
         })
+        .populate({ path: 'jobLocation', select: 'name address location' })
+        .populate({ path: 'jobSite', select: 'name address location' })
         .populate({
             path: 'paymentTerm',
             select: '-company -__v'
