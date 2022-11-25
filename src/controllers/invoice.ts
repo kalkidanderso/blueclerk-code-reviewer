@@ -3333,34 +3333,41 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                     widths: [10, 160, 160, 110, 97, 10],
                     body: [
                         [
+                            // Bill To, Customer Name, Job PO Title, & Job PO,
+                            // we put only Job PO here so it could adjust the break,
+                            // based on the lenght of the Invoice PO number
                             {},
                             {
                                 stack: [
                                     { text: 'Bill To', style: 'headerTitle' },
                                     { text: customer?.profile?.displayName ?? ' ', style: 'invoiceHeaderBold' }
                                 ],
+                                rowSpan: 2,
                                 margin: [0, 10, 0, 10],
                             },
                             {},
+                            { text: `Job PO/Sales Order:`, style: 'invoiceMetadataTitle', margin: [0, 10, 0, 0] },
+                            { text: invoice.customerPO ?? ' ', style: 'invoiceMetadata', margin: [0, 10, 0, 0] },
+                            {}
+                        ],
+                        [
+                            // The other invoice metadata in here
+                            {}, {}, {},
                             {
                                 stack: [
-                                    { text: `Job PO/Sales Order:${invoice.customerPO?.length > 15 ? '\n\n' : ''}`, style: 'invoiceMetadataTitle' },
                                     { text: 'Invoice Date:', style: 'invoiceMetadataTitle' },
                                     { text: 'Due Date:', style: 'invoiceMetadataTitle' },
                                     { text: 'Terms:', style: 'invoiceMetadataTitle' }
                                 ],
                                 rowSpan: 2,
-                                margin: [0, 10, 0, 0],
                             },
                             {
                                 stack: [
-                                    { text: invoice.customerPO ?? ' ', style: 'invoiceMetadata' },
                                     { text: `${moment(invoice.issuedDate ?? invoice.createdAt).format('MMM. DD, YYYY')}`, style: 'invoiceMetadata' },
                                     { text: `${invoice.dueDate ? moment(invoice.dueDate).format('MMM. DD, YYYY') : ' '}`, style: 'invoiceMetadata' },
                                     { text: paymentTerm?.name ?? ' ', style: 'invoiceMetadata' }
                                 ],
                                 rowSpan: 2,
-                                margin: [0, 10, 0, 0],
                             },
                             {}
                         ],
