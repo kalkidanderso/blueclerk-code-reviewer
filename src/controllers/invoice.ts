@@ -1267,6 +1267,24 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         total += shippingCost;
     }
 
+    let status = InvoiceStatus.UNPAID;
+    let paid = false;
+    if (params.isDraft === false) {
+        // Check if invoice updated and several conditions met
+        if (total <= 0) {
+            /**
+             * Invoice updated to the point balanceDue paid off or even minus,
+             * if minus, will put the extra payment to cust's credit,
+             * then mark invoice as PAID
+             */
+            customerObj.credit += Math.abs(total);
+            // paymentApplied = total;
+            // balanceDue = 0;
+            status = InvoiceStatus.PAID;
+            paid = true;
+        }
+    }
+
     var invoice = new Invoice({
         invoiceId: invoiceId,
         invoiceType: invoiceType,
@@ -1291,6 +1309,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         subTotal: Math.round(subTotalBeforeTax * 100) / 100,
         total: Math.round(total * 100) / 100,
         balanceDue: Math.round(total * 100) / 100,
+        status, paid,
         createdBy: user._id,
         createdAt: Date.now(),
         timeSpent: timeSpent,
