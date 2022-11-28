@@ -36,8 +36,8 @@ dotenv.config()
 process.env.TZ = 'America/Chicago';
 //Database connection
 const { DB_USER, DB_PASS, DB_HOST, DB_NAME, session_secret, jwt_encryption } = process.env
-const dbConnect = `mongodb://${DB_HOST}/${DB_NAME}`;
-// const dbConnect = `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`;
+// const dbConnect = `mongodb://${DB_HOST}/${DB_NAME}`;
+const dbConnect = `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`;
 
 mongoose.set('useCreateIndex', true)
 mongoose.connect(
