@@ -1680,7 +1680,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                             status, paid,
                             charges, issuedDate, dueDate, note: params.note,
                             isDraft: params.isDraft,
-                            paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                             customerPO: params.customerPO,
                             customerContactId: customerContact,
                             jobLocation: params.jobLocationId === null ? null : jobLocation?._id,
@@ -1693,6 +1692,15 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 if (err) {
                                     return res.json({ status: Status.Error, message: Messages.GenericError });
                                 }
+
+                                /**
+                                 * Kris' remark (Sept 27th, 2022):
+                                 * Add additional update for payment term,
+                                 * to not update too many code for now,
+                                 * because the one above have omitUndefined true.
+                                 */
+                                invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
+                                await invoice.save();
 
                                 // To handle the switch of Invoice isDraft
                                 _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
@@ -1844,7 +1852,6 @@ export const updateInvoice = (req: Request, res: Response) => {
                     status, paid,
                     issuedDate, dueDate, note: params.note,
                     isDraft: params.isDraft,
-                    paymentTerm: params.paymentTermId ? paymentTerm : undefined,
                     customerPO: params.customerPO,
                     customerContactId: customerContact,
                     jobLocation: params.jobLocationId === null ? null : jobLocation?._id,
@@ -1856,6 +1863,15 @@ export const updateInvoice = (req: Request, res: Response) => {
                         if (err) {
                             return res.json({ status: Status.Error, message: Messages.GenericError });
                         }
+
+                        /**
+                         * Kris' remark (Sept 27th, 2022):
+                         * Add additional update for payment term,
+                         * to not update too many code for now,
+                         * because the one above have omitUndefined true.
+                         */
+                        invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
+                        await invoice.save();
 
                         // To handle the switch of Invoice isDraft
                         _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
