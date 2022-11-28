@@ -7,7 +7,9 @@ import { IJob } from '../models/Job';
 import { IPaymentTerm } from '../models/PaymentTerm';
 import { ICompany } from './Company';
 import { IUser } from './User';
-import { IInvoiceCommission } from './InvoiceCommission';
+import { IInvoiceCommission } from '../models/InvoiceCommission';
+import { IJobLocation } from '../models/JobLocation';
+import { IJobSite } from '../models/JobSite';
 
 export interface IInvoice extends Document {
     invoice: any[]
@@ -25,6 +27,8 @@ export interface IInvoice extends Document {
     customerContactId?: Schema.Types.ObjectId | IContact
     vendorId?: string
     customer: Schema.Types.ObjectId | ICustomer
+    jobLocation: Schema.Types.ObjectId | IJobLocation
+    jobSite: Schema.Types.ObjectId | IJobSite
     company: Schema.Types.ObjectId
     note: string
     charges: number
@@ -206,6 +210,14 @@ const InvoiceSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Customer',
         required: true
+    },
+    jobLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobLocation'
+    },
+    jobSite: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobSite'
     },
     company: {
         type: Schema.Types.ObjectId,

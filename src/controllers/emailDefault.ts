@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import moment from 'moment';
+import * as helper from '../services/helper';
 import { Status } from '../common/constants';
 
 import { ICompany } from '../models/Company';
@@ -97,7 +98,7 @@ export const getPlaceholderValues = async ({
     const customer_name = customer?.profile?.displayName ?? '';
     const customer_email = invoiceContact?.email ?? jobContact?.email ?? customer?.info?.email ?? '';
     const invoice_number = invoice?.invoiceId ?? '';
-    const invoice_amount = `$${invoice?.total ?? ''}`;
+    const invoice_amount = helper.delimiterEnUs(invoice?.total);
     const invoice_due_date = moment(invoice?.dueDate ?? '').format('MMMM DD, YYYY');
     const date_range = dateRange ?? '';
 
@@ -107,7 +108,7 @@ export const getPlaceholderValues = async ({
         for (const invoice of invoices) {
             invoiceTotalAmount += invoice?.total;
         }
-        invoice_total_amount = `$${invoiceTotalAmount || ''}`;
+        invoice_total_amount = helper.delimiterEnUs(invoiceTotalAmount);
     }
 
     return { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_total_amount, invoice_due_date, date_range };
