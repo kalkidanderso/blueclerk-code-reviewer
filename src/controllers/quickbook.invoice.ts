@@ -34,6 +34,7 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
     // Populate the invoice to have customer and item object
     await invoice
         .populate({ path: 'customer' })
+        .populate({ path: 'jobLocation' })
         .populate({ path: 'paymentTerm' })
         .populate({
             path: 'job',
@@ -51,7 +52,7 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
     const job = <IJob>invoice.job;
     const serviceTicket = <IServiceTicket>job?.ticket;
-    const jobLocation = <IJobLocation>job?.jobLocation;
+    const jobLocation = <IJobLocation>invoice?.jobLocation ?? job?.jobLocation;
     const invCustContact = <IContact>invoice.customerContactId;
     const customerContact = <IContact>serviceTicket?.customerContactId;
 
