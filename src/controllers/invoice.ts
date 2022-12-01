@@ -3472,6 +3472,12 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                         ],
                         [
                             {},
+                            { text: 'Payments Applied:', style: 'itemListRight', border: [false, false, false, true] },
+                            { text: `${helper.delimiterEnUs(invoice.paymentApplied)}`, style: 'itemListRight', border: [false, false, false, true] },
+                            {}
+                        ],
+                        [
+                            {},
                             { text: 'AMOUNT DUE:', style: 'amountDueTitle', border: [false, false, false, true] },
                             { text: `${helper.delimiterEnUs(invoice.balanceDue)}`, style: 'amountDue', border: [false, false, false, true] },
                             {}
