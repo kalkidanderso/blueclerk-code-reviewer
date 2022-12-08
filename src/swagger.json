@@ -79,6 +79,10 @@
       "description": "For Inventory of company equipments"
     },
     {
+      "name": "Home Owner",
+      "description": "For adding, updating, and retrieving Home Owner"
+    },
+    {
       "name": "Subdivision",
       "description": "For company Subdivision (formerly Job Location)"
     },
@@ -4736,6 +4740,83 @@
             "Bearer": []
           }
         ]
+      }
+    },
+    "/homeOwner": {
+      "post": {
+        "tags": [
+          "Home Owner"
+        ],
+        "summary": "Create new Home Owner",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "firstName",
+                  "email",
+                  "phone"
+                ],
+                "properties": {
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "fax": {
+                    "type": "string"
+                  },
+                  "addressStreet": {
+                    "type": "string"
+                  },
+                  "addressUnit": {
+                    "type": "string"
+                  },
+                  "addressCity": {
+                    "type": "string"
+                  },
+                  "addressState": {
+                    "type": "string"
+                  },
+                  "addressZipCode": {
+                    "type": "string"
+                  },
+                  "longitude": {
+                    "type": "string"
+                  },
+                  "latitude": {
+                    "type": "string"
+                  },
+                  "image": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/jobLocation": {

@@ -643,6 +643,13 @@ export const Validations = {
 
   getOpenServiceTicketsStream: [check('includeOpenJobRequest').optional().toBoolean()],
 
+  // Home Owner
+  createHomeOwner: [
+    check('firstName').exists().withMessage(Messages.Required),
+    check('email').exists().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }).withMessage(Messages.InvalidEmail),
+    check('phone').exists().withMessage(Messages.Required)
+  ],
+
   // Job location
   getJobLocation: [
     check('companyId').optional().isMongoId().withMessage(Messages.WrongId),

@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import { IContact } from '../common/contact'
 import { ICustomer } from '../models/Customer'
+import { IHomeOwner } from '../models/HomeOwner'
 import { ICompany } from '../models/Company'
 import { IUser } from '../models/User'
 
@@ -20,6 +21,7 @@ export interface IJobLocation extends Document {
     jobSites?: [Schema.Types.ObjectId]
     isActive?: boolean
     customerId: Schema.Types.ObjectId | ICustomer
+    homeOwner: Schema.Types.ObjectId | IHomeOwner
     companyId: Schema.Types.ObjectId | ICompany
     inactiveAt?: Date
     inactiveBy?: Schema.Types.ObjectId | IUser
@@ -65,12 +67,16 @@ const JobLocationSchema = new Schema({
     customerId: {
         type: Schema.Types.ObjectId,
         ref: 'Customer',
-        required: true
+        // required: true
+    },
+    homeOwner: {
+        type: Schema.Types.ObjectId,
+        ref: 'HomeOwner'
     },
     companyId: {
         type: Schema.Types.ObjectId,
         ref: 'Company',
-        required: true
+        // required: true
     },
     inactiveAt: {
         type: Date
