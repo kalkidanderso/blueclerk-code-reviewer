@@ -883,6 +883,7 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
 export const getJobs = async (req: Request, res: Response) => {
 
     const params = req.body;
+    let technicianIds: any[];
     let companyId = req.otherCompanyId || req.companyId;
 
     // Return error when all cursors are provided
@@ -919,6 +920,27 @@ export const getJobs = async (req: Request, res: Response) => {
             ]
         })
     }
+
+    if (params.technicianIds) {
+        // Validate is technician ids is already array or object
+        technicianIds = Array.isArray(params.technicianIds)
+            ? params.technicianIds
+            : params.technicianIds.split(',').filter((element: any) => element)
+    }
+
+    if (technicianIds?.length) {
+        // convert technician Id from string to objectId and remove falsy value 
+        const technicians = technicianIds.map(technicianId => {
+            if (ObjectId.isValid(technicianId)) return new ObjectId(technicianId);
+        }).filter(tech => tech);
+        filterQuery['$and'].push({
+            $or: [
+                { 'tasks.technician': { $in: technicians } },
+                { 'tasks.contractor': { $in: technicians } }
+            ]
+        });
+    }
+
     if (params.status !== undefined && params.status !== null) {
         filterQuery['$and'].push({ status: params.status });
     }
