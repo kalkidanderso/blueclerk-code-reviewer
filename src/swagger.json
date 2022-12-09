@@ -8077,6 +8077,10 @@
                     "type": "string",
                     "description": "Filter jobs by customer"
                   },
+                  "technicianIds": {
+                    "type": "array",
+                    "description": "List of technician id's in array. eg. [\"608b9f54c30223196b7ab22a\", \"608b9f54c30223196b7ab21b\"]"
+                  },
                   "nextCursor": {
                     "type": "string",
                     "description": "Cursor to go to next page. Use the nextCursor value from the previous response"

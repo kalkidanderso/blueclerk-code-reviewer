@@ -255,7 +255,8 @@ export const Validations = {
   getJobs: [
     check('status').optional().toInt(),
     check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')
+    check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided'),
+    check('technicianIds').optional()
   ],
 
   searchJob: [check('pageSize').isNumeric(), check('page').isNumeric()],
