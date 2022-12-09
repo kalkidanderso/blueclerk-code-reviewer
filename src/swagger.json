@@ -8033,7 +8033,7 @@
                   },
                   "technicianIds": {
                     "type": "array",
-                    "description": "List of technician id's in comma separated objectId. eg. [\"608b9f54c30223196b7ab22a\", \"608b9f54c30223196b7ab21b\"]"
+                    "description": "List of technician id's in array. eg. [\"608b9f54c30223196b7ab22a\", \"608b9f54c30223196b7ab21b\"]"
                   },
                   "nextCursor": {
                     "type": "string",
