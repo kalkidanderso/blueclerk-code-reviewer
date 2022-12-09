@@ -4755,8 +4755,7 @@
                 "type": "object",
                 "required": [
                   "firstName",
-                  "email",
-                  "phone"
+                  "addressStreet"
                 ],
                 "properties": {
                   "firstName": {
@@ -4766,10 +4765,12 @@
                     "type": "string"
                   },
                   "email": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Either one of email or phone must be provided"
                   },
                   "phone": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Either one of email or phone must be provided"
                   },
                   "fax": {
                     "type": "string"

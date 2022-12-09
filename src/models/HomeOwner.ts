@@ -11,11 +11,11 @@ export interface IHomeOwner extends Document {
         displayName: string
         imageUrl?: string
     }
-    info: {
-        email: string
+    info?: {
+        email?: string
     }
-    contact: {
-        phone: string
+    contact?: {
+        phone?: string
         fax?: string
     }
     address: {
@@ -54,16 +54,10 @@ const HomeOwnerSchema = new Schema({
         imageUrl: String
     },
     info: {
-        email: {
-            type: String,
-            required: true
-        },
+        email: String,
     },
     contact: {
-        phone: {
-            type: String,
-            required: true
-        },
+        phone: String,
         fax: String
     },
     address: {

@@ -11,6 +11,11 @@ export const createHomeOwner = async (req: Request, res: Response) => {
     const params = req.body;
     const imagesUrl: string[] = [];
 
+    // Check for email and phone, one of them should be provided
+    if (!params.email && !params.phone) {
+        return res.json({ status: Status.Error, message: 'Either one of email or phone should be provided' });
+    }
+
     // Handle the uploaded 'image' file
     if (req.files) {
         // Parse the uploaded image file

@@ -16,6 +16,8 @@ export interface IJobSite extends Document {
     locationId: Schema.Types.ObjectId
     customerId: Schema.Types.ObjectId | ICustomer
     homeOwner: Schema.Types.ObjectId | IHomeOwner
+    createdAt?: Date
+    updatedAt?: Date
 
 }
 
@@ -58,6 +60,6 @@ const JobSiteSchema = new Schema({
         ref: 'HomeOwner'
     }
 
-})
+}, { timestamps: true });
 
-export const JobSite = mongoose.model<IJobSite>('JobSite', JobSiteSchema)
+export const JobSite = mongoose.model<IJobSite>('JobSite', JobSiteSchema);
