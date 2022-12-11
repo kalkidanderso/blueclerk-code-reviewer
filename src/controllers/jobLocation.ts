@@ -7,6 +7,7 @@ import { ICompany } from '../models/Company'
 import { Customer } from '../models/Customer'
 import { Contact } from '../models/Contact'
 import { _createQBCustomerJob, _updateQBCustomerJob } from './quickbook.customer';
+import { HomeOwner } from '../models/HomeOwner';
 
 /**
  * To reset Job Location quickbookId,
@@ -85,6 +86,7 @@ export const create = async (req: Request, res: Response) => {
     const state = params.state;
     const zipcode = params.zipcode;
     const customerId = params.customerId;
+    const homeOwnerId = params.homeOwnerId;
 
     if (!(locationLat && locationLong) && !(street && city && state && zipcode)) {
         return res.json({'status': Status.Error, 'message': "Either location or address is required."})
@@ -98,9 +100,19 @@ export const create = async (req: Request, res: Response) => {
             zipcode: zipcode
         },
         contacts: [],
-        customerId,
+        // customerId,
+        // homeOwner: homeOwnerId,
         companyId
     }
+
+    if (customerId && homeOwnerId || customerId && !homeOwnerId) {
+        jobLocationData.customerId = customerId
+    }
+
+    if (!customerId && homeOwnerId) {
+        jobLocationData.homeOwner = homeOwnerId
+    }
+
     if (contact?.name || contact?.phone || contact?.email) {
         const contactEntry = new Contact({
             name: contact?.name,
@@ -116,15 +128,17 @@ export const create = async (req: Request, res: Response) => {
     }
     JobLocation.create(jobLocationData).then(async (jobLocation: IJobLocation) => {
         const customer = await Customer.findById(customerId);
-        customer.jobLocations.push(jobLocation._id);
-        await customer.save();
+        const homeOwner = await HomeOwner.findById(homeOwnerId);
+
+        customer ? customer.jobLocations.push(jobLocation._id) : homeOwner.jobLocations.push(jobLocation._id);
+        customer ? await customer.save() : await homeOwner.save();
 
         await jobLocation
             .populate({ path: 'jobSites', select: '-__v -locationId -customerId' })
             .populate({ path: 'contacts', select: '-__v' })
             .execPopulate();
 
-        if (company.qbAuthorized && customer.quickbookId) {
+        if (company.qbAuthorized && customer?.quickbookId) {
             // Create QB Customer Job
             _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, (err, errMsg, qbCustomerJob) => {
                 if (err) {
@@ -157,15 +171,24 @@ export const update = async (req: Request, res: Response) => {
 
     // Find and check if customer existed
     const customer = await Customer.findOne({ _id: params.customerId });
+    const homeOwner = await HomeOwner.findById(params?.homeOwnerId);
 
-    if (!customer) {
-        return res.json({ status: Status.Error, message: 'Customer not found.' });
+    if (!customer && !homeOwner) {
+        return res.json({ status: Status.NotFound, message: 'Customer or home owner not found.' });
+    }
+
+    if (params.customerId && !customer) {
+        return res.json({ status: Status.NotFound, message: 'Customer not found.' });
+    }
+
+    if (params.homeOwnerId && !homeOwner) {
+        return res.json({ status: Status.NotFound, message: 'Home owner not found.' });
     }
 
     // Find and check if job locatino existed
     const jobLocation = await JobLocation.findOne({
         companyId: company._id,
-        customerId: customer._id,
+        $or: [{ customerId: customer._id }, { homeOwner: homeOwner._id }],
         _id: id
     });
 

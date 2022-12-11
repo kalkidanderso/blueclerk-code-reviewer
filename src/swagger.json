@@ -4876,17 +4876,19 @@
         "tags": [
           "Subdivision"
         ],
-        "summary": "Create a customer subdivision",
+        "summary": "Create a customer and home owner subdivision",
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
                 "type": "object",
                 "required": [
-                  "customerId",
                   "name"
                 ],
                 "properties": {
+                  "homeOwnerId": {
+                    "type": "string"
+                  },
                   "customerId": {
                     "type": "string"
                   },
@@ -4995,13 +4997,15 @@
             "application/x-www-form-urlencoded": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "customerId"
-                ],
+                "required": [],
                 "properties": {
                   "customerId": {
                     "type": "string",
                     "description": "Id of customer that owns the subdivision / job location"
+                  },
+                  "homeOwnerId": {
+                    "type": "string",
+                    "description": "Id of home owner that owns the subdivision / job location"
                   },
                   "name": {
                     "type": "string"
