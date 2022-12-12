@@ -40,10 +40,12 @@ export const get = (req: Request, res: Response) => {
         query = { customerId, companyId }
     } else if (homeOwnerId && companyId) {
         query = { homeOwner: homeOwnerId, companyId }
-    } else if (customerId && !homeOwnerId || customerId && homeOwnerId) {
+    } else if (customerId && !homeOwnerId) {
         query = { customerId }
     } else if (homeOwnerId && !customerId) {
         query = { homeOwner: homeOwnerId }
+    } else if(homeOwnerId && customerId) {
+        query =  { homeOwner: homeOwnerId, customerId }
     } else if (companyId) {
         query = { companyId }
     }
