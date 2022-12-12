@@ -28,7 +28,7 @@ export const get = (req: Request, res: Response) => {
     const { id } = req.params
     const { query: queryParams = {} } = req
     const loggedInCompanyId = req.companyId;
-    let { customerId, companyId, isActive } = queryParams
+    let { customerId, homeOwnerId, companyId, isActive } = queryParams
     let query = {}
 
     if (!id && !customerId && !companyId && loggedInCompanyId) {
@@ -38,8 +38,12 @@ export const get = (req: Request, res: Response) => {
         query = { _id: id }
     } else if (customerId && companyId) {
         query = { customerId, companyId }
-    } else if (customerId) {
+    } else if (homeOwnerId && companyId) {
+        query = { homeOwner: homeOwnerId, companyId }
+    } else if (customerId && !homeOwnerId || customerId && homeOwnerId) {
         query = { customerId }
+    } else if (homeOwnerId && !customerId) {
+        query = { homeOwner: homeOwnerId }
     } else if (companyId) {
         query = { companyId }
     }
@@ -61,7 +65,7 @@ export const get = (req: Request, res: Response) => {
     }
 
     JobLocation.find(query)
-        .populate('jobSites', '-__v -locationId -customerId')
+        .populate('jobSites', '-__v -locationId -customerId -homeOwner')
         .populate('contacts', '-__v')
         .exec().then((jobLocations: any) => {
         return res.json(jobLocations);
@@ -100,8 +104,6 @@ export const create = async (req: Request, res: Response) => {
             zipcode: zipcode
         },
         contacts: [],
-        // customerId,
-        // homeOwner: homeOwnerId,
         companyId
     }
 
@@ -134,7 +136,7 @@ export const create = async (req: Request, res: Response) => {
         customer ? await customer.save() : await homeOwner.save();
 
         await jobLocation
-            .populate({ path: 'jobSites', select: '-__v -locationId -customerId' })
+            .populate({ path: 'jobSites', select: '-__v -locationId -customerId -homeOwner' })
             .populate({ path: 'contacts', select: '-__v' })
             .execPopulate();
 
@@ -185,10 +187,19 @@ export const update = async (req: Request, res: Response) => {
         return res.json({ status: Status.NotFound, message: 'Home owner not found.' });
     }
 
+    let query
+    if (customer) {
+        query = { customerId: customer?._id }
+    }
+
+    if (homeOwner) {
+        query = { homeOwner: homeOwner?._id }
+    }
+
     // Find and check if job locatino existed
     const jobLocation = await JobLocation.findOne({
         companyId: company._id,
-        $or: [{ customerId: customer._id }, { homeOwner: homeOwner._id }],
+        ...query,
         _id: id
     });
 
@@ -224,11 +235,11 @@ export const update = async (req: Request, res: Response) => {
     await jobLocation.save();
 
     await jobLocation
-        .populate({ path: 'jobSites', select: '-__v -locationId -customerId' })
+        .populate({ path: 'jobSites', select: '-__v -locationId -customerId -homeOwner' })
         .populate({ path: 'contacts', select: '-__v' })
         .execPopulate();
 
-    if (company.qbAuthorized && customer.quickbookId && jobLocation.quickbookId) {
+    if (company.qbAuthorized && customer?.quickbookId && jobLocation.quickbookId) {
         // Sync the update to Customer Job in QuickBooks
         _updateQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, (err, errMsg, qbCustomerJob) => {
             if (err) {

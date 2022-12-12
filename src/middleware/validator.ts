@@ -654,13 +654,14 @@ export const Validations = {
   getJobLocation: [
     check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
     check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
     check('id').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
   createJobLocation: [
     // check('customerId').exists().withMessage(Messages.Required),
-    check('customerId').isMongoId().withMessage(Messages.WrongId),
-    check('homeOwnerId').isMongoId().withMessage(Messages.WrongId),
+    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
     check('name').exists().withMessage(Messages.Required)
   ],
 

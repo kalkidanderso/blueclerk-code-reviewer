@@ -4842,6 +4842,13 @@
             }
           },
           {
+            "name": "homeOwnerId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "isActive",
             "in": "query",
             "description": "If not provided will return ALL subdivision / job locations",
