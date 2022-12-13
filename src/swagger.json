@@ -5101,7 +5101,13 @@
           {
             "name": "customerId",
             "in": "query",
-            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "homeOwnerId",
+            "in": "query",
             "schema": {
               "type": "string"
             }

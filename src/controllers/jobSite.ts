@@ -19,12 +19,12 @@ export const get = (req: Request, res: Response) => {
     } else if (customerId && !homeOwnerId) {
         query = { customerId }
     } else if (customerId && homeOwnerId) {
-        query = { customerId, homeOwner: homeOwnerId }
+        query = {$or: [{ customerId }, { homeOwner: homeOwnerId }] }
     } else if (homeOwnerId && !customerId) {
         query = { homeOwner: homeOwnerId }
-    }else if (locationId) {
+    } else if (locationId) {
         query = { locationId }
-    }
+    } 
 
     switch (isActive) {
         case 'true':

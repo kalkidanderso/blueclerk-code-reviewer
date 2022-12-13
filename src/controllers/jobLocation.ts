@@ -45,7 +45,7 @@ export const get = (req: Request, res: Response) => {
     } else if (homeOwnerId && !customerId) {
         query = { homeOwner: homeOwnerId }
     } else if(homeOwnerId && customerId) {
-        query =  { homeOwner: homeOwnerId, customerId }
+        query =  { $or: [{ homeOwner: homeOwnerId }, { customerId }] }
     } else if (companyId) {
         query = { companyId }
     }
