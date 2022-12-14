@@ -7178,6 +7178,25 @@
                     "type": "string",
                     "description": "Id of a customer selected from the list received by /getCustomers api (Required for platform users)"
                   },
+                  "isHomeOccupied": {
+                    "type": "boolean",
+                    "enum": [
+                      true,
+                      false
+                    ]
+                  },
+                  "homeOwnerId": {
+                    "type": "string",
+                    "description": "Id of home owner"
+                  },
+                  "homeJobLocatoion": {
+                    "type": "string",
+                    "description": "Id of home owner job location"
+                  },
+                  "homeJobSite": {
+                    "type": "string",
+                    "description": "Id of home owner job site"
+                  },
                   "note": {
                     "type": "string"
                   },
@@ -7334,6 +7353,13 @@
                   "customerNames": {
                     "type": "array",
                     "description": "List of customer's displayNames",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "homeOwnerNames": {
+                    "type": "array",
+                    "description": "List of home owner's displayNames",
                     "items": {
                       "type": "string"
                     }

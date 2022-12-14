@@ -725,8 +725,8 @@ export const parseFieldsAndUploadImageInS3 = async function (req: Request, res: 
     uploadMultiple(req, res, (err) => {
 
       if (err) return next(err, null)
-      if (req.body.source === "blueclerk" && !req.body.customerId) {
-        return next({ message: "Customer is required to create a service ticket" }, null);
+      if (req.body.source === "blueclerk" && !req.body.customerId && !req.body.homeOwnerId) {
+        return next({ message: "Either Customer or Home Owner is required to create a service ticket" }, null);
       }
       const imagesUrl: string[] = [];
       const imageFiles = JSON.parse(JSON.stringify(req.files));

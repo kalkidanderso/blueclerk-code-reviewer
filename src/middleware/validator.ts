@@ -639,7 +639,7 @@ export const Validations = {
 
   getLocationTagJobs: [check('nfcTag').exists()],
 
-  getOpenServiceTickets: [check('page').exists().isNumeric(), check('pagesize').exists().isNumeric(), check('customerNames').optional(), check('jobTypeTitle').optional(), check('dueDate').optional(), check('ticketId').optional()],
+  getOpenServiceTickets: [check('page').exists().isNumeric(), check('pagesize').exists().isNumeric(), check('customerNames').optional(), check('homeOwnerNames').optional(), check('jobTypeTitle').optional(), check('dueDate').optional(), check('ticketId').optional()],
 
   getOpenServiceTicketsStream: [check('includeOpenJobRequest').optional().toBoolean()],
 
