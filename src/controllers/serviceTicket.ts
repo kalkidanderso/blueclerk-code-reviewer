@@ -95,6 +95,8 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 ticketId: ticketId,
                 jobLocation: params.jobLocationId,
                 jobSite: params.jobSiteId,
+                homeJobLocation: params.homeJobLocation,
+                homeJobSite: params.homeJobSite,
                 jobType: params.jobTypeId, // TODO: To be deprecated
                 tasks: jobTypes,
                 customerPO : customerPo,
