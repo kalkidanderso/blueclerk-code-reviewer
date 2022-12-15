@@ -240,6 +240,7 @@ const _createJob = async (
         companyId = req.otherCompanyId
     }
     const customer = params.customerId || parentJob && parentJob.customer;
+    const homeOwner = params.homeOwnerId || parentJob && parentJob.homeOwner;
 
     let tasks;
     try {
@@ -266,6 +267,16 @@ const _createJob = async (
             if (!serviceTicket.jobSite && params.jobSite) {
                 serviceTicket.jobSite = params.jobSite;
             }
+            if (!serviceTicket.homeJobLocation && params.homeJobLocation) {
+                serviceTicket.homeJobLocation = params.homeJobLocation;
+            }
+            if (!serviceTicket.homeJobSite && params.homeJobSite) {
+                serviceTicket.homeJobSite = params.homeJobSite;
+            }
+            if (!serviceTicket.isHomeOccupied && params.isHomeOccupied) {
+                serviceTicket.isHomeOccupied = params.isHomeOccupied;
+            }
+
             trackedServiceTicket = serviceTicket.track;
 
             await serviceTicket.save();
@@ -321,9 +332,13 @@ const _createJob = async (
         request: params.jobRequestId ?? null,
         // technician: technicianId,
         // contractor: params.contractorId,
+        isHomeOccupied: params.isHomeOccupied,
         customer,
+        homeOwner,
         jobLocation: params.jobLocationId ?? parentJob?.jobLocation,
         jobSite: params.jobSiteId ?? parentJob?.jobSite,
+        homeJobLocatoin: params.homeJobLocationId ?? parentJob?.homeJobLocation,
+        homeJobSite: params.homeJobSiteId ?? parentJob?.homeJobSite,
         customerContactId: params.customerContactId ?? parentJob?.customerContactId,
         customerPO: params.customerPO ?? parentJob?.customerPO,
         images: images,
@@ -405,6 +420,10 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             select: 'profile.displayName info.email emailPreferences'
         })
         .populate({
+            path: 'homeOwner',
+            select: 'profile.displayName info.email emailPreferences'
+        })
+        .populate({
             path: 'createdBy',
             select: 'profile.displayName'
         })
@@ -439,6 +458,7 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             var contractor: any;
             var assigneeName: any;
             var cust: any = job.customer
+            var homeOwner: any = job.homeOwner;
             var type: any = job.type && job.type.title
             const tasks: string[] = [];
             // let tasks: string[] = job.tasks.map(task => {
@@ -468,7 +488,7 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                 if (params.employeeType == 0) {
                     switch (techEmailPreferences) {
                         case 0: {
-                            sendJobEmailToAssignee({ to: tech.auth?.email, assigneeName: assigneeName, companyName: company.info.companyName, replyTo: company.info.companyEmail, customerName: cust.profile.displayName, jobTitles, notes: job.description, location: job.jobLocation, site: job.jobSite, ticket: job.ticket, dateTime: job.scheduleDate });
+                            sendJobEmailToAssignee({ to: tech.auth?.email, assigneeName: assigneeName, companyName: company.info.companyName, replyTo: company.info.companyEmail, customerName: cust.profile.displayName, homeOwnerName: homeOwner.profile.displayName, jobTitles, notes: job.description, location: job.jobLocation, site: job.jobSite, ticket: job.ticket, dateTime: job.scheduleDate });
                             break;
                         }
                         case 1: {
@@ -503,7 +523,7 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
                 if (params.employeeType == 1) {
                     switch (contractorEmailPreferences) {
                         case 0: {
-                            sendJobEmailToAssignee({ to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, replyTo: company.info.companyEmail, customerName: cust.profile.displayName, jobTitles, notes: job.description, location: job.jobLocation, site: job.jobSite, ticket: job.ticket, dateTime: job.scheduleDate })
+                            sendJobEmailToAssignee({ to: contractor.info.companyEmail, assigneeName: assigneeName, companyName: company.info.companyName, replyTo: company.info.companyEmail, customerName: cust.profile.displayName, homeOwnerName: homeOwner.profile.displayName, jobTitles, notes: job.description, location: job.jobLocation, site: job.jobSite, ticket: job.ticket, dateTime: job.scheduleDate })
                             break;
                         }
                         case 1: {
@@ -1756,6 +1776,10 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             select: 'profile.displayName itemTier'
         })
         .populate({
+            path: 'homeOwner',
+            select: 'profile'
+        })
+        .populate({
             path: 'technician',
             select: 'profile.displayName'
         })
@@ -1816,6 +1840,10 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     .populate({
                         path: 'customer',
                         select: 'profile.displayName itemTier'
+                    })
+                    .populate({
+                        path: 'homeOwner',
+                        select: 'profile'
                     })
                     .populate({
                         path: 'technician',

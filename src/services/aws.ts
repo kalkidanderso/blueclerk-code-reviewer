@@ -863,6 +863,7 @@ export const sendJobEmailToAssignee = function (options: any) {
     let contactPhone;
     let contactEmail;
     let imageUrl = ticket.image ? ticket.image : null;
+    let optionsNameParameter;
     if (contact) {
       contactName = contact.name ? contact.name : null;
       contactPhone = contact.phone ? contact.phone : null;
@@ -877,6 +878,12 @@ export const sendJobEmailToAssignee = function (options: any) {
     if (jobSite) {
       coordinates = jobSite.coordinates;
       address = jobSite.address;
+    }
+    if(options.customerName) {
+      optionsNameParameter = `<p>Customer : ${options.customerName}</p>`
+    }
+    if (options.homeOwnerName) {
+      optionsNameParameter = `<p>Home Owner : ${options.homeOwnerName}</p>`
     }
     ses.sendEmail(
       {
@@ -893,7 +900,7 @@ export const sendJobEmailToAssignee = function (options: any) {
             Html: {
               Data: `<p>Dear ${options.assigneeName}!</p>
                      <p>This email is to inform you that a job has been assigned and scheduled to you by (${options.companyName}).  Job details below:</p>
-                     <p>Customer : ${options.customerName}</p>
+                     ${optionsNameParameter}
                      <p>Job Types : ${options.jobTitles || '-'}</p>
                      ${coordinates.length > 0 ? '<p>Longitude: ' + coordinates[0] + ' Latitude: ' + coordinates[1] + '</p>' : ''}
                      ${locationName ? '<p>Location Name: ' + locationName + '</p>' : ''}
