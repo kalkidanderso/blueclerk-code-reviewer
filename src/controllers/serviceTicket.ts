@@ -351,7 +351,9 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
             }
 
             if (params.customerNames) {
-                customerNames = params.customerNames.split(',')
+                customerNames = Array.isArray(params.customerNames)
+                    ? params.customerNames
+                    : params.customerNames.split(',').filter((element: any) => element);
             }
 
             if (params.homeOwnerNames) {
@@ -401,18 +403,27 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                 criteria.ticketId = { $regex: ticketId, $options: 'i'}
             }
 
-            if(params.customerNames && params.customerNames.length >0) {
+            if(customerNames?.length) {
                 criteria['customer.profile.displayName'] = { $in: customerNames }
             }
 
-            if (params.homeOwnerNames && params.homeOwnerNames.length > 0) {
+            if (homeOwnerNames?.length) {
                 criteria['homeOwner.profile.displayName'] = { $in: homeOwnerNames }
+            }
+
+            if (homeOwnerNames?.length && customerNames?.length) {
+                criteria = {
+                    $or: [
+                        {'homeOwner.profile.displayName': { $in: homeOwnerNames}}, 
+                        {'customer.profile.displayName': { $in: customerNames }}
+                    ]
+                }
             }
 
             const Query = ServiceTicket.aggregate([
                 {
                     $lookup: {
-                        from: 'users',
+                        from: 'customers',
                         localField: "customer",
                         foreignField: "_id",
                         as: "customer"
