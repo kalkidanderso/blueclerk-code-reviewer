@@ -109,6 +109,10 @@ export const create = async (req: Request, res: Response) => {
         companyId
     }
 
+    if (!customerId && !homeOwnerId) {
+        return res.json({ status: Status.Error, message: 'Either one of customerId or homeOwnerId should be provided'})
+    }
+
     if (customerId && homeOwnerId || customerId && !homeOwnerId) {
         jobLocationData.customerId = customerId
     }
@@ -176,6 +180,10 @@ export const update = async (req: Request, res: Response) => {
     // Find and check if customer existed
     const customer = await Customer.findOne({ _id: params.customerId });
     const homeOwner = await HomeOwner.findById(params?.homeOwnerId);
+
+    if (!params.customer && !params.homeOwner) {
+        return res.json({ status: Status.Error, message: 'Either one of customerId or homeOwnerId should be provided' });
+    }
 
     if (!customer && !homeOwner) {
         return res.json({ status: Status.NotFound, message: 'Customer or home owner not found.' });

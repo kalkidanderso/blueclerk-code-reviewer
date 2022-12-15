@@ -52,7 +52,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             }
 
             if (isHomeOccupied && !params.homeOwnerId) {
-                return res.json({ status: Status.Error, message: 'Home owner is required when isHomeOccupied is active' });
+                return res.json({ status: Status.Error, message: 'Home Owner is required when home is occupied' });
             }
 
             if (params.homeOwnerId) {
@@ -105,13 +105,16 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
             if (homeOwnerId) {
                 serviceTicket.homeOwner = homeOwnerId;
-                // serviceTicket.homeJobLocation = params.homeJobLocation;
-                // serviceTicket.homeJobSite = params.homeJobSite;
             }
 
+            // default to customerId when customerId is provided
             if (customerId) {
                 serviceTicket.customer = customerId;
+                serviceTicket.homeOwner = null;
+                serviceTicket.homeJobLocation = null;
+                serviceTicket.homeJobSite = null;
             }
+
             if (customerContact) {
                 let checkContact = await Contact.findOne({_id: customerContact}).exec();
                 if (checkContact) {
