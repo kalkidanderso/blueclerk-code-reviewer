@@ -7989,20 +7989,19 @@
                     "description": "Id of job site"
                   },
                   "isHomeOccupied": {
-                    "type": "boolean",
-                    "description": "Filter invoices by draft"
+                    "type": "boolean"
                   },
                   "homeOwnerId": {
                     "type": "string",
-                    "description": "Id of a customer selected from the list received by /getCustomers api"
+                    "description": "Id of a home owner"
                   },
                   "homeJobLocationId": {
                     "type": "string",
-                    "description": "Id of job location"
+                    "description": "Id of home job location"
                   },
                   "homeJobSiteId": {
                     "type": "string",
-                    "description": "Id of job site"
+                    "description": "Id of home job site"
                   },
                   "description": {
                     "type": "string"
@@ -8737,6 +8736,14 @@
                   "jobSiteId": {
                     "type": "string",
                     "description": "Id of job site"
+                  },
+                  "homeJobLocationId": {
+                    "type": "string",
+                    "description": "Id of home job location"
+                  },
+                  "homeJobSiteId": {
+                    "type": "string",
+                    "description": "Id of home job site"
                   },
                   "images": {
                     "type": "array",

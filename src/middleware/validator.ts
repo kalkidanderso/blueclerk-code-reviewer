@@ -286,7 +286,9 @@ export const Validations = {
     check('jobId').isMongoId().withMessage(Messages.WrongId),
     check('status').exists().withMessage(Messages.Required),
     check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId)
+    check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
   updateJoBRequestStatus: [

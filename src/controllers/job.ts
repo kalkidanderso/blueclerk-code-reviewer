@@ -1948,6 +1948,12 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             if (params.jobLocationId) {
                 data.jobLocation = params.jobLocationId
             }
+            if (params.homeJobLocationId) {
+                data.homeJobLocation = params.homeJobLocationId
+            }
+            if (params.homeJobSiteId) {
+                data.homeJobSite = params.homeJobSiteId
+            }
             if (params.jobSiteId) {
                 data.jobSite = params.jobSiteId
             }
@@ -1964,7 +1970,9 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             if (
                 job.comment != params.comment ||
                 job.jobLocation != params.jobLocationId ||
-                job.jobSite != params.jobSiteId
+                job.jobSite != params.jobSiteId ||
+                job.homeJobLocation != params.homeJobLocationId ||
+                job.homeJobSite != params.homeJobSiteId
             ) {
                 action += '|Job Info Updated|';
             }
@@ -2374,6 +2382,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
         .populate({ path: 'tasks.jobType', select: 'title' })
         .populate({ path: 'tasks.jobTypes.jobType', select: 'title' })
         .populate({ path: 'customer', select: 'profile.displayName itemTier' })
+        .populate({ path: 'homeOwner', select: 'profile.displayName' })
         .populate({ path: 'tasks.technician', select: 'profile.displayName' })
         // TODO: To be deprecated
         .populate({ path: 'technician', select: 'profile.displayName' })
@@ -2895,6 +2904,10 @@ export const getJobDetails = (req: Request, res: Response) => {
         })
         .populate({
             path: 'customer',
+            populate: 'contacts'
+        })
+        .populate({
+            path: 'homeOwner',
             populate: 'contacts'
         })
         .populate({
