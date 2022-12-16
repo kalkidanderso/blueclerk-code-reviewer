@@ -7945,7 +7945,6 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "customerId",
                   "tasks",
                   "scheduleDate"
                 ],

@@ -154,7 +154,7 @@ const JobSchema = new Schema({
     customer: {
         type: Schema.Types.ObjectId,
         ref: 'Customer',
-        required: true
+        required: false
     },
     jobLocation: {
         type: Schema.Types.ObjectId,

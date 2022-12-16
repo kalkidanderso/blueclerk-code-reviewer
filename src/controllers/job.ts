@@ -157,6 +157,10 @@ export const createJob = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'contractorId must be provided when employeeType is contractor' });
     }
 
+    if (params.isHomeOccupied && !params.homeOwnerId) {
+        return res.json({ status: Status.Error, message: 'homeOwnerId must be provided when isHomeOccupied is true'});
+    }
+
     if (params.scheduledStartTime && params.scheduledEndTime) {
         try {
             handleScheduledTime({
@@ -3744,6 +3748,7 @@ const _handleMutltipleTechniciansTasks = async ({
     const tasks: ITask[] = [];
 
     const customer = params.customerId || parentJob && parentJob.customer;
+    const homeOwner = params.homeOwnerId || parentJob && parentJob.homeOwner
 
     for (const paramTask of paramTasks) {
         let taskContractor
