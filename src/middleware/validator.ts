@@ -305,6 +305,9 @@ export const Validations = {
     check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
     check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
     check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
     check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
     check('scheduleDate').exists().withMessage(Messages.Required)
   ],

@@ -265,20 +265,23 @@ const _createJob = async (
     if (params.ticketId) {
         serviceTicket = await ServiceTicket.findById(params.ticketId);
         if (serviceTicket) {
-            if (!serviceTicket.jobLocation && params.jobLocation) {
+            if (!serviceTicket.jobLocation && params.jobLocation && customer) {
                 serviceTicket.jobLocation = params.jobLocation;
             }
-            if (!serviceTicket.jobSite && params.jobSite) {
+            if (!serviceTicket.jobSite && params.jobSite && customer) {
                 serviceTicket.jobSite = params.jobSite;
             }
-            if (!serviceTicket.homeJobLocation && params.homeJobLocation) {
-                serviceTicket.homeJobLocation = params.homeJobLocation;
+            if (!serviceTicket.homeJobLocation && params.homeJobLocationId && homeOwner) {
+                serviceTicket.homeJobLocation = params.homeJobLocationId;
             }
-            if (!serviceTicket.homeJobSite && params.homeJobSite) {
-                serviceTicket.homeJobSite = params.homeJobSite;
+            if (!serviceTicket.homeJobSite && params.homeJobSiteId && homeOwner) {
+                serviceTicket.homeJobSite = params.homeJobSiteId;
             }
-            if (!serviceTicket.isHomeOccupied && params.isHomeOccupied) {
-                serviceTicket.isHomeOccupied = params.isHomeOccupied;
+
+            if (customer) {
+                serviceTicket.homeJobLocation = null;
+                serviceTicket.homeJobSite = null;
+                serviceTicket.homeOwner = null;
             }
 
             trackedServiceTicket = serviceTicket.track;
@@ -2679,6 +2682,31 @@ export const editJob = async (req: Request, res: Response) => {
                 if (linkedJob) { linkedJob.jobSite = params.jobSiteId; }
             }
 
+            if (params.homeJobLocationId) {
+                if (params.homeJobLocationId != job.homeJobLocation) {
+                    action += '|Updated HomeJobLocationId|';
+                }
+                job.homeJobLocation = params.homeJobLocationId
+                if (linkedJob) { linkedJob.homeJobLocation = params.homeJobLocationId; }
+            }
+
+            if (params.homeJobSiteId) {
+                if (params.homeJobSiteId != job.homeJobSite) {
+                    action += '|Updated HomeJobSiteId|';
+                }
+                job.homeJobSite = params.homeJobSiteId
+                if (linkedJob) { linkedJob.homeJobSite = params.homeJobSiteId; }
+            }
+
+            if (params.isHomeOccupied) {
+                if (params.isHomeOccupied !== job.isHomeOccupied) {
+                    action  += '|Updated Home Occupied Status|'
+                }
+
+                job.isHomeOccupied = params.isHomeOccupied;
+                if (linkedJob) { linkedJob.isHomeOccupied = params.isHomeOccupied; }
+            }
+
             if (params.customerContactId) {
                 if (params.customerContactId !== job.customerContactId) {
                     action += '|Updated Contact Associated|';
@@ -2730,6 +2758,18 @@ export const editJob = async (req: Request, res: Response) => {
                         }
                         if (!t.jobSite && params.jobSite) {
                             t.jobSite = params.jobSite;
+                        }
+                        if (!t.homeJobSite && params.homeJobSite) {
+                            t.homeJobSite = params.homeJobSite;
+                        }
+                        if (!t.homeJobLocation && params.homeJobLocation) {
+                            t.homeJobLocation = params.homeJobLocation;
+                        }
+
+                        if (t.customer) {
+                            t.homeJobLocation = null;
+                            t.homeOwner = null;
+                            t.homeJobSite = null;
                         }
                         t.save().then(() => { }).catch((err) => {
                             return res.json({ 'status': Status.Error, 'message': err.message });

@@ -8737,6 +8737,9 @@
                     "type": "string",
                     "description": "Id of job site"
                   },
+                  "isHomeOccupied": {
+                    "type": "boolean"
+                  },
                   "homeJobLocationId": {
                     "type": "string",
                     "description": "Id of home job location"
@@ -8824,6 +8827,15 @@
                   "jobSiteId": {
                     "type": "string",
                     "description": "Id of job site"
+                  },
+                  "isHomeOccupied": {
+                    "type": "boolean"
+                  },
+                  "homeJobLocationId": {
+                    "type": "string"
+                  },
+                  "homeJobSiteId": {
+                    "type": "string"
                   },
                   "tasks": {
                     "type": "string",
