@@ -113,12 +113,14 @@ export const create = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Either one of customerId or homeOwnerId should be provided'})
     }
 
-    if (customerId && homeOwnerId || customerId && !homeOwnerId) {
-        jobLocationData.customerId = customerId
+    if (homeOwnerId) {
+        jobLocationData.homeOwner = homeOwnerId;
     }
 
-    if (!customerId && homeOwnerId) {
-        jobLocationData.homeOwner = homeOwnerId
+    // default to customer
+    if (customerId) {
+        jobLocationData.homeOwner = null;
+        jobLocationData.customerId = customerId;
     }
 
     if (contact?.name || contact?.phone || contact?.email) {
