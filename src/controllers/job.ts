@@ -344,7 +344,7 @@ const _createJob = async (
         homeOwner,
         jobLocation: params.jobLocationId ?? parentJob?.jobLocation,
         jobSite: params.jobSiteId ?? parentJob?.jobSite,
-        homeJobLocatoin: params.homeJobLocationId ?? parentJob?.homeJobLocation,
+        homeJobLocation: params.homeJobLocationId ?? parentJob?.homeJobLocation,
         homeJobSite: params.homeJobSiteId ?? parentJob?.homeJobSite,
         customerContactId: params.customerContactId ?? parentJob?.customerContactId,
         customerPO: params.customerPO ?? parentJob?.customerPO,
@@ -1951,6 +1951,11 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             if (params.jobLocationId) {
                 data.jobLocation = params.jobLocationId
             }
+            if (params.isHomeOccupied) {
+                data.isHomeOccupied = params.isHomeOccupied;
+                data.jobLocation = null;
+                data.jobSite = null;
+            }
             if (params.homeJobLocationId) {
                 data.homeJobLocation = params.homeJobLocationId
             }
@@ -2704,7 +2709,13 @@ export const editJob = async (req: Request, res: Response) => {
                 }
 
                 job.isHomeOccupied = params.isHomeOccupied;
-                if (linkedJob) { linkedJob.isHomeOccupied = params.isHomeOccupied; }
+                job.jobLocation = null;
+                job.jobSite = null;
+                if (linkedJob) { 
+                    linkedJob.isHomeOccupied = params.isHomeOccupied; 
+                    linkedJob.jobLocation = null; 
+                    linkedJob.jobSite = null; 
+                }
             }
 
             if (params.customerContactId) {
@@ -2764,12 +2775,6 @@ export const editJob = async (req: Request, res: Response) => {
                         }
                         if (!t.homeJobLocation && params.homeJobLocation) {
                             t.homeJobLocation = params.homeJobLocation;
-                        }
-
-                        if (t.customer) {
-                            t.homeJobLocation = null;
-                            t.homeOwner = null;
-                            t.homeJobSite = null;
                         }
                         t.save().then(() => { }).catch((err) => {
                             return res.json({ 'status': Status.Error, 'message': err.message });
