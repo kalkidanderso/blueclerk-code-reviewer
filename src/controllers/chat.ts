@@ -140,6 +140,7 @@ export const markRead = async (req: Request, res: Response) => {
         recipientId: jobRequest.customerContact,
         notificationType: NotificationTypes.CHAT_READ,
         fbNotificationType: FbNotificationType.CHAT_READ,
+        metadataId: lastChat._id,
         chat: lastChat,
         jobRequest,
         lastReadChatId: lastChat._id
@@ -199,6 +200,7 @@ const _createJobRequestChat = async (params: any, id: string, user: IUser, compa
         fbNotificationType: FbNotificationType.NEW_CHAT,
         messageTitle: `You have new message for Job Request #${jobRequest.requestId}`,
         messageBody: jobRequestChat.message,
+        metadataId: jobRequestChat._id,
         chat: jobRequestChat,
         jobRequest
     });
