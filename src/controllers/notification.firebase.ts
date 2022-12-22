@@ -13,6 +13,7 @@ export const _handleNotification = async ({
     fbNotificationType,
     messageTitle,
     messageBody,
+    metadataId,
     chat,
     jobRequest,
     lastReadChatId,
@@ -22,6 +23,7 @@ export const _handleNotification = async ({
     fbNotificationType: string,
     messageTitle?: string,
     messageBody?: string,
+    metadataId?: string,
     chat?: IChat,
     jobRequest?: IJobRequest,
     lastReadChatId?: string,
@@ -65,7 +67,7 @@ export const _handleNotification = async ({
             title: messageTitle,
             body: messageBody
         },
-        metadata: jobRequest?._id
+        metadata: metadataId
     });
     await notification.save();
 
