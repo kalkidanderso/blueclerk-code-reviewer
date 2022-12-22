@@ -2,6 +2,7 @@ import { sendNotification } from '../services/firebase';
 import { IChat } from '../models/Chat';
 import { IJobRequest } from '../models/JobRequest';
 import { User } from '../models/User';
+import { NotificationChat } from '../models/NotificationDiscriminator';
 
 /**
  * Send notification through Firebase to the customer contact devices
@@ -9,19 +10,21 @@ import { User } from '../models/User';
 export const _handleNotification = async ({
     recipientId,
     notificationType,
+    fbNotificationType,
     messageTitle,
     messageBody,
     chat,
     jobRequest,
     lastReadChatId,
 }: {
-        recipientId: string,
-        notificationType: string,
-        messageTitle?: string,
-        messageBody?: string,
-        chat?: IChat,
-        jobRequest?: IJobRequest,
-        lastReadChatId?: string,
+    recipientId: string,
+    notificationType: string,
+    fbNotificationType: string,
+    messageTitle?: string,
+    messageBody?: string,
+    chat?: IChat,
+    jobRequest?: IJobRequest,
+    lastReadChatId?: string,
 }) => {
 
     // Find the user object of the customer contact
@@ -42,7 +45,7 @@ export const _handleNotification = async ({
     for (const fbt of firebaseTokens) {
         await sendNotification({
             fbToken: fbt.token,
-            notificationType,
+            notificationType: fbNotificationType,
             title: messageTitle,
             body: messageBody,
             chatChannel: chat?.chatChannel,
@@ -52,6 +55,19 @@ export const _handleNotification = async ({
             lastReadChatId: lastReadChatId?.toString()
         });
     }
+
+    // Save customer notification to DB
+    const notification = new NotificationChat({
+        customer: jobRequest?.customer,
+        customerContact: recipientId,
+        notificationType,
+        message: {
+            title: messageTitle,
+            body: messageBody
+        },
+        metadata: jobRequest?._id
+    });
+    await notification.save();
 
     return;
 

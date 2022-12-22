@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { Status, Messages, Role, NotificationTypes } from '../common/constants'
+import { Status, Messages, Role } from '../common/constants'
 
 import { IContact } from '../common/contact';
 import { Contact } from '../models/Contact';
@@ -10,6 +10,7 @@ import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
 import { NotificationServiceTicket } from '../models/NotificationDiscriminator';
+import { NotificationTypes } from '../models/Notification';
 import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin';
 
 var QuickBooks = require('node-quickbooks')

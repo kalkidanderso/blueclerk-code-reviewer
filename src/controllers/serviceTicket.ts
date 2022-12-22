@@ -4,12 +4,13 @@ import moment from 'moment';
 import { parseFieldsAndUploadImageInS3, updateFieldsAndUploadImageInS3 } from '../services/aws';
 import { _handleJobTypesJson } from '../controllers/item';
 
-import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, JobStatus, SocketEvents, NotificationTypes, JobRequestStatus } from '../common/constants';
+import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, JobStatus, SocketEvents, JobRequestStatus } from '../common/constants';
 
 import { ICompany } from '../models/Company';
 import { IUser } from '../models/User';
 import { Contact } from '../models/Contact';
 import { Item } from '../models/Item';
+import { NotificationTypes } from '../models/Notification';
 import { NotificationServiceTicket, INotificationServiceTicket } from '../models/NotificationDiscriminator';
 import { IJobTypes } from '../models/JobType'
 import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket';

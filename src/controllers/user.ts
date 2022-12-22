@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import moment from 'moment-timezone';
 
-import { CompanyType, ContractStatus, Messages, NotificationTypes, Role, Status, UserPermissions, AccountTypes } from '../common/constants';
+import { CompanyType, ContractStatus, Messages, Role, Status, UserPermissions, AccountTypes } from '../common/constants';
 import { sendEmail, sendEmployeeEmail, sendPasswordEmail, uploadImageInS3 } from '../services/aws';
 import { chargeSubscription, createStripeInvoiceItem } from '../services/stripe';
 
@@ -12,6 +12,7 @@ import { Employee, IEmployee } from '../models/Employee';
 import { Contract } from '../models/Contract';
 import { CompanyAdmin, ICompanyAdmin, ISupplierAdmin } from '../models/CompanyAdmin';
 import { IIndustry, Industry } from '../models/Industry';
+import { NotificationTypes } from '../models/Notification';
 import { NotificationContract, INotificationContract } from '../models/NotificationDiscriminator';
 import { CompanyInvoice } from '../models/CompanyInvoice';
 import { _getProRatedAmount } from '../controllers/vendor';

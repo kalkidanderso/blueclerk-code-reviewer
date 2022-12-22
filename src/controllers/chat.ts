@@ -7,6 +7,7 @@ import { ICompany } from '../models/Company';
 import { JobRequest } from '../models/JobRequest';
 import { IChat, Chat, ChatChannels, IJobRequestChat, JobRequestChat } from '../models/Chat';
 import { _handleNotification } from '../controllers/notification.firebase';
+import { NotificationTypes, FbNotificationType } from '../models/Notification';
 
 /**
  * To create new chat
@@ -137,7 +138,8 @@ export const markRead = async (req: Request, res: Response) => {
     // for mobile internal usage
     await _handleNotification({
         recipientId: jobRequest.customerContact,
-        notificationType: 'chatRead',
+        notificationType: NotificationTypes.CHAT_READ,
+        fbNotificationType: FbNotificationType.CHAT_READ,
         chat: lastChat,
         jobRequest,
         lastReadChatId: lastChat._id
@@ -193,7 +195,8 @@ const _createJobRequestChat = async (params: any, id: string, user: IUser, compa
     // Send notification over Firebase to Customer Contact
     await _handleNotification({
         recipientId: jobRequest.customerContact,
-        notificationType: 'chat',
+        notificationType: NotificationTypes.NEW_CHAT,
+        fbNotificationType: FbNotificationType.NEW_CHAT,
         messageTitle: `You have new message for Job Request #${jobRequest.requestId}`,
         messageBody: jobRequestChat.message,
         chat: jobRequestChat,
