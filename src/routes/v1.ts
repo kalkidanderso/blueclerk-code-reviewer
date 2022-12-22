@@ -46,6 +46,7 @@ import * as quickBookPaymentController from '../controllers/quickbook.payment'
 import * as companyController from '../controllers/company'
 import * as emailDefaultController from '../controllers/emailDefault'
 import * as invoiceController from '../controllers/invoice'
+import * as paymentAdvanceController from '../controllers/advancePayment'
 import * as partController from '../controllers/part'
 import * as purchaseOrderController from '../controllers/purchaseOrder'
 import * as estimateController from '../controllers/estimate'
@@ -889,6 +890,16 @@ export default function (sio: any) {
         jobController.editJob
     )
 
+    router.put(
+        '/updateJobRequestStatus',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Update),
+        validate(Validations.updateJoBRequestStatus),
+        jobController.updateJobRequestStatus
+    )
+
     router.post(
         '/updateJobTechnicianStatus',
         passport.authenticate('jwt', { session: false }),
@@ -1495,6 +1506,14 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/createQBInvoices',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookInvoiceController.createQBInvoices
+    )
+
+    router.post(
         '/syncQBInvoices',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
@@ -1509,6 +1528,15 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookPaymentController.createQBPayment
+    )
+
+    router.post(
+        '/createQBPayments',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookPaymentController.createQBPayments
     )
 
     router.post(
@@ -1838,7 +1866,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Invoice_Detail),
-        validate(Validations.sendInvoice),
+        validate(Validations.getInvoiceEmailTemplate),
         invoiceController.getInvoiceEmailTemplate
     )
 
@@ -1851,6 +1879,16 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Invoice_Detail),
         validate(Validations.sendInvoice),
         invoiceController.sendInvoiceEmail
+    )
+
+    router.post(
+        '/sendInvoices',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoice_Detail),
+        validate(Validations.sendInvoices),
+        invoiceController.sendInvoicesEmail
     )
 
     router.get(
@@ -1914,6 +1952,14 @@ export default function (sio: any) {
     )
 
     router.get(
+        '/getUnsyncedInvoices',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        invoiceController.getUnsyncedInvoices
+    )
+
+    router.get(
         '/getCompanyInvoices',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
@@ -1954,6 +2000,21 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Update_Invoice),
         validate(Validations.updateCommission),
         invoiceController.updateCommission
+    )
+
+     router.get(
+        '/updateCommissionCron',       
+         (req, res) => {
+            invoiceController.updateCommissionCron(req, res)
+        }
+    )  
+
+    router.get(
+        '/getCommissionHistory/:beneficiaryId',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        checkUserPermissions(Permissions.Update_Invoice), //if has permission to update then can also view
+        invoiceController.getCommissionHistory
     )
 
     router.get(
@@ -2208,6 +2269,15 @@ export default function (sio: any) {
     )
 
     router.get(
+        '/getUnsyncedPayments',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Payments),
+        paymentController.getUnsyncedPayments
+    )
+
+    router.get(
         '/getPaymentsByCustomerId',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
@@ -2305,6 +2375,27 @@ export default function (sio: any) {
         paymentController.getPayrollReport
     )
 
+    // Advance Payment
+    router.post(
+        '/recordAdvancePaymentContractor',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.recordAdvancePayment),
+        paymentAdvanceController.createAdvancePaymentContractor
+    )
+
+    router.get(
+        '/getAdvancePaymentsByContractor',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.getAdvancePayments),
+        paymentAdvanceController.getAdvancePaymentsByContractor
+    )
+
     // REPORT
 
     router.get(
@@ -2315,6 +2406,92 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.generateIncomeReport),
         reportController.generateIncomeReport
+    )
+
+    router.get(
+        '/generateIncomeReportPdf',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateIncomeReport),
+        reportController.generateIncomeReportPdf
+    )
+
+    router.get(
+        '/getIncomeReportEmailTemplate',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        reportController.getIncomeReportEmailTemplate
+    )
+
+    router.post(
+        '/sendIncomeReport',
+        passport.authenticate('jwt', { session: false }),
+        uploadInvoices.single('incomeReportPdf'),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateIncomeReport),
+        reportController.sendIncomeReportEmail
+    )
+
+    router.get(
+        '/getReportEmailTemplate/:reportType',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        reportController.getReportEmailTemplate
+    )
+
+    router.post(
+        '/sendReport/:reportType',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.sendReportEmail),
+        reportController.sendReportEmail
+    )
+
+    router.get(
+        '/generateAccountReceivableReport',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateAccountReceivableReport),
+        reportController.generateAccountReceivableReport
+    )
+
+    router.get(
+        '/generateAccountReceivableReport/subdivisions',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateAccountReceivableDetail),
+        reportController.generateAccountReceivableDetail
+    )
+
+    router.get(
+        '/generateAccountReceivableReport/invoices',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateAccountReceivableInvoices),
+        reportController.generateAccountReceivableInvoices
+    )
+
+    router.get(
+        '/generateReportPdf/:reportType',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.generateReportPdf),
+        reportController.generateReportPdf
     )
 
     router.get(
@@ -2349,6 +2526,15 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.updateMemorizedReport),
         reportController.updateMemorizedReport
+    )
+
+    router.delete(
+        '/deleteMemorizedReport',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.updateMemorizedReport),
+        reportController.deleteMemorizedReport
     )
 
     // CODE LOCATION TAG
@@ -2566,13 +2752,19 @@ export default function (sio: any) {
         scriptController.updateQBCustomerJob
     )
 
+    router.post(
+        '/script/revertBackInvoices',
+        scriptController.revertBackInvoices
+    )
+
+    // QUICKBOOK DIRECT CHECK API
     router.get(
-        '/quickbook/invoiceCheck',
+        '/quickbook/customerCheck',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
         refreshQBToken(),
-        quickBookInvoiceController.getQBInvoice
+        quickBookCustomerController.getQBCustomer
     )
 
     router.get(
@@ -2585,6 +2777,15 @@ export default function (sio: any) {
     )
 
     router.get(
+        '/quickbook/invoiceCheck',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookInvoiceController.getQBInvoice
+    )
+
+    router.get(
         '/quickbook/paymentCheck',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
@@ -2593,14 +2794,7 @@ export default function (sio: any) {
         quickBookPaymentController.getQBPayment
     )
 
-    router.get(
-        '/quickbook/customerCheck',
-        passport.authenticate('jwt', { session: false }),
-        isLogin(),
-        getCompanyId(),
-        refreshQBToken(),
-        quickBookCustomerController.getQBCustomer
-    )
+    // QUICKBOOK DIRECT CUSTOMER API
 
     router.get(
         '/quickbook/findQBCustomers',
@@ -2618,6 +2812,71 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookCustomerController.findQBCustomersByEmail
+    )
+
+    // QUICKBOOK DIRECT ACCOUNT API
+
+    router.get(
+        '/quickbook/findQBInvoice',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookInvoiceController.findQBInvoice
+    )
+
+    router.get(
+        '/quickbook/findQBAccount',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookItemController.findQBAccount
+    )
+
+    // QUICKBOOK DIRECT ITEM API
+
+    router.get(
+        '/quickbook/findQBItem',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookItemController.findQBItem
+    )
+
+    // QUICKBOOK DIRECT PAYMENT METHOD API
+
+    router.get(
+        '/quickbook/findQBAllTerms',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookPaymentTermController.findQBAllTerms
+    )
+
+    // QUICKBOOK DIRECT INVOICE API
+    router.put(
+        '/quickbook/updateQBInvoice',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookInvoiceController.updateQBInvoice
+    )
+
+    // QUICKBOOK DIRECT PAYMENT API
+
+    router.delete(
+        '/quickbook/deleteQBPayment',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookPaymentController.deleteQBPayment
+    )
+
+    router.get(
+        '/quickbook/findQBPayment',
+        passport.authenticate('jwt', { session: false }),
+        getCompanyId(),
+        refreshQBToken(),
+        quickBookPaymentController.findQBPayment
     )
 
     return router

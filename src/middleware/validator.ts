@@ -255,7 +255,8 @@ export const Validations = {
   getJobs: [
     check('status').optional().toInt(),
     check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')
+    check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided'),
+    check('technicianIds').optional()
   ],
 
   searchJob: [check('pageSize').isNumeric(), check('page').isNumeric()],
@@ -284,6 +285,13 @@ export const Validations = {
     check('status').exists().withMessage(Messages.Required),
     check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
     check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId)
+  ],
+
+  updateJoBRequestStatus: [
+    check('jobRequestId').exists().withMessage(Messages.Required),
+    check('jobRequestId').isMongoId().withMessage(Messages.WrongId),
+    check('status').exists().withMessage(Messages.Required),
+    check('status').isInt({ min: 4, max: 5 }).toInt().withMessage('has to be 4 (Accepted) or 5 (Rejected)'),
   ],
 
   editJob: [
@@ -398,9 +406,13 @@ export const Validations = {
 
   getInvoices: [
     check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
     check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
     check('isVoid').optional().isBoolean().toBoolean().withMessage('isVoid has to be boolean'),
-    check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')
+    check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided'),
+    check('recentOnly').optional().isBoolean().toBoolean().withMessage('recentOnly has to be boolean')
   ],
 
   createInvoice: [
@@ -412,9 +424,18 @@ export const Validations = {
     check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
+  getInvoiceEmailTemplate: [
+    // check('emailType').exists().withMessage(Messages.Required),
+    check('invoiceId').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
+
   sendInvoice: [
     check('invoiceId').exists().withMessage(Messages.Required),
-    check('invoiceId').isMongoId().withMessage(Messages.WrongId),
+    check('invoiceId').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  sendInvoices: [
+    check('invoiceIds').exists().withMessage(Messages.Required),
   ],
 
   generateInvoicePdf: [
@@ -443,6 +464,7 @@ export const Validations = {
 
   updateCommission: [
     check('type').exists().withMessage(Messages.Required),
+    check('commissionEffectiveDate').exists().withMessage(Messages.Required),
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId),
     check('commission').optional().isInt().withMessage('invalid format')
@@ -523,6 +545,7 @@ export const Validations = {
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId),
     check('amount').exists().withMessage(Messages.Required),
+    check('creditUsed').optional().isFloat().toFloat().withMessage('has to be number/decimal'),
   ],
 
   updatePaymentContractor: [
@@ -542,11 +565,58 @@ export const Validations = {
     check('paymentId').isMongoId().withMessage(Messages.WrongId),
   ],
 
+  // ADVANCE PAYMENT
+  recordAdvancePayment: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('amount').exists().withMessage(Messages.Required),
+    check('amount').isFloat().toFloat().withMessage('has to be number/decimal'),
+  ],
+
+  getAdvancePayments: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+  ],
+
   // REPORT
   generateIncomeReport: [
     check('reportData').exists().withMessage(Messages.Required),
     check('reportData').isInt().toInt().withMessage('has to be number'),
     check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+  ],
+
+  generateAccountReceivableReport: [
+    check('reportData').exists().withMessage(Messages.Required),
+    check('reportData').isInt().toInt().withMessage('has to be number'),
+    check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+  ],
+
+  generateAccountReceivableDetail: [
+    check('customerId').isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  generateAccountReceivableInvoices: [
+    check('customerId').isMongoId().withMessage(Messages.WrongId),
+    check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  generateReportPdf: [
+    check('reportType').exists().withMessage(Messages.Required),
+    check('reportData').exists().withMessage(Messages.Required),
+    check('reportData').isInt().toInt().withMessage('has to be number'),
+    check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+  ],
+
+  sendReportEmail: [
+    check('reportType').exists().withMessage(Messages.Required),
+    check('reportData').exists().withMessage(Messages.Required),
+    check('reportData').isInt().toInt().withMessage('has to be number'),
+    check('reportSource').optional().isInt().toInt().withMessage('has to be number'),
+    check('copyToMyself').optional().isBoolean().toBoolean().withMessage('has to be boolean'),
   ],
 
   createMemorizedReport: [

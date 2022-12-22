@@ -47,6 +47,7 @@ export interface IUser extends Document {
         timeZone: String
     },
     balance: number,
+    credit: number,
     commission: number,
     firebaseTokens: {
         token: string,
@@ -138,6 +139,10 @@ const UserSchema = new Schema({
         type: Number,
         default: 0
     },
+    credit: {
+        type: Number,
+        default: 0
+    },
     commission: {
         type: Number,
         default: null
@@ -216,7 +221,6 @@ UserSchema.methods.comparePassword = function(password: string, next: (isMatch: 
 UserSchema.methods.jwt = function(req: Request) {
 
     const user = this as IUser
-    console.log('sessionID', req.sessionID);
     const token = jwt.sign(
         {
             iss: "http://api.blueclerk.com",

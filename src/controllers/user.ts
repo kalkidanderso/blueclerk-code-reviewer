@@ -39,8 +39,17 @@ export const login = (req: Request, res: Response, sio: any) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
             }
 
-            if ([AccountTypes.BUILDER, AccountTypes.CONTRACTOR, AccountTypes.SUPPLIER].includes(Number(user.accountType))) {
-                return res.json({ status: Status.Error, message: 'Your account type does not have web access' });
+            if (
+                [AccountTypes.BUILDER, AccountTypes.CONTRACTOR, AccountTypes.SUPPLIER].includes(Number(user.accountType))
+                || [Role.CUSTOMER, Role.CUSTOMER_CONTACT, Role.CONTRACTOR].includes(Number(user.permissions.role))
+            ) {
+                return res.json({
+                    status: Status.Unauthorized,
+                    message: 'Your account type does not have web access',
+                    userType: user.permissions.role,
+                    accountType: user.accountType,
+                    user: null
+                });
             }
 
             if ((user.permissions.role != Role.COMPANY_ADMIN && user.permissions.role != Role.ADMIN_EMPLOYEE && user.permissions.role != Role.GLOBAL_ADMIN && user.permissions.role != Role.CUSTOMER_CONTACT)) {

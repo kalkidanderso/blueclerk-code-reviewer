@@ -8,7 +8,8 @@ import * as https from 'https';
 import * as helper from '../services/helper';
 import { ContractorPermissions, DefaultCommission, DefaultPageSize, InvoiceStatus, Messages, Status } from '../common/constants';
 import { IContact } from '../common/contact';
-import { INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } from '../common/config';
+import { FONT_SETS, INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } from '../common/config';
+import { Layouts, Styles } from '../common/constants.pdf';
 import { Contact } from '../models/Contact';
 import { IUser, User } from '../models/User';
 import { Company, ICompany } from '../models/Company';
@@ -27,7 +28,7 @@ import { IPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
 import { Payment, PaymentCustomer } from '../models/Payment';
 import { IInvoice, IQBInvoice, Invoice } from '../models/Invoice';
 import { IScan, Scan } from '../models/Scan';
-import { EmailDefault } from '../models/EmailDefault';
+import { EmailDefault, EmailTypes } from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer, uploadFileInS3 } from '../services/aws';
 import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer';
@@ -36,6 +37,7 @@ import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail
 import { IJobSite } from '../models/JobSite';
 import { IJobLocation } from '../models/JobLocation';
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission';
+import { ICommissionHistory, CommissionHistory } from '../models/CommissionHistory';
 import { getDatesFilterQuery } from 'src/services/pagination';
 
 /**
@@ -493,7 +495,7 @@ export const createInvoice = (req: Request, res: Response) => {
                             // Create new Invoice in QuickBooks
                             _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                                 if (err || errMsg) {
-                                    return res.json({ status: Status.Success, message: 'Job invoice created successfully.', invoice });
+                                    return res.json({ status: Status.Success, message: 'Job invoice created successfully.', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
                                 }
 
                                 if (qbInvoice) {
@@ -600,8 +602,8 @@ export const createInvoice = (req: Request, res: Response) => {
                         if (qbCustomer) {
                             // Create new Invoice in QuickBooks
                             _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
-                                if (err) {
-                                    return res.json({ status: Status.Success, message: 'Purchase order invoice created successfully.', invoice });
+                                if (err || errMsg) {
+                                    return res.json({ status: Status.Success, message: 'Purchase order invoice created successfully.', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
                                 }
 
                                 if (qbInvoice) {
@@ -768,8 +770,8 @@ export const createInvoice = (req: Request, res: Response) => {
                         if (qbCustomer) {
                             // Create new Invoice in QuickBooks
                             _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
-                                if (err) {
-                                    return res.json({ status: Status.Success, message: 'Estimate invoice created successfully.', invoice });
+                                if (err || errMsg) {
+                                    return res.json({ status: Status.Success, message: 'Estimate invoice created successfully.', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
                                 }
 
                                 if (qbInvoice) {
@@ -898,8 +900,8 @@ export const createInvoice = (req: Request, res: Response) => {
                                 if (qbCustomer) {
                                     // Create new Invoice in QuickBooks
                                     _createQBInvoice(req, res, company, newInvoice, (err, errMsg, qbInvoice) => {
-                                        if (err) {
-                                            return res.json({ status: Status.Success, message: 'Invoice created successfully.', invoice: newInvoice });
+                                        if (err || errMsg) {
+                                            return res.json({ status: Status.Success, message: 'Invoice created successfully.', invoice: newInvoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
                                         }
 
                                         if (qbInvoice) {
@@ -1434,8 +1436,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                         let taxAmount: number = 0;
                         let subTotalBeforeTax: number = 0;
                         let total: number = 0;
-                        let balanceDue = invoice.balanceDue ?? invoice.total;
                         let paymentApplied = invoice.paymentApplied ?? 0;
+                        let balanceDue = invoice.balanceDue ?? (invoice.total - paymentApplied) ?? invoice.total;
                         let paid = invoice.paid;
                         let status = invoice.status;
                         const oldTotal = invoice.total;
@@ -1519,7 +1521,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                         balanceDue += (total - oldTotal);
 
                         // Check if invoice updated and several conditions met
-                        if (balanceDue <= 0) {
+                        if (balanceDue <= 0 || (paymentApplied >= total)) {
                             /**
                              * Invoice updated to the point balanceDue paid off or even minus,
                              * if minus, will put the extra payment to cust's credit,
@@ -1624,7 +1626,10 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 }
 
                                 // To handle the switch of Invoice isDraft
-                                _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (invoice, qbInvoice) => {
+                                _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
+                                    if (errMsg) {
+                                        return res.json({ status: Status.Success, message: 'Invoice updated successfully.', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
+                                    }
 
                                     return res.json({ status: Status.Success, message: "Invoice updated successfully.", invoice, quickbookInvoice: qbInvoice });
                                 });
@@ -1649,8 +1654,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                 let taxAmount: number = 0;
                 let subTotalBeforeTax: number = 0;
                 let total: number = 0;
-                let balanceDue = invoice.balanceDue ?? invoice.total;
                 let paymentApplied = invoice.paymentApplied ?? 0;
+                let balanceDue = invoice.balanceDue ?? (invoice.total - paymentApplied) ?? invoice.total;
                 let paid = invoice.paid;
                 let status = invoice.status;
                 const oldTotal = invoice.total;
@@ -1718,7 +1723,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                 balanceDue += (total - oldTotal);
 
                 // Check if invoice updated and several conditions met
-                if (balanceDue <= 0) {
+                if (balanceDue <= 0 || (paymentApplied >= total)) {
                     /**
                      * Invoice updated to the point balanceDue paid off or even minus,
                      * if minus, will put the extra payment to cust's credit,
@@ -1780,7 +1785,10 @@ export const updateInvoice = (req: Request, res: Response) => {
                         }
 
                         // To handle the switch of Invoice isDraft
-                        _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (invoice, qbInvoice) => {
+                        _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
+                            if (errMsg) {
+                                return res.json({ status: Status.Success, message: 'Invoice updated successfully.', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
+                            }
 
                             return res.json({ status: Status.Success, message: "Invoice updated successfully.", invoice, quickbookInvoice: qbInvoice });
                         });
@@ -1799,8 +1807,10 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                 { path: 'type', select: 'title description sku' },
                 { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
-                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.technician', select: 'profile auth.email address contact permissions.role' },
                 { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
+                { path: 'technicianImages.uploadedBy', select: 'profile auth.email address contact permissions.role' },
+                { path: 'track.user', select: 'profile auth.email address contact permissions.role'},
                 { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
                 { path: 'jobLocation', select: 'name location address' },
                 { path: 'jobSite', select: 'name location address' }
@@ -1883,28 +1893,68 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
 
     const params = req.query;
     const company = <ICompany>req.company;
+    let invoice, invoices, customer, job;
 
-    // Retrieve invoice and populate customer and paymentTerm info
-    const invoice = await Invoice
-        .findOne({ company, _id: params.invoiceId })
-        .populate({
-            path: 'customer',
-            select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
-        })
+    switch (params.emailType) {
+        case EmailTypes.INVOICES:
+            if (!params.invoiceIds) {
+                return res.json({ status: Status.Error, message: 'Param invoiceIds is required for emailType INVOICES' });
+            }
 
-    if (!invoice) {
-        return res.json({ status: Status.Error, message: 'Invoice not found.' });
+            const invoiceIds = JSON.parse(params.invoiceIds)?.map((id: string) => new ObjectId(id));
+            invoices = await Invoice
+                .find({ company, _id: { $in: invoiceIds } })
+                .populate({
+                    path: 'customer',
+                    select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+                })
+
+            if (!invoices?.length) {
+                return res.json({ status: Status.Error, message: 'Invoices not found.' });
+            }
+
+            customer = <ICustomer>invoices[0]?.customer;
+            break;
+
+        case EmailTypes.INVOICE:
+            if (!params.invoiceId) {
+                return res.json({ status: Status.Error, message: 'Param invoiceId is required for emailType INVOICE' });
+            }
+
+        default:
+            // Retrieve invoice and populate customer and paymentTerm info
+            invoice = await Invoice
+                .findOne({ company, _id: params.invoiceId })
+                .populate({
+                    path: 'customer',
+                    select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+                })
+                .populate({ path: 'customerContactId', select: 'name email phone' })
+                .populate({
+                    path: 'job',
+                    select: 'customerContactId',
+                    populate: [{ path: 'customerContactId', select: 'name email phone'}]
+                });
+
+            if (!invoice) {
+                return res.json({ status: Status.Error, message: 'Invoice not found.' });
+            }
+
+            customer = <ICustomer>invoice?.customer;
+            job = <IJob>invoice?.job;
+            break;
     }
 
-    const customer = <ICustomer>invoice.customer;
+    // const customer = <ICustomer>invoice?.customer;
+    const emailType = params.emailType ?? EmailTypes.INVOICE;
 
     // Retrieve company email default
-    let emailDefault = await EmailDefault.findOne({ company });
+    let emailDefault = await EmailDefault.findOne({ company, emailType });
 
     // Create email default if company doesn't have one yet
     if (!emailDefault) {
-        await _createCompanyDefaultEmail(company);
-        emailDefault = await EmailDefault.findOne({ company });
+        await _createCompanyDefaultEmail(company, emailType);
+        emailDefault = await EmailDefault.findOne({ company, emailType });
     }
 
     /**
@@ -1914,21 +1964,25 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     await transformPlaceholders(emailDefault);
 
     // Get available placeholder values for Invoice email template
-    const { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_due_date } = await getPlaceholderValues(company, invoice, customer);
+    const { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_total_amount, invoice_due_date } = await getPlaceholderValues({ company, invoice, invoices, customer, job });
 
     return res.json({
         status: Status.Success,
+        emailType,
         emailTemplate: {
             from: company_email,
             to: customer_email,
             subject: eval('`' + emailDefault.subject + '`'),
             message: eval('`' + emailDefault.message + '`')
         },
-        invoice
+        invoice, invoices
     });
 
 }
 
+/**
+ * To send email with one invoice as the attachment
+ */
 export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
     const params = req.body;
@@ -1949,7 +2003,8 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
                 { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
                 { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
                 { path: 'jobLocation', select: 'name location address' },
-                { path: 'jobSite', select: 'name location address' }
+                { path: 'jobSite', select: 'name location address' },
+                { path: 'customerContactId', select: '-__v' }
             ],
         })
         .populate({
@@ -1980,7 +2035,8 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
     // Retrieve company email default
     const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
-    const emailDefault = await EmailDefault.findOne({ company });
+    const invoicePdfs = [{ invoice, filepath }];
+    const emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
 
     // Generate Invoice PDF
     await _generateInvoicePdf(company, invoice);
@@ -1990,8 +2046,12 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     let copyToMyself: boolean;
     try {
         // Handle the stringify array of recipients value
-        if (params.recipients && !Array.isArray(params.recipients)) {
-            paramRecipients = JSON.parse(params.recipients);
+        if (params.recipients) {
+            if (Array.isArray(params.recipients)) {
+                paramRecipients = params.recipients;
+            } else {
+                paramRecipients = JSON.parse(params.recipients);
+            }
         }
 
         // Handle the stringify boolean value
@@ -2032,8 +2092,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         invoice_number: invoice.invoiceId,
         invoice_amount: invoice.total,
         invoice_due_date: moment(invoice.dueDate).format('MMMM DD, YYYY'),
-        invoice_pdf: filepath,
-        invoice_pdf_name: req.file?.originalname ?? `${invoice.invoiceId}.pdf`,
+        invoice_pdfs: invoicePdfs,
         term_name: paymentTerm?.name,
         term_due_days: paymentTerm?.dueDays
     });
@@ -2051,10 +2110,168 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
 }
 
+/**
+ * To send email with multiple invoices as the attachments
+ */
+export const sendInvoicesEmail = async (req: Request, res: Response) => {
+
+    // const { INVOICE_PDF_PATH } = process.env;
+    const params = req.body;
+    const user = <IUser>req.user;
+    const company = <ICompany>req.company;
+
+    // Retrieve and check if customer exist
+    const customer = await Customer.findById(params.customerId);
+    if (!customer) {
+        return res.json({ Status: Status.Error, message: 'Customer not found' });
+    }
+
+    // Handle the stringify array of invoice IDs value
+    let invoiceIds: any[] = [];
+    try {
+        if (Array.isArray(invoiceIds)) {
+            invoiceIds = params.invoiceIds;
+        } else {
+            invoiceIds = JSON.parse(invoiceIds);
+        }
+
+        // To handle any over-stringified strings
+        if (!Array.isArray(invoiceIds)) {
+            invoiceIds = JSON.parse(invoiceIds);
+        }
+
+        // Convert all string ID to Object ID to be used in $in mongo query
+        invoiceIds = invoiceIds.map((id: string) => new ObjectId(id));
+    } catch (error) {
+        return res.json({ 'status': Status.Error, 'message': 'Param Invoice IDs is invalid' })
+    }
+
+    // Retrieve invoices and populate customer and paymentTerm info
+    const invoices = await Invoice
+        .find({ company, _id: { $in: invoiceIds } })
+        .populate({
+            path: 'job',
+            populate: [
+                { path: 'type', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+                { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
+                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
+                { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
+                { path: 'jobLocation', select: 'name location address' },
+                { path: 'jobSite', select: 'name location address' },
+                { path: 'customerContactId', select: '-__v' }
+            ],
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address contact contactName'
+        })
+        .populate({ path: 'customerContactId', select: '-__v' })
+        .populate({ path: 'paymentTerm', select: '-company -__v' })
+        .populate({
+            path: 'items.item',
+            select: 'name description sku isJobType isFixed charges tax',
+            populate: [{ path: 'jobType' }]
+        });
+
+    if (!invoices?.length) {
+        return res.json({ status: Status.Error, message: 'Invoices not found.' });
+    }
+
+    let invoicePdfs = [];
+    let totalInvoiceAmount = 0;
+
+    // Iterate all invoices to generate their PDF and collect the filepath
+    for (const invoice of invoices) {
+
+        // Get the invoice filepath
+        const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
+
+        // Generate Invoice PDF
+        await _generateInvoicePdf(company, invoice);
+
+        // Sum the invoice amount
+        totalInvoiceAmount += invoice.total;
+
+        // Collect all invoices into one array
+        invoicePdfs.push({ invoice, filepath });
+
+        // Update email history and last email sent info
+        const sendingDate = new Date();
+        invoice.emailHistory.push({
+            sentTo: customer.info?.email,
+            sentAt: sendingDate
+        });
+        invoice.lastEmailSent = sendingDate;
+        await invoice.save();
+    }
+
+    // Retrieve company email default
+    const emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICES });
+
+    let paramRecipients: string[];
+    let recipientEmails: string[];
+    let copyToMyself: boolean;
+    try {
+        // Handle the stringify array of recipients value
+        if (params.recipients) {
+            if (Array.isArray(params.recipients)) {
+                paramRecipients = params.recipients;
+            } else {
+                paramRecipients = JSON.parse(params.recipients);
+            }
+        }
+
+        // Handle the stringify boolean value
+        copyToMyself = params.copyToMyself
+            ? params.copyToMyself === 'false' || params.copyToMyself === false
+                ? false
+                : !!params.copyToMyself
+            : false;
+
+        /**
+         * Construct list of recipients if providef from FE,
+         * othwerwise using customerContact or customer
+         */
+        recipientEmails = paramRecipients?.length > 0
+            ? paramRecipients
+            : [customer?.info?.email];
+
+        // Add the user's email himself if he want to receive copy email
+        if (copyToMyself) {
+            recipientEmails.push(user.auth?.email);
+        }
+    } catch (error) {
+        return res.json({ status: Status.Error, message: Messages.GenericError });
+    }
+
+    // Call AWS SES method
+    sendInvoiceEmailToCustomer({
+        subject: params.subject ?? emailDefault?.subject,
+        message: params.message ?? emailDefault?.message,
+        sender_email: user.auth?.email,
+        company_name: company.info?.companyName,
+        company_email: company.info?.companyEmail,
+        company_logo: company.info?.logoUrl,
+        recipient_emails: recipientEmails,
+        invoice_total_amount: totalInvoiceAmount,
+        invoice_pdfs: invoicePdfs,
+    });
+
+    return res.json({ status: Status.Success, message: 'Invoice has been sent successfully.' });
+
+}
+
 export const getInvoices = async (req: Request, res: Response) => {
 
     const params = req.body;
     let companyId = req.otherCompanyId || req.companyId;
+
+    // Check if any filter provided to decide whether return all records or not
+    let isAllRecords = await _getIsAllRecordsByParams(params);
+    // Get the date of the last 90 days
+    const last90days = moment().subtract(90, 'days').format();
 
     // Return error when all cursors are provided
     if (params.nextCursor && params.previousCursor) {
@@ -2063,17 +2280,17 @@ export const getInvoices = async (req: Request, res: Response) => {
 
     // Data query that used to search Invoices and available previous/next page
     const filterQuery: any = {
-        $and: [{
-            $or: [
-                // { contractor: companyId },
-                { company: companyId }
-            ]
-        }]
+        $and: [{ $or: [{ company: companyId }] }]
     };
+
+    // Add the last 90 days filter if need to return all records
+    if (!isAllRecords) {
+        filterQuery['$and'].push({ issuedDate: { $gte: new Date(last90days) } });
+    }
 
     // Check and add if params filter provided
     if (params.keyword) {
-        const keywordRegex = { $regex: params.keyword, $options: 'i' };
+        const keywordRegex = helper.getRegex(params.keyword, 'i');
         filterQuery['$and'].push({
             $or: [
                 { invoiceId: keywordRegex },
@@ -2093,8 +2310,9 @@ export const getInvoices = async (req: Request, res: Response) => {
             ]
         })
     }
-    if (params.customerId) {
-        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+    if (params.invoiceId) {
+        const invoiceIdRegex = helper.getRegex(params.invoiceId, 'i');
+        filterQuery['$and'].push({ invoiceId: invoiceIdRegex });
     }
     if (params.dueDate) {
         const dueDate = moment(params.dueDate).endOf('day').format();
@@ -2103,7 +2321,48 @@ export const getInvoices = async (req: Request, res: Response) => {
     if (params.status) {
         filterQuery['$and'].push({ status: { $in: JSON.parse(params.status) } });
     }
-    // if (params.isDraft !== undefined || params.isDraft !== null) {
+    if (params.startAmount) {
+        filterQuery['$and'].push({ total: { $gte: params.startAmount } });
+    }
+    if (params.endAmount) {
+        filterQuery['$and'].push({ total: { $lte: params.endAmount } });
+    }
+    if (params.customerPO) {
+        const customerPORegex = helper.getRegex(params.customerPO, 'i');
+        filterQuery['$and'].push({ customerPO: customerPORegex });
+    }
+    if (params.customerId) {
+        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+    }
+    if (params.customerContactId) {
+        filterQuery['$and'].push({ customerContactId: new ObjectId(params.customerContactId) });
+    }
+    if (params.jobId) {
+        const jobIdRegex = helper.getRegex(params.jobId, 'i');
+        filterQuery['$and'].push({ 'jobObj.jobId': jobIdRegex });
+    }
+    if (params.jobLocationId) {
+        filterQuery['$and'].push({ 'jobLocationObj._id': new ObjectId(params.jobLocationId) });
+    }
+    if (params.jobAddress) {
+        const jobAddressRegex = helper.getRegex(params.jobAddress, 'i');
+        filterQuery['$and'].push({ 'jobSiteObj.address.street': jobAddressRegex });
+    }
+    if (params.jobCity) {
+        const jobCityRegex = helper.getRegex(params.jobCity, 'i');
+        filterQuery['$and'].push({ 'jobSiteObj.address.city': jobCityRegex });
+    }
+    if (params.jobState) {
+        const jobStateRegex = helper.getRegex(params.jobState, 'i');
+        filterQuery['$and'].push({ 'jobSiteObj.address.state': jobStateRegex });
+    }
+    if (params.jobZip) {
+        const jobZipRegex = helper.getRegex(params.jobZip, 'i');
+        filterQuery['$and'].push({ 'jobSiteObj.address.zipcode': jobZipRegex });
+    }
+    if (params.technicianId) {
+        filterQuery['$and'].push({ $or: [{ 'jobObj.tasks.technician': new ObjectId(params.technicianId) }, { 'jobObj.tasks.contractor': new ObjectId(params.technicianId) }] });
+    }
     switch (params.isDraft) {
         case true:
             filterQuery['$and'].push({ isDraft: params.isDraft });
@@ -2117,7 +2376,6 @@ export const getInvoices = async (req: Request, res: Response) => {
             filterQuery['$and'].push({ isDraft: { $ne: true } });
             break;
     }
-
     switch (params.isVoid) {
         case true:
             filterQuery['$and'].push({ isVoid: params.isVoid });
@@ -2131,11 +2389,15 @@ export const getInvoices = async (req: Request, res: Response) => {
             filterQuery['$and'].push({ isVoid: { $ne: true } });
             break;
     }
-    // }
     if (params.startDate && params.endDate) {
-        const startDate = moment(params.startDate).format('YYYY-MM-DD');
-        const endDate = moment(params.endDate).format('YYYY-MM-DD');
-        filterQuery['$and'].push({ createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) } });
+        const startDate = moment.utc(params.startDate).startOf('day').format();
+        const endDate = moment.utc(params.endDate).endOf('day').format();
+        filterQuery['$and'].push({ issuedDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
+    }
+    if (params.lastEmailStartDate && params.lastEmailEndDate) {
+        const lastEmailStartDate = moment(params.lastEmailStartDate).startOf('day').format();
+        const lastEmailEndDate = moment(params.lastEmailEndDate).endOf('day').format();
+        filterQuery['$and'].push({ lastEmailSent: { $gte: new Date(lastEmailStartDate), $lte: new Date(lastEmailEndDate) } });
     }
 
     // Deep clone filterQuery
@@ -2174,42 +2436,266 @@ export const getInvoices = async (req: Request, res: Response) => {
     }
 
     // Construct aggreate lookups here to be used multiple times
-    const aggregateLookups = [
-        { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
-        { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
-        { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
-        { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
-        { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
-        { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } }
-    ]
+    let aggregateLookups: any[] = [];
+    if (isAllRecords) {
+        aggregateLookups = [
+            { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
+            { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
+            { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
+            { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
+            { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
+            { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } },
+            
+        ]
+    }
+
+    aggregateLookups.push({ $lookup: { from: 'contacts', localField: 'customerContactId', foreignField: '_id', as: 'contactsObj' } })
+
+
 
     // Filter jobs using aggregate to be search to another collection
-    const invoicesAggregate: IInvoice[] = await Invoice.aggregate([
+    let invoices: IInvoice[] = await Invoice.aggregate([
         ...aggregateLookups,
         { $match: { ...query } },
-        { $project: { _id: 1, createdAt: 1 } },
         { $sort: sortQuery },
-        { $limit: params.pageSize || DefaultPageSize }
+        { $limit: params.pageSize || DefaultPageSize },
+        { $project: { jobObj: 0, customerObj: 0, jobLocationObj: 0, jobSiteObj: 0, technicianObj: 0, contractorsObj: 0 } },
     ]);
-    // Map the Invoice IDs filtered
-    const invoiceIds = invoicesAggregate.map((invoice) => invoice._id);
 
-    Invoice.find({ _id: { $in: invoiceIds } })
-        .sort({ ...sortQuery })
+    // Populate the invoices from aggregate
+    await Invoice.populate(invoices, [
+        { path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks' },
+        { path: 'paymentTerm', select: 'name dueDays' },
+        { path: 'customer', select: 'info.email auth.email profile address contact vendorId contactName contactEmail' },
+    ]);
+
+    // // Filter jobs using aggregate to be search to another collection
+    // const invoicesAggregate: IInvoice[] = await Invoice.aggregate([
+    //     ...aggregateLookups,
+    //     { $match: { ...query } },
+    //     { $project: { _id: 1, createdAt: 1 } },
+    //     { $sort: sortQuery },
+    //     { $limit: params.pageSize || DefaultPageSize }
+    // ]);
+    // // Map the Invoice IDs filtered
+    // const invoiceIds = invoicesAggregate.map((invoice) => invoice._id);
+
+    // Invoice.find({ _id: { $in: invoiceIds } })
+    //     .sort({ ...sortQuery })
+    //     .populate({
+    //         path: 'job',
+    //         populate: [
+    //             { path: 'type', select: 'title description sku' },
+    //             // TODO: To be deprecated
+    //             // { path: 'tasks.jobType', select: 'title description sku' },
+    //             { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+    //             { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
+    //             // TODO: To be deprecated
+    //             // { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+    //             // TODO: To be deprecated
+    //             // { path: 'contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
+    //             { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+    //             { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
+    //             { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
+    //             { path: 'jobLocation', select: 'name location address' },
+    //             { path: 'jobSite', select: 'name location address' }
+    //         ],
+    //     })
+    //     .populate({
+    //         path: 'purchaseOrder',
+    //         select: 'purchaseOrderId items equipment status estimate note total',
+    //         populate: [
+    //             { path: 'equipment', select: 'info maintenance type brand', populate: [{ path: 'type', select: 'title' }, { path: 'brand', select: 'title' }] },
+    //             { path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price' }
+    //         ]
+    //     })
+    //     .populate({ path: 'paymentTerm', select: 'name dueDays' })
+    //     .populate({ path: 'customerContactId', select: 'name phone email' })
+    //     .populate({
+    //         path: 'items.item',
+    //         select: 'name description sku isFixed charges tax',
+    //         populate: [{ path: 'jobType', select: 'title description sku' }]
+    //     })
+    //     .populate({
+    //         path: 'company',
+    //         select: 'info.companyName info.logoUrl info.companyEmail permissions.role address contact'
+    //     })
+    //     .populate({
+    //         path: 'customer',
+    //         select: 'info.email auth.email profile address contact vendorId contactName contactEmail'
+    //     })
+    //     .populate({
+    //         path: 'estimate',
+    //         select: 'total items note status customer company createdAt createdBy'
+    //     })
+    //     .populate({
+    //         path: 'createdBy',
+    //         select: 'info.companyName auth.email profile.displayName permissions.role address contact.phone'
+    //     })
+    //     .exec(async (err: any, invoices: IInvoice[]) => {
+
+    // Because we reverse sort for previous page, we need to revert it back
+    if (params.previousCursor) {
+        invoices = invoices.reverse();
+    }
+
+    /**
+     * Get all total invoices
+     */
+    const allInvoices = await Invoice.aggregate([
+        ...aggregateLookups,
+        { $match: { ...filterQuery } },
+        { $count: 'count' }
+        // { $sort: sortQuery }
+    ])
+
+    /**
+     * Get last page cursor
+     */
+    // const lastDivider = (params.pageSize || DefaultPageSize);
+    // const lastModulo = allInvoices?.length % lastDivider;
+    // const lastIndex = allInvoices?.length - ((lastModulo == 0) ? lastDivider : lastModulo);
+
+    // let lastPageCursor;
+    // if (lastIndex) {
+    //     if (params.previousCursor) {
+    //         let reverseAllInv = allInvoices.reverse();
+    //         lastPageCursor = { createdAt: reverseAllInv[lastIndex - 1]?.createdAt, _id: reverseAllInv[lastIndex - 1]?._id };
+    //     } else {
+    //         lastPageCursor = { createdAt: allInvoices[lastIndex - 1]?.createdAt, _id: allInvoices[lastIndex - 1]?._id };
+    //     }
+    // }
+
+    /**
+     * Check if next page is available
+     */
+    let nextCursor = { createdAt: invoices[invoices.length - 1]?.createdAt, _id: invoices[invoices.length - 1]?._id };
+    // Deep clone filterQuery
+    const nextPageQuery: any = { $and: [] };
+    filterQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
+    // To be added with the pagination for the previous page
+    nextPageQuery['$and'].push({
+        $or: [
+            { createdAt: { $lt: new Date(nextCursor.createdAt) } },
+            { createdAt: new Date(nextCursor.createdAt), _id: { $lt: nextCursor._id } }
+        ]
+    });
+    const isNextPage = await Invoice.aggregate([
+        ...aggregateLookups,
+        { $match: { ...nextPageQuery } },
+        { $sort: { createdAt: -1, _id: -1 } },
+        { $limit: 1 }
+    ]);
+
+    /**
+     * Check if previous page is availabe
+     */
+    let previousCursor = { createdAt: invoices[0]?.createdAt, _id: invoices[0]?._id };
+    // Deep clone filterQuery
+    const previousPageQuery: any = { $and: [] };
+    filterQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
+    // To be added with the pagination for the previous page
+    previousPageQuery['$and'].push({
+        $or: [
+            { createdAt: { $gt: new Date(previousCursor.createdAt) } },
+            { createdAt: new Date(previousCursor.createdAt), _id: { $gt: previousCursor._id } }
+        ]
+    });
+    const isPreviousPage = await Invoice.aggregate([
+        ...aggregateLookups,
+        { $match: { ...previousPageQuery } },
+        { $sort: { createdAt: 1, _id: 1 } },
+        { $limit: 1 }
+    ]);
+
+    // Retrieve number of the unsynced invoices
+    const unsyncedInvoices = await Invoice.find({
+        company: companyId,
+        isDraft: { $ne: true },
+        isVoid: { $ne: true },
+        quickbookId: null
+    })?.countDocuments();
+
+    return res.json({
+        status: Status.Success,
+        // total: allInvoices?.length ?? 0,
+        total: allInvoices[0]?.count,
+        unsyncedInvoices,
+        invoices,
+        pagination: {
+            nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)) : null,
+            previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null,
+            // lastPageCursor: lastPageCursor ? helper.toCursorHash(JSON.stringify(lastPageCursor)) : null,
+            pageSize: params.pageSize || null
+        },
+        // sort: {
+        //     by: params.sortBy,
+        //     order: params.sortOrder
+        // }
+    });
+
+}
+
+/**
+ * To retrieve unsynced invoices that not draft and active
+ */
+export const getUnsyncedInvoices = async (req: Request, res: Response) => {
+
+    const params = req.query;
+    const companyId = req.companyId;
+
+    // Data query that used to search unsynced Invoices
+    const filterQuery: any = {
+        $and: [
+            { company: companyId },
+            { isDraft: { $ne: true } },
+            { isVoid: { $ne: true } },
+            { quickbookId: null }
+        ]
+    }
+
+    // Check and add if params filter provided
+    if (params.keyword) {
+        const keywordRegex = { $regex: params.keyword, $options: 'i' };
+        filterQuery['$and'].push({
+            $or: [
+                { invoiceId: keywordRegex },
+                { status: keywordRegex },
+                { customerPO: keywordRegex },
+                { vendorId: keywordRegex },
+                { 'jobObj.jobId': keywordRegex },
+                { 'customerObj.profile.displayName': keywordRegex },
+                { 'jobLocationObj.name': keywordRegex },
+                { 'jobLocationObj.address.street': keywordRegex },
+                { 'jobLocationObj.address.city': keywordRegex },
+                { 'jobSiteObj.name': keywordRegex },
+                { 'jobSiteObj.address.street': keywordRegex },
+                { 'jobSiteObj.address.city': keywordRegex },
+                { 'technicianObj.profile.displayName': keywordRegex },
+                { 'contractorsObj.info.companyName': keywordRegex },
+            ]
+        })
+    }
+    if (params.customerId) {
+        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+    }
+    if (params.dueDate) {
+        const dueDate = moment(params.dueDate).endOf('day').format();
+        filterQuery['$and'].push({ dueDate: { $lte: new Date(dueDate) } });
+    }
+    if (params.status) {
+        filterQuery['$and'].push({ status: { $in: JSON.parse(params.status) } });
+    }
+
+    const invoices = await Invoice.find(filterQuery)
         .populate({
             path: 'job',
             populate: [
                 { path: 'type', select: 'title description sku' },
-                // TODO: To be deprecated
-                { path: 'tasks.jobType', select: 'title description sku' },
                 { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
-                { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
-                // TODO: To be deprecated
-                { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
-                // TODO: To be deprecated
-                { path: 'contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
-                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
-                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
+                { path: 'customer', select: 'info auth.email profile address contact vendorId contactName contactEmail' },
+                { path: 'tasks.technician', select: 'profile auth.email contact permissions.role' },
+                { path: 'tasks.contractor', select: 'info address contact', populate: { path: 'admin', select: 'profile auth.email contact permissions.role' } },
                 { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
                 { path: 'jobLocation', select: 'name location address' },
                 { path: 'jobSite', select: 'name location address' }
@@ -2224,113 +2710,22 @@ export const getInvoices = async (req: Request, res: Response) => {
             ]
         })
         .populate({
-            path: 'paymentTerm',
-            select: '-company -__v'
-        })
-        .populate({
-            path: 'customerContactId',
-            select: '-__v'
-        })
-        .populate({
             path: 'items.item',
             select: 'name description sku isFixed charges tax',
             populate: [{ path: 'jobType' }]
         })
-        .populate({
-            path: 'company',
-            select: 'info.companyName info.logoUrl info.companyEmail permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax'
-        })
-        .populate({
-            path: 'customer',
-            select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail'
-        })
-        .populate({
-            path: 'estimate',
-            select: 'total items note status customer company createdAt createdBy'
-        })
-        .populate({
-            path: 'createdBy',
-            select: 'info.companyName auth.email profile.displayName permissions.role address contact.phone'
-        })
-        .exec(async (err: any, invoices: IInvoice[]) => {
+        .populate({ path: 'paymentTerm', select: '-company -__v' })
+        .populate({ path: 'customerContactId', select: '-__v' })
+        .populate({ path: 'company', select: 'info address contact' })
+        .populate({ path: 'customer', select: 'info auth.email profile address contact vendorId contactName contactEmail' })
+        .populate({ path: 'estimate', select: 'total items note status customer company createdAt createdBy' })
+        .populate({ path: 'createdBy', select: 'info auth.email profile permissions.role address contact' });
 
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            }
-
-            // Because we reverse sort for previous page, we need to revert it back
-            if (params.previousCursor) {
-                invoices = invoices.reverse();
-            }
-
-            /**
-             * Get all total invoices count
-             */
-            const totalInvoices = await Invoice.aggregate([
-                ...aggregateLookups,
-                { $match: { ...filterQuery } },
-                { $count: 'count' }
-            ])
-
-            /**
-             * Check if next page is available
-             */
-            let nextCursor = { createdAt: invoices[invoices.length - 1]?.createdAt, _id: invoices[invoices.length - 1]?._id };
-            // Deep clone filterQuery
-            const nextPageQuery: any = { $and: [] };
-            filterQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
-            // To be added with the pagination for the previous page
-            nextPageQuery['$and'].push({
-                $or: [
-                    { createdAt: { $lt: new Date(nextCursor.createdAt) } },
-                    { createdAt: new Date(nextCursor.createdAt), _id: { $lt: nextCursor._id } }
-                ]
-            });
-            const isNextPage = await Invoice.aggregate([
-                ...aggregateLookups,
-                { $match: { ...nextPageQuery } },
-                { $project: { _id: 1, createdAt: 1 } },
-                { $sort: { createdAt: -1, _id: -1 } },
-                { $limit: 1 }
-            ]);
-
-            /**
-             * Check if previous page is availabe
-             */
-            let previousCursor = { createdAt: invoices[0]?.createdAt, _id: invoices[0]?._id };
-            // Deep clone filterQuery
-            const previousPageQuery: any = { $and: [] };
-            filterQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
-            // To be added with the pagination for the previous page
-            previousPageQuery['$and'].push({
-                $or: [
-                    { createdAt: { $gt: new Date(previousCursor.createdAt) } },
-                    { createdAt: new Date(previousCursor.createdAt), _id: { $gt: previousCursor._id } }
-                ]
-            });
-            const isPreviousPage = await Invoice.aggregate([
-                ...aggregateLookups,
-                { $match: { ...previousPageQuery } },
-                { $project: { _id: 1, createdAt: 1 } },
-                { $sort: { createdAt: 1, _id: 1 } },
-                { $limit: 1 }
-            ]);
-
-            return res.json({
-                status: Status.Success,
-                invoices,
-                total: totalInvoices[0]?.count,
-                pagination: {
-                    nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)) : null,
-                    previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null,
-                    pageSize: params.pageSize || null
-                },
-                // sort: {
-                //     by: params.sortBy,
-                //     order: params.sortOrder
-                // }
-            });
-        })
+    return res.json({
+        status: Status.Success,
+        total: invoices.length,
+        invoices
+    });
 
 }
 
@@ -2369,7 +2764,7 @@ export const getCompanyInvoiceDetails = (req: Request, res: Response) => {
  * Add or deduct customer balance,
  * Create, update, or remove QB Invoice
  */
-const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company: ICompany, customer: ICustomer, invoice: IInvoice, oldIsDraft: boolean, next: (invoice: IInvoice, qbInvoice: IQBInvoice) => void) => {
+const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company: ICompany, customer: ICustomer, invoice: IInvoice, oldIsDraft: boolean, next: (errMsg: string, invoice: IInvoice, qbInvoice: IQBInvoice) => void) => {
 
     // Retrieve the latest invoice
     invoice = await Invoice.findById(invoice._id);
@@ -2475,14 +2870,14 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
              */
             _checkQBCustomerJobLocation(req, res, company, customer._id, (err, errMsg, qbCustomer) => {
                 if (err || errMsg) {
-                    return next(invoice, null);
+                    return next(errMsg, invoice, null);
                 }
 
                 if (qbCustomer) {
                     // Create new Invoice in QuickBooks
                     _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                         if (err || errMsg) {
-                            return next(invoice, null);
+                            return next(errMsg, invoice, null);
                         }
 
                         if (qbInvoice) {
@@ -2496,13 +2891,13 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                             }
                         }
 
-                        return next(invoice, qbInvoice);
+                        return next(errMsg, invoice, qbInvoice);
                     });
                 }
             });
 
         } else {
-            return next(invoice, null);
+            return next(null, invoice, null);
         }
 
     } else if (!oldIsDraft && invoice.isDraft) {
@@ -2551,6 +2946,10 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         if (company.qbAuthorized && invoice.quickbookId) {
             // Delete Invoice in QuickBooks
             _deleteQBInvoice(req, res, company, invoice, (err, errMsg, status) => {
+                if (err || errMsg) {
+                    return next(errMsg, invoice, null);
+                }
+
                 if (status === 'Deleted') {
                     invoice.quickbookId = null;
                     invoice.save();
@@ -2562,10 +2961,10 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                     }
                 }
 
-                return next(invoice, null);
+                return next(null, invoice, null);
             })
         } else {
-            return next(invoice, null);
+            return next(null, invoice, null);
         }
 
     } else if (!oldIsDraft && !invoice.isDraft) {
@@ -2578,21 +2977,60 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         // Save customer credit
         customer.save()
 
-        if (company.qbAuthorized && invoice.quickbookId) {
-            // Update Invoice in QuickBooks
-            _updateQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
-                if (qbInvoice) {
-                    // If company's invoices already synced, update the synced date
-                    if (company.qbSync?.invoicesSynced) {
-                        company.qbSync.invoicesSyncedAt = new Date();
-                        company.save();
-                    }
-                }
+        if (company.qbAuthorized) {
 
-                return next(invoice, qbInvoice);
-            })
+            if (invoice.quickbookId) {
+                // Update Invoice in QuickBooks
+                _updateQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                    if (err || errMsg) {
+                        return next(errMsg, invoice, null);
+                    }
+
+                    if (qbInvoice) {
+                        // If company's invoices already synced, update the synced date
+                        if (company.qbSync?.invoicesSynced) {
+                            company.qbSync.invoicesSyncedAt = new Date();
+                            company.save();
+                        }
+                    }
+
+                    return next(null, invoice, qbInvoice);
+                })
+            } else {
+                /**
+                 * Check Customer & Job Locations data on QBooks,
+                 * if not found, create them on QBooks
+                 */
+                _checkQBCustomerJobLocation(req, res, company, customer._id, (err, errMsg, qbCustomer) => {
+                    if (err || errMsg) {
+                        return next(errMsg, invoice, null);
+                    }
+
+                    if (qbCustomer) {
+                        // Create new Invoice in QuickBooks
+                        _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
+                            if (err || errMsg) {
+                                return next(errMsg, invoice, null);
+                            }
+
+                            if (qbInvoice) {
+                                invoice.quickbookId = qbInvoice.Id;
+                                invoice.save();
+
+                                // If company's invoices already synced, update the synced date
+                                if (company.qbSync?.invoicesSynced) {
+                                    company.qbSync.invoicesSyncedAt = new Date();
+                                    company.save();
+                                }
+                            }
+
+                            return next(null, invoice, qbInvoice);
+                        });
+                    }
+                });
+            }
         } else {
-            return next(invoice, null);
+            return next(null, invoice, null);
         }
 
     } else {
@@ -2601,39 +3039,30 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
          * nothing to do
          */
 
-        return next(invoice, null);
+        return next(null, invoice, null);
     }
 
 }
 
 export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) => {
 
-    // const { INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } = process.env;
-
-    // await downloadFontToPath(INVOICE_FONT_PATH);
-    const fonts = {
-        Roboto: {
-            normal: `${INVOICE_FONT_PATH}/Roboto-Regular.ttf`,
-            bold: `${INVOICE_FONT_PATH}/Roboto-Medium.ttf`,
-            italics: `${INVOICE_FONT_PATH}/Roboto-Thin.ttf`,
-            bolditalics: `${INVOICE_FONT_PATH}/Roboto-MediumItalic.ttf`,
-        }
-    };
-
     // Initialize PDF Make
-    const pdfMake = new pdfmake(fonts);
+    const pdfMake = new pdfmake({
+        ...FONT_SETS.ROBOTO,
+        ...FONT_SETS.FONTELLO
+    });
 
     // Retrieve invoice populated or detailed data
     const customer = <ICustomer>invoice.customer;
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
     const job = <IJob>invoice.job;
     const ticket = <IServiceTicket>job?.ticket;
-    const customerContact = <IContact>invoice.customerContactId;
+    const customerContact = <IContact>invoice.customerContactId ?? job?.customerContactId;
 
     // Construct Company Address object
     const companyAddress = {
         street: company.address?.street ? `${company.address?.street}` : '',
-        city: company.address?.city ? `, ${company.address?.city}` : '',
+        city: company.address?.city ? `${company.address?.city}` : '',
         state: company.address?.state ? `, ${company.address?.state}` : '',
         zipCode: company.address?.zipCode ? `, ${company.address?.zipCode}` : '',
     }
@@ -2650,20 +3079,11 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const jobAddress: any = { ...customerAddress };
     const jobSiteAddress: any = { ...customerAddress };
 
-    let serviceAddress = {
-        text: [
-            { text: "JOB ADDRESS", style: "smallFont", alignment: "left" },
-            { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
-        ],
-        rowSpan: 2
-    }
-    let jobSiteServiceAddress = {};
-
     if (job) {
         // Take Job Location address if any
         const jobLocation = <IJobLocation>job.jobLocation;
         if (jobLocation) {
-            jobAddress.name = `\n${jobLocation?.name}` ?? '';
+            jobAddress.name = jobLocation?.name ?? '';
             jobAddress.street = jobLocation?.address?.street ?? '';
             jobAddress.city = jobAddress.street && jobLocation?.address?.city ? ', ' : '';
             jobAddress.city += jobLocation?.address?.city ?? '';
@@ -2671,48 +3091,20 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             jobAddress.state += jobLocation?.address?.state ?? '';
             jobAddress.zipCode = (jobAddress.street || jobAddress.city || jobAddress.state) && jobLocation?.address?.zipcode ? ', ' : '';
             jobAddress.zipCode += jobLocation?.address?.zipcode ?? '';
-
-            serviceAddress = {
-                text: [
-                    { text: "JOB ADDRESS", style: "smallFont", alignment: "left" },
-                    { text: `${jobAddress.name}`, style: "defaultFontBold" },
-                    { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
-                ],
-                rowSpan: 2
-            }
         }
 
         // Take Job Site address if any
         const site = <IJobSite>job.jobSite;
         if (site) {
-            jobSiteAddress.name = `\n${site?.name}` ?? '';
-            jobSiteAddress.street = site?.address?.street ?? '';
+            jobSiteAddress.name = site?.name ?? '';
+            jobSiteAddress.street = jobSiteAddress.name ? '\n' : '';
+            jobSiteAddress.street += site?.address?.street ?? '';
             jobSiteAddress.city = jobSiteAddress.street && site?.address?.city ? ', ' : '';
             jobSiteAddress.city += site?.address?.city ?? '';
             jobSiteAddress.state = (jobSiteAddress.street || jobSiteAddress.city) && site?.address?.state ? ', ' : '';
             jobSiteAddress.state += site?.address?.state ?? '';
             jobSiteAddress.zipCode = (jobSiteAddress.street || jobSiteAddress.city || jobSiteAddress.state) && site?.address?.zipcode ? ', ' : '';
             jobSiteAddress.zipCode += site?.address?.zipcode ?? '';
-
-            // If Job Site exist, add additional information for Job Location
-            serviceAddress = {
-                text: [
-                    { text: "SUBDIVISION", style: "smallFont", alignment: "left" },
-                    { text: `${jobAddress.name}`, style: "defaultFontBold" },
-                    { text: `\n${jobAddress.street}${jobAddress.city}${jobAddress.state}${jobAddress.zipCode}`, style: "defaultFont" }
-                ],
-                rowSpan: 2
-            }
-
-            // Job Site Address still shown as Service Address but shifted below
-            jobSiteServiceAddress = {
-                text: [
-                    { text: "JOB ADDRESS", style: "smallFont", alignment: "left" },
-                    { text: `${jobSiteAddress.name}`, style: "defaultFontBold" },
-                    { text: `\n${jobSiteAddress.street}${jobSiteAddress.city}${jobSiteAddress.state}${jobSiteAddress.zipCode}`, style: "defaultFont" }
-                ],
-                rowSpan: 2
-            }
         }
     }
 
@@ -2730,53 +3122,44 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             image: 'companyLogo',
             width: 67,
             height: 52,
+            margin: [0, 20, 0, 10],
+            border: [false, false, false, true],
+            rowSpan: 2
         }
     }
-
-    // Construct Contact Details text
-    let contactDetails = {
-        text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 8, bold: true
-    };
 
     // Construct the header for the Invoice Items
     const table: any = {
         headerRows: 1,
-        widths: [44, 202, 40, 86, 40, 86, 35],
+        widths: [20, 220, 50, 110, 48, 110, 20],
         body: [
             [
-                { text: '', fillColor: "#eaecf3", lineColor: "#ffffff" },
+                { text: '', style: 'itemTitle' },
                 {
-                    text: "SERVICE/PRODUCT",
-                    style: "smallFont",
-                    fillColor: "#eaecf3",
-                    lineColor: "#ffffff",
-                    alignment: "left"
+                    text: "Service / Product",
+                    style: "itemTitle",
                 },
                 {
-                    text: 'QUANTITY',
-                    style: 'smallFont',
-                    fillColor: '#eaecf3',
+                    text: 'Quantity',
+                    style: 'itemTitle',
                     alignment: "center"
                 },
                 {
-                    text: 'PRICE',
-                    style: "smallFont",
-                    fillColor: '#eaecf3',
+                    text: 'Price',
+                    style: "itemTitle",
                     alignment: "center"
                 },
                 {
-                    text: "TAX",
-                    style: "smallFont",
-                    fillColor: "#eaecf3",
+                    text: "Taxable",
+                    style: "itemTitle",
                     alignment: "center",
                 },
                 {
-                    text: "AMOUNT",
-                    style: "smallFont",
-                    fillColor: "#eaecf3",
+                    text: "Amount",
+                    style: "itemTitle",
                     alignment: "right",
                 },
-                { fillColor: "#eaecf3", text: "" },
+                { text: '', style: 'itemTitle' },
             ],
         ],
     }
@@ -2785,19 +3168,19 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const bodyTable: any = [];
     invoice.items.forEach(item => {
         const itemPopulated = <IItem>item.item;
-        const itemName = [{ text: `${item.name ?? itemPopulated?.name ?? ''}`, style: "lineFontBold", alignment: "left" }, { text: `${item.description ?? itemPopulated?.description ?? ''}`, style: "lineFont", alignment: "left" }];
-        const itemQuantity = [{ text: " ", style: "lineFontBold", alignment: "center" }, { text: item.quantity, style: "lineFont", alignment: "center" }];
-        const itemPrice = [{ text: " ", style: "lineFontBold", alignment: "center" }, { text: `$${item.price}`, style: "lineFont", alignment: "center" }];
-        const itemTax = [{ text: " ", style: "lineFontBold", alignment: "center" }, { text: item.tax === 0 ? 'No' : `Yes`, style: "lineFont", alignment: "center" }];
-        const itemSubTotal = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `$${item.subTotal}`, style: "lineFont", alignment: "right" }];
 
         bodyTable.push([
             {},
-            itemName,
-            itemQuantity,
-            itemPrice,
-            itemTax,
-            itemSubTotal,
+            {
+                stack: [
+                    { text: `${item.name ?? itemPopulated?.name ?? ''}`, style: 'itemListBold' },
+                    { text: `${item.description ?? itemPopulated?.description ?? ''}`, style: 'itemList' }
+                ]
+            },
+            { text: item.quantity, style: 'itemListCenter' },
+            { text: `${helper.delimiterEnUs(item.price)}`, style: 'itemListCenter' },
+            { text: item.taxAmount === 0 ? '' : '', style: 'icon' },
+            { text: `${helper.delimiterEnUs(item.subTotal)}`, style: 'itemListRight' },
             {}
         ]);
     });
@@ -2810,294 +3193,225 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     // INITIALIZE INVOICE PDF TEMPLATE
     const docDefinition: any = {
         pageSize: "A4",
-        pageMargins: [0, 0, 50, 0],
+        pageMargins: [0, 0, 50, 30],
         content: [
             {
+                // HEADER FIRST LINE: COMPANY LOGO, NAME, VENDOR, & INVOICE ID
                 table: {
                     headerRows: 1,
-                    widths: [48, 67, 100, 370],
+                    widths: [10, 80, 170, 110, 167, 10],
                     body: [
-                        [{}, {}, {}, {}],
                         [
                             {},
                             companyImage,
-                            [{
-                                text: `${company.info?.companyName}`,
-                                fontSize: 8,
-                                alignment: "left",
-                                bold: true,
-                            }, {
-                                text: `\n${company.contact?.phone ?? ''}\n${company.info?.companyEmail ?? ''}\n${companyAddress.street}${companyAddress.city}${companyAddress.state}${companyAddress.zipCode}`,
-                                style: "defaultFont",
-                            }],
-                            [{ text: '\n\nVendor Number:', style: 'smallFont' }, { text: invoice.vendorId ?? 'No vendor found', style: 'defaultFont', bold: true }],
-                        ],
-                        [{}, {}, {}, {}],
-                    ],
-                },
-                fillColor: '#EAECF3',
-                layout: 'noBorders'
-            },
-            {
-                table: {
-                    headerRows: 2,
-                    widths: [48, 110, 85, 70, 63, 50, 74, 70],
-                    body: [
-                        [
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            { text: 'INVOICE', fontSize: 15, bold: true, colSpan: 2, alignment: 'right' },
-                            {},
-                            {}
-                        ],
-                        [{}, {}, {}, {}, {}, {}, {}, {}],
-                        [
-                            {},
                             {
-                                text: "BILL TO",
-                                style: "smallFont",
+                                text: `${company.info?.companyName ?? ' '}`,
+                                style: 'companyName',
+                                margin: [0, 20, 0, 0],
+                                colSpan: 2,
                             },
                             {},
                             {
-                                text: "INVOICE #:",
-                                style: "smallFont",
-                                alignment: "right",
+                                text: `${invoice.invoiceId ? invoice.invoiceId?.toUpperCase() : ' '}`,
+                                style: 'invoiceId',
+                                alignment: 'right',
+                                margin: [0, 20, 0, 0]
                             },
-                            {
-                                text: `${invoice.invoiceId}`,
-                                style: "defaultFont",
-                            },
-                            {
-                                text: "INVOICE DATE:",
-                                style: "smallFont",
-                                alignment: "right",
-                            },
-                            {
-                                text: `${moment(invoice.createdAt).format('MMM. DD, YYYY')}`,
-                                style: "defaultFont",
-                                alignment: "right",
-                            },
-                            {},
-                        ],
-                        [
-                            {},
-                            {
-                                text: customer?.profile?.displayName, fontSize: 8, bold: true
-                            },
-                            {},
-                            {
-                                text: "CUSTOMER PO: ",
-                                style: "smallFont",
-                                alignment: "right",
-                            },
-                            { text: invoice.customerPO ?? 'N/A', style: "defaultFont" },
-                            { text: "DUE DATE:", style: "smallFont", alignment: "right" },
-                            { text: moment(invoice.dueDate).format('MMM. DD, YYYY'), style: "defaultFont", alignment: "right" },
                             {}
                         ],
                         [
                             {},
-                            [
-                                { text: !customer?.contact?.phone ? '\n' : `\n${customer.contact.phone}`, style: "defaultFont" },
-                                { text: `${customerAddress.street}${customerAddress.city}${customerAddress.state}${customerAddress.zipCode}`, style: "defaultFont" }
-                            ],
-                            { ...serviceAddress },
                             {},
-                            {},
-                            { text: "TERMS:", style: "smallFont", alignment: "right" },
-                            { text: paymentTerm?.name ?? "", style: "defaultFont", alignment: "right" },
+                            {
+                                text: `${companyAddress.street}\n${companyAddress.city}${companyAddress.state}${companyAddress.zipCode}\n${company.contact?.phone ?? ''}`,
+                                style: 'invoiceHeader',
+                                margin: [0, 0, 0, 10],
+                                border: [false, false, false, true]
+                            },
+                            {
+                                stack: [
+                                    { text: 'Vendor Number', style: 'headerTitleBold' },
+                                    { text: invoice.vendorId ?? '', style: 'invoiceHeader' },
+                                ],
+                                margin: [0, -2, 0, 10],
+                                border: [false, false, false, true]
+                            },
+                            { text: '', margin: [0, 0, 0, 10], border: [false, false, false, true] },
                             {}
-                        ],
-                        [{}, {}, {}, {}, {}, {}, {}, {}],
-                        [
-                            {},
-                            [
-                                { text: "CONTACT DETAILS", style: "smallFont" },
-                                { text: `${customerContact?.name ?? ''}`, fontSize: 8, bold: true },
-                                { text: `${!customerContact?.phone ? ' ' : customerContact?.phone + '\n'} ${customerContact?.email ?? ''}`, fontSize: 8, bold: true },
-                            ],
-                            { ...jobSiteServiceAddress },
-                            { text: "\nTOTAL", fontSize: 5, rowSpan: 4, colSpan: 2, fillColor: "#D0D3DC" },
-                            {},
-                            { text: "", colSpan: 2, fillColor: "#D0D3DC" },
-                            {},
-                            {},
-                        ],
-                        [
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {
-                                text: `\n$${invoice.total}`,
-                                fontSize: 16, rowSpan: 3, colSpan: 2, fillColor: "#D0D3DC", alignment: 'right', lineHeight: 0.1
-                            },
-                            {},
-                            {}
-                        ],
-                        [
-                            {},
-                            [
-                                { text: "NOTE", style: "smallFont" },
-                                { text: `${ticket?.note ?? ''}`, fontSize: 8, bold: true },
-                            ],
-                            {},
-                            {},
-                            {},
-                            {},
-                            {},
-                            {}
-                        ],
-                        [{}, {}, {}, {}, {}, {}, {}, {}],
-                    ],
-                },
-                fillColor: '#EAECF3',
-                layout: 'noBorders'
-            },
-            {
-                table,
-                layout: {
-                    hLineWidth: function (i: number, node: { table: { body: string | any[]; }; }) {
-                        return i === 0 || i === node.table.body.length ? 0 : 1;
-                    },
-                    vLineWidth: function (i: number, node: { table: { widths: string | any[]; }; }) {
-                        return i === 0 || i === node.table.widths.length ? 0 : 1;
-                    },
-                    vLineColor: function (i: number, node: { table: { widths: string | any[]; }; }) {
-                        return i === 0 || i === node.table.widths.length ? "black" : "white";
-                    },
-                    hLineColor: function (i: number, node: { table: { body: string | any[]; }; }) {
-                        return i === 0 || i === node.table.body.length
-                            ? "#d0d3dc"
-                            : "#eeeeee";
-                    },
-                },
-            },
-            {
-                table: {
-                    headerRows: 1,
-                    widths: [48, 120, 10, 201, 137, 35],
-                    body: [
-                        [
-                            {},
-                            {
-                                text: "SUBTOTAL",
-                                style: "defaultFont",
-                                fillColor: "#eaecf3",
-                                lineColor: "#ffffff",
-                                alignment: "left"
-                            },
-                            {
-                                text: "",
-                                fillColor: "#eaecf3"
-                            },
-                            {
-                                text: "TAX",
-                                style: "defaultFont",
-                                fillColor: "#eaecf3",
-                                lineColor: "#ffffff",
-                                alignment: "left"
-                            },
-                            { fillColor: "#d0d3dc", text: 'TOTAL', style: "defaultFont", alignment: 'right' },
-                            {},
-                        ],
-                        [
-                            {},
-                            {
-                                text: `$${invoice.subTotal}`,
-                                fillColor: "#eaecf3",
-                                fontSize: 20,
-                                alignment: "left"
-                            },
-                            {
-                                text: `+`,
-                                fillColor: "#eaecf3",
-                                fontSize: 15,
-                                alignment: "left"
-                            },
-                            {
-                                text: `$${invoice.taxAmount}`,
-                                fillColor: "#eaecf3",
-                                fontSize: 20,
-                                alignment: "left"
-                            },
-                            {
-                                text: `$${invoice.total}`,
-                                fillColor: "#d0d3dc",
-                                fontSize: 20,
-                                alignment: "right"
-                            },
-                            {},
                         ]
                     ],
                 },
-                layout: 'noBorders'
+                fillColor: '#F9FDFF',
+                layout: {
+                    ...Layouts.noBorders,
+                    hLineColor: (i: number, node: any) => { return '#D0D3DC'; },
+                    hLineWidth: (i: number, node: any) => { return 1; }
+                },
+            },
+            {
+                // HEADER SECOND LINE: CUSTOMER & INVOICE INFORMATION
+                table: {
+                    widths: [10, 160, 160, 110, 97, 10],
+                    body: [
+                        [
+                            {},
+                            {
+                                stack: [
+                                    { text: 'Bill To', style: 'headerTitle' },
+                                    { text: customer?.profile?.displayName ?? ' ', style: 'invoiceHeaderBold' }
+                                ],
+                                margin: [0, 10, 0, 10],
+                            },
+                            {},
+                            {
+                                stack: [
+                                    { text: `Job PO/Sales Order:${invoice.customerPO?.length > 15 ? '\n\n' : ''}`, style: 'invoiceMetadataTitle' },
+                                    { text: 'Invoice Date:', style: 'invoiceMetadataTitle' },
+                                    { text: 'Due Date:', style: 'invoiceMetadataTitle' },
+                                    { text: 'Terms:', style: 'invoiceMetadataTitle' }
+                                ],
+                                rowSpan: 2,
+                                margin: [0, 10, 0, 0],
+                            },
+                            {
+                                stack: [
+                                    { text: invoice.customerPO ?? ' ', style: 'invoiceMetadata' },
+                                    { text: `${moment(invoice.issuedDate ?? invoice.createdAt).format('MMM. DD, YYYY')}`, style: 'invoiceMetadata' },
+                                    { text: `${invoice.dueDate ? moment(invoice.dueDate).format('MMM. DD, YYYY') : ' '}`, style: 'invoiceMetadata' },
+                                    { text: paymentTerm?.name ?? ' ', style: 'invoiceMetadata' }
+                                ],
+                                rowSpan: 2,
+                                margin: [0, 10, 0, 0],
+                            },
+                            {}
+                        ],
+                        [
+                            // We put the Subdivision, Job Address, Contact name here,
+                            // so the Contact Title and Name could be in alignment
+                            {},
+                            {
+                                stack: [
+                                    { text: 'Subdivision', style: 'headerTitle' },
+                                    { text: jobAddress.name ?? ' ', style: 'invoiceHeader' },
+                                    { text: 'Job Address', style: 'headerTitle', margin: [0, 10, 0, 0] },
+                                    { text: `${jobSiteAddress.name ?? ' '}${jobSiteAddress.street ?? ' '}`, style: 'invoiceHeader' }
+                                ],
+                                rowSpan: 2,
+                                margin: [0, 0, 0, 10],
+                                border: [false, false, false, true]
+                            },
+                            {
+                                stack: [
+                                    { text: 'Contact Details', style: 'headerTitle' },
+                                    { text: customerContact?.name ?? ' ', style: 'invoiceHeader' }
+                                ],
+                                margin: [0, 0, 0, 5],
+                            },
+                            {}, {}, {}
+                        ],
+                        [
+                            // We put the contact phone and email here,
+                            // so it could be long to the right,
+                            // right under the Terms information
+                            {}, {},
+                            {
+                                stack: [
+                                    { text: customerContact?.phone ?? ' ', style: 'invoiceHeader' },
+                                    { text: customerContact?.email ?? ' ', style: 'invoiceHeader' }
+                                ],
+                                colSpan: 3,
+                                margin: [0, 0, 0, 10],
+                                border: [false, false, false, true]
+                            },
+                            {}, {}, {}
+                        ]
+                    ]
+                },
+                fillColor: '#F9FDFF',
+                layout: {
+                    ...Layouts.noBorders,
+                    hLineColor: (i: number, node: any) => { return '#D0D3DC'; },
+                    hLineWidth: (i: number, node: any) => { return 1; }
+                },
+            },
+            {
+                // INVOICE LINE
+                table,
+                layout: {
+                    ...Layouts.custom,
+                    paddingLeft: (i: number, node: any) => { return 1; },
+                    paddingRight: (i: number, node: any) => { return 1; },
+                    paddingTop: (i: number, node: any) => { return 5; },
+                    paddingBottom: (i: number, node: any) => { return 5; },
+                },
+            },
+            {
+                // INVOICE SUBTOTAL TOTAL AMOUNTDUE
+                table: {
+                    widths: [308, 148, 110, 20],
+                    body: [
+                        [
+                            {},
+                            { text: 'Subtotal:', style: 'itemListRight', border: [false, false, false, true] },
+                            { text: `${helper.delimiterEnUs(invoice.subTotal)}`, style: 'itemListRight', border: [false, false, false, true] },
+                            {}
+                        ],
+                        [
+                            {},
+                            { text: 'Tax:', style: 'itemListRight', border: [false, false, false, true] },
+                            { text: `${helper.delimiterEnUs(invoice.taxAmount)}`, style: 'itemListRight', border: [false, false, false, true] },
+                            {}
+                        ],
+                        [
+                            {},
+                            { text: 'Total:', style: 'itemListRight', border: [false, false, false, true] },
+                            { text: `${helper.delimiterEnUs(invoice.total)}`, style: 'itemListRight', border: [false, false, false, true] },
+                            {}
+                        ],
+                        [
+                            {},
+                            { text: 'AMOUNT DUE:', style: 'amountDueTitle', border: [false, false, false, true] },
+                            { text: `${helper.delimiterEnUs(invoice.balanceDue)}`, style: 'amountDue', border: [false, false, false, true] },
+                            {}
+                        ]
+                    ]
+                },
+                layout: {
+                    ...Layouts.noBorders,
+                    hLineColor: (i: number, node: any) => { return '#D0D3DC'; },
+                    hLineWidth: (i: number, node: any) => { return 1; },
+                    paddingLeft: (i: number, node: any) => { return 1; },
+                    paddingRight: (i: number, node: any) => { return 1; },
+                    paddingTop: (i: number, node: any) => { return 5; },
+                    paddingBottom: (i: number, node: any) => { return 5; },
+                },
             }
         ],
-        styles: {
-            header: {
-                fontSize: 18,
-                bold: true,
-            },
-            bigger: {
-                fontSize: 15,
-                italics: true,
-            },
-            subheader: {
-                fontSize: 15,
-                bold: true,
-            },
-            quote: {
-                italics: true,
-            },
-            smallFont: {
-                italics: true,
-                fontSize: 7,
-                lineHeight: 1.2,
-            },
-            defaultFont: {
-                bold: false,
-                fontSize: 8,
-                weight: 100,
-                lineHeight: 1.2,
-            },
-            defaultFontBold: {
-                bold: true,
-                fontSize: 8,
-                weight: 100,
-                lineHeight: 1.2,
-            },
-            lineFont: {
-                bold: false,
-                fontSize: 10,
-                weight: 100,
-                lineHeight: 1.2,
-            },
-            lineFontBold: {
-                bold: true,
-                fontSize: 10,
-                weight: 100,
-                lineHeight: 1.2,
-            },
-            tableFont: {
-                bold: false,
-                fontSize: 16,
-                weight: 100,
-                lineHeight: 1.2,
-            },
-            tableHeader: {
-                bold: true,
-                fontSize: 13,
-                color: "black",
-            },
+        footer: (currentPage: number, pageCount: number) => {
+            return [{
+                table: {
+                    widths: [20, 535, 20],
+                    body: [
+                        [
+                            {},
+                            {
+                                text: `Page ${currentPage} of ${pageCount}`,
+                                style: 'smallFontGray',
+                                alignment: 'right',
+                                margin: [0, 10]
+                            },
+                            {}
+                        ],
+                    ],
+                },
+                fillColor: '#F9FDFF',
+                layout: { ...Layouts.noBorders },
+            }]
         },
+        styles: Styles.invoice,
         defaultStyle: {
             columnGap: 10,
-            font: "Roboto",
+            font: 'Roboto',
         },
         images: {
             companyLogo: `${INVOICE_IMAGE_PATH}/${company.info.companyName.replace(/\s+/g, '').toLowerCase()}.jpg`
@@ -3164,7 +3478,22 @@ export const fileExists = async (absolutePath: string): Promise<boolean> => {
 export const updateCommission = async (req: Request, res: Response) => {
 
     const params = req.body;
+    const user = <IUser>req.user;
     let commissionBalance = 0;
+
+    // Insert into commissionHistory
+    const commissionHistory = new CommissionHistory({
+        technicianOrContractor: params.id,
+        effectiveDate: params.commissionEffectiveDate,
+        commission: params.commission,
+        type: params.type,
+        editedBy: {
+            id: user._id,
+            displayName: user.profile.displayName,
+        },
+    });
+
+    await commissionHistory.save();
 
     switch (params.type) {
         case 'vendor':
@@ -3173,41 +3502,53 @@ export const updateCommission = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'Vendor not found' });
             }
 
-            // Update vendor's commission rate
-            contractor.commission = params.commission ?? null;
+            // Check if the date is greater than today, if so, do nothing... else, do as you used to..
+            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day')) {
+                // Update vendor's commission rate
+                contractor.commission = params.commission ?? null;
 
-            // Find if vendor already have invoice commission
-            const contractorInvoiceCommissions = await InvoiceCommission.find({ 'technicians.contractor': contractor._id }).populate('invoice').exec();
-            if (contractorInvoiceCommissions.length) {
-                // Iterate all invoice commissions 
-                for (const invoiceCommission of contractorInvoiceCommissions) {
-                    const invoice = <IInvoice>invoiceCommission.invoice;
-                    const totalTechnician = invoiceCommission?.technicians?.length;
-                    const contractorCommission = invoiceCommission?.technicians?.find(technician => technician?.contractor?.toString() === contractor._id?.toString());
-                    if (!contractorCommission) {
-                        continue;
+                // Find if vendor already have invoice commission
+                // --should only happen if the invoice issued date is greater than the effective date
+                const contractorInvoiceCommissions = await InvoiceCommission.find({ 'technicians.contractor': contractor._id })
+                    .populate('invoice')
+                    .exec();
+
+                if (contractorInvoiceCommissions?.length) {
+                    // Iterate all invoice commissions
+                    for (const invoiceCommission of contractorInvoiceCommissions) {
+                        const invoice = <IInvoice>invoiceCommission.invoice;
+                        const totalTechnician = invoiceCommission?.technicians?.length ?? 0;
+                        const contractorCommission = invoiceCommission?.technicians?.find((technician) => technician?.contractor?.toString() === contractor._id?.toString());
+
+                        if (!contractorCommission) {
+                            continue;
+                        }
+
+                        if (!contractorCommission.paid) {
+                            /**
+                             * If invoice commission is not been paid,
+                             * update the amount with the new rate
+                             * now for this invoice- let's get the issuedDate and compare it to params effective date
+                             * if the issued date is less than effective date-- don't update, else update
+                             **/
+                            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment.utc(invoice?.issuedDate ?? invoice?.createdAt), 'day')) {
+                                contractorCommission.commission = params.commission ?? null;
+                                const commissionAmount = (((invoice?.total ?? 0) / totalTechnician) * Number(params.commission ?? 0)) / 100;
+                                contractorCommission.commissionAmount = Number(commissionAmount?.toFixed(2));
+                            }
+                        }
+
+                        // Recalculate vendor open balance
+                        commissionBalance += contractorCommission.commissionAmount ?? 0;
+                        await invoiceCommission.save();
                     }
 
-                    if (!contractorCommission.paid) {
-                        /**
-                         * If invoice commission is not been paid,
-                         * update the amount with the new rate
-                         */
-                        contractorCommission.commission = params.commission ?? null;
-                        const commissionAmount = (invoice.total / totalTechnician) * (params.commission ?? 0) / 100;
-                        contractorCommission.commissionAmount = Number(commissionAmount.toFixed(2));
-                    }
-
-                    // Recalculate vendor open balance
-                    commissionBalance += contractorCommission.commissionAmount;
-                    await invoiceCommission.save();
+                    // Update vendor balance and save vendor object
+                    contractor.balance = commissionBalance;
                 }
             }
 
-            // Update vendor balance and save vendor object
-            contractor.balance = commissionBalance;
             await contractor.save();
-
             return res.json({ status: Status.Success, message: 'Commission updated successfully', contractor });
 
         case 'employee':
@@ -3216,47 +3557,101 @@ export const updateCommission = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'Employee not found' });
             }
 
-            // Update employee's commission rate
-            employee.commission = params.commission ?? null;
+            // Check if the date is greater than today, if so, do not update commision... else, do as you used to..
+            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day')) {
+                // Update employee's commission rate
+                employee.commission = params.commission ?? null;
 
-            // Find if employee already have invoice commission
-            const employeeInvoiceCommissions = await InvoiceCommission.find({ 'technicians.technician': employee._id }).populate('invoice').exec();
-            if (employeeInvoiceCommissions.length) {
-                // Iterate all invoice commissions 
-                for (const invoiceCommission of employeeInvoiceCommissions) {
-                    const invoice = <IInvoice>invoiceCommission.invoice;
-                    const totalTechnician = invoiceCommission?.technicians?.length;
-                    const employeeCommission = invoiceCommission.technicians?.find(technician => technician?.technician?.toString() === employee._id?.toString());
-                    if (!employeeCommission) {
-                        continue;
+                // Find if employee already have invoice commission
+                // --should only happen if the invoice issued date is greater than the effective date
+                const employeeInvoiceCommissions = await InvoiceCommission.find({ 'technicians.technician': employee._id })
+                    .populate('invoice')
+                    .exec();
+
+                if (employeeInvoiceCommissions?.length) {
+                    // Iterate all invoice commissions
+                    for (const invoiceCommission of employeeInvoiceCommissions) {
+                        const invoice = <IInvoice>invoiceCommission.invoice;
+                        const totalTechnician = invoiceCommission?.technicians?.length ?? 0;
+                        const employeeCommission = invoiceCommission.technicians?.find((technician) => technician?.technician?.toString() === employee._id?.toString());
+
+                        if (!employeeCommission) {
+                            continue;
+                        }
+
+                        if (!employeeCommission.paid) {
+                            /**
+                             * If invoice commission is not been paid,
+                             * update the amount with the new rate
+                             * now for this invoice- let's get the issuedDate and compare it to params effective date
+                             * if the issued date is less than effective date-- don't update, else update
+                             **/
+                            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment.utc(invoice?.issuedDate ?? invoice?.createdAt), 'day')) {
+                                employeeCommission.commission = params.commission ?? null;
+                                const commissionAmount = (((invoice?.total ?? 0) / totalTechnician) * Number(params.commission ?? 0)) / 100;
+                                employeeCommission.commissionAmount = Number(commissionAmount?.toFixed(2));
+                            }
+                        }
+
+                        // Recalculate employee open balance
+                        commissionBalance += employeeCommission.commissionAmount ?? 0;
+                        await invoiceCommission.save();
                     }
-
-                    if (!employeeCommission.paid) {
-                        /**
-                         * If invoice commission is not been paid,
-                         * update the amount with the new rate
-                         */
-                        employeeCommission.commission = params.commission ?? null;
-                        const commissionAmount = (invoice.total / totalTechnician) * (params.commission ?? 0) / 100;
-                        employeeCommission.commissionAmount = Number(commissionAmount.toFixed(2));
-                    }
-
-                    // Recalculate employee open balance
-                    commissionBalance += employeeCommission.commissionAmount;
-                    await invoiceCommission.save();
                 }
-            }
 
-            // Update employee balance and save employee object
-            employee.balance = commissionBalance;
+                // Update employee balance and save employee object
+                employee.balance = commissionBalance;
+            } //else part here for commission processing if date is in future
+
             await employee.save();
-
             return res.json({ status: Status.Success, message: 'Commission updated successfully', employee });
 
         default:
             return res.json({ status: Status.Success, message: 'Type not supported. Available Type to be used: vendor or employee.' });
     }
 
+}
+
+export const getCommissionHistory = async (req: Request, res: Response) => {
+    const { beneficiaryId } = req.params;
+    const commissionHistories = await CommissionHistory.find({ technicianOrContractor: beneficiaryId })
+    return res.json({ 'status': Status.OK, 'history': commissionHistories })
+}
+
+export const updateCommissionCron = async (req: Request, res: Response) => {
+    
+    let start = new Date();
+    start.setHours(0,0,0,0);
+
+    let end = new Date();
+    end.setHours(23, 59, 59, 999);    
+    // get commission_ histories whole effective date is today    
+    const commissionHistories = await CommissionHistory.find({ effectiveDate: { $gte: start, $lt: end } })
+    if (commissionHistories?.length > 0) {
+        for (const history of commissionHistories) {
+            //    if type is contractor
+            if (history?.type === 'vendor') {
+                
+                const contractor = await Company.findById(history.technicianOrContractor).exec();
+                if (contractor) {
+                    //update that commision
+                    contractor.commission = history.commission
+                    await contractor.save()
+                }
+            } else if (history?.type === 'employee') {
+                const employee = await User.findById(history.technicianOrContractor).exec();
+                if (employee) {
+                  // update employee
+                    employee.commission = history.commission
+                    await employee.save()
+                    
+                }
+
+            }                     
+            
+        }
+    } 
+    return res.json({ status: Status.OK });
 }
 
 export const getInvoicesByContractor = async (req: Request, res: Response) => {
@@ -3405,7 +3800,8 @@ export const generateInvoicePdf = async (req: Request, res: Response) => {
                 { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
                 { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
                 { path: 'jobLocation', select: 'name location address' },
-                { path: 'jobSite', select: 'name location address' }
+                { path: 'jobSite', select: 'name location address' },
+                { path: 'customerContactId', select: '-__v' }
             ],
         })
         .populate({
@@ -3436,4 +3832,46 @@ export const generateInvoicePdf = async (req: Request, res: Response) => {
     await _generateInvoicePdf(company, invoice);
     const invoiceUrl = await uploadFileInS3(filepath, 'pdf');
     return res.json({ status: Status.Success, message: 'Invoice Successfully Generated', invoiceUrl: invoiceUrl });
+}
+
+// PARTIAL METHODS
+
+/**
+ * Partial method to check whether or not need to retrieve all record,
+ * if no filter provided, BE will return the last 90 days records,
+ * otherwise, all records shall be returned
+ */
+const _getIsAllRecordsByParams = async (params: any): Promise<boolean> => {
+    // Default is only send the last 90 days records
+    let isAllRecords = false;
+
+    if (params.recentOnly) {
+        return isAllRecords;
+    }
+
+    if (
+        params.keyword ||
+        params.invoiceId ||
+        params.dueDate ||
+        params.status ||
+        (params.startAmount && params.endAmount) ||
+        params.customerPO ||
+        params.customerId ||
+        params.customerContactId ||
+        params.jobId ||
+        params.jobLocationId ||
+        params.jobAddress ||
+        params.jobCity ||
+        params.jobState ||
+        params.jobZip ||
+        params.technicianId ||
+        (params.isDraft !== undefined && params.isDraft !== null) ||
+        (params.isVoid !== undefined && params.isVoid !== null) ||
+        (params.startDate && params.endDate) ||
+        (params.lastEmailStartDate && params.lastEmailEndDate)
+    ) {
+        isAllRecords = true;
+    }
+
+    return isAllRecords;
 }

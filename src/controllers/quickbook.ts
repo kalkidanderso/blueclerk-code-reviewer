@@ -258,6 +258,11 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
     // Get BC Company based on the realmId
     const company = await Company.findOne({ realmId: eventNotification?.realmId });
 
+    if (!company) {
+        // No company tied with this quickbook action, do nothing
+        return res.status(200).json({});
+    }
+
     for (const eventEntity of eventEntities) {
 
         // Handle Entity Event Trigger
@@ -306,7 +311,7 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
                 switch (eventEntity?.operation) {
                     case QBEntityOperations.UPDATE:
                         // Update BC Invoice here
-                        updateBCInvoice(req, res, company, eventEntity?.id);
+                        // updateBCInvoice(req, res, company, eventEntity?.id);
                         break;
 
                     case QBEntityOperations.VOID:
@@ -352,6 +357,6 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
         }
     }
 
-    res.status(200).json({});
+    return res.status(200).json({});
 
 }

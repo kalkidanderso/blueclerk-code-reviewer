@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb'
 import moment from 'moment'
+import { roundTwoDecimal } from '../services/helper';
 
 import { Status, Messages, InvoiceStatus, DefaultCommission } from '../common/constants'
 import { Company, ICompany } from '../models/Company'
@@ -14,6 +15,7 @@ import { Employee } from '../models/Employee'
 import { Contract } from '../models/Contract'
 import { IJob, Job } from '../models/Job'
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission'
+import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor } from '../models/AdvancePayment';
 
 
 /**
@@ -22,8 +24,9 @@ import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommissi
  * customer's balance and credit
  */
 export const _calculateInvoiceBalance = async (invoice: IInvoice, customer: ICustomer, amountPaid: number): Promise<void> => {
+
     // Check and set invoice balanceDue if not found
-    invoice.balanceDue = invoice.balanceDue ?? invoice.total;
+    invoice.balanceDue = invoice.balanceDue ?? (invoice.total - invoice.paymentApplied) ?? invoice.total;
 
     // Handle invoice balance due, underpayment, and overpayment
     if (amountPaid >= invoice.balanceDue) {
@@ -63,6 +66,11 @@ export const _calculateInvoiceBalance = async (invoice: IInvoice, customer: ICus
             invoice.status = InvoiceStatus.UNPAID;
         }
     }
+
+    // Round the numbers
+    customer.balance = roundTwoDecimal(customer.balance);
+    invoice.balanceDue = roundTwoDecimal(invoice.balanceDue);
+    invoice.paymentApplied = roundTwoDecimal(invoice.paymentApplied);
 
     // Save the customer's changes
     await customer.save();
@@ -111,9 +119,17 @@ export const getPayments = (req: Request, res: Response) => {
             path: 'createdBy',
             select: 'profile.displayName auth.email'
         })
-        .then((payments: IPayment[] | null) => {
+        .then(async (payments: IPayment[] | null) => {
 
-            return res.json({ 'status': Status.Success, 'payment': payments })
+            // Retrieve number of the unsynced invoices
+            const unsyncedPayments = await Payment.find({
+                company: req.companyId,
+                __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] },
+                isVoid: { $ne: true },
+                quickbookId: null
+            })?.countDocuments();
+
+            return res.json({ status: Status.Success, unsyncedPayments, payment: payments });
         })
         .catch((error: any) => {
             if (error.message != undefined) {
@@ -122,6 +138,72 @@ export const getPayments = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
         })
+
+}
+
+/**
+ * To retrieve unsynced payments that active
+ */
+export const getUnsyncedPayments = async (req: Request, res: Response) => {
+
+    const params = req.query;
+    const companyId = req.companyId;
+
+    // Data query that used to search unsynced Invoices
+    const filterQuery: any = {
+        $and: [
+            { company: companyId },
+            { __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] } },
+            { isVoid: { $ne: true } },
+            { quickbookId: null }
+        ]
+    }
+
+    // Check and add if params filter provided
+    if (params.keyword) {
+        const keywordRegex = { $regex: params.keyword, $options: 'i' };
+        filterQuery['$and'].push({
+            $or: [
+                { referenceNumber: keywordRegex },
+                { paymentType: keywordRegex },
+                { 'invoice.invoiceId': keywordRegex },
+                { 'invoice.customerPO': keywordRegex },
+                { 'line.invoice.invoiceId': keywordRegex },
+                { 'line.invoice.customerPO': keywordRegex },
+            ]
+        })
+    }
+    if (params.customerId) {
+        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+    }
+
+    const payments = await Payment.find(filterQuery)
+        .populate({
+            path: 'company',
+            select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+        })
+        .populate({
+            path: 'customer',
+            select: 'info.email auth.email profile.displayName address contact contactName vendorId'
+        })
+        .populate({
+            path: 'invoice',
+            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+        })
+        .populate({
+            path: 'line.invoice',
+            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+        })
+        .populate({
+            path: 'createdBy',
+            select: 'profile.displayName auth.email'
+        });
+
+    return res.json({
+        status: Status.Success,
+        total: payments.length,
+        payments
+    });
 
 }
 
@@ -351,7 +433,7 @@ export const createPayment = async (req: Request, res: Response) => {
         }
 
         // Save the new payment
-        payment.amountPaid = Math.round(payment.amountPaid * 100) / 100;
+        payment.amountPaid = roundTwoDecimal(payment.amountPaid);
         await payment.save();
 
         if (company.qbAuthorized) {
@@ -367,8 +449,8 @@ export const createPayment = async (req: Request, res: Response) => {
                 if (qbCustomer) {
                     // Create new Payment in QuickBooks
                     _createQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
-                        if (err) {
-                            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
+                        if (err || errMsg) {
+                            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, quickbookPayment: null, quickbookPaymentError: errMsg, customer, invoice });
                         }
 
                         if (qbPayment) {
@@ -414,8 +496,11 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
         return res.json({ statstus: Status.Error, message: 'Either invoiceIds or startDate endDate is required.' });
     }
 
-    const startDate = moment(params.startDate).startOf('day').utc().format();
-    const endDate = moment(params.endDate).endOf('day').utc().format();
+    // const startDate = moment(params.startDate).startOf('day').utc().format();
+    // const endDate = moment(params.endDate).endOf('day').utc().format();
+    const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
+    const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
+    let creditUsed = params.creditUsed ?? 0;
 
     if (paramsInvoiceIds.length) {
         query = { _id: { $in: paramsInvoiceIds } }
@@ -434,13 +519,15 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
     // Construct the base payment entry
     const paymentEntry = {
         invoices: invoiceIds,
-        amountPaid: params.amount,
+        amountPaid: roundTwoDecimal(params.amount),
         paymentType: params.paymentType,
         // referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
         referenceNumber: params.referenceNumber,
         startDate: params.startDate ? moment(params.startDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
         endDate: params.endDate ? moment(params.endDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+        offset: params.offset,
         paidAt: params.paidAt ? moment(params.paidAt).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
+        creditUsed,
         note: params.note,
         company,
         createdBy: user,
@@ -461,6 +548,38 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                 ...paymentEntry
             }).save();
 
+            if (creditUsed > 0) {
+                // Deduct vendor credit
+                const contractorCredit = (contractor.credit ?? 0) - creditUsed;
+                contractor.credit = contractorCredit < 0 ? 0 : contractorCredit;
+
+                // Deduct advance payment's balance
+                // let creditUsed = params.creditUsed;
+                const vendorAdvancePayments = await AdvancePayment.find({
+                    company: company._id,
+                    isVoid: { $ne: true },
+                    contractor: contractor._id,
+                    appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) }
+                });
+                // Iterate advance payments and deduct their balance
+                for (const advancePayment of vendorAdvancePayments) {
+                    if (creditUsed > advancePayment.balance) {
+                        creditUsed -= advancePayment.balance;
+                        advancePayment.balance = 0;
+                    } else {
+                        advancePayment.balance -= creditUsed;
+                        creditUsed = 0;
+                    }
+
+                    await advancePayment.save();
+
+                    if (creditUsed <= 0) {
+                        break;
+                    }
+                };
+            }
+
+
             // Iterate all invoices to mark the commission as paid and deduct vendor balance
             for (const invoice of invoices) {
                 const invoiceCommission = <IInvoiceCommission>invoice.commission;
@@ -478,9 +597,9 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                     contractor.balance = contractorBalance < 0 ? 0 : contractorBalance;
 
                     await invoiceCommission.save();
-                    await contractor.save();
                 }
             }
+            await contractor.save();
 
             // Record payment for vendor is done, finish the request
             return res.json({ status: Status.Success, message: 'Payment successfully created.', payment: paymentVendor });
@@ -497,6 +616,38 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                 employee,
                 ...paymentEntry
             }).save();
+
+            if (creditUsed > 0) {
+                // Deduct employee credit
+                const employeeCredit = (employee.credit ?? 0) - creditUsed;
+                employee.credit = employeeCredit < 0 ? 0 : employeeCredit;
+
+                // Deduct advance payment's balance
+                // let creditUsed = params.creditUsed;
+                const employeeAdvancePayments = await AdvancePayment.find({
+                    company: company._id,
+                    isVoid: { $ne: true },
+                    employee: employee._id,
+                    appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) }
+                });
+                // Iterate advance payments and deduct their balance
+                for (const advancePayment of employeeAdvancePayments) {
+                    if (creditUsed > advancePayment.balance) {
+                        creditUsed -= advancePayment.balance;
+                        advancePayment.balance = 0;
+                    } else {
+                        advancePayment.balance -= creditUsed;
+                        creditUsed = 0;
+                    }
+
+                    await advancePayment.save();
+
+                    if (creditUsed <= 0) {
+                        break;
+                    }
+                };
+            }
+
 
             // Iterate all invoices to mark the commission as paid and deduct employee balance
             for (const invoice of invoices) {
@@ -515,9 +666,9 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                     employee.balance = employeeBalance < 0 ? 0 : employeeBalance;
 
                     await invoiceCommission.save();
-                    await employee.save();
                 }
             }
+            await employee.save();
 
             // Record payment for employee is done, finish the request
             return res.json({ status: Status.Success, message: 'Payment successfully created.', payment: paymentEmployee });
@@ -566,7 +717,7 @@ export const createPaymentMultipleInvoices = async (req: Request, res: Response)
 
     const payment = new Payment({
         customer,
-        amountPaid: params.amount,
+        amountPaid: roundTwoDecimal(params.amount),
         referenceNumber: params.referenceNumber,
         paymentType: params.paymentType,
         paidAt: params.paidAt ? new Date(params.paidAt) : Date.now(),
@@ -582,6 +733,7 @@ export const createPaymentMultipleInvoices = async (req: Request, res: Response)
 
         // Deduct the customer balance
         customer.balance -= payment.amountPaid;
+        customer.balance = roundTwoDecimal(customer.balance);
         await customer.save();
 
         // Update all invoices status to paid=true
@@ -657,6 +809,7 @@ export const updatePayment = async (req: Request, res: Response) => {
     }
 
     payment.amountPaid = newAmountPaid ?? payment.amountPaid;
+    payment.amountPaid = roundTwoDecimal(payment.amountPaid);
     payment.referenceNumber = params.referenceNumber ?? payment.referenceNumber;
     payment.paymentType = params.paymentType;
     payment.paidAt = params.paidAt ? new Date(moment(params.paidAt).format('YYYY-MM-DD')) : payment.paidAt;
@@ -666,8 +819,8 @@ export const updatePayment = async (req: Request, res: Response) => {
 
     try {
         if (payment?.line.length && paramsInvoices.length) {
-            const invoiceLIne = await _handleUpdateMultipleInvoices(paramsInvoices, payment, customer, company);
-            invoices.push(...invoiceLIne);
+            const invoiceLine = await _handleUpdateMultipleInvoices(paramsInvoices, payment, customer, company);
+            invoices.push(...invoiceLine);
         }
 
         // If amount changed, recalculate invoice & customer balance
@@ -693,8 +846,8 @@ export const updatePayment = async (req: Request, res: Response) => {
         if (company.qbAuthorized && payment.quickbookId) {
             // Sync the update to Payment in QuickBooks
             _updateQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
-                if (err) {
-                    return res.json({ status: err, message: errMsg });
+                if (err || errMsg) {
+                    return res.json({ status: Status.Success, message: 'Payment successfully updated.', payment, quickbookPayment: null, quickbookPaymentError: errMsg, customer, invoices });
                 }
 
                 if (qbPayment) {
@@ -773,6 +926,7 @@ export const updatePaymentContractor = async (req: Request, res: Response) => {
     }
 
     payment.amountPaid = params.amount ? Number(params.amount) : payment.amountPaid;
+    payment.amountPaid = roundTwoDecimal(payment.amountPaid);
     payment.referenceNumber = params.referenceNumber ?? payment.referenceNumber;
     payment.paymentType = params.paymentType ?? payment.paymentType;
     payment.paidAt = params.paidAt ? new Date(moment(params.paidAt).format('YYYY-MM-DD')) : payment.paidAt;
@@ -809,7 +963,7 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
                 throw new Error('Invalid payment Id.')
             } else {
                 previousDedeuctedBalance = payment.amountPaid
-                return payment.updateOne({ amountPaid: params.amount, referenceNumber: params.referenceNumber, paymentType: params.paymentType, paidAt: params.paidAt, invoices: invoiceIds, udpatedBy: user._id, udpatedAt: Date.now() })
+                return payment.updateOne({ amountPaid: roundTwoDecimal(params.amount), referenceNumber: params.referenceNumber, paymentType: params.paymentType, paidAt: params.paidAt, invoices: invoiceIds, udpatedBy: user._id, udpatedAt: Date.now() })
             }
         })
         .then((response: any) => {
@@ -822,7 +976,7 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
                         let newBalance = customer.balance + previousDedeuctedBalance
                         newBalance = newBalance - params.amount
 
-                        customer.updateOne({ balance: newBalance })
+                        customer.updateOne({ balance: roundTwoDecimal(newBalance) })
                             .then((res: any) => {
                                 resolve()
                             })
@@ -856,7 +1010,7 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
     const vendors: any = [];
     const employees: any = [];
-    let query;
+    let query, queryPaymentVendor: any = {}, queryPaymentEmployee: any = {}, queryAdvancePaymentVendor: any = {}, queryAdvancePaymentEmployee: any = {};
 
     // Check when startDate and endDate is provided, offset must be required
     if (params.startDate && params.endDate) {
@@ -866,7 +1020,11 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
 
         const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
         const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
-        query = { issuedDate: { $gte: startDate, $lte: endDate } }
+        query = { issuedDate: { $gte: startDate, $lte: endDate } };
+        queryPaymentVendor = { paidAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
+        queryAdvancePaymentVendor = { appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
+        queryPaymentEmployee = { paidAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
+        queryAdvancePaymentEmployee = { appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
     }
 
     // get job with unpaid technician or contractor
@@ -889,11 +1047,13 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
 
                     if (contractorEntry) {
                         contractorEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
+                        // contractorEntry.balanceDue += Number(technicianCommission.commissionAmount.toFixed(2));
                         contractorEntry?.invoiceIds?.push(invoice._id);
                     } else {
                         vendors.push({
                             contractor,
                             commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
+                            // balanceDue: Number(technicianCommission.commissionAmount.toFixed(2)),
                             invoiceIds: [invoice._id],
                         });
                     }
@@ -905,11 +1065,13 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
 
                     if (technicianEntry) {
                         technicianEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
+                        // technicianEntry.balanceDue += Number(technicianCommission.commissionAmount.toFixed(2));
                         technicianEntry.invoiceIds.push(invoice._id);
                     } else {
                         employees.push({
                             employee: technician,
                             commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
+                            // balanceDue: Number(technicianCommission.commissionAmount.toFixed(2)),
                             invoiceIds: [invoice._id],
                         });
                     }
@@ -917,6 +1079,11 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
             }
         }
     }
+
+    // await _getVendorPayments(vendors, company, queryPaymentVendor);
+    await _getVendorPayments(vendors, company, queryPaymentVendor, queryAdvancePaymentVendor);
+    // await _getEmployeePayments(employees, company, queryPaymentEmployee);
+    await _getEmployeePayments(employees, company, queryPaymentEmployee, queryAdvancePaymentEmployee);
 
     return res.json({
         status: Status.Success,
@@ -1043,11 +1210,14 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
     const params = req.body;
     const company = <ICompany>req.company;
     let payment: IPayment;
+    let paymentVendor: IPaymentVendor;
+    let paymentEmployee: IPaymentEmployee;
     let customer: ICustomer;
 
     switch (params.type) {
         case 'vendor':
             payment = await Payment.findOne({ _id: params.paymentId, company, __t: 'PaymentVendor' }).exec();
+            paymentVendor = <IPaymentVendor>payment;
 
             if (!payment) {
                 return res.json({ status: Status.Error, message: `Payment with type ${params.type} is Not Found` });
@@ -1098,7 +1268,8 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
         }
 
         try {
-            await _handleVoidPayment(invoiceIds, payment, customer);
+            await _handleVoidPayment(params.type, invoiceIds, payment, customer);
+            await _handleVoidPaymentContractor(params.type, paymentVendor, company._id);
         } catch (err) {
             return res.json({ status: Status.Error, message: err.message });
         }
@@ -1138,7 +1309,7 @@ export const _handleMultipleInvoices = async (
 
     payment.line.push({
         invoice: invoice,
-        amountPaid: paramInvoice.amountPaid
+        amountPaid: roundTwoDecimal(paramInvoice.amountPaid)
     });
 
     payment.amountPaid = payment.amountPaid ?? 0;
@@ -1178,6 +1349,7 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
 
         if (invoiceLine.balanceDue === 0 && diffAmountPaid < 0 && newAmountPaid >= invoiceLine.total) {
             customer.credit += diffAmountPaid;
+            customer.credit = roundTwoDecimal(customer.credit);
             await customer.save();
         } else {
             await _calculateInvoiceBalance(invoiceLine, customer, diffAmountPaid);
@@ -1190,59 +1362,268 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
         paymentAmountPaid += paymentLine.amountPaid;
     });
 
-    payment.amountPaid = Math.round(paymentAmountPaid * 100) / 100;
+    payment.amountPaid = roundTwoDecimal(paymentAmountPaid);
     return invoices;
 }
 
-export const _handleVoidPayment = async (invoiceIds: string[], payment: IPayment, customer: ICustomer) => {
+export const _handleVoidPayment = async (paymentType: string, invoiceIds: string[], payment: IPayment, customer: ICustomer) => {
 
     const invoices = await Invoice.find({ _id: { $in: [...new Set(invoiceIds)] } })
 
     if (customer) {
         customer.balance += payment.amountPaid;
+        customer.balance = roundTwoDecimal(customer.balance);
         await customer.save();
     }
 
     if (invoices?.length) {
         for (const invoice of invoices) {
-            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id }).exec();
-            if (invoiceCommission?.technicians) {
-                for (const technicianCommission of invoiceCommission.technicians) {
-                    if (technicianCommission.contractor) {
-                        const contractor = await Company.findById(technicianCommission.contractor).exec();
-                        contractor.balance += technicianCommission.commissionAmount;
-                        await contractor.save();
-                    }
+            if (['vendor', 'employee'].includes(paymentType)) {
+                // Find commissions of vendor or employee
+                const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id }).exec();
+                if (invoiceCommission?.technicians) {
+                    // Iterate and revert back commission balance
+                    for (const technicianCommission of invoiceCommission.technicians) {
+                        if (technicianCommission.contractor) {
+                            const contractor = await Company.findById(technicianCommission.contractor).exec();
+                            contractor.balance += technicianCommission.commissionAmount;
+                            contractor.balance = roundTwoDecimal(contractor.balance);
+                            await contractor.save();
+                        }
 
-                    if (technicianCommission.technician && !technicianCommission.contractor) {
-                        const technician = await User.findById(technicianCommission.technician).exec();
-                        technician.balance += technicianCommission.commissionAmount;
-                        await technician.save();
-                    }
+                        if (technicianCommission.technician && !technicianCommission.contractor) {
+                            const technician = await User.findById(technicianCommission.technician).exec();
+                            technician.balance += technicianCommission.commissionAmount;
+                            technician.balance = roundTwoDecimal(technician.balance);
+                            await technician.save();
+                        }
 
-                    technicianCommission.paid = false;
+                        technicianCommission.paid = false;
+                    }
                     await invoiceCommission.save();
                 }
             }
 
-            // Find invoice in line for multiple invoices
-            const paymentLine = payment?.line?.find(line => line.invoice.toString() === invoice._id.toString());
-            invoice.balanceDue += paymentLine?.amountPaid ?? payment.amountPaid;
-            invoice.paymentApplied -= paymentLine?.amountPaid ?? payment.amountPaid;
+            if (paymentType === 'customer') {
+                // Find invoice in line for multiple invoices
+                const paymentLine = payment?.line?.find(line => line.invoice.toString() === invoice._id.toString());
 
-            if (invoice.balanceDue > 0) {
-                invoice.status = InvoiceStatus.PARTIALLY_PAID;
+                // Set default paymentApplied and balanceDue if not exist on old invoice
+                invoice.paymentApplied = invoice.paymentApplied ? invoice.paymentApplied : 0;
+                invoice.balanceDue = invoice.balanceDue ?? (invoice.total - invoice.paymentApplied) ?? invoice.total;
+
+                // Revert back invoice balanceDue and paymentApplied for PaymentCustomer
+                invoice.balanceDue += paymentLine?.amountPaid ?? payment.amountPaid;
+                invoice.paymentApplied -= paymentLine?.amountPaid ?? payment.amountPaid;
+
+                // Set limit to balance due and payment applied
+                invoice.paymentApplied = invoice.paymentApplied < 0 ? 0 : invoice.paymentApplied;
+                invoice.balanceDue = invoice.balanceDue > invoice.total ? invoice.total : invoice.balanceDue;
+
+                if (invoice.balanceDue > 0) {
+                    invoice.paid = false;
+                    invoice.status = InvoiceStatus.PARTIALLY_PAID;
+                }
+
+                if (invoice.paymentApplied <= 0) {
+                    invoice.paid = false;
+                    invoice.status = InvoiceStatus.UNPAID;
+                }
+
+                // Round the numbers
+                invoice.paymentApplied = roundTwoDecimal(invoice.paymentApplied);
+                invoice.balanceDue = roundTwoDecimal(invoice.balanceDue);
+
+                await invoice.save();
             }
-
-            if (invoice.paymentApplied <= 0) {
-                invoice.status = InvoiceStatus.UNPAID;
-            }
-
-            await invoice.save();
         }
     } else {
         throw new Error('Invoice not found');
     }
 
     return;
+}
+
+/**
+ * Partial method called by voidPaymentContractor,
+ * to handle reverting back the advance payment's balance,
+ * and to revert back the contractor's credit
+ */
+const _handleVoidPaymentContractor = async (paymentType: string, paymentVendor: IPaymentVendor, companyId: string) => {
+
+    // This method only serve for voiding payment vendor/contractor
+    if (paymentType !== 'vendor') {
+        return;
+    }
+
+    // Find contractor and construct startDate endDate for query
+    const contractor = await Company.findById(paymentVendor.contractor);
+    const startDate = moment(paymentVendor.startDate).startOf('day').utcOffset(paymentVendor.offset ?? '', true).utc().format();
+    const endDate = moment(paymentVendor.endDate).endOf('day').utcOffset(paymentVendor.offset ?? '', true).utc().format();
+
+    // Revert deducted contractor credit
+    contractor.credit += paymentVendor.creditUsed;
+
+    /**
+     * REVERT DEDUCTED ADVANCE PAYMENT'S BALANCE
+     */
+
+    /**
+     * Find the advance payments of vendor, in reverse order,
+     * to revert to the latest advance payment first
+     */
+    const vendorAdvancePayments = await AdvancePayment.find({
+        company: companyId,
+        isVoid: { $ne: true },
+        contractor: contractor._id,
+        appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) }
+    }).sort({ _id: -1 });
+
+    // Get the credit used to be reverted
+    let creditUsed = paymentVendor.creditUsed;
+
+    if (!creditUsed) {
+        return;
+    }
+
+    for (const advancePayment of vendorAdvancePayments) {
+        if (advancePayment.balance + creditUsed > advancePayment.amount) {
+            /**
+             * Credit used is bigger than the balance to be reverted,
+             * only reverted as much as the advance payment amount
+             */
+            creditUsed -= (advancePayment.amount - advancePayment.balance);
+            advancePayment.balance = advancePayment.amount;
+        } else {
+            // Credit used is smaller or same with the balance, revert directly
+            advancePayment.balance += creditUsed;
+            creditUsed = 0;
+        }
+
+        await advancePayment.save();
+
+        // No more credit used to be reverted
+        if (creditUsed <= 0) {
+            break;
+        }
+    }
+
+    return;
+
+}
+
+const _getVendorPayments = async (vendors: any[], company: ICompany, queryPayment: any, queryAdvancePayment: any) => {
+    // const query: any = {
+    //     company: company._id,
+    //     isVoid: { $ne: true }
+    // };
+    queryPayment.company = company._id;
+    queryPayment.isVoid = { $ne: true };
+    queryAdvancePayment.company = company._id;
+    queryAdvancePayment.isVoid = { $ne: true };
+    for (const vendor of vendors) {
+        queryPayment.contractor = vendor?.contractor?._id;
+        queryAdvancePayment.contractor = vendor?.contractor?._id;
+
+        console.log('== queryAdvancePayment:', queryAdvancePayment);
+        // query.contractor = vendor?.contractor?._id;
+
+        // Retrieve advance payments history and the total of it
+        // const advancePayments = await AdvancePaymentVendor.find({ ...queryPayment });
+        const advancePayment = await AdvancePaymentVendor.aggregate([
+            // { $match: { ...queryPayment } },
+            { $match: { ...queryAdvancePayment } },
+            // { $match: { ...query } },
+            {
+                $group: {
+                    _id: { contractor: "$contractor", company: "$company" },
+                    totalAdvancePayment: { $sum: "$amount" },
+                    creditAvailable: { $sum: '$balance' }
+                }
+            }
+        ]);
+
+        // Retrieve payments history and the total of it
+        // const payments = await PaymentVendor.find({ ...queryPayment });
+        const payment = await PaymentVendor.aggregate([
+            { $match: { ...queryPayment } },
+            // { $match: { ...query } },
+            {
+                $group: {
+                    _id: { contractor: "$contractor", company: "$company" },
+                    // totalPayment: { $sum: "$amountPaid" },
+                    creditUsed: { $sum: "$creditUsed" }
+                }
+            }
+        ]);
+
+        // Put the retrieved history and total to each vendor
+        // vendor.advancePayments = advancePayments;
+        // vendor.payments = payments;
+        // vendor.paymentTotal = payment[0]?.totalPayment ?? 0;
+        // vendor.balanceDue -= vendor.advancePaymentTotal;
+        // vendor.balanceDue -= vendor.paymentTotal;
+        vendor.advancePaymentTotal = advancePayment[0]?.totalAdvancePayment ?? 0;
+        vendor.creditAvailable = advancePayment[0]?.creditAvailable ?? 0;
+        vendor.creditUsedTotal = payment[0]?.creditUsed ?? 0;
+        // vendor.creditAvailable = vendor.advancePaymentTotal - vendor.creditUsedTotal;
+        // vendor.creditAvailable = vendor.creditAvailable < 0 ? 0 : vendor.creditAvailable;
+    }
+}
+
+const _getEmployeePayments = async (employees: any[], company: ICompany, queryPayment: any, queryAdvancePayment: any) => {
+    // const query: any = {
+    //     company: company._id,
+    //     isVoid: { $ne: true }
+    // };
+    queryPayment.company = company._id;
+    queryPayment.isVoid = { $ne: true };
+    queryAdvancePayment.company = company._id;
+    queryAdvancePayment.isVoid = { $ne: true };
+    for (const employee of employees) {
+        queryPayment.employee = employee?.employee?._id;
+        queryAdvancePayment.employee = employee?.employee?._id;
+        // query.employee = employee?.employee?._id;
+
+        // Retrieve advance payments history and the total of it
+        // const advancePayments = await AdvancePaymentEmployee.find({ ...queryPayment });
+        const advancePayment = await AdvancePaymentEmployee.aggregate([
+            // { $match: { ...queryPayment } },
+            { $match: { ...queryAdvancePayment } },
+            // { $match: { ...query } },
+            {
+                $group: {
+                    _id: { employee: "$employee", company: "$company" },
+                    totalAdvancePayment: { $sum: "$amount" },
+                    creditAvailable: { $sum: '$balance' }
+                }
+            }
+        ]);
+
+        // Retrieve payments history and the total of it
+        // const payments = await PaymentEmployee.find({ ...queryPayment });
+        const payment = await PaymentEmployee.aggregate([
+            { $match: { ...queryPayment } },
+            // { $match: { ...query } },
+            {
+                $group: {
+                    _id: { employee: "$employee", company: "$company" },
+                    totalPayment: { $sum: "$amountPaid" },
+                    creditUsed: { $sum: "$creditUsed" }
+                }
+            }
+        ]);
+
+        // Put the retrieved history and total to each employee
+        // employee.advancePayments = advancePayments;
+        // employee.payments = payments;
+        // employee.paymentTotal = payment[0]?.totalPayment ?? 0;
+        // employee.balanceDue -= employee.advancePaymentTotal;
+        // employee.balanceDue -= employee.paymentTotal;
+        employee.advancePaymentTotal = advancePayment[0]?.totalAdvancePayment ?? 0;
+        employee.creditAvailable = advancePayment[0]?.creditAvailable ?? 0;
+        employee.creditUsedTotal = payment[0]?.creditUsed ?? 0;
+        // employee.creditAvailable = employee.advancePaymentTotal - employee.creditUsedTotal;
+        // employee.creditAvailable = employee.creditAvailable < 0 ? 0 : employee.creditAvailable;
+    }
 }

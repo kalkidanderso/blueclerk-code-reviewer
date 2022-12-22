@@ -19,3 +19,24 @@ export const privateKey = {
 export const INVOICE_FONT_PATH = 'assets/fonts';
 export const INVOICE_IMAGE_PATH = 'tmp/images';
 export const INVOICE_PDF_PATH = 'tmp/invoices';
+export const INCOME_REPORT_PDF_PATH = 'tmp/incomeReports';
+export const ACCOUNT_RECEIVABLE_REPORT_PDF_PATH = 'tmp/accountReceivableReports';
+
+export const FONT_SETS = {
+    ROBOTO: {
+        Roboto: {
+            normal: `${INVOICE_FONT_PATH}/Roboto-Regular.ttf`,
+            bold: `${INVOICE_FONT_PATH}/Roboto-Medium.ttf`,
+            italics: `${INVOICE_FONT_PATH}/Roboto-Thin.ttf`,
+            bolditalics: `${INVOICE_FONT_PATH}/Roboto-MediumItalic.ttf`,
+        }
+    },
+    FONTELLO: {
+        Fontello: {
+            normal: `${INVOICE_FONT_PATH}/fontello.ttf`,
+            bold: `${INVOICE_FONT_PATH}/fontello.ttf`,
+            italics: `${INVOICE_FONT_PATH}/fontello.ttf`,
+            bolditalics: `${INVOICE_FONT_PATH}/fontello.ttf`,
+        }
+    }
+}

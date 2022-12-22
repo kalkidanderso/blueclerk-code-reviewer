@@ -97,6 +97,7 @@ export interface ICompany extends Document{
     paymentTerm?: Schema.Types.ObjectId | IPaymentTerm
     companyInvoices: ICompanyInvoice[];
     balance: number;
+    credit: number;
     commission: number;
 }
 
@@ -117,6 +118,8 @@ export interface IQBCompany {
         Address?: string
     }
 }
+
+
 
 const CompanySchema = new Schema({
 
@@ -297,10 +300,15 @@ const CompanySchema = new Schema({
         type: Number,
         default: 0
     },
+    credit: {
+        type: Number,
+        default: 0
+    },
     commission: {
         type: Number,
         default: null
     },
+     
     companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
 }, { timestamps: { createdAt: true, updatedAt: true } })
 

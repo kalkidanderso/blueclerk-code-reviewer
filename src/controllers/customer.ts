@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb'
-import { Status, Messages, Role } from '../common/constants'
+import { Status, Messages, Role, AccountTypes } from '../common/constants'
 
 import { Company, ICompany } from '../models/Company'
 import { User, IUser } from '../models/User'
@@ -136,7 +136,8 @@ export const createCustomer = async (req: Request, res: Response) => {
                             emailPreferences: customer?.emailPreferences,
                             balance: customer?.balance,
                             commission: customer?.commission,
-                            customer: customer._id
+                            customer: customer._id,
+                            accountType: AccountTypes.BUILDER,
                         }).save();
 
                         customer.admin = customerAdmin._id;
@@ -534,8 +535,8 @@ export const customerDetail = (req: Request, res: Response) => {
             populate: [{ path: 'jobLocations', populate: { path: 'jobSites' } }, { path: 'equipments' }, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
         })
         .exec().then((companyCustomer: ICompanyCustomer) => {
-            const customer: any = companyCustomer.customer;
-            if (!companyCustomer || customer.permissions.role != Role.CUSTOMER) {
+            const customer: any = companyCustomer?.customer;
+            if (!companyCustomer || customer?.permissions?.role != Role.CUSTOMER) {
                 return res.json({ 'status': Status.Error, 'message': 'No customer found' })
             }
             return res.json({ 'status': Status.Success, 'customer': customer })

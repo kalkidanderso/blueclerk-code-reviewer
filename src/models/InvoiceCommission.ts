@@ -1,11 +1,13 @@
-import mongoose, { Document, Schema } from 'mongoose'
-import { ICompany } from './Company';
-import { IInvoice } from './Invoice';
-import { IUser } from './User';
+import mongoose, { Document, Schema } from 'mongoose';
+import { IUser } from '../models/User';
+import { ICompany } from '../models/Company';
+import { IInvoice } from '../models/Invoice';
 
 export interface IInvoiceCommission extends Document {
     invoice: Schema.Types.ObjectId | IInvoice
     technicians: IInvoiceCommissionTechnician[]
+    createdAt: Date
+    updatedAt: Date
 }
 
 export interface IInvoiceCommissionTechnician {
