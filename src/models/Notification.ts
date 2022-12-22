@@ -1,5 +1,24 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { NotificationTypes } from '../common/constants';
+
+export enum NotificationTypes {
+    SERVICE_TICKET_CREATED = 'ServiceTicketCreated',
+    CONTRACT_INVITATION = 'ContractInvitation',
+    CONTRACT_ACCEPTED = 'ContractAccepted',
+    CONTRACT_CANCELED = 'ContractCanceled',
+    CONTRACT_REJECTED = 'ContractRejected',
+    CONTRACT_FINISHED = 'ContractFinished',
+    JOB_RESCHEDULED = 'JobRescheduled',
+    COMPANY_INVOICE_FAILED = 'CompanyInvoiceFailed',
+    JOB_REQUEST_CREATED = 'JobRequestCreated',
+    JOB_REQUEST_STATUS_UPDATED = 'JobRequestStatusUpdated',
+    NEW_CHAT = 'NewChat',
+    CHAT_READ = 'ChatRead'
+}
+
+export enum FbNotificationType {
+    NEW_CHAT = 'chat',
+    CHAT_READ = 'chatRead'
+}
 
 export interface INotificationQuery {
 
@@ -12,6 +31,8 @@ export interface INotificationQuery {
 export interface INotification extends Document {
 
     company: Schema.Types.ObjectId
+    customer: Schema.Types.ObjectId
+    customerContact: Schema.Types.ObjectId
     notificationType: string
     message: {
         title: String
@@ -37,7 +58,14 @@ const NotificationSchema = new Schema(
         company: {
             type: Schema.Types.ObjectId,
             ref: 'Company',
-            required: true
+        },
+        customer: {
+            type: Schema.Types.ObjectId,
+            ref: 'Customer'
+        },
+        customerContact: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
         },
         notificationType: {
             type: String,

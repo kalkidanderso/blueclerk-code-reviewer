@@ -4,13 +4,14 @@ import { ObjectId } from 'mongodb';
 import request from 'request';
 import moment from 'moment-timezone';
 
-import { Status, Messages, ContractStatus, EmployeeStatus, Role, CompanyType, NotificationTypes, SocketEvents } from '../common/constants';
+import { Status, Messages, ContractStatus, EmployeeStatus, Role, CompanyType, SocketEvents } from '../common/constants';
 import { sendAccountDowngradeEmail, sendAccountUpgradeEmail, sendDeclinedOrderEmail } from '../services/aws';
 import { chargeSubscription, createStripeInvoice, payStripeInvoice } from '../services/stripe';
 import { ICompany, Company } from '../models/Company';
 import { Contract } from '../models/Contract';
 import { Employee } from '../models/Employee';
 import {CompanyInvoice, ICompanyInvoice} from '../models/CompanyInvoice';
+import { NotificationTypes } from '../models/Notification';
 import { INotificationContract, NotificationContract } from '../models/NotificationDiscriminator';
 
 export const addCompanySubscriptions = (req: Request, res: Response) => {

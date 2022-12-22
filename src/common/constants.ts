@@ -154,20 +154,6 @@ export enum AccountTypes {
     COMPANY = 5
 }
 
-export enum NotificationTypes {
-    SERVICE_TICKET_CREATED = 'ServiceTicketCreated',
-    CONTRACT_INVITATION = 'ContractInvitation',
-    CONTRACT_ACCEPTED = 'ContractAccepted',
-    CONTRACT_CANCELED = 'ContractCanceled',
-    CONTRACT_REJECTED = 'ContractRejected',
-    CONTRACT_FINISHED = 'ContractFinished',
-    JOB_RESCHEDULED = 'JobRescheduled',
-    COMPANY_INVOICE_FAILED = 'CompanyInvoiceFailed',
-    JOB_REQUEST_CREATED = 'JobRequestCreated',
-    JOB_REQUEST_STATUS_UPDATED = 'JobRequestStatusUpdated',
-    NEW_CHAT = 'NewChat',
-}
-
 export enum PaymentTermNames {
     DUE_ON_RECEIPT = 'Due on Receipt',
     NET_15 = 'Net 15',
