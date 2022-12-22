@@ -2,9 +2,11 @@ import mongoose, { Document, Schema } from 'mongoose';
 import { IUser } from '../models/User';
 import { IJobLocation } from '../models/JobLocation';
 import moment from 'moment';
+import { ICompany } from './Company';
 
 export interface IHomeOwner extends Document {
 
+    companyId: Schema.Types.ObjectId | ICompany 
     profile: {
         firstName: string
         lastName?: string
@@ -44,6 +46,10 @@ export interface IHomeOwner extends Document {
 
 const HomeOwnerSchema = new Schema({
 
+    companyId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Company'
+    },
     profile: {
         firstName: {
             type: String,

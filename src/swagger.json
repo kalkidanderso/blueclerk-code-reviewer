@@ -4758,6 +4758,9 @@
                   "addressStreet"
                 ],
                 "properties": {
+                  "companyId": {
+                    "type": "string"
+                  },
                   "firstName": {
                     "type": "string"
                   },

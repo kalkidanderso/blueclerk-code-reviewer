@@ -654,6 +654,7 @@ export const Validations = {
 
   // Home Owner
   createHomeOwner: [
+    check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
     check('firstName').exists().withMessage(Messages.Required),
     check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }).withMessage(Messages.InvalidEmail),
     check('addressStreet').exists().withMessage(Messages.Required)
