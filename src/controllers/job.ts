@@ -1951,6 +1951,9 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             if (params.jobLocationId) {
                 data.jobLocation = params.jobLocationId
             }
+            if (params.jobSiteId) {
+                data.jobSite = params.jobSiteId
+            }
             if (params.isHomeOccupied) {
                 data.isHomeOccupied = params.isHomeOccupied;
                 data.jobLocation = null;
@@ -1961,9 +1964,6 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             }
             if (params.homeJobSiteId) {
                 data.homeJobSite = params.homeJobSiteId
-            }
-            if (params.jobSiteId) {
-                data.jobSite = params.jobSiteId
             }
             if (imagesUrl?.length) {
                 if (JSON.stringify(imagesUrl) !== JSON.stringify(job.images)) {
@@ -2703,7 +2703,7 @@ export const editJob = async (req: Request, res: Response) => {
                 if (linkedJob) { linkedJob.homeJobSite = params.homeJobSiteId; }
             }
 
-            if (params.isHomeOccupied) {
+            if (params.isHomeOccupied !== null || params.isHomeOccupied !== undefined) {
                 if (params.isHomeOccupied !== job.isHomeOccupied) {
                     action  += '|Updated Home Occupied Status|'
                 }
