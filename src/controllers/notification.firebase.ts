@@ -43,21 +43,6 @@ export const _handleNotification = async ({
         delete minimizedChat.customer;
     }
 
-    // Iterate all tokens and send notification
-    for (const fbt of firebaseTokens) {
-        await sendNotification({
-            fbToken: fbt.token,
-            notificationType: fbNotificationType,
-            title: messageTitle,
-            body: messageBody,
-            chatChannel: chat?.chatChannel,
-            chatId: chat?._id?.toString(),
-            minimizedChat,
-            jobRequestId: jobRequest?._id?.toString(),
-            lastReadChatId: lastReadChatId?.toString()
-        });
-    }
-
     // Save customer notification to DB
     const notification = new NotificationChat({
         customer: jobRequest?.customer,
@@ -70,6 +55,23 @@ export const _handleNotification = async ({
         metadata: metadataId
     });
     await notification.save();
+
+    // Iterate all tokens and send notification
+    for (const fbt of firebaseTokens) {
+        await sendNotification({
+            fbToken: fbt.token,
+            notificationId: notification?._id?.toString(),
+            notificationType: fbNotificationType,
+            title: messageTitle,
+            body: messageBody,
+            chatChannel: chat?.chatChannel,
+            chatId: chat?._id?.toString(),
+            minimizedChat,
+            jobRequestId: jobRequest?._id?.toString(),
+            jobRequestNumber: jobRequest?.requestId?.toString(),
+            lastReadChatId: lastReadChatId?.toString()
+        });
+    }
 
     return;
 

@@ -25,6 +25,7 @@ export const _initializeFirebase = async () => {
  */
 export const sendNotification = async ({
     fbToken,
+    notificationId,
     notificationType,
     title,
     body,
@@ -32,16 +33,19 @@ export const sendNotification = async ({
     chatId,
     minimizedChat,
     jobRequestId,
+    jobRequestNumber,
     lastReadChatId,
 }: {
     fbToken: string,
+    notificationId: string,
     notificationType: string,
     title?: string,
     body?: string,
     chatChannel: ChatChannels,
     chatId: string,
     minimizedChat: IChat,
-    jobRequestId?: string
+    jobRequestId?: string,
+    jobRequestNumber?: string,
     lastReadChatId?: string,
 }) => {
 
@@ -57,6 +61,7 @@ export const sendNotification = async ({
         data: {
             appTitle: 'BlueClerk',
             type: notificationType,
+            notificationId,
             chatChannel,
             messageId: chatId ?? '',
             message: (minimizedChat && JSON.stringify(minimizedChat)) ?? '',
@@ -71,6 +76,7 @@ export const sendNotification = async ({
     switch (chatChannel) {
         case ChatChannels.JOB_REQUEST:
             message.data.jobRequestId = jobRequestId;
+            message.data.jobRequestNumber = jobRequestNumber;
             break;
     
         default:
