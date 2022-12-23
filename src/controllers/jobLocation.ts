@@ -183,7 +183,7 @@ export const update = async (req: Request, res: Response) => {
     const customer = await Customer.findOne({ _id: params.customerId });
     const homeOwner = await HomeOwner.findById(params?.homeOwnerId);
 
-    if (!params.customer && !params.homeOwner) {
+    if (!params.customerId && !params.homeOwnerId) {
         return res.json({ status: Status.Error, message: 'Either one of customerId or homeOwnerId should be provided' });
     }
 
