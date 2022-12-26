@@ -83,11 +83,7 @@ export const getChats = async (req: Request, res: Response) => {
                 .populate({ path: 'customer', select: 'profile info address contact' });
 
             // Retrieve unread chat count
-            unreadChat = await JobRequestChat.find({
-                jobRequest: jobRequest._id,
-                company: { $ne: company._id },
-                'readStatus.isRead': false
-            })?.countDocuments();
+            unreadChat = await _getUnreadChatCount(company._id, jobRequest._id);
 
             break;
     
@@ -99,6 +95,9 @@ export const getChats = async (req: Request, res: Response) => {
 
 }
 
+/**
+ * To mark chats as read based on last given chat ID
+ */
 export const markRead = async (req: Request, res: Response) => {
 
     const { chatChannel, id } = req.params;
@@ -135,7 +134,7 @@ export const markRead = async (req: Request, res: Response) => {
     }
 
     // Send simple notification to mobile through Firebase,
-    // for mobile internal usage
+    // for mobile internal usage, not saving to DB
     await _handleNotification({
         recipientId: jobRequest.customerContact,
         notificationType: NotificationTypes.CHAT_READ,
@@ -143,10 +142,19 @@ export const markRead = async (req: Request, res: Response) => {
         metadataId: lastChat._id,
         chat: lastChat,
         jobRequest,
-        lastReadChatId: lastChat._id
+        lastReadChatId: lastChat._id,
+        readBy: user?.profile?.displayName,
+        saveToDb: false
     })
 
-    return res.json({ status: Status.Success, message: 'Chats marked as read successfully.', chatsToRead });
+    // Retrieve unread chat count
+    const unreadChat = await _getUnreadChatCount(company._id, jobRequest._id);
+
+    return res.json({
+        status: Status.Success,
+        message: 'Chats marked as read successfully.',
+        unreadChat
+    });
 
 }
 
@@ -207,4 +215,16 @@ const _createJobRequestChat = async (params: any, id: string, user: IUser, compa
 
     return jobRequestChat;
 
+}
+
+// Retrieve unread chat count
+const _getUnreadChatCount = async (companyId: string, jobRequestId: string) => {
+    const unreadChat = await Chat.find({
+        chatChannel: ChatChannels.JOB_REQUEST,
+        jobRequest: jobRequestId,
+        company: { $ne: companyId },
+        'readStatus.isRead': false
+    })?.countDocuments();
+
+    return unreadChat;
 }

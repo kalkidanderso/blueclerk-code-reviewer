@@ -35,6 +35,7 @@ export const sendNotification = async ({
     jobRequestId,
     jobRequestNumber,
     lastReadChatId,
+    readBy
 }: {
     fbToken: string,
     notificationId: string,
@@ -47,6 +48,7 @@ export const sendNotification = async ({
     jobRequestId?: string,
     jobRequestNumber?: string,
     lastReadChatId?: string,
+    readBy?: string
 }) => {
 
     // Construct Firebase's message entry
@@ -66,6 +68,7 @@ export const sendNotification = async ({
             messageId: chatId ?? '',
             message: (minimizedChat && JSON.stringify(minimizedChat)) ?? '',
             lastReadMessageId: lastReadChatId ?? '',
+            readBy,
             color: '#00aaff',
             sound: 'default'
         },
