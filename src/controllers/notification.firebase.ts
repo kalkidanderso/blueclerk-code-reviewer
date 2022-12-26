@@ -17,6 +17,8 @@ export const _handleNotification = async ({
     chat,
     jobRequest,
     lastReadChatId,
+    readBy,
+    saveToDb = true,
 }: {
     recipientId: string,
     notificationType: string,
@@ -27,6 +29,8 @@ export const _handleNotification = async ({
     chat?: IChat,
     jobRequest?: IJobRequest,
     lastReadChatId?: string,
+    readBy?: string
+    saveToDb?: boolean
 }) => {
 
     // Find the user object of the customer contact
@@ -43,7 +47,6 @@ export const _handleNotification = async ({
         delete minimizedChat.customer;
     }
 
-    // Save customer notification to DB
     const notification = new NotificationChat({
         customer: jobRequest?.customer,
         customerContact: recipientId,
@@ -54,7 +57,11 @@ export const _handleNotification = async ({
         },
         metadata: metadataId
     });
-    await notification.save();
+
+    // Save customer notification to DB
+    if (saveToDb) {
+        await notification.save();
+    }
 
     // Iterate all tokens and send notification
     for (const fbt of firebaseTokens) {
@@ -69,7 +76,8 @@ export const _handleNotification = async ({
             minimizedChat,
             jobRequestId: jobRequest?._id?.toString(),
             jobRequestNumber: jobRequest?.requestId?.toString(),
-            lastReadChatId: lastReadChatId?.toString()
+            lastReadChatId: lastReadChatId?.toString(),
+            readBy
         });
     }
 
