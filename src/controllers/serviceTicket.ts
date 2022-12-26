@@ -43,7 +43,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 ? false
                 : !!params.isHomeOccupied
 
-            if (params.customerId) {
+            if (params.customerId && !isHomeOccupied) {
                 try {
                     customerId = new ObjectId(params.customerId)
                 } catch (e) {
@@ -55,7 +55,11 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 return res.json({ status: Status.Error, message: 'Home Owner is required when home is occupied' });
             }
 
-            if (params.homeOwnerId) {
+            if (!isHomeOccupied && !params.customerId) {
+                return res.json({ status: Status.Error, message: 'Customer is required'})
+            }
+
+            if (isHomeOccupied && params.homeOwnerId) {
                 try {
                     const homeOwnerIdParameter = ObjectId.isValid(params.homeOwnerId) ? params.homeOwnerId : new ObjectId(params.homeOwnerId)
                     const homeOwner = await HomeOwner.findById(homeOwnerIdParameter);
@@ -86,6 +90,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             // let dueDate = params.dueDate ? new Date(params.dueDate) : null
             let dueDate = params.dueDate ? moment.parseZone(params.dueDate).format("YYYY-MM-DD") : null;
             let serviceTicket = new ServiceTicket({
+                isHomeOccupied,
                 createdAt: Date.now(),
                 dueDate: dueDate,
                 createdBy: user._id,
@@ -110,9 +115,6 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             // default to customerId when customerId is provided
             if (customerId) {
                 serviceTicket.customer = customerId;
-                serviceTicket.homeOwner = null;
-                serviceTicket.homeJobLocation = null;
-                serviceTicket.homeJobSite = null;
             }
 
             if (customerContact) {
