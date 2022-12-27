@@ -28,6 +28,7 @@ import { sendScheduledJobEmailToAssignee } from './services/aws';
 import { Company } from './models/Company';
 import { Customer } from './models/Customer';
 import { Status, Messages, JobStatus } from './common/constants';
+import { getRegisteredUser } from './blockchain/registerUser';
 const timeout = require('connect-timeout');
 const MongoStore = require('connect-mongo');
 
@@ -271,6 +272,16 @@ new CronJob('1 0 * * *', () => {
 //   console.log({ error: err.message });
 
 // }
+
+// Register Blockchain User\
+(async () => {
+  try {
+    await getRegisteredUser();
+    console.log('Blockchain:: successfully created app user')
+  } catch (error) {
+    console.error('Blockchain:: failed to create app user')
+  }
+})()
 
 //Starting the server
 httpServer.listen(
