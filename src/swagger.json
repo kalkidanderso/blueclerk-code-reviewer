@@ -79,6 +79,10 @@
       "description": "For Inventory of company equipments"
     },
     {
+      "name": "Home Owner",
+      "description": "For adding, updating, and retrieving Home Owner"
+    },
+    {
       "name": "Subdivision",
       "description": "For company Subdivision (formerly Job Location)"
     },
@@ -4784,6 +4788,84 @@
         ]
       }
     },
+    "/homeOwner": {
+      "post": {
+        "tags": [
+          "Home Owner"
+        ],
+        "summary": "Create new Home Owner",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "firstName",
+                  "addressStreet"
+                ],
+                "properties": {
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "description": "Either one of email or phone must be provided"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Either one of email or phone must be provided"
+                  },
+                  "fax": {
+                    "type": "string"
+                  },
+                  "addressStreet": {
+                    "type": "string"
+                  },
+                  "addressUnit": {
+                    "type": "string"
+                  },
+                  "addressCity": {
+                    "type": "string"
+                  },
+                  "addressState": {
+                    "type": "string"
+                  },
+                  "addressZipCode": {
+                    "type": "string"
+                  },
+                  "longitude": {
+                    "type": "string"
+                  },
+                  "latitude": {
+                    "type": "string"
+                  },
+                  "image": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/jobLocation": {
       "get": {
         "tags": [
@@ -4800,6 +4882,13 @@
           },
           {
             "name": "customerId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "homeOwnerId",
             "in": "query",
             "schema": {
               "type": "string"
@@ -4840,17 +4929,19 @@
         "tags": [
           "Subdivision"
         ],
-        "summary": "Create a customer subdivision",
+        "summary": "Create a customer and home owner subdivision",
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
                 "type": "object",
                 "required": [
-                  "customerId",
                   "name"
                 ],
                 "properties": {
+                  "homeOwnerId": {
+                    "type": "string"
+                  },
                   "customerId": {
                     "type": "string"
                   },
@@ -4959,13 +5050,15 @@
             "application/x-www-form-urlencoded": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "customerId"
-                ],
+                "required": [],
                 "properties": {
                   "customerId": {
                     "type": "string",
                     "description": "Id of customer that owns the subdivision / job location"
+                  },
+                  "homeOwnerId": {
+                    "type": "string",
+                    "description": "Id of home owner that owns the subdivision / job location"
                   },
                   "name": {
                     "type": "string"
@@ -5054,7 +5147,13 @@
           {
             "name": "customerId",
             "in": "query",
-            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "homeOwnerId",
+            "in": "query",
             "schema": {
               "type": "string"
             }
@@ -7125,27 +7224,12 @@
                     "type": "string",
                     "description": "Id of a customer selected from the list received by /getCustomers api (Required for platform users)"
                   },
-                  "note": {
-                    "type": "string"
-                  },
                   "customerContactId": {
                     "type": "string"
                   },
                   "customerPO": {
                     "type": "string",
                     "description": "Customer PO/Sales Order#"
-                  },
-                  "technicianId": {
-                    "type": "string",
-                    "description": "Id of a technician / admin"
-                  },
-                  "dueDate": {
-                    "type": "string",
-                    "description": "due date of service ticket. e.g. 2020-08-12"
-                  },
-                  "companyId": {
-                    "type": "string",
-                    "description": "Id of company if contractor is hitting for other company"
                   },
                   "jobLocationId": {
                     "type": "string",
@@ -7155,9 +7239,36 @@
                     "type": "string",
                     "description": "Id of job site"
                   },
+                  "isHomeOccupied": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "homeOwnerId": {
+                    "type": "string",
+                    "description": "Id of home owner"
+                  },
+                  "homeJobLocationId": {
+                    "type": "string",
+                    "description": "Id of home owner job location"
+                  },
+                  "homeJobSiteId": {
+                    "type": "string",
+                    "description": "Id of home owner job site"
+                  },
                   "jobTypes": {
                     "type": "string",
                     "description": "Json string of the jobTypes e.g [{\"jobTypeId\": \"608ae3aeffe3cf17946a08b1\"},{\"jobTypeId\": \"60b90cf138045631806b8e6e\"}]. Id of a job type from the list received by /getJobTypes api"
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "description": "due date of service ticket. e.g. 2020-08-12"
+                  },
+                  "note": {
+                    "type": "string"
+                  },
+                  "companyId": {
+                    "type": "string",
+                    "description": "Id of company if contractor is hitting for other company"
                   },
                   "images": {
                     "type": "array",
@@ -7281,6 +7392,13 @@
                   "customerNames": {
                     "type": "array",
                     "description": "List of customer's displayNames",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "homeOwnerNames": {
+                    "type": "array",
+                    "description": "List of home owner's displayNames",
                     "items": {
                       "type": "string"
                     }
@@ -7866,7 +7984,6 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "customerId",
                   "tasks",
                   "scheduleDate"
                 ],
@@ -7910,10 +8027,6 @@
                     "type": "string",
                     "description": "Id of job site"
                   },
-                  "description": {
-                    "type": "string",
-                    "description": "Description of the job"
-                  },
                   "customerContactId": {
                     "type": "string",
                     "description": "Customer contact Id associated of the job"
@@ -7922,16 +8035,35 @@
                     "type": "string",
                     "description": "Customer PO of the job"
                   },
+                  "isHomeOccupied": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "homeOwnerId": {
+                    "type": "string",
+                    "description": "Id of a home owner"
+                  },
+                  "homeJobLocationId": {
+                    "type": "string",
+                    "description": "Id of home job location"
+                  },
+                  "homeJobSiteId": {
+                    "type": "string",
+                    "description": "Id of home job site"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "companyId": {
+                    "type": "string",
+                    "description": "Id of company if contractor is hitting for other company"
+                  },
                   "images": {
                     "type": "array",
                     "items": {
                       "type": "string",
                       "format": "binary"
                     }
-                  },
-                  "companyId": {
-                    "type": "string",
-                    "description": "Id of company if contractor is hitting for other company"
                   }
                 }
               }
@@ -8649,6 +8781,17 @@
                     "type": "string",
                     "description": "Id of job site"
                   },
+                  "isHomeOccupied": {
+                    "type": "boolean"
+                  },
+                  "homeJobLocationId": {
+                    "type": "string",
+                    "description": "Id of home job location"
+                  },
+                  "homeJobSiteId": {
+                    "type": "string",
+                    "description": "Id of home job site"
+                  },
                   "images": {
                     "type": "array",
                     "items": {
@@ -8728,6 +8871,15 @@
                   "jobSiteId": {
                     "type": "string",
                     "description": "Id of job site"
+                  },
+                  "isHomeOccupied": {
+                    "type": "boolean"
+                  },
+                  "homeJobLocationId": {
+                    "type": "string"
+                  },
+                  "homeJobSiteId": {
+                    "type": "string"
                   },
                   "tasks": {
                     "type": "string",

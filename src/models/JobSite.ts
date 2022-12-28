@@ -1,4 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { ICustomer } from '../models/Customer'
+import { IHomeOwner } from '../models/HomeOwner'
 
 export interface IJobSite extends Document {
 
@@ -12,7 +14,10 @@ export interface IJobSite extends Document {
       zipcode: string
     }
     locationId: Schema.Types.ObjectId
-    customerId: Schema.Types.ObjectId
+    customerId: Schema.Types.ObjectId | ICustomer
+    homeOwner: Schema.Types.ObjectId | IHomeOwner
+    createdAt?: Date
+    updatedAt?: Date
 
 }
 
@@ -48,9 +53,13 @@ const JobSiteSchema = new Schema({
     customerId: {
         type: Schema.Types.ObjectId,
         ref: 'Customer',
-        required: true
+        // required: true
+    },
+    homeOwner: {
+        type: Schema.Types.ObjectId,
+        ref: 'HomeOwner'
     }
 
-})
+}, { timestamps: true });
 
-export const JobSite = mongoose.model<IJobSite>('JobSite', JobSiteSchema)
+export const JobSite = mongoose.model<IJobSite>('JobSite', JobSiteSchema);

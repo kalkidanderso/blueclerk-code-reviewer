@@ -2,6 +2,9 @@ import mongoose, { Document, Schema } from 'mongoose'
 import { IUser } from './User'
 import { IJobType, IJobTypes } from './JobType'
 import { ICompany } from '../models/Company';
+import { IHomeOwner } from '../models/HomeOwner';
+import { IJobLocation } from '../models/JobLocation';
+import { IJobSite } from '../models/JobSite';
 
 export interface IJob extends Document {
 
@@ -17,6 +20,10 @@ export interface IJob extends Document {
     customer: Schema.Types.ObjectId | any
     jobLocation: Schema.Types.ObjectId | any
     jobSite: Schema.Types.ObjectId | any
+    isHomeOccupied: boolean
+    homeOwner: Schema.Types.ObjectId | IHomeOwner
+    homeJobLocation: Schema.Types.ObjectId | IJobLocation
+    homeJobSite: Schema.Types.ObjectId | IJobSite
     customerContactId: Schema.Types.ObjectId | any
     customerPO: string
     image?: string
@@ -147,7 +154,7 @@ const JobSchema = new Schema({
     customer: {
         type: Schema.Types.ObjectId,
         ref: 'Customer',
-        required: true
+        required: false
     },
     jobLocation: {
         type: Schema.Types.ObjectId,
@@ -156,6 +163,22 @@ const JobSchema = new Schema({
     jobSite: {
         type: Schema.Types.ObjectId,
         ref: 'JobSite',
+    },
+    isHomeOccupied: {
+        type: Boolean,
+        default: false
+    },
+    homeOwner: {
+        type: Schema.Types.ObjectId,
+        ref: 'HomeOwner'
+    },
+    homeJobLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobLocation'
+    },
+    homeJobSite: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobSite'
     },
     customerContactId: {
         type: Schema.Types.ObjectId,

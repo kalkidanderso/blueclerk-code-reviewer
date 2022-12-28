@@ -60,6 +60,7 @@ import * as notificationController from '../controllers/notification';
 import * as integrationController from '../controllers/integration';
 import * as scriptController from '../controllers/script';
 
+import homeOwner from './homeOwner';
 import jobLocation from './jobLocation'
 import jobSite from './jobSite'
 import chat from './chat';
@@ -69,6 +70,7 @@ export default function (sio: any) {
 
     const router: express.Router = express.Router()
 
+    router.use('/homeOwner', homeOwner)
     router.use('/jobLocation', jobLocation)
     router.use('/jobSite', jobSite)
     router.use('/chats', chat);
