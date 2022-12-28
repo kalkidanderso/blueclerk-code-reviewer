@@ -53,8 +53,7 @@ export const createHomeOwner = async (req: Request, res: Response) => {
             city: params.addressCity?.trim(),
             state: params.addressState?.trim(),
             zipCode: params.addressZipCode?.trim()
-        },
-        companyId: companyId
+        }
     });
 
     // Input the long lat when provided
@@ -68,8 +67,7 @@ export const createHomeOwner = async (req: Request, res: Response) => {
     if (companyId) {
         await new CompanyHomeOwner({
             company: companyId,
-            homeOwner: homeOwner._id,
-            createdAt: Date.now()
+            homeOwner: homeOwner._id
         }).save();
     }
 

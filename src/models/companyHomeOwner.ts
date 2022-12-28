@@ -4,9 +4,10 @@ export interface ICompanyHomeOwner extends Document {
 
     company: Schema.Types.ObjectId
     homeOwner: Schema.Types.ObjectId | any
-    createdAt: Date
     status: number
     isPreferred: boolean
+    createdAt: Date
+    updatedAt: Date
 
 }
 
@@ -29,9 +30,8 @@ const CompanyHomeOwnerSchema = new Schema({
     isPreferred: {
         type: Boolean,
         default: false
-    },
-    createdAt: Date
+    }
 
-})
+}, { timestamps: true });
 
 export const CompanyHomeOwner = mongoose.model<ICompanyHomeOwner>('CompanyHomeOwner', CompanyHomeOwnerSchema)

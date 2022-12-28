@@ -157,8 +157,12 @@ export const createJob = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'contractorId must be provided when employeeType is contractor' });
     }
 
+    if (!params.isHomeOccupied && !params.customerId) {
+        return res.json({ status: Status.Error, message: 'Customer is required' });
+    }
+
     if (params.isHomeOccupied && !params.homeOwnerId) {
-        return res.json({ status: Status.Error, message: 'homeOwnerId must be provided when isHomeOccupied is true'});
+        return res.json({ status: Status.Error, message: 'Home Owner is required when home is occupied'});
     }
 
     if (params.scheduledStartTime && params.scheduledEndTime) {
@@ -337,8 +341,6 @@ const _createJob = async (
         jobId: jobId,
         ticket: params.ticketId ?? parentJob?.ticket ?? null,
         request: params.jobRequestId ?? null,
-        // technician: technicianId,
-        // contractor: params.contractorId,
         isHomeOccupied: params.isHomeOccupied,
         customer,
         homeOwner,
@@ -349,14 +351,12 @@ const _createJob = async (
         customerContactId: params.customerContactId ?? parentJob?.customerContactId,
         customerPO: params.customerPO ?? parentJob?.customerPO,
         images: images,
-        // type: params.jobTypeId ?? parentJob?.type, // TODO: To be deprecated
         tasks,
         company: companyId,
         description: params.description ?? parentJob?.description,
         createdAt: Date.now(),
         createdBy: user._id,
         track: track,
-        // employeeType,
     })
 
     let newStartTime: any = null
@@ -1951,6 +1951,9 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             if (params.jobLocationId) {
                 data.jobLocation = params.jobLocationId
             }
+            if (params.jobSiteId) {
+                data.jobSite = params.jobSiteId
+            }
             if (params.isHomeOccupied) {
                 data.isHomeOccupied = params.isHomeOccupied;
                 data.jobLocation = null;
@@ -1961,9 +1964,6 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             }
             if (params.homeJobSiteId) {
                 data.homeJobSite = params.homeJobSiteId
-            }
-            if (params.jobSiteId) {
-                data.jobSite = params.jobSiteId
             }
             if (imagesUrl?.length) {
                 if (JSON.stringify(imagesUrl) !== JSON.stringify(job.images)) {
@@ -2703,7 +2703,7 @@ export const editJob = async (req: Request, res: Response) => {
                 if (linkedJob) { linkedJob.homeJobSite = params.homeJobSiteId; }
             }
 
-            if (params.isHomeOccupied) {
+            if (params.isHomeOccupied !== null || params.isHomeOccupied !== undefined) {
                 if (params.isHomeOccupied !== job.isHomeOccupied) {
                     action  += '|Updated Home Occupied Status|'
                 }
