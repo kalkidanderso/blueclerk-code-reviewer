@@ -29,6 +29,9 @@ export const createHomeOwner = async (req: Request, res: Response) => {
 
     if (params.companyId) {
         const company = await Company.findById(params.companyId);
+        if (!company) {
+            return res.json({ status: Status.Error, message: 'Company not found' });
+        }
         companyId = company._id;
     }
 

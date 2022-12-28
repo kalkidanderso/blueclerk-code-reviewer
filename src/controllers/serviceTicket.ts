@@ -59,14 +59,6 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 }
             }
 
-            if (isHomeOccupied && !params.homeOwnerId) {
-                return res.json({ status: Status.Error, message: 'Home Owner is required when home is occupied' });
-            }
-
-            if (!isHomeOccupied && !params.customerId) {
-                return res.json({ status: Status.Error, message: 'Customer is required'})
-            }
-
             if (isHomeOccupied && params.homeOwnerId) {
                 try {
                     const homeOwnerIdParameter = ObjectId.isValid(params.homeOwnerId) ? params.homeOwnerId : new ObjectId(params.homeOwnerId)
