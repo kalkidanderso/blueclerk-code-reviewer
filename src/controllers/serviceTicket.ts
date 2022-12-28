@@ -52,7 +52,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 return res.json({ status: Status.Error, message: 'Home Owner is required when home is occupied' });
             }
 
-            if (params.customerId) {
+            if (params.customerId && !isHomeOccupied) {
                 try {
                     customerId = new ObjectId(params.customerId)
                 } catch (e) {
@@ -60,7 +60,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 }
             }
 
-            if (params.homeOwnerId) {
+            if (isHomeOccupied && params.homeOwnerId) {
                 try {
                     const homeOwnerIdParameter = ObjectId.isValid(params.homeOwnerId) ? params.homeOwnerId : new ObjectId(params.homeOwnerId)
                     const homeOwner = await HomeOwner.findById(homeOwnerIdParameter);

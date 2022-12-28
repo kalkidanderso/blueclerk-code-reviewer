@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import * as helper from '../services/helper';
 import { Status } from '../common/constants';
 import { HomeOwner } from '../models/HomeOwner';
+import { Company } from '../models/Company';
+import { CompanyHomeOwner } from '../models/companyHomeOwner';
 
 /**
  * CREATE NEW HOME OWNER
@@ -10,6 +12,7 @@ export const createHomeOwner = async (req: Request, res: Response) => {
 
     const params = req.body;
     const imagesUrl: string[] = [];
+    let companyId;
 
     // Check for email and phone, one of them should be provided
     if (!params.email && !params.phone) {
@@ -22,6 +25,14 @@ export const createHomeOwner = async (req: Request, res: Response) => {
         const paramsImageFile = JSON.parse(JSON.stringify(req.files));
         // Push image location from req.files to imagesUrl
         paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
+    }
+
+    if (params.companyId) {
+        const company = await Company.findById(params.companyId);
+        if (!company) {
+            return res.json({ status: Status.Error, message: 'Company not found' });
+        }
+        companyId = company._id;
     }
 
     // Construct the basic Home Owner object
@@ -45,7 +56,7 @@ export const createHomeOwner = async (req: Request, res: Response) => {
             city: params.addressCity?.trim(),
             state: params.addressState?.trim(),
             zipCode: params.addressZipCode?.trim()
-        },
+        }
     });
 
     // Input the long lat when provided
@@ -56,6 +67,12 @@ export const createHomeOwner = async (req: Request, res: Response) => {
     }
 
     await homeOwner.save();
+    if (companyId) {
+        await new CompanyHomeOwner({
+            company: companyId,
+            homeOwner: homeOwner._id
+        }).save();
+    }
 
     let resMessage = 'Home Owner created successfully';
     if (!params.addressStreet) {
