@@ -113,6 +113,9 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             } else {
                 // Default to customerId when isHomeOccupied false or nowhere
                 serviceTicket.customer = customerId;
+                serviceTicket.homeOwner = null;
+                serviceTicket.homeJobLocation = null;
+                serviceTicket.homeJobSite = null;
             }
 
             if (customerContact) {
