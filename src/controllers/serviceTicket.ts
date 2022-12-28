@@ -38,10 +38,18 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             let homeOwnerId: any = null;
 
             const isHomeOccupied = params.isHomeOccupied === undefined || params.isHomeOccupied === null
-            ? false
-            : params.isHomeOccupied === 'false'
                 ? false
-                : !!params.isHomeOccupied
+                : params.isHomeOccupied === 'false'
+                    ? false
+                    : !!params.isHomeOccupied;
+
+            if (!isHomeOccupied && !params.customerId) {
+                return res.json({ status: Status.Error, message: 'Customer is required' });
+            }
+
+            if (isHomeOccupied && !params.homeOwnerId) {
+                return res.json({ status: Status.Error, message: 'Home Owner is required when home is occupied' });
+            }
 
             if (params.customerId) {
                 try {
@@ -49,10 +57,6 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 } catch (e) {
                     return res.json({'status': Status.Error, 'message': `parameter customerId: ${Messages.WrongId}`});
                 }
-            }
-
-            if (isHomeOccupied && !params.homeOwnerId) {
-                return res.json({ status: Status.Error, message: 'Home Owner is required when home is occupied' });
             }
 
             if (params.homeOwnerId) {
@@ -86,29 +90,28 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             // let dueDate = params.dueDate ? new Date(params.dueDate) : null
             let dueDate = params.dueDate ? moment.parseZone(params.dueDate).format("YYYY-MM-DD") : null;
             let serviceTicket = new ServiceTicket({
+                isHomeOccupied,
                 createdAt: Date.now(),
                 dueDate: dueDate,
                 createdBy: user._id,
                 company: companyId,
                 note: params.note,
-                technician: params.technicianId,
                 ticketId: ticketId,
                 jobLocation: params.jobLocationId,
                 jobSite: params.jobSiteId,
-                homeJobLocation: params.homeJobLocation,
-                homeJobSite: params.homeJobSite,
                 jobType: params.jobTypeId, // TODO: To be deprecated
                 tasks: jobTypes,
                 customerPO : customerPo,
                 images: [],
             });
 
-            if (homeOwnerId) {
+            // Set home owner's property is home is occupied
+            if (isHomeOccupied) {
                 serviceTicket.homeOwner = homeOwnerId;
-            }
-
-            // default to customerId when customerId is provided
-            if (customerId) {
+                serviceTicket.homeJobLocation = params.homeJobLocationId;
+                serviceTicket.homeJobSite = params.homeJobSiteId
+            } else {
+                // Default to customerId when isHomeOccupied false or nowhere
                 serviceTicket.customer = customerId;
                 serviceTicket.homeOwner = null;
                 serviceTicket.homeJobLocation = null;

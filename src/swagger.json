@@ -7178,46 +7178,12 @@
                     "type": "string",
                     "description": "Id of a customer selected from the list received by /getCustomers api (Required for platform users)"
                   },
-                  "isHomeOccupied": {
-                    "type": "boolean",
-                    "enum": [
-                      true,
-                      false
-                    ]
-                  },
-                  "homeOwnerId": {
-                    "type": "string",
-                    "description": "Id of home owner"
-                  },
-                  "homeJobLocation": {
-                    "type": "string",
-                    "description": "Id of home owner job location"
-                  },
-                  "homeJobSite": {
-                    "type": "string",
-                    "description": "Id of home owner job site"
-                  },
-                  "note": {
-                    "type": "string"
-                  },
                   "customerContactId": {
                     "type": "string"
                   },
                   "customerPO": {
                     "type": "string",
                     "description": "Customer PO/Sales Order#"
-                  },
-                  "technicianId": {
-                    "type": "string",
-                    "description": "Id of a technician / admin"
-                  },
-                  "dueDate": {
-                    "type": "string",
-                    "description": "due date of service ticket. e.g. 2020-08-12"
-                  },
-                  "companyId": {
-                    "type": "string",
-                    "description": "Id of company if contractor is hitting for other company"
                   },
                   "jobLocationId": {
                     "type": "string",
@@ -7227,9 +7193,36 @@
                     "type": "string",
                     "description": "Id of job site"
                   },
+                  "isHomeOccupied": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "homeOwnerId": {
+                    "type": "string",
+                    "description": "Id of home owner"
+                  },
+                  "homeJobLocationId": {
+                    "type": "string",
+                    "description": "Id of home owner job location"
+                  },
+                  "homeJobSiteId": {
+                    "type": "string",
+                    "description": "Id of home owner job site"
+                  },
                   "jobTypes": {
                     "type": "string",
                     "description": "Json string of the jobTypes e.g [{\"jobTypeId\": \"608ae3aeffe3cf17946a08b1\"},{\"jobTypeId\": \"60b90cf138045631806b8e6e\"}]. Id of a job type from the list received by /getJobTypes api"
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "description": "due date of service ticket. e.g. 2020-08-12"
+                  },
+                  "note": {
+                    "type": "string"
+                  },
+                  "companyId": {
+                    "type": "string",
+                    "description": "Id of company if contractor is hitting for other company"
                   },
                   "images": {
                     "type": "array",
@@ -7988,8 +7981,17 @@
                     "type": "string",
                     "description": "Id of job site"
                   },
+                  "customerContactId": {
+                    "type": "string",
+                    "description": "Customer contact Id associated of the job"
+                  },
+                  "customerPO": {
+                    "type": "string",
+                    "description": "Customer PO of the job"
+                  },
                   "isHomeOccupied": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "default": false
                   },
                   "homeOwnerId": {
                     "type": "string",
@@ -8006,13 +8008,9 @@
                   "description": {
                     "type": "string"
                   },
-                  "customerContactId": {
+                  "companyId": {
                     "type": "string",
-                    "description": "Customer contact Id associated of the job"
-                  },
-                  "customerPO": {
-                    "type": "string",
-                    "description": "Customer PO of the job"
+                    "description": "Id of company if contractor is hitting for other company"
                   },
                   "images": {
                     "type": "array",
@@ -8020,10 +8018,6 @@
                       "type": "string",
                       "format": "binary"
                     }
-                  },
-                  "companyId": {
-                    "type": "string",
-                    "description": "Id of company if contractor is hitting for other company"
                   }
                 }
               }
