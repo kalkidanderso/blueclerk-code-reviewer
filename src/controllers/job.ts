@@ -1039,7 +1039,7 @@ export const getJobs = async (req: Request, res: Response) => {
         })
         .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
+            select: 'info.email auth.email profile.displayName address location contactName'
         })
         .populate({
             path: 'customerContactId',
