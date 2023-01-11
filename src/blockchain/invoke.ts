@@ -60,7 +60,7 @@ export const invokeChaincode = async (
           }
           if (code !== 'VALID') {
             reject(
-              new Error('Problem with the tranaction, event status ::' + code),
+              new Error('Problem with the transaction, event status ::' + code),
             )
           } else {
             resolve(returnStatus)
