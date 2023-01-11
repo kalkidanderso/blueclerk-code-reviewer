@@ -3,6 +3,7 @@ import { ICompanyAdmin } from '../models/CompanyAdmin';
 import { ICompanyInvoice } from '../models/CompanyInvoice';
 import { IPriceTier } from '../models/PriceTier';
 import { IPaymentTerm } from '../models/PaymentTerm';
+import { IUser } from '../models/User';
 
 export interface ICompany extends Document{
 
@@ -99,6 +100,14 @@ export interface ICompany extends Document{
     balance: number;
     credit: number;
     commission: number;
+    blockchain?: {
+        attachments?: string,
+        verified: boolean,
+        verifiedAt: Date,
+        verifiedBy: Schema.Types.ObjectId | IUser
+        deniedAt: Date,
+        deniedBy: Schema.Types.ObjectId | IUser
+    }
 }
 
 export interface IQBCompany {
@@ -310,6 +319,23 @@ const CompanySchema = new Schema({
     },
      
     companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
+    blockchain: {
+        verified: {
+            type: Boolean,
+            default: false
+        },
+        verifiedAt: Date,
+        verifiedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        deniedAt: Date,
+        deniedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        }
+    }
+
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)

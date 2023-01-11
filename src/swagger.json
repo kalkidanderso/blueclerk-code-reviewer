@@ -214,6 +214,10 @@
       "description": "For creating service ticket via web"
     },
     {
+      "name": "Blockchain",
+      "description": "API for Blockchain portal"
+    },
+    {
       "name": "Script",
       "description": "To run script, not to be run frequently. Only use these API if you know what you are doing."
     }
@@ -14979,6 +14983,125 @@
             "Bearer": []
           }
         ]
+      }
+    },
+    "/blockchain/login": {
+      "post": {
+        "tags": [
+          "Blockchain"
+        ],
+        "summary": "Login for Blockchain portal",
+        "description": "Now, only for Global Admin",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blockchain/getAllAssets": {
+      "get": {
+        "tags": [
+          "Blockchain"
+        ],
+        "summary": "Get all assets",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blockchain/getAllCompanies": {
+      "get": {
+        "tags": [
+          "Blockchain"
+        ],
+        "summary": "Get all companies of BlueClerk",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blockchain/approveCompany": {
+      "post": {
+        "tags": [
+          "Blockchain"
+        ],
+        "summary": "Approve a company",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "companyId"
+                ],
+                "properties": {
+                  "companyId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthAPIResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/script/syncItemTier": {
