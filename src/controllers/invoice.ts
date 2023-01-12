@@ -2421,6 +2421,9 @@ export const getInvoices = async (req: Request, res: Response) => {
         const customerPORegex = helper.getRegex(params.customerPO, 'i');
         filterQuery['$and'].push({ customerPO: customerPORegex });
     }
+    if (params.missingPO) {
+        filterQuery['$and'].push({ $or: [{ customerPO: '' }, { customerPO: null }]});
+    }
     if (params.customerId) {
         filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
     }
