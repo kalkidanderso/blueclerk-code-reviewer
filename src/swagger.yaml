@@ -5883,6 +5883,9 @@ paths:
                 customerPO:
                   type: string
                   description: Filter invoices by P.O. Number
+                missingPO:
+                  type: boolean
+                  description: Filter invoices by missing P.O. Number. Only show invoices that don't have any PO number
                 status:
                   type: string
                   description: 'Filter invoices by multiple status. Format example: ["UNPAID", "PARTIALLY_PAID", "PAID"]'
