@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { Messages, NotificationTypes, SocketEvents, Status } from '../common/constants';
+import { Messages, SocketEvents, Status } from '../common/constants';
 
 import { IUser } from '../models/User';
-import { Notification, INotification, INotificationQuery } from '../models/Notification';
+import { Notification, INotification, INotificationQuery, NotificationTypes } from '../models/Notification';
 import { NotificationContract, NotificationServiceTicket, NotificationJob, NotificationJobRequest, NotificationChat } from '../models/NotificationDiscriminator';
 
 /**
@@ -112,7 +112,8 @@ export const getNotifications = (req: Request, res: Response) => {
             select: 'profile.displayName'
         })
         .populate({
-            path: 'metadata'
+            path: 'metadata',
+            populate: [{ path: 'jobRequest' }]
         })
         .exec((err: any, notifications: INotification[]) => {
             if (err) {

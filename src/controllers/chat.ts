@@ -1,11 +1,13 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
-import { Status } from '../common/constants';
+import { Messages, Status } from '../common/constants';
 
 import { IUser } from '../models/User';
 import { ICompany } from '../models/Company';
 import { JobRequest } from '../models/JobRequest';
 import { IChat, Chat, ChatChannels, IJobRequestChat, JobRequestChat } from '../models/Chat';
+import { _handleNotification } from '../controllers/notification.firebase';
+import { NotificationTypes, FbNotificationType } from '../models/Notification';
 
 /**
  * To create new chat
@@ -46,8 +48,8 @@ export const createChat = async (req: Request, res: Response) => {
             default:
                 break;
         }
-    } catch (error) {
-        return res.json({ status: Status.Error, message: error });
+    } catch (err) {
+        return res.json({ status: Status.Error, message: err?.message ?? Messages.GenericError });
     }
 
     return res.json({ status: Status.Success, message: 'Message sent successfully', chat });
@@ -62,6 +64,7 @@ export const getChats = async (req: Request, res: Response) => {
     const { chatChannel, id } = req.params;
     const company = <ICompany>req.company;
     let chats;
+    let unreadChat = 0;
 
     switch (chatChannel) {
         case ChatChannels.JOB_REQUEST:
@@ -79,7 +82,8 @@ export const getChats = async (req: Request, res: Response) => {
                 .populate({ path: 'company', select: 'info address contact' })
                 .populate({ path: 'customer', select: 'profile info address contact' });
 
-            // TODO: get chats unread count
+            // Retrieve unread chat count
+            unreadChat = await _getUnreadChatCount(company._id, jobRequest._id);
 
             break;
     
@@ -87,10 +91,13 @@ export const getChats = async (req: Request, res: Response) => {
             break;
     }
 
-    return res.json({ status: Status.Success, chats });
+    return res.json({ status: Status.Success, unreadChat, chats });
 
 }
 
+/**
+ * To mark chats as read based on last given chat ID
+ */
 export const markRead = async (req: Request, res: Response) => {
 
     const { chatChannel, id } = req.params;
@@ -126,7 +133,28 @@ export const markRead = async (req: Request, res: Response) => {
         await chat.save();
     }
 
-    return res.json({ status: Status.Success, message: 'Chats marked as read successfully.', chatsToRead });
+    // Send simple notification to mobile through Firebase,
+    // for mobile internal usage, not saving to DB
+    await _handleNotification({
+        recipientId: jobRequest.customerContact,
+        notificationType: NotificationTypes.CHAT_READ,
+        fbNotificationType: FbNotificationType.CHAT_READ,
+        metadataId: lastChat._id,
+        chat: lastChat,
+        jobRequest,
+        lastReadChatId: lastChat._id,
+        readBy: user?.profile?.displayName,
+        saveToDb: false
+    })
+
+    // Retrieve unread chat count
+    const unreadChat = await _getUnreadChatCount(company._id, jobRequest._id);
+
+    return res.json({
+        status: Status.Success,
+        message: 'Chats marked as read successfully.',
+        unreadChat
+    });
 
 }
 
@@ -173,6 +201,30 @@ const _createJobRequestChat = async (params: any, id: string, user: IUser, compa
         .populate({ path: 'customer', select: 'profile info address contact' })
         .execPopulate();
 
+    // Send notification over Firebase to Customer Contact
+    await _handleNotification({
+        recipientId: jobRequest.customerContact,
+        notificationType: NotificationTypes.NEW_CHAT,
+        fbNotificationType: FbNotificationType.NEW_CHAT,
+        messageTitle: `You have new message for Job Request #${jobRequest.requestId}`,
+        messageBody: jobRequestChat.message,
+        metadataId: jobRequestChat._id,
+        chat: jobRequestChat,
+        jobRequest
+    });
+
     return jobRequestChat;
 
+}
+
+// Retrieve unread chat count
+const _getUnreadChatCount = async (companyId: string, jobRequestId: string) => {
+    const unreadChat = await Chat.find({
+        chatChannel: ChatChannels.JOB_REQUEST,
+        jobRequest: jobRequestId,
+        company: { $ne: companyId },
+        'readStatus.isRead': false
+    })?.countDocuments();
+
+    return unreadChat;
 }
