@@ -9453,6 +9453,14 @@
                     "type": "string",
                     "description": "Pass customer id to create invoice"
                   },
+                  "jobLocationId": {
+                    "type": "string",
+                    "description": "Pass Subdivision ID for the invoice"
+                  },
+                  "jobSiteId": {
+                    "type": "string",
+                    "description": "Pass Job Address ID for the invoice"
+                  },
                   "note": {
                     "type": "string",
                     "description": "Pass note for invoice"
@@ -9860,6 +9868,14 @@
                   "customerContactId": {
                     "type": "string",
                     "description": "Pass customer contact id to replace ticket's customer contact id if any (optional)"
+                  },
+                  "jobLocationId": {
+                    "type": "string",
+                    "description": "Pass Subdivision ID for the invoice"
+                  },
+                  "jobSiteId": {
+                    "type": "string",
+                    "description": "Pass Job Address ID for the invoice"
                   },
                   "vendorId": {
                     "type": "string",

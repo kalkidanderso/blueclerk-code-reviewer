@@ -421,7 +421,10 @@ export const Validations = {
     check('estimateId').optional().isMongoId().withMessage(Messages.WrongId),
     check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
     check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId)
+    check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
   ],
 
   getInvoiceEmailTemplate: [
@@ -453,7 +456,10 @@ export const Validations = {
     check('invoiceId').exists().withMessage(Messages.Required),
     check('invoiceId').isMongoId().withMessage(Messages.WrongId),
     check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId)
+    check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('jobLocationId').optional({ nullable: true }).isMongoId().withMessage(Messages.WrongId),
+    check('jobSiteId').optional({ nullable: true }).isMongoId().withMessage(Messages.WrongId),
+    check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
   ],
 
   setCustomInvoiceNumber: [check('invoiceNumber').optional().isInt().toInt()],

@@ -5,7 +5,7 @@ import moment from 'moment';
 import momentTz from 'moment-timezone';
 import * as _ from 'lodash';
 import * as helper from '../services/helper';
-import { Status, Messages, JobStatus, ServiceTicketStatus, NotificationTypes, SocketEvents, DefaultPageSize, JobRequestStatus } from '../common/constants'
+import { Status, Messages, JobStatus, ServiceTicketStatus, SocketEvents, DefaultPageSize, JobRequestStatus } from '../common/constants'
 import {
     sendJobEmailToAssignee,
     sendJobEmailToCustomer, sendReportEmailToCustomer
@@ -30,6 +30,7 @@ import { _handleJobTypesJson } from '../controllers/item';
 import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
 import { _handleNotification } from '../controllers/notification';
 import { IJobRequest, JobRequest } from '../models/JobRequest';
+import { NotificationTypes } from '../models/Notification';
 
 /**
  * 04-22-2022
@@ -1039,7 +1040,7 @@ export const getJobs = async (req: Request, res: Response) => {
         })
         .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName'
+            select: 'info.email auth.email profile.displayName address location contactName'
         })
         .populate({
             path: 'customerContactId',

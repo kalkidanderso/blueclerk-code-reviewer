@@ -143,13 +143,11 @@ export const Styles = {
             bold: true,
             color: '#333333',
             alignment: 'right',
-            rowSpan: 2
         },
         invoiceMetadata: {
             fontSize: 11,
             color: '#333333',
             alignment: 'right',
-            rowSpan: 2
         },
         itemTitle: {
             fontSize: 12,

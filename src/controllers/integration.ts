@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb'
 
-import { NotificationTypes, Status } from '../common/constants';
+import { Status } from '../common/constants';
 import { ICustomer } from '../models/Customer';
 import { IServiceTicket } from '../models/ServiceTicket';
+import { NotificationTypes } from '../models/Notification';
 
 import { _createCustomer } from './customer';
 import { _createServiceTicket } from './serviceTicket';

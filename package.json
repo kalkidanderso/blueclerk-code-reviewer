@@ -49,6 +49,7 @@
     "express": "^4.17.1",
     "express-session": "^1.17.3",
     "express-validator": "^6.2.0",
+    "firebase-admin": "^11.0.1",
     "generate-password": "^1.7.0",
     "hubspot": "2.3.12",
     "intuit-oauth": "^2.1.0",
@@ -70,7 +71,7 @@
     "socketio-jwt": "^4.6.2",
     "stripe": "^7.9.1",
     "swagger-ui-express": "^4.1.6",
-    "typescript": "^3.7.7",
+    "typescript": "^4.1.6",
     "uuid": "^3.3.3",
     "xlsx": "^0.15.4"
   },

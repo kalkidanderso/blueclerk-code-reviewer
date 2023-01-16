@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import moment from 'moment-timezone';
 
-import { CompanyType, ContractStatus, Messages, NotificationTypes, Role, Status, UserPermissions, SocketEvents } from '../common/constants';
+import { CompanyType, ContractStatus, Messages, Role, Status, UserPermissions, SocketEvents } from '../common/constants';
 import { sendAccountUpgradeEmail, sendContractStartEmail, sendContractStartEmailToCompany, sendContractStatusChangeEmailToCompany, sendContractStatusChangeEmailToContractor, sendEmail, sendInvitationToContractor } from '../services/aws';
 import { addCustomerAndCharge, chargeSubscription, createStripeInvoiceItem } from '../services/stripe';
 
@@ -12,6 +12,7 @@ import { CompanyCustomer } from '../models/CompanyCustomer';
 import { CompanyCard } from '../models/CompanyCard';
 import { CompanyInvoice, ICompanyInvoice } from '../models/CompanyInvoice';
 import { Contract, IContract } from '../models/Contract';
+import { NotificationTypes } from '../models/Notification';
 import { NotificationContract, INotificationContract } from '../models/NotificationDiscriminator';
 import { _createHubSpotContact, _upgradeHubSpotContact, checkCompanyEmailExists, login } from '../controllers/user';
 import { _handleNotification } from './notification';
