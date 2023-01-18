@@ -2096,7 +2096,6 @@ paths:
             schema:
               type: object
               required:
-                - email
                 - name
               properties:
                 email:
@@ -2145,7 +2144,6 @@ paths:
               type: object
               required:
                 - customerId
-                - email
                 - name
               properties:
                 customerId:

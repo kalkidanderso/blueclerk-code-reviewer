@@ -42,8 +42,8 @@ export interface ICustomer extends Document {
     },
     commission: number,
     isActive: boolean
-    info:{
-        email: string
+    info?:{
+        email?: string
     }
     contactName: string
     equipments: [Schema.Types.ObjectId]
@@ -176,7 +176,8 @@ const CustomerSchema = new Schema({
     },
     isActive: {type: Boolean, default: true},
     info:{
-        email: String
+        email: String,
+        required: false
     },
     contactName: {
         type: String,

@@ -3463,7 +3463,6 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "email",
                   "name"
                 ],
                 "properties": {
@@ -3541,7 +3540,6 @@
                 "type": "object",
                 "required": [
                   "customerId",
-                  "email",
                   "name"
                 ],
                 "properties": {
