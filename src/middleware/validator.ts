@@ -160,9 +160,9 @@ export const Validations = {
   createEquipmentBrand: [check('title').exists()],
 
   //Customers
-  createCustomer: [check('name').exists(), check('email').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
+  createCustomer: [check('name').exists(), check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
-  updateCustomer: [check('customerId').exists()],
+  updateCustomer: [check('customerId').exists(), check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
   updateCustomPrices: [check('customerId').exists().withMessage('is required'), check('customerId').isMongoId().withMessage(Messages.WrongId)],
 

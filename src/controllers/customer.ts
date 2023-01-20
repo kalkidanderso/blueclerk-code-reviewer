@@ -211,7 +211,7 @@ export const _createCustomer = async (req: Request, res: Response, next: (err: a
     const companyCustomers: ICompanyCustomer[] = await CompanyCustomer.find({ company: companyId });
     const customerIds = companyCustomers.map(obj => obj.customer) || [];
     const customers: ICustomer[] = await Customer.find({ _id: { $in: customerIds } });
-    const existingCustomer = customers.find((customer: ICustomer) => customer.info.email === params.email);
+    const existingCustomer = customers.find((customer: ICustomer) => customer.info?.email === params.email);
     if (existingCustomer) {
         // Existing customer found, return it already
         customer = await Customer.findById(existingCustomer._id);
