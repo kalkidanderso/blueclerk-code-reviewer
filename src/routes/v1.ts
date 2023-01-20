@@ -9,6 +9,7 @@ import {
 } from '../middleware/permissions'
 import { uploadInvoices, uploadImageInS3 } from '../middleware/multer';
 import { getCompanyId } from '../middleware/company'
+import { getSupplierId } from '../middleware/supplier';
 import { refreshQBToken } from '../middleware/quickbook';
 import { getTechnicianContractor } from '../middleware/job'
 
@@ -59,18 +60,22 @@ import * as notificationController from '../controllers/notification';
 import * as integrationController from '../controllers/integration';
 import * as scriptController from '../controllers/script';
 
+import homeOwner from './homeOwner';
 import jobLocation from './jobLocation'
 import jobSite from './jobSite'
 import chat from './chat';
+import blockchain from './blockchain';
 import { isLogin } from '../middleware/session';
 
 export default function (sio: any) {
 
     const router: express.Router = express.Router()
 
+    router.use('/homeOwner', homeOwner)
     router.use('/jobLocation', jobLocation)
     router.use('/jobSite', jobSite)
     router.use('/chats', chat);
+    router.use('/blockchain', blockchain);
 
     // Auth
     router.post(
@@ -531,6 +536,15 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Customer_Update),
         validate(Validations.mergeCustomers),
         customerController.mergeCustomers
+    )
+
+    router.get(
+        '/getSupplierBuilders',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getSupplierId(),
+        // checkUserPermissions(Permissions.Customer_Get_All),
+        customerController.getSupplierBuilders
     )
 
     //Customer equipments
@@ -2396,6 +2410,26 @@ export default function (sio: any) {
         paymentAdvanceController.getAdvancePaymentsByContractor
     )
 
+    router.put(
+        '/updateAdvancePaymentContractor',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Payment),
+        validate(Validations.updateAdvancePaymentContractor),
+        paymentAdvanceController.updateAdvancePaymentContractor
+    )
+
+    router.delete(
+        '/voidAdvancePaymentContractor',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Payment),
+        validate(Validations.voidAdvancePaymentContractor),
+        paymentAdvanceController.voidAdvancePaymentContractor
+    )    
+
     // REPORT
 
     router.get(
@@ -2750,6 +2784,11 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         scriptController.updateQBCustomerJob
+    )
+
+    router.post(
+        '/script/revertBackInvoices',
+        scriptController.revertBackInvoices
     )
 
     router.post(

@@ -1,6 +1,9 @@
 import mongoose, { Document, Schema } from 'mongoose'
-import { IJobTypes } from './JobType';
-import { IUser } from './User';
+import { IUser } from '../models/User';
+import { IHomeOwner } from '../models/HomeOwner';
+import { IJobLocation } from '../models/JobLocation';
+import { IJobSite } from '../models/JobSite';
+import { IJobTypes } from '../models/JobType';
 
 export interface IServiceTicket extends Document {
 
@@ -27,6 +30,10 @@ export interface IServiceTicket extends Document {
     ticketId: string
     jobLocation: Schema.Types.ObjectId
     jobSite: Schema.Types.ObjectId
+    isHomeOccupied: boolean
+    homeOwner: Schema.Types.ObjectId | IHomeOwner
+    homeJobLocation: Schema.Types.ObjectId | IJobLocation
+    homeJobSite: Schema.Types.ObjectId | IJobSite
     jobType: Schema.Types.ObjectId // TODO: To be deprecated
     tasks: IJobTypes[]
     item: Schema.Types.ObjectId
@@ -111,6 +118,22 @@ const ServiceTicketSchema = new Schema({
     jobSite: {
         type: Schema.Types.ObjectId,
         ref: 'JobSite',
+    },
+    isHomeOccupied: {
+        type: Boolean,
+        default: false
+    },
+    homeOwner: {
+        type: Schema.Types.ObjectId,
+        ref: 'HomeOwner'
+    },
+    homeJobLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobLocation'
+    },
+    homeJobSite: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobSite'
     },
     jobType: {
         // TODO: To be deprecated

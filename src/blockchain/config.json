@@ -1,0 +1,16 @@
+{
+    "peerRequestUrl": "grpcs://ec2-44-199-204-81.compute-1.amazonaws.com:7051",
+    "peerEventUrl": "grpcs://ec2-44-199-204-81.compute-1.amazonaws.com:7053",
+    "networkOrdererUrl": "grpcs://ec2-44-199-204-81.compute-1.amazonaws.com:7050",
+    "networkCaUrl": "https://ec2-44-199-204-81.compute-1.amazonaws.com:7054",
+    "channelName": "blueclerkchannel",
+    "chainCodeName": "blueclerkcc",
+    "orgName": "blueclerk",
+    "defaultOrgUser": "blueclerkMember1",
+    "mspName": "BlueclerkMSP",
+    "caName": "ca-blueclerk",
+    "peer": "peer0.blueclerk.blueclerk-bcn.com",
+    "orderer": "orderer.blueclerk-bcn.com",
+    "tlsPeerCert": "/tlsca.blueclerk.blueclerk-bcn.com-cert.pem",
+    "tlsOrdererCert": "/tlsca.blueclerk-bcn.com-cert.pem"
+}

@@ -7,18 +7,24 @@ import { JobLocation } from '../models/JobLocation'
 export const get = (req: Request, res: Response) => {
     const { id } = req.params
     const { query: queryParams = {} } = req
-    const { customerId, locationId, isActive } = queryParams
+    const { customerId, homeOwnerId, locationId, isActive } = queryParams
 
     let query = {}
     if (id) {
         query = { _id: id }
     } else if (customerId && locationId) {
         query = { customerId, locationId }
-    } else if (customerId) {
+    } else if (homeOwnerId && locationId) {
+        query = {homeOwner: homeOwnerId, locationId}
+    } else if (customerId && !homeOwnerId) {
         query = { customerId }
+    } else if (customerId && homeOwnerId) {
+        query = {$or: [{ customerId }, { homeOwner: homeOwnerId }] }
+    } else if (homeOwnerId && !customerId) {
+        query = { homeOwner: homeOwnerId }
     } else if (locationId) {
         query = { locationId }
-    }
+    } 
 
     switch (isActive) {
         case 'true':
@@ -72,7 +78,8 @@ export const create = async (req: Request, res: Response) => {
 
     let jobLocation = null
     try {
-        jobLocation = await JobLocation.findById(locationId, 'customerId')
+        jobLocation = await JobLocation.findById(locationId, {customerId: 1, homeOwner: 1})
+        
         if (!jobLocation) {
             return res.json({ status: Status.Error, message: 'Subdivision not found.' });
         }
@@ -80,7 +87,7 @@ export const create = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: Messages.InternalServerError });
     }
     if (!jobLocation) return
-    const { customerId = null } = jobLocation || {}
+    const { customerId = null, homeOwner = null } = jobLocation || {}
 
     await JobSite.create({
         name,
@@ -89,7 +96,8 @@ export const create = async (req: Request, res: Response) => {
         },
         address,
         locationId,
-        customerId
+        customerId,
+        homeOwner
     }, (err: any, jobSite: IJobSite) => {
         if (err) {
             return res.json({ status: Status.Error, message: Messages.InternalServerError });
@@ -129,7 +137,7 @@ export const update = async (req: Request, res: Response) => {
 
     let jobLocation = null
     try {
-        jobLocation = await JobLocation.findById(locationId, 'customerId')
+        jobLocation = await JobLocation.findById(locationId, {customerId: 1, homeOwner: 1})
         if (!jobLocation) {
             return res.json({ status: Status.Error, message: 'Subdivision not found.' });
         }
@@ -137,7 +145,7 @@ export const update = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: Messages.InternalServerError });
     }
     if (!jobLocation) return
-    const { customerId = null } = jobLocation || {}
+    const { customerId = null, homeOwner = null } = jobLocation || {}
 
     const jobSite = await JobSite.findById(id).exec();
     const isJobSiteActive = isActive === undefined || isActive === null
@@ -154,7 +162,8 @@ export const update = async (req: Request, res: Response) => {
         isActive: isJobSiteActive,
         address: address,
         locationId: locationId,
-        customerId: customerId
+        customerId: customerId,
+        homeOwner
     }, (err: any) => {
         if (err) {
             return res.json({ status: Status.Error, message: Messages.InternalServerError });

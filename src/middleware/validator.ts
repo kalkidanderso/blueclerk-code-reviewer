@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { check, param, validationResult, ValidationChain, body } from 'express-validator'
+import { check, param, validationResult, ValidationChain } from 'express-validator';
 import { Status, Messages, JobStatus } from '../common/constants'
 
 
@@ -160,9 +160,9 @@ export const Validations = {
   createEquipmentBrand: [check('title').exists()],
 
   //Customers
-  createCustomer: [check('name').exists(), check('email').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
+  createCustomer: [check('name').exists(), check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
-  updateCustomer: [check('customerId').exists()],
+  updateCustomer: [check('customerId').exists(), check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
   updateCustomPrices: [check('customerId').exists().withMessage('is required'), check('customerId').isMongoId().withMessage(Messages.WrongId)],
 
@@ -225,8 +225,9 @@ export const Validations = {
   //Job
   createJob: [
     check('scheduleDate').exists().withMessage(Messages.Required),
-    check('customerId').exists().withMessage(Messages.Required),
-    check('customerId').isMongoId().withMessage(Messages.WrongId),
+    check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
+    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
     // check('jobTypes').exists().withMessage(Messages.Required),
     // check('ticketId').exists().withMessage(Messages.Required),
     // check('requestId').exists().withMessage(Messages.Required),
@@ -239,6 +240,8 @@ export const Validations = {
     // check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
     check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
     check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
     check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
@@ -284,7 +287,10 @@ export const Validations = {
     check('jobId').isMongoId().withMessage(Messages.WrongId),
     check('status').exists().withMessage(Messages.Required),
     check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId)
+    check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
+    check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
   updateJoBRequestStatus: [
@@ -301,6 +307,9 @@ export const Validations = {
     check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
     check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
     check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
     check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
     check('scheduleDate').exists().withMessage(Messages.Required)
   ],
@@ -588,6 +597,24 @@ export const Validations = {
     check('id').isMongoId().withMessage(Messages.WrongId),
   ],
 
+  updateAdvancePaymentContractor: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('advancePaymentId').exists().withMessage(Messages.Required),
+    check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
+    check('amount').exists().withMessage(Messages.Required),
+    check('amount').isInt().toInt().withMessage('has to be number'),
+  ],  
+
+  voidAdvancePaymentContractor: [
+    check('type').exists().withMessage(Messages.Required),
+    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+    check('advancePaymentId').exists().withMessage(Messages.Required),
+    check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
+  ],  
+
   // REPORT
   generateIncomeReport: [
     check('reportData').exists().withMessage(Messages.Required),
@@ -646,26 +673,36 @@ export const Validations = {
 
   getLocationTagJobs: [check('nfcTag').exists()],
 
-  getOpenServiceTickets: [check('page').exists().isNumeric(), check('pagesize').exists().isNumeric(), check('customerNames').optional(), check('jobTypeTitle').optional(), check('dueDate').optional(), check('ticketId').optional()],
+  getOpenServiceTickets: [check('page').exists().isNumeric(), check('pagesize').exists().isNumeric(), check('customerNames').optional(), check('homeOwnerNames').optional(), check('jobTypeTitle').optional(), check('dueDate').optional(), check('ticketId').optional()],
 
   getOpenServiceTicketsStream: [check('includeOpenJobRequest').optional().toBoolean()],
+
+  // Home Owner
+  createHomeOwner: [
+    check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('firstName').exists().withMessage(Messages.Required),
+    check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }).withMessage(Messages.InvalidEmail),
+    check('addressStreet').exists().withMessage(Messages.Required)
+  ],
 
   // Job location
   getJobLocation: [
     check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
     check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
     check('id').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
   createJobLocation: [
-    check('customerId').exists().withMessage(Messages.Required),
-    check('customerId').isMongoId().withMessage(Messages.WrongId),
+    // check('customerId').exists().withMessage(Messages.Required),
+    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
     check('name').exists().withMessage(Messages.Required)
   ],
 
   updateJobLocation: [
-    check('customerId').exists().withMessage(Messages.Required),
-    check('customerId').isMongoId().withMessage(Messages.WrongId),
+    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId)
   ],

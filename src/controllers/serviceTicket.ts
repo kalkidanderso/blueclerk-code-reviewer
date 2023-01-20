@@ -16,6 +16,7 @@ import { IJobTypes } from '../models/JobType'
 import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket';
 import { JobRequest } from '../models/JobRequest';
 import { ITask, Job } from '../models/Job';
+import { HomeOwner } from '../models/HomeOwner';
 
 export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
@@ -35,11 +36,37 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             }
             let customerPo = params.customerPO ? params.customerPO : null;
             let customerId: any = null;
-            if (params.customerId) {
+            let homeOwnerId: any = null;
+
+            const isHomeOccupied = params.isHomeOccupied === undefined || params.isHomeOccupied === null
+                ? false
+                : params.isHomeOccupied === 'false'
+                    ? false
+                    : !!params.isHomeOccupied;
+
+            if (!isHomeOccupied && !params.customerId) {
+                return res.json({ status: Status.Error, message: 'Customer is required' });
+            }
+
+            if (isHomeOccupied && !params.homeOwnerId) {
+                return res.json({ status: Status.Error, message: 'Home Owner is required when home is occupied' });
+            }
+
+            if (params.customerId && !isHomeOccupied) {
                 try {
                     customerId = new ObjectId(params.customerId)
                 } catch (e) {
                     return res.json({'status': Status.Error, 'message': `parameter customerId: ${Messages.WrongId}`});
+                }
+            }
+
+            if (isHomeOccupied && params.homeOwnerId) {
+                try {
+                    const homeOwnerIdParameter = ObjectId.isValid(params.homeOwnerId) ? params.homeOwnerId : new ObjectId(params.homeOwnerId)
+                    const homeOwner = await HomeOwner.findById(homeOwnerIdParameter);
+                    homeOwnerId = homeOwner._id;
+                } catch(error) {
+                    return res.json({ status: Status.Error, message: error.message });    
                 }
             }
 
@@ -64,12 +91,12 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             // let dueDate = params.dueDate ? new Date(params.dueDate) : null
             let dueDate = params.dueDate ? moment.parseZone(params.dueDate).format("YYYY-MM-DD") : null;
             let serviceTicket = new ServiceTicket({
+                isHomeOccupied,
                 createdAt: Date.now(),
                 dueDate: dueDate,
                 createdBy: user._id,
                 company: companyId,
                 note: params.note,
-                technician: params.technicianId,
                 ticketId: ticketId,
                 jobLocation: params.jobLocationId,
                 jobSite: params.jobSiteId,
@@ -78,9 +105,20 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 customerPO : customerPo,
                 images: [],
             });
-            if (customerId) {
+
+            // Set home owner's property is home is occupied
+            if (isHomeOccupied) {
+                serviceTicket.homeOwner = homeOwnerId;
+                serviceTicket.homeJobLocation = params.homeJobLocationId;
+                serviceTicket.homeJobSite = params.homeJobSiteId
+            } else {
+                // Default to customerId when isHomeOccupied false or nowhere
                 serviceTicket.customer = customerId;
+                serviceTicket.homeOwner = null;
+                serviceTicket.homeJobLocation = null;
+                serviceTicket.homeJobSite = null;
             }
+
             if (customerContact) {
                 let checkContact = await Contact.findOne({_id: customerContact}).exec();
                 if (checkContact) {
@@ -105,6 +143,10 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                                 .populate({
                                     path: 'customer',
                                     select: 'info.email profile.displayName contactName'
+                                })
+                                .populate({
+                                    path: 'homeOwner',
+                                    select: 'info profile address location contact'
                                 })
                                 .populate({
                                     path: 'createdBy',
@@ -269,6 +311,10 @@ export const getServiceTickets = (req: Request, res: Response) => {
             select: 'info.email profile.displayName contactName',
         })
         .populate({
+            path: 'homeOwner',
+            select: 'info profile address location contact'
+        })
+        .populate({
             path: 'createdBy',
             select: 'profile.displayName'
         })
@@ -302,13 +348,23 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
             let serviceTickets : any = [];
             let totalCount : number = 0;
             let customerNames: any;
+            let homeOwnerNames: any;
 
             if (req.otherCompanyId != undefined) {
                 companyId = req.otherCompanyId
             }
 
             if (params.customerNames) {
-                customerNames = params.customerNames.split(',')
+                customerNames = Array.isArray(params.customerNames)
+                    ? params.customerNames
+                    : params.customerNames.split(',').filter((element: any) => element);
+            }
+
+            if (params.homeOwnerNames) {
+                // Check is homeOwnerNames is already array or not, and remove the falsy value
+                homeOwnerNames = Array.isArray(params.homeOwnerNames)
+                    ? params.homeOwnerNames
+                    : params.homeOwnerNames.split(',').filter((element: any) => element)
             }
 
             let criteria: any = {
@@ -351,17 +407,38 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                 criteria.ticketId = { $regex: ticketId, $options: 'i'}
             }
 
-            if(params.customerNames && params.customerNames.length >0) {
+            if(customerNames?.length) {
                 criteria['customer.profile.displayName'] = { $in: customerNames }
+            }
+
+            if (homeOwnerNames?.length) {
+                criteria['homeOwner.profile.displayName'] = { $in: homeOwnerNames }
+            }
+
+            if (homeOwnerNames?.length && customerNames?.length) {
+                criteria = {
+                    $or: [
+                        {'homeOwner.profile.displayName': { $in: homeOwnerNames}}, 
+                        {'customer.profile.displayName': { $in: customerNames }}
+                    ]
+                }
             }
 
             const Query = ServiceTicket.aggregate([
                 {
                     $lookup: {
-                        from: 'users',
+                        from: 'customers',
                         localField: "customer",
                         foreignField: "_id",
                         as: "customer"
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'homeowners',
+                        localField: "homeOwner",
+                        foreignField: "_id",
+                        as: "homeOwner"
                     }
                 },
                 {
@@ -409,6 +486,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                     $project: {
                       "_id": 1,
                       "customer": {$arrayElemAt:["$customer",0]},
+                      "homeOwner": {$arrayElemAt:["$homeOwner",0]},
                       "jobSite": {$arrayElemAt:["$jobSite",0]},
                       "jobLocation": {$arrayElemAt:["$jobLocation",0]},
                       "tasks": 1,
@@ -499,6 +577,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     }).sort({ _id: -1 })
         .populate({ path: 'company', select: 'info address contact' })
         .populate({ path: 'customer', select: 'info profile address contact' })
+        .populate({ path: 'homeOwner', select: 'info profile address location contact' })
         .populate({ path: 'customerContactId', select: '-__v' })
         .populate({ path: 'jobLocation', select: 'name address location' })
         .populate({ path: 'jobSite', select: 'name address location' })
@@ -555,6 +634,10 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
         }).sort({ _id: -1 })
             .populate({ path: 'company', select: 'info address contact' })
             .populate({ path: 'customer', select: 'info profile address contact' })
+            .populate({
+                path: 'homeOwner',
+                select: 'info profile address location contact'
+            })
             .populate({ path: 'customerContact', select: 'info profile address contact' })
             .populate({ path: 'jobLocation', select: 'name address location' })
             .populate({ path: 'jobSite', select: 'name address location' })
@@ -843,6 +926,10 @@ export const getServiceTicketDetail = (req: Request, res: Response) => {
         .populate({
             path: 'customer',
             select: 'info.email profile.displayName contactName'
+        })
+        .populate({
+            path: 'homeOwner',
+            select: 'info profile address location contact'
         })
         .populate({
             path: 'createdBy',
