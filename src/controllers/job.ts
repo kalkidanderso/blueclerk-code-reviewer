@@ -2726,7 +2726,7 @@ export const editJob = async (req: Request, res: Response) => {
                 if (linkedJob) { linkedJob.homeJobSite = params.homeJobSiteId; }
             }
 
-            if (params.isHomeOccupied !== null || params.isHomeOccupied !== undefined) {
+            if (params.isHomeOccupied) {
                 if (params.isHomeOccupied !== job.isHomeOccupied) {
                     action  += '|Updated Home Occupied Status|'
                 }
