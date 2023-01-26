@@ -6,11 +6,11 @@ import { CompanyType, ContractStatus, Messages, Role, Status, UserPermissions, A
 import { sendEmail, sendEmployeeEmail, sendPasswordEmail, uploadImageInS3 } from '../services/aws';
 import { chargeSubscription, createStripeInvoiceItem } from '../services/stripe';
 
-import { Company, ICompany } from '../models/Company';
+import { Company, CompanyTypes, ICompany } from '../models/Company';
 import { IUser, User } from '../models/User';
 import { Employee, IEmployee } from '../models/Employee';
 import { Contract } from '../models/Contract';
-import { CompanyAdmin, ICompanyAdmin, ISupplierAdmin } from '../models/CompanyAdmin';
+import { CompanyAdmin, ICompanyAdmin } from '../models/CompanyAdmin';
 import { IIndustry, Industry } from '../models/Industry';
 import { NotificationTypes } from '../models/Notification';
 import { NotificationContract, INotificationContract } from '../models/NotificationDiscriminator';
@@ -20,8 +20,6 @@ import { CustomerContact } from '../models/CustomerContact';
 import { Customer } from '../models/Customer';
 import { IndependentContractor } from '../models/IndependentContractor';
 import { ISession, Session } from '../models/Session';
-import { Supplier } from '../models/Supplier';
-import { createSupplier } from '../controllers/supplier';
 
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
@@ -140,25 +138,6 @@ export const login = (req: Request, res: Response, sio: any) => {
                     )
 
 
-                })
-            } else if (user.permissions.role == Role.SUPPLIER_ADMIN) {
-                user.comparePassword(params.password, async (isMatching: Boolean) => {
-                    if (!isMatching) {
-                        return res.json({ status: Status.Error, message: Messages.InvalidEmailPassword });
-                    }
-
-                    const admin = <ISupplierAdmin>user;
-                    const supplier = await Supplier.findById(admin.supplier);
-
-                    req.session.save();
-
-                    return res.json({
-                        status: Status.Success,
-                        token: user.jwt(req),
-                        userType: user.permissions.role,
-                        AccountTypes: user.accountType,
-                        user, supplier
-                    });
                 })
             } else {
                 user.comparePassword(params.password, (isMatching: Boolean) => {
@@ -368,7 +347,8 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                 if (!params.supplierName) {
                     return res.json({ status: Status.Error, message: 'supplierName is required for Supplier Signup.' });
                 }
-                createSupplier(req, res, sio);
+                // update as of 26 January 2023. Windows Supplier / Manufacturer is also a Company with type=2 (Windows Supplier)
+                createCompany(req, res, sio, CompanyTypes.SUPPLIER);
                 break;
 
             case AccountTypes.COMPANY:
@@ -376,14 +356,14 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                 if (!params.companyName) {
                     return res.json({ status: Status.Error, message: 'companyName is required for Company Signup.' })
                 }
-                createCompany(req, res, sio);
+                createCompany(req, res, sio, CompanyTypes.COMPANY);
                 break;
         }
 
     });
 }
 
-export const createCompany = (req: Request, res: Response, sio: any) => {
+export const createCompany = (req: Request, res: Response, sio: any, companyType: CompanyTypes) => {
 
     checkCompanyEmailExists(req, res, async (req: Request, res: Response) => {
 
@@ -420,7 +400,8 @@ export const createCompany = (req: Request, res: Response, sio: any) => {
                 maxTechnicians: 2,
                 maxAdmins: 1,
                 maxManagers: 1,
-                maxOfficeAdmins: 1
+                maxOfficeAdmins: 1,
+                type: companyType
             }
         )
 
