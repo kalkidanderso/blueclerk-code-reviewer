@@ -5,7 +5,13 @@ import { IPriceTier } from '../models/PriceTier';
 import { IPaymentTerm } from '../models/PaymentTerm';
 import { IUser } from '../models/User';
 
-export interface ICompany extends Document{
+export enum CompanyTypes {
+    COMPANY = 0,
+    CONTRACTOR = 1,
+    SUPPLIER = 2 // Manufacturer, Windows Supplier, ex: BFS, Throphy
+}
+
+export interface ICompany extends Document {
 
     info: {
         companyName: string
@@ -31,7 +37,7 @@ export interface ICompany extends Document{
     customers: [Schema.Types.ObjectId]
     stripeId: string
     paid: boolean
-    type: number
+    type: CompanyTypes
     plan: number
     chargeDate: Date
     trialEndDate?: Date
@@ -161,9 +167,11 @@ const CompanySchema = new Schema({
     },
     // type 0 for company
     // type 1 for contractor
+    // type 2 for Manufacturer/Windows Supplier
     type: {
         type: Number,
-        default: 0
+        default: CompanyTypes.COMPANY,
+        enum: Object.values(CompanyTypes)
     },
     // type 0 for subscribed
     // type 1 for free
