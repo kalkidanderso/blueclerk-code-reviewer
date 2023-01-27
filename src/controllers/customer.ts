@@ -333,7 +333,7 @@ export const getCustomers = (req: Request, res: Response) => {
 export const getSupplierBuilders = async (req: Request, res: Response) => {
 
     const params = req.query;
-    const supplier = req.supplier;
+    const supplier = req.company;
 
     // Get all the 'contract' of the supplier
     const supplierBuilders = await SupplierBuilder.find({ supplier: supplier._id });

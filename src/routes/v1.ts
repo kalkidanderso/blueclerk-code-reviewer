@@ -542,7 +542,7 @@ export default function (sio: any) {
         '/getSupplierBuilders',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        getSupplierId(),
+        getCompanyId(),
         // checkUserPermissions(Permissions.Customer_Get_All),
         customerController.getSupplierBuilders
     )
