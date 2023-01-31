@@ -15,4 +15,4 @@ COPY . .
 EXPOSE 3006
 RUN npm run tsc
 
-CMD ["node", "dist/server.js"]
+CMD ["node", "--heapsnapshot-signal=SIGUSR2", "dist/server.js"]
