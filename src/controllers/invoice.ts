@@ -2272,29 +2272,33 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
     let invoicePdfs = [];
     let totalInvoiceAmount = 0;
 
-    // Iterate all invoices to generate their PDF and collect the filepath
-    for (const invoice of invoices) {
+    try {
+        // Iterate all invoices to generate their PDF and collect the filepath
+        for (const invoice of invoices) {
 
-        // Get the invoice filepath
-        const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
+            // Get the invoice filepath
+            const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
 
-        // Generate Invoice PDF
-        await _generateInvoicePdf(company, invoice);
+            // Generate Invoice PDF
+            await _generateInvoicePdf(company, invoice);
 
-        // Sum the invoice amount
-        totalInvoiceAmount += invoice.total;
+            // Sum the invoice amount
+            totalInvoiceAmount += invoice.total;
 
-        // Collect all invoices into one array
-        invoicePdfs.push({ invoice, filepath });
+            // Collect all invoices into one array
+            invoicePdfs.push({ invoice, filepath });
 
-        // Update email history and last email sent info
-        const sendingDate = new Date();
-        invoice.emailHistory.push({
-            sentTo: customer.info?.email,
-            sentAt: sendingDate
-        });
-        invoice.lastEmailSent = sendingDate;
-        await invoice.save();
+            // Update email history and last email sent info
+            const sendingDate = new Date();
+            invoice.emailHistory.push({
+                sentTo: customer.info?.email,
+                sentAt: sendingDate
+            });
+            invoice.lastEmailSent = sendingDate;
+            await invoice.save();
+        }
+    } catch (error) {
+        return res.json({ status: Status.Error, message: Messages.GenericError });
     }
 
     // Retrieve company email default
@@ -3529,7 +3533,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
         },
     };
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         const fullPath = `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
         // Check if folder path exist, create if not
         if (!fs.existsSync(INVOICE_PDF_PATH)) {
@@ -3544,9 +3548,12 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
         const writeStream = fs.createWriteStream(fullPath);
         pdfDoc.pipe(writeStream);
         pdfDoc.end();
-        writeStream.on('finish', resolve)
+        writeStream.on('finish', resolve);
+        writeStream.on('error', (error) => {
+            console.log('Error in _generateInvoicePdf: ', error);
+            reject;
+        });
     })
-
 }
 
 // Check and download Company Logo to /tmp file
@@ -3564,15 +3571,20 @@ export const downloadFileToPath = async (
     if (fs.existsSync(fullPath)) {
         fs.unlinkSync(fullPath)
     }
-    const file = fs.createWriteStream(fullPath);
-    return new Promise((resolve) => {
+
+    return new Promise((resolve, reject) => {
         const protocol = sourceUrl.startsWith('https') ? https : http;
         protocol.get(sourceUrl, (res) => {
+            const file = fs.createWriteStream(fullPath);
             res.pipe(file);
             file.on('finish', () => {
                 file.close();
                 resolve(true);
                 return;
+            });
+            file.on('error', (error) => {
+                console.log('Error in downloadFileToPath: ', error);
+                reject(false);
             });
         })
     })
