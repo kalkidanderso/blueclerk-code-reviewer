@@ -896,9 +896,11 @@ const _handleReportPdf = async ({
         fillColor: '#cccccc'
     }
 
+    let companyLogoFilePath = '';
+
     if (company.info?.logoUrl) {
         // Check and download Company Logo to /tmp file
-        await downloadFileToPath(company, company.info.logoUrl, INVOICE_IMAGE_PATH);
+        companyLogoFilePath = await downloadFileToPath(company, company.info.logoUrl, INVOICE_IMAGE_PATH, false);
 
         companyImage = {
             image: 'companyLogo',
@@ -1189,7 +1191,7 @@ const _handleReportPdf = async ({
             font: "Roboto",
         },
         images: {
-            companyLogo: `${INVOICE_IMAGE_PATH}/${company.info.companyName.replace(/\s+/g, '').toLowerCase()}.jpg`
+            companyLogo: companyLogoFilePath
         },
     };
 
