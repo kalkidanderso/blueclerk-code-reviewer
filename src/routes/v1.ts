@@ -59,6 +59,7 @@ import * as ContactController from '../controllers/contact';
 import * as notificationController from '../controllers/notification';
 import * as integrationController from '../controllers/integration';
 import * as scriptController from '../controllers/script';
+import * as workTypeController from '../controllers/workType';
 
 import homeOwner from './homeOwner';
 import jobLocation from './jobLocation'
@@ -2916,6 +2917,17 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookPaymentController.findQBPayment
+    )
+
+    // WORK TYPE API
+    router.get(
+        '/getWorkTypes',
+        workTypeController.getWorkTypes
+    )
+
+    router.get(
+        '/getWorkType/:id',
+        workTypeController.getWorkTypeById
     )
 
     return router
