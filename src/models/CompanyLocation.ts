@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { ICompany } from '../models/Company';
+import { IWorkType } from './WorkType';
 
 export interface ICompanyLocation extends Document {
     name?: string
@@ -22,6 +23,8 @@ export interface ICompanyLocation extends Document {
         fax?: string
     }
     company: Schema.Types.ObjectId | ICompany
+    assignedVendor: Schema.Types.ObjectId | ICompany
+    workTypes: [Schema.Types.ObjectId | IWorkType]
 }
 
 const CompanyLocationSchema = new Schema({
@@ -55,8 +58,12 @@ const CompanyLocationSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Company',
         required: true
-    }
-
+    },
+    assignedVendor: {
+        type: Schema.Types.ObjectId,
+        ref: 'Company'
+    },
+    workTypes: [{ type: Schema.Types.ObjectId, ref: 'WorkType' }]
 })
 
 export const CompanyLocation = mongoose.model<ICompanyLocation>('CompanyLocation', CompanyLocationSchema);
