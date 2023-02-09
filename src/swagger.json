@@ -2738,6 +2738,42 @@
         ]
       }
     },
+    "/getCompanyLocation/{id}": {
+      "get": {
+        "tags": [
+          "Company Location"
+        ],
+        "summary": "Retrieve a location of company by the given ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Company Location ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/createCompanyLocation": {
       "post": {
         "tags": [
@@ -2751,6 +2787,7 @@
                 "type": "object",
                 "required": [
                   "name",
+                  "assignedVendors",
                   "workTypes"
                 ],
                 "properties": {
@@ -2791,14 +2828,19 @@
                   "fax": {
                     "type": "string"
                   },
-                  "assignedVendorId": {
-                    "type": "string"
-                  },
                   "workTypes": {
                     "type": "array",
                     "items": {
                       "type": "string"
-                    }
+                    },
+                    "description": "Array of work type ID"
+                  },
+                  "assignedVendors": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AssignedVendor"
+                    },
+                    "description": "Array of assigned vendor data"
                   }
                 }
               }
@@ -2839,6 +2881,7 @@
                 "required": [
                   "companyLocationId",
                   "name",
+                  "assignedVendors",
                   "workTypes"
                 ],
                 "properties": {
@@ -2882,14 +2925,19 @@
                   "fax": {
                     "type": "string"
                   },
-                  "assignedVendorId": {
-                    "type": "string"
-                  },
                   "workTypes": {
                     "type": "array",
                     "items": {
                       "type": "string"
-                    }
+                    },
+                    "description": "Array of work type ID"
+                  },
+                  "assignedVendors": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AssignedVendor"
+                    },
+                    "description": "Array of assigned vendor data"
                   }
                 }
               }
@@ -18136,6 +18184,23 @@
           },
           "updateAt": {
             "type": "string"
+          }
+        }
+      },
+      "AssignedVendor": {
+        "type": "object",
+        "required": ["vendorId"],
+        "properties": {
+          "vendorId": {
+            "type": "string",
+            "description": "Assigned vendor ID"
+          },
+          "workTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of work type ID"
           }
         }
       }

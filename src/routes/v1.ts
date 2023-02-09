@@ -447,6 +447,15 @@ export default function (sio: any) {
         companyLocationController.getCompanyLocations
     )
 
+    router.get(
+        '/getCompanyLocation/:id',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Company_Profile),
+        companyLocationController.getCompanyLocationById
+    )
+
     router.post(
         '/createCompanyLocation',
         passport.authenticate('jwt', { session: false }),
