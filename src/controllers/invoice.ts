@@ -39,6 +39,7 @@ import { IJobLocation, JobLocation } from '../models/JobLocation';
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission';
 import { ICommissionHistory, CommissionHistory } from '../models/CommissionHistory';
 import { getDatesFilterQuery } from '../services/pagination';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * To reset Invoice quickbookId,
@@ -2272,29 +2273,33 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
     let invoicePdfs = [];
     let totalInvoiceAmount = 0;
 
-    // Iterate all invoices to generate their PDF and collect the filepath
-    for (const invoice of invoices) {
+    try {
+        // Iterate all invoices to generate their PDF and collect the filepath
+        for (const invoice of invoices) {
 
-        // Get the invoice filepath
-        const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
+            // Get the invoice filepath
+            const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
 
-        // Generate Invoice PDF
-        await _generateInvoicePdf(company, invoice);
+            // Generate Invoice PDF
+            await _generateInvoicePdf(company, invoice);
 
-        // Sum the invoice amount
-        totalInvoiceAmount += invoice.total;
+            // Sum the invoice amount
+            totalInvoiceAmount += invoice.total;
 
-        // Collect all invoices into one array
-        invoicePdfs.push({ invoice, filepath });
+            // Collect all invoices into one array
+            invoicePdfs.push({ invoice, filepath });
 
-        // Update email history and last email sent info
-        const sendingDate = new Date();
-        invoice.emailHistory.push({
-            sentTo: customer.info?.email,
-            sentAt: sendingDate
-        });
-        invoice.lastEmailSent = sendingDate;
-        await invoice.save();
+            // Update email history and last email sent info
+            const sendingDate = new Date();
+            invoice.emailHistory.push({
+                sentTo: customer.info?.email,
+                sentAt: sendingDate
+            });
+            invoice.lastEmailSent = sendingDate;
+            await invoice.save();
+        }
+    } catch (error) {
+        return res.json({ status: Status.Error, message: Messages.GenericError });
     }
 
     // Retrieve company email default
@@ -3212,9 +3217,11 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
         fillColor: '#cccccc'
     }
 
+    let companyLogoFilePath = '';
+
     if (company.info?.logoUrl) {
         // Check and download Company Logo to /tmp file
-        await downloadFileToPath(company, company.info.logoUrl, INVOICE_IMAGE_PATH);
+        companyLogoFilePath = await downloadFileToPath(company, company.info.logoUrl, INVOICE_IMAGE_PATH, true);
 
         companyImage = {
             image: 'companyLogo',
@@ -3525,58 +3532,78 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             font: 'Roboto',
         },
         images: {
-            companyLogo: `${INVOICE_IMAGE_PATH}/${company.info.companyName.replace(/\s+/g, '').toLowerCase()}.jpg`
+            companyLogo: companyLogoFilePath
         },
     };
 
-    return new Promise((resolve) => {
-        const fullPath = `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
-        // Check if folder path exist, create if not
-        if (!fs.existsSync(INVOICE_PDF_PATH)) {
-            fs.mkdirSync(INVOICE_PDF_PATH);
-        }
-        // Check if existing Invoice PDF exist, remove if any
-        if (fs.existsSync(fullPath)) {
-            fs.unlinkSync(fullPath);
-        }
+    const fullPath = `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
+    // Check if folder path exist, create if not
+    if (!fs.existsSync(INVOICE_PDF_PATH)) {
+        fs.mkdirSync(INVOICE_PDF_PATH);
+    }
+    // Check if existing Invoice PDF exist, remove if any
+    if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+    }
 
-        const pdfDoc = pdfMake.createPdfKitDocument(docDefinition);
-        const writeStream = fs.createWriteStream(fullPath);
-        pdfDoc.pipe(writeStream);
-        pdfDoc.end();
-        writeStream.on('finish', resolve)
-    })
+    const pdfDoc = pdfMake.createPdfKitDocument(docDefinition);
+    const writeStream = fs.createWriteStream(fullPath);
+    pdfDoc.pipe(writeStream);
+    pdfDoc.end();
 
+    return await new Promise((resolve, reject) => {
+        writeStream.on('finish', () => {
+            if (company.info?.logoUrl) {
+                fs.unlink(companyLogoFilePath, (err) => {
+                    if (err) console.log(`Error in deleting temporary company logo image file "${companyLogoFilePath}" : ${err}`);
+                })
+            }
+            resolve('');
+        })
+        .on('error', (error) => {
+            reject('Error in _generateInvoicePdf: ' + error);
+        });
+    });
 }
 
-// Check and download Company Logo to /tmp file
+// Check and download Company Logo to /tmp file and return the image fullpath
 export const downloadFileToPath = async (
     company: ICompany,
     sourceUrl: string,
     absoluteTargetPath: string,
-) => {
+    makeFileNameUnique: boolean
+): Promise<string> => {
 
-    const filename = company.info.companyName.replace(/\s+/g, '').toLowerCase();
-    const fullPath = `${absoluteTargetPath}/${filename}.jpg`;
-    if (!fs.existsSync(absoluteTargetPath)) {
-        fs.mkdirSync(absoluteTargetPath);
-    }
-    if (fs.existsSync(fullPath)) {
-        fs.unlinkSync(fullPath)
-    }
-    const file = fs.createWriteStream(fullPath);
-    return new Promise((resolve) => {
+    try {
+        const filename = company.info.companyName.replace(/\s+/g, '').toLowerCase() + (makeFileNameUnique ? '_' + uuidv4() : '');
+        const fullPath = `${absoluteTargetPath}/${filename}.jpg`;
+        if (!fs.existsSync(absoluteTargetPath)) {
+            fs.mkdirSync(absoluteTargetPath);
+        }
+        if (fs.existsSync(fullPath)) {
+            fs.unlinkSync(fullPath)
+        }
+
         const protocol = sourceUrl.startsWith('https') ? https : http;
-        protocol.get(sourceUrl, (res) => {
-            res.pipe(file);
-            file.on('finish', () => {
-                file.close();
-                resolve(true);
-                return;
-            });
-        })
-    })
+        return await new Promise((resolve, reject) => {
+            protocol.get(sourceUrl, async (res) => {
+                await new Promise<void>((resolve2, reject2) => {
+                    const file = fs.createWriteStream(fullPath);
+                    res.pipe(file);
 
+                    file.on('finish', () => {
+                        file.close();
+                        resolve2();
+                    })
+                });
+
+                resolve(fullPath);
+            })
+        });
+    } catch (error) {
+        console.log('Error in downloadFileToPath: ', error);
+        throw error;
+    }
 }
 
 /**

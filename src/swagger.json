@@ -220,6 +220,10 @@
     {
       "name": "Script",
       "description": "To run script, not to be run frequently. Only use these API if you know what you are doing."
+    },
+    {
+      "name": "Work Type",
+      "description": "API for Work Type"
     }
   ],
   "paths": {
@@ -1134,9 +1138,9 @@
                     },
                     "history": {
                       "type": "array",
-                       "items": {
-                          "$ref": "#/components/schemas/CommissionHistoryResponse"
-                       }
+                      "items": {
+                        "$ref": "#/components/schemas/CommissionHistoryResponse"
+                      }
                     }
                   }
                 }
@@ -2746,7 +2750,8 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "name"
+                  "name",
+                  "workTypes"
                 ],
                 "properties": {
                   "name": {
@@ -2785,6 +2790,15 @@
                   },
                   "fax": {
                     "type": "string"
+                  },
+                  "assignedVendorId": {
+                    "type": "string"
+                  },
+                  "workTypes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -2824,7 +2838,8 @@
                 "type": "object",
                 "required": [
                   "companyLocationId",
-                  "name"
+                  "name",
+                  "workTypes"
                 ],
                 "properties": {
                   "companyLocationId": {
@@ -2866,6 +2881,15 @@
                   },
                   "fax": {
                     "type": "string"
+                  },
+                  "assignedVendorId": {
+                    "type": "string"
+                  },
+                  "workTypes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -4851,7 +4875,7 @@
                   "companyId": {
                     "type": "string",
                     "description": "Only fill this companyId to create the \"contract\" between Company and Home Owner directly"
-                  },
+                  }
                 }
               }
             }
@@ -7750,8 +7774,7 @@
             "multipart/form-data": {
               "schema": {
                 "type": "object",
-                "required": [
-                ],
+                "required": [],
                 "properties": {
                   "replyToId": {
                     "type": "string",
@@ -9824,7 +9847,10 @@
                   "recentOnly": {
                     "type": "boolean",
                     "description": "To force API to return only last 90 days even with any filter applied. Be default, when any filter applied, API will return all data so user could search through all invoices",
-                    "enum": [true, false]
+                    "enum": [
+                      true,
+                      false
+                    ]
                   }
                 }
               }
@@ -11064,9 +11090,9 @@
                 "Payroll Payments",
                 "Advance Payments",
                 "All"
-              ]              
+              ]
             }
-          },          
+          },
           {
             "name": "startDate",
             "in": "query",
@@ -11107,16 +11133,16 @@
                       "$ref": "#/components/schemas/GeneralAPIResponse"
                     },
                     "payments": {
-                      "type" : "array",
+                      "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/Payment"
                       }
                     },
-                    "advancePayments":{
-                      "type" : "array",
+                    "advancePayments": {
+                      "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/Payment"
-                      }                        
+                      }
                     }
                   }
                 }
@@ -12655,7 +12681,7 @@
           "Report"
         ],
         "summary": "Get the report email template before send the email",
-        "parameters": [ ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Success",
@@ -15535,6 +15561,66 @@
           }
         ]
       }
+    },
+    "/getWorkTypes": {
+      "get": {
+        "tags": [
+          "Work Type"
+        ],
+        "summary": "Get list of work types",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/getWorkType/{id}": {
+      "get": {
+        "tags": [
+          "Work Type"
+        ],
+        "summary": "Get a work type by the given ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Work type ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -18037,11 +18123,11 @@
           "editedBy": {
             "type": "object",
             "properties": {
-              "_id":{
-                "type":"string"
+              "_id": {
+                "type": "string"
               },
-              "displayName":{
-                "type":"string"
+              "displayName": {
+                "type": "string"
               }
             }
           },

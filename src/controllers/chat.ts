@@ -3,8 +3,8 @@ import { ObjectId } from 'mongodb';
 import { Messages, Status } from '../common/constants';
 
 import { IUser } from '../models/User';
-import { ICompany } from '../models/Company';
-import { JobRequest } from '../models/JobRequest';
+import { CompanyTypes, ICompany } from '../models/Company';
+import { IJobRequest, JobRequest } from '../models/JobRequest';
 import { IChat, Chat, ChatChannels, IJobRequestChat, JobRequestChat } from '../models/Chat';
 import { _handleNotification } from '../controllers/notification.firebase';
 import { NotificationTypes, FbNotificationType } from '../models/Notification';
@@ -63,16 +63,13 @@ export const getChats = async (req: Request, res: Response) => {
 
     const { chatChannel, id } = req.params;
     const company = <ICompany>req.company;
+    const user = <IUser>req.user;
     let chats;
     let unreadChat = 0;
 
     switch (chatChannel) {
         case ChatChannels.JOB_REQUEST:
-            const jobRequest = await JobRequest.findOne({ _id: id, company: company._id })
-
-            if (!jobRequest) {
-                return res.json({ status: Status.Error, message: 'Job Request not found' });
-            }
+            const jobRequest = await _findJobRequest(req.params, id, user, company);
 
             chats = await Chat.find({ chatChannel: ChatChannels.JOB_REQUEST, jobRequest: jobRequest._id })
                 .populate({ path: 'jobRequest', select: '-__v -track' })
@@ -105,11 +102,7 @@ export const markRead = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
 
-    // Retrieve and check if Job Request exist
-    const jobRequest = await JobRequest.findOne({ _id: id, company: company._id })
-    if (!jobRequest) {
-        return res.json({ status: Status.Error, message: 'Job Request not found' });
-    }
+    const jobRequest = await _findJobRequest(params, id, user, company);
 
     // Retrieve and check if last message 
     const lastChat = await Chat.findById(params.lastReadChatId);
@@ -167,11 +160,7 @@ export const markRead = async (req: Request, res: Response) => {
  */
 const _createJobRequestChat = async (params: any, id: string, user: IUser, company: ICompany, repliedChat: IChat): Promise<IJobRequestChat> => {
 
-    // Check if Job Request exist
-    const jobRequest = await JobRequest.findOne({ _id: id, company: company._id });
-    if (!jobRequest) {
-        throw new Error('Job Request not found');
-    }
+    const jobRequest = await _findJobRequest(params, id, user, company);
 
     // Construct the Job Request Chat
     const jobRequestChat = new JobRequestChat({
@@ -227,4 +216,20 @@ const _getUnreadChatCount = async (companyId: string, jobRequestId: string) => {
     })?.countDocuments();
 
     return unreadChat;
+}
+
+const _findJobRequest =  async (params: any, id: string, user: IUser, company: ICompany): Promise<IJobRequest> => {
+
+    // Check if Job Request exist
+    let jobRequest = await JobRequest.findOne({ _id: id, company: company._id });
+
+    // if it is a supplier, searching by the manufacturer
+    if(company.type == CompanyTypes.SUPPLIER) {
+        jobRequest = await JobRequest.findOne({ _id: id, manufacturer: company._id });
+    }
+    if (!jobRequest) {
+        throw new Error('Job Request not found');
+    }
+
+    return jobRequest;
 }
