@@ -7,8 +7,8 @@ export const getClientForOrg = async () => {
   let peerCert = '';
   let ordererCert = '';
   try {
-    peerCert = fs.readFileSync(path.join(__dirname, '/network/tls', config.tlsPeerCert)).toString();
-    ordererCert = fs.readFileSync(path.join(__dirname, '/network/tls', config.tlsOrdererCert)).toString();
+    peerCert = fs.readFileSync(path.join(__dirname, 'network/tls', config.tlsPeerCert)).toString();
+    ordererCert = fs.readFileSync(path.join(__dirname, 'network/tls', config.tlsOrdererCert)).toString();
   } catch (err) {
     console.error(err);
     throw new Error('Failed to read Certificates from persistence error: ');
