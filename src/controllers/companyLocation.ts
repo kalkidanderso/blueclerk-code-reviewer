@@ -1,23 +1,38 @@
 import { Request, Response } from 'express';
 import { WorkType } from '../models/WorkType';
 import { Status } from '../common/constants';
-import { Company, CompanyTypes, ICompany } from '../models/Company';
+import { Company, ICompany } from '../models/Company';
 import { CompanyAdmin } from '../models/CompanyAdmin';
 import { CompanyLocation, ICompanyLocation } from '../models/CompanyLocation';
+import { AssignedVendor, IAssignedVendor } from '../models/AssignedVendor';
+import { checkIfDuplicateExists, removeDuplicate } from '../utils/arrayUtil';
 
 
 export const getCompanyLocations = async (req: Request, res: Response) => {
+    try {
+        const company = <ICompany>req.company;
 
-    const company = <ICompany>req.company;
+        const companyLocations = await CompanyLocation.find({ company })
+            .populate('workTypes');
 
-    const companyLocations = await CompanyLocation.find({ company });
-
-    return res.json({ status: Status.Success, companyLocations });
-
+        return res.json({ status: Status.Success, companyLocations });
+    } catch (error) {
+        return res.json({ status: Status.Error, message: error.message});
+    }
 }
 
-export const getCompanyLocationDetail = (req: Request, res: Response) => {
-// upcoming
+export const getCompanyLocationById = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        const companyLocation = await CompanyLocation.findById(id)
+            .populate('workTypes')
+            .populate('assignedVendors.workTypes');
+
+        return res.json({ status: Status.Success, companyLocation });
+    } catch (error) {
+        return res.json({ status: Status.Error, message: error.message});
+    }
 }
 
 export const createCompanyLocation = async (req: Request, res: Response) => {
@@ -32,22 +47,8 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
             }
         }
 
-        if (params.assignedVendorId) {
-            if (await Company.findOne({$and: [{_id: params.assignedVendorId }, { type: CompanyTypes.CONTRACTOR }]}) == null) {
-                return res.json({ status: Status.Error, message: 'Invalid Assigned Vendor ID: ' + params.assignedVendorId});
-            }
-        }
-
-        // For handling request from swagger which uses application/x-www-form-urlencoded content type
-        if (typeof params.workTypes === 'string') {
-            params.workTypes = params.workTypes.split(',');
-        }
-
-        for (const workTypeId of (params.workTypes || [])) {
-            if (await WorkType.findById(workTypeId) == null) {
-                return res.json({ status: Status.Error, message: 'Invalid Work Type ID: ' + workTypeId});
-            }
-        }
+        await validateAndParseWorkTypesParam(params);
+        await validateAndParseAssignedVendorsParam(params);
 
         const companyLocation = new CompanyLocation(
             {
@@ -70,8 +71,8 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
                 },
                 contactName: params.contactName,
                 company,
-                assignedVendor: params.assignedVendorId || null,
-                workTypes: params.workTypes
+                workTypes: params.workTypes,
+                assignedVendors: params.assignedVendors
             }
         );
 
@@ -101,22 +102,8 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
             }
         }
 
-        if (params.assignedVendorId) {
-            if (await Company.findOne({$and: [{_id: params.assignedVendorId }, { type: CompanyTypes.CONTRACTOR }]}) == null) {
-                return res.json({ status: Status.Error, message: 'Invalid Assigned Vendor ID: ' + params.assignedVendorId});
-            }
-        }
-
-        // For handling request from swagger which uses application/x-www-form-urlencoded content type
-        if (typeof params.workTypes === 'string') {
-            params.workTypes = params.workTypes.split(',');
-        }
-
-        for (const workTypeId of (params.workTypes || [])) {
-            if (await WorkType.findById(workTypeId) == null) {
-                return res.json({ status: Status.Error, message: 'Invalid Work Type ID: ' + workTypeId});
-            }
-        }
+        await validateAndParseWorkTypesParam(params);
+        await validateAndParseAssignedVendorsParam(params);
 
         companyLocation.name = params.name;
         companyLocation.isMainLocation = params.isMainLocation ?? companyLocation.isMainLocation;
@@ -137,8 +124,8 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
         companyLocation.contact.fax = params.fax;
         companyLocation.contactName = params.contactName;
 
-        companyLocation.assignedVendor = params.assignedVendorId || null;
         companyLocation.workTypes = params.workTypes;
+        companyLocation.assignedVendors = params.assignedVendors;
 
         await companyLocation.save();
 
@@ -202,4 +189,67 @@ export const _manageCompanyMainLocation = async (company: ICompany): Promise<ICo
 
     return mainLocation;
 
+}
+
+const validateAndParseWorkTypesParam = async (params: any) => {
+    // For handling request from swagger which uses application/x-www-form-urlencoded content type
+    if (typeof params.workTypes === 'string') {
+        params.workTypes = params.workTypes.split(',');
+    }
+
+    params.workTypes = removeDuplicate(params.workTypes);
+
+    for (const workTypeId of (params.workTypes || [])) {
+        if (!await WorkType.findById(workTypeId)) {
+            throw new Error("Invalid Company Location Work Type ID: " + workTypeId);
+        }
+    }
+}
+
+const validateAndParseAssignedVendorsParam = async (params: any) => {
+    // For handling request from swagger which uses application/x-www-form-urlencoded content type
+    if (typeof params.assignedVendors === 'string') {
+        params.assignedVendors = JSON.parse("["+params.assignedVendors+"]");
+    }
+
+    if (params.assignedVendors) {
+        const vendorIds = params.assignedVendors.map((e: any) => e.vendorId);
+        if (checkIfDuplicateExists(vendorIds)) {
+            throw new Error("Duplicate Vendor ID found");
+        }
+    }
+
+    const assignedVendors: IAssignedVendor[] = [];
+
+    for (const assignedVendor of (params.assignedVendors || [])) {
+        if (!await Company.findById(assignedVendor.vendorId)) {
+            throw new Error("Invalid Assigned Vendor ID: " + assignedVendor.vendorId);
+        }
+
+        if (params.workTypes && params.workTypes.length > 0) {
+            assignedVendor.workTypes = removeDuplicate(assignedVendor.workTypes);
+
+            for (const workTypeId of (assignedVendor.workTypes || [])) {
+                if (!await WorkType.findById(workTypeId)) {
+                    throw new Error("Invalid Assigned Vendor Work Type ID: " + workTypeId);
+                }
+
+                if (params.workTypes.indexOf(workTypeId) === -1) {
+                    throw new Error(`Work Type ID ${workTypeId} doesn't match Company Location Work Type IDs`);
+                }
+            }
+        } else {
+            if (assignedVendor.workTypes && assignedVendor.workTypes.length > 0) {
+                throw new Error(`Can't set Work Type for Vendor with ID ${assignedVendor.vendorId} - Company Location doesn't have Work Types`);
+            }
+        }
+
+        assignedVendors.push(new AssignedVendor(
+            {
+                vendor: assignedVendor.vendorId,
+                workTypes: assignedVendor.workTypes
+            }));
+    }
+
+    params.assignedVendors = assignedVendors;
 }
