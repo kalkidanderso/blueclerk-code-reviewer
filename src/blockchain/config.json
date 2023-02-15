@@ -6,7 +6,7 @@
     "channelName": "blueclerkchannel",
     "chainCodeName": "blueclerkcc",
     "orgName": "blueclerk",
-    "defaultOrgUser": "blueclerkMember1",
+    "defaultOrgUser": "blueclerkUser1",
     "mspName": "BlueclerkMSP",
     "caName": "ca-blueclerk",
     "peer": "peer0.blueclerk.blueclerk-bcn.com",
