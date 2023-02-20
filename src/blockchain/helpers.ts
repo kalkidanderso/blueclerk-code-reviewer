@@ -45,5 +45,6 @@ export const getClientForOrg = async () => {
     };
   } catch (err) {
     console.error(err);
+    throw new Error('Failed to read stateStore: ');
   }
 };
