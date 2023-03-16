@@ -426,7 +426,7 @@ export const getServiceTickets = async (req: Request, res: Response) => {
     ]);
     // Map the Job IDs filtered
     const serviceTicketIds = serviceTicketsAggregate.map((serviceTicket) => serviceTicket._id);
-    return res.json({'status': Status.Error, 'message': serviceTicketIds})
+
     ServiceTicket.find({ _id: { $in: serviceTicketIds } })
         .sort({ ...sortQuery })
         .populate({
