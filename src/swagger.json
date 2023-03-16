@@ -7392,6 +7392,47 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "keyword": {
+                    "type": "string",
+                    "description": "Filter service tickets by search keyword to Service Ticket Id, Customer's name, Subdivision's name address, Technician's name, and Contractor's name"
+                  },
+                  "status": {
+                    "type": "integer",
+                    "description": "Filter service tickets by status (ACTIVE => 0, CANCELED => 1, FINISHED => 2, REACTIVED => 3)",
+                    "enum": [
+                      0,
+                      1,
+                      2
+                    ]
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter of start service tickets schedule date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter of end service tickets schedule date"
+                  },
+                  "customerId": {
+                    "type": "string",
+                    "description": "Filter service tickets by customer"
+                  },
+                  "technicianIds": {
+                    "type": "array",
+                    "description": "List of technician id's in array. eg. [\"608b9f54c30223196b7ab22a\", \"608b9f54c30223196b7ab21b\"]"
+                  },
+                  "nextCursor": {
+                    "type": "string",
+                    "description": "Cursor to go to next page. Use the nextCursor value from the previous response"
+                  },
+                  "previousCursor": {
+                    "type": "string",
+                    "description": "Cursor to go to previous page. Use the previousCursor value from the previous response"
+                  },
+                  "pageSize": {
+                    "type": "number",
+                    "description": "The numbers of service tickets to return per page e.g. 10. When not provided, will return 30 service tickets by default"
+                  },
                   "companyId": {
                     "type": "string",
                     "description": "Id of company if contractor is hitting for other company"
