@@ -17,9 +17,9 @@ export const invokeChaincode = async (
   const channel = fabricClient.getChannel(channelName)
   const userFromStore = await fabricClient.getUserContext(userName, true)
 
-  if (!userFromStore && !userFromStore.isEnrolled()) {
-    throw new Error('Failed to get user.... run register User')
-  }
+//  if (!userFromStore && !userFromStore.isEnrolled()) {
+//    throw new Error('Failed to get user.... run register User')
+//  }
   const txId = fabricClient.newTransactionID()
   const proposalRequest = {
     chaincodeId: chaincodeName,
