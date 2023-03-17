@@ -3,8 +3,9 @@ import { ObjectId } from 'mongodb';
 import moment from 'moment';
 import { parseFieldsAndUploadImageInS3, updateFieldsAndUploadImageInS3 } from '../services/aws';
 import { _handleJobTypesJson } from '../controllers/item';
+import * as helper from '../services/helper';
 
-import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, JobStatus, SocketEvents, JobRequestStatus } from '../common/constants';
+import { Status, Messages, ServiceTicketStatus, ServiceTicketSource, JobStatus, SocketEvents, DefaultPageSize, JobRequestStatus } from '../common/constants';
 
 import { ICompany } from '../models/Company';
 import { IUser } from '../models/User';
@@ -298,14 +299,156 @@ export const _createServiceTicket = async (req: Request, res: Response, next: (e
 
 }
 
-export const getServiceTickets = (req: Request, res: Response) => {
+export const getServiceTickets = async (req: Request, res: Response) => {
 
+    const params = req.body;
     let companyId = req.companyId;
+    let technicianIds: any[];
+
     if(req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
 
-    ServiceTicket.find({ company: companyId })
+    // Return error when all cursors are provided
+    if (params.nextCursor && params.previousCursor) {
+        return res.json({ status: Status.Error, message: 'Provided cursor could only be one of either nextCursor or previousCursor.' });
+    }
+
+    const filterQuery: any = {
+        $and: [{
+            $or: [
+                { company: companyId }
+            ]
+        }]
+    };
+
+    // Check and add if params filter provided
+    if (params.keyword) {
+        const keywordRegex = { $regex: params.keyword, $options: 'i' };
+        filterQuery['$and'].push({
+            $or: [
+                { ticketId: keywordRegex },
+                { 'customerObj.profile.displayName': keywordRegex },
+                { 'homeOwnerObj.profile.displayName': keywordRegex },
+                { 'jobLocationObj.name': keywordRegex },
+                { 'jobLocationObj.address.street': keywordRegex },
+                { 'jobLocationObj.address.city': keywordRegex },
+                { 'jobSiteObj.name': keywordRegex },
+                { 'jobSiteObj.address.street': keywordRegex },
+                { 'jobSiteObj.address.city': keywordRegex },
+                { 'technicianObj.profile.displayName': keywordRegex },
+            ]
+        })
+    }
+    if (params.technicianIds) {
+        // Validate is technician ids is already array or object
+        technicianIds = Array.isArray(params.technicianIds)
+            ? params.technicianIds
+            : params.technicianIds.split(',').filter((element: any) => element)
+    }
+
+    if (technicianIds?.length) {
+        // convert technician Id from string to objectId and remove falsy value 
+        const technicians = technicianIds.map(technicianId => {
+            if (ObjectId.isValid(technicianId)) return new ObjectId(technicianId);
+        }).filter(tech => tech);
+        filterQuery['$and'].push({
+            $or: [
+                { 'tasks.technician': { $in: technicians } },
+                { 'tasks.contractor': { $in: technicians } }
+            ]
+        });
+    }
+
+    if (params.status == 0) {
+        filterQuery['$and'].push({status: {$ne: 1}});
+        filterQuery['$and'].push({jobCreated: false});
+    }
+    else if(params.status == 1)
+    {
+        filterQuery['$and'].push(
+        {$or: [
+            {
+                $and: [
+                    {status: {$ne: 1}},
+                    {jobCreated: false}
+                ]
+            },
+            {
+                $and: [
+                    {status: 1},
+                    {jobCreated: true}
+                ]
+            },
+        ]});
+    }
+    if (params.startDate && params.endDate) {
+        const startDate = moment(params.startDate).format('YYYY-MM-DD');
+        const endDate = moment(params.endDate).format('YYYY-MM-DD');
+        filterQuery['$and'].push({ scheduleDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
+    }
+    if (params.customerId) {
+        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+    }
+
+    // Deep clone filterQuery
+    const query: any = { $and: [] };
+    filterQuery['$and'].map((q: any) => { query['$and'].push({ ...q }) });
+    // Pagination query that default to nothing
+    let paginationQuery = {};
+    // Sort query that default to sort by the recent ones
+    let sortQuery = { editedAt: -1, _id: -1 };
+
+    if (params.nextCursor) {
+        // Update pagination query to get the next page
+        const cursor = JSON.parse(helper.fromCursorHash(params.nextCursor));
+        const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
+        paginationQuery = {
+            $or: [
+                { editedAt: { $lt: new Date(cursor.updatedAt) } },
+                { editedAt: new Date(cursor.updatedAt), _id: { $lt: cursorId } }
+            ]
+        };
+        query['$and'].push({ ...paginationQuery });
+    }
+    if (params.previousCursor) {
+        // Update pagination query to get the previous page
+        const cursor = JSON.parse(helper.fromCursorHash(params.previousCursor));
+        const cursorId =
+         ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
+        paginationQuery = {
+            $or: [
+                { editedAt: { $gt: new Date(cursor.updatedAt) } },
+                { editedAt: new Date(cursor.updatedAt), _id: { $gt: cursorId } }
+            ]
+        };
+        query['$and'].push({ ...paginationQuery });
+        // Getting previous page is special, we need to reverse the sort
+        sortQuery = { editedAt: 1, _id: 1 };
+    }
+
+    // Construct aggreate lookups here to be used multiple times
+    const aggregateLookups = [
+        { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
+        { $lookup: { from: 'joblocations', localField: 'jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
+        { $lookup: { from: 'jobsites', localField: 'jobSite', foreignField: '_id', as: 'jobSiteObj' } },
+        { $lookup: { from: 'users', localField: 'tasks.technician', foreignField: '_id', as: 'technicianObj' } },
+        { $lookup: { from: 'companies', localField: 'tasks.contractor', foreignField: '_id', as: 'contractorsObj' } }
+    ]
+
+    // Filter jobs using aggregate to be search to another collection
+    const serviceTicketsAggregate: IServiceTicket[] = await ServiceTicket.aggregate([
+        ...aggregateLookups,
+        { $match: { ...query } },
+        { $project: { _id: 1, editedAt: 1 } },
+        { $sort: sortQuery },
+        { $limit: Number(params.pageSize) || DefaultPageSize }
+    ]);
+    // Map the Job IDs filtered
+    const serviceTicketIds = serviceTicketsAggregate.map((serviceTicket) => serviceTicket._id);
+
+    ServiceTicket.find({ _id: { $in: serviceTicketIds } })
+        .sort({ ...sortQuery })
         .populate({
             path: 'customer',
             select: 'info.email profile.displayName contactName',
@@ -326,13 +469,76 @@ export const getServiceTickets = (req: Request, res: Response) => {
             path: 'editedBy',
             select: 'profile.displayName'
         })
-        .exec((err: any, serviceTickets: IServiceTicket[])=>{
+        .exec(async (err: any, serviceTickets: IServiceTicket[])=>{
 
             if (err) {
                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            return res.json({'status': Status.Success, 'serviceTickets': serviceTickets})
+            // Because we reverse sort for previous page, we need to revert it back
+            if (params.previousCursor) {
+                serviceTickets = serviceTickets.reverse();
+            }
+
+            /**
+             * Get all total jobs count
+             */
+            const totalServiceTickets = await ServiceTicket.aggregate([
+                ...aggregateLookups,
+                { $match: { ...filterQuery } },
+                { $count: 'count' }
+            ])
+
+            /**
+             * Check if next page is available
+             */
+            let nextCursor = { updatedAt: serviceTickets[serviceTickets.length - 1]?.editedAt, _id: serviceTickets[serviceTickets.length - 1]?._id };
+            // Deep clone filterQuery
+            const nextPageQuery: any = { $and: [] };
+            filterQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
+            // To be added with the pagination for the previous page
+            nextPageQuery['$and'].push({
+                $or: [
+                    { editedAt: { $lt: new Date(nextCursor.updatedAt) } },
+                    { editedAt: new Date(nextCursor.updatedAt), _id: { $lt: nextCursor._id } }
+                ]
+            });
+            const isNextPage = await ServiceTicket.aggregate([
+                ...aggregateLookups,
+                { $match: { ...nextPageQuery } },
+                { $project: { _id: 1, editedAt: 1 } },
+                { $sort: { editedAt: -1, _id: -1 } },
+                { $limit: 1 }
+            ]);
+
+            /**
+             * Check if previous page is availabe
+             */
+            let previousCursor = { updatedAt: serviceTickets[0]?.editedAt, _id: serviceTickets[0]?._id };
+            // Deep clone filterQuery
+            const previousPageQuery: any = { $and: [] };
+            filterQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
+            // To be added with the pagination for the previous page
+            previousPageQuery['$and'].push({
+                $or: [
+                    { editedAt: { $gt: new Date(previousCursor.updatedAt) } },
+                    { editedAt: new Date(previousCursor.updatedAt), _id: { $gt: previousCursor._id } }
+                ]
+            });
+            const isPreviousPage = await ServiceTicket.aggregate([
+                ...aggregateLookups,
+                { $match: { ...previousPageQuery } },
+                { $project: { _id: 1, editedAt: 1 } },
+                { $sort: { editedAt: 1, _id: 1 } },
+                { $limit: 1 }
+            ]);
+            return res.json({
+                status: Status.Success,
+                serviceTickets: serviceTickets,
+                total: totalServiceTickets[0]?.count,
+                nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)) : null,
+                previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null
+            });
         }
     )
 
