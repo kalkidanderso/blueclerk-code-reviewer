@@ -370,8 +370,7 @@ export const getServiceTickets = async (req: Request, res: Response) => {
         {$or: [
             {
                 $and: [
-                    {status: {$ne: 1}},
-                    {jobCreated: false}
+                    {status: {$ne: 1}}
                 ]
             },
             {
