@@ -4407,10 +4407,10 @@ paths:
               properties:
                 keyword:
                   type: string
-                  description: Filter jobs by search keyword to Service Ticket Id, Customer's name, Subdivision's name address, Technician's name, and Contractor's name
+                  description: Filter service tickets by search keyword to Service Ticket Id, Customer's name, Subdivision's name address, Technician's name, and Contractor's name
                 status:
                   type: integer
-                  "description": "Filter service tickets by status (ACTIVE => 0, CANCELED => 1, FINISHED => 2, REACTIVED => 3)"
+                  "description": "Filter service tickets by status (OPEN => 0, AVAILABLE => 1, ALL => 2)",
                   enum:
                     - 0
                     - 1

@@ -7398,7 +7398,7 @@
                   },
                   "status": {
                     "type": "integer",
-                    "description": "Filter service tickets by status (ACTIVE => 0, CANCELED => 1, FINISHED => 2, REACTIVED => 3)",
+                    "description": "Filter service tickets by status (OPEN => 0, AVAILABLE => 1, ALL => 2)",
                     "enum": [
                       0,
                       1,

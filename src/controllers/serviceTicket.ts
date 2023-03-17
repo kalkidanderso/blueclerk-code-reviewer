@@ -360,8 +360,27 @@ export const getServiceTickets = async (req: Request, res: Response) => {
         });
     }
 
-    if (params.status !== undefined && params.status !== null) {
-        filterQuery['$and'].push({ status: params.status });
+    if (params.status == 0) {
+        filterQuery['$and'].push({status: {$ne: 1}});
+        filterQuery['$and'].push({jobCreated: false});
+    }
+    else if(params.status == 1)
+    {
+        filterQuery['$and'].push(
+        {$or: [
+            {
+                $and: [
+                    {status: {$ne: 1}},
+                    {jobCreated: false}
+                ]
+            },
+            {
+                $and: [
+                    {status: 1},
+                    {jobCreated: true}
+                ]
+            },
+        ]});
     }
     if (params.startDate && params.endDate) {
         const startDate = moment(params.startDate).format('YYYY-MM-DD');
@@ -378,7 +397,7 @@ export const getServiceTickets = async (req: Request, res: Response) => {
     // Pagination query that default to nothing
     let paginationQuery = {};
     // Sort query that default to sort by the recent ones
-    let sortQuery = { updatedAt: -1, _id: -1 };
+    let sortQuery = { editedAt: -1, _id: -1 };
 
     if (params.nextCursor) {
         // Update pagination query to get the next page
@@ -386,8 +405,8 @@ export const getServiceTickets = async (req: Request, res: Response) => {
         const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
         paginationQuery = {
             $or: [
-                { updatedAt: { $lt: new Date(cursor.updatedAt) } },
-                { updatedAt: new Date(cursor.updatedAt), _id: { $lt: cursorId } }
+                { editedAt: { $lt: new Date(cursor.updatedAt) } },
+                { editedAt: new Date(cursor.updatedAt), _id: { $lt: cursorId } }
             ]
         };
         query['$and'].push({ ...paginationQuery });
@@ -395,16 +414,17 @@ export const getServiceTickets = async (req: Request, res: Response) => {
     if (params.previousCursor) {
         // Update pagination query to get the previous page
         const cursor = JSON.parse(helper.fromCursorHash(params.previousCursor));
-        const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
+        const cursorId =
+         ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
         paginationQuery = {
             $or: [
-                { updatedAt: { $gt: new Date(cursor.updatedAt) } },
-                { updatedAt: new Date(cursor.updatedAt), _id: { $gt: cursorId } }
+                { editedAt: { $gt: new Date(cursor.updatedAt) } },
+                { editedAt: new Date(cursor.updatedAt), _id: { $gt: cursorId } }
             ]
         };
         query['$and'].push({ ...paginationQuery });
         // Getting previous page is special, we need to reverse the sort
-        sortQuery = { updatedAt: 1, _id: 1 };
+        sortQuery = { editedAt: 1, _id: 1 };
     }
 
     // Construct aggreate lookups here to be used multiple times
@@ -420,9 +440,9 @@ export const getServiceTickets = async (req: Request, res: Response) => {
     const serviceTicketsAggregate: IServiceTicket[] = await ServiceTicket.aggregate([
         ...aggregateLookups,
         { $match: { ...query } },
-        { $project: { _id: 1, updatedAt: 1 } },
+        { $project: { _id: 1, editedAt: 1 } },
         { $sort: sortQuery },
-        { $limit: params.pageSize || DefaultPageSize }
+        { $limit: Number(params.pageSize) || DefaultPageSize }
     ]);
     // Map the Job IDs filtered
     const serviceTicketIds = serviceTicketsAggregate.map((serviceTicket) => serviceTicket._id);
@@ -479,15 +499,15 @@ export const getServiceTickets = async (req: Request, res: Response) => {
             // To be added with the pagination for the previous page
             nextPageQuery['$and'].push({
                 $or: [
-                    { updatedAt: { $lt: new Date(nextCursor.updatedAt) } },
-                    { updatedAt: new Date(nextCursor.updatedAt), _id: { $lt: nextCursor._id } }
+                    { editedAt: { $lt: new Date(nextCursor.updatedAt) } },
+                    { editedAt: new Date(nextCursor.updatedAt), _id: { $lt: nextCursor._id } }
                 ]
             });
             const isNextPage = await ServiceTicket.aggregate([
                 ...aggregateLookups,
                 { $match: { ...nextPageQuery } },
-                { $project: { _id: 1, updatedAt: 1 } },
-                { $sort: { updatedAt: -1, _id: -1 } },
+                { $project: { _id: 1, editedAt: 1 } },
+                { $sort: { editedAt: -1, _id: -1 } },
                 { $limit: 1 }
             ]);
 
@@ -501,15 +521,15 @@ export const getServiceTickets = async (req: Request, res: Response) => {
             // To be added with the pagination for the previous page
             previousPageQuery['$and'].push({
                 $or: [
-                    { updatedAt: { $gt: new Date(previousCursor.updatedAt) } },
-                    { updatedAt: new Date(previousCursor.updatedAt), _id: { $gt: previousCursor._id } }
+                    { editedAt: { $gt: new Date(previousCursor.updatedAt) } },
+                    { editedAt: new Date(previousCursor.updatedAt), _id: { $gt: previousCursor._id } }
                 ]
             });
             const isPreviousPage = await ServiceTicket.aggregate([
                 ...aggregateLookups,
                 { $match: { ...previousPageQuery } },
-                { $project: { _id: 1, updatedAt: 1 } },
-                { $sort: { updatedAt: 1, _id: 1 } },
+                { $project: { _id: 1, editedAt: 1 } },
+                { $sort: { editedAt: 1, _id: 1 } },
                 { $limit: 1 }
             ]);
             return res.json({
