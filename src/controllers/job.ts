@@ -1021,6 +1021,7 @@ export const getJobs = async (req: Request, res: Response) => {
     // Construct aggreate lookups here to be used multiple times
     const aggregateLookups = [
         { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
+        { $lookup: { from: 'servicetickets', localField: 'ticket', foreignField: '_id', as: 'ticketObj' } },
         { $lookup: { from: 'joblocations', localField: 'jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
         { $lookup: { from: 'jobsites', localField: 'jobSite', foreignField: '_id', as: 'jobSiteObj' } },
         { $lookup: { from: 'users', localField: 'tasks.technician', foreignField: '_id', as: 'technicianObj' } },
@@ -1042,7 +1043,7 @@ export const getJobs = async (req: Request, res: Response) => {
     ])
     return res.json({
         status: Status.Success,
-        jobsAggregate,
+        jobs: jobsAggregate,
         total: totalJobs[0]?.count,
     });
     // Map the Job IDs filtered
