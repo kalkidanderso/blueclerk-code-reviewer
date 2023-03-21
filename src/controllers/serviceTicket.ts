@@ -328,7 +328,10 @@ export const getServiceTickets = async (req: Request, res: Response) => {
         filterQuery['$and'].push({
             $or: [
                 { ticketId: keywordRegex },
+                { note: keywordRegex },
+                { dueDate: keywordRegex },
                 { 'customerObj.profile.displayName': keywordRegex },
+                { 'customerContactIdObj.name': keywordRegex },
                 { 'homeOwnerObj.profile.displayName': keywordRegex },
                 { 'jobLocationObj.name': keywordRegex },
                 { 'jobLocationObj.address.street': keywordRegex },
@@ -384,7 +387,7 @@ export const getServiceTickets = async (req: Request, res: Response) => {
     if (params.startDate && params.endDate) {
         const startDate = moment(params.startDate).format('YYYY-MM-DD');
         const endDate = moment(params.endDate).format('YYYY-MM-DD');
-        filterQuery['$and'].push({ scheduleDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
+        filterQuery['$and'].push({ dueDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
     }
     if (params.customerId) {
         filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
@@ -432,7 +435,8 @@ export const getServiceTickets = async (req: Request, res: Response) => {
         { $lookup: { from: 'joblocations', localField: 'jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
         { $lookup: { from: 'jobsites', localField: 'jobSite', foreignField: '_id', as: 'jobSiteObj' } },
         { $lookup: { from: 'users', localField: 'tasks.technician', foreignField: '_id', as: 'technicianObj' } },
-        { $lookup: { from: 'companies', localField: 'tasks.contractor', foreignField: '_id', as: 'contractorsObj' } }
+        { $lookup: { from: 'companies', localField: 'tasks.contractor', foreignField: '_id', as: 'contractorsObj' } },
+        { $lookup: { from: 'contacts', localField: 'customerContactId', foreignField: '_id', as: 'customerContactIdObj' } }
     ]
 
     // Filter jobs using aggregate to be search to another collection
