@@ -329,6 +329,7 @@ export const getServiceTickets = async (req: Request, res: Response) => {
             $or: [
                 { ticketId: keywordRegex },
                 { note: keywordRegex },
+                { customerPO: keywordRegex },
                 { dueDate: keywordRegex },
                 { 'customerObj.profile.displayName': keywordRegex },
                 { 'customerContactIdObj.name': keywordRegex },
