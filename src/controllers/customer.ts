@@ -24,7 +24,7 @@ import { _getQBPayments, _updateQBPayment, _transferQBPayments, _countQBPayments
 import { _refreshToken } from './quickbook'
 import { createCustomerContact } from './contact'
 import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin'
-import { SupplierBuilder } from '../models/SupplierBuilder'
+import { SupplierBuilder, ISupplierBuilder } from '../models/SupplierBuilder'
 
 /**
  * To reset Customer quickbookId,
@@ -569,13 +569,32 @@ export const updateCustomPrices = async (req: Request, res: Response) => {
 export const customerDetail = (req: Request, res: Response) => {
 
     const params = req.body
-
+    
     let companyId = req.companyId;
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
 
-    CompanyCustomer.findOne({ 'customer': params.customerId, company: companyId })
+    if(params.accountType == "Supplier")
+    {
+        SupplierBuilder.findOne({ builder: params.customerId, supplier: companyId })
+        .populate({
+            path: 'builder',
+            populate: [{ path: 'jobLocations', populate: { path: 'jobSites' } }, { path: 'equipments' }, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
+        })
+        .exec().then((supplierCustomer: ISupplierBuilder) => {
+            const customer: any = supplierCustomer?.builder;
+            if (!supplierCustomer || customer?.permissions?.role != Role.CUSTOMER) {
+                return res.json({ 'status': Status.Error, 'message': 'No customer found' })
+            }
+            return res.json({ 'status': Status.Success, 'customer': customer })
+        }).catch((err) => {
+            return res.json({ 'status': Status.Error, 'message': err.message });
+        });
+    }
+    else
+    {
+        CompanyCustomer.findOne({ 'customer': params.customerId, company: companyId })
         .populate({
             path: 'customer',
             populate: [{ path: 'jobLocations', populate: { path: 'jobSites' } }, { path: 'equipments' }, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
@@ -589,6 +608,7 @@ export const customerDetail = (req: Request, res: Response) => {
         }).catch((err) => {
             return res.json({ 'status': Status.Error, 'message': err.message });
         });
+    }
 }
 
 export const searchDuplicatedCustomers = async (req: Request, res: Response) => {

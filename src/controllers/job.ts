@@ -1025,7 +1025,8 @@ export const getJobs = async (req: Request, res: Response) => {
         { $lookup: { from: 'joblocations', localField: 'jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
         { $lookup: { from: 'jobsites', localField: 'jobSite', foreignField: '_id', as: 'jobSiteObj' } },
         { $lookup: { from: 'users', localField: 'tasks.technician', foreignField: '_id', as: 'technicianObj' } },
-        { $lookup: { from: 'companies', localField: 'tasks.contractor', foreignField: '_id', as: 'contractorsObj' } }
+        { $lookup: { from: 'companies', localField: 'tasks.contractor', foreignField: '_id', as: 'contractorsObj' } },
+        { $lookup: { from: 'jobtypes', localField: 'tasks.jobTypes.jobType', foreignField: '_id', as: 'jobTypeObj' } }
     ]
 
     // Filter jobs using aggregate to be search to another collection
