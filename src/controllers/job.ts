@@ -134,7 +134,6 @@ export const createJob = async (req: Request, res: Response) => {
     const params = req.body;
     const imagesUrl: string[] = [];
     const company = <ICompany>req.company;
-    console.log('params', params)
     if (req.files) {
         const paramsImageFile = JSON.parse(JSON.stringify(req.files));
 
@@ -1032,115 +1031,17 @@ export const getJobs = async (req: Request, res: Response) => {
 
     // Filter jobs using aggregate to be search to another collection
     const jobsAggregate: IJob[] = await Job.aggregate([
+        ...aggregateLookups,
         { $match: { ...query } },
         { $sort: sortQuery },
         { $skip : (currentPage  * pageSize) },
-        { $limit: params.pageSize || DefaultPageSize },
-        {
-            $lookup: {
-                from: 'customers',
-                localField: 'customer',
-                foreignField: '_id',
-                as: 'customerObj',
-                pipeline: [
-                    {
-                        $project: {
-                            _id: 1,
-                            profile: 1,
-                            info: 1,
-                        },
-                    },
-                ],
-            }
-        },
-        {
-            $lookup: {
-                from: 'servicetickets',
-                localField: 'ticket',
-                foreignField: '_id',
-                as: 'ticketObj'
-            }
-        },
-        {
-            $lookup: {
-                from: 'joblocations',
-                localField: 'jobLocation',
-                foreignField: '_id',
-                as: 'jobLocationObj',
-                pipeline: [
-                    {
-                        $project: {
-                            _id: 1,
-                            name: 1,
-                            address: 1,
-                        },
-                    },
-                ],
-            }
-        },
-        {
-            $lookup: {
-                from: 'jobsites',
-                localField: 'jobSite',
-                foreignField: '_id',
-                as: 'jobSiteObj'
-            }
-        },
-        {
-            $lookup: {
-                from: 'users',
-                localField: 'tasks.technician',
-                foreignField: '_id',
-                as: 'technicianObj',
-                pipeline: [
-                    {
-                        $project: {
-                            _id: 1,
-                            profile: 1,
-                            info: 1,
-                        },
-                    },
-                ],
-            }
-        },
-        {
-            $lookup: {
-                from: 'companies',
-                localField: 'tasks.contractor',
-                foreignField: '_id',
-                as: 'contractorsObj'
-            }
-        },
-        {
-            $lookup: {
-                from: 'jobtypes',
-                localField: 'tasks.jobTypes.jobType',
-                foreignField: '_id',
-                as: 'jobTypeObj'
-            }
-        },
-        // {
-        //     $project: {
-        //         "_id":0,
-        //         "jobId":1,
-        //         "status":1,
-        //         "customerObj": 1,
-        //         "ticketObj": 1,
-        //         "technicianObj": 1,
-        //         "jobLocationObj": 1,
-        //         "jobSiteObj": 1,
-        //         "scheduledStartTime":"$scheduledStartTime",
-        //         "scheduledEndTime":"$scheduledEndTime",
-        //         "jobtypeObj": 1,
-        //         "contractorsObj": 1,
-        //         "tasks": 1,
-        //     }
-        // }
+        { $limit: params.pageSize || DefaultPageSize }
     ]);
     const totalJobs = await Job.aggregate([
+        ...aggregateLookups,
         { $match: { ...filterQuery } },
         { $count: 'count' }
-    ]);
+    ])
     return res.json({
         status: Status.Success,
         jobs: jobsAggregate,
@@ -1308,98 +1209,6 @@ export const getJobs = async (req: Request, res: Response) => {
     //     )
 
 }
-// export const getJobs = async (req: Request, res: Response) => {
-
-//     const params = req.body;
-//     let technicianIds: any[];
-//     let companyId = req.otherCompanyId || req.companyId;
-//     let currentPage = params.currentPage || 0;
-//     let pageSize = params.pageSize || DefaultPageSize;
-
-//     // Return error when all cursors are provided
-//     if (params.nextCursor && params.previousCursor) {
-//         return res.json({ status: Status.Error, message: 'Provided cursor could only be one of either nextCursor or previousCursor.' });
-//     }
-
-//     // Filter jobs using aggregate to be search to another collection
-//     const jobsAggregate: IJob[] = await Job.aggregate([
-//         {
-//             $match: {
-//                 $or: [
-//                     {'tasks.contractor': companyId},
-//                     {"company": companyId},
-//                     {"contractor": companyId},
-//                 ]
-//             },
-//         },
-//         {
-//             $sort: {
-//                 updatedAt: -1,
-//             },
-//         },
-//         {
-//             $skip: (currentPage * pageSize),
-//         },
-//         {
-//             $limit: params.pageSize || DefaultPageSize,
-//         },
-//         { $lookup: {
-//             from: "customers",
-//             localField: "customer",
-//             foreignField: "_id",
-//             as: "customerobj"
-//           }
-//         },
-//         {
-//             $lookup: {
-//                     from: "users",
-//                     localField: "tasks.technician",
-//                     foreignField: "_id",
-//                     as: "technicianObj"
-//                 }
-//         },
-//         {
-//             $lookup: {
-//                     from: "joblocations",
-//                     localField: "jobLocation",
-//                     foreignField: "_id",
-//                     as: "joblocationObj"
-//                 }
-//         },
-//         {
-//             $lookup: {
-//                    from: "jobtypes",
-//                    localField: "tasks.jobTypes.jobType",
-//                    foreignField: "_id",
-//                    as: "jobtypeObj"
-//                  }
-//         },
-//         {
-//             $project: {
-//                 "_id":0,
-//                 "jobId":1,
-//                 "status":1,
-//                 "customerName":{$arrayElemAt: ["$customerobj.profile.displayName",0]},
-//                 "technicianName":{$arrayElemAt: ["$technicianObj.profile.displayName",0]},
-//                 "subdivision":{$ifNull: [{$arrayElemAt: ["$joblocationObj.name",0]},""]},
-//                 "scheduledStartTime":"$scheduledStartTime",
-//                 "scheduledEndTime":"$scheduledEndTime",
-//                 "jobtypeObj":{$ifNull: [{$arrayElemAt: ["$jobtypeObj.title",0]},""]}
-//             }
-//         }
-//     ]);
-//     const totalJobs = await Job.find({$or:[
-//         {"tasks.contractor": new ObjectId(companyId)}, 
-//         {"company": new ObjectId(companyId)}, 
-//         {"contractor": new ObjectId(companyId)}]
-//     }).countDocuments();
-//     return res.json({
-//         status: Status.Success,
-//         jobs: jobsAggregate,
-//         total: totalJobs,
-//     });
-
-// }
 
 export const getJobsByTechnicianId = (req: Request, res: Response) => {
 
