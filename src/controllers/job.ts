@@ -134,7 +134,6 @@ export const createJob = async (req: Request, res: Response) => {
     const params = req.body;
     const imagesUrl: string[] = [];
     const company = <ICompany>req.company;
-    console.log('params', params)
     if (req.files) {
         const paramsImageFile = JSON.parse(JSON.stringify(req.files));
 
