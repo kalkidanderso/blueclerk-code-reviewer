@@ -275,8 +275,8 @@ export const _createCustomer = async (req: Request, res: Response, next: (err: a
 
 }
 
-export const getCustomers = (req: Request, res: Response) => {
 
+export const getCustomers = async (req: Request, res: Response) => {
     const params = req.body
     var companyId = req.companyId;
     if (req.otherCompanyId != undefined) {
@@ -290,40 +290,37 @@ export const getCustomers = (req: Request, res: Response) => {
     } else {
         filter = { 'isActive': { $eq: false } }
     }
-    var companyId = companyId;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
-    }
 
-    CompanyCustomer.find({ company: companyId },
-        (err: any, companyCustomers: ICompanyCustomer[]) => {
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+    const customers = await Customer.aggregate([
+        {
+            $lookup: {
+                from: "companycustomers",
+                localField: "_id",
+                foreignField: "customer",
+                as: "companycustomers"
             }
-
-            if (companyCustomers.length == 0) {
-                return res.json({ 'status': Status.Success, 'customers': [] })
+        },
+        {
+            $match: {
+                $and: [
+                    { 'companycustomers.company': new ObjectId(companyId) },
+                    filter
+                ]
             }
-            const customerIds = companyCustomers.map((obj: any) => {
-
-                return obj.customer
-            })
-
-            Customer.find({ _id: { $in: customerIds }, ...filter },
-                'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.zipCode location contact.phone permissions.role isActive balance company vendorId itemTier paymentTerm quickbookId inactiveBy inactiveAt')
-                .populate({ path: 'itemTier', select: '-companyId -__v' })
-                .populate({ path: 'inactiveBy', select: 'profile' })
-                .exec((err: any, customers: ICustomer[]) => {
-
-                    if (err) {
-
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                    }
-
-                    return res.json({ 'status': Status.Success, 'customers': customers })
-                })
-
-        })
+        },
+        {
+            $project: {
+                _id: 1,
+                "profile.displayName": 1,
+                "contact.phone": 1,
+                "info.email": 1,
+                "isActive": 1,
+                "quickbookId": 1,
+            }
+        },
+    ]).exec()
+    
+    return res.json({ 'status': Status.Success, 'customers': customers })
 }
 
 /**
