@@ -16,6 +16,7 @@ import * as swaggerDocument from './swagger.json'
 import { CronJob } from 'cron'
 import request from 'request';
 import socketioJwt from 'socketio-jwt';
+const Sentry = require("@sentry/node");
 
 //Environment config
 import moment from 'moment-timezone';
@@ -54,6 +55,11 @@ mongoose.connect(
 
 // Application/Server configs
 const app = require('express')();
+
+Sentry.init({
+  dsn: "https://e9e04710cc774ae3a25f8b762c0c0494@o4504971440422912.ingest.sentry.io/4504971441733632",
+  tracesSampleRate: 1.0,
+});
 
 app.use(timeout('1200s'));
 
@@ -106,6 +112,7 @@ passportMiddleWare(passport)
 
 //Logger
 app.use(logger('dev'))
+
 //Swagger
 app.use('/api-docs', (req: any, res: any, next: any) => {
   swaggerDocument.servers.push({ url: process.env.BASE_URL || "https://blueclerk-node-api.deploy.blueclerk.com/api/v1" });
@@ -283,6 +290,7 @@ new CronJob('1 0 * * *', () => {
     await getRegisteredUser();
     console.log('Blockchain:: successfully created app user')
   } catch (error) {
+    Sentry.captureException(error);
     console.error('Blockchain:: failed to create app user')
   }
 })()
@@ -291,7 +299,6 @@ new CronJob('1 0 * * *', () => {
 httpServer.listen(
   app.get('port'),
   (err: any) => {
-
     if (err) return console.log(`Server start error: ${err}`)
     console.log(`Server started at port: ${app.get('port')}`)
   }

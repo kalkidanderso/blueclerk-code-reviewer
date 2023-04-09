@@ -2,15 +2,15 @@ import { Request, Response } from 'express'
 import { Status, Messages, QBEntityNames, QBEntityOperations } from '../common/constants'
 
 import { ICompany, IQBCompany, Company } from '../models/Company';
-import { _resetCompanyQB } from '../controllers/company';
-import { _resetCustomerQB } from '../controllers/customer';
+import { _resetCompanyQB } from './company';
+import { _resetCustomerQB } from './customer';
 import { _resetJobLocationQB } from './jobLocation';
-import { _resetItemQB } from '../controllers/jobType';
-import { _resetPaymentTermQB } from '../controllers/paymentTerm';
-import { _resetInvoiceQB } from '../controllers/invoice';
-import { _resetPaymentQB } from '../controllers/payment';
-import { createBCCustomer, updateBCCustomer } from '../controllers/quickbook.customer';
-import { createBCPayment } from '../controllers/quickbook.payment';
+import { _resetItemQB } from './jobType';
+import { _resetPaymentTermQB } from './paymentTerm';
+import { _resetInvoiceQB } from './invoice';
+import { _resetPaymentQB } from './payment';
+import { createBCCustomer, updateBCCustomer } from './quickbook.customer';
+import { createBCPayment } from './quickbook.payment';
 import { NotificationServiceTicket } from '../models/NotificationDiscriminator';
 import { NotificationTypes } from '../models/Notification';
 import { createBCItem, updateBCItem } from './quickbook.item';
