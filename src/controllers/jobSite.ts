@@ -65,7 +65,6 @@ export const create = async (req: Request, res: Response) => {
         },
         address,
         locationId,
-        isHomeOccupied
     } = params
 
     const missingParams = []
@@ -99,7 +98,6 @@ export const create = async (req: Request, res: Response) => {
         locationId,
         customerId,
         homeOwner,
-        isHomeOccupied: isHomeOccupied === 'false'? false : !!isHomeOccupied
     }, (err: any, jobSite: IJobSite) => {
         if (err) {
             return res.json({ status: Status.Error, message: Messages.InternalServerError });
@@ -125,7 +123,6 @@ export const update = async (req: Request, res: Response) => {
         isActive,
         address,
         locationId,
-        isHomeOccupied
     } = params
 
     const missingParams = []
@@ -166,8 +163,7 @@ export const update = async (req: Request, res: Response) => {
         address: address,
         locationId: locationId,
         customerId: customerId,
-        homeOwner,
-        isHomeOccupied: isHomeOccupied === 'false'? false : !!isHomeOccupied
+        homeOwner: homeOwner || params.homeOwner,
     }, (err: any) => {
         if (err) {
             return res.json({ status: Status.Error, message: Messages.InternalServerError });

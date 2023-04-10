@@ -59,10 +59,6 @@ const JobSiteSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'HomeOwner'
     },
-    isHomeOccupied: {
-      type: Boolean,
-      default: false
-    }
 
 }, { timestamps: true });
 
