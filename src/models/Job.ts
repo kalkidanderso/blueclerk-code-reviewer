@@ -21,6 +21,8 @@ export interface IJob extends Document {
     jobLocation: Schema.Types.ObjectId | any
     jobSite: Schema.Types.ObjectId | any
     isHomeOccupied: boolean
+    customerName?: Schema.Types.String
+    customerEmail?: Schema.Types.String
     homeOwner: Schema.Types.ObjectId | IHomeOwner
     homeJobLocation: Schema.Types.ObjectId | IJobLocation
     homeJobSite: Schema.Types.ObjectId | IJobSite
