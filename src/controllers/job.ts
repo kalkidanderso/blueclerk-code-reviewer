@@ -166,6 +166,10 @@ export const createJob = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Home Owner is required when home is occupied'});
     }
 
+    if (params.customerName && !params.customerEmail) {
+        return res.json({ status: Status.Error, message: 'Name or Email must be provided'});
+    }
+
     if (params.scheduledStartTime && params.scheduledEndTime) {
         try {
             handleScheduledTime({
@@ -343,6 +347,8 @@ const _createJob = async (
         ticket: params.ticketId ?? parentJob?.ticket ?? null,
         request: params.jobRequestId ?? null,
         isHomeOccupied: params.isHomeOccupied,
+        customerEmail: params.customerEmail || '',
+        customerName: params.customerName || '',
         customer,
         homeOwner,
         jobLocation: params.jobLocationId ?? parentJob?.jobLocation,
