@@ -166,8 +166,8 @@ export const createJob = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Home Owner is required when home is occupied'});
     }
 
-    if (!params.customerName) {
-        return res.json({ status: Status.Error, message: 'Name must be provided'});
+    if (!params.customerName && !(!params.customerPhone && !params.customerEmail)) {
+        return res.json({ status: Status.Error, message: 'Name, Email or Phone must be provided'});
     }
 
     if (params.scheduledStartTime && params.scheduledEndTime) {
