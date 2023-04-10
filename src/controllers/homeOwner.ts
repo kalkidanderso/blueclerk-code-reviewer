@@ -92,17 +92,25 @@ export const getHomeOwners = async (req: Request, res: Response) => {
 
     const params = req.params;
 
-    const keyword = helper.getRegex(params.keyword, 'i');
+    let query: any
 
-    const homeOwners = await HomeOwner.find({
-        $or: [
-            { 'profile.firstName': keyword },
-            { 'profile.lastName': keyword },
-            { 'profile.displayName': keyword },
-            { 'address.street': keyword },
-            { 'address.city': keyword },
-        ]
-    })
+    if (req.query._id) query = { _id: req.query._id }
+    else {
+
+        const keyword = helper.getRegex(params.keyword, 'i');
+
+        query = {
+            $or: [
+                { 'profile.firstName': keyword },
+                { 'profile.lastName': keyword },
+                { 'profile.displayName': keyword },
+                { 'address.street': keyword },
+                { 'address.city': keyword },
+            ]
+        }
+    }
+
+    const homeOwners = await HomeOwner.find(query)
         .populate({
             path: 'jobLocations', select: 'isActive name location address jobSites',
             populate: [{ path: 'jobSites', select: 'isActive name location address' }]
