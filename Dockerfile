@@ -13,7 +13,7 @@ RUN npm install
 RUN npm rebuild bcrypt --build-from-source
 RUN npm install pm2 -g
 ENV PM2_PUBLIC_KEY orlibi61uru1kzv
-ENV PM2_SECRET_KEY hidden
+ENV PM2_SECRET_KEY 88riceao9xegxk2
 COPY . .
 EXPOSE 3006
 RUN npm run tsc
