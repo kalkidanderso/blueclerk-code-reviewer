@@ -11,8 +11,10 @@ COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "tsconfig.js
 RUN npm install request
 RUN npm install
 RUN npm rebuild bcrypt --build-from-source
+RUN npm install pm2 -g
+ENV PM2_PUBLIC_KEY orlibi61uru1kzv
+ENV PM2_SECRET_KEY hidden
 COPY . .
 EXPOSE 3006
 RUN npm run tsc
-
-CMD ["node", "--heapsnapshot-signal=SIGUSR2", "dist/server.js"]
+CMD ["pm2-runtime", "dist/server.js"]
