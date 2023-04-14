@@ -58,7 +58,7 @@ const JobSiteSchema = new Schema({
     homeOwner: {
         type: Schema.Types.ObjectId,
         ref: 'HomeOwner'
-    }
+    },
 
 }, { timestamps: true });
 

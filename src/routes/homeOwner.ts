@@ -1,5 +1,4 @@
 import express from 'express';
-import passport from 'passport';
 
 import { validate, Validations } from '../middleware/validator';
 import { uploadImageInS3 } from '../middleware/multer';
@@ -15,6 +14,10 @@ router.post(
     uploadImageInS3.fields([{ name: 'image' }]),
     validate(Validations.createHomeOwner),
     homeOwnerController.createHomeOwner
+)
+router.get(
+    '/',
+    homeOwnerController.getHomeOwners
 )
 
 export default router;

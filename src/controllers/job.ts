@@ -166,6 +166,10 @@ export const createJob = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Home Owner is required when home is occupied'});
     }
 
+    if (!params.customerName && !(!params.customerPhone && !params.customerEmail)) {
+        return res.json({ status: Status.Error, message: 'Name, Email or Phone must be provided'});
+    }
+
     if (params.scheduledStartTime && params.scheduledEndTime) {
         try {
             handleScheduledTime({
@@ -343,6 +347,9 @@ const _createJob = async (
         ticket: params.ticketId ?? parentJob?.ticket ?? null,
         request: params.jobRequestId ?? null,
         isHomeOccupied: params.isHomeOccupied,
+        customerPhone: params.customerPhone || '',
+        customerEmail: params.customerEmail || '',
+        customerName: params.customerName,
         customer,
         homeOwner,
         jobLocation: params.jobLocationId ?? parentJob?.jobLocation,
@@ -1031,183 +1038,110 @@ export const getJobs = async (req: Request, res: Response) => {
 
     // Filter jobs using aggregate to be search to another collection
     const jobsAggregate: IJob[] = await Job.aggregate([
-        ...aggregateLookups,
-        { $match: { ...query } },
+        { $match: { 
+            $or: [
+                {"tasks.contractor":new ObjectId(companyId)}, 
+                {"company": new ObjectId(companyId)}, 
+                {"contractor": new ObjectId(companyId)}
+            ]
+          } 
+        },
         { $sort: sortQuery },
         { $skip : (currentPage  * pageSize) },
-        { $limit: params.pageSize || DefaultPageSize }
+        { $limit: params.pageSize || DefaultPageSize },
+        {
+            $lookup: {
+                from: 'customers',
+                localField: 'customer',
+                foreignField: '_id',
+                as: 'customerObj',
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            profile: 1,
+                            info: 1,
+                        },
+                    },
+                ],
+            }
+        },
+        {
+            $lookup: {
+                from: 'servicetickets',
+                localField: 'ticket',
+                foreignField: '_id',
+                as: 'ticketObj'
+            }
+        },
+        {
+            $lookup: {
+                from: 'joblocations',
+                localField: 'jobLocation',
+                foreignField: '_id',
+                as: 'jobLocationObj',
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            name: 1,
+                            address: 1,
+                        },
+                    },
+                ],
+            }
+        },
+        {
+            $lookup: {
+                from: 'jobsites',
+                localField: 'jobSite',
+                foreignField: '_id',
+                as: 'jobSiteObj'
+            }
+        },
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'tasks.technician',
+                foreignField: '_id',
+                as: 'technicianObj',
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            profile: 1,
+                            info: 1,
+                        },
+                    },
+                ],
+            }
+        },
+        {
+            $lookup: {
+                from: 'companies',
+                localField: 'tasks.contractor',
+                foreignField: '_id',
+                as: 'contractorsObj'
+            }
+        },
+        {
+            $lookup: {
+                from: 'jobtypes',
+                localField: 'tasks.jobTypes.jobType',
+                foreignField: '_id',
+                as: 'jobTypeObj'
+            }
+        },
     ]);
     const totalJobs = await Job.aggregate([
-        ...aggregateLookups,
         { $match: { ...filterQuery } },
         { $count: 'count' }
-    ])
+    ]);
     return res.json({
         status: Status.Success,
         jobs: jobsAggregate,
         total: totalJobs[0]?.count,
     });
-    // Map the Job IDs filtered
-    // const jobIds = jobsAggregate.map((job) => job._id);
-
-    // Find the filtered jobs again with populated data to be returned to the user
-    // Job.find({ _id: { $in: jobIds } })
-    //     .sort({ ...sortQuery })
-    //     .populate({
-    //         path: 'ticket',
-    //         populate: [{ path: 'customerContactId' }, { path: 'tasks.jobType', select: 'title description sku' }]
-    //     })
-    //     .populate({
-    //         path: 'request',
-    //         populate: [{ path: 'customerContact' }]
-    //     })
-    //     .populate({
-    //         // TODO: To be deprecated
-    //         path: 'technician',
-    //         select: 'profile contact auth.email'
-    //     })
-    //     .populate({
-    //         path: 'tasks.technician',
-    //         select: 'profile contact auth.email'
-    //     })
-    //     .populate({
-    //         // TODO: To be deprecated
-    //         path: 'contractor',
-    //         select: 'info.companyName info.companyEmail type'
-    //     })
-    //     .populate({
-    //         path: 'tasks.contractor',
-    //         select: 'info.companyName info.companyEmail type'
-    //     })
-    //     .populate({
-    //         path: 'customer',
-    //         select: 'info.email auth.email profile.displayName address location contactName'
-    //     })
-    //     .populate({
-    //         path: 'customerContactId',
-    //         select: '-id -__v'
-    //     })
-    //     .populate({
-    //         // TODO: To be deprecated
-    //         path: 'type',
-    //         select: 'title description sku'
-    //     })
-    //     .populate({
-    //         // TODO: To be deprecated
-    //         path: 'tasks.jobType',
-    //         select: 'title description sku'
-    //     })
-    //     .populate({
-    //         // TODO: To be deprecated
-    //         path: 'tasks.timeUpdatedBy',
-    //         select: 'profile.displayName'
-    //     })
-    //     .populate({
-    //         path: 'tasks.jobTypes.jobType',
-    //         select: 'title description sku'
-    //     })
-    //     .populate({
-    //         path: 'tasks.jobTypes.timeUpdatedBy',
-    //         select: 'profile.displayName'
-    //     })
-    //     .populate({
-    //         path: 'company',
-    //         select: 'info.companyName'
-    //     })
-    //     .populate({
-    //         path: 'createdBy',
-    //         select: 'profile.displayName'
-    //     })
-    //     .populate({
-    //         path: 'jobLocation',
-    //         select: 'name location address'
-    //     })
-    //     .populate({
-    //         path: 'jobSite',
-    //         select: 'name location address'
-    //     })
-    //     .populate({
-    //         path: 'images.uploadedBy',
-    //         select: 'profile.displayName'
-    //     })
-    //     .populate({
-    //         path: 'technicianImages.uploadedBy',
-    //         select: 'profile.displayName'
-    //     })
-    //     .exec(async (err: any, jobs: IJob[]) => {
-
-    //         if (err) {
-    //             return res.json({ 'status': Status.Error, 'message': err.errmsg || Messages.GenericError })
-    //         }
-
-    //         // Because we reverse sort for previous page, we need to revert it back
-    //         if (params.previousCursor) {
-    //             jobs = jobs.reverse();
-    //         }
-
-    //         /**
-    //          * Get all total jobs count
-    //          */
-    //         const totalJobs = await Job.aggregate([
-    //             ...aggregateLookups,
-    //             { $match: { ...filterQuery } },
-    //             { $count: 'count' }
-    //         ])
-
-    //         /**
-    //          * Check if next page is available
-    //          */
-    //         let nextCursor = { updatedAt: jobs[jobs.length - 1]?.updatedAt, _id: jobs[jobs.length - 1]?._id };
-    //         // Deep clone filterQuery
-    //         const nextPageQuery: any = { $and: [] };
-    //         filterQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
-    //         // To be added with the pagination for the previous page
-    //         nextPageQuery['$and'].push({
-    //             $or: [
-    //                 { updatedAt: { $lt: new Date(nextCursor.updatedAt) } },
-    //                 { updatedAt: new Date(nextCursor.updatedAt), _id: { $lt: nextCursor._id } }
-    //             ]
-    //         });
-    //         const isNextPage = await Job.aggregate([
-    //             ...aggregateLookups,
-    //             { $match: { ...nextPageQuery } },
-    //             { $project: { _id: 1, updatedAt: 1 } },
-    //             { $sort: { updatedAt: -1, _id: -1 } },
-    //             { $limit: 1 }
-    //         ]);
-
-    //         /**
-    //          * Check if previous page is availabe
-    //          */
-    //         let previousCursor = { updatedAt: jobs[0]?.updatedAt, _id: jobs[0]?._id };
-    //         // Deep clone filterQuery
-    //         const previousPageQuery: any = { $and: [] };
-    //         filterQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
-    //         // To be added with the pagination for the previous page
-    //         previousPageQuery['$and'].push({
-    //             $or: [
-    //                 { updatedAt: { $gt: new Date(previousCursor.updatedAt) } },
-    //                 { updatedAt: new Date(previousCursor.updatedAt), _id: { $gt: previousCursor._id } }
-    //             ]
-    //         });
-    //         const isPreviousPage = await Job.aggregate([
-    //             ...aggregateLookups,
-    //             { $match: { ...previousPageQuery } },
-    //             { $project: { _id: 1, updatedAt: 1 } },
-    //             { $sort: { updatedAt: 1, _id: 1 } },
-    //             { $limit: 1 }
-    //         ]);
-
-    //         return res.json({
-    //             status: Status.Success,
-    //             jobs,
-    //             total: totalJobs[0]?.count,
-    //             nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)) : null,
-    //             previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null
-    //         });
-    //     }
-    //     )
-
 }
 
 export const getJobsByTechnicianId = (req: Request, res: Response) => {
@@ -1557,56 +1491,118 @@ export const getAllJobReports = async (req: Request, res: Response) => {
     // Sort query that default to sort by the recent ones
     let sortQuery = { createdAt: -1, _id: -1 };
 
-    // if (params.nextCursor) {
-    //     // Update pagination query to get the next page
-    //     const cursor = JSON.parse(helper.fromCursorHash(params.nextCursor));
-    //     const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
-    //     paginationQuery = {
-    //         $or: [
-    //             { createdAt: { $lt: new Date(cursor.createdAt) } },
-    //             { createdAt: new Date(cursor.createdAt), _id: { $lt: cursorId } }
-    //         ]
-    //     };
-    //     query['$and'].push({ ...paginationQuery });
-    // }
-    // if (params.previousCursor) {
-    //     // Update pagination query to get the previous page
-    //     const cursor = JSON.parse(helper.fromCursorHash(params.previousCursor));
-    //     const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
-    //     paginationQuery = {
-    //         $or: [
-    //             { createdAt: { $gt: new Date(cursor.createdAt) } },
-    //             { createdAt: new Date(cursor.createdAt), _id: { $gt: cursorId } }
-    //         ]
-    //     };
-    //     query['$and'].push({ ...paginationQuery });
-    //     // Getting previous page is special, we need to reverse the sort
-    //     sortQuery = { createdAt: 1, _id: 1 };
-    // }
-    // Construct aggreate lookups here to be used multiple times
     const aggregateLookups = [
-        { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
-        { $lookup: { from: 'invoices', localField: 'invoice', foreignField: '_id', as: 'invoiceObj' } },
-        { $lookup: { from: 'customers', localField: 'jobObj.customer', foreignField: '_id', as: 'customerObj' } },
-        { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
-        { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
-        { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
-        { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } },
-        { $lookup: { from: 'companies', localField: 'company', foreignField: '_id', as: 'companyObj' } },
-        { $lookup: { from: 'jobtypes', localField: 'jobObj.tasks.jobTypes.jobType', foreignField: '_id', as: 'jobTypeObj' } }
+        {
+            $lookup: {
+                from: 'jobs',
+                localField: 'job',
+                foreignField: '_id',
+                as: 'jobObj'
+            }
+        },
+        {
+            $lookup: {
+                from: 'invoices',
+                localField: 'invoice',
+                foreignField: '_id',
+                as: 'invoiceObj'
+            }
+        },
+        {
+            $lookup: {
+                from: 'customers',
+                localField: 'jobObj.customer',
+                foreignField: '_id',
+                as: 'customerObj',
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            profile: 1,
+                            info: 1,
+                        },
+                    },
+                ],
+            }
+        },
+        {
+            $lookup: {
+                from: 'joblocations',
+                localField: 'jobObj.jobLocation',
+                foreignField: '_id',
+                as: 'jobLocationObj',
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            name: 1,
+                            address: 1,
+                        },
+                    },
+                ],
+            }
+        },
+        {
+            $lookup: {
+                from: 'jobsites',
+                localField: 'jobObj.jobSite',
+                foreignField: '_id',
+                as: 'jobSiteObj'
+            }
+        },
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'jobObj.tasks.technician',
+                foreignField: '_id',
+                as: 'technicianObj',
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            profile: 1,
+                            info: 1,
+                        },
+                    },
+                ],
+            }
+        },
+        {
+            $lookup: {
+                from: 'companies',
+                localField: 'jobObj.tasks.contractor',
+                foreignField: '_id',
+                as: 'contractorsObj'
+            }
+        },
+        {
+            $lookup: {
+                from: 'companies',
+                localField: 'company',
+                foreignField: '_id',
+                as: 'companyObj'
+            }
+        },
+        {
+            $lookup: {
+                from: 'jobtypes',
+                localField: 'jobObj.tasks.jobTypes.jobType',
+                foreignField: '_id',
+                as: 'jobTypeObj'
+            }
+        }
     ]
 
     // Filter jobs using aggregate to be search to another collection
     const jobReportsAggregate: IJobReport[] = await JobReport.aggregate([
-        ...aggregateLookups,
         { $match: { ...query } },
         { $sort: sortQuery },
         { $skip : (currentPage  * pageSize) },
-        { $limit: params.pageSize || DefaultPageSize }
+        { $limit: params.pageSize || DefaultPageSize },
+        ...aggregateLookups,
     ]);
 
     const totalJobReports = await JobReport.aggregate([
-        ...aggregateLookups,
         { $match: { ...filterQuery } },
         { $count: 'count' }
     ])
@@ -1615,101 +1611,6 @@ export const getAllJobReports = async (req: Request, res: Response) => {
         reports: jobReportsAggregate,
         total: totalJobReports[0]?.count,
     });
-    // Map the Job Report IDs filtered
-    // const jobReportIds = jobReportsAggregate.map((jobReport) => jobReport._id);
-
-    // JobReport.find({ _id: { $in: jobReportIds } })
-    //     .sort({ ...sortQuery })
-    //     .populate({
-    //         path: 'job',
-    //         populate: [
-    //             { path: 'tasks.technician', select: 'profile auth.email contact' },
-    //             { path: 'tasks.contractor', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
-    //             { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
-    //             { path: 'customerContactId', select: '-id -__v' },
-    //             { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
-    //             { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
-    //         ]
-    //     })
-    //     .populate({
-    //         path: 'invoice',
-    //         select: '-__v -jobPurchaseOrders -job -customer -company -createdBy -lastEmailSent -emailHistory'
-    //     })
-    //     .exec().then(async (reports: IJobReport[]) => {
-    //         if (reports.length) {
-
-    //             // Because we reverse sort for previous page, we need to revert it back
-    //             if (params.previousCursor) {
-    //                 reports = reports.reverse();
-    //             }
-
-    //             /**
-    //              * Get all total job reports count
-    //              */
-    //             const totalJobReports = await JobReport.aggregate([
-    //                 ...aggregateLookups,
-    //                 { $match: { ...filterQuery } },
-    //                 { $count: 'count' }
-    //             ])
-
-    //             /**
-    //              * Check if next page is available
-    //              */
-    //             let nextCursor = { createdAt: reports[reports.length - 1]?.createdAt, _id: reports[reports.length - 1]?._id };
-    //             // Deep clone filterQuery
-    //             const nextPageQuery: any = { $and: [] };
-    //             filterQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
-    //             // To be added with the pagination for the previous page
-    //             nextPageQuery['$and'].push({
-    //                 $or: [
-    //                     { createdAt: { $lt: new Date(nextCursor.createdAt) } },
-    //                     { createdAt: new Date(nextCursor.createdAt), _id: { $lt: nextCursor._id } }
-    //                 ]
-    //             });
-    //             const isNextPage = await JobReport.aggregate([
-    //                 ...aggregateLookups,
-    //                 { $match: { ...nextPageQuery } },
-    //                 { $project: { _id: 1, createdAt: 1 } },
-    //                 { $sort: { createdAt: -1, _id: -1 } },
-    //                 { $limit: 1 }
-    //             ]);
-
-    //             /**
-    //              * Check if previous page is availabe
-    //              */
-    //             let previousCursor = { createdAt: reports[0]?.createdAt, _id: reports[0]?._id };
-    //             // Deep clone filterQuery
-    //             const previousPageQuery: any = { $and: [] };
-    //             filterQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
-    //             // To be added with the pagination for the previous page
-    //             previousPageQuery['$and'].push({
-    //                 $or: [
-    //                     { createdAt: { $gt: new Date(previousCursor.createdAt) } },
-    //                     { createdAt: new Date(previousCursor.createdAt), _id: { $gt: previousCursor._id } }
-    //                 ]
-    //             });
-    //             const isPreviousPage = await JobReport.aggregate([
-    //                 ...aggregateLookups,
-    //                 { $match: { ...previousPageQuery } },
-    //                 { $project: { _id: 1, createdAt: 1 } },
-    //                 { $sort: { createdAt: 1, _id: 1 } },
-    //                 { $limit: 1 }
-    //             ]);
-
-    //             return res.json({
-    //                 status: Status.Success,
-    //                 reports,
-    //                 total: totalJobReports[0]?.count,
-    //                 nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)) : null,
-    //                 previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null
-    //             });
-    //         }
-
-    //         return res.json({ status: Status.Success, reports: [], message: 'No job reports was found' });
-    //     }).catch((err) => {
-    //         return res.json({ status: Status.Error, message: err.message });
-    //     });
-
 }
 
 
@@ -3280,7 +3181,6 @@ export const sendJobReport = (req: Request, res: Response) => {
                         ccEmails.push(user.auth?.email);
                     }
                 } catch (error) {
-                    console.log('== Send Invoice Error:', error);
                     return res.json({ status: Status.Error, message: Messages.GenericError });
                 }
 
