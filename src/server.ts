@@ -295,6 +295,12 @@ new CronJob('1 0 * * *', () => {
   }
 })()
 
+// Error handling middleware
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error(err.stack);
+  res.status(500).send(err.message || 'Something went wrong');
+});
+
 //Starting the server
 httpServer.listen(
   app.get('port'),
