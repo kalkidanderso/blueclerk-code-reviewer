@@ -2707,7 +2707,7 @@ export const getInvoices = async (req: Request, res: Response) => {
         { $match: { ...previousPageQuery } },
         { $sort: { createdAt: 1, _id: 1 } },
         { $limit: 1 }
-    ]);
+    ]).allowDiskUse(true);
 
     // Retrieve number of the unsynced invoices
     const unsyncedInvoices = await Invoice.find({
