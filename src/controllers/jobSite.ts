@@ -116,10 +116,7 @@ export const update = async (req: Request, res: Response) => {
     const { id } = req.params
     const {
         name,
-        location: {
-            lat,
-            long
-        },
+        location,
         isActive,
         address,
         locationId,
@@ -157,7 +154,7 @@ export const update = async (req: Request, res: Response) => {
     JobSite.updateOne({ _id: id }, {
         name: name ?? jobSite.name,
         location: {
-            coordinates: [long ?? '', lat ?? '']
+            coordinates: [location?.long ?? '', location?.lat ?? '']
         },
         isActive: isJobSiteActive,
         address: address,
