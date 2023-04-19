@@ -786,7 +786,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
         status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] }
     }).sort({ _id: -1 })
         .populate({ path: 'company', select: 'info address contact' })
-        .populate({ path: 'customer', select: 'info profile address contact' })
+        .populate({ path: 'customer', select: 'info profile address location contact' })
         .populate({ path: 'homeOwner', select: 'info profile address location contact' })
         .populate({ path: 'customerContactId', select: '-__v' })
         .populate({ path: 'jobLocation', select: 'name address location' })
@@ -843,7 +843,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
             status: { $in: [JobRequestStatus.PENDING] }
         }).sort({ _id: -1 })
             .populate({ path: 'company', select: 'info address contact' })
-            .populate({ path: 'customer', select: 'info profile address contact' })
+            .populate({ path: 'customer', select: 'info profile address location contact' })
             .populate({
                 path: 'homeOwner',
                 select: 'info profile address location contact'
