@@ -6,10 +6,7 @@ import { ICompany } from '../models/Company'
 import { IUser } from '../models/User'
 
 export interface IJobLocation extends Document {
-    name: {
-      type: String,
-      index: true
-    }
+    name: string
     contacts: [Schema.Types.ObjectId | IContact] | any,
     location: {
       type?: 'Point',
@@ -35,7 +32,7 @@ export interface IJobLocation extends Document {
 
 const JobLocationSchema = new Schema({
 
-    name: { type: String, required: true},
+    name: { type: String, required: true },
     contacts: [{
       type: Schema.Types.ObjectId,
       ref: 'Contact',
