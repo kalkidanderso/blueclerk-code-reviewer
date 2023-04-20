@@ -83,7 +83,10 @@ const UserSchema = new Schema({
     profile: {
         firstName: String,
         lastName: String,
-        displayName: String,
+        displayName: {
+            type: String,
+            index: "text"
+        },
         imageUrl: String,
     },
     address: {
