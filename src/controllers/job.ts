@@ -21,7 +21,7 @@ import { Scan } from '../models/Scan'
 import { PurchaseOrder } from '../models/PurchaseOrder'
 import { IJobReport, JobReport } from '../models/JobReport'
 import { Item, IItem } from '../models/Item'
-import { ICustomer } from '../models/Customer';
+import { Customer, ICustomer } from '../models/Customer';
 import { CompanyCustomer } from '../models/CompanyCustomer';
 import { INotificationJob, NotificationJob } from '../models/NotificationDiscriminator'
 import { IJobType, JobType } from '../models/JobType';
@@ -917,230 +917,130 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
 }
 export const getJobs = async (req: Request, res: Response) => {
 
-    const params = req.body;
-    let technicianIds: any[];
-    let companyId = req.otherCompanyId || req.companyId;
-    let currentPage = params.currentPage || 0;
-    let pageSize = params.pageSize || DefaultPageSize;
-
-    // Return error when all cursors are provided
-    if (params.nextCursor && params.previousCursor) {
-        return res.json({ status: Status.Error, message: 'Provided cursor could only be one of either nextCursor or previousCursor.' });
-    }
-
-    // Data query that used to search Jobs and available previous/next page
-    const filterQuery: any = {
-        $and: [{
+    let { currentPage, pageSize, keyword, status, startDate, endDate } = req.body;
+    
+    currentPage = currentPage ?? 1;
+    pageSize = pageSize ?? 10;
+    if(currentPage <= 0) currentPage = 1;
+    
+    let customerIds = [];
+    let technicianIds = [];
+    let match:any = {};
+    console.log({keyword});
+    if(keyword) {
+        [customerIds, technicianIds] = await Promise.all([
+            Customer.aggregate([
+                { $match: { $text: { $search: keyword } } }, 
+                { $match: { "profile.displayName": { $regex: keyword, $options: 'i'} } },
+                { $project: { "_id": 1 }}
+            ]),
+            User.aggregate([
+                { $match: { $text: { $search: keyword } } }, 
+                { $match: { "profile.displayName": { $regex: keyword, $options: 'i'} } },
+                { $project: { "_id": 1 }}
+            ])
+        ]).then(resps => resps.map(resp => resp.map(each => each._id)))
+        console.log('customerIds', customerIds.length, customerIds);
+        console.log('technicianIds', technicianIds.length, technicianIds);
+        match = {
             $or: [
-                { 'tasks.contractor': companyId },
-                { contractor: companyId },
-                { company: companyId }
-            ]
-        }]
-    };
-
-    // Check and add if params filter provided
-    if (params.keyword) {
-        const keywordRegex = { $regex: params.keyword, $options: 'i' };
-        filterQuery['$and'].push({
-            $or: [
-                { jobId: keywordRegex },
-                { 'customerObj.profile.displayName': keywordRegex },
-                { 'jobLocationObj.name': keywordRegex },
-                { 'jobLocationObj.address.street': keywordRegex },
-                { 'jobLocationObj.address.city': keywordRegex },
-                { 'jobSiteObj.name': keywordRegex },
-                { 'jobSiteObj.address.street': keywordRegex },
-                { 'jobSiteObj.address.city': keywordRegex },
-                { 'technicianObj.profile.displayName': keywordRegex },
-                { 'contractorsObj.info.companyName': keywordRegex },
-            ]
-        })
-    }
-
-    if (params.technicianIds) {
-        // Validate is technician ids is already array or object
-        technicianIds = Array.isArray(params.technicianIds)
-            ? params.technicianIds
-            : params.technicianIds.split(',').filter((element: any) => element)
-    }
-
-    if (technicianIds?.length) {
-        // convert technician Id from string to objectId and remove falsy value 
-        const technicians = technicianIds.map(technicianId => {
-            if (ObjectId.isValid(technicianId)) return new ObjectId(technicianId);
-        }).filter(tech => tech);
-        filterQuery['$and'].push({
-            $or: [
-                { 'tasks.technician': { $in: technicians } },
-                { 'tasks.contractor': { $in: technicians } }
-            ]
-        });
-    }
-
-    if (params.status !== undefined && params.status !== null) {
-        filterQuery['$and'].push({ status: params.status });
-    }
-    if (params.startDate && params.endDate) {
-        const startDate = moment(params.startDate).format('YYYY-MM-DD');
-        const endDate = moment(params.endDate).format('YYYY-MM-DD');
-        filterQuery['$and'].push({ scheduleDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
-    }
-    if (params.customerId) {
-        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
-    }
-
-    // Deep clone filterQuery
-    const query: any = { $and: [] };
-    filterQuery['$and'].map((q: any) => { query['$and'].push({ ...q }) });
-    // Pagination query that default to nothing
-    let paginationQuery = {};
-    // Sort query that default to sort by the recent ones
-    let sortQuery = { updatedAt: -1, _id: -1 };
-
-    if (params.nextCursor) {
-        // Update pagination query to get the next page
-        const cursor = JSON.parse(helper.fromCursorHash(params.nextCursor));
-        const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
-        paginationQuery = {
-            $or: [
-                { updatedAt: { $lt: new Date(cursor.updatedAt) } },
-                { updatedAt: new Date(cursor.updatedAt), _id: { $lt: cursorId } }
+                {
+                    $and: [
+                        { $text: {$search: keyword} },
+                        { jobId: { $regex: keyword, $options: 'i'} }
+                    ]
+                },
+                { customer: { $in: customerIds } },
+                { technician: { $in: technicianIds} },
             ]
         };
-        query['$and'].push({ ...paginationQuery });
     }
-    if (params.previousCursor) {
-        // Update pagination query to get the previous page
-        const cursor = JSON.parse(helper.fromCursorHash(params.previousCursor));
-        const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
-        paginationQuery = {
-            $or: [
-                { updatedAt: { $gt: new Date(cursor.updatedAt) } },
-                { updatedAt: new Date(cursor.updatedAt), _id: { $gt: cursorId } }
-            ]
-        };
-        query['$and'].push({ ...paginationQuery });
-        // Getting previous page is special, we need to reverse the sort
-        sortQuery = { updatedAt: 1, _id: 1 };
-    }
-
-    // Construct aggreate lookups here to be used multiple times
-    const aggregateLookups = [
-        { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
-        { $lookup: { from: 'servicetickets', localField: 'ticket', foreignField: '_id', as: 'ticketObj' } },
-        { $lookup: { from: 'joblocations', localField: 'jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
-        { $lookup: { from: 'jobsites', localField: 'jobSite', foreignField: '_id', as: 'jobSiteObj' } },
-        { $lookup: { from: 'users', localField: 'tasks.technician', foreignField: '_id', as: 'technicianObj' } },
-        { $lookup: { from: 'companies', localField: 'tasks.contractor', foreignField: '_id', as: 'contractorsObj' } },
-        { $lookup: { from: 'jobtypes', localField: 'tasks.jobTypes.jobType', foreignField: '_id', as: 'jobTypeObj' } }
-    ]
-
+    
     // Filter jobs using aggregate to be search to another collection
-    const jobsAggregate: IJob[] = await Job.aggregate([
-        { $match: { 
-            $or: [
-                {"tasks.contractor":new ObjectId(companyId)}, 
-                {"company": new ObjectId(companyId)}, 
-                {"contractor": new ObjectId(companyId)}
-            ]
-          } 
-        },
-        { $sort: sortQuery },
-        { $skip : (currentPage  * pageSize) },
-        { $limit: params.pageSize || DefaultPageSize },
-        {
-            $lookup: {
-                from: 'customers',
-                localField: 'customer',
-                foreignField: '_id',
-                as: 'customerObj',
-                pipeline: [
-                    {
-                        $project: {
-                            _id: 1,
-                            profile: 1,
-                            info: 1,
+    const [jobsAggregate, totalJobs] = await Promise.all([
+        Job.aggregate([
+            { 
+                $match: match
+            },
+            { $sort: { updatedAt: -1 } },
+            { $skip : (currentPage-1)  * pageSize },
+            { $limit: pageSize },
+            {   
+                $lookup: {
+                    from: 'customers',
+                    localField: 'customer',
+                    foreignField: '_id',
+                    as: 'customerObj',
+                    pipeline: [
+                        {
+                            $project: {
+                                "profile.displayName": 1,
+                            },
                         },
-                    },
-                ],
-            }
-        },
-        {
-            $lookup: {
-                from: 'servicetickets',
-                localField: 'ticket',
-                foreignField: '_id',
-                as: 'ticketObj'
-            }
-        },
-        {
-            $lookup: {
-                from: 'joblocations',
-                localField: 'jobLocation',
-                foreignField: '_id',
-                as: 'jobLocationObj',
-                pipeline: [
-                    {
-                        $project: {
-                            _id: 1,
-                            name: 1,
-                            address: 1,
+                    ],
+                }
+            },
+            {
+                $lookup: {
+                    from: 'joblocations',
+                    localField: 'jobLocation',
+                    foreignField: '_id',
+                    as: 'jobLocationObj',
+                    pipeline: [
+                        {
+                            $project: {
+                                name: 1,
+                            },
                         },
-                    },
-                ],
-            }
-        },
-        {
-            $lookup: {
-                from: 'jobsites',
-                localField: 'jobSite',
-                foreignField: '_id',
-                as: 'jobSiteObj'
-            }
-        },
-        {
-            $lookup: {
-                from: 'users',
-                localField: 'tasks.technician',
-                foreignField: '_id',
-                as: 'technicianObj',
-                pipeline: [
-                    {
-                        $project: {
-                            _id: 1,
-                            profile: 1,
-                            info: 1,
+                    ],
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'technician',
+                    foreignField: '_id',
+                    as: 'technicianObj',
+                    pipeline: [
+                        {
+                            $project: {
+                                "profile.displayName": 1,
+                            },
                         },
-                    },
-                ],
+                    ],
+                }
+            },
+            {
+                $lookup: {
+                    from: 'jobtypes',
+                    localField: 'tasks.jobTypes.jobType',
+                    foreignField: '_id',
+                    as: 'jobTypeObj',
+                    pipeline: [
+                        {
+                            $project: {
+                                title: 1,
+                            },
+                        },
+                    ],
+                }
+            },
+            {
+                $project: {
+                    tasks: 0,
+                    track: 0,
+                }
             }
-        },
-        {
-            $lookup: {
-                from: 'companies',
-                localField: 'tasks.contractor',
-                foreignField: '_id',
-                as: 'contractorsObj'
-            }
-        },
-        {
-            $lookup: {
-                from: 'jobtypes',
-                localField: 'tasks.jobTypes.jobType',
-                foreignField: '_id',
-                as: 'jobTypeObj'
-            }
-        },
-    ]);
-    const totalJobs = await Job.aggregate([
-        { $match: { ...filterQuery } },
-        { $count: 'count' }
+        ]),
+        Job.aggregate([
+            { $match: match },
+            { $count: 'count'}
+        ])
     ]);
     return res.json({
         status: Status.Success,
-        jobs: jobsAggregate,
         total: totalJobs[0]?.count,
+        jobs: jobsAggregate,
     });
 }
 
