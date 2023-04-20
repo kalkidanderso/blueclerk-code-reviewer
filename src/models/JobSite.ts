@@ -23,7 +23,7 @@ export interface IJobSite extends Document {
 
 const JobSiteSchema = new Schema({
 
-    name: { type: String, required: false},
+    name: { type: String, required: false, index: 'text'},
     location: {
       type: {
         type: String,
