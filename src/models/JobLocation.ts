@@ -32,7 +32,7 @@ export interface IJobLocation extends Document {
 
 const JobLocationSchema = new Schema({
 
-    name: { type: String, required: true },
+    name: { type: String, required: true, index: "text" },
     contacts: [{
       type: Schema.Types.ObjectId,
       ref: 'Contact',

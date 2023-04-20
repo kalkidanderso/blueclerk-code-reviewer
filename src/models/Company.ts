@@ -139,7 +139,7 @@ export interface IQBCompany {
 const CompanySchema = new Schema({
 
     info: {
-        companyName: String,
+        companyName: { type: String, index: "text"},
         industry: { type: Schema.Types.ObjectId, ref: 'Industry' },
         logoUrl: String,
         companyEmail: String,

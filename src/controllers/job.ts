@@ -939,45 +939,42 @@ export const getJobs = async (req: Request, res: Response) => {
         keyword = keyword.toLowerCase();
         [jobIds, customerIds, technicianIds, jobLocationIds, companyIds, jobTypeIds, jobSiteIds, ticketIds] = await Promise.all([
             Job.aggregate([
-                { $match: { $expr: {$ne: [{ $indexOfCP: ['$jobId', keyword] }, -1]}} },
+                { $match: { $text: {$search: keyword} } },
                 { $limit: 10 },
                 { $project: { "_id": 1 }}
             ]),
             Customer.aggregate([
-                { $match: { "profile.displayName": { $regex: keyword, $options: 'i'} } },
+                { $match: { $text: {$search: keyword} } },
                 // { $limit: 10 },
                 { $project: { "_id": 1 }}
             ]),
             User.aggregate([
-                { $match: { "profile.displayName": { $regex: keyword, $options: 'i'} } },
+                { $match: { $text: {$search: keyword} } },
                 // { $limit: 10 },
                 { $project: { "_id": 1 }}
             ]),
             JobLocation.aggregate([
-                { $addFields: { allfields: { $concat: ["$name", ";", "$address.street", " ", "$address.city", " ", "$address.state", " ", "$address.zipcode"], }, }, },
-                { $match: { "allfields": { $regex: keyword, $options: 'i'} } },
+                { $match: { $text: {$search: keyword} } },
                 // { $limit: 10 },
                 { $project: { "_id": 1 }}
             ]),
             Company.aggregate([
-                { $addFields: { allfields: { $concat: ["$info.companyName", ";", "$address.street", " ", "$address.city", " ", "$address.state", " ", "$address.zipcode"], }, }, },
-                { $match: { "allfields": { $regex: keyword, $options: 'i'} } },
+                { $match: { $text: {$search: keyword} } },
                 // { $limit: 10 },
                 { $project: { "_id": 1 }}
             ]),
             JobType.aggregate([
-                { $match: { "title": { $regex: keyword, $options: 'i'} } },
+                { $match: { $text: {$search: keyword} } },
                 // { $limit: 10 },
                 { $project: { "_id": 1 }}
             ]),
             JobSite.aggregate([
-                { $addFields: { allfields: { $concat: ["$name", ";", "$address.street", " ", "$address.city", " ", "$address.state", " ", "$address.zipcode"], }, }, },
-                { $match: { "allfields": { $regex: keyword, $options: 'i'} } },
+                { $match: { $text: {$search: keyword} } },
                 // { $limit: 10 },
                 { $project: { "_id": 1 }}
             ]),
             ServiceTicket.aggregate([
-                { $match: { "note": { $regex: keyword, $options: 'i'} } },
+                { $match: { $text: {$search: keyword} } },
                 // { $limit: 10 },
                 { $project: { "_id": 1 }}
             ]),
@@ -1044,13 +1041,6 @@ export const getJobs = async (req: Request, res: Response) => {
                     localField: 'technician',
                     foreignField: '_id',
                     as: 'technicianObj',
-                    pipeline: [
-                        {
-                            $project: {
-                                "profile.displayName": 1,
-                            },
-                        },
-                    ],
                 }
             },
             {
@@ -1101,7 +1091,7 @@ export const getJobs = async (req: Request, res: Response) => {
                 }
             },
         ]),
-        Job.aggregate([
+        keyword ? {count: 0} : Job.aggregate([
             { $match: match },
             { $count: 'count'}
         ])

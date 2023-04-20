@@ -90,11 +90,26 @@ const UserSchema = new Schema({
         imageUrl: String,
     },
     address: {
-        street: String,
-        unit: String,
-        city: String,
-        state: String,
-        zipCode: String,
+        street: {
+            type: String,
+            index: "text"
+        },
+        unit: {
+            type: String,
+            index: "text"
+        },
+        city: {
+            type: String,
+            index: "text"
+        },
+        state: {
+            type: String,
+            index: "text"
+        },
+        zipCode: {
+            type: String,
+            index: "text"
+        },
     },
     location: {
         type: {
