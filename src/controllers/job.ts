@@ -955,6 +955,12 @@ export const getJobs = async (req: Request, res: Response) => {
             ]
         };
     }
+    if(status) {
+        match.status = status;
+    }
+    if(startDate && endDate) {
+        match.scheduleDate = { $gte: moment.utc(startDate).startOf('day').toDate(), $lte: moment.utc(endDate).endOf('day').toDate() };
+    }
     
     // Filter jobs using aggregate to be search to another collection
     const [jobsAggregate, totalJobs] = await Promise.all([
