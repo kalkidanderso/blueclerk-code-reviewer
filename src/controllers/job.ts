@@ -955,32 +955,29 @@ export const getJobs = async (req: Request, res: Response) => {
             ]),
             JobLocation.aggregate([
                 { $addFields: { allfields: { $concat: ["$name", ";", "$address.street", " ", "$address.city", " ", "$address.state", " ", "$address.zipcode"], }, }, },
-                { $project: { substringIndex: { $indexOfCP: ["$allfields", keyword] } } },
-                { $match: { substringIndex: { $ne: -1 } } },
+                { $match: { "allfields": { $regex: keyword, $options: 'i'} } },
                 // { $limit: 10 },
                 { $project: { "_id": 1 }}
             ]),
             Company.aggregate([
                 { $addFields: { allfields: { $concat: ["$info.companyName", ";", "$address.street", " ", "$address.city", " ", "$address.state", " ", "$address.zipcode"], }, }, },
-                { $project: { substringIndex: { $indexOfCP: ["$allfields", keyword] } } },
-                { $match: { substringIndex: { $ne: -1 } } },
+                { $match: { "allfields": { $regex: keyword, $options: 'i'} } },
                 // { $limit: 10 },
                 { $project: { "_id": 1 }}
             ]),
             JobType.aggregate([
-                { $match: { $expr: {$ne: [{ $indexOfCP: [{ $toLower: "$title" }, keyword] }, -1]}} },
+                { $match: { "title": { $regex: keyword, $options: 'i'} } },
                 // { $limit: 10 },
                 { $project: { "_id": 1 }}
             ]),
             JobSite.aggregate([
                 { $addFields: { allfields: { $concat: ["$name", ";", "$address.street", " ", "$address.city", " ", "$address.state", " ", "$address.zipcode"], }, }, },
-                { $project: { substringIndex: { $indexOfCP: ["$allfields", keyword] } } },
-                { $match: { substringIndex: { $ne: -1 } } },
+                { $match: { "allfields": { $regex: keyword, $options: 'i'} } },
                 // { $limit: 10 },
                 { $project: { "_id": 1 }}
             ]),
             ServiceTicket.aggregate([
-                { $match: { $expr: {$ne: [{ $indexOfCP: [{ $toLower: "$note" }, keyword] }, -1]}} },
+                { $match: { "note": { $regex: keyword, $options: 'i'} } },
                 // { $limit: 10 },
                 { $project: { "_id": 1 }}
             ]),
