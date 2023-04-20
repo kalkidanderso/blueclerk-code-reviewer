@@ -986,7 +986,7 @@ export const getJobs = async (req: Request, res: Response) => {
             $or: [
                 { _id: { $in: jobIds} },
                 { customer: { $in: customerIds} },
-                { technician: { $in: technicianIds}},
+                { "tasks.technician": { $in: technicianIds}},
                 { jobLocation: { $in: jobLocationIds}},
                 { company: { $in: companyIds}},
                 { contractor: { $in: companyIds}},
@@ -1038,9 +1038,18 @@ export const getJobs = async (req: Request, res: Response) => {
             {
                 $lookup: {
                     from: 'users',
-                    localField: 'technician',
+                    localField: 'tasks.technician',
                     foreignField: '_id',
                     as: 'technicianObj',
+                    pipeline: [
+                        {
+                            $project: {
+                                _id: 1,
+                                profile: 1,
+                                info: 1,
+                            },
+                        },
+                    ],
                 }
             },
             {
@@ -1091,7 +1100,7 @@ export const getJobs = async (req: Request, res: Response) => {
                 }
             },
         ]),
-        keyword ? {count: 0} : Job.aggregate([
+        keyword ? [] : Job.aggregate([
             { $match: match },
             { $count: 'count'}
         ])
