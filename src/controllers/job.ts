@@ -1012,7 +1012,7 @@ export const getJobs = async (req: Request, res: Response) => {
             { $sort: { updatedAt: -1 } },
             { $skip : currentPage  * pageSize },
             { $limit: pageSize },
-            {   
+            {
                 $lookup: {
                     from: 'customers',
                     localField: 'customer',
@@ -1021,10 +1021,20 @@ export const getJobs = async (req: Request, res: Response) => {
                     pipeline: [
                         {
                             $project: {
-                                "profile.displayName": 1,
+                                _id: 1,
+                                profile: 1,
+                                info: 1,
                             },
                         },
                     ],
+                }
+            },
+            {
+                $lookup: {
+                    from: 'servicetickets',
+                    localField: 'ticket',
+                    foreignField: '_id',
+                    as: 'ticketObj'
                 }
             },
             {
@@ -1033,6 +1043,23 @@ export const getJobs = async (req: Request, res: Response) => {
                     localField: 'jobLocation',
                     foreignField: '_id',
                     as: 'jobLocationObj',
+                    pipeline: [
+                        {
+                            $project: {
+                                _id: 1,
+                                name: 1,
+                                address: 1,
+                            },
+                        },
+                    ],
+                }
+            },
+            {
+                $lookup: {
+                    from: 'jobsites',
+                    localField: 'jobSite',
+                    foreignField: '_id',
+                    as: 'jobSiteObj'
                 }
             },
             {
@@ -1054,49 +1081,18 @@ export const getJobs = async (req: Request, res: Response) => {
             },
             {
                 $lookup: {
-                    from: 'jobtypes',
-                    localField: 'tasks.jobTypes.jobType',
-                    foreignField: '_id',
-                    as: 'jobTypeObj',
-                    pipeline: [
-                        {
-                            $project: {
-                                title: 1,
-                            },
-                        },
-                    ],
-                }
-            },
-            {
-                $lookup: {
-                    from: 'jobsites',
-                    localField: 'jobObj.jobSite',
-                    foreignField: '_id',
-                    as: 'jobSiteObj'
-                }
-            },
-            {
-                $lookup: {
                     from: 'companies',
-                    localField: 'jobObj.tasks.contractor',
+                    localField: 'tasks.contractor',
                     foreignField: '_id',
                     as: 'contractorsObj'
                 }
             },
             {
                 $lookup: {
-                    from: 'companies',
-                    localField: 'company',
+                    from: 'jobtypes',
+                    localField: 'tasks.jobTypes.jobType',
                     foreignField: '_id',
-                    as: 'companyObj'
-                }
-            },
-            {
-                $lookup: {
-                    from: 'servicetickets',
-                    localField: 'ticket',
-                    foreignField: '_id',
-                    as: 'ticketObj'
+                    as: 'jobTypeObj'
                 }
             },
         ]),
