@@ -31,6 +31,8 @@ import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
 import { _handleNotification } from '../controllers/notification';
 import { IJobRequest, JobRequest } from '../models/JobRequest';
 import { NotificationTypes } from '../models/Notification';
+import { JobLocation } from '../models/JobLocation';
+import { JobSite } from '../models/JobSite';
 
 /**
  * 04-22-2022
@@ -919,39 +921,84 @@ export const getJobs = async (req: Request, res: Response) => {
 
     let { currentPage, pageSize, keyword, status, startDate, endDate } = req.body;
     
-    currentPage = currentPage ?? 1;
+    currentPage = currentPage ?? 0;
     pageSize = pageSize ?? 10;
-    if(currentPage <= 0) currentPage = 1;
+    if(currentPage < 0) currentPage = 0;
     
     let customerIds = [];
     let technicianIds = [];
+    let jobLocationIds = [];
+    let companyIds = [];
+    let jobTypeIds = [];
+    let jobSiteIds = [];
+    let ticketIds = [];
+    let jobIds = [];
     let match:any = {};
     console.log({keyword});
     if(keyword) {
-        [customerIds, technicianIds] = await Promise.all([
+        keyword = keyword.toLowerCase();
+        [jobIds, customerIds, technicianIds, jobLocationIds, companyIds, jobTypeIds, jobSiteIds, ticketIds] = await Promise.all([
+            Job.aggregate([
+                { $match: { $expr: {$ne: [{ $indexOfCP: ['$jobId', keyword] }, -1]}} },
+                { $limit: 10 },
+                { $project: { "_id": 1 }}
+            ]),
             Customer.aggregate([
-                { $match: { $text: { $search: keyword } } }, 
                 { $match: { "profile.displayName": { $regex: keyword, $options: 'i'} } },
+                // { $limit: 10 },
                 { $project: { "_id": 1 }}
             ]),
             User.aggregate([
-                { $match: { $text: { $search: keyword } } }, 
                 { $match: { "profile.displayName": { $regex: keyword, $options: 'i'} } },
+                // { $limit: 10 },
                 { $project: { "_id": 1 }}
-            ])
-        ]).then(resps => resps.map(resp => resp.map(each => each._id)))
-        console.log('customerIds', customerIds.length, customerIds);
-        console.log('technicianIds', technicianIds.length, technicianIds);
+            ]),
+            JobLocation.aggregate([
+                { $addFields: { allfields: { $concat: ["$name", ";", "$address.street", " ", "$address.city", " ", "$address.state", " ", "$address.zipcode"], }, }, },
+                { $project: { substringIndex: { $indexOfCP: ["$allfields", keyword] } } },
+                { $match: { substringIndex: { $ne: -1 } } },
+                // { $limit: 10 },
+                { $project: { "_id": 1 }}
+            ]),
+            Company.aggregate([
+                { $addFields: { allfields: { $concat: ["$info.companyName", ";", "$address.street", " ", "$address.city", " ", "$address.state", " ", "$address.zipcode"], }, }, },
+                { $project: { substringIndex: { $indexOfCP: ["$allfields", keyword] } } },
+                { $match: { substringIndex: { $ne: -1 } } },
+                // { $limit: 10 },
+                { $project: { "_id": 1 }}
+            ]),
+            JobType.aggregate([
+                { $match: { $expr: {$ne: [{ $indexOfCP: [{ $toLower: "$title" }, keyword] }, -1]}} },
+                // { $limit: 10 },
+                { $project: { "_id": 1 }}
+            ]),
+            JobSite.aggregate([
+                { $addFields: { allfields: { $concat: ["$name", ";", "$address.street", " ", "$address.city", " ", "$address.state", " ", "$address.zipcode"], }, }, },
+                { $project: { substringIndex: { $indexOfCP: ["$allfields", keyword] } } },
+                { $match: { substringIndex: { $ne: -1 } } },
+                // { $limit: 10 },
+                { $project: { "_id": 1 }}
+            ]),
+            ServiceTicket.aggregate([
+                { $match: { $expr: {$ne: [{ $indexOfCP: [{ $toLower: "$note" }, keyword] }, -1]}} },
+                // { $limit: 10 },
+                { $project: { "_id": 1 }}
+            ]),
+        ]).then(resps => resps.map(resp => { return resp.map(each => each._id)}))
+        // jobLocationIds = [];
+        console.log({customerIds, technicianIds, jobLocationIds, companyIds, jobTypeIds, jobSiteIds, ticketIds});
+        // companyIds = [];
         match = {
             $or: [
-                {
-                    $and: [
-                        { $text: {$search: keyword} },
-                        { jobId: { $regex: keyword, $options: 'i'} }
-                    ]
-                },
-                { customer: { $in: customerIds } },
-                { technician: { $in: technicianIds} },
+                { _id: { $in: jobIds} },
+                { customer: { $in: customerIds} },
+                { technician: { $in: technicianIds}},
+                { jobLocation: { $in: jobLocationIds}},
+                { company: { $in: companyIds}},
+                { contractor: { $in: companyIds}},
+                { jobType: { $in: jobTypeIds}},
+                { jobSite: { $in: jobSiteIds}},
+                { ticket: { $in: ticketIds}},
             ]
         };
     }
@@ -969,7 +1016,7 @@ export const getJobs = async (req: Request, res: Response) => {
                 $match: match
             },
             { $sort: { updatedAt: -1 } },
-            { $skip : (currentPage-1)  * pageSize },
+            { $skip : currentPage  * pageSize },
             { $limit: pageSize },
             {   
                 $lookup: {
@@ -992,13 +1039,6 @@ export const getJobs = async (req: Request, res: Response) => {
                     localField: 'jobLocation',
                     foreignField: '_id',
                     as: 'jobLocationObj',
-                    pipeline: [
-                        {
-                            $project: {
-                                name: 1,
-                            },
-                        },
-                    ],
                 }
             },
             {
