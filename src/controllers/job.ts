@@ -1032,11 +1032,37 @@ export const getJobs = async (req: Request, res: Response) => {
                 }
             },
             {
-                $project: {
-                    tasks: 0,
-                    track: 0,
+                $lookup: {
+                    from: 'jobsites',
+                    localField: 'jobObj.jobSite',
+                    foreignField: '_id',
+                    as: 'jobSiteObj'
                 }
-            }
+            },
+            {
+                $lookup: {
+                    from: 'companies',
+                    localField: 'jobObj.tasks.contractor',
+                    foreignField: '_id',
+                    as: 'contractorsObj'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'companies',
+                    localField: 'company',
+                    foreignField: '_id',
+                    as: 'companyObj'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'servicetickets',
+                    localField: 'ticket',
+                    foreignField: '_id',
+                    as: 'ticketObj'
+                }
+            },
         ]),
         Job.aggregate([
             { $match: match },
