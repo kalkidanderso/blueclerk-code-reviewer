@@ -23,7 +23,7 @@ export interface IJobSite extends Document {
 
 const JobSiteSchema = new Schema({
 
-    name: { type: String, required: false},
+    name: { type: String, required: false, index: 'text'},
     location: {
       type: {
         type: String,
@@ -40,10 +40,10 @@ const JobSiteSchema = new Schema({
       default: true
     },
     address: {
-      city: String,
-      state: String,
-      street: String,
-      zipcode: String
+      city: { type: String, index: "text" },
+      state: { type: String, index: "text" },
+      street: { type: String, index: "text" },
+      zipcode: { type: String, index: "text" }, 
     },
     locationId: {
         type: Schema.Types.ObjectId,

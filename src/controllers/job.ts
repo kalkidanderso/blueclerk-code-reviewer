@@ -21,7 +21,7 @@ import { Scan } from '../models/Scan'
 import { PurchaseOrder } from '../models/PurchaseOrder'
 import { IJobReport, JobReport } from '../models/JobReport'
 import { Item, IItem } from '../models/Item'
-import { ICustomer } from '../models/Customer';
+import { Customer, ICustomer } from '../models/Customer';
 import { CompanyCustomer } from '../models/CompanyCustomer';
 import { INotificationJob, NotificationJob } from '../models/NotificationDiscriminator'
 import { IJobType, JobType } from '../models/JobType';
@@ -31,6 +31,8 @@ import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
 import { _handleNotification } from '../controllers/notification';
 import { IJobRequest, JobRequest } from '../models/JobRequest';
 import { NotificationTypes } from '../models/Notification';
+import { JobLocation } from '../models/JobLocation';
+import { JobSite } from '../models/JobSite';
 
 /**
  * 04-22-2022
@@ -1258,6 +1260,8 @@ const matchStage = orQuery.length > 0 ? { $match: { $or: orQuery } } : { $match:
 } catch (error) {
     console.log(error)
 }}
+
+
 
 export const getJobsByTechnicianId = (req: Request, res: Response) => {
 
