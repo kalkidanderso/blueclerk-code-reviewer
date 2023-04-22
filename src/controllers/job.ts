@@ -918,9 +918,6 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
 
 }
 export const getJobs = async (req: Request, res: Response) => {
-    try {
-        
-    
     const params = req.body;
     let technicianIds: any[];
     let companyId = req.otherCompanyId || req.companyId;
@@ -1257,9 +1254,7 @@ const matchStage = orQuery.length > 0 ? { $match: { $or: orQuery } } : { $match:
         total: totalJobs[0]?.count,
         filterQuery,
     });
-} catch (error) {
-    console.log(error)
-}}
+} 
 
 
 
