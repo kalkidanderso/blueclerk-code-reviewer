@@ -1075,6 +1075,9 @@ if (result?.jobLocation?.length > 0) {
 if (result?.technician?.length > 0) {
   orQuery.push({ "tasks.technician": { $in: result?.technician } });
 }
+if (result?.jobSite?.length > 0) {
+  orQuery.push({ "jobSite": { $in: result?.jobSite } });
+}
 if (orQuery.length > 0) {
     filterQuery['$and'].push({ $or: orQuery });
 }
