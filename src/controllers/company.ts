@@ -318,7 +318,7 @@ export const getContractorDetail = async(req: Request, res: Response) => {
             const paymentVendor = await PaymentVendor.find({ contractor: params.contractorId })
                 .populate({
                     path: 'company',
-                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                    select: 'info.companyName info.logoUrl info.displayName auth.email permissions.role address contact'
                 })
                 .populate({
                     path: 'contractor',
