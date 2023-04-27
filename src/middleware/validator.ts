@@ -685,6 +685,15 @@ export const Validations = {
     check('addressStreet').exists().withMessage(Messages.Required)
   ],
 
+  getHomeOwner: [
+    param('id').exists().withMessage(Messages.Required),
+    param('id').isMongoId().withMessage(Messages.WrongId)
+  ],
+
+  getHomeOwners: [
+    check('keyword').optional(),
+  ],
+
   // Job location
   getJobLocation: [
     check('companyId').optional().isMongoId().withMessage(Messages.WrongId),

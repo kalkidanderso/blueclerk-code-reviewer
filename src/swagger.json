@@ -4944,6 +4944,56 @@
         }
       }
     },
+    "/homeOwner/{id}": {
+      "get": {
+        "tags": [
+          "Home Owner"
+        ],
+        "summary": "Get Home Owner by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/homeOwner": {
+      "get": {
+        "tags": [
+          "Home Owner"
+        ],
+        "summary": "Gets all Home Owner by ID",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/jobLocation": {
       "get": {
         "tags": [

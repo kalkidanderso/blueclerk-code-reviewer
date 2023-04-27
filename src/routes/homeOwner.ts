@@ -15,9 +15,18 @@ router.post(
     validate(Validations.createHomeOwner),
     homeOwnerController.createHomeOwner
 )
+
 router.get(
-    '/',
-    homeOwnerController.getHomeOwners
+    '/:id',
+    validate(Validations.getHomeOwner),
+    homeOwnerController.getHomeOwner,
+)
+
+router.get(
+    '/getAll', // TODO CHANGE TO URL PARAM INSTEAD OF BODY
+    validate(Validations.getHomeOwners),
+    homeOwnerController.getHomeOwners,
 )
 
 export default router;
+// TODO CHECK MONGODB DEPENDENCY BUILD BEFORE REQUEST

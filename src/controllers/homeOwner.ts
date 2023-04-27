@@ -84,21 +84,27 @@ export const createHomeOwner = async (req: Request, res: Response) => {
 }
 
 /**
- * RETRIEVE MULTIPLE HOME OWNER
- * TODO: Add another params?
- * TODO: Testing & finish
+ * RETRIEVE ONE HOME OWNER GIVEN ITS ID
  */
-export const getHomeOwners = async (req: Request, res: Response) => {
+export const getHomeOwner = async (req: Request, res: Response) => {
 
-    const params = req.params;
+    const params = req.params.id;
+    const homeOwner = await HomeOwner.findOne({ '_id': req.params.id })
+    if(!homeOwner) return res.json({ status: Status.NotFound, message: 'Home Owner not found' });
+    
+    return res.json({ status: Status.Success, homeOwner });
+}
 
-    let query: any
+/**
+ * RETRIEVES ALL HOME OWNERS, APPLYING A FILTER IF DESIRED
+ */
+export const getHomeOwners = async(req: Request, res: Response) => {
 
-    if (req.query._id) query = { _id: req.query._id }
-    else {
+    var query = {};
 
-        const keyword = helper.getRegex(params.keyword, 'i');
-
+    if(req.body.keyword && req.body.keyword.length > 0) {
+        console.log("ENTRO");
+        const keyword = helper.getRegex(req.body.keyword, 'i');
         query = {
             $or: [
                 { 'profile.firstName': keyword },
@@ -106,6 +112,7 @@ export const getHomeOwners = async (req: Request, res: Response) => {
                 { 'profile.displayName': keyword },
                 { 'address.street': keyword },
                 { 'address.city': keyword },
+                { 'info.email': keyword },
             ]
         }
     }
@@ -117,5 +124,4 @@ export const getHomeOwners = async (req: Request, res: Response) => {
         });
 
     return res.json({ status: Status.Success, homeOwners });
-
 }
