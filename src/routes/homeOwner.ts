@@ -17,15 +17,27 @@ router.post(
 )
 
 router.get(
-    '/:id',
+    '/',
     validate(Validations.getHomeOwner),
     homeOwnerController.getHomeOwner,
 )
 
 router.get(
-    '/getAll', // TODO CHANGE TO URL PARAM INSTEAD OF BODY
+    '/all',
     validate(Validations.getHomeOwners),
     homeOwnerController.getHomeOwners,
+)
+
+router.delete(
+    '/',
+    validate(Validations.getHomeOwner),
+    homeOwnerController.deleteHomeOwner,
+)
+
+router.put(
+    '/',
+    validate(Validations.updateHomeOwner),
+    homeOwnerController.updateHomeOwner,
 )
 
 export default router;

@@ -4942,9 +4942,7 @@
             }
           }
         }
-      }
-    },
-    "/homeOwner/{id}": {
+      },
       "get": {
         "tags": [
           "Home Owner"
@@ -4953,7 +4951,109 @@
         "parameters": [
           {
             "name": "id",
-            "in": "path",
+            "description": "Home owner ID",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Home Owner"
+        ],
+        "summary": "Create new Home Owner",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "fax": {
+                    "type": "string"
+                  },
+                  "addressStreet": {
+                    "type": "string"
+                  },
+                  "addressUnit": {
+                    "type": "string"
+                  },
+                  "addressCity": {
+                    "type": "string"
+                  },
+                  "addressState": {
+                    "type": "string"
+                  },
+                  "addressZipCode": {
+                    "type": "string"
+                  },
+                  "longitude": {
+                    "type": "string"
+                  },
+                  "latitude": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Home Owner"
+        ],
+        "summary": "Delete Home Owner given his ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Home Owner ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -4974,12 +5074,22 @@
         }
       }
     },
-    "/homeOwner": {
+    "/homeOwner/all": {
       "get": {
         "tags": [
           "Home Owner"
         ],
         "summary": "Gets all Home Owner by ID",
+          "parameters": [
+            {
+            "name": "keyword",
+            "description": "To filter the home owners by firstname, lastname, displayname, street, city or email. Idle for retrieving all.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success",

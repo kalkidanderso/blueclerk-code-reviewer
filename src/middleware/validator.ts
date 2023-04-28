@@ -686,12 +686,19 @@ export const Validations = {
   ],
 
   getHomeOwner: [
-    param('id').exists().withMessage(Messages.Required),
-    param('id').isMongoId().withMessage(Messages.WrongId)
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId)
   ],
 
   getHomeOwners: [
-    check('keyword').optional(),
+    check('keyword').optional().isString(),
+  ],
+
+  // Home Owner
+  updateHomeOwner: [
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }).withMessage(Messages.InvalidEmail),
   ],
 
   // Job location

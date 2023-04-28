@@ -88,8 +88,7 @@ export const createHomeOwner = async (req: Request, res: Response) => {
  */
 export const getHomeOwner = async (req: Request, res: Response) => {
 
-    const params = req.params.id;
-    const homeOwner = await HomeOwner.findOne({ '_id': req.params.id })
+    const homeOwner = await HomeOwner.findOne({ '_id': req.query.id })
     if(!homeOwner) return res.json({ status: Status.NotFound, message: 'Home Owner not found' });
     
     return res.json({ status: Status.Success, homeOwner });
@@ -102,9 +101,9 @@ export const getHomeOwners = async(req: Request, res: Response) => {
 
     var query = {};
 
-    if(req.body.keyword && req.body.keyword.length > 0) {
+    if(req.query.keyword && req.query.keyword.length > 0) {
         console.log("ENTRO");
-        const keyword = helper.getRegex(req.body.keyword, 'i');
+        const keyword = helper.getRegex(req.query.keyword, 'i');
         query = {
             $or: [
                 { 'profile.firstName': keyword },
@@ -124,4 +123,97 @@ export const getHomeOwners = async(req: Request, res: Response) => {
         });
 
     return res.json({ status: Status.Success, homeOwners });
+}
+
+/**
+ * DELETE ONE HOME OWNER GIVEN ITS ID
+ */
+export const deleteHomeOwner = async (req: Request, res: Response) => {
+
+    const homeOwner = await HomeOwner.findOne({ '_id': req.query.id })
+    if(!homeOwner) return res.json({ status: Status.NotFound, message: 'Home Owner not found' });
+    
+    HomeOwner.deleteOne({_id: req.query.id})
+        .exec((err: any) => {
+
+            if (err) {
+                return res.json({'status': Status.InternalError, 'message': 'Failed deleting home owner'})
+            }
+
+            return res.json({'status': Status.OK, 'message': "Home owner deleted successfully."})
+        })
+}
+
+/**
+ * UPDATE A EXISTING HOME OWNER
+ */
+export const updateHomeOwner = async (req: Request, res: Response) => {
+    const {
+        id,
+        firstName,
+        lastName,
+        email,
+        phone,
+        fax,
+        addressStreet,
+        addressUnit,
+        addressCity,
+        addressState,
+        addressZipCode,
+        latitude,
+        longitude,
+    } = req.body;
+
+    const myquery = { '_id': id };
+    const homeOwner = await HomeOwner.findOne(myquery)
+    if(!homeOwner) return res.json({ status: Status.NotFound, message: 'Home Owner not found' });
+    
+    // Check if new location provided
+    var location = homeOwner.location;
+    if (latitude && longitude) {
+        location = {
+            coordinates: [longitude, latitude]
+        }
+    } // TODO ALLOW IDLE STRINGS? CHECK ONE PHONE OR EMAIL ARE REMAINING AFTER UPDAATE
+
+    // Update displayname if one firstname or lastname changes
+    var displayName = homeOwner.profile.displayName;
+    if (firstName || lastName) {
+        displayName = (
+            (firstName ?? homeOwner.profile.firstName) 
+            + ' ' 
+            + (lastName ?? homeOwner.profile.lastName)
+        ).trim();
+    }
+
+    // Updates home owner
+    HomeOwner.updateOne(myquery, { 
+        profile: {
+            firstName: firstName?.trim() ?? homeOwner.profile.firstName,
+            lastName: lastName?.trim() ?? homeOwner.profile.lastName,
+            displayName: displayName,
+        },
+        info: {
+            email: email?.trim() ?? homeOwner.info.email,
+        },
+        contact: {
+            phone: phone?.trim() ?? homeOwner.contact.phone,
+            fax: fax?.trim() ?? homeOwner.contact.fax,
+        },
+        address: {
+            street: addressStreet?.trim() ?? homeOwner.address.street,
+            unit: addressUnit?.trim() ?? homeOwner.address.unit,
+            city: addressCity?.trim() ?? homeOwner.address.city,
+            state: addressState?.trim() ?? homeOwner.address.state,
+            zipCode: addressZipCode?.trim() ?? homeOwner.address.zipCode,
+        },
+        location: location
+    }, (err: any, raw: any) => {
+
+        if (err) {
+            return res.json({ 'status': Status.Error, 'message': 'Failed updating Home Owner' })
+        }
+
+        return res.json({ 'status': Status.OK, 'message': 'Home owner updated successfully' })
+    });
 }
