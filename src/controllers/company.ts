@@ -282,7 +282,7 @@ export const getCompanyContracts = async (req: Request, res: Response) => {
     })
     .populate({
         path: 'contractor',
-        select: 'info.companyName info.companyEmail type',
+        select: 'info.companyName info.companyEmail info.displayName type',
         populate: [{ path: 'admin', select: 'profile auth.email contact' }]
     })
     .exec((err: any, contracts: IContract[]) => {
