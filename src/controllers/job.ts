@@ -21,7 +21,7 @@ import { Scan } from '../models/Scan'
 import { PurchaseOrder } from '../models/PurchaseOrder'
 import { IJobReport, JobReport } from '../models/JobReport'
 import { Item, IItem } from '../models/Item'
-import { ICustomer } from '../models/Customer';
+import { Customer, ICustomer } from '../models/Customer';
 import { CompanyCustomer } from '../models/CompanyCustomer';
 import { INotificationJob, NotificationJob } from '../models/NotificationDiscriminator'
 import { IJobType, JobType } from '../models/JobType';
@@ -31,6 +31,8 @@ import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
 import { _handleNotification } from '../controllers/notification';
 import { IJobRequest, JobRequest } from '../models/JobRequest';
 import { NotificationTypes } from '../models/Notification';
+import { JobLocation } from '../models/JobLocation';
+import { JobSite } from '../models/JobSite';
 
 /**
  * 04-22-2022
@@ -916,9 +918,6 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
 
 }
 export const getJobs = async (req: Request, res: Response) => {
-    try {
-        
-    
     const params = req.body;
     let technicianIds: any[];
     let companyId = req.otherCompanyId || req.companyId;
@@ -1255,9 +1254,9 @@ const matchStage = orQuery.length > 0 ? { $match: { $or: orQuery } } : { $match:
         total: totalJobs[0]?.count,
         filterQuery,
     });
-} catch (error) {
-    console.log(error)
-}}
+} 
+
+
 
 export const getJobsByTechnicianId = (req: Request, res: Response) => {
 
