@@ -21,7 +21,7 @@ export interface IJobTypes {
 
 const JobTypeSchema = new Schema({
 
-    title: String,
+    title: { type: String, index: "text" },
     description: String,
     sku: String,
     industry: {

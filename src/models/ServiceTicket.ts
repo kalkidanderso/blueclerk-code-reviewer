@@ -60,7 +60,7 @@ const ServiceTicketSchema = new Schema({
         ref: 'User',
         required: true
     },
-    note: String,
+    note: {type: String, index: "text"},
     customerContactId: {
         type: Schema.Types.ObjectId,
         ref: 'Contact',
