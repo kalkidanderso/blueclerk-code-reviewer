@@ -108,10 +108,14 @@ export const getHomeOwners = async(req: Request, res: Response) => {
             $or: [
                 { 'profile.firstName': keyword },
                 { 'profile.lastName': keyword },
-                { 'profile.displayName': keyword },
+                { 'contact.phone': keyword },
+                { 'info.email': keyword},
+                { 'contact.fax': keyword },
                 { 'address.street': keyword },
+                { 'address.unit': keyword },
                 { 'address.city': keyword },
-                { 'info.email': keyword },
+                { 'address.state': keyword },
+                { 'address.zipCode': keyword },
             ]
         }
     }
@@ -174,7 +178,7 @@ export const updateHomeOwner = async (req: Request, res: Response) => {
         location = {
             coordinates: [longitude, latitude]
         }
-    } // TODO ALLOW IDLE STRINGS? CHECK ONE PHONE OR EMAIL ARE REMAINING AFTER UPDAATE
+    }
 
     // Update displayname if one firstname or lastname changes
     var displayName = homeOwner.profile.displayName;

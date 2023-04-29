@@ -699,6 +699,17 @@ export const Validations = {
     check('id').exists().withMessage(Messages.Required),
     check('id').isMongoId().withMessage(Messages.WrongId),
     check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }).withMessage(Messages.InvalidEmail),
+    check('firstName').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('firlastNamestName').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('phone').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('fax').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('addressStreet').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('addressUnit').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('addressCity').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('addressState').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('addressZipCode').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('latitude').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('longitude').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
   ],
 
   // Job location

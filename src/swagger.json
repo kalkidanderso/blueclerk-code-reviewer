@@ -4977,6 +4977,7 @@
           "Home Owner"
         ],
         "summary": "Create new Home Owner",
+        "description": "Id is required and the rest os parameters (fields to update) are optional. However, if provided, these must not be idle strings",
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
@@ -5083,7 +5084,7 @@
           "parameters": [
             {
             "name": "keyword",
-            "description": "To filter the home owners by firstname, lastname, displayname, street, city or email. Idle for retrieving all.",
+            "description": "To filter the home owners by firstname, lastname, phone, fax, street, city, state, unit, zipcode or email. Idle for retrieving all.",
             "in": "query",
             "schema": {
               "type": "string"
