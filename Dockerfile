@@ -8,6 +8,7 @@ RUN apk update && apk upgrade && \
 
 WORKDIR /usr/src/app
 COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "tsconfig.json", "./"]
+RUN npm install -g mongodb
 RUN npm install request
 RUN npm install
 RUN npm rebuild bcrypt --build-from-source
@@ -17,4 +18,5 @@ ENV PM2_SECRET_KEY 88riceao9xegxk2
 COPY . .
 EXPOSE 3006
 RUN npm run tsc
+RUN npm link mongodb
 CMD ["pm2-runtime", "dist/server.js"]

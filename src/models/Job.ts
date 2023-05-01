@@ -124,7 +124,10 @@ const JobSchema = new Schema({
         type: Date,
         required: false
     },
-    jobId: String,
+    jobId: {
+        type: String,
+        index: "text"
+    },
     parentJob: {
         type: Schema.Types.ObjectId,
         ref: 'Job'
@@ -146,7 +149,8 @@ const JobSchema = new Schema({
         // TODO: To be deprecated
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: false
+        required: false,
+        index: true
     },
     contractor: {
         // TODO: To be deprecated
@@ -157,7 +161,8 @@ const JobSchema = new Schema({
     customer: {
         type: Schema.Types.ObjectId,
         ref: 'Customer',
-        required: false
+        required: false,
+        index:true
     },
     jobLocation: {
         type: Schema.Types.ObjectId,
