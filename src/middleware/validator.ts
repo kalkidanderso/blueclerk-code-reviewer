@@ -290,6 +290,7 @@ export const Validations = {
     check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
     check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
     check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
+    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
     check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
@@ -387,7 +388,13 @@ export const Validations = {
 
   editTicket: [check('ticketId').exists(), check('status').exists(), check('status').isNumeric()],
 
-  updateTicket: [check('ticketId').exists(), check('note').exists()],
+  updateTicket: [
+    check('ticketId').exists().withMessage(Messages.Required),
+    check('ticketId').isMongoId().withMessage(Messages.WrongId),
+    check('note').exists(),
+    check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
+    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
 
   getTicketDetail: [check('ticketId').exists()],
 
