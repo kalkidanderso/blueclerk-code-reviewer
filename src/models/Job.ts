@@ -74,6 +74,8 @@ export interface IJob extends Document {
         note?: string
         date: Date
     }[]
+    workType: string | null
+    companyLocation: string | null
 }
 
 export interface ITask extends Document {
@@ -425,7 +427,15 @@ const JobSchema = new Schema({
     completeOnTime: {
         type: Boolean,
         required: false
-    }
+    },
+    workType: {
+        type: Schema.Types.ObjectId,
+        ref: 'workType',
+    },
+    companyLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'companyLocation',
+    },
 }, { timestamps: { updatedAt: true } })
 
 export const Job = mongoose.model<IJob>('Job', JobSchema)

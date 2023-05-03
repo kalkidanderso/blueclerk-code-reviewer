@@ -17,6 +17,7 @@ import {CompanyCustomer, ICompanyCustomer} from '../models/CompanyCustomer';
 import { IItem, Item } from '../models/Item'
 import { IPriceTier, PriceTier } from '../models/PriceTier'
 import { PaymentEmployee, PaymentVendor } from '../models/Payment'
+import { CompanyLocation } from '../models/CompanyLocation'
 
 const Hubspot = require('hubspot')
 
@@ -185,45 +186,104 @@ export const getAllEmployees = (req: Request, res: Response) => {
 }
 
 export const getEmployeesForJob = (req: Request, res: Response) => {
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
 
-    Company.findOne({ _id: req.companyId })
-        .populate({
-            path: 'employees',
-            match: { 'permissions.role': { $ne: 0 } },
-            select: '_id profile.displayName',
-        })
-        .populate({
-            path: 'admin',
-            select: '_id profile.displayName',
-        })
-        .exec((err: any, company: ICompany) => {
-
-            if (err || !company) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+    CompanyLocation.aggregate([
+        {
+            $lookup: {
+                from: "companies",
+                localField: "company",
+                foreignField: "_id",
+                as: "company"
             }
-            const employees = company.employees
-            const admin = company.admin
-            company.employees = undefined
-            company.userPermissions = undefined
-            company.stripeId = undefined
-            company.employees = undefined
-            company.customers = undefined
-            company.maxTechnicians = undefined
-            company.maxAdmins = undefined
-            company.maxManagers = undefined
-            company.maxOfficeAdmins = undefined
-            company.other = undefined
-            company.paid = undefined
-            company.type = undefined
-            company.plan = undefined
-            company.currentJobId = undefined
-            company.chargeDate = undefined
-            company.contact = undefined
-            company.address = undefined
+        },
+        {
+            $lookup :{
+                from: "users",
+                localField: "company.admin",
+                foreignField: "_id",
+                as: "admin",
+            }
+        },
+        {
+            $match: {
+                "_id": new ObjectId(companyLocation)
+            }
+        },
+        {   
+            $project: {
+                _id: 1,
+                admin: 1,
+                "assignedEmployees": { 
+                    $filter: { 
+                        input: "$assignedEmployees", 
+                        cond: { $in: [new ObjectId(workType),"$$this.workTypes"] } 
+                   } 
+                } 
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "assignedEmployees.employee",
+                foreignField: "_id",
+                as: "employees",
+            }
+        }
+    ]).exec((err: any, companyLocations: any[]) => {
+        if (err && !companyLocations.length) {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
 
-            return res.json({ 'status': Status.Success, 'employees': employees, 'superAdmin': admin })
+        let companyLocation = companyLocations[0];
+        const employees = companyLocation.employees;
+        let admin = {};
+        if (companyLocation.admin.length) admin = companyLocation.admin[0]
 
-        })
+        return res.json({ 'status': Status.Success, 'employees': employees, 'superAdmin': admin })
+
+    })
+
+    //Old method to get employees by the company 
+    // Company.findOne({ _id: req.companyId })
+    //     .populate({
+    //         path: 'employees',
+    //         match: { 'permissions.role': { $ne: 0 } },
+    //         select: '_id profile.displayName',
+    //     })
+    //     .populate({
+    //         path: 'admin',
+    //         select: '_id profile.displayName',
+    //     })
+    //     .exec((err: any, company: ICompany) => {
+
+    //         if (err || !company) {
+    //             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+    //         }
+    //         const employees = company.employees
+    //         const admin = company.admin
+    //         company.employees = undefined
+    //         company.userPermissions = undefined
+    //         company.stripeId = undefined
+    //         company.employees = undefined
+    //         company.customers = undefined
+    //         company.maxTechnicians = undefined
+    //         company.maxAdmins = undefined
+    //         company.maxManagers = undefined
+    //         company.maxOfficeAdmins = undefined
+    //         company.other = undefined
+    //         company.paid = undefined
+    //         company.type = undefined
+    //         company.plan = undefined
+    //         company.currentJobId = undefined
+    //         company.chargeDate = undefined
+    //         company.contact = undefined
+    //         company.address = undefined
+
+    //         return res.json({ 'status': Status.Success, 'employees': employees, 'superAdmin': admin })
+
+    //     })
 
 }
 
@@ -254,13 +314,37 @@ export const getContractorForJob = (req: Request, res: Response) => {
 }
 
 export const getCompanyContracts = async (req: Request, res: Response) => {
+    const workType = req.body.workType;
+    const companyLocation = req.body.companyLocation;
 
     const company = <ICompany>req.company
 
+    let byCompanyLocationAgg: any[] = []
+    if (workType && companyLocation) {
+        byCompanyLocationAgg = [
+            {
+                $lookup: {
+                    from: "companylocations",
+                    localField: "contractor",
+                    foreignField: "company",
+                    as: "companylocations",
+                }
+            },
+            {
+                $match: {
+                    "companylocations._id" : new ObjectId(companyLocation),
+                    "companylocations.assignedVendors.workTypes": { $in: [new ObjectId(workType)]} 
+                }
+            }
+        ];
+    }
+
     const contractAggregate: IContract[] = await Contract.aggregate([
+        ...byCompanyLocationAgg,
         {
         $match: {"company": company._id}
-        },{
+        },
+        {
             $sort: { _id: -1}
         },{
             $group: {

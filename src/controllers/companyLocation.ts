@@ -6,6 +6,8 @@ import { CompanyAdmin } from '../models/CompanyAdmin';
 import { CompanyLocation, ICompanyLocation } from '../models/CompanyLocation';
 import { AssignedVendor, IAssignedVendor } from '../models/AssignedVendor';
 import { checkIfDuplicateExists, removeDuplicate } from '../utils/arrayUtil';
+import { Employee } from '../models/Employee';
+import { AssignedEmployee, IAssignedEmployee } from '../models/AssignedEmployee';
 
 
 export const getCompanyLocations = async (req: Request, res: Response) => {
@@ -13,7 +15,11 @@ export const getCompanyLocations = async (req: Request, res: Response) => {
         const company = <ICompany>req.company;
 
         const companyLocations = await CompanyLocation.find({ company })
-            .populate('workTypes');
+            .populate('workTypes')
+            .populate('assignedEmployees.employee')
+            .populate('assignedEmployees.workTypes')
+            .populate('assignedVendors.vendor')
+            .populate('assignedVendors.workTypes');
 
         return res.json({ status: Status.Success, companyLocations });
     } catch (error) {
@@ -49,6 +55,7 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
 
         await validateAndParseWorkTypesParam(params);
         await validateAndParseAssignedVendorsParam(params);
+        await validateAndParseAssignedEmployeesParam(params);
 
         const companyLocation = new CompanyLocation(
             {
@@ -72,7 +79,8 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
                 contactName: params.contactName,
                 company,
                 workTypes: params.workTypes,
-                assignedVendors: params.assignedVendors
+                assignedVendors: params.assignedVendors,
+                assignedEmployees: params.assignedEmployees
             }
         );
 
@@ -104,6 +112,7 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
 
         await validateAndParseWorkTypesParam(params);
         await validateAndParseAssignedVendorsParam(params);
+        await validateAndParseAssignedEmployeesParam(params);
 
         companyLocation.name = params.name;
         companyLocation.isMainLocation = params.isMainLocation ?? companyLocation.isMainLocation;
@@ -126,10 +135,18 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
 
         companyLocation.workTypes = params.workTypes;
         companyLocation.assignedVendors = params.assignedVendors;
+        companyLocation.assignedEmployees = params.assignedEmployees;
 
         await companyLocation.save();
 
-        return res.json({ status: Status.Success, message: 'Company Location updated successfully', companyLocation });
+        const newCompanyLocation = await CompanyLocation.findOne({ _id: params.companyLocationId, company })
+        .populate('workTypes')
+        .populate('assignedEmployees.employee')
+        .populate('assignedEmployees.workTypes')
+        .populate('assignedVendors.vendor')
+        .populate('assignedVendors.workTypes');
+
+        return res.json({ status: Status.Success, message: 'Company Location updated successfully', "companyLocation": newCompanyLocation });
     } catch (error) {
         return res.json({ status: Status.Error, message: error.message });
     }
@@ -252,4 +269,53 @@ const validateAndParseAssignedVendorsParam = async (params: any) => {
     }
 
     params.assignedVendors = assignedVendors;
+}
+
+const validateAndParseAssignedEmployeesParam = async (params: any) => {
+    // For handling request from swagger which uses application/x-www-form-urlencoded content type
+    if (typeof params.assignedEmployees === 'string') {
+        params.assignedEmployees = JSON.parse("["+params.assignedEmployees+"]");
+    }
+
+    if (params.assignedEmployees) {
+        const employeeIds = params.assignedEmployees.map((e: any) => e.employeeId);
+        if (checkIfDuplicateExists(employeeIds)) {
+            throw new Error("Duplicate Vendor ID found");
+        }
+    }
+
+    const assignedEmployees: IAssignedEmployee[] = [];
+
+    for (const assignedEmployee of (params.assignedEmployees || [])) {
+
+        if (!await Employee.findById(assignedEmployee.employeeId)) {
+            throw new Error("Invalid Assigned eMPLOYEE ID: " + assignedEmployee.employeeId);
+        }
+
+        if (params.workTypes && params.workTypes.length > 0) {
+            assignedEmployee.workTypes = removeDuplicate(assignedEmployee.workTypes);
+
+            for (const workTypeId of (assignedEmployee.workTypes || [])) {
+                if (!await WorkType.findById(workTypeId)) {
+                    throw new Error("Invalid Assigned Vendor Work Type ID: " + workTypeId);
+                }
+
+                if (params.workTypes.indexOf(workTypeId) === -1) {
+                    throw new Error(`Work Type ID ${workTypeId} doesn't match Company Location Work Type IDs`);
+                }
+            }
+        } else {
+            if (assignedEmployee.workTypes && assignedEmployee.workTypes.length > 0) {
+                throw new Error(`Can't set Work Type for Vendor with ID ${assignedEmployee.employeeId} - Company Location doesn't have Work Types`);
+            }
+        }
+        
+        assignedEmployees.push(new AssignedEmployee(
+            {
+                employee: assignedEmployee.employeeId,
+                workTypes: assignedEmployee.workTypes
+            }));
+    }
+
+    params.assignedEmployees = assignedEmployees;
 }

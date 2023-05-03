@@ -919,6 +919,8 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
 }
 export const getJobs = async (req: Request, res: Response) => {
     const params = req.body;
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
     let technicianIds: any[];
     let companyId = req.otherCompanyId || req.companyId;
     let currentPage = params.currentPage || 0;
@@ -972,11 +974,14 @@ export const getJobs = async (req: Request, res: Response) => {
         filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
     }
 
+    if (workType && companyLocation) {
+        filterQuery['$and'].push({ "ticketObj.workType": new ObjectId(workType) });
+        filterQuery['$and'].push({ "ticketObj.companyLocation": new ObjectId(companyLocation) });
+    }
+
     // Deep clone filterQuery
     const query: any = { $and: [] };
     filterQuery['$and'].map((q: any) => { query['$and'].push({ ...q }) });
-
-    
 
     // Filter jobs using aggregate to be search to another collection
     let ids: any[] = [];
@@ -1083,12 +1088,6 @@ if (orQuery.length > 0) {
 }
 const matchStage = { $match: filterQuery };
     const jobsAggregate: IJob[] = await Job.aggregate([
-        matchStage,
-        {
-            $sort:{"updatedAt":-1}
-        },
-        { $skip : (currentPage  * pageSize) },
-        { $limit: params.pageSize || DefaultPageSize },
         {
             $lookup: {
                 from: 'customers',
@@ -1171,7 +1170,14 @@ const matchStage = { $match: filterQuery };
                 foreignField: '_id',
                 as: 'jobTypeObj'
             }
-        },   ]);
+        },
+        matchStage,
+        {
+            $sort:{"updatedAt":-1}
+        },
+        { $skip : (currentPage  * pageSize) },
+        { $limit: params.pageSize || DefaultPageSize },
+       ]);
 
     const totalJobs = await Job.aggregate([
         matchStage,
@@ -1484,6 +1490,8 @@ const createJobReport = async (jobId: any, companyId: any, customerName: string 
 export const getAllJobReports = async (req: Request, res: Response) => {
 
     const params = req.query;
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
     let companyId = req.otherCompanyId || req.companyId;
     let currentPage = params.currentPage || 0;
     let pageSize = params.pageSize || DefaultPageSize;
@@ -1529,6 +1537,13 @@ export const getAllJobReports = async (req: Request, res: Response) => {
         filterQuery['$and'].push({ jobDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
     }
 
+    if (workType && companyLocation) {
+        if (params.workType && params.companyLocation) {
+            filterQuery['$and'].push({ "ticketObj.workType": new ObjectId(workType) });
+            filterQuery['$and'].push({ "ticketObj.companyLocation": new ObjectId(companyLocation) });
+        }
+    }
+
     // Deep clone filterQuery
     const query: any = { $and: [] };
     filterQuery['$and'].map((q: any) => { query['$and'].push({ ...q }) });
@@ -1544,6 +1559,14 @@ export const getAllJobReports = async (req: Request, res: Response) => {
                 localField: 'job',
                 foreignField: '_id',
                 as: 'jobObj'
+            }
+        },
+        {
+            $lookup: {
+                from: 'servicetickets',
+                localField: 'jobObj.ticket',
+                foreignField: '_id',
+                as: 'ticketObj'
             }
         },
         {
@@ -1641,11 +1664,11 @@ export const getAllJobReports = async (req: Request, res: Response) => {
 
     // Filter jobs using aggregate to be search to another collection
     const jobReportsAggregate: IJobReport[] = await JobReport.aggregate([
+        ...aggregateLookups,
         { $match: { ...query } },
         { $sort: sortQuery },
         { $skip : (currentPage  * pageSize) },
         { $limit: params.pageSize || DefaultPageSize },
-        ...aggregateLookups,
     ]);
 
     const totalJobReports = await JobReport.aggregate([

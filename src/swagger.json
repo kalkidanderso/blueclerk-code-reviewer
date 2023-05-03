@@ -2786,9 +2786,7 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "name",
-                  "assignedVendors",
-                  "workTypes"
+                  "name"
                 ],
                 "properties": {
                   "name": {
@@ -2841,6 +2839,13 @@
                       "$ref": "#/components/schemas/AssignedVendor"
                     },
                     "description": "Array of assigned vendor data"
+                  },
+                  "assignedEmployees": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AssignedEmployee"
+                    },
+                    "description": "Array of assigned employee data"
                   }
                 }
               }
@@ -2880,9 +2885,7 @@
                 "type": "object",
                 "required": [
                   "companyLocationId",
-                  "name",
-                  "assignedVendors",
-                  "workTypes"
+                  "name"
                 ],
                 "properties": {
                   "companyLocationId": {
@@ -2938,6 +2941,13 @@
                       "$ref": "#/components/schemas/AssignedVendor"
                     },
                     "description": "Array of assigned vendor data"
+                  },
+                  "assignedEmployees": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AssignedEmployee"
+                    },
+                    "description": "Array of assigned employee data"
                   }
                 }
               }
@@ -18235,6 +18245,23 @@
           "vendorId": {
             "type": "string",
             "description": "Assigned vendor ID"
+          },
+          "workTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of work type ID"
+          }
+        }
+      },
+      "AssignedEmployees": {
+        "type": "object",
+        "required": ["employeeId"],
+        "properties": {
+          "employeeId": {
+            "type": "string",
+            "description": "Assigned employee ID"
           },
           "workTypes": {
             "type": "array",

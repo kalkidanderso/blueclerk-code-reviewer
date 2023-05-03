@@ -126,6 +126,12 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                     serviceTicket.customerContactId = checkContact._id;
                 }
             }
+
+            if (params.workType && params.companyLocation) {
+                serviceTicket.workType = params.workType;
+                serviceTicket.companyLocation = params.companyLocation;    
+            }
+
             data.imagesUrl?.forEach((imageUrl: string) => serviceTicket.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }));
             serviceTicket.source = params.source ? params.source : 'blueclerk';
             await serviceTicket.save(async (err: any) => {
@@ -302,6 +308,8 @@ export const _createServiceTicket = async (req: Request, res: Response, next: (e
 export const getServiceTickets = async (req: Request, res: Response) => {
 
     const params = req.body;
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
     let companyId = req.companyId;
     let technicianIds: any[];
 
@@ -362,6 +370,11 @@ export const getServiceTickets = async (req: Request, res: Response) => {
                 { 'tasks.contractor': { $in: technicians } }
             ]
         });
+    }
+
+    if (workType && companyLocation) {
+        filterQuery['$and'].push({ workType: new ObjectId(workType) });
+        filterQuery['$and'].push({ companyLocation: new ObjectId(companyLocation) });
     }
 
     if (params.status == 0) {
@@ -747,6 +760,8 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
     const actionId = req.query.actionId;
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
     const includeOpenJobRequest = req.query.includeOpenJobRequest || false;
 
     // Initialize started count & total of the service tickets
@@ -780,11 +795,18 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
      * Retrieve all open service tickets with all populated info,
      * and return it as a stream via socket.io
      */
-    const serviceTicketCursor = ServiceTicket.find({
+    let serviceTicketFilter: any = {
         company: company._id,
         jobCreated: false,
         status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] }
-    }).sort({ _id: -1 })
+    };
+
+    if (companyLocation && workType) {
+        serviceTicketFilter.workType = workType;
+        serviceTicketFilter.companyLocation = companyLocation;
+    }
+
+    const serviceTicketCursor = ServiceTicket.find(serviceTicketFilter).sort({ _id: -1 })
         .populate({ path: 'company', select: 'info address contact' })
         .populate({ path: 'customer', select: 'info profile address location contact' })
         .populate({ path: 'homeOwner', select: 'info profile address location contact' })
