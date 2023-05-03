@@ -367,6 +367,8 @@ const _createJob = async (
         createdAt: Date.now(),
         createdBy: user._id,
         track: track,
+        scheduledStartTime: params.scheduledStartTime,
+        scheduledEndTime: params.scheduledEndTime,
     })
 
     let newStartTime: any = null
@@ -375,17 +377,17 @@ const _createJob = async (
         imagesUrl.forEach(imageUrl => job.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }));
     }
 
-    if (params.scheduledStartTime) {
-        let date = new Date(params.scheduleDate)
-        newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
-        job.scheduledStartTime = newStartTime
+    // if (params.scheduledStartTime) {
+    //     let date = new Date(params.scheduleDate)
+    //     newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
+    //     job.scheduledStartTime = newStartTime
 
-    }
-    if (params.scheduledEndTime) {
-        let date = new Date(params.scheduleDate)
-        newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
-        job.scheduledEndTime = newEndTime
-    }
+    // }
+    // if (params.scheduledEndTime) {
+    //     let date = new Date(params.scheduleDate)
+    //     newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
+    //     job.scheduledEndTime = newEndTime
+    // }
     if (params.equipmentId) {
         job.equipmentId = params.equipmentId
     }
@@ -1171,7 +1173,28 @@ const matchStage = { $match: filterQuery };
                 foreignField: '_id',
                 as: 'jobTypeObj'
             }
-        },   ]);
+        },
+        {
+            $project: {
+                "_id":0,
+                "jobId":1,
+                "status":"$status",
+                "createdBy":"$createdBy",
+                "description":"$description",
+                "tasks":"$tasks",
+                "track":"$track",
+                "customerObj":"$customerObj",
+                "jobLocationObj":"$jobLocationObj",
+                "jobSiteObj":"$jobSiteObj",
+                "scheduledStartTime":"$scheduledStartTime",
+                "scheduledEndTime":"$scheduledEndTime",
+                "technicianObj":"$technicianObj",
+                "contractorsObj":"$contractorsObj",
+                "jobTypeObj":"$jobTypeObj",
+                "ticketObj":"$ticketObj",
+            }
+        }
+    ]);
 
     const totalJobs = await Job.aggregate([
         matchStage,
