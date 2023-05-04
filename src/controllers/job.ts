@@ -298,6 +298,10 @@ const _createJob = async (
             trackedServiceTicket = serviceTicket.track;
 
             await serviceTicket.save();
+
+            // Set the job's work type and company location to match the information provided in the ticket
+            params.workType = serviceTicket.workType;
+            params.companyLocation = serviceTicket.companyLocation;
         }
 
         const ticketImages = parentJob?.images?.length
@@ -390,6 +394,11 @@ const _createJob = async (
     // }
     if (params.equipmentId) {
         job.equipmentId = params.equipmentId
+    }
+
+    if (params.workType && params.companyLocation) {
+        job.workType = params.workType;
+        job.companyLocation = params.companyLocation;
     }
 
     newJob = await job.save();
@@ -977,8 +986,8 @@ export const getJobs = async (req: Request, res: Response) => {
     }
 
     if (workType && companyLocation) {
-        filterQuery['$and'].push({ "ticketObj.workType": new ObjectId(workType) });
-        filterQuery['$and'].push({ "ticketObj.companyLocation": new ObjectId(companyLocation) });
+        filterQuery['$and'].push({ "workType": new ObjectId(workType) });
+        filterQuery['$and'].push({ "companyLocation": new ObjectId(companyLocation) });
     }
 
     // Deep clone filterQuery
@@ -1173,6 +1182,12 @@ const matchStage = { $match: filterQuery };
                 as: 'jobTypeObj'
             }
         },
+        matchStage,
+        {
+            $sort:{"updatedAt":-1}
+        },
+        { $skip : (currentPage  * pageSize) },
+        { $limit: params.pageSize || DefaultPageSize },
         {
             $project: {
                 "_id":0,
@@ -1554,10 +1569,8 @@ export const getAllJobReports = async (req: Request, res: Response) => {
     }
 
     if (workType && companyLocation) {
-        if (params.workType && params.companyLocation) {
-            filterQuery['$and'].push({ "ticketObj.workType": new ObjectId(workType) });
-            filterQuery['$and'].push({ "ticketObj.companyLocation": new ObjectId(companyLocation) });
-        }
+        filterQuery['$and'].push({ "jobObj.workType": new ObjectId(workType)});
+        filterQuery['$and'].push({ "jobObj.companyLocation": new ObjectId(companyLocation)});
     }
 
     // Deep clone filterQuery
@@ -1575,14 +1588,6 @@ export const getAllJobReports = async (req: Request, res: Response) => {
                 localField: 'job',
                 foreignField: '_id',
                 as: 'jobObj'
-            }
-        },
-        {
-            $lookup: {
-                from: 'servicetickets',
-                localField: 'jobObj.ticket',
-                foreignField: '_id',
-                as: 'ticketObj'
             }
         },
         {

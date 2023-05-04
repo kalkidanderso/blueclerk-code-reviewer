@@ -2536,8 +2536,8 @@ export const getInvoices = async (req: Request, res: Response) => {
     }
 
     if (workType && companyLocation) {
-        query['$and'].push({ "ticketObj.workType": new ObjectId(workType) });
-        query['$and'].push({ "ticketObj.companyLocation": new ObjectId(companyLocation) });
+        query['$and'].push({ "jobObj.workType": new ObjectId(workType) });
+        query['$and'].push({ "jobObj.companyLocation": new ObjectId(companyLocation) });
     }
 
     // Construct aggreate lookups here to be used multiple times
@@ -2545,7 +2545,6 @@ export const getInvoices = async (req: Request, res: Response) => {
     if (isAllRecords) {
         aggregateLookups = [
             { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
-            { $lookup: { from: 'servicetickets', localField: 'jobObj.ticket', foreignField: '_id', as: 'ticketObj' } },
             { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
             { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
             { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },

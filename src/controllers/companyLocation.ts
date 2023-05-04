@@ -8,6 +8,8 @@ import { AssignedVendor, IAssignedVendor } from '../models/AssignedVendor';
 import { checkIfDuplicateExists, removeDuplicate } from '../utils/arrayUtil';
 import { Employee } from '../models/Employee';
 import { AssignedEmployee, IAssignedEmployee } from '../models/AssignedEmployee';
+import { ServiceTicket } from '../models/ServiceTicket';
+import { Job } from '../models/Job';
 
 
 export const getCompanyLocations = async (req: Request, res: Response) => {
@@ -45,7 +47,7 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
     try {
         const params = req.body;
         const company = <ICompany>req.company;
-
+        
         if (params.isMainLocation) {
             let existingMainLocation = await CompanyLocation.findOne({ company, isActive: true, isMainLocation: true });
             if (existingMainLocation) {
@@ -56,6 +58,8 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
         await validateAndParseWorkTypesParam(params);
         await validateAndParseAssignedVendorsParam(params);
         await validateAndParseAssignedEmployeesParam(params);
+
+        let existingDevision = await CompanyLocation.find({company: company._id, workTypes: {$ne: []}});
 
         const companyLocation = new CompanyLocation(
             {
@@ -92,7 +96,11 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
                                             .populate('assignedVendors.vendor')
                                             .populate('assignedVendors.workTypes')
                                             .execPopulate();
-
+        
+        //Verify Devision and auto allocate jobs
+        if (!existingDevision.length) {
+            await checkIsFirstLocation(params, company, populatedCompanyLocation.id)
+        }
 
         return res.json({ status: Status.Success, companyLocation : populatedCompanyLocation });
     } catch (error) {
@@ -363,4 +371,12 @@ const validateAndParseAssignedEmployeesParam = async (params: any) => {
     }
 
     params.assignedEmployees = assignedEmployees;
+}
+
+
+const checkIsFirstLocation = async (params: any, company: ICompany, locationId: string) => {
+    if (params.workTypes && params.workTypes.length && locationId) {
+        await Job.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
+        await ServiceTicket.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
+    }
 }

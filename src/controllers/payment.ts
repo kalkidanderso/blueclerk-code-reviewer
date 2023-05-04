@@ -94,8 +94,16 @@ export const _resetPaymentQB = (company: ICompany): void => {
 };
 
 export const getPayments = (req: Request, res: Response) => {
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
+    
+    let filterQuery: {[key: string]: any} = { company: req.companyId, __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] } };
+    if (workType && companyLocation) {
+        filterQuery["invoice.job.workType"] = workType;
+        filterQuery["invoice.job.companyLocation"] = companyLocation;
+    }
 
-    Payment.find({ company: req.companyId, __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] } })
+    Payment.find(filterQuery)
         .populate({
             path: 'company',
             select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -107,6 +115,9 @@ export const getPayments = (req: Request, res: Response) => {
         .populate({
             path: 'invoice',
             select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+        })
+        .populate({
+            path: 'invoice.job'
         })
         .populate({
             path: 'line.invoice',
