@@ -1,6 +1,6 @@
 FROM node:14.20-alpine3.15
 
-ENV NODE_ENV development
+ENV NODE_ENV $node_environment
 
 RUN apk update && apk upgrade && \
     apk --no-cache --virtual build-dependencies add \

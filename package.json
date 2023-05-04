@@ -6,7 +6,7 @@
   "scripts": {
     "tsc": "tsc",
     "watch:tsc": "tsc --watch",
-    "dev": "concurrently \"tsc --watch\" \"nodemon ./dist/server.js\""
+    "dev": "concurrently \"tsc --watch\" \"nodemon --require './tracer.js' ./dist/server.js\""
   },
   "author": "",
   "license": "ISC",
