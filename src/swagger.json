@@ -2974,6 +2974,70 @@
         ]
       }
     },
+    "/updateCompanyLocationAssignments": {
+      "put": {
+        "tags": [
+          "Company Location"
+        ],
+        "summary": "To update company location Assigned Employees/Vendors",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "companyLocationId"
+                ],
+                "properties": {
+                  "companyLocationId": {
+                    "type": "string"
+                  },
+                  "workTypes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Array of work type ID"
+                  },
+                  "assignedVendors": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AssignedVendor"
+                    },
+                    "description": "Array of assigned vendor data"
+                  },
+                  "assignedEmployees": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AssignedEmployee"
+                    },
+                    "description": "Array of assigned employee data"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getCompanyEmailDefault": {
       "get": {
         "tags": [

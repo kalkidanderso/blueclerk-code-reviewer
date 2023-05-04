@@ -134,8 +134,8 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
         companyLocation.contactName = params.contactName;
 
         companyLocation.workTypes = params.workTypes;
-        companyLocation.assignedVendors = params.assignedVendors;
-        companyLocation.assignedEmployees = params.assignedEmployees;
+        if(params.assignedVendors) companyLocation.assignedVendors = params.assignedVendors;
+        if(params.assignedEmployees) companyLocation.assignedEmployees = params.assignedEmployees;
 
         await companyLocation.save();
 
@@ -150,6 +150,43 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
     } catch (error) {
         return res.json({ status: Status.Error, message: error.message });
     }
+}
+
+/**
+ * To manage the employees or vendors who are assigned to a specific company location
+ */
+
+export const updateCompanyLocationAssignments = async (req: Request, res: Response) => {
+    try {
+        const params = req.body;
+        const company = <ICompany>req.company;
+
+        
+        let data: {[key: string]: any} = {};
+        if(params.assignedVendors) {
+            await validateAndParseAssignedVendorsParam(params);
+            data["assignedVendors"] = params.assignedVendors;
+        }
+
+        if(params.assignedEmployees) {
+            await validateAndParseAssignedEmployeesParam(params);
+            data["assignedEmployees"] = params.assignedEmployees;
+        }
+        
+        await CompanyLocation.updateOne({ _id: params.companyLocationId, company }, data);
+
+        const newCompanyLocation = await CompanyLocation.findOne({ _id: params.companyLocationId, company })
+        .populate('workTypes')
+        .populate('assignedEmployees.employee')
+        .populate('assignedEmployees.workTypes')
+        .populate('assignedVendors.vendor')
+        .populate('assignedVendors.workTypes');
+
+        return res.json({ status: Status.Success, message: 'Company Location updated successfully', "companyLocation": newCompanyLocation });
+    } catch (error) {   
+        return res.json({ status: Status.Error, message: error.message });
+    }
+
 }
 
 /**
@@ -280,7 +317,7 @@ const validateAndParseAssignedEmployeesParam = async (params: any) => {
     if (params.assignedEmployees) {
         const employeeIds = params.assignedEmployees.map((e: any) => e.employeeId);
         if (checkIfDuplicateExists(employeeIds)) {
-            throw new Error("Duplicate Vendor ID found");
+            throw new Error("Duplicate Emplyee ID found");
         }
     }
 
@@ -289,7 +326,7 @@ const validateAndParseAssignedEmployeesParam = async (params: any) => {
     for (const assignedEmployee of (params.assignedEmployees || [])) {
 
         if (!await Employee.findById(assignedEmployee.employeeId)) {
-            throw new Error("Invalid Assigned eMPLOYEE ID: " + assignedEmployee.employeeId);
+            throw new Error("Invalid Assigned Employee ID: " + assignedEmployee.employeeId);
         }
 
         if (params.workTypes && params.workTypes.length > 0) {
@@ -297,7 +334,7 @@ const validateAndParseAssignedEmployeesParam = async (params: any) => {
 
             for (const workTypeId of (assignedEmployee.workTypes || [])) {
                 if (!await WorkType.findById(workTypeId)) {
-                    throw new Error("Invalid Assigned Vendor Work Type ID: " + workTypeId);
+                    throw new Error("Invalid Assigned Emplyee Work Type ID: " + workTypeId);
                 }
 
                 if (params.workTypes.indexOf(workTypeId) === -1) {
@@ -306,7 +343,7 @@ const validateAndParseAssignedEmployeesParam = async (params: any) => {
             }
         } else {
             if (assignedEmployee.workTypes && assignedEmployee.workTypes.length > 0) {
-                throw new Error(`Can't set Work Type for Vendor with ID ${assignedEmployee.employeeId} - Company Location doesn't have Work Types`);
+                throw new Error(`Can't set Work Type for Emplyee with ID ${assignedEmployee.employeeId} - Company Location doesn't have Work Types`);
             }
         }
         
