@@ -84,9 +84,17 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
             }
         );
 
-        await companyLocation.save();
+        const savedCompanyLocation = await companyLocation.save();
+        const populatedCompanyLocation = await savedCompanyLocation
+                                            .populate('workTypes')
+                                            .populate('assignedEmployees.employee')
+                                            .populate('assignedEmployees.workTypes')
+                                            .populate('assignedVendors.vendor')
+                                            .populate('assignedVendors.workTypes')
+                                            .execPopulate();
 
-        return res.json({ status: Status.Success, companyLocation });
+
+        return res.json({ status: Status.Success, companyLocation : populatedCompanyLocation });
     } catch (error) {
         return res.json({ status: Status.Error, message: error.message });
     }
