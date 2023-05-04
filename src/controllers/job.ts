@@ -1176,7 +1176,7 @@ const matchStage = { $match: filterQuery };
         },
         {
             $project: {
-                "_id":0,
+                "_id":1,
                 "jobId":1,
                 "status":"$status",
                 "createdBy":"$createdBy",
