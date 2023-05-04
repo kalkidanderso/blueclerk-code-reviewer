@@ -1192,6 +1192,7 @@ const matchStage = { $match: filterQuery };
                 "contractorsObj":"$contractorsObj",
                 "jobTypeObj":"$jobTypeObj",
                 "ticketObj":"$ticketObj",
+                "scheduleDate":"$scheduleDate",
             }
         }
     ]);
