@@ -1,5 +1,7 @@
 FROM node:14.20-alpine3.15
 
+ARG node_environment
+
 ENV NODE_ENV $node_environment
 
 RUN apk update && apk upgrade && \
