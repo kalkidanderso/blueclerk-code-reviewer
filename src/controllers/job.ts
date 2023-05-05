@@ -1190,7 +1190,7 @@ const matchStage = { $match: filterQuery };
         { $limit: params.pageSize || DefaultPageSize },
         {
             $project: {
-                "_id":0,
+                "_id":1,
                 "jobId":1,
                 "status":"$status",
                 "createdBy":"$createdBy",
@@ -1206,6 +1206,7 @@ const matchStage = { $match: filterQuery };
                 "contractorsObj":"$contractorsObj",
                 "jobTypeObj":"$jobTypeObj",
                 "ticketObj":"$ticketObj",
+                "scheduleDate":"$scheduleDate",
             }
         }
     ]);
