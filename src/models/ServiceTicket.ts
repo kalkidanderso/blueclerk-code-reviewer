@@ -40,8 +40,8 @@ export interface IServiceTicket extends Document {
     jobCreated: boolean
     track: any[];
     source: string | null;
-    workType: string | null
-    companyLocation: string | null
+    workType: Schema.Types.ObjectId  | null
+    companyLocation: Schema.Types.ObjectId  | null
 }
 
 const ServiceTicketSchema = new Schema({

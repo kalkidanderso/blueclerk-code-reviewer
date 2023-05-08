@@ -37,6 +37,8 @@ export interface IPaymentCustomer extends IPayment {
 
     customer: Schema.Types.ObjectId | ICustomer
     invoice: Schema.Types.ObjectId | IInvoice
+    workType: Schema.Types.ObjectId | null
+    companyLocation: Schema.Types.ObjectId | null
 }
 
 export interface IPaymentVendor extends IPayment {
@@ -184,6 +186,14 @@ const PaymentCustomerSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Invoice',
         required: false
+    },
+    workType: {
+        type: Schema.Types.ObjectId,
+        ref: 'workType',
+    },
+    companyLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'companyLocation',
     },
 })
 

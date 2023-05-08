@@ -2182,6 +2182,53 @@
         ]
       }
     },
+    "/updateEmployeeLocPermission": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "This API used to update employees location permisson",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "employeeId",
+                  "canAccessAllLocations"
+                ],
+                "properties": {
+                  "employeeId": {
+                    "type": "string"
+                  },
+                  "canAccessAllLocations": {
+                    "type": "booelan"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/updateEmployeeEmailPreferences": {
       "post": {
         "tags": [

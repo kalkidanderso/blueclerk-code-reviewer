@@ -97,10 +97,10 @@ export const getPayments = (req: Request, res: Response) => {
     const workType = req.query.workType;
     const companyLocation = req.query.companyLocation;
     
-    let filterQuery: {[key: string]: any} = { company: req.companyId, __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] } };
+    let filterQuery: {[key: string]: any} = { company: req.companyId, __t: { $nin: ['PaymentEmployee', 'PaymentVendor']} };
     if (workType && companyLocation) {
-        filterQuery["invoice.job.workType"] = workType;
-        filterQuery["invoice.job.companyLocation"] = companyLocation;
+        filterQuery["workType"] = new ObjectId(workType);
+        filterQuery["companyLocation"] = new ObjectId(companyLocation);
     }
 
     Payment.find(filterQuery)
@@ -115,9 +115,6 @@ export const getPayments = (req: Request, res: Response) => {
         .populate({
             path: 'invoice',
             select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
-        })
-        .populate({
-            path: 'invoice.job'
         })
         .populate({
             path: 'line.invoice',
@@ -156,7 +153,9 @@ export const getUnsyncedPayments = async (req: Request, res: Response) => {
 
     const params = req.query;
     const companyId = req.companyId;
-
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
+    
     // Data query that used to search unsynced Invoices
     const filterQuery: any = {
         $and: [
@@ -183,6 +182,11 @@ export const getUnsyncedPayments = async (req: Request, res: Response) => {
     }
     if (params.customerId) {
         filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+    }
+
+    if (workType && companyLocation) {
+        filterQuery['$and'].push({workType : new ObjectId(workType)});
+        filterQuery['$and'].push({companyLocation : new ObjectId(companyLocation)});
     }
 
     const payments = await Payment.find(filterQuery)
@@ -486,6 +490,7 @@ export const createPayment = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Customer not found.' });
     }
 
+    let devisionData: any = {};
     if (params.invoiceId) {
         // Find and check if invoice existed and belongs to the customer
         invoice = await Invoice.findOne({
@@ -501,6 +506,11 @@ export const createPayment = async (req: Request, res: Response) => {
         if (invoice.status === InvoiceStatus.PAID) {
             return res.json({ status: Status.Success, message: 'Invoice already paid off.' });
         }
+
+        if (invoice.workType && invoice.companyLocation) {
+            devisionData["workType"] = invoice.workType;
+            devisionData["companyLocation"] = invoice.companyLocation;
+        }
     }
 
     // Construct payment entry
@@ -514,7 +524,8 @@ export const createPayment = async (req: Request, res: Response) => {
         note: params.note,
         company,
         createdBy: user,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        ...devisionData
     });
 
     try {
@@ -1107,7 +1118,9 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
     const vendors: any = [];
     const employees: any = [];
-    let query, queryPaymentVendor: any = {}, queryPaymentEmployee: any = {}, queryAdvancePaymentVendor: any = {}, queryAdvancePaymentEmployee: any = {};
+    let query: any = {}, queryPaymentVendor: any = {}, queryPaymentEmployee: any = {}, queryAdvancePaymentVendor: any = {}, queryAdvancePaymentEmployee: any = {};
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
 
     // Check when startDate and endDate is provided, offset must be required
     if (params.startDate && params.endDate) {
@@ -1122,6 +1135,12 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
         queryAdvancePaymentVendor = { appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
         queryPaymentEmployee = { paidAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
         queryAdvancePaymentEmployee = { appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
+    }
+
+
+    if (workType && companyLocation) {
+        query["workType"] = new ObjectId(workType);
+        query["companyLocation"] =  new ObjectId(companyLocation);
     }
 
     // get job with unpaid technician or contractor
@@ -1200,7 +1219,11 @@ export const getPayrollReport = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
     const vendors: any = [];
     const employees: any = [];
-    let techQuery, query: any;
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
+
+    let techQuery: any;
+    let query: any = {};
 
     if (params.startDate && params.endDate) {
         if (!params.offset) {
@@ -1224,6 +1247,11 @@ export const getPayrollReport = async (req: Request, res: Response) => {
         default:
             techQuery = {};
             break;
+    }
+
+    if (companyLocation && workType) {
+        query["workType"] = workType;
+        query["companyLocation"] = companyLocation;
     }
 
     const invoices = await Invoice.find({

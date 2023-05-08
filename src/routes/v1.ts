@@ -326,6 +326,16 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/updateEmployeeLocPermission',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.User_Get_All_Employees),
+        validate(Validations.changeEmployeeLocPermission),
+        userController.updateEmployeeLocPermission
+    )
+
+    router.post(
         '/getManagers',
         passport.authenticate('jwt', { session: false }),
         isLogin(),

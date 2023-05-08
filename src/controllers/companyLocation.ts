@@ -10,6 +10,8 @@ import { Employee } from '../models/Employee';
 import { AssignedEmployee, IAssignedEmployee } from '../models/AssignedEmployee';
 import { ServiceTicket } from '../models/ServiceTicket';
 import { Job } from '../models/Job';
+import { Invoice } from '../models/Invoice';
+import { Payment } from '../models/Payment';
 
 
 export const getCompanyLocations = async (req: Request, res: Response) => {
@@ -378,5 +380,7 @@ const checkIsFirstLocation = async (params: any, company: ICompany, locationId: 
     if (params.workTypes && params.workTypes.length && locationId) {
         await Job.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
         await ServiceTicket.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
+        await Invoice.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
+        await Payment.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
     }
 }

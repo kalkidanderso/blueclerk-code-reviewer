@@ -113,7 +113,7 @@ export const getEmployeeDetail = async (req: Request, res: Response) => {
             }
 
             let employeeDetails: any = await User.findOne({_id: new ObjectId(employeeId)})
-                .select('_id auth.email auth.socialId profile address location contact emailPreferences permissions').exec();
+                .select('_id auth.email auth.socialId profile address location contact emailPreferences permissions canAccessAllLocations').exec();
             employeeData._id = employeeDetails._id;
             employeeData.email = employeeDetails.auth.email;
             employeeData.socialId = employeeDetails.auth.socialId;
@@ -133,6 +133,8 @@ export const getEmployeeDetail = async (req: Request, res: Response) => {
                 timeZone : employeeDetails.emailPreferences.timeZone,
                 time: hours + ':' + minutes
             }
+            employeeData.canAccessAllLocations = employeeDetails.canAccessAllLocations;
+            
             if (employeeDetails) {
                 return res.json({'status': Status.Success, 'employee': employeeData});
             } else {

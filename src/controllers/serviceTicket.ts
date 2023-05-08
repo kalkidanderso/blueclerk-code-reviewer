@@ -766,10 +766,18 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
 
     // Initialize started count & total of the service tickets
     let count = 1;
+
+    let filterByDevision: any = {};
+    if (companyLocation && workType) {
+        filterByDevision["workType"] = workType;
+        filterByDevision["companyLocation"] = companyLocation;
+    }
+
     const totalServiceTickets = await ServiceTicket.find({
         company: company._id,
         jobCreated: false,
-        status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] }
+        status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] },
+        ...filterByDevision
     }).countDocuments();
 
     let totalJobRequests = 0;
@@ -777,7 +785,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
         // Get total of job requests
         totalJobRequests = await JobRequest.find({
             company: company._id,
-            status: { $in: [JobRequestStatus.PENDING] }
+            status: { $in: [JobRequestStatus.PENDING] },
         }).countDocuments();
     }
     const grandTotal = totalServiceTickets + totalJobRequests;
@@ -795,18 +803,12 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
      * Retrieve all open service tickets with all populated info,
      * and return it as a stream via socket.io
      */
-    let serviceTicketFilter: any = {
+    const serviceTicketCursor = ServiceTicket.find({
         company: company._id,
         jobCreated: false,
-        status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] }
-    };
-
-    if (companyLocation && workType) {
-        serviceTicketFilter.workType = workType;
-        serviceTicketFilter.companyLocation = companyLocation;
-    }
-
-    const serviceTicketCursor = ServiceTicket.find(serviceTicketFilter).sort({ _id: -1 })
+        status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] },
+        ...filterByDevision
+    }).sort({ _id: -1 })
         .populate({ path: 'company', select: 'info address contact' })
         .populate({ path: 'customer', select: 'info profile address location contact' })
         .populate({ path: 'homeOwner', select: 'info profile address location contact' })

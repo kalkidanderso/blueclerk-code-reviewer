@@ -943,6 +943,8 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     const params = req.body
     const company = <ICompany>req.company
     const user = <IUser>req.user
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
 
     let currentInvoiceId = 0;
     if (company.currentInvoiceId) {
@@ -1285,6 +1287,13 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             paid = true;
         }
     }
+    let devision: {[key: string] : any} = {};
+    if (companyLocation && workType) {
+        devision["workType"] = workType;
+        devision["companyLocation"] = companyLocation;
+    }
+    console.log(devision);
+    
 
     var invoice = new Invoice({
         invoiceId: invoiceId,
@@ -1317,7 +1326,8 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         items: invoiceItems,
         estimate: estimateId,
         emailHistory: [],
-        lastEmailSent: null
+        lastEmailSent: null,
+        ...devision
     })
 
     next(req, res, invoice, currentInvoiceId);
@@ -2500,6 +2510,11 @@ export const getInvoices = async (req: Request, res: Response) => {
         filterQuery['$and'].push({ lastEmailSent: { $gte: new Date(lastEmailStartDate), $lte: new Date(lastEmailEndDate) } });
     }
 
+    if (workType && companyLocation) {
+        filterQuery['$and'].push({ workType: new ObjectId(workType) });
+        filterQuery['$and'].push({ companyLocation: new ObjectId(companyLocation) });
+    }
+
     // Deep clone filterQuery
     const query: any = { $and: [] };
     filterQuery['$and'].map((q: any) => { query['$and'].push({ ...q }) });
@@ -2533,11 +2548,6 @@ export const getInvoices = async (req: Request, res: Response) => {
         query['$and'].push({ ...paginationQuery });
         // Getting previous page is special, we need to reverse the sort
         sortQuery = { createdAt: 1, _id: 1 };
-    }
-
-    if (workType && companyLocation) {
-        query['$and'].push({ "jobObj.workType": new ObjectId(workType) });
-        query['$and'].push({ "jobObj.companyLocation": new ObjectId(companyLocation) });
     }
 
     // Construct aggreate lookups here to be used multiple times
@@ -2751,6 +2761,8 @@ export const getUnsyncedInvoices = async (req: Request, res: Response) => {
 
     const params = req.query;
     const companyId = req.companyId;
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
 
     // Data query that used to search unsynced Invoices
     const filterQuery: any = {
@@ -2793,6 +2805,10 @@ export const getUnsyncedInvoices = async (req: Request, res: Response) => {
     }
     if (params.status) {
         filterQuery['$and'].push({ status: { $in: JSON.parse(params.status) } });
+    }
+    if (workType && companyLocation) {
+        filterQuery['$and'].push({workType : new ObjectId(workType)});
+        filterQuery['$and'].push({companyLocation : new ObjectId(companyLocation)});
     }
 
     const invoices = await Invoice.find(filterQuery)

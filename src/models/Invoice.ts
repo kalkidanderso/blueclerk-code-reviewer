@@ -66,6 +66,8 @@ export interface IInvoice extends Document {
     createdBy: Schema.Types.ObjectId
     createdAt: Date
     updatedAt: Date
+    workType: Schema.Types.ObjectId  | null
+    companyLocation: Schema.Types.ObjectId  | null
 }
 
 export enum LineDetailTypes {
@@ -337,8 +339,15 @@ const InvoiceSchema = new Schema({
     isVoid: {
         type: Boolean,
         default: false
-    }
-
+    },
+    workType: {
+        type: Schema.Types.ObjectId,
+        ref: 'workType',
+    },
+    companyLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'companyLocation',
+    },
 }, { timestamps: { createdAt: true, updatedAt: true } });
 
 export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema)
