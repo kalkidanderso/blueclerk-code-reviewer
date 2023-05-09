@@ -61,12 +61,13 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
         await validateAndParseAssignedVendorsParam(params);
         await validateAndParseAssignedEmployeesParam(params);
 
-        let existingDevision = await CompanyLocation.find({company: company._id, workTypes: {$ne: []}});
+        let existingDivision = await CompanyLocation.find({company: company._id, workTypes: {$ne: []}});
 
         const companyLocation = new CompanyLocation(
             {
                 name: params.name,
                 isMainLocation: params.isMainLocation,
+                isActive: params.isActive,
                 info: {
                     companyEmail: params.email,
                     logoUrl: params.logoUrl,
@@ -77,6 +78,13 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
                     city: params.city,
                     state: params.state,
                     zipCode: params.zipCode
+                },
+                isAddressAsBillingAddress: params.isAddressAsBillingAddress,
+                billingAddress: {
+                    street: params.billingStreet,
+                    city: params.billingCity,
+                    state: params.billingState,
+                    zipCode: params.billingZipCode
                 },
                 contact: {
                     phone: params.phone,
@@ -99,8 +107,8 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
                                             .populate('assignedVendors.workTypes')
                                             .execPopulate();
         
-        //Verify Devision and auto allocate jobs
-        if (!existingDevision.length) {
+        //Verify Division and auto allocate jobs
+        if (!existingDivision.length) {
             await checkIsFirstLocation(params, company, populatedCompanyLocation.id)
         }
 
@@ -134,6 +142,7 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
 
         companyLocation.name = params.name;
         companyLocation.isMainLocation = params.isMainLocation ?? companyLocation.isMainLocation;
+        companyLocation.isActive = params.isActive ?? companyLocation.isActive;
 
         companyLocation.info = companyLocation.info ?? {};
         companyLocation.info.companyEmail = params.email;
@@ -145,6 +154,14 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
         companyLocation.address.city = params.city;
         companyLocation.address.state = params.state;
         companyLocation.address.zipCode = params.zipCode;
+        
+        companyLocation.isAddressAsBillingAddress = params.isAddressAsBillingAddress ?? companyLocation.isAddressAsBillingAddress;
+
+        companyLocation.billingAddress = companyLocation.billingAddress ?? {};
+        companyLocation.billingAddress.street = params.billingStreet;
+        companyLocation.billingAddress.city = params.billingCity;
+        companyLocation.billingAddress.state = params.billingState;
+        companyLocation.billingAddress.zipCode = params.billingZipCode;
 
         companyLocation.contact = companyLocation.contact ?? {};
         companyLocation.contact.phone = params.phone;

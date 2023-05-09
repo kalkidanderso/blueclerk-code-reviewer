@@ -1287,12 +1287,11 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             paid = true;
         }
     }
-    let devision: {[key: string] : any} = {};
+    let division: {[key: string] : any} = {};
     if (companyLocation && workType) {
-        devision["workType"] = workType;
-        devision["companyLocation"] = companyLocation;
+        division["workType"] = workType;
+        division["companyLocation"] = companyLocation;
     }
-    console.log(devision);
     
 
     var invoice = new Invoice({
@@ -1327,7 +1326,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         estimate: estimateId,
         emailHistory: [],
         lastEmailSent: null,
-        ...devision
+        ...division
     })
 
     next(req, res, invoice, currentInvoiceId);

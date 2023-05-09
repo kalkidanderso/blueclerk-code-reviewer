@@ -767,17 +767,17 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     // Initialize started count & total of the service tickets
     let count = 1;
 
-    let filterByDevision: any = {};
+    let filterByDivision: any = {};
     if (companyLocation && workType) {
-        filterByDevision["workType"] = workType;
-        filterByDevision["companyLocation"] = companyLocation;
+        filterByDivision["workType"] = workType;
+        filterByDivision["companyLocation"] = companyLocation;
     }
 
     const totalServiceTickets = await ServiceTicket.find({
         company: company._id,
         jobCreated: false,
         status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] },
-        ...filterByDevision
+        ...filterByDivision
     }).countDocuments();
 
     let totalJobRequests = 0;
@@ -807,7 +807,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
         company: company._id,
         jobCreated: false,
         status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] },
-        ...filterByDevision
+        ...filterByDivision
     }).sort({ _id: -1 })
         .populate({ path: 'company', select: 'info address contact' })
         .populate({ path: 'customer', select: 'info profile address location contact' })

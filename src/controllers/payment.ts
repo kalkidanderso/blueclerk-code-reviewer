@@ -490,7 +490,7 @@ export const createPayment = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Customer not found.' });
     }
 
-    let devisionData: any = {};
+    let divisionData: any = {};
     if (params.invoiceId) {
         // Find and check if invoice existed and belongs to the customer
         invoice = await Invoice.findOne({
@@ -508,8 +508,8 @@ export const createPayment = async (req: Request, res: Response) => {
         }
 
         if (invoice.workType && invoice.companyLocation) {
-            devisionData["workType"] = invoice.workType;
-            devisionData["companyLocation"] = invoice.companyLocation;
+            divisionData["workType"] = invoice.workType;
+            divisionData["companyLocation"] = invoice.companyLocation;
         }
     }
 
@@ -525,7 +525,7 @@ export const createPayment = async (req: Request, res: Response) => {
         company,
         createdBy: user,
         createdAt: Date.now(),
-        ...devisionData
+        ...divisionData
     });
 
     try {
