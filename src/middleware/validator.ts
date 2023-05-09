@@ -100,6 +100,11 @@ export const Validations = {
     check('employeeId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
+  updateVendorDisplayName: [
+      check('contractorId').exists().isMongoId().withMessage(Messages.WrongId),
+        check('displayName').exists().isString().withMessage(Messages.Required)
+  ],
+
   updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('companyEmail').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }), check('phone').exists()],
 
   getCompanyCustomer: [
@@ -608,14 +613,14 @@ export const Validations = {
     check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
     check('amount').exists().withMessage(Messages.Required),
     check('amount').isInt().toInt().withMessage('has to be number'),
-  ],  
+  ],
 
   voidAdvancePaymentContractor: [
     check('type').exists().withMessage(Messages.Required),
     check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
     check('advancePaymentId').exists().withMessage(Messages.Required),
     check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
-  ],  
+  ],
 
   // REPORT
   generateIncomeReport: [

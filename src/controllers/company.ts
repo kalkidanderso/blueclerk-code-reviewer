@@ -373,7 +373,7 @@ export const getCompanyContracts = async (req: Request, res: Response) => {
     })
     .populate({
         path: 'contractor',
-        select: 'info.companyName info.companyEmail type',
+        select: 'info.companyName info.companyEmail info.displayName type',
         populate: [{ path: 'admin', select: 'profile auth.email contact' }]
     })
     .exec((err: any, contracts: IContract[]) => {
@@ -409,7 +409,7 @@ export const getContractorDetail = async(req: Request, res: Response) => {
             const paymentVendor = await PaymentVendor.find({ contractor: params.contractorId })
                 .populate({
                     path: 'company',
-                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                    select: 'info.companyName info.logoUrl info.displayName auth.email permissions.role address contact'
                 })
                 .populate({
                     path: 'contractor',
