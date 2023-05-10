@@ -8,6 +8,7 @@ import { ICompany } from '../models/Company';
 import { IUser, User } from '../models/User';
 import { Job } from '../models/Job';
 import { JobRoute } from '../models/JobRoute';
+import Sentry from "@sentry/node";
 
 /**
  *  To retrieve all job routes by today or any filter date provided
@@ -161,6 +162,7 @@ export const createJobRoute = async (req: Request, res: Response) => {
             parsedRoutes = JSON.parse(parsedRoutes);
         }
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({ status: Status.Error, message: 'routes json is invalid' });
     }
 
@@ -257,6 +259,7 @@ export const updateJobRoute = async (req: Request, res: Response) => {
             parsedRoutes = JSON.parse(parsedRoutes);
         }
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({ status: Status.Error, message: 'routes json is invalid' });
     }
 

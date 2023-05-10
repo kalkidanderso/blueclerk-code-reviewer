@@ -40,6 +40,7 @@ import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommissi
 import { ICommissionHistory, CommissionHistory } from '../models/CommissionHistory';
 import { getDatesFilterQuery } from '../services/pagination';
 import { v4 as uuidv4 } from 'uuid';
+import Sentry from "@sentry/node";
 
 /**
  * To reset Invoice quickbookId,
@@ -528,6 +529,7 @@ export const createInvoice = (req: Request, res: Response) => {
                 }
             })
             .catch((error: any) => {
+                Sentry.captureException(error);
                 if (error.message != undefined) {
                     return res.json({ 'status': Status.Error, 'message': error.message })
                 } else {
@@ -636,6 +638,7 @@ export const createInvoice = (req: Request, res: Response) => {
                 }
             })
             .catch((error: any) => {
+                Sentry.captureException(error);
                 if (error.message != undefined) {
                     return res.json({ 'status': Status.Error, 'message': error.message })
                 } else {
@@ -804,6 +807,7 @@ export const createInvoice = (req: Request, res: Response) => {
                 }
             })
             .catch((error: any) => {
+                Sentry.captureException(error);
                 if (error.message != undefined) {
                     return res.json({ 'status': Status.Error, 'message': error.message })
                 } else {
@@ -1080,6 +1084,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
                 items = JSON.parse(items);
             }
         } catch (error) {
+            Sentry.captureException(error);
             return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
         }
     }
@@ -1536,6 +1541,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                                     items = JSON.parse(items);
                                 }
                             } catch (error) {
+                                Sentry.captureException(error);
                                 return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
                             }
                         }
@@ -1714,6 +1720,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                             })
                     })
                     .catch((error: any) => {
+                        Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
                     })
             } else {
@@ -1750,6 +1757,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                             items = JSON.parse(items);
                         }
                     } catch (error) {
+                        Sentry.captureException(error);
                         return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
                     }
                 }
@@ -2163,6 +2171,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
             recipientEmails.push(user.auth?.email);
         }
     } catch (error) {
+        Sentry.captureException(error);
         console.log('== Send Invoice Error:', error);
         return res.json({ status: Status.Error, message: Messages.GenericError });
     }
@@ -2232,6 +2241,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
         // Convert all string ID to Object ID to be used in $in mongo query
         invoiceIds = invoiceIds.map((id: string) => new ObjectId(id));
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ 'status': Status.Error, 'message': 'Param Invoice IDs is invalid' })
     }
 
@@ -2299,6 +2309,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
             await invoice.save();
         }
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: Messages.GenericError });
     }
 
@@ -2338,6 +2349,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
             recipientEmails.push(user.auth?.email);
         }
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: Messages.GenericError });
     }
 
@@ -3601,6 +3613,7 @@ export const downloadFileToPath = async (
             })
         });
     } catch (error) {
+        Sentry.captureException(error);
         console.log('Error in downloadFileToPath: ', error);
         throw error;
     }

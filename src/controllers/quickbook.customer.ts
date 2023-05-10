@@ -12,6 +12,7 @@ import { _getQbo, _refreshToken } from '../controllers/quickbook';
 import { NotificationServiceTicket } from '../models/NotificationDiscriminator';
 import { NotificationTypes } from '../models/Notification';
 import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin';
+import Sentry from "@sentry/node";
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");
@@ -1230,7 +1231,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
         })
     } catch (error) {
         console.log('== error:', error);
-
+        Sentry.captureException(error);
         // For testing purpose to know if Webhook received on staging and production
         // const notification = new NotificationServiceTicket({
         //     company: '60884254898eb7068283bfcd',
@@ -1522,6 +1523,7 @@ export const getQBCustomer = async (req: Request, res: Response) => {
         return res.json({ 'status': Status.Success, 'message': response })
     })
     .catch((error: any) => {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }
@@ -1547,6 +1549,7 @@ export const findQBCustomers = async (req: Request, res: Response) => {
         return res.json({ status: Status.Success, data: data ?? null });
     })
     .catch((error: any) => {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }
@@ -1571,6 +1574,7 @@ export const findQBCustomersByEmail = async (req: Request, res: Response) => {
         return res.json({ status: Status.Success, data: data ?? null });
     })
     .catch((error: any) => {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }

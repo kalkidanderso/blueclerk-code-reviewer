@@ -534,6 +534,7 @@ export const getQBItem = async (req: Request, res: Response) => {
       return res.json({'status': Status.Success, 'message': response})
     })
     .catch((error: any) => {
+      Sentry.captureException(error);
       return res.json({status: Status.Error, message: error ?? Messages.GenericError});
     })
 }
@@ -559,6 +560,7 @@ export const findQBItem = async (req: Request, res: Response) => {
       return res.json({status: Status.Success, data: data ?? null});
     })
     .catch((error: any) => {
+      Sentry.captureException(error);
       return res.json({status: Status.Error, message: error ?? Messages.GenericError});
     })
 
@@ -585,6 +587,7 @@ export const findQBAccount = async (req: Request, res: Response) => {
       return res.json({status: Status.Success, data: data ?? null});
     })
     .catch((error: any) => {
+      Sentry.captureException(error);
       return res.json({status: Status.Error, message: error ?? Messages.GenericError});
     })
 }
