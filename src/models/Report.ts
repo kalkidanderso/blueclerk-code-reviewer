@@ -95,6 +95,10 @@ const MemorizedReportSchema = new Schema(
     { timestamps: true }
 )
 
+//Indexes
+MemorizedReportSchema.index({ company: 1 });
+MemorizedReportSchema.index({ company: 1, name: 1, _id: 1 });
+
 export const MemorizedReport = mongoose.model<IMemorizedReport>('MemorizedReport', MemorizedReportSchema);
 
 // INCOME REPORT DISCRIMINATOR

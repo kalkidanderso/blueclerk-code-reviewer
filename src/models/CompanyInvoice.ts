@@ -94,4 +94,8 @@ const CompanyInvoiceSchema = new Schema({
     }],
 }, { timestamps: { createdAt: true, updatedAt: true } });
 
+//Indexes
+CompanyInvoiceSchema.index({ company: 1 });
+CompanyInvoiceSchema.index({ isDraft: 1 });
+
 export const CompanyInvoice = mongoose.model<ICompanyInvoice>('CompanyInvoice', CompanyInvoiceSchema)

@@ -18,4 +18,7 @@ const InvoicePrefixSchema = new Schema({
     }
 })
 
+//Indexes
+InvoicePrefixSchema.index({ company: 1 });
+
 export const InvoicePrefix = mongoose.model<IInvoicePrefix>('InvoicePrefix', InvoicePrefixSchema)

@@ -43,4 +43,12 @@ const CompanyEquipmentSchema = new Schema({
 
 })
 
+//Indexes
+CompanyEquipmentSchema.index({ company: 1 });
+CompanyEquipmentSchema.index({ brand: 1 });
+CompanyEquipmentSchema.index({ type: 1 });
+CompanyEquipmentSchema.index({ 'info.nfcTag': 1, company: 1 });
+CompanyEquipmentSchema.index({ 'info.qrCode': 1, company: 1 });
+CompanyEquipmentSchema.index({ 'info.nfcTag': 1, 'info.qrCode': 1 });
+
 export const CompanyEquipment = mongoose.model<ICompanyEquipment>('CompanyEquipment', CompanyEquipmentSchema)

@@ -110,4 +110,10 @@ const EstimateSchema = new Schema({
     }
 })
 
+//Indexes
+EstimateSchema.index({ company: 1 });
+EstimateSchema.index({ customer: 1 });
+EstimateSchema.index({ purchaseOrder: 1 });
+EstimateSchema.index({ createdBy: 1 });
+
 export const Estimate = mongoose.model<IEstimate>('Estimate', EstimateSchema)

@@ -23,4 +23,9 @@ const EquipmentBrandSchema = new Schema({
 
 })
 
+//Indexes
+EquipmentBrandSchema.index({ industry: 1 });
+EquipmentBrandSchema.index({ createdBy: 1 });
+EquipmentBrandSchema.index({ title: 1, industry: 1, createdBy: 1 });
+
 export const EquipmentBrand = mongoose.model<IEquipmentBrand>('EquipmentBrand', EquipmentBrandSchema)

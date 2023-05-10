@@ -346,5 +346,15 @@ const CompanySchema = new Schema({
 
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
+//Indexes
+CompanySchema.index({ 'info.industry': 1 });
+CompanySchema.index({ companyInvoices: 1 });
+CompanySchema.index({ employees: 1 });
+CompanySchema.index({ customers: 1 });
+CompanySchema.index({ admin: 1 });
+CompanySchema.index({ paymentTerm: 1 });
+CompanySchema.index({ 'info.companyEmail': 1 });
+CompanySchema.index({ plan: 1, chargeDate: 1 });
+
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)
 export const Company = mongoose.model<ICompany>('Company', CompanySchema)

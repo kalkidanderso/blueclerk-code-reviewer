@@ -34,4 +34,13 @@ const CompanyCustomerSchema = new Schema({
 
 })
 
+//Indexes
+CompanyCustomerSchema.index({ company: 1 });
+CompanyCustomerSchema.index({ company: 1, customer: 1 });
+CompanyCustomerSchema.index({ company: 1, customer: 1, status: 1, isPreferred: 1 });
+CompanyCustomerSchema.index({ contacts: 1 });
+CompanyCustomerSchema.index({ equipments: 1 });
+CompanyCustomerSchema.index({ jobLocations: 1 });
+CompanyCustomerSchema.index({ paymentTerm: 1 });
+
 export const CompanyCustomer = mongoose.model<ICompanyCustomer>('CompanyCustomer', CompanyCustomerSchema)

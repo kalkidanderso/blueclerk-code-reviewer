@@ -79,4 +79,12 @@ const JobReportSchema = new Schema({
     }
 });
 
+//Indexes
+JobReportSchema.index({ job: 1 });
+JobReportSchema.index({ scans: 1 });
+JobReportSchema.index({ purchaseOrders: 1 });
+JobReportSchema.index({ company: 1 });
+JobReportSchema.index({ contractor: 1 });
+JobReportSchema.index({ invoice: 1 });
+
 export const JobReport = mongoose.model<IJobReport>('JobReport', JobReportSchema)

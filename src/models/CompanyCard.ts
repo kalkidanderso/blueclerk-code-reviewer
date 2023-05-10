@@ -39,4 +39,7 @@ const CompanyCardSchema = new Schema({
 
 })
 
+//Indexes
+CompanyCardSchema.index({ company: 1 });
+
 export const CompanyCard = mongoose.model<ICompanyCard>('CompanyCard', CompanyCardSchema)

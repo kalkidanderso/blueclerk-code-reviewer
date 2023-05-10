@@ -34,4 +34,7 @@ const EmployeeSchema = new Schema({
 
 })
 
+//Indexes
+EmployeeSchema.index({ company: 1 });
+
 export const Employee = User.discriminator<IEmployee>('Employee', EmployeeSchema)

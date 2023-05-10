@@ -46,4 +46,10 @@ const JobChargesSchema = new Schema({
 
 })
 
+//Indexes
+JobChargesSchema.index({ jobType: 1 });
+JobChargesSchema.index({ company: 1 });
+JobChargesSchema.index({ createdBy: 1 });
+JobChargesSchema.index({ salesTax: 1 });
+
 export const JobCharges = mongoose.model<IJobCharges>('JobCharges', JobChargesSchema)
