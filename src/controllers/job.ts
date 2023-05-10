@@ -905,6 +905,10 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
             select: 'profile.displayName'
         })
         .populate({
+            path: 'homeOwner',
+            select: 'profile info contact'
+        })
+        .populate({
             path: 'jobSite',
             select: 'name address location'
         }).skip((currentPage - 1) * pageSize)
@@ -1163,6 +1167,14 @@ const matchStage = { $match: filterQuery };
                 localField: 'tasks.contractor',
                 foreignField: '_id',
                 as: 'contractorsObj'
+            }
+        },
+        {
+            $lookup: {
+                from: 'homeowners',
+                localField: 'homeOwner',
+                foreignField: '_id',
+                as: 'homeOwnerObj'
             }
         },
         {
@@ -2971,7 +2983,7 @@ export const getJobDetails = (req: Request, res: Response) => {
         })
         .populate({
             path: 'homeOwner',
-            populate: 'contacts'
+            select: 'profile info contact'
         })
         .populate({
             path: 'customerContactId',
