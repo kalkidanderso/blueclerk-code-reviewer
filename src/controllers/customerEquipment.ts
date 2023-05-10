@@ -9,6 +9,7 @@ import { IUser} from '../models/User'
 import { Tag, ITag} from '../models/Tag'
 import { ObjectId } from 'mongodb'
 import {JobSite} from '../models/JobSite';
+import Sentry from "@sentry/node";
 
 export const createCustomerEquipment = (req: Request, res: Response) => {
 
@@ -342,6 +343,7 @@ export const linkJobToEquipment = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Success, 'message': response })
         })
         .catch((error: any) => {
+            Sentry.captureException(error);
             if (error != undefined && error.message != undefined) {
                 return res.json({ 'status': Status.Error, 'message': error.message })
             } else {
@@ -439,6 +441,7 @@ export const  checkTagAssociation = (req: Request, res: Response) => {
         }
     })
     .catch((error) => {
+        Sentry.captureException(error);
         if (error.message != undefined) {
             return res.json({ 'status': Status.Error, 'message': error.message });
         }

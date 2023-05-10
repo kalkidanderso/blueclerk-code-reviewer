@@ -15,6 +15,7 @@ import { NotificationServiceTicket } from '../models/NotificationDiscriminator';
 import { NotificationTypes } from '../models/Notification';
 import { createBCItem, updateBCItem } from './quickbook.item';
 import { deleteBCInvoice, updateBCInvoice, voidBCInvoice } from './quickbook.invoice';
+import Sentry from "@sentry/node";
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");
@@ -80,6 +81,7 @@ export const _refreshToken = (req: Request, res: Response, company: ICompany, ne
             })
         })
         .catch(function (err: any) {
+            Sentry.captureException(err);
             console.log('== error', err);
             console.log('The error message is :', err.originalMessage);
             console.log('Intuit error :', err.intuit_tid);
@@ -197,6 +199,7 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
             })
         })
         .catch(function (err: any) {
+            Sentry.captureException(err);
             return res.json({ 'status': Status.Error, 'message': err.error_description || err.originalMessage || err.message || Messages.GenericError });
         });
 }
