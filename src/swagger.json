@@ -4875,7 +4875,7 @@
                 "type": "object",
                 "required": [
                   "firstName",
-                  "addressStreet"
+                  "address"
                 ],
                 "properties": {
                   "firstName": {
@@ -4895,26 +4895,13 @@
                   "fax": {
                     "type": "string"
                   },
-                  "addressStreet": {
-                    "type": "string"
+                  "address": {
+                    "type": "string",
+                    "description": "Job site Mongo ID"
                   },
-                  "addressUnit": {
-                    "type": "string"
-                  },
-                  "addressCity": {
-                    "type": "string"
-                  },
-                  "addressState": {
-                    "type": "string"
-                  },
-                  "addressZipCode": {
-                    "type": "string"
-                  },
-                  "longitude": {
-                    "type": "string"
-                  },
-                  "latitude": {
-                    "type": "string"
+                  "subdivision": {
+                    "type": "string",
+                    "description": "Job address Mongo ID"
                   },
                   "image": {
                     "type": "string",
@@ -4976,8 +4963,8 @@
         "tags": [
           "Home Owner"
         ],
-        "summary": "Create new Home Owner",
-        "description": "Id is required and the rest os parameters (fields to update) are optional. However, if provided, these must not be idle strings",
+        "summary": "Update existing Home Owner",
+        "description": "Id is required and the other parameters (fields to update) are optional. However, if provided, these must not be idle strings",
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
@@ -5005,26 +4992,13 @@
                   "fax": {
                     "type": "string"
                   },
-                  "addressStreet": {
-                    "type": "string"
+                  "address": {
+                    "type": "string",
+                    "description": "Job site Mongo ID"
                   },
-                  "addressUnit": {
-                    "type": "string"
-                  },
-                  "addressCity": {
-                    "type": "string"
-                  },
-                  "addressState": {
-                    "type": "string"
-                  },
-                  "addressZipCode": {
-                    "type": "string"
-                  },
-                  "longitude": {
-                    "type": "string"
-                  },
-                  "latitude": {
-                    "type": "string"
+                  "subdivision": {
+                    "type": "string",
+                    "description": "Job address Mongo ID"
                   }
                 }
               }
@@ -5081,10 +5055,24 @@
           "Home Owner"
         ],
         "summary": "Gets all Home Owner by ID",
-          "parameters": [
-            {
+        "parameters": [
+          {
             "name": "keyword",
-            "description": "To filter the home owners by firstname, lastname, phone, fax, street, city, state, unit, zipcode or email. Idle for retrieving all.",
+            "description": "To filter the home owners by firstname, lastname, phone, fax, or email. Idle for retrieving all.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "address",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subdivision",
             "in": "query",
             "schema": {
               "type": "string"

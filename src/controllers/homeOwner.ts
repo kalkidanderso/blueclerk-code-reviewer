@@ -40,7 +40,7 @@ export const createHomeOwner = async (req: Request, res: Response) => {
         profile: {
             firstName: params.firstName?.trim(),
             lastName: params.lastName?.trim(),
-            displayName: `${params.firstName} ${params.lastName}`.trim(),
+            displayName: `${params.firstName ?? ''} ${params.lastName ?? ''}`.trim(),
             imageUrl: imagesUrl?.[0]
         },
         info: {
@@ -50,21 +50,9 @@ export const createHomeOwner = async (req: Request, res: Response) => {
             phone: params.phone?.trim(),
             fax: params.fax?.trim()
         },
-        address: {
-            street: params.addressStreet?.trim(),
-            unit: params.addressUnit?.trim(),
-            city: params.addressCity?.trim(),
-            state: params.addressState?.trim(),
-            zipCode: params.addressZipCode?.trim()
-        }
+        subdivision: params.subdivision,
+        address: params.address
     });
-
-    // Input the long lat when provided
-    if (params.latitude && params.longitude) {
-        homeOwner.location = {
-            coordinates: [params.longitude, params.latitude]
-        }
-    }
 
     await homeOwner.save();
     if (companyId) {
@@ -75,12 +63,8 @@ export const createHomeOwner = async (req: Request, res: Response) => {
     }
 
     let resMessage = 'Home Owner created successfully';
-    if (!params.addressStreet) {
-        resMessage += ' without any address. Subdivision and Job Address are required for this Home Owner to be available';
-    }
 
     return res.json({ status: Status.Success, message: resMessage, homeOwner });
-
 }
 
 /**
@@ -98,33 +82,50 @@ export const getHomeOwner = async (req: Request, res: Response) => {
  * RETRIEVES ALL HOME OWNERS, APPLYING A FILTER IF DESIRED
  */
 export const getHomeOwners = async(req: Request, res: Response) => {
+    const {
+        keyword,
+        address,
+        subdivision,
+    } = req.query;
 
-    var query = {};
+    let query: any = {};
 
-    if(req.query.keyword && req.query.keyword.length > 0) {
-        console.log("ENTRO");
+    // Build query depending on provided parameters
+    if(subdivision && subdivision.length > 0) {
+        query = {
+            ...query,
+            $and: [
+                { 'subdivision': subdivision }
+            ]
+        }
+    }
+
+    if(address && address.length > 0) {
+        query['$and'] ?
+        query['$and'].push({ 'address': address }) :
+        query = {
+            ...query,
+            $and: [
+                { 'address': address }
+            ]
+        }
+    }
+
+    if(keyword && keyword.length > 0) {
         const keyword = helper.getRegex(req.query.keyword, 'i');
         query = {
+            ...query,
             $or: [
                 { 'profile.firstName': keyword },
                 { 'profile.lastName': keyword },
                 { 'contact.phone': keyword },
                 { 'info.email': keyword},
                 { 'contact.fax': keyword },
-                { 'address.street': keyword },
-                { 'address.unit': keyword },
-                { 'address.city': keyword },
-                { 'address.state': keyword },
-                { 'address.zipCode': keyword },
             ]
         }
     }
 
-    const homeOwners = await HomeOwner.find(query)
-        .populate({
-            path: 'jobLocations', select: 'isActive name location address jobSites',
-            populate: [{ path: 'jobSites', select: 'isActive name location address' }]
-        });
+    const homeOwners = await HomeOwner.find(query);
 
     return res.json({ status: Status.Success, homeOwners });
 }
@@ -159,26 +160,14 @@ export const updateHomeOwner = async (req: Request, res: Response) => {
         email,
         phone,
         fax,
-        addressStreet,
-        addressUnit,
-        addressCity,
-        addressState,
-        addressZipCode,
-        latitude,
-        longitude,
+        address,
+        subdivision,
     } = req.body;
 
     const myquery = { '_id': id };
     const homeOwner = await HomeOwner.findOne(myquery)
     if(!homeOwner) return res.json({ status: Status.NotFound, message: 'Home Owner not found' });
     
-    // Check if new location provided
-    var location = homeOwner.location;
-    if (latitude && longitude) {
-        location = {
-            coordinates: [longitude, latitude]
-        }
-    }
 
     // Update displayname if one firstname or lastname changes
     var displayName = homeOwner.profile.displayName;
@@ -204,14 +193,8 @@ export const updateHomeOwner = async (req: Request, res: Response) => {
             phone: phone?.trim() ?? homeOwner.contact.phone,
             fax: fax?.trim() ?? homeOwner.contact.fax,
         },
-        address: {
-            street: addressStreet?.trim() ?? homeOwner.address.street,
-            unit: addressUnit?.trim() ?? homeOwner.address.unit,
-            city: addressCity?.trim() ?? homeOwner.address.city,
-            state: addressState?.trim() ?? homeOwner.address.state,
-            zipCode: addressZipCode?.trim() ?? homeOwner.address.zipCode,
-        },
-        location: location
+        address: address?.trim() ?? homeOwner.address,
+        subdivision: subdivision?.trim() ?? homeOwner.subdivision
     }, (err: any, raw: any) => {
 
         if (err) {

@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { IUser } from '../models/User';
 import { IJobLocation } from '../models/JobLocation';
 import moment from 'moment';
+import { IJobSite } from './JobSite';
 
 export interface IHomeOwner extends Document {
 
@@ -18,25 +18,8 @@ export interface IHomeOwner extends Document {
         phone?: string
         fax?: string
     }
-    address: {
-        street?: string
-        unit?: string
-        city?: string
-        state?: string
-        zipCode?: string
-    }
-    location?: {
-        type?: 'Point',
-        coordinates: number[]
-    }
-    jobLocations: [Schema.Types.ObjectId | IJobLocation]
-    emailPreferences: {
-        preferences: number,
-        time: Date,
-        timeZone: string
-    }
-    inactiveAt?: Date
-    inactiveBy?: Schema.Types.ObjectId | IUser
+    subdivision: [Schema.Types.ObjectId | IJobSite]
+    address: [Schema.Types.ObjectId | IJobLocation]
     createdAt: Date
     updatedAt: Date
 
@@ -60,50 +43,14 @@ const HomeOwnerSchema = new Schema({
         phone: String,
         fax: String
     },
-    address: {
-        street: String,
-        unit: String,
-        city: String,
-        state: String,
-        zipCode: String
-    },
-    location: {
-        type: {
-            type: String,
-            enum: ['Point']
-        },
-        coordinates: {
-            type: [Number]
-        }
-    },
-    jobLocations: [{
+    subdivision: {
         type: Schema.Types.ObjectId,
-        ref: 'JobLocation'
-    }],
-    emailPreferences: {
-        preferences: {
-            type: Number,
-            default: 1
-            // 0 for email everytime a job is scheduled
-            // 1 for once at the specified time
-            // 2 no emails
-        },
-        time: {
-            type: Date,
-            default: moment().local().hour(18).minute(0o0).second(0o0)
-        },
-        timeZone: {
-            type: String,
-            default: 'America/Chicago'
-        }
+        ref: 'JobLocation',
     },
-    inactiveAt: {
-        type: Date
+    address: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobSite',
     },
-    inactiveBy: {
-        type: String,
-        ref: 'User'
-    }
 
 }, { timestamps: true });
 
