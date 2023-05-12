@@ -326,58 +326,66 @@ export const getCompanyContracts = async (req: Request, res: Response) => {
 
     const company = <ICompany>req.company
 
-    let byCompanyLocationAgg: any[] = []
     if (workType && companyLocation) {
-        byCompanyLocationAgg = [
+        CompanyLocation.aggregate([
             {
-                $lookup: {
-                    from: "companylocations",
-                    localField: "contractor",
-                    foreignField: "company",
-                    as: "companylocations",
+                $match: {
+                    "company": new ObjectId(company._id),
+                    "_id": new ObjectId(companyLocation)
                 }
             },
             {
-                $match: {
-                    "companylocations._id" : new ObjectId(companyLocation),
-                    "companylocations.assignedVendors.workTypes": { $in: [new ObjectId(workType)]} 
+                $project: {
+                    _id: 1,
+                    company: "$company",
+                    "assignedVendors": {
+                        $filter: {
+                            input: "$assignedVendors",
+                            cond: { $in: [new ObjectId(workType), "$$this.workTypes"] }
+                        }
+                    }
                 }
+            },
+            {
+                $lookup: {
+                    from: "companies",
+                    localField: "company",
+                    foreignField: "_id",
+                    as: "company"
+                }
+            },
+            { $unwind: "$company" },
+            {
+                $lookup: {
+                    from: "companies",
+                    localField: "assignedVendors.vendor",
+                    foreignField: "_id",
+                    as: "contractor",
+                }
+            },
+            { $unwind: "$contractor" },
+            {
+                $lookup: {
+                    from: "contracts",
+                    localField: "contractor._id",
+                    foreignField: "contractor",
+                    as: "contract",
+                }
+            },
+            { $unwind: "$contract" },
+            {
+                $match: {
+                    "contract.company" :  new ObjectId("645514c6f6a4c24665457059")
+                }
+            },
+            {
+                $project: {
+                    status: "$contract.status",
+                    company: "$company",
+                    contractor: "$contractor"
+                }        
             }
-        ];
-    }
-
-    const contractAggregate: IContract[] = await Contract.aggregate([
-        ...byCompanyLocationAgg,
-        {
-        $match: {"company": company._id}
-        },
-        {
-            $sort: { _id: -1}
-        },{
-            $group: {
-                _id: "$contractor",
-                "docs": {"$first": "$$ROOT"}
-            }
-        },{
-            "$replaceRoot":{"newRoot":"$docs"}
-        }
-    ])
-
-    // Map the Contract IDs filtered
-    const contractIds = contractAggregate.map((result)=>result._id)
-
-    Contract.find({_id: {$in : contractIds}})
-    .populate({
-        path: 'company',
-        select: 'info.companyName info.companyEmail type'
-    })
-    .populate({
-        path: 'contractor',
-        select: 'info.companyName info.companyEmail info.displayName type',
-        populate: [{ path: 'admin', select: 'profile auth.email contact' }]
-    })
-    .exec((err: any, contracts: IContract[]) => {
-
+        ]).exec((err: any, contracts: any[]) => {
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
@@ -387,8 +395,52 @@ export const getCompanyContracts = async (req: Request, res: Response) => {
             }
 
             return res.json({ 'status': Status.Success, 'contracts': contracts})
-        }
-    )
+    
+        });
+    }else{
+        const contractAggregate: IContract[] = await Contract.aggregate([
+            {
+            $match: {"company": company._id}
+            },
+            {
+                $sort: { _id: -1}
+            },{
+                $group: {
+                    _id: "$contractor",
+                    "docs": {"$first": "$$ROOT"}
+                }
+            },{
+                "$replaceRoot":{"newRoot":"$docs"}
+            }
+        ])
+    
+        // Map the Contract IDs filtered
+        const contractIds = contractAggregate.map((result)=>result._id)
+    
+        Contract.find({_id: {$in : contractIds}})
+        .populate({
+            path: 'company',
+            select: 'info.companyName info.companyEmail type'
+        })
+        .populate({
+            path: 'contractor',
+            select: 'info.companyName info.companyEmail info.displayName type',
+            populate: [{ path: 'admin', select: 'profile auth.email contact' }]
+        })
+        .exec((err: any, contracts: IContract[]) => {
+    
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                }
+    
+                if(!contracts.length) {
+                    return res.json({ 'status': Status.Error, 'message': 'No contracts found.' })
+                }
+    
+                return res.json({ 'status': Status.Success, 'contracts': contracts})
+            }
+        )
+    }
 }
 
 export const getContractorDetail = async(req: Request, res: Response) => {

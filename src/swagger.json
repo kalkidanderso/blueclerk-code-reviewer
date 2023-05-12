@@ -2508,6 +2508,49 @@
         ]
       }
     },
+    "/getUserDivisions": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "To retrieve the division associated with a user.",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "userId"
+                ],
+                "properties": {
+                  "userId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getCompanyProfile/{companyId}": {
       "get": {
         "tags": [
@@ -3059,6 +3102,61 @@
                       "$ref": "#/components/schemas/AssignedEmployee"
                     },
                     "description": "Array of assigned employee data"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateCompanyLocationBillingAddress": {
+      "put": {
+        "tags": [
+          "Company Location"
+        ],
+        "summary": "To update company location billing address",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "companyLocationId"
+                ],
+                "properties": {
+                  "companyLocationId": {
+                    "type": "string"
+                  },
+                  "street": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "zipCode": {
+                    "type": "string"
                   }
                 }
               }

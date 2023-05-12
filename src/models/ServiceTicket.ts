@@ -162,11 +162,11 @@ const ServiceTicketSchema = new Schema({
     },
     workType: {
         type: Schema.Types.ObjectId,
-        ref: 'workType',
+        ref: 'WorkType',
     },
     companyLocation: {
         type: Schema.Types.ObjectId,
-        ref: 'companyLocation',
+        ref: 'CompanyLocation',
     },
 
 })

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { WorkType } from '../models/WorkType';
 import { Status } from '../common/constants';
 import { Company, ICompany } from '../models/Company';
-import { CompanyAdmin } from '../models/CompanyAdmin';
+import { CompanyAdmin, ICompanyAdmin } from '../models/CompanyAdmin';
 import { CompanyLocation, ICompanyLocation } from '../models/CompanyLocation';
 import { AssignedVendor, IAssignedVendor } from '../models/AssignedVendor';
 import { checkIfDuplicateExists, removeDuplicate } from '../utils/arrayUtil';
@@ -12,7 +12,8 @@ import { ServiceTicket } from '../models/ServiceTicket';
 import { Job } from '../models/Job';
 import { Invoice } from '../models/Invoice';
 import { Payment } from '../models/Payment';
-
+import { User } from 'src/models/User';
+import {ObjectId} from 'mongodb'
 
 export const getCompanyLocations = async (req: Request, res: Response) => {
     try {
@@ -222,6 +223,117 @@ export const updateCompanyLocationAssignments = async (req: Request, res: Respon
         return res.json({ status: Status.Error, message: error.message });
     }
 
+}
+
+export const updateCompanyLocationBillingAddress = async (req: Request, res: Response) => {
+    try {
+        const params = req.body;
+        const company = <ICompany>req.company;
+        
+        let billingAddressData = {
+              billingAddress: {
+                    street: params.street,
+                    city: params.city,
+                    state: params.state,
+                    zipCode: params.zipCode
+                },
+        }
+        await CompanyLocation.updateOne({ _id: params.companyLocationId, company }, billingAddressData);
+
+        const newCompanyLocation = await CompanyLocation.findOne({ _id: params.companyLocationId, company })
+        .populate('workTypes')
+        .populate('assignedEmployees.employee')
+        .populate('assignedEmployees.workTypes')
+        .populate('assignedVendors.vendor')
+        .populate('assignedVendors.workTypes');
+
+        return res.json({ status: Status.Success, message: 'Company Location updated successfully', "companyLocation": newCompanyLocation });
+    } catch (error) {   
+        return res.json({ status: Status.Error, message: error.message });
+    }
+
+}
+
+export const getUserDivision = async (req: Request, res: Response) => {
+    try {
+        const userId = req.body.userId;
+        const company = <ICompany>req.company;
+        const employee = await Employee.findById(userId);
+
+        let userPipeline = [];
+        
+        if (company.admin as unknown as string != userId && !employee?.canAccessAllLocations) {
+            if (employee) {
+                userPipeline = [
+                    {$unwind: "$assignedEmployees"},
+                    {
+                            $match: { "assignedEmployees.employee": new ObjectId(userId)}
+                    },
+                    {$unwind: "$assignedEmployees.workTypes"},
+                    {
+                        $lookup: {
+                            from: "worktypes",
+                            localField: "assignedEmployees.workTypes",
+                            foreignField: "_id",
+                            as: "workType"
+                            }  
+                    },
+                    {$unwind: "$workType"},
+                ]
+            }else{
+                userPipeline = [
+                    {$unwind: "$assignedVendors"},
+                    {
+                            $match: { "assignedVendors.vendor": new ObjectId(userId)}
+                    },
+                    {$unwind: "$assignedVendors.workTypes"},
+                    {
+                        $lookup: {
+                            from: "worktypes",
+                            localField: "assignedVendors.workTypes",
+                            foreignField: "_id",
+                            as: "workType"
+                            }  
+                    },
+                    {$unwind: "$workType"},
+                ]
+            }
+        }else{
+            userPipeline = [
+                {
+                    $lookup: {
+                        from: "worktypes",
+                        localField: "workTypes",
+                        foreignField: "_id",
+                        as: "workType"
+                        }  
+                },
+                {$unwind: "$workType"},
+            ]
+        }
+
+        let divisions = await CompanyLocation.aggregate([
+            {$match: {company: new ObjectId(company._id)}},
+            ...userPipeline,
+            {
+                $project: {
+                    locationId: "$_id",
+                    workTypeId: "$workType._id",
+                    name: {$concat : ["$name", " - (" , "$workType.title", ")"]}
+                }
+            }
+        ]).exec();
+
+        if ((company.admin as unknown as string == userId || employee?.canAccessAllLocations) && divisions.length) {
+            divisions.unshift({
+                name: "All"
+            })
+        }
+
+        return res.json({ status: Status.Success, divisions });
+    } catch (error) {
+        return res.json({ status: Status.Error, message: error.message});
+    }
 }
 
 /**

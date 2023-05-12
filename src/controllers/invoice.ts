@@ -40,6 +40,7 @@ import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommissi
 import { ICommissionHistory, CommissionHistory } from '../models/CommissionHistory';
 import { getDatesFilterQuery } from '../services/pagination';
 import { v4 as uuidv4 } from 'uuid';
+import { ICompanyLocation } from '../models/CompanyLocation';
 
 /**
  * To reset Invoice quickbookId,
@@ -1948,6 +1949,10 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
             path: 'createdBy',
             select: 'info.companyName auth.email profile.displayName permissions.role address contact.phone'
         })
+        .populate({
+            path: 'companyLocation',
+            select: 'isAddressAsBillingAddress address billingAddress'
+        })
         .exec((err: any, invoice: IInvoice) => {
 
             if (err) {
@@ -2122,6 +2127,10 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
             select: 'name description sku isJobType isFixed charges tax',
             populate: [{ path: 'jobType' }]
         })
+        .populate({
+            path: 'companyLocation',
+            select: 'isAddressAsBillingAddress address billingAddress'
+        })
 
     if (!invoice) {
         return res.json({ status: Status.Error, message: 'Invoice not found.' });
@@ -2273,6 +2282,10 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
             path: 'items.item',
             select: 'name description sku isJobType isFixed charges tax',
             populate: [{ path: 'jobType' }]
+        })
+        .populate({
+            path: 'companyLocation',
+            select: 'isAddressAsBillingAddress address billingAddress'
         });
 
     if (!invoices?.length) {
@@ -3182,14 +3195,15 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
     const job = <IJob>invoice.job;
     const ticket = <IServiceTicket>job?.ticket;
+    const companyLocation = <ICompanyLocation>invoice?.companyLocation;
     const customerContact = <IContact>invoice.customerContactId ?? job?.customerContactId;
 
-    // Construct Company Address object
-    const companyAddress = {
-        street: company.address?.street ? `${company.address?.street}` : '',
-        city: company.address?.city ? `${company.address?.city}` : '',
-        state: company.address?.state ? `, ${company.address?.state}` : '',
-        zipCode: company.address?.zipCode ? `, ${company.address?.zipCode}` : '',
+    // Construct Billing Address object
+    const billingAddress = {
+        street: invoice.companyLocation ? `${(companyLocation.isAddressAsBillingAddress ? companyLocation.address?.street : companyLocation.billingAddress?.street) ?? ''}` : `${company.address?.street ?? ''}`,
+        city: invoice.companyLocation ? `${(companyLocation.isAddressAsBillingAddress ? companyLocation.address?.city : companyLocation.billingAddress?.city) ?? ''}` : `${company.address?.city ?? ''}`,
+        state: invoice.companyLocation ? `${(companyLocation.isAddressAsBillingAddress ? companyLocation.address?.state : companyLocation.billingAddress?.state) ?? ''}` : `${company.address?.state ?? ''}`,
+        zipCode: invoice.companyLocation ? `${(companyLocation.isAddressAsBillingAddress ? companyLocation.address?.zipCode : companyLocation.billingAddress?.zipCode) ?? ''}` : `${company.address?.zipCode ?? ''}`,
     }
 
     // Construct Customer Address object
@@ -3350,7 +3364,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {},
                             {},
                             {
-                                text: `${companyAddress.street}\n${companyAddress.city}${companyAddress.state}${companyAddress.zipCode}\n${company.contact?.phone ?? ''}`,
+                                text: `${billingAddress.street}\n${billingAddress.city}${billingAddress.state ? ', ' + billingAddress.state: ''}${billingAddress.zipCode? ', ' + billingAddress.zipCode : ''}\n${company.contact?.phone ?? ''}`,
                                 style: 'invoiceHeader',
                                 margin: [0, 0, 0, 10],
                                 border: [false, false, false, true]
@@ -3985,6 +3999,10 @@ export const generateInvoicePdf = async (req: Request, res: Response) => {
             path: 'items.item',
             select: 'name description sku isJobType isFixed charges tax',
             populate: [{ path: 'jobType' }]
+        })
+        .populate({
+            path: 'companyLocation',
+            select: 'isAddressAsBillingAddress address billingAddress'
         })
 
     if (!invoice) {

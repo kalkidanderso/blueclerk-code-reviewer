@@ -495,6 +495,24 @@ export default function (sio: any) {
         companyLocationController.updateCompanyLocationAssignments
     )
 
+    router.put(
+        '/updateCompanyLocationBillingAddress',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Company_Profile),
+        companyLocationController.updateCompanyLocationBillingAddress
+    )
+
+    router.post(
+        '/getUserDivisions',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Company_Profile),
+        companyLocationController.getUserDivision
+    )
+
     // Customers
     router.post(
         '/createCustomer',
