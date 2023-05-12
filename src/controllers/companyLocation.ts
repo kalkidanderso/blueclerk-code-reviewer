@@ -313,7 +313,7 @@ export const getUserDivision = async (req: Request, res: Response) => {
         }
 
         let divisions = await CompanyLocation.aggregate([
-            {$match: {company: new ObjectId(company._id)}},
+            {$match: {company: new ObjectId(company._id), isActive: true}},
             ...userPipeline,
             {
                 $project: {
