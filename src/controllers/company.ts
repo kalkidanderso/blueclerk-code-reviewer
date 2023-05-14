@@ -375,7 +375,7 @@ export const getCompanyContracts = async (req: Request, res: Response) => {
             { $unwind: "$contract" },
             {
                 $match: {
-                    "contract.company" :  new ObjectId("645514c6f6a4c24665457059")
+                    "contract.company" :  new ObjectId(company._id)
                 }
             },
             {
