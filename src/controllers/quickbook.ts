@@ -277,12 +277,12 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
                     // => CUSTOMER CREATE ACTION
                     case QBEntityOperations.CREATE:
                         // Create BC Customer here
-                        createBCCustomer(req, res, company, eventEntity?.id);
+                        await createBCCustomer(req, res, company, eventEntity?.id);
                         break;
 
                     case QBEntityOperations.UPDATE:
                         // Update BC Customer / Job Location here
-                        updateBCCustomer(req, res, company, eventEntity?.id, (err, errMsg, customer, jobLocation) => {
+                        await updateBCCustomer(req, res, company, eventEntity?.id, (err, errMsg, customer, jobLocation) => {
                             // Implement another actions here
                         });
                         break;
