@@ -1308,24 +1308,27 @@ export const updateBCCustomer = async (req: Request, res: Response, company: ICo
             } else {
                 // Get BC Job Location by QB Customer Job's quickbookId
                 jobLocation = await JobLocation.findOne({ companyId: company._id, quickbookId: qbCustomer.Id });
-                const currentIsActive = jobLocation.isActive;
 
-                // Update Job Location data based on QB Customer Job
-                jobLocation.name = qbCustomer.DisplayName;
-                jobLocation.isActive = qbCustomer.Active;
-                jobLocation.address.street = qbCustomer.ShipAddr?.Line1 ?? qbCustomer.BillAddr?.Line1;
-                jobLocation.address.city = qbCustomer.ShipAddr?.City ?? qbCustomer.BillAddr?.City;
-                jobLocation.address.state = qbCustomer.ShipAddr?.CountrySubDivisionCode ?? qbCustomer.BillAddr?.CountrySubDivisionCode;
-                jobLocation.address.zipcode = qbCustomer.ShipAddr?.PostalCode ?? qbCustomer.BillAddr?.PostalCode;
+                if (jobLocation) {
+                    const currentIsActive = jobLocation.isActive;
 
-                if (currentIsActive && !qbCustomer.Active) {
-                    jobLocation.inactiveAt = new Date();
-                } else if (qbCustomer.Active) {
-                    jobLocation.inactiveAt = null;
-                    jobLocation.inactiveBy = null;
+                    // Update Job Location data based on QB Customer Job
+                    jobLocation.name = qbCustomer.DisplayName;
+                    jobLocation.isActive = qbCustomer.Active;
+                    jobLocation.address.street = qbCustomer.ShipAddr?.Line1 ?? qbCustomer.BillAddr?.Line1;
+                    jobLocation.address.city = qbCustomer.ShipAddr?.City ?? qbCustomer.BillAddr?.City;
+                    jobLocation.address.state = qbCustomer.ShipAddr?.CountrySubDivisionCode ?? qbCustomer.BillAddr?.CountrySubDivisionCode;
+                    jobLocation.address.zipcode = qbCustomer.ShipAddr?.PostalCode ?? qbCustomer.BillAddr?.PostalCode;
+
+                    if (currentIsActive && !qbCustomer.Active) {
+                        jobLocation.inactiveAt = new Date();
+                    } else if (qbCustomer.Active) {
+                        jobLocation.inactiveAt = null;
+                        jobLocation.inactiveBy = null;
+                    }
+
+                    await jobLocation.save();
                 }
-
-                await jobLocation.save();
             }
 
             return next(null, null, customer, jobLocation);
