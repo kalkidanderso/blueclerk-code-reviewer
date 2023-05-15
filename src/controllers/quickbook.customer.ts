@@ -1366,7 +1366,7 @@ export const createBCCustomer = async (req: Request, res: Response, company: ICo
                         return;
                     }
 
-                    customer = await Customer.findById(companyCustomer.customer);
+                    customer = await Customer.findById(companyCustomer?.customer);
                 }
 
                 // Existing Customer found, return directly
@@ -1457,7 +1457,7 @@ export const createBCCustomer = async (req: Request, res: Response, company: ICo
                     const customerIds = customers.map(customer => customer._id);
                     const companyCustomer = await CompanyCustomer.findOne({ company: company._id, customer: { $in: customerIds } });
 
-                    customer = await Customer.findById(companyCustomer.customer);
+                    customer = await Customer.findById(companyCustomer?.customer);
                 }
 
                 // Parent Customer not found, return directly
