@@ -3157,6 +3157,9 @@
                   },
                   "zipCode": {
                     "type": "string"
+                  },
+                  "isAddressAsBillingAddress" : {
+                    "type": "booelan"
                   }
                 }
               }

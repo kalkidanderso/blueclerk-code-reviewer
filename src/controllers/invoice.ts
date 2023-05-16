@@ -1327,6 +1327,8 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         estimate: estimateId,
         emailHistory: [],
         lastEmailSent: null,
+        workType: params?.workType,
+        companyLocation: params?.companyLocation,
         ...division
     })
 
