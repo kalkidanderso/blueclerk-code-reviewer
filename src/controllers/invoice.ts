@@ -2187,11 +2187,12 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: Messages.GenericError });
     }
 
+    const companyLocation = <ICompanyLocation>invoice.companyLocation;
     // Call AWS SES method
     sendInvoiceEmailToCustomer({
         subject: params.subject ?? emailDefault?.subject,
         message: params.message ?? emailDefault?.message,
-        sender_email: user.auth?.email,
+        sender_email: companyLocation?.billingAddress?.emailSender ?? user.auth?.email,
         company_name: company.info?.companyName,
         company_email: company.info?.companyEmail,
         company_logo: company.info?.logoUrl,
@@ -2296,6 +2297,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
 
     let invoicePdfs = [];
     let totalInvoiceAmount = 0;
+    let invoiceSender = "";
 
     try {
         // Iterate all invoices to generate their PDF and collect the filepath
@@ -2320,6 +2322,10 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
                 sentAt: sendingDate
             });
             invoice.lastEmailSent = sendingDate;
+            
+            const companyLocation = <ICompanyLocation>invoice.companyLocation;
+            invoiceSender = companyLocation?.billingAddress?.emailSender;
+
             await invoice.save();
         }
     } catch (error) {
@@ -2369,7 +2375,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
     sendInvoiceEmailToCustomer({
         subject: params.subject ?? emailDefault?.subject,
         message: params.message ?? emailDefault?.message,
-        sender_email: user.auth?.email,
+        sender_email: invoiceSender ?? user.auth?.email,
         company_name: company.info?.companyName,
         company_email: company.info?.companyEmail,
         company_logo: company.info?.logoUrl,
@@ -2599,6 +2605,7 @@ export const getInvoices = async (req: Request, res: Response) => {
         { path: 'customerContactId', select: 'name phone email' },
         { path: 'jobLocation', select: 'name address location' },
         { path: 'jobSite', select: 'name address location' },
+        { path: 'companyLocation', select: 'billingAddress' },
     ]);
 
     // // Filter jobs using aggregate to be search to another collection
@@ -2741,11 +2748,20 @@ export const getInvoices = async (req: Request, res: Response) => {
     ]).allowDiskUse(true);
 
     // Retrieve number of the unsynced invoices
+    let filterUnsynced = {};
+    if (workType && companyLocation) {
+        filterUnsynced = {
+            workType: new ObjectId(workType),
+            companyLocation: new ObjectId(companyLocation)
+        }
+    }
+
     const unsyncedInvoices = await Invoice.find({
         company: companyId,
         isDraft: { $ne: true },
         isVoid: { $ne: true },
-        quickbookId: null
+        quickbookId: null,
+        ...filterUnsynced
     })?.countDocuments();
 
     return res.json({

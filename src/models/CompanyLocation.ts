@@ -25,7 +25,8 @@ export interface ICompanyLocation extends Document {
         street?: string
         city?: string
         state?: string
-        zipCode?: string
+        zipCode?: string,
+        emailSender?: string
     }
     contact?: {
         phone?: string
@@ -68,7 +69,8 @@ const CompanyLocationSchema = new Schema({
         street: String,
         city: String,
         state: String,
-        zipCode: String
+        zipCode: String,
+        emailSender: String
     },
     contact: {
         phone: String,

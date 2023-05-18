@@ -127,11 +127,20 @@ export const getPayments = (req: Request, res: Response) => {
         .then(async (payments: IPayment[] | null) => {
 
             // Retrieve number of the unsynced invoices
+            let filterUnsynced = {};
+            if (workType && companyLocation) {
+                filterUnsynced = {
+                    workType: new ObjectId(workType),
+                    companyLocation: new ObjectId(companyLocation)
+                }
+            }
+        
             const unsyncedPayments = await Payment.find({
                 company: req.companyId,
                 __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] },
                 isVoid: { $ne: true },
-                quickbookId: null
+                quickbookId: null,
+                ...filterUnsynced
             })?.countDocuments();
 
             return res.json({ status: Status.Success, unsyncedPayments, payment: payments });

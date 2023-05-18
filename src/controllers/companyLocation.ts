@@ -236,7 +236,8 @@ export const updateCompanyLocationBillingAddress = async (req: Request, res: Res
                 street: params.street,
                 city: params.city,
                 state: params.state,
-                zipCode: params.zipCode
+                zipCode: params.zipCode,
+                emailSender: params.emailSender
             },
         }
         await CompanyLocation.updateOne({ _id: params.companyLocationId, company }, billingAddressData);
@@ -320,7 +321,7 @@ export const getUserDivision = async (req: Request, res: Response) => {
                 $project: {
                     locationId: "$_id",
                     workTypeId: "$workType._id",
-                    name: {$concat : ["$name", " - (" , "$workType.title", ")"]},
+                    name: {$concat : ["$name", " - (" ,  {$cond:[{$eq:['$isMainLocation', true]}, "Main - ", ""] }, "$workType.title", ")"]},
                     isMainLocation: "$isMainLocation"
                 }
             }

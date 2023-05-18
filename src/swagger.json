@@ -3158,6 +3158,12 @@
                   "zipCode": {
                     "type": "string"
                   },
+                  "emailSender": {
+                    "type": "string"
+                  },
+                  "setUserAsSender" : {
+                    "type": "booelan"
+                  },
                   "isAddressAsBillingAddress" : {
                     "type": "booelan"
                   }
