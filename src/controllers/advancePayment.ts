@@ -12,7 +12,7 @@ export const createAdvancePaymentContractor = async (req: Request, res: Response
     const user = <IUser>req.user;
     const company = <ICompany>req.company;
 
-    const advancePaymentEntry = {
+    const advancePaymentEntry:any = {
         company: company._id,
         referenceNumber: params.referenceNumber,
         paidAt: params.paidAt ?? new Date(),
@@ -23,6 +23,14 @@ export const createAdvancePaymentContractor = async (req: Request, res: Response
         note: params.note,
         createdBy: user._id
     };
+
+    if (params.companyLocation) {
+        advancePaymentEntry["companyLocation"] = params.companyLocation;    
+    }
+
+    if (params.workType) {
+        advancePaymentEntry["workType"] = params.workType;
+    }
 
     switch (params.type) {
         case 'vendor':

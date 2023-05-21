@@ -2916,6 +2916,21 @@
                   "fax": {
                     "type": "string"
                   },
+                  "billingStreet": {
+                    "type": "string"
+                  },
+                  "billingCity": {
+                    "type": "string"
+                  },
+                  "billingState": {
+                    "type": "string"
+                  },
+                  "billingZipCode": {
+                    "type": "string"
+                  },
+                  "billingEmailSender": {
+                    "type": "string"
+                  },
                   "workTypes": {
                     "type": "array",
                     "items": {
@@ -3016,6 +3031,21 @@
                     "type": "string"
                   },
                   "fax": {
+                    "type": "string"
+                  },
+                  "billingStreet": {
+                    "type": "string"
+                  },
+                  "billingCity": {
+                    "type": "string"
+                  },
+                  "billingState": {
+                    "type": "string"
+                  },
+                  "billingZipCode": {
+                    "type": "string"
+                  },
+                  "billingEmailSender": {
                     "type": "string"
                   },
                   "workTypes": {
@@ -7582,6 +7612,14 @@
                       "type": "string",
                       "format": "binary"
                     }
+                  },
+                  "workType": {
+                    "type": "string",
+                    "description": "If data is created from a specific work type and company location."
+                  },
+                  "companyLocation": {
+                    "type": "string",
+                    "description": "If data is created from a specific company location."
                   }
                 }
               }
@@ -10024,6 +10062,14 @@
                   "includePO": {
                     "type": "boolean",
                     "description": "select if you want to include purchase orders linked to this job in this invoice"
+                  },
+                  "workType": {
+                    "type": "string",
+                    "description": "If data is created from a specific work type and company location."
+                  },
+                  "companyLocation": {
+                    "type": "string",
+                    "description": "If data is created from a specific company location."
                   }
                 }
               }
@@ -11619,6 +11665,12 @@
                   },
                   "note": {
                     "type": "string"
+                  },
+                  "workType": {
+                    "type": "string"
+                  },
+                  "companyLocation": {
+                    "type": "string"
                   }
                 }
               }
@@ -12101,6 +12153,14 @@
                   },
                   "note": {
                     "type": "string"
+                  },
+                  "workType": {
+                    "type": "string",
+                    "description": "If data is created from a specific work type and company location."
+                  },
+                  "companyLocation": {
+                    "type": "string",
+                    "description": "If data is created from a specific company location."
                   }
                 }
               }
@@ -15908,6 +15968,96 @@
         }
       }
     },
+    "/createWorkType": {
+      "post": {
+        "tags": [
+          "Work Type"
+        ],
+        "summary": "To create new work type",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/updateWorkType": {
+      "put": {
+        "tags": [
+          "Work Type"
+        ],
+        "summary": "To update work type",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "workTypeId"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "workTypeId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getWorkType/{id}": {
       "get": {
         "tags": [
@@ -15937,6 +16087,42 @@
             }
           }
         }
+      }
+    },
+    "/deleteWorkType/{id}": {
+      "delete": {
+        "tags": [
+          "Work Type"
+        ],
+        "summary": "Delete a work type by the given ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Work type ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
       }
     }
   },

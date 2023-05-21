@@ -2530,9 +2530,25 @@ export const getInvoices = async (req: Request, res: Response) => {
         filterQuery['$and'].push({ lastEmailSent: { $gte: new Date(lastEmailStartDate), $lte: new Date(lastEmailEndDate) } });
     }
 
-    if (workType && companyLocation) {
-        filterQuery['$and'].push({ workType: new ObjectId(workType) });
-        filterQuery['$and'].push({ companyLocation: new ObjectId(companyLocation) });
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterQuery['$and'].push({ workType: { $in : workTypeIds }});
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterQuery['$and'].push({ companyLocation: { $in : companyLocationIds }});
     }
 
     // Deep clone filterQuery
@@ -2748,12 +2764,27 @@ export const getInvoices = async (req: Request, res: Response) => {
     ]).allowDiskUse(true);
 
     // Retrieve number of the unsynced invoices
-    let filterUnsynced = {};
-    if (workType && companyLocation) {
-        filterUnsynced = {
-            workType: new ObjectId(workType),
-            companyLocation: new ObjectId(companyLocation)
-        }
+    let filterUnsynced:any = {};
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterUnsynced["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterUnsynced["companyLocation"] = { $in : companyLocationIds };
     }
 
     const unsyncedInvoices = await Invoice.find({
@@ -2836,9 +2867,26 @@ export const getUnsyncedInvoices = async (req: Request, res: Response) => {
     if (params.status) {
         filterQuery['$and'].push({ status: { $in: JSON.parse(params.status) } });
     }
-    if (workType && companyLocation) {
-        filterQuery['$and'].push({workType : new ObjectId(workType)});
-        filterQuery['$and'].push({companyLocation : new ObjectId(companyLocation)});
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterQuery['$and'].push({ workType: { $in : workTypeIds }});
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterQuery['$and'].push({ companyLocation: { $in : companyLocationIds }});
     }
 
     const invoices = await Invoice.find(filterQuery)

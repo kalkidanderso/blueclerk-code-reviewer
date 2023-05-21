@@ -396,9 +396,12 @@ const _createJob = async (
         job.equipmentId = params.equipmentId
     }
 
-    if (params.workType && params.companyLocation) {
+    if (params.companyLocation) {
+        job.companyLocation = params.companyLocation;    
+    }
+
+    if (params.workType) {
         job.workType = params.workType;
-        job.companyLocation = params.companyLocation;
     }
 
     newJob = await job.save();
@@ -985,9 +988,25 @@ export const getJobs = async (req: Request, res: Response) => {
         filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
     }
 
-    if (workType && companyLocation) {
-        filterQuery['$and'].push({ "workType": new ObjectId(workType) });
-        filterQuery['$and'].push({ "companyLocation": new ObjectId(companyLocation) });
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterQuery['$and'].push({ workType: { $in : workTypeIds }});
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterQuery['$and'].push({ companyLocation: { $in : companyLocationIds }});
     }
 
     // Deep clone filterQuery
@@ -1569,9 +1588,25 @@ export const getAllJobReports = async (req: Request, res: Response) => {
         filterQuery['$and'].push({ jobDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
     }
 
-    if (workType && companyLocation) {
-        filterQuery['$and'].push({ "jobObj.workType": new ObjectId(workType)});
-        filterQuery['$and'].push({ "jobObj.companyLocation": new ObjectId(companyLocation)});
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterQuery['$and'].push({ "jobObj.workType": { $in : workTypeIds }});
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterQuery['$and'].push({ "jobObj.companyLocation": { $in : companyLocationIds }});
     }
 
     // Deep clone filterQuery

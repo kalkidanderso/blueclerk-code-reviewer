@@ -127,9 +127,12 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 }
             }
 
-            if (params.workType && params.companyLocation) {
-                serviceTicket.workType = params.workType;
+            if (params.companyLocation) {
                 serviceTicket.companyLocation = params.companyLocation;    
+            }
+
+            if (params.workType) {
+                serviceTicket.workType = params.workType;
             }
 
             data.imagesUrl?.forEach((imageUrl: string) => serviceTicket.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }));
@@ -372,9 +375,25 @@ export const getServiceTickets = async (req: Request, res: Response) => {
         });
     }
 
-    if (workType && companyLocation) {
-        filterQuery['$and'].push({ workType: new ObjectId(workType) });
-        filterQuery['$and'].push({ companyLocation: new ObjectId(companyLocation) });
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterQuery['$and'].push({ workType: { $in : workTypeIds }});
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterQuery['$and'].push({ companyLocation: { $in : companyLocationIds }});
     }
 
     if (params.status == 0) {
@@ -768,9 +787,26 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     let count = 1;
 
     let filterByDivision: any = {};
-    if (companyLocation && workType) {
-        filterByDivision["workType"] = workType;
-        filterByDivision["companyLocation"] = companyLocation;
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterByDivision["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterByDivision["companyLocation"] = { $in : companyLocationIds };
     }
 
     const totalServiceTickets = await ServiceTicket.find({

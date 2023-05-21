@@ -98,11 +98,26 @@ export const getPayments = (req: Request, res: Response) => {
     const companyLocation = req.query.companyLocation;
     
     let filterQuery: {[key: string]: any} = { company: req.companyId, __t: { $nin: ['PaymentEmployee', 'PaymentVendor']} };
-    if (workType && companyLocation) {
-        filterQuery["workType"] = new ObjectId(workType);
-        filterQuery["companyLocation"] = new ObjectId(companyLocation);
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterQuery["workType"] = { $in : workTypeIds };
     }
-
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterQuery["companyLocation"] = { $in : companyLocationIds };
+    }
     Payment.find(filterQuery)
         .populate({
             path: 'company',
@@ -127,14 +142,28 @@ export const getPayments = (req: Request, res: Response) => {
         .then(async (payments: IPayment[] | null) => {
 
             // Retrieve number of the unsynced invoices
-            let filterUnsynced = {};
-            if (workType && companyLocation) {
-                filterUnsynced = {
-                    workType: new ObjectId(workType),
-                    companyLocation: new ObjectId(companyLocation)
-                }
+            let filterUnsynced: any = {};
+            if (workType) {
+                let workTypeIds: any[] = [];
+                try {
+                    let workTypeArr = JSON.parse(workType);
+                    workTypeIds = workTypeArr.map((id: string) => {
+                        if (ObjectId.isValid(id)) return new ObjectId(id)
+                    })
+                } catch (error) {};
+                filterUnsynced["workType"] = { $in : workTypeIds };
             }
-        
+            if (companyLocation) {
+                let companyLocationIds: any[] = [];
+                try {
+                    let companyLocationArr = JSON.parse(companyLocation);
+                    companyLocationIds = companyLocationArr.map((id: string) => {
+                        if (ObjectId.isValid(id)) return new ObjectId(id)
+                    })
+                } catch (error) {}
+                filterUnsynced["companyLocation"] = { $in : companyLocationIds };
+            }
+            
             const unsyncedPayments = await Payment.find({
                 company: req.companyId,
                 __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] },
@@ -193,9 +222,25 @@ export const getUnsyncedPayments = async (req: Request, res: Response) => {
         filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
     }
 
-    if (workType && companyLocation) {
-        filterQuery['$and'].push({workType : new ObjectId(workType)});
-        filterQuery['$and'].push({companyLocation : new ObjectId(companyLocation)});
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterQuery['$and'].push({ workType: { $in : workTypeIds }});
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterQuery['$and'].push({ companyLocation: { $in : companyLocationIds }});
     }
 
     const payments = await Payment.find(filterQuery)
@@ -281,6 +326,31 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
     const payrollPaymentType = params.payrollPaymentType;
     const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
     const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
+
+    let filterByDivision: any = {};
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterByDivision["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterByDivision["companyLocation"] = { $in : companyLocationIds };
+    }
 
     if (params.startDate && params.endDate) {
         query = { paidAt: { $gte: startDate, $lte: endDate } }
@@ -303,7 +373,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
     switch (params.type) {
         case 'vendor':
             result = _.extend({status: Status.Success});
-            const vendorQuery = { company: company._id, contractor: params.id, ...query, ...voidQuery }
+            const vendorQuery = { company: company._id, contractor: params.id, ...query, ...voidQuery, ...filterByDivision }
             if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
                 const payments = await PaymentVendor.find(vendorQuery)
                     .populate({
@@ -357,7 +427,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
 
         case 'employee':
             result = _.extend({status: Status.Success});
-            const employeeQuery = { company, employee: params.id, ...query, ...voidQuery }
+            const employeeQuery = { company, employee: params.id, ...query, ...voidQuery, ...filterByDivision }
             if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
                 const payments = await PaymentEmployee.find(employeeQuery)
                     .populate({
@@ -410,7 +480,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
         default:
             result = _.extend({status: Status.Success});
             if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
-                const payments = await Payment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery })
+                const payments = await Payment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery, ...filterByDivision })
                     .populate({
                         path: 'company',
                         select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -439,7 +509,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
             }
 
             if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
-                const advancePayments = await AdvancePayment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery })
+                const advancePayments = await AdvancePayment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery, ...filterByDivision })
                     .populate({
                         path: 'company',
                         select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -516,9 +586,12 @@ export const createPayment = async (req: Request, res: Response) => {
             return res.json({ status: Status.Success, message: 'Invoice already paid off.' });
         }
 
-        if (invoice.workType && invoice.companyLocation) {
-            divisionData["workType"] = invoice.workType;
+        if (invoice.companyLocation) {
             divisionData["companyLocation"] = invoice.companyLocation;
+        }
+        
+        if (invoice.workType) {
+            divisionData["workType"] = invoice.workType;
         }
     }
 
@@ -634,7 +707,7 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
     const invoiceIds = invoices.map(invoice => invoice._id);
 
     // Construct the base payment entry
-    const paymentEntry = {
+    const paymentEntry:any = {
         invoices: invoiceIds,
         amountPaid: roundTwoDecimal(params.amount),
         paymentType: params.paymentType,
@@ -650,6 +723,14 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
         createdBy: user,
         createdAt: Date.now(),
     };
+
+    if (params.companyLocation) {
+        paymentEntry["companyLocation"] = params.companyLocation;    
+    }
+
+    if (params.workType) {
+        paymentEntry["workType"] = params.workType;
+    }
 
     switch (params.type) {
         case 'vendor':
@@ -1146,10 +1227,33 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
         queryAdvancePaymentEmployee = { appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
     }
 
-
-    if (workType && companyLocation) {
-        query["workType"] = new ObjectId(workType);
-        query["companyLocation"] =  new ObjectId(companyLocation);
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        query["workType"] = { $in : workTypeIds };
+        queryPaymentVendor["workType"] = { $in : workTypeIds };
+        queryAdvancePaymentVendor["workType"] = { $in : workTypeIds };
+        queryPaymentEmployee["workType"] = { $in : workTypeIds };
+        queryAdvancePaymentEmployee["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        query["companyLocation"] = { $in : companyLocationIds };
+        queryPaymentVendor["companyLocation"] = { $in : companyLocationIds };
+        queryAdvancePaymentVendor["companyLocation"] = { $in : companyLocationIds };
+        queryPaymentEmployee["companyLocation"] = { $in : companyLocationIds };
+        queryAdvancePaymentEmployee["companyLocation"] = { $in : companyLocationIds };
     }
 
     // get job with unpaid technician or contractor
@@ -1258,9 +1362,25 @@ export const getPayrollReport = async (req: Request, res: Response) => {
             break;
     }
 
-    if (companyLocation && workType) {
-        query["workType"] = workType;
-        query["companyLocation"] = companyLocation;
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        query["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        query["companyLocation"] = { $in : companyLocationIds };
     }
 
     const invoices = await Invoice.find({

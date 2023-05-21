@@ -2983,6 +2983,24 @@ export default function (sio: any) {
         workTypeController.getWorkTypeById
     )
 
+    router.delete(
+        '/deleteWorkType/:id',
+        workTypeController.deleteWorkType,
+        passport.authenticate('jwt', { session: false })
+    )
+
+    router.put(
+        '/updateWorkType',
+        workTypeController.updateWorkType,
+        passport.authenticate('jwt', { session: false })
+    )
+
+    router.post(
+        '/createWorkType',
+        workTypeController.createWorkType,
+        passport.authenticate('jwt', { session: false })
+    )
+
     return router
 
 }

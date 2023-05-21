@@ -205,10 +205,25 @@ const _generateAccountReceivableReport = async (companyId: string, params: any) 
         isVoid: { $ne: true }
     };
 
-    
-    if (workType && companyLocation) {
-        query["workType"] = new ObjectId(workType);
-        query["companyLocation"] =  new ObjectId(companyLocation);
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        query["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        query["companyLocation"] = { $in : companyLocationIds };
     }
 
     // Handle if there asOf params provided, otherwise using today as default

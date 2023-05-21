@@ -14,6 +14,7 @@ import { Invoice } from '../models/Invoice';
 import { Payment } from '../models/Payment';
 import { User } from 'src/models/User';
 import {ObjectId} from 'mongodb'
+import { AdvancePayment } from '../models/AdvancePayment';
 
 export const getCompanyLocations = async (req: Request, res: Response) => {
     try {
@@ -85,7 +86,8 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
                     street: params.billingStreet,
                     city: params.billingCity,
                     state: params.billingState,
-                    zipCode: params.billingZipCode
+                    zipCode: params.billingZipCode,
+                    emailSender: params.billingEmailSender
                 },
                 contact: {
                     phone: params.phone,
@@ -163,6 +165,7 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
         companyLocation.billingAddress.city = params.billingCity;
         companyLocation.billingAddress.state = params.billingState;
         companyLocation.billingAddress.zipCode = params.billingZipCode;
+        companyLocation.billingAddress.emailSender = params.billingEmailSender;
 
         companyLocation.contact = companyLocation.contact ?? {};
         companyLocation.contact.phone = params.phone;
@@ -321,16 +324,23 @@ export const getUserDivision = async (req: Request, res: Response) => {
                 $project: {
                     locationId: "$_id",
                     workTypeId: "$workType._id",
-                    name: {$concat : ["$name", " - (" ,  {$cond:[{$eq:['$isMainLocation', true]}, "Main - ", ""] }, "$workType.title", ")"]},
+                    name: {$concat : ["$name",  {$cond:[{$eq:['$isMainLocation', true]}, " (Main)", ""] }, " - ","$workType.title"]},
                     isMainLocation: "$isMainLocation"
                 }
             }
         ]).exec();
 
-        if ((company.admin as unknown as string == userId || employee?.canAccessAllLocations) && divisions.length) {
-            divisions.unshift({
-                name: "All"
-            })
+        if (divisions.length) {
+            let allOption: any = {
+                name: "All",
+            };
+              
+            if (company.admin as unknown as string != userId && !employee?.canAccessAllLocations) {
+                allOption["locationId"] = divisions.map((loc: any) => loc.locationId),
+                allOption["workTypeId"] = divisions.map((workType: any) => workType.workTypeId)
+            }
+
+            divisions.unshift(allOption)
         }
 
         return res.json({ status: Status.Success, divisions });
@@ -514,5 +524,6 @@ const checkIsFirstLocation = async (params: any, company: ICompany, locationId: 
         await ServiceTicket.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
         await Invoice.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
         await Payment.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
+        await AdvancePayment.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
     }
 }
