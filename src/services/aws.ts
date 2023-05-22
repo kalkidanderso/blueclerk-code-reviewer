@@ -15,6 +15,7 @@ import { IContact } from '../common/contact';
 import { ICustomer } from '../models/Customer';
 import { EmailSchedule } from '../models/EmailSchedule';
 import { v4 as uuidv4 } from 'uuid';
+import Sentry from "@sentry/node";
 const http = require("http");
 
 export const sendEmail = function (options: any) {
@@ -342,6 +343,7 @@ export const sendInvoiceEmailToCustomer = async function (options: any) {
       RawMessage: { Data: rawMessage.join("\n") }
     }).promise();
   } catch (error) {
+    Sentry.captureException(error);
     console.log('== AWS sendInvoiceEmailToCustomer Error:', error);
     return;
   }
@@ -418,6 +420,7 @@ export const sendReportPdf = async (options: any) => {
       RawMessage: { Data: rawMessage.join("\n") }
     }).promise();
   } catch (error) {
+    Sentry.captureException(error);
     console.log('== AWS sendInvoiceEmailToCustomer Error:', error);
     return;
   }

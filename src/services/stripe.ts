@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import Sentry from "@sentry/node";
 
 /**
  * @param number
@@ -74,6 +75,7 @@ export const createCustomer = (email: string, description: string, token: string
         return callback(1, customer);
 
     }).catch(function(err: any) {
+        Sentry.captureException(err);
         // asynchronously called
         var message= "";
         switch (err.type) {
@@ -119,7 +121,7 @@ export const addCustomerAndCharge = (email: string, description: string, token: 
             return callback(1, customer, charge, '');
 
         }).catch(function(err: any) {
-
+            Sentry.captureException(err);
             var message= "";
             switch (err.type) {
                 case 'StripeCardError':
@@ -137,6 +139,7 @@ export const addCustomerAndCharge = (email: string, description: string, token: 
 
     }).catch(function(err: any) {
         // asynchronously called
+        Sentry.captureException(err);
         var message= "";
         switch (err.type) {
             case 'StripeCardError':
@@ -163,6 +166,7 @@ export const detachCustomerSource = (stripeId: String, cardId: String, callback:
         return callback(0);
 
     }).catch(function(err: any) {
+        Sentry.captureException(err);
         var message= "";
         switch (err.type) {
             case 'StripeCardError':
@@ -192,6 +196,7 @@ export const addCustomerSource = (stripeId: String, token: String, callback: Fun
             return callback(1, source, '');
 
         }).catch(function(err: any) {
+            Sentry.captureException(err);
             // asynchronously called
             var message= "";
             switch (err.type) {
@@ -231,6 +236,7 @@ export const chargeSubscription = function (amount: any, customerId: String, cal
         return callback(1, charge,tax, '');
 
     }).catch(function(err: any) {
+        Sentry.captureException(err);
         let message= "";
         switch (err.type) {
             case 'StripeCardError':
@@ -270,6 +276,7 @@ export const chargeCustomer = function (amount: any, customerId: String, cardId:
         return callback(1, charge, '');
 
     }).catch(function(err: any) {
+        Sentry.captureException(err);
         var message= "";
         switch (err.type) {
             case 'StripeCardError':
@@ -344,7 +351,7 @@ export const subscribe = function (customerId: String, cardId: String, planId: S
             return callback(1, subscription, '');
 
         }).catch(function(err: any) {
-
+            Sentry.captureException(err);
             var message= "";
             switch (err.type) {
                 case 'StripeCardError':
@@ -360,6 +367,7 @@ export const subscribe = function (customerId: String, cardId: String, planId: S
         // return callback(1, customer, '');
 
     }).catch(function(err: any) {
+        Sentry.captureException(err);
         var message= "";
         switch (err.type) {
             case 'StripeCardError':
@@ -387,7 +395,7 @@ export const unsubscribe = function (subscriptionId: String, callback: Function)
         return callback(1, '');
 
     }).catch(function(err: any) {
-
+        Sentry.captureException(err);
         var message= "";
         switch (err.type) {
             case 'StripeCardError':
@@ -426,6 +434,7 @@ export const listSubscriptions = function (callback: Function) {
         return callback(1, stripeSubscriptions, '');
 
     }).catch(function(err: any) {
+        Sentry.captureException(err);
         var message= "";
         switch (err.type) {
             case 'StripeCardError':

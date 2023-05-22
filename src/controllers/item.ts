@@ -15,6 +15,7 @@ import { JobCharges } from '../models/JobCharges';
 import { IInvoice, Invoice } from '../models/Invoice';
 import { _createQBItem, _updateQBItem, _updateQBItemsStatus, _transferQBItems } from '../controllers/quickbook.item';
 import { _transferQBInvoiceItem } from '../controllers/quickbook.invoice';
+import Sentry from "@sentry/node";
 
 // ==========================================
 // ==============[ ITEM ]====================
@@ -154,6 +155,7 @@ export const updateItems = async (req: Request, res: Response) => {
                 items = JSON.parse(items);
             }
         } catch (err) {
+            Sentry.captureException(err);
             return res.json({ status: Status.Error, message: 'Items json is invalid' });
         }
     }
@@ -273,6 +275,7 @@ export const mergeItems = async (req: Request, res: Response) => {
                 tiers = JSON.parse(tiers);
             }
         } catch (err) {
+            Sentry.captureException(err);
             return res.json({ status: Status.Error, message: 'Items json is invalid' });
         }
     }
@@ -460,6 +463,7 @@ export const createDiscountItem = async (req: Request, res: Response, next: Next
         // Check if customer already have discount item for that quantity of items
         ({ customer, custDiscountPrice } = await _checkCustomerDiscountItem(params, company, customer, custDiscountPrice));
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({ status: Status.Error, message: err.message || Messages.GenericError });
     }
 
@@ -483,6 +487,7 @@ export const createDiscountItem = async (req: Request, res: Response, next: Next
         // Check and fill Customer's discount prices list
         await _saveCustomerDiscountItem(params, customer, custDiscountPrice, item);
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({ status: Status.Error, message: err.message || Messages.GenericError });
     }
 
@@ -539,6 +544,7 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
             // Check if customer already have discount item for that quantity of items
             ({ customer, custDiscountPrice } = await _checkCustomerDiscountItem(params, company, customer, custDiscountPrice));
         } catch (err) {
+            Sentry.captureException(err);
             return res.json({ status: Status.Error, message: err.message || Messages.GenericError });
         }
     } else {
@@ -559,6 +565,7 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
         // Check and fill Customer's discount prices list
         await _saveCustomerDiscountItem(params, customer, custDiscountPrice, item);
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({ status: Status.Error, message: err.message || Messages.GenericError });
     }
 
@@ -617,6 +624,7 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
                     }
                 }
             } catch (err) {
+                Sentry.captureException(err);
                 reject({ message: 'jobTypes json is invalid' });
             }
 
@@ -732,6 +740,7 @@ const _saveCustomerDiscountItem = async (params: any, customer: ICustomer, custD
     try {
         customer.save();
     } catch (error) {
+        Sentry.captureException(error);
         throw new Error(error.message);
     }
 

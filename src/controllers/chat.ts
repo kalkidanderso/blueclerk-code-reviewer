@@ -8,6 +8,7 @@ import { IJobRequest, JobRequest } from '../models/JobRequest';
 import { IChat, Chat, ChatChannels, IJobRequestChat, JobRequestChat } from '../models/Chat';
 import { _handleNotification } from '../controllers/notification.firebase';
 import { NotificationTypes, FbNotificationType } from '../models/Notification';
+import Sentry from "@sentry/node";
 
 /**
  * To create new chat
@@ -49,6 +50,7 @@ export const createChat = async (req: Request, res: Response) => {
                 break;
         }
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({ status: Status.Error, message: err?.message ?? Messages.GenericError });
     }
 

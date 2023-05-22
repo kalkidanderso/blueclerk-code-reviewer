@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { Status } from '../common/constants';
 import { Session } from '../models/Session';
+import Sentry from "@sentry/node";
 
 export const isLogin = () => {
 
@@ -17,6 +18,7 @@ export const isLogin = () => {
             next();
             return
         } catch (err) {
+            Sentry.captureException(err);
             return res.json({ status: Status.Error, message: 'Session is expired or you are already logged out, please login again' })
         }
     }

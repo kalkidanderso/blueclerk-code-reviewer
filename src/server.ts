@@ -38,8 +38,9 @@ dotenv.config()
 process.env.TZ = 'America/Chicago';
 //Database connection
 const { DB_USER, DB_PASS, DB_HOST, DB_NAME, session_secret, jwt_encryption } = process.env
-// const dbConnect = `mongodb://${DB_HOST}/${DB_NAME}`;
-const dbConnect = `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`;
+const dbConnect = DB_HOST === 'localhost'
+    ? `mongodb://${DB_HOST}/${DB_NAME}`
+    : `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`;
 
 mongoose.set('useCreateIndex', true)
 mongoose.connect(
@@ -57,9 +58,11 @@ mongoose.connect(
 const app = require('express')();
 
 Sentry.init({
-  dsn: "https://e9e04710cc774ae3a25f8b762c0c0494@o4504971440422912.ingest.sentry.io/4504971441733632",
-  tracesSampleRate: 1.0,
+    dsn: "https://7ce3dc3af480456e9351a3df61cd166a@o4505155845226496.ingest.sentry.io/4505156270686208",
+    tracesSampleRate: 1.0,
+    environment: process.env.ENVIRONMENT
 });
+
 
 app.use(timeout('1200s'));
 
