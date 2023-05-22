@@ -323,6 +323,7 @@ export const getContractorForJob = (req: Request, res: Response) => {
 export const getCompanyContracts = async (req: Request, res: Response) => {
     const workType = req.body.workType;
     const companyLocation = req.body.companyLocation;
+    const assignedVendorsIncluded = req.body.assignedVendorsIncluded;
 
     const company = <ICompany>req.company
 
@@ -427,17 +428,21 @@ export const getCompanyContracts = async (req: Request, res: Response) => {
             select: 'info.companyName info.companyEmail info.displayName type',
             populate: [{ path: 'admin', select: 'profile auth.email contact' }]
         })
-        .exec((err: any, contracts: IContract[]) => {
-    
+        .exec(async (err: any, contracts: IContract[]) => {
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
-    
+                
                 if(!contracts.length) {
                     return res.json({ 'status': Status.Error, 'message': 'No contracts found.' })
                 }
-    
-                return res.json({ 'status': Status.Success, 'contracts': contracts})
+
+                if (assignedVendorsIncluded) {
+                    let assignedVendors = await CompanyLocation.find({company: new ObjectId(company._id)}).distinct("assignedVendors.vendor");
+                    return res.json({ 'status': Status.Success, 'contracts': contracts, assignedVendors: assignedVendors});
+                }else{
+                    return res.json({ 'status': Status.Success, 'contracts': contracts});
+                }
             }
         )
     }
