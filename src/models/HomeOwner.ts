@@ -18,8 +18,8 @@ export interface IHomeOwner extends Document {
         phone?: string
         fax?: string
     }
-    subdivision: [Schema.Types.ObjectId | IJobSite]
-    address: [Schema.Types.ObjectId | IJobLocation]
+    subdivision: [Schema.Types.ObjectId | IJobLocation]
+    address: [Schema.Types.ObjectId | IJobSite]
     createdAt: Date
     updatedAt: Date
 
