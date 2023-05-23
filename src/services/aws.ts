@@ -302,12 +302,10 @@ export const sendInvoiceEmailToCustomer = async function (options: any) {
                       <a href="https://app.blueclerk.com"><img src="https://blueclerk.com/wp-content/uploads/2020/07/logo.png" /></a>
                     </div>`;
 
-  const reply_to = [company_email,sender_email];
-
   const rawMessage = [
     `From: ${SENDER}`,
     `To: ${RECIPIENT}`,
-    `Reply-To: ${reply_to.join(", ")}`,
+    `Reply-To: ${sender_email}`,
     `Subject: ${SUBJECT}`,
     `MIME-Version: 1.0`,
     `Content-Type: multipart/mixed; boundary=\"${boundary}\"\n`,

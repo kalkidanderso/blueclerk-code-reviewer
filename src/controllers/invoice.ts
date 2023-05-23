@@ -2192,7 +2192,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     sendInvoiceEmailToCustomer({
         subject: params.subject ?? emailDefault?.subject,
         message: params.message ?? emailDefault?.message,
-        sender_email: companyLocation?.billingAddress?.emailSender ?? user.auth?.email,
+        sender_email: companyLocation?.billingAddress?.emailSender || user.auth?.email,
         company_name: company.info?.companyName,
         company_email: company.info?.companyEmail,
         company_logo: company.info?.logoUrl,
@@ -2375,7 +2375,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
     sendInvoiceEmailToCustomer({
         subject: params.subject ?? emailDefault?.subject,
         message: params.message ?? emailDefault?.message,
-        sender_email: invoiceSender ?? user.auth?.email,
+        sender_email: invoiceSender || user.auth?.email,
         company_name: company.info?.companyName,
         company_email: company.info?.companyEmail,
         company_logo: company.info?.logoUrl,
