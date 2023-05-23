@@ -14,6 +14,7 @@ import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer'
 import { _createQBPayment, _deleteQBPayment, _updateQBPayment, _voidPayment } from './quickbook.payment'
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission'
 import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor } from '../models/AdvancePayment';
+import Sentry from "@sentry/node";
 
 /**
  * To calculate invoice and customer payment amount related,
@@ -175,6 +176,7 @@ export const getPayments = (req: Request, res: Response) => {
             return res.json({ status: Status.Success, unsyncedPayments, payment: payments });
         })
         .catch((error: any) => {
+            Sentry.captureException(error);
             if (error.message != undefined) {
                 return res.json({ 'status': Status.Error, 'message': error.message })
             } else {
@@ -307,6 +309,7 @@ export const getPaymentsByCustomerId = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Success, 'payment': payments })
         })
         .catch((error: any) => {
+            Sentry.captureException(error);
             if (error.message != undefined) {
                 return res.json({ 'status': Status.Error, 'message': error.message })
             } else {
@@ -394,6 +397,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                         select: 'profile.displayName auth.email'
                     })
                     .catch((error: any) => {
+                        Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
                 result = _.extend(result, { payments });
@@ -419,6 +423,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                         select: 'profile.displayName auth.email'
                     })
                     .catch((error: any) => {
+                        Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
                 result = _.extend(result, { advancePayments });
@@ -447,6 +452,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                         select: 'profile.displayName auth.email'
                     })
                     .catch((error: any) => {
+                        Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
                 result = _.extend(result, { payments });
@@ -471,6 +477,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                         select: 'profile.displayName auth.email'
                     })
                     .catch((error: any) => {
+                        Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
                 result = _.extend(result, { advancePayments });
@@ -503,6 +510,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                         select: 'profile.displayName auth.email'
                     })
                     .catch((error: any) => {
+                        Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
                 result = _.extend(result, { payments });
@@ -532,6 +540,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                         select: 'profile.displayName auth.email'
                     })
                     .catch((error: any) => {
+                        Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
                 result = _.extend(result, { advancePayments });
@@ -671,6 +680,7 @@ export const createPayment = async (req: Request, res: Response) => {
         }
 
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
     }
 }
@@ -940,6 +950,7 @@ export const createPaymentMultipleInvoices = async (req: Request, res: Response)
         return res.json({ status: Status.Success, message: 'Payment created successfully.' });
 
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
     };
 
@@ -1072,6 +1083,7 @@ export const updatePayment = async (req: Request, res: Response) => {
         }
 
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
     }
 
@@ -1179,10 +1191,12 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
                                 resolve()
                             })
                             .catch((err: any) => {
+                                Sentry.captureException(err);
                                 reject(err)
                             })
                     })
                     .catch((err: any) => {
+                        Sentry.captureException(err);
                         reject(err)
                     })
             })
@@ -1194,6 +1208,7 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Success, 'message': "Payment update successfully." })
         })
         .catch((error: any) => {
+            Sentry.captureException(error);
             if (error != undefined && error.message != undefined) {
                 return res.json({ 'status': Status.Error, 'message': error.message })
             } else {
@@ -1525,6 +1540,7 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
             await _handleVoidPayment(params.type, invoiceIds, payment, customer);
             await _handleVoidPaymentContractor(params.type, paymentVendor, company._id);
         } catch (err) {
+            Sentry.captureException(err);
             return res.json({ status: Status.Error, message: err.message });
         }
 

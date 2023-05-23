@@ -12,9 +12,10 @@ import { ServiceTicket } from '../models/ServiceTicket';
 import { Job } from '../models/Job';
 import { Invoice } from '../models/Invoice';
 import { Payment } from '../models/Payment';
-import { User } from 'src/models/User';
 import {ObjectId} from 'mongodb'
 import { AdvancePayment } from '../models/AdvancePayment';
+import Sentry from "@sentry/node";
+
 
 export const getCompanyLocations = async (req: Request, res: Response) => {
     try {
@@ -29,6 +30,7 @@ export const getCompanyLocations = async (req: Request, res: Response) => {
 
         return res.json({ status: Status.Success, companyLocations });
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message});
     }
 }
@@ -43,6 +45,7 @@ export const getCompanyLocationById = async (req: Request, res: Response) => {
 
         return res.json({ status: Status.Success, companyLocation });
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message});
     }
 }
@@ -117,6 +120,8 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
 
         return res.json({ status: Status.Success, companyLocation : populatedCompanyLocation });
     } catch (error) {
+        Sentry.captureException(error);
+
         return res.json({ status: Status.Error, message: error.message });
     }
 }
@@ -187,6 +192,7 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
 
         return res.json({ status: Status.Success, message: 'Company Location updated successfully', "companyLocation": newCompanyLocation });
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message });
     }
 }

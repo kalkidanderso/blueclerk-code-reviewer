@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { WorkType } from '../models/WorkType';
 import { Status } from '../common/constants';
 import { ObjectId } from 'mongodb';
+import Sentry from "@sentry/node";
 
 
 export const getWorkTypes = async (req: Request, res: Response) => {
@@ -17,6 +18,7 @@ export const getWorkTypes = async (req: Request, res: Response) => {
 
         return res.json({ status: Status.Success, workTypes });
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message});
     }
 }
@@ -29,6 +31,7 @@ export const getWorkTypeById = async (req: Request, res: Response) => {
 
         return res.json({ status: Status.Success, workType });
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message});
     }
 }

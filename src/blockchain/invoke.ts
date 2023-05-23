@@ -1,5 +1,6 @@
 import { getClientForOrg } from './helpers'
 import * as config from './config.json'
+import Sentry from "@sentry/node";
 
 export const invokeChaincode = async (
   fcn: any,
@@ -97,6 +98,7 @@ export const invokeChaincode = async (
           .proposal_response_payload.extension.response.payload,
       )
     } catch (err) {
+      Sentry.captureException(err);
       throw new Error(`Failed to query transaction ${txId} due to: `)
     }
   } else {
