@@ -74,8 +74,8 @@ export interface IJob extends Document {
         note?: string
         date: Date
     }[]
-    workType: Schema.Types.ObjectId  | null
-    companyLocation: Schema.Types.ObjectId  | null
+    workType: Schema.Types.ObjectId  | any
+    companyLocation: Schema.Types.ObjectId  | any
 }
 
 export interface ITask extends Document {

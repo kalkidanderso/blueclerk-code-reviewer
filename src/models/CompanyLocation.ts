@@ -19,6 +19,10 @@ export interface ICompanyLocation extends Document {
         city?: string
         state?: string
         zipCode?: string
+        coordinates?: {
+            lng: Number,
+            lat: Number
+        }
     }
     isAddressAsBillingAddress: boolean
     billingAddress?: {
@@ -59,7 +63,11 @@ const CompanyLocationSchema = new Schema({
         unit: String,
         city: String,
         state: String,
-        zipCode: String
+        zipCode: String,
+        coordinates: {
+            lng: Number,
+            lat: Number
+        }
     },
     isAddressAsBillingAddress: {
         type: Boolean,

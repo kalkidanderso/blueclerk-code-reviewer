@@ -82,7 +82,8 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
                     unit: params.unit,
                     city: params.city,
                     state: params.state,
-                    zipCode: params.zipCode
+                    zipCode: params.zipCode,
+                    coordinates: params.coordinates
                 },
                 isAddressAsBillingAddress: params.isAddressAsBillingAddress,
                 billingAddress: {
@@ -162,6 +163,7 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
         companyLocation.address.city = params.city;
         companyLocation.address.state = params.state;
         companyLocation.address.zipCode = params.zipCode;
+        companyLocation.address.coordinates = params.coordinates;
         
         companyLocation.isAddressAsBillingAddress = params.isAddressAsBillingAddress ?? companyLocation.isAddressAsBillingAddress;
 
@@ -328,6 +330,7 @@ export const getUserDivision = async (req: Request, res: Response) => {
             ...userPipeline,
             {
                 $project: {
+                    address: "$address",
                     locationId: "$_id",
                     workTypeId: "$workType._id",
                     name: {$concat : ["$name",  {$cond:[{$eq:['$isMainLocation', true]}, " (Main)", ""] }, " - ","$workType.title"]},

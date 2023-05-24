@@ -948,8 +948,6 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     const params = req.body
     const company = <ICompany>req.company
     const user = <IUser>req.user
-    const workType = req.query.workType;
-    const companyLocation = req.query.companyLocation;
 
     let currentInvoiceId = 0;
     if (company.currentInvoiceId) {
@@ -983,6 +981,8 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     let timeSpent: number = 0
     let purchaseOrderId: string = null
     let estimateId: string = null
+    let workType: string = params.workType;
+    let companyLocation: string = params.companyLocation;
 
     if (job) {
         charges = job.charges;
@@ -990,7 +990,9 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         customer = job.customer;
         jobLocation = job.jobLocation;
         jobSite = job.jobSite;
-        jobId = job._id
+        jobId = job._id;
+        workType = job.workType;
+        companyLocation = job.companyLocation;
 
         await job.populate({ path: 'ticket' }).execPopulate();
         ticket = job.ticket;
@@ -1293,12 +1295,6 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             paid = true;
         }
     }
-    let division: {[key: string] : any} = {};
-    if (companyLocation && workType) {
-        division["workType"] = workType;
-        division["companyLocation"] = companyLocation;
-    }
-    
 
     var invoice = new Invoice({
         invoiceId: invoiceId,
@@ -1332,9 +1328,8 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         estimate: estimateId,
         emailHistory: [],
         lastEmailSent: null,
-        workType: params?.workType,
-        companyLocation: params?.companyLocation,
-        ...division
+        workType: workType,
+        companyLocation: companyLocation
     })
 
     next(req, res, invoice, currentInvoiceId);
