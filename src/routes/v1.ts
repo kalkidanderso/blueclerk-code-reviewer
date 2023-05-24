@@ -326,6 +326,16 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/updateEmployeeLocPermission',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.User_Get_All_Employees),
+        validate(Validations.changeEmployeeLocPermission),
+        userController.updateEmployeeLocPermission
+    )
+
+    router.post(
         '/getManagers',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
@@ -474,6 +484,33 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Update_Company_Profile),
         validate(Validations.updateCompanyLocation),
         companyLocationController.updateCompanyLocation
+    )
+
+    router.put(
+        '/updateCompanyLocationAssignments',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Company_Profile),
+        companyLocationController.updateCompanyLocationAssignments
+    )
+
+    router.put(
+        '/updateCompanyLocationBillingAddress',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Company_Profile),
+        companyLocationController.updateCompanyLocationBillingAddress
+    )
+
+    router.post(
+        '/getUserDivisions',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Company_Profile),
+        companyLocationController.getUserDivision
     )
 
     // Customers
@@ -1371,6 +1408,13 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/updateVendorDisplayName',
+        passport.authenticate('jwt', { session: false }),
+        validate(Validations.updateVendorDisplayName),
+        vendorController.updateVendorDisplayName
+    )
+
+    router.post(
         '/checkAndGet',
         validate(Validations.socialLogin),
         userController.checkAndGetUser
@@ -2027,11 +2071,11 @@ export default function (sio: any) {
     )
 
      router.get(
-        '/updateCommissionCron',       
+        '/updateCommissionCron',
          (req, res) => {
             invoiceController.updateCommissionCron(req, res)
         }
-    )  
+    )
 
     router.get(
         '/getCommissionHistory/:beneficiaryId',
@@ -2438,7 +2482,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Update_Payment),
         validate(Validations.voidAdvancePaymentContractor),
         paymentAdvanceController.voidAdvancePaymentContractor
-    )    
+    )
 
     // REPORT
 
@@ -2937,6 +2981,24 @@ export default function (sio: any) {
     router.get(
         '/getWorkType/:id',
         workTypeController.getWorkTypeById
+    )
+
+    router.delete(
+        '/deleteWorkType/:id',
+        workTypeController.deleteWorkType,
+        passport.authenticate('jwt', { session: false })
+    )
+
+    router.put(
+        '/updateWorkType',
+        workTypeController.updateWorkType,
+        passport.authenticate('jwt', { session: false })
+    )
+
+    router.post(
+        '/createWorkType',
+        workTypeController.createWorkType,
+        passport.authenticate('jwt', { session: false })
     )
 
     return router

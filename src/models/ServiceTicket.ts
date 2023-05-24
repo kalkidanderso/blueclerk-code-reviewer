@@ -40,7 +40,8 @@ export interface IServiceTicket extends Document {
     jobCreated: boolean
     track: any[];
     source: string | null;
-
+    workType: Schema.Types.ObjectId  | null
+    companyLocation: Schema.Types.ObjectId  | null
 }
 
 const ServiceTicketSchema = new Schema({
@@ -158,8 +159,32 @@ const ServiceTicketSchema = new Schema({
     source: {
         type: String,
         default: 'blueclerk'
-    }
+    },
+    workType: {
+        type: Schema.Types.ObjectId,
+        ref: 'WorkType',
+    },
+    companyLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'CompanyLocation',
+    },
 
 })
+
+//Indexes
+ServiceTicketSchema.index({ customer: 1 });
+ServiceTicketSchema.index({ createdBy: 1 });
+ServiceTicketSchema.index({ customerContactId: 1 });
+ServiceTicketSchema.index({ company: 1 });
+ServiceTicketSchema.index({ technician: 1 });
+ServiceTicketSchema.index({ editedBy: 1 });
+ServiceTicketSchema.index({ jobLocation: 1 });
+ServiceTicketSchema.index({ jobSite: 1 });
+ServiceTicketSchema.index({ homeOwner: 1 });
+ServiceTicketSchema.index({ homeJobLocation: 1 });
+ServiceTicketSchema.index({ homeJobSite: 1 });
+ServiceTicketSchema.index({ jobType: 1 });
+ServiceTicketSchema.index({ item: 1 });
+ServiceTicketSchema.index({ company: 1, jobCreated: 1, status: 1 });
 
 export const ServiceTicket = mongoose.model<IServiceTicket>('ServiceTicket', ServiceTicketSchema)

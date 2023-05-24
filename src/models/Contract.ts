@@ -43,4 +43,10 @@ const ContractSchema = new Schema({
 
 }, { timestamps: { createdAt: true, updatedAt: true } });
 
+//Indexes
+ContractSchema.index({ company: 1 });
+ContractSchema.index({ contractor: 1 });
+ContractSchema.index({ createdBy: 1 });
+ContractSchema.index({ finishedBy: 1 });
+
 export const Contract = mongoose.model<IContract>('Contract', ContractSchema)

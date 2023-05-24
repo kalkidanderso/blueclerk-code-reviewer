@@ -1,6 +1,7 @@
 import * as config from './config.json'
 import FabricCAClient from 'fabric-ca-client'
 import { getClientForOrg } from './helpers'
+import Sentry from "@sentry/node";
 
 const registerNewUser = async (username: any, client: any, orgName: any) => {
   // create the key value store as defined in the fabric-client/config/default.json 'key-value-store' setting
@@ -69,7 +70,8 @@ const registerNewUser = async (username: any, client: any, orgName: any) => {
       return client.setUserContext(user)
     })
     .catch((err: any) => {
-      console.error('Failed to register: ' + err)
+        Sentry.captureException(err);
+        console.error('Failed to register: ' + err)
       if (err.toString().indexOf('Authorization') > -1) {
         console.error(
           'Authorization failures may be caused by having admin credentials from a previous CA instance.\n' +

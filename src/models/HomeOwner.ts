@@ -54,4 +54,9 @@ const HomeOwnerSchema = new Schema({
 
 }, { timestamps: true });
 
+//Indexes
+HomeOwnerSchema.index({ jobLocations: 1 });
+HomeOwnerSchema.index({ 'profile.firstName': 1, 'profile.lastName': 1, 'profile.displayName': 1, 'address.street': 1, 'address.city': 1 });
+
+
 export const HomeOwner = mongoose.model<IHomeOwner>('HomeOwner', HomeOwnerSchema);

@@ -8,6 +8,7 @@ import multer from 'multer'
 import { JobLocation } from '../models/JobLocation';
 import { Contact } from '../models/Contact'
 import { IContact } from '../common/contact'
+import Sentry from "@sentry/node";
 
 let fs = require('fs');
 let XLSX = require('xlsx')
@@ -206,12 +207,14 @@ export const uploadfile = (req: Request, res: Response) => {
             }
         }
         } catch (err) {
+            Sentry.captureException(err);
             return res.json({"status": Status.Error, 'message': err.message});
         }
         fs.unlinkSync(path + fileName)
         return res.json({"status": Status.Success, 'message': 'Customers imported successfully'});
     })
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({"status": Status.Success, 'message': err.message});
     }
 }

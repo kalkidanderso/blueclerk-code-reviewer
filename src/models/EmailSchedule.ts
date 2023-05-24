@@ -35,4 +35,9 @@ const EmailScheduleSchema = new Schema({
     }
 })
 
+//Indexes
+EmailScheduleSchema.index({ user: 1 });
+EmailScheduleSchema.index({ jobs: 1 });
+EmailScheduleSchema.index({ pulled: 1 });
+
 export const EmailSchedule = mongoose.model<IEmailSchedule>('EmailSchedule', EmailScheduleSchema)

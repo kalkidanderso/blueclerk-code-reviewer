@@ -14,6 +14,7 @@ import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer'
 import { _createQBPayment, _deleteQBPayment, _updateQBPayment, _voidPayment } from './quickbook.payment'
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission'
 import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor } from '../models/AdvancePayment';
+import Sentry from "@sentry/node";
 
 /**
  * To calculate invoice and customer payment amount related,
@@ -94,8 +95,31 @@ export const _resetPaymentQB = (company: ICompany): void => {
 };
 
 export const getPayments = (req: Request, res: Response) => {
-
-    Payment.find({ company: req.companyId, __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] } })
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
+    
+    let filterQuery: {[key: string]: any} = { company: req.companyId, __t: { $nin: ['PaymentEmployee', 'PaymentVendor']} };
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterQuery["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterQuery["companyLocation"] = { $in : companyLocationIds };
+    }
+    Payment.find(filterQuery)
         .populate({
             path: 'company',
             select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -119,16 +143,40 @@ export const getPayments = (req: Request, res: Response) => {
         .then(async (payments: IPayment[] | null) => {
 
             // Retrieve number of the unsynced invoices
+            let filterUnsynced: any = {};
+            if (workType) {
+                let workTypeIds: any[] = [];
+                try {
+                    let workTypeArr = JSON.parse(workType);
+                    workTypeIds = workTypeArr.map((id: string) => {
+                        if (ObjectId.isValid(id)) return new ObjectId(id)
+                    })
+                } catch (error) {};
+                filterUnsynced["workType"] = { $in : workTypeIds };
+            }
+            if (companyLocation) {
+                let companyLocationIds: any[] = [];
+                try {
+                    let companyLocationArr = JSON.parse(companyLocation);
+                    companyLocationIds = companyLocationArr.map((id: string) => {
+                        if (ObjectId.isValid(id)) return new ObjectId(id)
+                    })
+                } catch (error) {}
+                filterUnsynced["companyLocation"] = { $in : companyLocationIds };
+            }
+            
             const unsyncedPayments = await Payment.find({
                 company: req.companyId,
                 __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] },
                 isVoid: { $ne: true },
-                quickbookId: null
+                quickbookId: null,
+                ...filterUnsynced
             })?.countDocuments();
 
             return res.json({ status: Status.Success, unsyncedPayments, payment: payments });
         })
         .catch((error: any) => {
+            Sentry.captureException(error);
             if (error.message != undefined) {
                 return res.json({ 'status': Status.Error, 'message': error.message })
             } else {
@@ -145,7 +193,9 @@ export const getUnsyncedPayments = async (req: Request, res: Response) => {
 
     const params = req.query;
     const companyId = req.companyId;
-
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
+    
     // Data query that used to search unsynced Invoices
     const filterQuery: any = {
         $and: [
@@ -172,6 +222,27 @@ export const getUnsyncedPayments = async (req: Request, res: Response) => {
     }
     if (params.customerId) {
         filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+    }
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterQuery['$and'].push({ workType: { $in : workTypeIds }});
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterQuery['$and'].push({ companyLocation: { $in : companyLocationIds }});
     }
 
     const payments = await Payment.find(filterQuery)
@@ -238,6 +309,7 @@ export const getPaymentsByCustomerId = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Success, 'payment': payments })
         })
         .catch((error: any) => {
+            Sentry.captureException(error);
             if (error.message != undefined) {
                 return res.json({ 'status': Status.Error, 'message': error.message })
             } else {
@@ -257,6 +329,31 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
     const payrollPaymentType = params.payrollPaymentType;
     const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
     const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
+
+    let filterByDivision: any = {};
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterByDivision["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterByDivision["companyLocation"] = { $in : companyLocationIds };
+    }
 
     if (params.startDate && params.endDate) {
         query = { paidAt: { $gte: startDate, $lte: endDate } }
@@ -279,7 +376,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
     switch (params.type) {
         case 'vendor':
             result = _.extend({status: Status.Success});
-            const vendorQuery = { company: company._id, contractor: params.id, ...query, ...voidQuery }
+            const vendorQuery = { company: company._id, contractor: params.id, ...query, ...voidQuery, ...filterByDivision }
             if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
                 const payments = await PaymentVendor.find(vendorQuery)
                     .populate({
@@ -300,6 +397,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                         select: 'profile.displayName auth.email'
                     })
                     .catch((error: any) => {
+                        Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
                 result = _.extend(result, { payments });
@@ -325,6 +423,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                         select: 'profile.displayName auth.email'
                     })
                     .catch((error: any) => {
+                        Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
                 result = _.extend(result, { advancePayments });
@@ -333,7 +432,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
 
         case 'employee':
             result = _.extend({status: Status.Success});
-            const employeeQuery = { company, employee: params.id, ...query, ...voidQuery }
+            const employeeQuery = { company, employee: params.id, ...query, ...voidQuery, ...filterByDivision }
             if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
                 const payments = await PaymentEmployee.find(employeeQuery)
                     .populate({
@@ -353,6 +452,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                         select: 'profile.displayName auth.email'
                     })
                     .catch((error: any) => {
+                        Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
                 result = _.extend(result, { payments });
@@ -377,6 +477,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                         select: 'profile.displayName auth.email'
                     })
                     .catch((error: any) => {
+                        Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
                 result = _.extend(result, { advancePayments });
@@ -386,7 +487,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
         default:
             result = _.extend({status: Status.Success});
             if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
-                const payments = await Payment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery })
+                const payments = await Payment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery, ...filterByDivision })
                     .populate({
                         path: 'company',
                         select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -409,13 +510,14 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                         select: 'profile.displayName auth.email'
                     })
                     .catch((error: any) => {
+                        Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
                 result = _.extend(result, { payments });
             }
 
             if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
-                const advancePayments = await AdvancePayment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery })
+                const advancePayments = await AdvancePayment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery, ...filterByDivision })
                     .populate({
                         path: 'company',
                         select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
@@ -438,6 +540,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
                         select: 'profile.displayName auth.email'
                     })
                     .catch((error: any) => {
+                        Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                     });
                 result = _.extend(result, { advancePayments });
@@ -475,6 +578,7 @@ export const createPayment = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Customer not found.' });
     }
 
+    let divisionData: any = {};
     if (params.invoiceId) {
         // Find and check if invoice existed and belongs to the customer
         invoice = await Invoice.findOne({
@@ -490,6 +594,14 @@ export const createPayment = async (req: Request, res: Response) => {
         if (invoice.status === InvoiceStatus.PAID) {
             return res.json({ status: Status.Success, message: 'Invoice already paid off.' });
         }
+
+        if (invoice.companyLocation) {
+            divisionData["companyLocation"] = invoice.companyLocation;
+        }
+        
+        if (invoice.workType) {
+            divisionData["workType"] = invoice.workType;
+        }
     }
 
     // Construct payment entry
@@ -503,7 +615,8 @@ export const createPayment = async (req: Request, res: Response) => {
         note: params.note,
         company,
         createdBy: user,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        ...divisionData
     });
 
     try {
@@ -567,6 +680,7 @@ export const createPayment = async (req: Request, res: Response) => {
         }
 
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
     }
 }
@@ -603,7 +717,7 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
     const invoiceIds = invoices.map(invoice => invoice._id);
 
     // Construct the base payment entry
-    const paymentEntry = {
+    const paymentEntry:any = {
         invoices: invoiceIds,
         amountPaid: roundTwoDecimal(params.amount),
         paymentType: params.paymentType,
@@ -619,6 +733,14 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
         createdBy: user,
         createdAt: Date.now(),
     };
+
+    if (params.companyLocation) {
+        paymentEntry["companyLocation"] = params.companyLocation;    
+    }
+
+    if (params.workType) {
+        paymentEntry["workType"] = params.workType;
+    }
 
     switch (params.type) {
         case 'vendor':
@@ -828,6 +950,7 @@ export const createPaymentMultipleInvoices = async (req: Request, res: Response)
         return res.json({ status: Status.Success, message: 'Payment created successfully.' });
 
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
     };
 
@@ -960,6 +1083,7 @@ export const updatePayment = async (req: Request, res: Response) => {
         }
 
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
     }
 
@@ -1067,10 +1191,12 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
                                 resolve()
                             })
                             .catch((err: any) => {
+                                Sentry.captureException(err);
                                 reject(err)
                             })
                     })
                     .catch((err: any) => {
+                        Sentry.captureException(err);
                         reject(err)
                     })
             })
@@ -1082,6 +1208,7 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Success, 'message': "Payment update successfully." })
         })
         .catch((error: any) => {
+            Sentry.captureException(error);
             if (error != undefined && error.message != undefined) {
                 return res.json({ 'status': Status.Error, 'message': error.message })
             } else {
@@ -1096,7 +1223,9 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
     const vendors: any = [];
     const employees: any = [];
-    let query, queryPaymentVendor: any = {}, queryPaymentEmployee: any = {}, queryAdvancePaymentVendor: any = {}, queryAdvancePaymentEmployee: any = {};
+    let query: any = {}, queryPaymentVendor: any = {}, queryPaymentEmployee: any = {}, queryAdvancePaymentVendor: any = {}, queryAdvancePaymentEmployee: any = {};
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
 
     // Check when startDate and endDate is provided, offset must be required
     if (params.startDate && params.endDate) {
@@ -1111,6 +1240,35 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
         queryAdvancePaymentVendor = { appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
         queryPaymentEmployee = { paidAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
         queryAdvancePaymentEmployee = { appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
+    }
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        query["workType"] = { $in : workTypeIds };
+        queryPaymentVendor["workType"] = { $in : workTypeIds };
+        queryAdvancePaymentVendor["workType"] = { $in : workTypeIds };
+        queryPaymentEmployee["workType"] = { $in : workTypeIds };
+        queryAdvancePaymentEmployee["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        query["companyLocation"] = { $in : companyLocationIds };
+        queryPaymentVendor["companyLocation"] = { $in : companyLocationIds };
+        queryAdvancePaymentVendor["companyLocation"] = { $in : companyLocationIds };
+        queryPaymentEmployee["companyLocation"] = { $in : companyLocationIds };
+        queryAdvancePaymentEmployee["companyLocation"] = { $in : companyLocationIds };
     }
 
     // get job with unpaid technician or contractor
@@ -1189,7 +1347,11 @@ export const getPayrollReport = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
     const vendors: any = [];
     const employees: any = [];
-    let techQuery, query: any;
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
+
+    let techQuery: any;
+    let query: any = {};
 
     if (params.startDate && params.endDate) {
         if (!params.offset) {
@@ -1213,6 +1375,27 @@ export const getPayrollReport = async (req: Request, res: Response) => {
         default:
             techQuery = {};
             break;
+    }
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        query["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        query["companyLocation"] = { $in : companyLocationIds };
     }
 
     const invoices = await Invoice.find({
@@ -1357,6 +1540,7 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
             await _handleVoidPayment(params.type, invoiceIds, payment, customer);
             await _handleVoidPaymentContractor(params.type, paymentVendor, company._id);
         } catch (err) {
+            Sentry.captureException(err);
             return res.json({ status: Status.Error, message: err.message });
         }
 

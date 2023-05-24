@@ -26,4 +26,8 @@ const ContactSchema = new Schema({
     },
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
+//Indexes
+ContactSchema.index({ userId: 1 });
+ContactSchema.index({ name: 1, phone: 1, email: 1});
+
 export const Contact = mongoose.model<IContact>('Contact', ContactSchema)

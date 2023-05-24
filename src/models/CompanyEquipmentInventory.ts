@@ -25,4 +25,8 @@ const CompanyEquipmentInventorySchema = new Schema({
 
 })
 
+//Indexes
+CompanyEquipmentInventorySchema.index({ createdBy: 1 });
+CompanyEquipmentInventorySchema.index({ companyEquipments: 1 });
+
 export const CompanyEquipmentInventory = mongoose.model<ICompanyEquipmentInventory>('CompanyEquipmentInventory', CompanyEquipmentInventorySchema)
