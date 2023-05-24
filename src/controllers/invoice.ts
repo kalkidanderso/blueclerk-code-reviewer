@@ -40,6 +40,7 @@ import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommissi
 import { ICommissionHistory, CommissionHistory } from '../models/CommissionHistory';
 import { getDatesFilterQuery } from '../services/pagination';
 import { v4 as uuidv4 } from 'uuid';
+import { ICompanyLocation } from '../models/CompanyLocation';
 import Sentry from "@sentry/node";
 
 /**
@@ -947,6 +948,8 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     const params = req.body
     const company = <ICompany>req.company
     const user = <IUser>req.user
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
 
     let currentInvoiceId = 0;
     if (company.currentInvoiceId) {
@@ -1290,6 +1293,12 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             paid = true;
         }
     }
+    let division: {[key: string] : any} = {};
+    if (companyLocation && workType) {
+        division["workType"] = workType;
+        division["companyLocation"] = companyLocation;
+    }
+    
 
     var invoice = new Invoice({
         invoiceId: invoiceId,
@@ -1322,7 +1331,10 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         items: invoiceItems,
         estimate: estimateId,
         emailHistory: [],
-        lastEmailSent: null
+        lastEmailSent: null,
+        workType: params?.workType,
+        companyLocation: params?.companyLocation,
+        ...division
     })
 
     next(req, res, invoice, currentInvoiceId);
@@ -1947,6 +1959,10 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
             path: 'createdBy',
             select: 'info.companyName auth.email profile.displayName permissions.role address contact.phone'
         })
+        .populate({
+            path: 'companyLocation',
+            select: 'isAddressAsBillingAddress address billingAddress'
+        })
         .exec((err: any, invoice: IInvoice) => {
 
             if (err) {
@@ -2121,6 +2137,10 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
             select: 'name description sku isJobType isFixed charges tax',
             populate: [{ path: 'jobType' }]
         })
+        .populate({
+            path: 'companyLocation',
+            select: 'isAddressAsBillingAddress address billingAddress'
+        })
 
     if (!invoice) {
         return res.json({ status: Status.Error, message: 'Invoice not found.' });
@@ -2176,11 +2196,12 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: Messages.GenericError });
     }
 
+    const companyLocation = <ICompanyLocation>invoice.companyLocation;
     // Call AWS SES method
     sendInvoiceEmailToCustomer({
         subject: params.subject ?? emailDefault?.subject,
         message: params.message ?? emailDefault?.message,
-        sender_email: user.auth?.email,
+        sender_email: companyLocation?.billingAddress?.emailSender || user.auth?.email,
         company_name: company.info?.companyName,
         company_email: company.info?.companyEmail,
         company_logo: company.info?.logoUrl,
@@ -2274,6 +2295,10 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
             path: 'items.item',
             select: 'name description sku isJobType isFixed charges tax',
             populate: [{ path: 'jobType' }]
+        })
+        .populate({
+            path: 'companyLocation',
+            select: 'isAddressAsBillingAddress address billingAddress'
         });
 
     if (!invoices?.length) {
@@ -2282,6 +2307,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
 
     let invoicePdfs = [];
     let totalInvoiceAmount = 0;
+    let invoiceSender = "";
 
     try {
         // Iterate all invoices to generate their PDF and collect the filepath
@@ -2306,6 +2332,10 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
                 sentAt: sendingDate
             });
             invoice.lastEmailSent = sendingDate;
+            
+            const companyLocation = <ICompanyLocation>invoice.companyLocation;
+            invoiceSender = companyLocation?.billingAddress?.emailSender;
+
             await invoice.save();
         }
     } catch (error) {
@@ -2357,7 +2387,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
     sendInvoiceEmailToCustomer({
         subject: params.subject ?? emailDefault?.subject,
         message: params.message ?? emailDefault?.message,
-        sender_email: user.auth?.email,
+        sender_email: invoiceSender || user.auth?.email,
         company_name: company.info?.companyName,
         company_email: company.info?.companyEmail,
         company_logo: company.info?.logoUrl,
@@ -2373,6 +2403,8 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
 export const getInvoices = async (req: Request, res: Response) => {
 
     const params = req.body;
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
     let companyId = req.otherCompanyId || req.companyId;
 
     // Check if any filter provided to decide whether return all records or not
@@ -2510,6 +2542,27 @@ export const getInvoices = async (req: Request, res: Response) => {
         filterQuery['$and'].push({ lastEmailSent: { $gte: new Date(lastEmailStartDate), $lte: new Date(lastEmailEndDate) } });
     }
 
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterQuery['$and'].push({ workType: { $in : workTypeIds }});
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterQuery['$and'].push({ companyLocation: { $in : companyLocationIds }});
+    }
+
     // Deep clone filterQuery
     const query: any = { $and: [] };
     filterQuery['$and'].map((q: any) => { query['$and'].push({ ...q }) });
@@ -2580,6 +2633,7 @@ export const getInvoices = async (req: Request, res: Response) => {
         { path: 'customerContactId', select: 'name phone email' },
         { path: 'jobLocation', select: 'name address location' },
         { path: 'jobSite', select: 'name address location' },
+        { path: 'companyLocation', select: 'billingAddress' },
     ]);
 
     // // Filter jobs using aggregate to be search to another collection
@@ -2722,11 +2776,35 @@ export const getInvoices = async (req: Request, res: Response) => {
     ]).allowDiskUse(true);
 
     // Retrieve number of the unsynced invoices
+    let filterUnsynced:any = {};
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterUnsynced["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterUnsynced["companyLocation"] = { $in : companyLocationIds };
+    }
+
     const unsyncedInvoices = await Invoice.find({
         company: companyId,
         isDraft: { $ne: true },
         isVoid: { $ne: true },
-        quickbookId: null
+        quickbookId: null,
+        ...filterUnsynced
     })?.countDocuments();
 
     return res.json({
@@ -2756,6 +2834,8 @@ export const getUnsyncedInvoices = async (req: Request, res: Response) => {
 
     const params = req.query;
     const companyId = req.companyId;
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
 
     // Data query that used to search unsynced Invoices
     const filterQuery: any = {
@@ -2798,6 +2878,27 @@ export const getUnsyncedInvoices = async (req: Request, res: Response) => {
     }
     if (params.status) {
         filterQuery['$and'].push({ status: { $in: JSON.parse(params.status) } });
+    }
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterQuery['$and'].push({ workType: { $in : workTypeIds }});
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterQuery['$and'].push({ companyLocation: { $in : companyLocationIds }});
     }
 
     const invoices = await Invoice.find(filterQuery)
@@ -3172,14 +3273,15 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
     const job = <IJob>invoice.job;
     const ticket = <IServiceTicket>job?.ticket;
+    const companyLocation = <ICompanyLocation>invoice?.companyLocation;
     const customerContact = <IContact>invoice.customerContactId ?? job?.customerContactId;
 
-    // Construct Company Address object
-    const companyAddress = {
-        street: company.address?.street ? `${company.address?.street}` : '',
-        city: company.address?.city ? `${company.address?.city}` : '',
-        state: company.address?.state ? `, ${company.address?.state}` : '',
-        zipCode: company.address?.zipCode ? `, ${company.address?.zipCode}` : '',
+    // Construct Billing Address object
+    const billingAddress = {
+        street: invoice.companyLocation ? `${(companyLocation.isAddressAsBillingAddress ? companyLocation.address?.street : companyLocation.billingAddress?.street) ?? ''}` : `${company.address?.street ?? ''}`,
+        city: invoice.companyLocation ? `${(companyLocation.isAddressAsBillingAddress ? companyLocation.address?.city : companyLocation.billingAddress?.city) ?? ''}` : `${company.address?.city ?? ''}`,
+        state: invoice.companyLocation ? `${(companyLocation.isAddressAsBillingAddress ? companyLocation.address?.state : companyLocation.billingAddress?.state) ?? ''}` : `${company.address?.state ?? ''}`,
+        zipCode: invoice.companyLocation ? `${(companyLocation.isAddressAsBillingAddress ? companyLocation.address?.zipCode : companyLocation.billingAddress?.zipCode) ?? ''}` : `${company.address?.zipCode ?? ''}`,
     }
 
     // Construct Customer Address object
@@ -3340,7 +3442,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {},
                             {},
                             {
-                                text: `${companyAddress.street}\n${companyAddress.city}${companyAddress.state}${companyAddress.zipCode}\n${company.contact?.phone ?? ''}`,
+                                text: `${billingAddress.street}\n${billingAddress.city}${billingAddress.state ? ', ' + billingAddress.state: ''}${billingAddress.zipCode? ', ' + billingAddress.zipCode : ''}\n${company.contact?.phone ?? ''}`,
                                 style: 'invoiceHeader',
                                 margin: [0, 0, 0, 10],
                                 border: [false, false, false, true]
@@ -3976,6 +4078,10 @@ export const generateInvoicePdf = async (req: Request, res: Response) => {
             path: 'items.item',
             select: 'name description sku isJobType isFixed charges tax',
             populate: [{ path: 'jobType' }]
+        })
+        .populate({
+            path: 'companyLocation',
+            select: 'isAddressAsBillingAddress address billingAddress'
         })
 
     if (!invoice) {

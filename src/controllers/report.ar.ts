@@ -194,7 +194,9 @@ export const _customAccountReceivableReport = async (companyId: string, params: 
  * where only return the total unpaid and aging buckets
  */
 const _generateAccountReceivableReport = async (companyId: string, params: any) => {
-
+    const workType = params.workType;
+    const companyLocation = params.companyLocation;
+    
     // Construct the basic filter query
     const query: any = {
         company: new ObjectId(companyId),
@@ -202,6 +204,27 @@ const _generateAccountReceivableReport = async (companyId: string, params: any) 
         isDraft: { $ne: true },
         isVoid: { $ne: true }
     };
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        query["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        query["companyLocation"] = { $in : companyLocationIds };
+    }
 
     // Handle if there asOf params provided, otherwise using today as default
     let asOf = params.asOf ? params.asOf : new Date();

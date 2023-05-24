@@ -10,6 +10,8 @@ import { IUser } from './User';
 import { IInvoiceCommission } from '../models/InvoiceCommission';
 import { IJobLocation } from '../models/JobLocation';
 import { IJobSite } from '../models/JobSite';
+import { IWorkType } from './WorkType';
+import { ICompanyLocation } from './CompanyLocation';
 
 export interface IInvoice extends Document {
     invoice: any[]
@@ -66,6 +68,8 @@ export interface IInvoice extends Document {
     createdBy: Schema.Types.ObjectId
     createdAt: Date
     updatedAt: Date
+    workType: Schema.Types.ObjectId  | IWorkType
+    companyLocation: Schema.Types.ObjectId  | ICompanyLocation
 }
 
 export enum LineDetailTypes {
@@ -337,8 +341,15 @@ const InvoiceSchema = new Schema({
     isVoid: {
         type: Boolean,
         default: false
-    }
-
+    },
+    workType: {
+        type: Schema.Types.ObjectId,
+        ref: 'WorkType',
+    },
+    companyLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'CompanyLocation',
+    },
 }, { timestamps: { createdAt: true, updatedAt: true } });
 
 export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema)

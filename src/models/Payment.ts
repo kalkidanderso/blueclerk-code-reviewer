@@ -5,6 +5,8 @@ import { ICompany } from '../models/Company';
 import { IUser } from '../models/User';
 import { ICustomer } from '../models/Customer';
 import { IInvoice } from '../models/Invoice';
+import { IWorkType } from './WorkType';
+import { ICompanyLocation } from './CompanyLocation';
 
 export interface IPayment extends Document {
     customer: Schema.Types.ObjectId | ICustomer
@@ -31,12 +33,16 @@ export interface IPayment extends Document {
     createdAt: Date
     updatedBy: Schema.Types.ObjectId | IUser
     updatedAt: Date
+    workType: Schema.Types.ObjectId  | IWorkType
+    companyLocation: Schema.Types.ObjectId  | ICompanyLocation
 }
 
 export interface IPaymentCustomer extends IPayment {
 
     customer: Schema.Types.ObjectId | ICustomer
     invoice: Schema.Types.ObjectId | IInvoice
+    workType: Schema.Types.ObjectId | null
+    companyLocation: Schema.Types.ObjectId | null
 }
 
 export interface IPaymentVendor extends IPayment {
@@ -170,6 +176,14 @@ const PaymentSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User',
     },
+    workType: {
+        type: Schema.Types.ObjectId,
+        ref: 'WorkType',
+    },
+    companyLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'CompanyLocation',
+    },
     updatedAt: Date,
 })
 
@@ -184,6 +198,14 @@ const PaymentCustomerSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Invoice',
         required: false
+    },
+    workType: {
+        type: Schema.Types.ObjectId,
+        ref: 'WorkType',
+    },
+    companyLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'CompanyLocation',
     },
 })
 

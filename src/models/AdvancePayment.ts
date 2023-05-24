@@ -16,6 +16,8 @@ export interface IAdvancePayment extends Document {
     createdBy: Schema.Types.ObjectId | IUser
     updatedBy: Schema.Types.ObjectId | IUser
     voidedBy: Schema.Types.ObjectId | IUser
+    workType: Schema.Types.ObjectId  | null
+    companyLocation: Schema.Types.ObjectId  | null
 }
 
 export interface IAdvancePaymentVendor extends IAdvancePayment {
@@ -62,6 +64,14 @@ const AdvancePaymentSchema = new Schema({
     voidedBy: {
         type: Schema.Types.ObjectId,
         ref: 'User',
+    },
+    workType: {
+        type: Schema.Types.ObjectId,
+        ref: 'WorkType',
+    },
+    companyLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'CompanyLocation',
     },
 }, { timestamps: true });
 

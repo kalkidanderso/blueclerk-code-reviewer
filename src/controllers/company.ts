@@ -17,6 +17,7 @@ import {CompanyCustomer, ICompanyCustomer} from '../models/CompanyCustomer';
 import { IItem, Item } from '../models/Item'
 import { IPriceTier, PriceTier } from '../models/PriceTier'
 import { PaymentEmployee, PaymentVendor } from '../models/Payment'
+import { CompanyLocation } from '../models/CompanyLocation'
 import Sentry from "@sentry/node";
 
 const Hubspot = require('hubspot')
@@ -113,7 +114,7 @@ export const getEmployeeDetail = async (req: Request, res: Response) => {
             }
 
             let employeeDetails: any = await User.findOne({_id: new ObjectId(employeeId)})
-                .select('_id auth.email auth.socialId profile address location contact emailPreferences permissions').exec();
+                .select('_id auth.email auth.socialId profile address location contact emailPreferences permissions canAccessAllLocations').exec();
             employeeData._id = employeeDetails._id;
             employeeData.email = employeeDetails.auth.email;
             employeeData.socialId = employeeDetails.auth.socialId;
@@ -133,6 +134,8 @@ export const getEmployeeDetail = async (req: Request, res: Response) => {
                 timeZone : employeeDetails.emailPreferences.timeZone,
                 time: hours + ':' + minutes
             }
+            employeeData.canAccessAllLocations = employeeDetails.canAccessAllLocations;
+            
             if (employeeDetails) {
                 return res.json({'status': Status.Success, 'employee': employeeData});
             } else {
@@ -186,47 +189,111 @@ export const getAllEmployees = (req: Request, res: Response) => {
         })
 }
 
-export const getEmployeesForJob = (req: Request, res: Response) => {
-
-    Company.findOne({ _id: req.companyId })
-        .populate({
-            path: 'employees',
-            match: { 'permissions.role': { $ne: 0 } },
-            select: '_id profile.displayName',
-        })
-        .populate({
-            path: 'admin',
-            select: '_id profile.displayName',
-        })
-        .exec((err: any, company: ICompany) => {
-
-            if (err || !company) {
+export const getEmployeesForJob = async (req: Request, res: Response) => {
+    const workType = req.body.workType;
+    const companyLocation = req.body.companyLocation;
+    if (workType && companyLocation) {
+        CompanyLocation.aggregate([
+            {
+                $lookup: {
+                    from: "companies",
+                    localField: "company",
+                    foreignField: "_id",
+                    as: "company"
+                }
+            },
+            {
+                $lookup :{
+                    from: "users",
+                    localField: "company.admin",
+                    foreignField: "_id",
+                    as: "admin",
+                }
+            },
+            {
+                $match: {
+                    "company._id": new ObjectId(req.companyId),
+                    "_id": new ObjectId(companyLocation)
+                }
+            },
+            {   
+                $project: {
+                    _id: 1,
+                    admin: 1,
+                    "assignedEmployees": { 
+                        $filter: { 
+                            input: "$assignedEmployees", 
+                            cond: { $in: [new ObjectId(workType),"$$this.workTypes"] } 
+                       } 
+                    } 
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "assignedEmployees.employee",
+                    foreignField: "_id",
+                    as: "employees",
+                }
+            }
+        ]).exec((err: any, companyLocations: any[]) => {
+            if (err && !companyLocations.length) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
-            const employees = company.employees
-            const admin = company.admin
-            company.employees = undefined
-            company.userPermissions = undefined
-            company.stripeId = undefined
-            company.employees = undefined
-            company.customers = undefined
-            company.maxTechnicians = undefined
-            company.maxAdmins = undefined
-            company.maxManagers = undefined
-            company.maxOfficeAdmins = undefined
-            company.other = undefined
-            company.paid = undefined
-            company.type = undefined
-            company.plan = undefined
-            company.currentJobId = undefined
-            company.chargeDate = undefined
-            company.contact = undefined
-            company.address = undefined
-
+    
+            let companyLocation = companyLocations[0];
+            let admin = {};
+            let employees = [];
+            try {
+                employees =  companyLocation.employees;
+                if (companyLocation.admin.length) admin = companyLocation.admin[0]
+            } catch (error) {
+            }
+    
             return res.json({ 'status': Status.Success, 'employees': employees, 'superAdmin': admin })
-
+    
         })
+    }else{
+        Company.findOne({ _id: req.companyId })
+            .populate({
+                path: 'employees',
+                match: { 'permissions.role': { $ne: 0 } },
+                select: '_id profile.displayName',
+            })
+            .populate({
+                path: 'admin',
+                select: '_id profile.displayName',
+            })
+            .exec((err: any, company: ICompany) => {
+    
+                if (err || !company) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                }
+                const employees = company.employees
+                const admin = company.admin
+                company.employees = undefined
+                company.userPermissions = undefined
+                company.stripeId = undefined
+                company.employees = undefined
+                company.customers = undefined
+                company.maxTechnicians = undefined
+                company.maxAdmins = undefined
+                company.maxManagers = undefined
+                company.maxOfficeAdmins = undefined
+                company.other = undefined
+                company.paid = undefined
+                company.type = undefined
+                company.plan = undefined
+                company.currentJobId = undefined
+                company.chargeDate = undefined
+                company.contact = undefined
+                company.address = undefined
+    
+                return res.json({ 'status': Status.Success, 'employees': employees, 'superAdmin': admin })
+    
+            })
 
+    }
 }
 
 export const getContractorForJob = (req: Request, res: Response) => {
@@ -256,39 +323,72 @@ export const getContractorForJob = (req: Request, res: Response) => {
 }
 
 export const getCompanyContracts = async (req: Request, res: Response) => {
+    const workType = req.body.workType;
+    const companyLocation = req.body.companyLocation;
+    const assignedVendorsIncluded = req.body.assignedVendorsIncluded;
 
     const company = <ICompany>req.company
 
-    const contractAggregate: IContract[] = await Contract.aggregate([
-        {
-        $match: {"company": company._id}
-        },{
-            $sort: { _id: -1}
-        },{
-            $group: {
-                _id: "$contractor",
-                "docs": {"$first": "$$ROOT"}
+    if (workType && companyLocation) {
+        CompanyLocation.aggregate([
+            {
+                $match: {
+                    "company": new ObjectId(company._id),
+                    "_id": new ObjectId(companyLocation)
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    company: "$company",
+                    "assignedVendors": {
+                        $filter: {
+                            input: "$assignedVendors",
+                            cond: { $in: [new ObjectId(workType), "$$this.workTypes"] }
+                        }
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: "companies",
+                    localField: "company",
+                    foreignField: "_id",
+                    as: "company"
+                }
+            },
+            { $unwind: "$company" },
+            {
+                $lookup: {
+                    from: "companies",
+                    localField: "assignedVendors.vendor",
+                    foreignField: "_id",
+                    as: "contractor",
+                }
+            },
+            { $unwind: "$contractor" },
+            {
+                $lookup: {
+                    from: "contracts",
+                    localField: "contractor._id",
+                    foreignField: "contractor",
+                    as: "contract",
+                }
+            },
+            { $unwind: "$contract" },
+            {
+                $match: {
+                    "contract.company" :  new ObjectId(company._id)
+                }
+            },
+            {
+                $project: {
+                    status: "$contract.status",
+                    company: "$company",
+                    contractor: "$contractor"
+                }        
             }
-        },{
-            "$replaceRoot":{"newRoot":"$docs"}
-        }
-    ])
-
-    // Map the Contract IDs filtered
-    const contractIds = contractAggregate.map((result)=>result._id)
-
-    Contract.find({_id: {$in : contractIds}})
-    .populate({
-        path: 'company',
-        select: 'info.companyName info.companyEmail type'
-    })
-    .populate({
-        path: 'contractor',
-        select: 'info.companyName info.companyEmail type',
-        populate: [{ path: 'admin', select: 'profile auth.email contact' }]
-    })
-    .exec((err: any, contracts: IContract[]) => {
-
+        ]).exec((err: any, contracts: any[]) => {
             if (err) {
                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
             }
@@ -298,8 +398,56 @@ export const getCompanyContracts = async (req: Request, res: Response) => {
             }
 
             return res.json({ 'status': Status.Success, 'contracts': contracts})
-        }
-    )
+    
+        });
+    }else{
+        const contractAggregate: IContract[] = await Contract.aggregate([
+            {
+            $match: {"company": company._id}
+            },
+            {
+                $sort: { _id: -1}
+            },{
+                $group: {
+                    _id: "$contractor",
+                    "docs": {"$first": "$$ROOT"}
+                }
+            },{
+                "$replaceRoot":{"newRoot":"$docs"}
+            }
+        ])
+    
+        // Map the Contract IDs filtered
+        const contractIds = contractAggregate.map((result)=>result._id)
+    
+        Contract.find({_id: {$in : contractIds}})
+        .populate({
+            path: 'company',
+            select: 'info.companyName info.companyEmail type'
+        })
+        .populate({
+            path: 'contractor',
+            select: 'info.companyName info.companyEmail info.displayName type',
+            populate: [{ path: 'admin', select: 'profile auth.email contact' }]
+        })
+        .exec(async (err: any, contracts: IContract[]) => {
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                }
+                
+                if(!contracts.length) {
+                    return res.json({ 'status': Status.Error, 'message': 'No contracts found.' })
+                }
+
+                if (assignedVendorsIncluded) {
+                    let assignedVendors = await CompanyLocation.find({company: new ObjectId(company._id)}).distinct("assignedVendors.vendor");
+                    return res.json({ 'status': Status.Success, 'contracts': contracts, assignedVendors: assignedVendors});
+                }else{
+                    return res.json({ 'status': Status.Success, 'contracts': contracts});
+                }
+            }
+        )
+    }
 }
 
 export const getContractorDetail = async(req: Request, res: Response) => {
@@ -320,7 +468,7 @@ export const getContractorDetail = async(req: Request, res: Response) => {
             const paymentVendor = await PaymentVendor.find({ contractor: params.contractorId })
                 .populate({
                     path: 'company',
-                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                    select: 'info.companyName info.logoUrl info.displayName auth.email permissions.role address contact'
                 })
                 .populate({
                     path: 'contractor',

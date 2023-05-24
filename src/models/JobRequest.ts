@@ -28,6 +28,8 @@ export interface IJobRequest extends Document {
     createdAt: Date
     updatedBy: Schema.Types.ObjectId
     updatedAt: Date
+    workType: string | null
+    companyLocation: string | null
 }
 
 export interface IRequests {
@@ -116,7 +118,15 @@ const JobRequestSchema = new Schema({
     },
     editedAt: {
         type: Date
-    }
+    },
+    workType: {
+        type: Schema.Types.ObjectId,
+        ref: 'WorkType',
+    },
+    companyLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'CompanyLocation',
+    },
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
 export const JobRequest = mongoose.model<IJobRequest>('JobRequest', JobRequestSchema);
