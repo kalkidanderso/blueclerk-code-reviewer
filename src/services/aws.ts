@@ -306,7 +306,7 @@ export const sendInvoiceEmailToCustomer = async function (options: any) {
   const rawMessage = [
     `From: ${SENDER}`,
     `To: ${RECIPIENT}`,
-    `Reply-To: ${company_email ?? ""}`,
+    `Reply-To: ${sender_email}`,
     `Subject: ${SUBJECT}`,
     `MIME-Version: 1.0`,
     `Content-Type: multipart/mixed; boundary=\"${boundary}\"\n`,

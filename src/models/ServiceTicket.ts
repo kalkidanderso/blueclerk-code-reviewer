@@ -40,7 +40,8 @@ export interface IServiceTicket extends Document {
     jobCreated: boolean
     track: any[];
     source: string | null;
-
+    workType: Schema.Types.ObjectId  | null
+    companyLocation: Schema.Types.ObjectId  | null
 }
 
 const ServiceTicketSchema = new Schema({
@@ -158,7 +159,15 @@ const ServiceTicketSchema = new Schema({
     source: {
         type: String,
         default: 'blueclerk'
-    }
+    },
+    workType: {
+        type: Schema.Types.ObjectId,
+        ref: 'WorkType',
+    },
+    companyLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'CompanyLocation',
+    },
 
 })
 
