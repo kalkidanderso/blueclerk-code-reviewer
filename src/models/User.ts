@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import { Role, AccountTypes } from '../common/constants'
 import bcrypt from "bcrypt-nodejs"
 import moment from 'moment'
+import Sentry from "@sentry/node";
 
 export interface IUser extends Document {
 
@@ -217,6 +218,7 @@ UserSchema.methods.hashPassword = function(password: string, next: (err?: any, h
             }
         )
     } catch (err) {
+        Sentry.captureException(err);
         return next(err)
     }
 
@@ -254,5 +256,11 @@ UserSchema.methods.jwt = function(req: Request) {
     return `Bearer ${token}`
 
 }
+
+//Indexes
+UserSchema.index({ contacts: 1 });
+UserSchema.index({ 'profile.displayName': 1 });
+UserSchema.index({ 'auth.email': 1 });
+UserSchema.index({ 'auth.socialId': 1, 'auth.connectorType': 1 });
 
 export const User = mongoose.model<IUser>('User', UserSchema)

@@ -34,6 +34,7 @@ import { NotificationTypes } from '../models/Notification';
 import { JobLocation } from '../models/JobLocation';
 import { JobSite } from '../models/JobSite';
 import { HomeOwner } from '../models/HomeOwner';
+import Sentry from "@sentry/node";
 
 /**
  * 04-22-2022
@@ -183,6 +184,7 @@ export const createJob = async (req: Request, res: Response) => {
                 technicianId: params.technicianId
             });
         } catch (err) {
+            Sentry.captureException(err);
             return res.json({ status: Status.Error, message: err });
         }
     }
@@ -262,6 +264,7 @@ const _createJob = async (
     try {
         tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob, paramTasks, serviceTicket });
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message });
     }
 
@@ -368,6 +371,8 @@ const _createJob = async (
         createdAt: Date.now(),
         createdBy: user._id,
         track: track,
+        scheduledStartTime: params.scheduledStartTime,
+        scheduledEndTime: params.scheduledEndTime,
     })
 
     let newStartTime: any = null
@@ -376,17 +381,17 @@ const _createJob = async (
         imagesUrl.forEach(imageUrl => job.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }));
     }
 
-    if (params.scheduledStartTime) {
-        let date = new Date(params.scheduleDate)
-        newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
-        job.scheduledStartTime = newStartTime
+    // if (params.scheduledStartTime) {
+    //     let date = new Date(params.scheduleDate)
+    //     newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
+    //     job.scheduledStartTime = newStartTime
 
-    }
-    if (params.scheduledEndTime) {
-        let date = new Date(params.scheduleDate)
-        newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
-        job.scheduledEndTime = newEndTime
-    }
+    // }
+    // if (params.scheduledEndTime) {
+    //     let date = new Date(params.scheduleDate)
+    //     newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
+    //     job.scheduledEndTime = newEndTime
+    // }
     if (params.equipmentId) {
         job.equipmentId = params.equipmentId
     }
@@ -608,6 +613,7 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             next(req, res, jobCreated)
             return
         }).catch((err) => {
+            Sentry.captureException(err);
             return res.json({ 'status': Status.Error, 'message': err.message });
         })
 
@@ -1184,7 +1190,29 @@ const matchStage = { $match: filterQuery };
                 foreignField: '_id',
                 as: 'jobTypeObj'
             }
-        },   ]);
+        },
+        {
+            $project: {
+                "_id":1,
+                "jobId":1,
+                "status":"$status",
+                "createdBy":"$createdBy",
+                "description":"$description",
+                "tasks":"$tasks",
+                "track":"$track",
+                "customerObj":"$customerObj",
+                "jobLocationObj":"$jobLocationObj",
+                "jobSiteObj":"$jobSiteObj",
+                "scheduledStartTime":"$scheduledStartTime",
+                "scheduledEndTime":"$scheduledEndTime",
+                "technicianObj":"$technicianObj",
+                "contractorsObj":"$contractorsObj",
+                "jobTypeObj":"$jobTypeObj",
+                "ticketObj":"$ticketObj",
+                "scheduleDate":"$scheduleDate",
+            }
+        }
+    ]);
 
     const totalJobs = await Job.aggregate([
         matchStage,
@@ -1746,6 +1774,7 @@ export const getJobReportDetails = (req: Request, res: Response) => {
             }
             return res.json({ 'status': Status.Success, 'message': 'No report was found!' });
         }).catch((err) => {
+            Sentry.captureException(err);
             return res.json({ 'status': Status.Error, 'message': err.message });
         });
 }
@@ -1761,6 +1790,7 @@ export const deleteJobReportById = async (req: Request, res: Response) => {
     JobReport.deleteOne({ _id: new ObjectId(jobReportId), $or: [{ contractor: companyId }, { company: companyId }] }).then(() => {
         return res.json({ 'status': Status.Success, 'message': 'Job Report Has Been Deleted Successfully!' });
     }).catch((err) => {
+        Sentry.captureException(err);
         return res.json({ 'status': Status.Error, 'message': err.message });
     });
 }
@@ -2177,9 +2207,11 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
 
                 return res.json({ 'status': Status.Success, 'message': 'Job updated successfully.', job: updatedJob });
             } catch (err) {
+                Sentry.captureException(err);
                 return res.json({ 'status': Status.Error, 'message': err.message });
             }
         }).catch((err) => {
+            Sentry.captureException(err);
             return res.json({ 'status': Status.Error, 'message': err.message });
         })
 
@@ -2532,6 +2564,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
         // Save the job and the tasks inside
         await job.save();
     } catch (err) {
+        Sentry.captureException(err);
         if (err) return res.json({ status: Status.Error, message: err.message });
     }
 
@@ -2562,6 +2595,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
             // Save the linked job and the tasks inside
             await linkedJob.save();
         } catch (err) {
+            Sentry.captureException(err);
             if (err) return res.json({ status: Status.Error, message: err.message });
         }
 
@@ -2653,6 +2687,7 @@ export const editJob = async (req: Request, res: Response) => {
                 try {
                     tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob: job, paramTasks, serviceTicket });
                 } catch (error) {
+                    Sentry.captureException(error);
                     return res.json({ status: Status.Error, message: error.message });
                 }
                 job.tasks = tasks;
@@ -2807,10 +2842,12 @@ export const editJob = async (req: Request, res: Response) => {
                             t.homeJobLocation = params.homeJobLocation;
                         }
                         t.save().then(() => { }).catch((err) => {
+                            Sentry.captureException(err);
                             return res.json({ 'status': Status.Error, 'message': err.message });
                         })
                     }
                 }).catch((err) => {
+                    Sentry.captureException(err);
                     return res.json({ 'status': Status.Error, 'message': err.message });
                 });
             }
@@ -3063,6 +3100,7 @@ export const getJobDetails = (req: Request, res: Response) => {
 
         })
         .catch((error: any) => {
+            Sentry.captureException(error);
             if (error.message != undefined) {
                 return res.json({ 'status': Status.Error, 'message': error.message })
             } else {
@@ -3253,6 +3291,7 @@ export const sendJobReport = (req: Request, res: Response) => {
                         ccEmails.push(user.auth?.email);
                     }
                 } catch (error) {
+                    Sentry.captureException(error);
                     return res.json({ status: Status.Error, message: Messages.GenericError });
                 }
 
@@ -3279,12 +3318,14 @@ export const sendJobReport = (req: Request, res: Response) => {
                 await report.save().then((r) => {
                     return res.json({ 'status': Status.Success, 'message': 'Job Report Has Been Sent Successfully!' })
                 }).catch((err) => {
+                    Sentry.captureException(err);
                     return res.json({ 'status': Status.Error, 'message': err.message });
                 });
             } else {
                 return res.json({ 'status': Status.Error, 'message': "Report was not found" });
             }
         }).catch((err) => {
+            Sentry.captureException(err);
             return res.json({ 'status': Status.Error, 'message': err.message });
         });
 }
@@ -3528,6 +3569,7 @@ export const updateJobTime = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Success, 'message': 'Job time updated successfully.' })
         })
         .catch((err: any) => {
+            Sentry.captureException(err);
             if (err.message != undefined) {
                 return res.json({ 'status': Status.Error, 'message': err.message })
 
@@ -3705,6 +3747,7 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
 
         await job.save();
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({ status: Status.Error, message: err.message });
     }
 
@@ -3883,6 +3926,7 @@ const _handleMutltipleTechniciansTasks = async ({
             taskEntry.jobTypes = jobTypes;
             tasks.push(taskEntry);
         } catch (error) {
+            Sentry.captureException(error);
             // return res.json({ 'status': Status.Error, 'message': error.message });
             throw new Error(error.message);
         }

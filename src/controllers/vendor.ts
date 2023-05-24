@@ -17,6 +17,7 @@ import { NotificationContract, INotificationContract } from '../models/Notificat
 import { _createHubSpotContact, _upgradeHubSpotContact, checkCompanyEmailExists, login } from '../controllers/user';
 import { _handleNotification } from './notification';
 import { Employee } from '../models/Employee';
+import Sentry from "@sentry/node";
 
 // new contractor signup
 export const createContractor = (req: Request, res: Response, sio: any) => {
@@ -530,6 +531,7 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                         })
                     })
                 } catch (err) {
+                    Sentry.captureException(err);
                     return res.json({ 'status': Status.Error, 'message': err.message });
                 }
             } else {
@@ -669,6 +671,7 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
 
         }
     }).catch((err) => {
+        Sentry.captureException(err);
         return res.json({ 'status': Status.Error, 'message': err.message });
     })
 }

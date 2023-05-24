@@ -76,4 +76,13 @@ const TagSchema = new Schema({
 
 })
 
+//Indexes
+TagSchema.index({ jobLocation: 1 });
+TagSchema.index({ jobSite: 1 });
+TagSchema.index({ customer: 1 });
+TagSchema.index({ company: 1 });
+TagSchema.index({ createdBy: 1 });
+TagSchema.index({ 'info.nfcTag': 1 });
+TagSchema.index({ 'info.nfcTag': 1, company: 1 });
+
 export const Tag = mongoose.model<ITag>('Tag', TagSchema)

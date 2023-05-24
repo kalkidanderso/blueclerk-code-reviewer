@@ -14,6 +14,7 @@ import { IPayment, IQBPayment, IQBPaymentMethod, IQBPaymentTxnTypes, Payment, Pa
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
 import { _calculateInvoiceBalance } from '../controllers/payment';
 import { waitTimer } from '../services/helper';
+import Sentry from "@sentry/node";
 
 // ===================================
 // =======[ QUICKBOOK PAYMENT ]=======
@@ -139,6 +140,7 @@ export const _createQBPayment = async (req: Request, res: Response, company: ICo
         // QBooks Payment sync successfully
         return next(null, null, qbPayment);
     }).catch((errMsg) => {
+        Sentry.captureException(errMsg);
         // QBooks Payment sync failed
         return next(Status.Error, errMsg, null);
     })
@@ -295,6 +297,7 @@ export const createQBPayments = async (req: Request, res: Response) => {
             paramPaymentIds = JSON.parse(paramPaymentIds);
         }
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: 'paymentIds is invalid' });
     }
 
@@ -848,6 +851,7 @@ export const deleteQBPayment = async (req: Request, res: Response) => {
             return res.json({ status: Status.Success, message: response });
         })
         .catch((error: any) => {
+            Sentry.captureException(error);
             return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
         })
 
@@ -896,6 +900,7 @@ export const _voidPayment = async (req: Request, res: Response, company: ICompan
             })
                 .then(response => response)
                 .catch(err => {
+                    Sentry.captureException(err);
                     throw new Error(err.Fault?.Error[0]?.Detail
                         || err.Fault?.Error[0]?.Message
                         || err.fault?.error[0]?.detail
@@ -931,6 +936,7 @@ export const getQBPayment = async (req: Request, res: Response) => {
         return res.json({ status: Status.Success, message: response });
     })
     .catch((error: any) => {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }
@@ -955,6 +961,7 @@ export const findQBPayment = async (req: Request, res: Response) => {
         return res.json({ status: Status.Success, data: data ?? null });
     })
     .catch((error: any) => {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }

@@ -16,4 +16,6 @@ export const AssignedVendorSchema = new Schema({
     workTypes: [{ type: Schema.Types.ObjectId, ref: 'WorkType' }]
 })
 
+AssignedVendorSchema.index({ vendor: 1 });
+
 export const AssignedVendor = mongoose.model<IAssignedVendor>('AssignedVendor', AssignedVendorSchema);

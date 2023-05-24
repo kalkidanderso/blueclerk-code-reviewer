@@ -16,4 +16,7 @@ const SessionSchema = new Schema({
 
 });
 
+//Indexes
+SessionSchema.index({ session: 1 });
+
 export const Session = mongoose.model<ISession>('Session', SessionSchema);

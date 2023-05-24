@@ -8,6 +8,7 @@ import { ICompanyAdmin, CompanyAdmin } from '../models/CompanyAdmin'
 import {Tag} from '../models/Tag';
 import {createManager} from '../controllers/user';
 import {CustomerEquipment} from '../models/CustomerEquipment';
+import Sentry from "@sentry/node";
 
 export const checkPermissions = (minAuth: Role) => {
 
@@ -90,6 +91,7 @@ export const checkUserScanPermissions = (permissionId: number) => {
                     }
 
                 }catch (err) {
+                    Sentry.captureException(err);
                     return res.json({"status": Status.Error, "message": err.message});
                 }
             // }

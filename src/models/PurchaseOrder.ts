@@ -120,4 +120,14 @@ const PurchaseOrderSchema = new Schema({
     }
 })
 
+//Indexes
+PurchaseOrderSchema.index({ estimate: 1 });
+PurchaseOrderSchema.index({ equipment: 1 });
+PurchaseOrderSchema.index({ job: 1 });
+PurchaseOrderSchema.index({ customer: 1 });
+PurchaseOrderSchema.index({ company: 1 });
+PurchaseOrderSchema.index({ createdBy: 1 });
+PurchaseOrderSchema.index({ estimate: 1, company: 1 });
+PurchaseOrderSchema.index({ company: 1, equipment: 1 });
+
 export const PurchaseOrder = mongoose.model<IPurchaseOrder>('PurchaseOrder', PurchaseOrderSchema)

@@ -76,4 +76,12 @@ const CustomerContactSchema = new Schema({
 
 });
 
+//Indexes
+CustomerContactSchema.index({ company: 1 });
+CustomerContactSchema.index({ customer: 1 });
+CustomerContactSchema.index({ equipments: 1 });
+CustomerContactSchema.index({ jobLocations: 1 });
+CustomerContactSchema.index({ paymentTerm: 1 });
+CustomerContactSchema.index({ 'info.email': 1 });
+
 export const CustomerContact= User.discriminator<ICustomerContact>('CustomerContact', CustomerContactSchema)

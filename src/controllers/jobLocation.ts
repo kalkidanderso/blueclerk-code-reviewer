@@ -8,6 +8,7 @@ import { Customer } from '../models/Customer'
 import { Contact } from '../models/Contact'
 import { _createQBCustomerJob, _updateQBCustomerJob } from './quickbook.customer';
 import { HomeOwner } from '../models/HomeOwner';
+import Sentry from "@sentry/node";
 
 /**
  * To reset Job Location quickbookId,
@@ -72,6 +73,7 @@ export const get = (req: Request, res: Response) => {
         .exec().then((jobLocations: any) => {
         return res.json(jobLocations);
     }).catch((err) => {
+        Sentry.captureException(err);
         return res.json({'status': Status.Error, 'message': err.message});
     })
 }
@@ -168,6 +170,7 @@ export const create = async (req: Request, res: Response) => {
         }
 
     }).catch((err) => {
+        Sentry.captureException(err);
         return res.json({'status': Status.Error, 'message': err.message});
     })
 }

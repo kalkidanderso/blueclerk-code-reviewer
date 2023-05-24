@@ -41,4 +41,10 @@ const ScanSchema = new Schema({
 
 })
 
+//Indexes
+ScanSchema.index({ job: 1 });
+ScanSchema.index({ equipment: 1 });
+ScanSchema.index({ tag: 1 });
+ScanSchema.index({ user: 1 });
+
 export const Scan = mongoose.model<IScan>('Scan', ScanSchema)
