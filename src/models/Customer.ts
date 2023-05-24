@@ -114,7 +114,10 @@ const CustomerSchema = new Schema({
     profile: {
         firstName: String,
         lastName: String,
-        displayName: String,
+        displayName: {
+            type: String,
+            index: "text"
+        },
         imageUrl: String,
     },
     address: {
@@ -248,5 +251,14 @@ const CustomerSchema = new Schema({
     }
 
 });
+
+//Indexes
+CustomerSchema.index({ itemTier: 1 });
+CustomerSchema.index({ contacts: 1 });
+CustomerSchema.index({ equipments: 1 });
+CustomerSchema.index({ jobLocations: 1 });
+CustomerSchema.index({ paymentTerm: 1 });
+CustomerSchema.index({ isActive: 1 });
+CustomerSchema.index({ contactName: 1 });
 
 export const Customer = mongoose.model<ICustomer>('Customer', CustomerSchema);

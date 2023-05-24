@@ -52,4 +52,8 @@ const PartSchema = new Schema({
     }
 })
 
+//Indexes
+PartSchema.index({ company: 1 });
+PartSchema.index({ company: 1, itemCode: 1 });
+
 export const Part = mongoose.model<IPart>('Part', PartSchema)

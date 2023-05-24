@@ -4,6 +4,7 @@ import { CompanyCard, ICompanyCard } from '../models/CompanyCard'
 import { createCustomer, detachCustomerSource, addCustomerSource, createCard, checkCardExist, _getCustomerCard } from '../services/stripe'
 import { ICompany } from '../models/Company'
 import { ObjectId } from 'mongodb'
+import Sentry from "@sentry/node";
 
 
 export const createCompanyCard = async (req: Request, res: Response) => {
@@ -33,6 +34,7 @@ export const createCompanyCard = async (req: Request, res: Response) => {
         });
 
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({ 'status': Status.Error, 'message': err.message });
     }
 
@@ -95,6 +97,7 @@ const addCardToCompany = async (req: Request, res: Response) => {
             }
         })
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({'status': Status.Error, 'message': err.message});
     }
 
@@ -120,6 +123,7 @@ let addCompanyCard = async (token: any, source: any, res: Response, company: any
     card.save().then(() => {
         return res.json({status: Status.Success, message: "Company card added successfully."});
     }).catch((err) => {
+        Sentry.captureException(err);
         return res.json({'status': Status.Error, 'message': err.message});
     })
 }

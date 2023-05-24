@@ -21,7 +21,7 @@ export interface IJobTypes {
 
 const JobTypeSchema = new Schema({
 
-    title: String,
+    title: { type: String, index: "text" },
     description: String,
     sku: String,
     industry: {
@@ -41,5 +41,12 @@ const JobTypeSchema = new Schema({
 
 }, { timestamps: { createdAt: true, updatedAt: true } }
 )
+
+//Indexes
+JobTypeSchema.index({ industry: 1 });
+JobTypeSchema.index({ createdBy: 1, quickbookId: 1 });
+JobTypeSchema.index({ title: 1, industry: 1, createdBy: 1 });
+JobTypeSchema.index({ createdBy: 1, industry: 1, isActive: 1 });
+
 
 export const JobType = mongoose.model<IJobType>('JobType', JobTypeSchema)

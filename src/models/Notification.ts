@@ -98,4 +98,11 @@ const NotificationSchema = new Schema(
 
 );
 
+//Indexes
+NotificationSchema.index({ company: 1 });
+NotificationSchema.index({ customer: 1 });
+NotificationSchema.index({ customerContact: 1 });
+NotificationSchema.index({ notificationType: 1 });
+NotificationSchema.index({ company: 1, 'dismissedStatus.isDismissed': 1, 'readStatus.isRead': 1 });
+
 export const Notification = mongoose.model<INotification>('Notification', NotificationSchema);

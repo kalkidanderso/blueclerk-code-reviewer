@@ -6,6 +6,7 @@ import { CompanyAdmin } from '../models/CompanyAdmin';
 import { CompanyLocation, ICompanyLocation } from '../models/CompanyLocation';
 import { AssignedVendor, IAssignedVendor } from '../models/AssignedVendor';
 import { checkIfDuplicateExists, removeDuplicate } from '../utils/arrayUtil';
+import Sentry from "@sentry/node";
 
 
 export const getCompanyLocations = async (req: Request, res: Response) => {
@@ -17,6 +18,7 @@ export const getCompanyLocations = async (req: Request, res: Response) => {
 
         return res.json({ status: Status.Success, companyLocations });
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message});
     }
 }
@@ -31,6 +33,7 @@ export const getCompanyLocationById = async (req: Request, res: Response) => {
 
         return res.json({ status: Status.Success, companyLocation });
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message});
     }
 }
@@ -80,6 +83,8 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
 
         return res.json({ status: Status.Success, companyLocation });
     } catch (error) {
+        Sentry.captureException(error);
+
         return res.json({ status: Status.Error, message: error.message });
     }
 }
@@ -131,6 +136,7 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
 
         return res.json({ status: Status.Success, message: 'Company Location updated successfully', companyLocation });
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message });
     }
 }

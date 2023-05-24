@@ -1,6 +1,8 @@
 FROM node:14.20-alpine3.15
 
-ENV NODE_ENV development
+ARG node_environment
+
+ENV NODE_ENV $node_environment
 
 RUN apk update && apk upgrade && \
     apk --no-cache --virtual build-dependencies add \
@@ -8,6 +10,7 @@ RUN apk update && apk upgrade && \
 
 WORKDIR /usr/src/app
 COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "tsconfig.json", "./"]
+RUN npm install -g mongodb
 RUN npm install request
 RUN npm install
 RUN npm rebuild bcrypt --build-from-source
@@ -17,4 +20,5 @@ ENV PM2_SECRET_KEY 88riceao9xegxk2
 COPY . .
 EXPOSE 3006
 RUN npm run tsc
+RUN npm link mongodb
 CMD ["pm2-runtime", "dist/server.js"]

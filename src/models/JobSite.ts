@@ -23,7 +23,7 @@ export interface IJobSite extends Document {
 
 const JobSiteSchema = new Schema({
 
-    name: { type: String, required: false},
+    name: { type: String, required: false, index: 'text'},
     location: {
       type: {
         type: String,
@@ -40,10 +40,10 @@ const JobSiteSchema = new Schema({
       default: true
     },
     address: {
-      city: String,
-      state: String,
-      street: String,
-      zipcode: String
+      city: { type: String, index: "text" },
+      state: { type: String, index: "text" },
+      street: { type: String, index: "text" },
+      zipcode: { type: String, index: "text" }, 
     },
     locationId: {
         type: Schema.Types.ObjectId,
@@ -61,5 +61,15 @@ const JobSiteSchema = new Schema({
     },
 
 }, { timestamps: true });
+
+//Indexes
+JobSiteSchema.index({ locationId: 1 });
+JobSiteSchema.index({ customerId: 1 });
+JobSiteSchema.index({ homeOwner: 1 });
+JobSiteSchema.index({ isActive: 1 });
+JobSiteSchema.index({ _id: 1, customerId: 1, isActive: 1 });
+JobSiteSchema.index({ 'address.street': 1 });
+JobSiteSchema.index({ 'address.city': 1 });
+
 
 export const JobSite = mongoose.model<IJobSite>('JobSite', JobSiteSchema);

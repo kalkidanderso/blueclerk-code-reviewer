@@ -73,4 +73,11 @@ const CustomerEquipmentSchema = new Schema({
 
 })
 
+//Indexes
+CustomerEquipmentSchema.index({ type: 1 });
+CustomerEquipmentSchema.index({ brand: 1 });
+CustomerEquipmentSchema.index({ customer: 1 });
+CustomerEquipmentSchema.index({ jobLocation: 1 });
+CustomerEquipmentSchema.index({ 'info.nfcTag': 1, customer: 1 });
+
 export const CustomerEquipment = mongoose.model<ICustomerEquipment>('CustomerEquipment', CustomerEquipmentSchema)

@@ -3,6 +3,7 @@ import { Status, Messages } from '../common/constants'
 
 import { JobSite, IJobSite } from '../models/JobSite'
 import { JobLocation } from '../models/JobLocation'
+import Sentry from "@sentry/node";
 
 export const get = (req: Request, res: Response) => {
     const { id } = req.params
@@ -84,6 +85,7 @@ export const create = async (req: Request, res: Response) => {
             return res.json({ status: Status.Error, message: 'Subdivision not found.' });
         }
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({ status: Status.Error, message: Messages.InternalServerError });
     }
     if (!jobLocation) return
@@ -139,6 +141,7 @@ export const update = async (req: Request, res: Response) => {
             return res.json({ status: Status.Error, message: 'Subdivision not found.' });
         }
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({ status: Status.Error, message: Messages.InternalServerError });
     }
     if (!jobLocation) return

@@ -80,6 +80,14 @@ const ChatSchema = new Schema(
     { timestamps: true }
 )
 
+
+//Indexes
+ChatSchema.index({ user: 1 });
+ChatSchema.index({ company: 1 });
+ChatSchema.index({ customer: 1 });
+ChatSchema.index({ replyTo: 1 });
+ChatSchema.index({ chatChannel: 1, jobRequest: 1 });
+
 export const Chat = mongoose.model<IChat>('Chat', ChatSchema);
 
 // SERVICE TICKET DISCRIMINATOR
@@ -104,6 +112,7 @@ const JobRequestChatSchema = new Schema({
     }
 
 })
+
 
 export const JobRequestChat = Chat.discriminator<IJobRequestChat>('JobRequestChat', JobRequestChatSchema);
 

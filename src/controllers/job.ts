@@ -21,7 +21,7 @@ import { Scan } from '../models/Scan'
 import { PurchaseOrder } from '../models/PurchaseOrder'
 import { IJobReport, JobReport } from '../models/JobReport'
 import { Item, IItem } from '../models/Item'
-import { ICustomer } from '../models/Customer';
+import { Customer, ICustomer } from '../models/Customer';
 import { CompanyCustomer } from '../models/CompanyCustomer';
 import { INotificationJob, NotificationJob } from '../models/NotificationDiscriminator'
 import { IJobType, JobType } from '../models/JobType';
@@ -31,6 +31,10 @@ import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
 import { _handleNotification } from '../controllers/notification';
 import { IJobRequest, JobRequest } from '../models/JobRequest';
 import { NotificationTypes } from '../models/Notification';
+import { JobLocation } from '../models/JobLocation';
+import { JobSite } from '../models/JobSite';
+import { HomeOwner } from '../models/HomeOwner';
+import Sentry from "@sentry/node";
 
 /**
  * 04-22-2022
@@ -180,6 +184,7 @@ export const createJob = async (req: Request, res: Response) => {
                 technicianId: params.technicianId
             });
         } catch (err) {
+            Sentry.captureException(err);
             return res.json({ status: Status.Error, message: err });
         }
     }
@@ -259,6 +264,7 @@ const _createJob = async (
     try {
         tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob, paramTasks, serviceTicket });
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message });
     }
 
@@ -365,6 +371,8 @@ const _createJob = async (
         createdAt: Date.now(),
         createdBy: user._id,
         track: track,
+        scheduledStartTime: params.scheduledStartTime,
+        scheduledEndTime: params.scheduledEndTime,
     })
 
     let newStartTime: any = null
@@ -373,17 +381,17 @@ const _createJob = async (
         imagesUrl.forEach(imageUrl => job.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }));
     }
 
-    if (params.scheduledStartTime) {
-        let date = new Date(params.scheduleDate)
-        newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
-        job.scheduledStartTime = newStartTime
+    // if (params.scheduledStartTime) {
+    //     let date = new Date(params.scheduleDate)
+    //     newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
+    //     job.scheduledStartTime = newStartTime
 
-    }
-    if (params.scheduledEndTime) {
-        let date = new Date(params.scheduleDate)
-        newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
-        job.scheduledEndTime = newEndTime
-    }
+    // }
+    // if (params.scheduledEndTime) {
+    //     let date = new Date(params.scheduleDate)
+    //     newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
+    //     job.scheduledEndTime = newEndTime
+    // }
     if (params.equipmentId) {
         job.equipmentId = params.equipmentId
     }
@@ -605,6 +613,7 @@ const scheduleEmails = (req: Request, res: Response, jobCreated: IJob, next: (re
             next(req, res, jobCreated)
             return
         }).catch((err) => {
+            Sentry.captureException(err);
             return res.json({ 'status': Status.Error, 'message': err.message });
         })
 
@@ -902,6 +911,10 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
             select: 'profile.displayName'
         })
         .populate({
+            path: 'homeOwner',
+            select: 'profile info contact'
+        })
+        .populate({
             path: 'jobSite',
             select: 'name address location'
         }).skip((currentPage - 1) * pageSize)
@@ -916,9 +929,6 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
 
 }
 export const getJobs = async (req: Request, res: Response) => {
-    try {
-        
-    
     const params = req.body;
     let technicianIds: any[];
     let companyId = req.otherCompanyId || req.companyId;
@@ -940,27 +950,6 @@ export const getJobs = async (req: Request, res: Response) => {
             ]
         }]
     };
-
-    // Check and add if params filter provided
-    if (params.keyword) {
-        console.log(params.keyword)
-        const keywordRegex = { $regex: params.keyword, $options: 'i' };
-        console.log(keywordRegex)
-        filterQuery['$and'].push({
-            $or: [
-                { jobId: keywordRegex },
-                { 'customerObj.profile.displayName': keywordRegex },
-                { 'jobLocationObj.name': keywordRegex },
-                { 'jobLocationObj.address.street': keywordRegex },
-                { 'jobLocationObj.address.city': keywordRegex },
-                { 'jobSiteObj.name': keywordRegex },
-                { 'jobSiteObj.address.street': keywordRegex },
-                { 'jobSiteObj.address.city': keywordRegex },
-                { 'technicianObj.profile.displayName': keywordRegex },
-                { 'contractorsObj.info.companyName': keywordRegex },
-            ]
-        })
-    }
 
     if (params.technicianIds) {
         // Validate is technician ids is already array or object
@@ -997,52 +986,13 @@ export const getJobs = async (req: Request, res: Response) => {
     // Deep clone filterQuery
     const query: any = { $and: [] };
     filterQuery['$and'].map((q: any) => { query['$and'].push({ ...q }) });
-    // Pagination query that default to nothing
-    let paginationQuery = {};
-    // Sort query that default to sort by the recent ones
-    let sortQuery = { updatedAt: -1, _id: -1 };
 
-    if (params.nextCursor) {
-        // Update pagination query to get the next page
-        const cursor = JSON.parse(helper.fromCursorHash(params.nextCursor));
-        const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
-        paginationQuery = {
-            $or: [
-                { updatedAt: { $lt: new Date(cursor.updatedAt) } },
-                { updatedAt: new Date(cursor.updatedAt), _id: { $lt: cursorId } }
-            ]
-        };
-        query['$and'].push({ ...paginationQuery });
-    }
-    if (params.previousCursor) {
-        // Update pagination query to get the previous page
-        const cursor = JSON.parse(helper.fromCursorHash(params.previousCursor));
-        const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
-        paginationQuery = {
-            $or: [
-                { updatedAt: { $gt: new Date(cursor.updatedAt) } },
-                { updatedAt: new Date(cursor.updatedAt), _id: { $gt: cursorId } }
-            ]
-        };
-        query['$and'].push({ ...paginationQuery });
-        // Getting previous page is special, we need to reverse the sort
-        sortQuery = { updatedAt: 1, _id: 1 };
-    }
-
-    // Construct aggreate lookups here to be used multiple times
-    const aggregateLookups = [
-        { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
-        { $lookup: { from: 'servicetickets', localField: 'ticket', foreignField: '_id', as: 'ticketObj' } },
-        { $lookup: { from: 'joblocations', localField: 'jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
-        { $lookup: { from: 'jobsites', localField: 'jobSite', foreignField: '_id', as: 'jobSiteObj' } },
-        { $lookup: { from: 'users', localField: 'tasks.technician', foreignField: '_id', as: 'technicianObj' } },
-        { $lookup: { from: 'companies', localField: 'tasks.contractor', foreignField: '_id', as: 'contractorsObj' } },
-        { $lookup: { from: 'jobtypes', localField: 'tasks.jobTypes.jobType', foreignField: '_id', as: 'jobTypeObj' } }
-    ]
+    
 
     // Filter jobs using aggregate to be search to another collection
     let ids: any[] = [];
     if(params.keyword){
+        const keywordRegex = { $regex: params.keyword, $options: 'i' };
         ids =  await Job.aggregate([
             {/*search in jobs*/
                 $match: {
@@ -1057,12 +1007,8 @@ export const getJobs = async (req: Request, res: Response) => {
                     coll: "customers", 
                     pipeline: [
                        {
-                        $search: {
-                          index: "customer_displayName",
-                          autocomplete: {
-                            query:  params.keyword,
-                            path:"profile.displayName"
-                                        }
+                        $match: {
+                          "profile.displayName": keywordRegex,
                                     }
                     }
             ,{$group: { _id:0, "customer": {$addToSet:"$_id"}}},
@@ -1073,12 +1019,8 @@ export const getJobs = async (req: Request, res: Response) => {
                     coll: "joblocations", 
                     pipeline: [
                         {
-                        $search: {
-                          index: "joblocations_name",
-                          autocomplete: {
-                            query: params.keyword,
-                            path:"name"
-                                        }
+                        $match: {
+                          name: keywordRegex,
                                     }
                     },{$group: { _id:0, jobLocation: {$addToSet:"$_id"}}},
                 {$project: {_id:0, jobLocation:1}}]}
@@ -1088,12 +1030,8 @@ export const getJobs = async (req: Request, res: Response) => {
                     coll: "users", 
                     pipeline: [
                        {
-                        $search: {
-                          index: "users_task_technician",
-                          autocomplete: {
-                            query: params.keyword,
-                            path:"profile.displayName"
-                                        }
+                        $match: {
+                          "profile.displayName":keywordRegex,
                                     }
                     },{$group: { _id:0, "technician": {$addToSet:"$_id"}}},
                 {$project: {_id:0, "technician":1}}]}
@@ -1103,27 +1041,19 @@ export const getJobs = async (req: Request, res: Response) => {
                     coll: "jobsites", 
                     pipeline: [
                        {
-                        $search: {
-                          index: "jobsite_details",
-                          autocomplete: {
-                            query: params.keyword,
-                            path:"name"
-                                        }
+                        $match: {
+                          name: keywordRegex,
                                     }
                     },{$group: { _id:0, "jobSite": {$addToSet:"$_id"}}},
                 {$project: {_id:0, "jobSite":1}}]}
             },
             {/*company*/
-                $unionWith: { 
+                $unionWith: {
                     coll: "companies", 
                     pipeline: [
                        {
-                        $search: {
-                          index: "companyName",
-                          autocomplete: {
-                            query: params.keyword,
-                            path:"info.companyName"
-                                        }
+                        $match: {
+                            "info.companyName": keywordRegex,
                                     }
                     },{$group: { _id:0, "companyName": {$addToSet:"$_id"}}},
                 {$project: {_id:0, "companyName":1}}]}
@@ -1131,116 +1061,158 @@ export const getJobs = async (req: Request, res: Response) => {
             
             ]);
     }
-    // console.log('totalJobs', totalJobs)
+    const result = ids.reduce((acc, curr) => {
+        const key = Object.keys(curr)[0];
+        const value = curr[key];
+        acc[key] = value;
+        return acc;
+      }, {});
+      
+      if (!result.customer) result.customer = [];
+      if (!result.jobLocation) result.jobLocation = [];
+      if (!result.technician) result.technician = [];
+      if (!result.jobSite) result.jobSite = [];
+      
     // Create an empty $or query array
 const orQuery = [];
 
 // Add $in operators for each field in ids array with checks for empty arrays
-if (ids.length > 0 && ids[0].customer.length > 0) {
-  orQuery.push({ "customer": { $in: ids[0].customer } });
+if (result?.customer?.length > 0) {
+  orQuery.push({ "customer": { $in: result?.customer } });
 }
-if (ids.length > 2 && ids[2].technician.length > 0) {
-  orQuery.push({ "tasks.technician": { $in: ids[2].technician } });
+if (result?.jobLocation?.length > 0) {
+  orQuery.push({ "jobLocation": { $in: result?.jobLocation } });
 }
-if (ids.length > 1 && ids[1].jobLocation.length > 0) {
-  orQuery.push({ "jobLocation": { $in: ids[1].jobLocation } });
+if (result?.technician?.length > 0) {
+  orQuery.push({ "tasks.technician": { $in: result?.technician } });
 }
-
-const matchStage = orQuery.length > 0 ? { $match: { $or: orQuery } } : { $match: {} };
+if (result?.jobSite?.length > 0) {
+  orQuery.push({ "jobSite": { $in: result?.jobSite } });
+}
+if (orQuery.length > 0) {
+    filterQuery['$and'].push({ $or: orQuery });
+}
+const matchStage = { $match: filterQuery };
     const jobsAggregate: IJob[] = await Job.aggregate([
         matchStage,
         {
             $sort:{"updatedAt":-1}
         },
-        {
-            $skip: 0
-        },
-        {
-            $limit:10
-        },
-        { $lookup: {
-                   from: "customers",
-                   localField: "customer",
-                   foreignField: "_id",
-                   as: "customerobj"
-                 }
-        },
+        { $skip : (currentPage  * pageSize) },
+        { $limit: params.pageSize || DefaultPageSize },
         {
             $lookup: {
-                   from: "users",
-                   localField: "tasks.technician",
-                   foreignField: "_id",
-                   as: "technicianObj"
+                from: 'customers',
+                localField: 'customer',
+                foreignField: '_id',
+                as: 'customerObj',
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            profile: 1,
+                            info: 1,
+                        },
+                    },
+                ],
             }
         },
         {
             $lookup: {
-                   from: "joblocations",
-                   localField: "jobLocation",
-                   foreignField: "_id",
-                   as: "joblocationObj"
-                 }
+                from: 'servicetickets',
+                localField: 'ticket',
+                foreignField: '_id',
+                as: 'ticketObj'
+            }
         },
         {
             $lookup: {
-                   from: "joblocations",
-                   localField: "jobLocation",
-                   foreignField: "_id",
-                   as: "joblocationObj"
-                 }
+                from: 'joblocations',
+                localField: 'jobLocation',
+                foreignField: '_id',
+                as: 'jobLocationObj',
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            name: 1,
+                            address: 1,
+                        },
+                    },
+                ],
+            }
         },
         {
             $lookup: {
-                   from: "jobtypes",
-                   localField: "tasks.jobTypes.jobType",
-                   foreignField: "_id",
-                   as: "jobtypeObj"
-                 }
+                from: 'jobsites',
+                localField: 'jobSite',
+                foreignField: '_id',
+                as: 'jobSiteObj'
+            }
         },
         {
             $lookup: {
-                   from: "jobsites",
-                   localField: "jobSite",
-                   foreignField: "_id",
-                   as: "jobsiteObj"
-                 }
+                from: 'users',
+                localField: 'tasks.technician',
+                foreignField: '_id',
+                as: 'technicianObj',
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            profile: 1,
+                            info: 1,
+                        },
+                    },
+                ],
+            }
         },
         {
             $lookup: {
-                   from: "servicetickets",
-                   localField: "ticket",
-                   foreignField: "_id",
-                   as: "ticketObj"
-                 }
-        }, 
+                from: 'companies',
+                localField: 'tasks.contractor',
+                foreignField: '_id',
+                as: 'contractorsObj'
+            }
+        },
         {
-        $lookup: {
-          from: "companies",
-          localField: "tasks.contractor",
-          foreignField: "_id",
-          as: "contractorsObj"
+            $lookup: {
+                from: 'homeowners',
+                localField: 'homeOwner',
+                foreignField: '_id',
+                as: 'homeOwnerObj'
+            }
+        },
+        {
+            $lookup: {
+                from: 'jobtypes',
+                localField: 'tasks.jobTypes.jobType',
+                foreignField: '_id',
+                as: 'jobTypeObj'
             }
         },
         {
             $project: {
-                "_id":0,
+                "_id":1,
                 "jobId":1,
-                "jobstatus":"$status",
-                "jobCreatedby":"$createdBy",
-                "jobDescription":"$description",
-                "jobTask":"$tasks",
-                "jobTrack":"$track",
-                "customerName":{$arrayElemAt: ["$customerobj.profile.displayName",0]},
-                "technicianName":{$arrayElemAt: ["$technicianObj.profile.displayName",0]},
-                "subdivision":{$ifNull: [{$arrayElemAt: ["$joblocationObj.name",0]},""]},
+                "status":"$status",
+                "createdBy":"$createdBy",
+                "description":"$description",
+                "tasks":"$tasks",
+                "track":"$track",
+                "customerObj":"$customerObj",
+                "jobLocationObj":"$jobLocationObj",
+                "jobSiteObj":"$jobSiteObj",
                 "scheduledStartTime":"$scheduledStartTime",
                 "scheduledEndTime":"$scheduledEndTime",
-                "jobtypeObj":{$ifNull: [{$arrayElemAt: ["$jobtypeObj.title",0]},""]},            
-                "jobSiteName":{$ifNull: [{$arrayElemAt: ["$jobsiteObj.name",0]},""]},
-                "customerPO":{$ifNull: [{$arrayElemAt: ["$ticketObj.customerPO",0]},""]},
-                "employeetype":{$ifNull: [{$arrayElemAt: ["$contractorsObj.type",0]},""]}
+                "technicianObj":"$technicianObj",
+                "contractorsObj":"$contractorsObj",
+                "jobTypeObj":"$jobTypeObj",
+                "ticketObj":"$ticketObj",
+                "scheduleDate":"$scheduleDate",
             }
-        }    ]);
+        }
+    ]);
 
     const totalJobs = await Job.aggregate([
         matchStage,
@@ -1255,9 +1227,9 @@ const matchStage = orQuery.length > 0 ? { $match: { $or: orQuery } } : { $match:
         total: totalJobs[0]?.count,
         filterQuery,
     });
-} catch (error) {
-    console.log(error)
-}}
+} 
+
+
 
 export const getJobsByTechnicianId = (req: Request, res: Response) => {
 
@@ -1802,6 +1774,7 @@ export const getJobReportDetails = (req: Request, res: Response) => {
             }
             return res.json({ 'status': Status.Success, 'message': 'No report was found!' });
         }).catch((err) => {
+            Sentry.captureException(err);
             return res.json({ 'status': Status.Error, 'message': err.message });
         });
 }
@@ -1817,6 +1790,7 @@ export const deleteJobReportById = async (req: Request, res: Response) => {
     JobReport.deleteOne({ _id: new ObjectId(jobReportId), $or: [{ contractor: companyId }, { company: companyId }] }).then(() => {
         return res.json({ 'status': Status.Success, 'message': 'Job Report Has Been Deleted Successfully!' });
     }).catch((err) => {
+        Sentry.captureException(err);
         return res.json({ 'status': Status.Error, 'message': err.message });
     });
 }
@@ -2029,6 +2003,18 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 //data.jobLocation = null;
                 //data.jobSite = null;
             }
+            if(params.homeOwnerId) {
+                const newHomeOwner = await HomeOwner.findOne({ _id: params.homeOwnerId });
+                if(!newHomeOwner) {
+                    return res.json({ 'status': Status.NotFound, 'message': 'Provided homeOwnerId does not correspond with any home owner' });
+                }
+                data.homeOwner = new ObjectId(params.homeOwnerId);
+            }
+            else {
+                if(data.isHomeOccupied === true && !job.homeOwner) {
+                    return res.json({ 'status': Status.Error, 'message': 'Home Owner is required when home is occupied' });
+                }
+            }
             if (params.homeJobLocationId) {
                 data.homeJobLocation = params.homeJobLocationId
             }
@@ -2221,9 +2207,11 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
 
                 return res.json({ 'status': Status.Success, 'message': 'Job updated successfully.', job: updatedJob });
             } catch (err) {
+                Sentry.captureException(err);
                 return res.json({ 'status': Status.Error, 'message': err.message });
             }
         }).catch((err) => {
+            Sentry.captureException(err);
             return res.json({ 'status': Status.Error, 'message': err.message });
         })
 
@@ -2302,7 +2290,8 @@ export const startJob = (req: Request, res: Response) => {
                             }
 
                             return res.json({ 'status': Status.Success, 'message': 'Job started successfully.' })
-                        });
+                        }
+                    );
                 }
             )
         }
@@ -2575,6 +2564,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
         // Save the job and the tasks inside
         await job.save();
     } catch (err) {
+        Sentry.captureException(err);
         if (err) return res.json({ status: Status.Error, message: err.message });
     }
 
@@ -2605,6 +2595,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
             // Save the linked job and the tasks inside
             await linkedJob.save();
         } catch (err) {
+            Sentry.captureException(err);
             if (err) return res.json({ status: Status.Error, message: err.message });
         }
 
@@ -2696,6 +2687,7 @@ export const editJob = async (req: Request, res: Response) => {
                 try {
                     tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob: job, paramTasks, serviceTicket });
                 } catch (error) {
+                    Sentry.captureException(error);
                     return res.json({ status: Status.Error, message: error.message });
                 }
                 job.tasks = tasks;
@@ -2850,10 +2842,12 @@ export const editJob = async (req: Request, res: Response) => {
                             t.homeJobLocation = params.homeJobLocation;
                         }
                         t.save().then(() => { }).catch((err) => {
+                            Sentry.captureException(err);
                             return res.json({ 'status': Status.Error, 'message': err.message });
                         })
                     }
                 }).catch((err) => {
+                    Sentry.captureException(err);
                     return res.json({ 'status': Status.Error, 'message': err.message });
                 });
             }
@@ -3026,7 +3020,7 @@ export const getJobDetails = (req: Request, res: Response) => {
         })
         .populate({
             path: 'homeOwner',
-            populate: 'contacts'
+            select: 'profile info contact'
         })
         .populate({
             path: 'customerContactId',
@@ -3106,6 +3100,7 @@ export const getJobDetails = (req: Request, res: Response) => {
 
         })
         .catch((error: any) => {
+            Sentry.captureException(error);
             if (error.message != undefined) {
                 return res.json({ 'status': Status.Error, 'message': error.message })
             } else {
@@ -3296,6 +3291,7 @@ export const sendJobReport = (req: Request, res: Response) => {
                         ccEmails.push(user.auth?.email);
                     }
                 } catch (error) {
+                    Sentry.captureException(error);
                     return res.json({ status: Status.Error, message: Messages.GenericError });
                 }
 
@@ -3322,12 +3318,14 @@ export const sendJobReport = (req: Request, res: Response) => {
                 await report.save().then((r) => {
                     return res.json({ 'status': Status.Success, 'message': 'Job Report Has Been Sent Successfully!' })
                 }).catch((err) => {
+                    Sentry.captureException(err);
                     return res.json({ 'status': Status.Error, 'message': err.message });
                 });
             } else {
                 return res.json({ 'status': Status.Error, 'message': "Report was not found" });
             }
         }).catch((err) => {
+            Sentry.captureException(err);
             return res.json({ 'status': Status.Error, 'message': err.message });
         });
 }
@@ -3571,6 +3569,7 @@ export const updateJobTime = (req: Request, res: Response) => {
             return res.json({ 'status': Status.Success, 'message': 'Job time updated successfully.' })
         })
         .catch((err: any) => {
+            Sentry.captureException(err);
             if (err.message != undefined) {
                 return res.json({ 'status': Status.Error, 'message': err.message })
 
@@ -3748,6 +3747,7 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
 
         await job.save();
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({ status: Status.Error, message: err.message });
     }
 
@@ -3926,6 +3926,7 @@ const _handleMutltipleTechniciansTasks = async ({
             taskEntry.jobTypes = jobTypes;
             tasks.push(taskEntry);
         } catch (error) {
+            Sentry.captureException(error);
             // return res.json({ 'status': Status.Error, 'message': error.message });
             throw new Error(error.message);
         }

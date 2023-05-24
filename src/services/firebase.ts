@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import { getMessaging } from 'firebase-admin/messaging';
 import { ChatChannels, IChat } from '../models/Chat';
+import Sentry from "@sentry/node";
 
 /**
  * Initialize Firebase instance and app,
@@ -93,6 +94,7 @@ export const sendNotification = async ({
         console.log('Successfully sent message:', response);
     })
     .catch((error) => {
+        Sentry.captureException(error);
         console.log('Error sending message:', error);
     });
 

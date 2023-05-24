@@ -124,7 +124,10 @@ const JobSchema = new Schema({
         type: Date,
         required: false
     },
-    jobId: String,
+    jobId: {
+        type: String,
+        index: "text"
+    },
     parentJob: {
         type: Schema.Types.ObjectId,
         ref: 'Job'
@@ -146,7 +149,8 @@ const JobSchema = new Schema({
         // TODO: To be deprecated
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: false
+        required: false,
+        index: true
     },
     contractor: {
         // TODO: To be deprecated
@@ -157,7 +161,8 @@ const JobSchema = new Schema({
     customer: {
         type: Schema.Types.ObjectId,
         ref: 'Customer',
-        required: false
+        required: false,
+        index:true
     },
     jobLocation: {
         type: Schema.Types.ObjectId,
@@ -422,5 +427,31 @@ const JobSchema = new Schema({
         required: false
     }
 }, { timestamps: { updatedAt: true } })
+
+//Indexes
+JobSchema.index({ parentJob: 1 });
+JobSchema.index({ employeeType: 1 });
+JobSchema.index({ image: 1 });
+JobSchema.index({ ticket: 1 });
+JobSchema.index({ request: 1 });
+JobSchema.index({ equipmentId: 1 });
+JobSchema.index({ technician: 1 });
+JobSchema.index({ contractor: 1 });
+JobSchema.index({ customer: 1 });
+JobSchema.index({ jobLocation: 1 });
+JobSchema.index({ jobSite: 1 });
+JobSchema.index({ homeOwner: 1 });
+JobSchema.index({ homeJobLocation: 1 });
+JobSchema.index({ homeJobSite: 1 });
+JobSchema.index({ customerContactId: 1 });
+JobSchema.index({ company: 1, 'tasks.technician': 1});
+JobSchema.index({"tasks.contractor": 1})
+JobSchema.index({ 'tasks.technician': 1, technician: 1});
+JobSchema.index({ contractor: 1, 'tasks.contractor': 1, company: 1, customer: 1});
+JobSchema.index({ contractor: 1, 'tasks.contractor': 1, company: 1, updatedAt: -1 });
+JobSchema.index({ contractor: 1, 'tasks.contractor': 1, company: 1, scheduleDate: 1, customer: 1});
+JobSchema.index({ contractor: 1, 'tasks.contractor': 1, company: 1, scheduleDate: 1, customer: 1, jobId: 1});
+JobSchema.index({ contractor: 1, 'tasks.contractor': 1, company: 1, scheduleDate: 1, customer: 1, jobId: 1, _id: -1});
+
 
 export const Job = mongoose.model<IJob>('Job', JobSchema)

@@ -44,4 +44,8 @@ const OrderSchema = new Schema({
     stripeChargeId: String
 })
 
+
+//Indexes
+OrderSchema.index({ company: 1 });
+
 export const Order = mongoose.model<IOrder>('Order', OrderSchema )

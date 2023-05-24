@@ -32,7 +32,7 @@ export interface IJobLocation extends Document {
 
 const JobLocationSchema = new Schema({
 
-    name: { type: String, required: true},
+    name: { type: String, required: true, index: "text" },
     contacts: [{
       type: Schema.Types.ObjectId,
       ref: 'Contact',
@@ -88,5 +88,19 @@ const JobLocationSchema = new Schema({
     quickbookId: String
 
 }, { timestamps: { createdAt: true, updatedAt: true } });
+
+//Indexes
+JobLocationSchema.index({ contacts: 1 });
+JobLocationSchema.index({ jobSites: 1 });
+JobLocationSchema.index({ companyId: 1 });
+JobLocationSchema.index({ customerId: 1 });
+JobLocationSchema.index({ homeOwner: 1 });
+JobLocationSchema.index({ isActive: 1 });
+JobLocationSchema.index({ contacts: 1 });
+JobLocationSchema.index({ 'address.street': 1 });
+JobLocationSchema.index({ 'address.city': 1 });
+JobLocationSchema.index({ _id: 1, customerId: 1, isActive: 1 })
+JobLocationSchema.index({ companyId: 1, quickbookId: 1 })
+JobLocationSchema.index({ customerId: 1, companyId: 1, name: 1, address: 1, location: 1 })
 
 export const JobLocation = mongoose.model<IJobLocation>('JobLocation', JobLocationSchema)

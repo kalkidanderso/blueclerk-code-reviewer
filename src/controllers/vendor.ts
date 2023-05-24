@@ -13,18 +13,19 @@ import {
 } from '../services/aws';
 import {addCustomerAndCharge, chargeSubscription, createStripeInvoiceItem} from '../services/stripe';
 
-import {Company, ICompany} from '../models/Company';
-import {IUser} from '../models/User';
-import {CompanyAdmin, ICompanyAdmin} from '../models/CompanyAdmin';
-import {CompanyCustomer} from '../models/CompanyCustomer';
-import {CompanyCard} from '../models/CompanyCard';
-import {CompanyInvoice, ICompanyInvoice} from '../models/CompanyInvoice';
-import {Contract, IContract} from '../models/Contract';
-import {NotificationTypes} from '../models/Notification';
-import {NotificationContract, INotificationContract} from '../models/NotificationDiscriminator';
-import {_createHubSpotContact, _upgradeHubSpotContact, checkCompanyEmailExists, login} from '../controllers/user';
-import {_handleNotification} from './notification';
-import {Employee} from '../models/Employee';
+import { Company, ICompany } from '../models/Company';
+import { IUser } from '../models/User';
+import { CompanyAdmin, ICompanyAdmin } from '../models/CompanyAdmin';
+import { CompanyCustomer } from '../models/CompanyCustomer';
+import { CompanyCard } from '../models/CompanyCard';
+import { CompanyInvoice, ICompanyInvoice } from '../models/CompanyInvoice';
+import { Contract, IContract } from '../models/Contract';
+import { NotificationTypes } from '../models/Notification';
+import { NotificationContract, INotificationContract } from '../models/NotificationDiscriminator';
+import { _createHubSpotContact, _upgradeHubSpotContact, checkCompanyEmailExists, login } from '../controllers/user';
+import { _handleNotification } from './notification';
+import { Employee } from '../models/Employee';
+import Sentry from "@sentry/node";
 
 // new contractor signup
 export const createContractor = (req: Request, res: Response, sio: any) => {
@@ -580,7 +581,8 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                         })
                     })
                 } catch (err) {
-                    return res.json({'status': Status.Error, 'message': err.message});
+                    Sentry.captureException(err);
+                    return res.json({ 'status': Status.Error, 'message': err.message });
                 }
             } else {
                 contract.updateOne(
@@ -741,7 +743,8 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
 
         }
     }).catch((err) => {
-        return res.json({'status': Status.Error, 'message': err.message});
+        Sentry.captureException(err);
+        return res.json({ 'status': Status.Error, 'message': err.message });
     })
 }
 

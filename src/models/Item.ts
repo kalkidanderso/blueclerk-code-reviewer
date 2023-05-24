@@ -119,4 +119,11 @@ const ItemSchema = new Schema({
 }, { timestamps: { createdAt: true, updatedAt: true } }
 )
 
+//Indexes
+ItemSchema.index({ company: 1, isActive: 1 });
+ItemSchema.index({ company: 1, isActive: 1 });
+ItemSchema.index({ company: 1, name: 1 });
+ItemSchema.index({ company: 1, isActive: 1, isDiscountItem: 1 });
+ItemSchema.index({ jobType: 1 });
+
 export const Item = mongoose.model<IItem>('Item', ItemSchema)

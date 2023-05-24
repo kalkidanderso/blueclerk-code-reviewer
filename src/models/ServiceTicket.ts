@@ -60,7 +60,7 @@ const ServiceTicketSchema = new Schema({
         ref: 'User',
         required: true
     },
-    note: String,
+    note: {type: String, index: "text"},
     customerContactId: {
         type: Schema.Types.ObjectId,
         ref: 'Contact',
@@ -161,5 +161,21 @@ const ServiceTicketSchema = new Schema({
     }
 
 })
+
+//Indexes
+ServiceTicketSchema.index({ customer: 1 });
+ServiceTicketSchema.index({ createdBy: 1 });
+ServiceTicketSchema.index({ customerContactId: 1 });
+ServiceTicketSchema.index({ company: 1 });
+ServiceTicketSchema.index({ technician: 1 });
+ServiceTicketSchema.index({ editedBy: 1 });
+ServiceTicketSchema.index({ jobLocation: 1 });
+ServiceTicketSchema.index({ jobSite: 1 });
+ServiceTicketSchema.index({ homeOwner: 1 });
+ServiceTicketSchema.index({ homeJobLocation: 1 });
+ServiceTicketSchema.index({ homeJobSite: 1 });
+ServiceTicketSchema.index({ jobType: 1 });
+ServiceTicketSchema.index({ item: 1 });
+ServiceTicketSchema.index({ company: 1, jobCreated: 1, status: 1 });
 
 export const ServiceTicket = mongoose.model<IServiceTicket>('ServiceTicket', ServiceTicketSchema)
