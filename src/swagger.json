@@ -5133,7 +5133,7 @@
                 "type": "object",
                 "required": [
                   "firstName",
-                  "addressStreet"
+                  "address"
                 ],
                 "properties": {
                   "firstName": {
@@ -5153,26 +5153,13 @@
                   "fax": {
                     "type": "string"
                   },
-                  "addressStreet": {
-                    "type": "string"
+                  "address": {
+                    "type": "string",
+                    "description": "Job site Mongo ID"
                   },
-                  "addressUnit": {
-                    "type": "string"
-                  },
-                  "addressCity": {
-                    "type": "string"
-                  },
-                  "addressState": {
-                    "type": "string"
-                  },
-                  "addressZipCode": {
-                    "type": "string"
-                  },
-                  "longitude": {
-                    "type": "string"
-                  },
-                  "latitude": {
-                    "type": "string"
+                  "subdivision": {
+                    "type": "string",
+                    "description": "Job address Mongo ID"
                   },
                   "image": {
                     "type": "string",
@@ -5188,6 +5175,168 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Home Owner"
+        ],
+        "summary": "Get Home Owner by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "description": "Home owner ID",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Home Owner"
+        ],
+        "summary": "Update existing Home Owner",
+        "description": "Id is required and the other parameters (fields to update) are optional. However, if provided, these must not be idle strings",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "fax": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "type": "string",
+                    "description": "Job site Mongo ID"
+                  },
+                  "subdivision": {
+                    "type": "string",
+                    "description": "Job address Mongo ID"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Home Owner"
+        ],
+        "summary": "Delete Home Owner given his ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Home Owner ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/homeOwner/all": {
+      "get": {
+        "tags": [
+          "Home Owner"
+        ],
+        "summary": "Gets all Home Owner by ID",
+        "parameters": [
+          {
+            "name": "keyword",
+            "description": "To filter the home owners by firstname, lastname, phone, fax, or email. Idle for retrieving all.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "address",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subdivision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -7992,6 +8141,13 @@
                     "type": "string",
                     "description": "Json string of the jobTypes e.g [{\"jobTypeId\": \"608ae3aeffe3cf17946a08b1\"},{\"jobTypeId\": \"60b90cf138045631806b8e6e\"}]. Id of a job type from the list received by /getJobTypes api"
                   },
+                  "isHomeOccupied": {
+                    "type": "boolean"
+                  },
+                  "homeOwnerId": {
+                    "type": "string",
+                    "description": "Id of a home owner"
+                  },
                   "images": {
                     "type": "array",
                     "items": {
@@ -9167,6 +9323,10 @@
                   },
                   "isHomeOccupied": {
                     "type": "boolean"
+                  },
+                  "homeOwnerId": {
+                    "type": "string",
+                    "description": "Id of a home owner"
                   },
                   "homeJobLocationId": {
                     "type": "string",
