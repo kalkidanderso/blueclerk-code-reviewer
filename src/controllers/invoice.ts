@@ -2628,7 +2628,8 @@ export const getInvoices = async (req: Request, res: Response) => {
         { path: 'customerContactId', select: 'name phone email' },
         { path: 'jobLocation', select: 'name address location' },
         { path: 'jobSite', select: 'name address location' },
-        { path: 'companyLocation', select: 'billingAddress' },
+        { path: 'companyLocation', select: 'billingAddress name isMainLocation' },
+        { path: 'workType', select: 'title' },
     ]);
 
     // // Filter jobs using aggregate to be search to another collection

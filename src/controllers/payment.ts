@@ -140,6 +140,14 @@ export const getPayments = (req: Request, res: Response) => {
             path: 'createdBy',
             select: 'profile.displayName auth.email'
         })
+        .populate({
+            path: 'companyLocation',
+            select: 'billingAddress name isMainLocation'
+        })
+        .populate({
+            path: 'workType',
+            select: 'title'
+        })
         .then(async (payments: IPayment[] | null) => {
 
             // Retrieve number of the unsynced invoices
