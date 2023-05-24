@@ -257,4 +257,10 @@ UserSchema.methods.jwt = function(req: Request) {
 
 }
 
+//Indexes
+UserSchema.index({ contacts: 1 });
+UserSchema.index({ 'profile.displayName': 1 });
+UserSchema.index({ 'auth.email': 1 });
+UserSchema.index({ 'auth.socialId': 1, 'auth.connectorType': 1 });
+
 export const User = mongoose.model<IUser>('User', UserSchema)

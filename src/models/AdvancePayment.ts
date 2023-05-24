@@ -81,6 +81,17 @@ const AdvancePaymentEmployeeSchema = new Schema({
     }
 });
 
+//Indexes
+AdvancePaymentSchema.index({ company: 1 });
+AdvancePaymentSchema.index({ contractor: 1 });
+AdvancePaymentSchema.index({ employee: 1 });
+AdvancePaymentSchema.index({ paidAt: 1 });
+AdvancePaymentSchema.index({ is_void: 1, paidAt: 1 });
+AdvancePaymentSchema.index({ company: 1, contractor: 1, is_void: 1, paidAt: 1 });
+AdvancePaymentSchema.index({ company: 1, contractor: 1, is_void: 1, appliedAt: 1 });
+AdvancePaymentSchema.index({ company: 1, employee: 1, is_void: 1, paidAt: 1 });
+AdvancePaymentSchema.index({ company: 1, employee: 1, is_void: 1, appliedAt: 1 });
+
 export const AdvancePayment = mongoose.model<IAdvancePayment>('AdvancePayment', AdvancePaymentSchema);
 export const AdvancePaymentVendor = AdvancePayment.discriminator<IAdvancePaymentVendor>('AdvancePaymentVendor', AdvancePaymentVendorSchema);
 export const AdvancePaymentEmployee = AdvancePayment.discriminator<IAdvancePaymentEmployee>('AdvancePaymentEmployee', AdvancePaymentEmployeeSchema);

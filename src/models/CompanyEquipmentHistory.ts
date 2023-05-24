@@ -26,4 +26,7 @@ const CompanyEquipmentHistorySchema = new Schema({
 
 })
 
+CompanyEquipmentHistorySchema.index({ companyEquipment: 1 });
+CompanyEquipmentHistorySchema.index({ createdBy: 1 });
+
 export const CompanyEquipmentHistory = mongoose.model<ICompanyEquipmentHistory>('CompanyEquipmentHistory', CompanyEquipmentHistorySchema)

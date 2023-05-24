@@ -69,4 +69,16 @@ const JobRouteSchema = new Schema(
 
 )
 
+//Indexes
+JobRouteSchema.index({ company: 1 });
+JobRouteSchema.index({ technician: 1 });
+JobRouteSchema.index({ contractor: 1 });
+JobRouteSchema.index({ createdBy: 1 });
+JobRouteSchema.index({ updatedBy: 1 });
+JobRouteSchema.index({ company: 1, 'jobs.company': 1, scheduleDate: 1 });
+JobRouteSchema.index({ technician: 1, scheduleDate: 1 });
+JobRouteSchema.index({ company: 1, employeeType: 1, technician: 1, contractor: 1, 'jobs.company': 1, scheduleDate: 1 });
+JobRouteSchema.index({ scheduleDate: 1 });
+JobRouteSchema.index({ scheduleDate: -1 });
+
 export const JobRoute = mongoose.model<IJobRoute>('JobRoute', JobRouteSchema);

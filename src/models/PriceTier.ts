@@ -39,4 +39,8 @@ const PriceTierSchema = new Schema(
 
 )
 
+//Indexes
+PriceTierSchema.index({ companyId: 1 });
+PriceTierSchema.index({ inactiveBy: 1 });
+
 export const PriceTier = mongoose.model<IPriceTier>('PriceTier', PriceTierSchema);

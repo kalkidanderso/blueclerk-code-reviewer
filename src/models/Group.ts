@@ -25,4 +25,9 @@ const GroupSchema = new Schema({
 
 })
 
+//Indexes
+GroupSchema.index({ company: 1 });
+GroupSchema.index({ manager: 1 });
+GroupSchema.index({ members: 1 });
+
 export const Group = mongoose.model<IGroup>('Group', GroupSchema)
