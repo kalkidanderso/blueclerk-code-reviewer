@@ -47,4 +47,7 @@ const CommissionHistorySchema = new Schema({
 
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
+//Indexes
+CommissionHistorySchema.index({ effectiveDate: 1 });
+
 export const CommissionHistory = mongoose.model<ICommissionHistory>('CommissionHistory', CommissionHistorySchema);

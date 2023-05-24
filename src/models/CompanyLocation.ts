@@ -86,4 +86,10 @@ const CompanyLocationSchema = new Schema({
     assignedEmployees: [AssignedEmployeeSchema]
 })
 
+//Indexes
+CompanyLocationSchema.index({ company: 1 });
+CompanyLocationSchema.index({ workTypes: 1 });
+CompanyLocationSchema.index({ company: 1, isActive: 1, isMainLocation: 1 });
+CompanyLocationSchema.index({ company: 1, isActive: 1, isMainLocation: 1, _id: -1 });
+
 export const CompanyLocation = mongoose.model<ICompanyLocation>('CompanyLocation', CompanyLocationSchema);

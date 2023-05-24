@@ -74,4 +74,8 @@ const EmailDefaultSchema = new Schema(
 
 )
 
+//Indexes
+EmailDefaultSchema.index({ updatedBy: 1 });
+EmailDefaultSchema.index({ company: 1, emailType: 1 });
+
 export const EmailDefault = mongoose.model<IEmailDefault>('EmailDefault', EmailDefaultSchema);

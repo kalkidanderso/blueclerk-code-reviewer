@@ -77,4 +77,11 @@ const PaymentTermSchema = new Schema(
 
 )
 
+//Indexes
+PaymentTermSchema.index({ company: 1 });
+PaymentTermSchema.index({ createdBy: 1 });
+PaymentTermSchema.index({ isActive: 1 });
+PaymentTermSchema.index({ company: 1, isActive: 1 });
+PaymentTermSchema.index({ company: 1, quickbookId: 1 });
+
 export const PaymentTerm = mongoose.model<IPaymentTerm>('PaymentTerm', PaymentTermSchema);
