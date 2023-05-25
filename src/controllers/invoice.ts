@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import moment from 'moment';
 import fs from 'fs';
-import pdfmake from 'pdfmake';
 import * as http from 'http';
 import * as https from 'https';
 import * as helper from '../services/helper';
@@ -41,6 +40,8 @@ import { ICommissionHistory, CommissionHistory } from '../models/CommissionHisto
 import { getDatesFilterQuery } from '../services/pagination';
 import { v4 as uuidv4 } from 'uuid';
 import Sentry from "@sentry/node";
+
+const pdfmake = require('pdfmake');
 
 /**
  * To reset Invoice quickbookId,
