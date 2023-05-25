@@ -20,6 +20,7 @@ import { CustomerContact } from '../models/CustomerContact';
 import { Customer } from '../models/Customer';
 import { IndependentContractor } from '../models/IndependentContractor';
 import { ISession, Session } from '../models/Session';
+import { CompanyLocation } from '../models/CompanyLocation';
 import Sentry from "@sentry/node";
 
 var generator = require('generate-password');
@@ -575,6 +576,38 @@ export const getCompanyProfile = (req: Request, res: Response) => {
         });
 }
 
+export const getAssignedCompanyLocations = (req: Request, res: Response) => {
+    const {companyId, userId} = req.query;
+   
+    CompanyLocation.aggregate([
+        {
+            $match: { company: new ObjectId(companyId) },
+        },
+        {
+            $project: {
+                assignedEmployees: {
+                    $filter: {
+                    input: "$assignedEmployees",
+                    as: "ae",
+                    cond: {
+                        $eq: [ "$$ae.employeeId", new ObjectId(userId) ]
+                    }
+                    }
+                },
+                _id: 0,
+                name: 1,
+                company: 1
+            }
+        },
+    ])
+    .exec((err: any, companyLocatons: any[]) => {
+        if (err) {
+            return res.status(500).json({ 'status': Status.Error, 'message': 'something went wrong' })
+        }
+        return res.status(200).json({ 'status': Status.Success, 'company': companyLocatons });
+    });
+}
+
 export const updateEmployeeRole = (req: Request, res: Response) => {
 
     const company = <ICompany>req.company
@@ -598,6 +631,20 @@ export const updateEmployeeRole = (req: Request, res: Response) => {
         return res.json({ 'status': Status.Error, 'message': err.message });
     })
 
+}
+
+export const updateEmployeeLocPermission = (req: Request, res: Response) => {
+    const company = <ICompany>req.company
+    const params = req.body;
+
+    Employee.findOneAndUpdate({ _id: params.employeeId, company: company._id }, { "canAccessAllLocations": params.canAccessAllLocations }).then((employee: IEmployee) => {
+        if (employee) {
+            return res.json({ 'status': Status.Success, 'message': 'Employee Permission Has Been Updated Successfully!' });
+        }
+        return res.json({ 'status': Status.Error, 'message': 'Employee was not found' });
+    }).catch((err) => {
+        return res.json({ 'status': Status.Error, 'message': err.message });
+    })
 }
 
 export const _createHubSpotContact = async (company: ICompany, companyAdmin: ICompanyAdmin) => {
@@ -872,6 +919,7 @@ const createEmployee = (req: Request, res: Response, role: Role) => {
                         role: role,
                         extra: [],
                     },
+                    canAccessAllLocations: params.canAccessAllLocations,
                     company: req.companyId,
                     extraPermissions: {
                         on: [],
