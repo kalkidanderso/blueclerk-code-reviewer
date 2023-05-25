@@ -17,7 +17,8 @@ export interface ICompany extends Document {
         companyName: string
         industry?: Schema.Types.ObjectId
         logoUrl: string,
-        companyEmail: string
+        companyEmail: string,
+        displayName: string,
     },
     address: {
         street: string
@@ -143,6 +144,7 @@ const CompanySchema = new Schema({
         industry: { type: Schema.Types.ObjectId, ref: 'Industry' },
         logoUrl: String,
         companyEmail: String,
+        displayName: String
     },
     address: {
         street: String,
@@ -325,7 +327,7 @@ const CompanySchema = new Schema({
         type: Number,
         default: null
     },
-     
+
     companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
     blockchain: {
         verified: {

@@ -1371,6 +1371,13 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/updateVendorDisplayName',
+        passport.authenticate('jwt', { session: false }),
+        validate(Validations.updateVendorDisplayName),
+        vendorController.updateVendorDisplayName
+    )
+
+    router.post(
         '/checkAndGet',
         validate(Validations.socialLogin),
         userController.checkAndGetUser
@@ -2027,11 +2034,11 @@ export default function (sio: any) {
     )
 
      router.get(
-        '/updateCommissionCron',       
+        '/updateCommissionCron',
          (req, res) => {
             invoiceController.updateCommissionCron(req, res)
         }
-    )  
+    )
 
     router.get(
         '/getCommissionHistory/:beneficiaryId',
@@ -2438,7 +2445,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Update_Payment),
         validate(Validations.voidAdvancePaymentContractor),
         paymentAdvanceController.voidAdvancePaymentContractor
-    )    
+    )
 
     // REPORT
 

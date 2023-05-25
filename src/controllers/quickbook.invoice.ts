@@ -19,6 +19,7 @@ import { JobReport } from '../models/JobReport';
 import { InvoiceCommission } from '../models/InvoiceCommission';
 import { Payment } from '../models/Payment';
 import { waitTimer } from '../services/helper';
+import Sentry from "@sentry/node";
 
 // ===================================
 // =======[ QUICKBOOK INVOICE ]=======
@@ -217,6 +218,7 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
         // QBooks Invoice sync successfully
         return next(null, null, qbInvoice);
     }).catch((errMsg) => {
+        Sentry.captureException(errMsg);
         // QBooks Invoice sync failed
         return next(Status.Error, errMsg, null);
     })
@@ -520,6 +522,7 @@ export const createQBInvoices = async (req: Request, res: Response) => {
             paramInvoiceIds = JSON.parse(paramInvoiceIds);
         }
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ 'status': Status.Error, 'message': 'invoiceIds is invalid' });
     }
 
@@ -1025,6 +1028,7 @@ export const _voidQBInvoice = async (req: Request, res: Response, company: IComp
             })
                 .then(response => response)
                 .catch(err => {
+                    Sentry.captureException(err);
                     throw new Error(err.Fault?.Error[0]?.Detail
                         || err.Fault?.Error[0]?.Message
                         || err.fault?.error[0]?.detail
@@ -1228,6 +1232,7 @@ export const getQBInvoice = async (req: Request, res: Response) => {
         return res.json({ 'status': Status.Success, 'message': response })
     })
     .catch((error: any) => {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }
@@ -1252,6 +1257,7 @@ export const findQBInvoice = async (req: Request, res: Response) => {
         return res.json({ status: Status.Success, data: data ?? null });
     })
     .catch((error: any) => {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }
@@ -1276,6 +1282,7 @@ export const updateQBInvoice = async (req: Request, res: Response) => {
         return res.json({ status: Status.Success, data: data ?? null });
     })
     .catch((error: any) => {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }

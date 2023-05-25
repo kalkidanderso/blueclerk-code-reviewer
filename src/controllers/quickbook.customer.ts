@@ -12,6 +12,7 @@ import { _getQbo, _refreshToken } from '../controllers/quickbook';
 import { NotificationServiceTicket } from '../models/NotificationDiscriminator';
 import { NotificationTypes } from '../models/Notification';
 import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin';
+import Sentry from "@sentry/node";
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");
@@ -1230,7 +1231,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
         })
     } catch (error) {
         console.log('== error:', error);
-
+        Sentry.captureException(error);
         // For testing purpose to know if Webhook received on staging and production
         // const notification = new NotificationServiceTicket({
         //     company: '60884254898eb7068283bfcd',
@@ -1307,24 +1308,27 @@ export const updateBCCustomer = async (req: Request, res: Response, company: ICo
             } else {
                 // Get BC Job Location by QB Customer Job's quickbookId
                 jobLocation = await JobLocation.findOne({ companyId: company._id, quickbookId: qbCustomer.Id });
-                const currentIsActive = jobLocation.isActive;
 
-                // Update Job Location data based on QB Customer Job
-                jobLocation.name = qbCustomer.DisplayName;
-                jobLocation.isActive = qbCustomer.Active;
-                jobLocation.address.street = qbCustomer.ShipAddr?.Line1 ?? qbCustomer.BillAddr?.Line1;
-                jobLocation.address.city = qbCustomer.ShipAddr?.City ?? qbCustomer.BillAddr?.City;
-                jobLocation.address.state = qbCustomer.ShipAddr?.CountrySubDivisionCode ?? qbCustomer.BillAddr?.CountrySubDivisionCode;
-                jobLocation.address.zipcode = qbCustomer.ShipAddr?.PostalCode ?? qbCustomer.BillAddr?.PostalCode;
+                if (jobLocation) {
+                    const currentIsActive = jobLocation.isActive;
 
-                if (currentIsActive && !qbCustomer.Active) {
-                    jobLocation.inactiveAt = new Date();
-                } else if (qbCustomer.Active) {
-                    jobLocation.inactiveAt = null;
-                    jobLocation.inactiveBy = null;
+                    // Update Job Location data based on QB Customer Job
+                    jobLocation.name = qbCustomer.DisplayName;
+                    jobLocation.isActive = qbCustomer.Active;
+                    jobLocation.address.street = qbCustomer.ShipAddr?.Line1 ?? qbCustomer.BillAddr?.Line1;
+                    jobLocation.address.city = qbCustomer.ShipAddr?.City ?? qbCustomer.BillAddr?.City;
+                    jobLocation.address.state = qbCustomer.ShipAddr?.CountrySubDivisionCode ?? qbCustomer.BillAddr?.CountrySubDivisionCode;
+                    jobLocation.address.zipcode = qbCustomer.ShipAddr?.PostalCode ?? qbCustomer.BillAddr?.PostalCode;
+
+                    if (currentIsActive && !qbCustomer.Active) {
+                        jobLocation.inactiveAt = new Date();
+                    } else if (qbCustomer.Active) {
+                        jobLocation.inactiveAt = null;
+                        jobLocation.inactiveBy = null;
+                    }
+
+                    await jobLocation.save();
                 }
-
-                await jobLocation.save();
             }
 
             return next(null, null, customer, jobLocation);
@@ -1365,7 +1369,7 @@ export const createBCCustomer = async (req: Request, res: Response, company: ICo
                         return;
                     }
 
-                    customer = await Customer.findById(companyCustomer.customer);
+                    customer = await Customer.findById(companyCustomer?.customer);
                 }
 
                 // Existing Customer found, return directly
@@ -1456,7 +1460,7 @@ export const createBCCustomer = async (req: Request, res: Response, company: ICo
                     const customerIds = customers.map(customer => customer._id);
                     const companyCustomer = await CompanyCustomer.findOne({ company: company._id, customer: { $in: customerIds } });
 
-                    customer = await Customer.findById(companyCustomer.customer);
+                    customer = await Customer.findById(companyCustomer?.customer);
                 }
 
                 // Parent Customer not found, return directly
@@ -1522,6 +1526,7 @@ export const getQBCustomer = async (req: Request, res: Response) => {
         return res.json({ 'status': Status.Success, 'message': response })
     })
     .catch((error: any) => {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }
@@ -1547,6 +1552,7 @@ export const findQBCustomers = async (req: Request, res: Response) => {
         return res.json({ status: Status.Success, data: data ?? null });
     })
     .catch((error: any) => {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }
@@ -1571,6 +1577,7 @@ export const findQBCustomersByEmail = async (req: Request, res: Response) => {
         return res.json({ status: Status.Success, data: data ?? null });
     })
     .catch((error: any) => {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }

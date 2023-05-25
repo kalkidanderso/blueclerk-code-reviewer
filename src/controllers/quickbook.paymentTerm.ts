@@ -4,6 +4,7 @@ import { IUser } from '../models/User';
 import { ICompany, Company } from '../models/Company';
 import { IPaymentTerm, DefaultPaymentTerms, IQBPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
+import Sentry from "@sentry/node";
 
 // =========================================
 // =======[ QUICKBOOKS PAYMENT TERM ]=======
@@ -229,6 +230,7 @@ export const findQBAllTerms = async (req: Request, res: Response) => {
         return res.json({ status: Status.Success, data: data ?? null });
     })
     .catch((error: any) => {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
     })
 }

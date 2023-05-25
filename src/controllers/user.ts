@@ -20,6 +20,7 @@ import { CustomerContact } from '../models/CustomerContact';
 import { Customer } from '../models/Customer';
 import { IndependentContractor } from '../models/IndependentContractor';
 import { ISession, Session } from '../models/Session';
+import Sentry from "@sentry/node";
 
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');
@@ -168,6 +169,7 @@ export const logout = async (req: Request, res: Response) => {
         await Session.findByIdAndRemove(session._id);
         return res.json({ status: Status.Success, message: 'Logout Successfully' });
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({ status: Status.Error, message: Messages.GenericError });
     }
 }
@@ -592,6 +594,7 @@ export const updateEmployeeRole = (req: Request, res: Response) => {
         }
         return res.json({ 'status': Status.Error, 'message': 'Employee was not found' });
     }).catch((err) => {
+        Sentry.captureException(err);
         return res.json({ 'status': Status.Error, 'message': err.message });
     })
 
