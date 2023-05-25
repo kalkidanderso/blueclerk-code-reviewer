@@ -33,6 +33,7 @@ import { IJobRequest, JobRequest } from '../models/JobRequest';
 import { NotificationTypes } from '../models/Notification';
 import { JobLocation } from '../models/JobLocation';
 import { JobSite } from '../models/JobSite';
+import { HomeOwner } from '../models/HomeOwner';
 
 /**
  * 04-22-2022
@@ -904,6 +905,10 @@ export const getFilteredJobs = async (req: Request, res: Response) => {
             select: 'profile.displayName'
         })
         .populate({
+            path: 'homeOwner',
+            select: 'profile info contact'
+        })
+        .populate({
             path: 'jobSite',
             select: 'name address location'
         }).skip((currentPage - 1) * pageSize)
@@ -1162,6 +1167,14 @@ const matchStage = { $match: filterQuery };
                 localField: 'tasks.contractor',
                 foreignField: '_id',
                 as: 'contractorsObj'
+            }
+        },
+        {
+            $lookup: {
+                from: 'homeowners',
+                localField: 'homeOwner',
+                foreignField: '_id',
+                as: 'homeOwnerObj'
             }
         },
         {
@@ -1959,6 +1972,18 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 data.isHomeOccupied = params.isHomeOccupied;
                 //data.jobLocation = null;
                 //data.jobSite = null;
+            }
+            if(params.homeOwnerId) {
+                const newHomeOwner = await HomeOwner.findOne({ _id: params.homeOwnerId });
+                if(!newHomeOwner) {
+                    return res.json({ 'status': Status.NotFound, 'message': 'Provided homeOwnerId does not correspond with any home owner' });
+                }
+                data.homeOwner = new ObjectId(params.homeOwnerId);
+            }
+            else {
+                if(data.isHomeOccupied === true && !job.homeOwner) {
+                    return res.json({ 'status': Status.Error, 'message': 'Home Owner is required when home is occupied' });
+                }
             }
             if (params.homeJobLocationId) {
                 data.homeJobLocation = params.homeJobLocationId
@@ -2958,7 +2983,7 @@ export const getJobDetails = (req: Request, res: Response) => {
         })
         .populate({
             path: 'homeOwner',
-            populate: 'contacts'
+            select: 'profile info contact'
         })
         .populate({
             path: 'customerContactId',

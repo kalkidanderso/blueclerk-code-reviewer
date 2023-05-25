@@ -290,6 +290,7 @@ export const Validations = {
     check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
     check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
     check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
+    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
     check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
@@ -387,7 +388,13 @@ export const Validations = {
 
   editTicket: [check('ticketId').exists(), check('status').exists(), check('status').isNumeric()],
 
-  updateTicket: [check('ticketId').exists(), check('note').exists()],
+  updateTicket: [
+    check('ticketId').exists().withMessage(Messages.Required),
+    check('ticketId').isMongoId().withMessage(Messages.WrongId),
+    check('note').exists(),
+    check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
+    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
 
   getTicketDetail: [check('ticketId').exists()],
 
@@ -682,7 +689,33 @@ export const Validations = {
     check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
     check('firstName').exists().withMessage(Messages.Required),
     check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }).withMessage(Messages.InvalidEmail),
-    check('addressStreet').exists().withMessage(Messages.Required)
+    check('address').exists().withMessage(Messages.Required),
+    check('address').isMongoId().withMessage(Messages.WrongId),
+    check('subdivision').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  getHomeOwner: [
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId)
+  ],
+
+  getHomeOwners: [
+    check('keyword').optional().isString(),
+    check('address').optional().isMongoId().withMessage(Messages.WrongId),
+    check('subdivision').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  // Home Owner
+  updateHomeOwner: [
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }).withMessage(Messages.InvalidEmail),
+    check('firstName').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('lastName').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('phone').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('fax').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('address').optional().isMongoId().withMessage(Messages.WrongId),
+    check('subdivision').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
   // Job location

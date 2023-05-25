@@ -140,7 +140,7 @@ export const create = async (req: Request, res: Response) => {
         const customer = await Customer.findById(customerId);
         const homeOwner = await HomeOwner.findById(homeOwnerId);
 
-        customer ? customer.jobLocations.push(jobLocation._id) : homeOwner.jobLocations.push(jobLocation._id);
+        customer ? customer.jobLocations.push(jobLocation._id) : homeOwner.subdivision = jobLocation._id;
         customer ? await customer.save() : await homeOwner.save();
 
         await jobLocation
