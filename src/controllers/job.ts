@@ -367,6 +367,7 @@ const _createJob = async (
         createdAt: Date.now(),
         createdBy: user._id,
         track: track,
+        scheduleTimeAMPM: params.scheduleTimeAMPM || 0,
     })
 
     let newStartTime: any = null
@@ -2748,6 +2749,14 @@ export const editJob = async (req: Request, res: Response) => {
                     job.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() });
                     if (linkedJob) { linkedJob.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }) }
                 });
+            }
+
+            if (params.scheduleTimeAMPM) {
+                if (params.scheduleTimeAMPM !== job.scheduleTimeAMPM) {
+                    action += '|Updated ScheduleTimeAMPM|';
+                }
+                job.scheduleTimeAMPM = params.scheduleTimeAMPM;
+                if (linkedJob) { linkedJob.scheduleTimeAMPM = params.scheduleTimeAMPM; }    
             }
 
             if (job.status == JobStatus.RESCHEDULED) {
