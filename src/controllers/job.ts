@@ -1164,6 +1164,7 @@ const matchStage = { $match: filterQuery };
                             _id: 1,
                             name: 1,
                             address: 1,
+                            location: 1,
                         },
                     },
                 ],
