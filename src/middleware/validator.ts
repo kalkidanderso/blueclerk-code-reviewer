@@ -248,7 +248,7 @@ export const Validations = {
     check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
     check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
     check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('scheduleTimeAMPM').optional().isIn([0, 1, 2, 3]).withMessage(Messages.InvalidAMPM),
+    check('scheduleTimeAMPM').optional().isIn([0, 1, 2]).withMessage(Messages.InvalidAMPM),
   ],
 
   createSubJob: [

@@ -8277,7 +8277,7 @@
                   "scheduleTimeAMPM": {
                     "type": "integer",
                     "default": 0,
-                    "description": "0 for none, 1 for AM, 2 for PM, 3 for both. You should provide either scheduleTimeAMPM or scheduledStartTime and scheduledEndTime, not both"
+                    "description": "0 for none, 1 for AM, 2 for PM. You should provide either scheduleTimeAMPM or scheduledStartTime and scheduledEndTime, not both"
                   },
                   "ticketId": {
                     "type": "string",
