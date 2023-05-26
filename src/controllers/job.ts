@@ -1212,8 +1212,6 @@ const matchStage = { $match: filterQuery };
                 "ticketObj":"$ticketObj",
                 "scheduleDate":"$scheduleDate",
                 "scheduleTimeAMPM":"$scheduleTimeAMPM",
-                "homeOwnerObj":"$homeOwnerObj",
-                "isHomeOcuppied":"$isHomeOcuppied",
             }
         }
     ]);
