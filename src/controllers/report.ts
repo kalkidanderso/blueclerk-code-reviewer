@@ -707,6 +707,8 @@ const _customIncomeReport = async (companyId: string, params: any): Promise<{ to
  * where only return the total amount, customers count, and jobs count
  */
 const _generateIncomeReport = async (companyId: string, params: any) => {
+    const workType = params.workType;
+    const companyLocation = params.companyLocation;
 
     const query: any = {
         company: companyId,
@@ -745,6 +747,27 @@ const _generateIncomeReport = async (companyId: string, params: any) => {
                 query.issuedDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
                 break;
         }
+    }
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        query["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        query["companyLocation"] = { $in : companyLocationIds };
     }
 
     // Construct aggregate lookups to the Job collection

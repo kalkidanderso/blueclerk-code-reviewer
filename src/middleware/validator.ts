@@ -86,6 +86,8 @@ export const Validations = {
 
   changeEmployeeRole: [check('employeeId').exists(), check('newRole').exists()],
 
+  changeEmployeeLocPermission: [check('employeeId').exists(), check('canAccessAllLocations').exists()],
+
   updateProfile: [check('firstName').exists(), check('lastName').exists()],
 
   changePassword: [
