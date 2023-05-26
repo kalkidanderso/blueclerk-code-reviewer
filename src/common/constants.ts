@@ -43,7 +43,8 @@ export const Messages = {
     JobCannotBeStarted: `You can't start this job, it is already`,
     TaskCannotBeStarted: `You can't start this task/job type, it is already`,
     TaskCannotBeUpdated: `You can't update this task/job type, it is already`,
-    TaskNotFound: 'Task/job type not found in this Job.'
+    TaskNotFound: 'Task/job type not found in this Job.',
+    EmptyString: 'Must not be empty',
 }
 
 export const enum Role {

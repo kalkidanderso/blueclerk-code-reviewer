@@ -74,6 +74,8 @@ export interface IJob extends Document {
         note?: string
         date: Date
     }[]
+    workType: Schema.Types.ObjectId  | any
+    companyLocation: Schema.Types.ObjectId  | any
 }
 
 export interface ITask extends Document {
@@ -425,7 +427,41 @@ const JobSchema = new Schema({
     completeOnTime: {
         type: Boolean,
         required: false
-    }
+    },
+    workType: {
+        type: Schema.Types.ObjectId,
+        ref: 'WorkType',
+    },
+    companyLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'CompanyLocation',
+    },
 }, { timestamps: { updatedAt: true } })
+
+//Indexes
+JobSchema.index({ parentJob: 1 });
+JobSchema.index({ employeeType: 1 });
+JobSchema.index({ image: 1 });
+JobSchema.index({ ticket: 1 });
+JobSchema.index({ request: 1 });
+JobSchema.index({ equipmentId: 1 });
+JobSchema.index({ technician: 1 });
+JobSchema.index({ contractor: 1 });
+JobSchema.index({ customer: 1 });
+JobSchema.index({ jobLocation: 1 });
+JobSchema.index({ jobSite: 1 });
+JobSchema.index({ homeOwner: 1 });
+JobSchema.index({ homeJobLocation: 1 });
+JobSchema.index({ homeJobSite: 1 });
+JobSchema.index({ customerContactId: 1 });
+JobSchema.index({ company: 1, 'tasks.technician': 1});
+JobSchema.index({"tasks.contractor": 1})
+JobSchema.index({ 'tasks.technician': 1, technician: 1});
+JobSchema.index({ contractor: 1, 'tasks.contractor': 1, company: 1, customer: 1});
+JobSchema.index({ contractor: 1, 'tasks.contractor': 1, company: 1, updatedAt: -1 });
+JobSchema.index({ contractor: 1, 'tasks.contractor': 1, company: 1, scheduleDate: 1, customer: 1});
+JobSchema.index({ contractor: 1, 'tasks.contractor': 1, company: 1, scheduleDate: 1, customer: 1, jobId: 1});
+JobSchema.index({ contractor: 1, 'tasks.contractor': 1, company: 1, scheduleDate: 1, customer: 1, jobId: 1, _id: -1});
+
 
 export const Job = mongoose.model<IJob>('Job', JobSchema)

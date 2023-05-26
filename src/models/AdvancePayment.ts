@@ -16,6 +16,8 @@ export interface IAdvancePayment extends Document {
     createdBy: Schema.Types.ObjectId | IUser
     updatedBy: Schema.Types.ObjectId | IUser
     voidedBy: Schema.Types.ObjectId | IUser
+    workType: Schema.Types.ObjectId  | null
+    companyLocation: Schema.Types.ObjectId  | null
 }
 
 export interface IAdvancePaymentVendor extends IAdvancePayment {
@@ -63,6 +65,14 @@ const AdvancePaymentSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User',
     },
+    workType: {
+        type: Schema.Types.ObjectId,
+        ref: 'WorkType',
+    },
+    companyLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'CompanyLocation',
+    },
 }, { timestamps: true });
 
 const AdvancePaymentVendorSchema = new Schema({
@@ -80,6 +90,17 @@ const AdvancePaymentEmployeeSchema = new Schema({
         required: false
     }
 });
+
+//Indexes
+AdvancePaymentSchema.index({ company: 1 });
+AdvancePaymentSchema.index({ contractor: 1 });
+AdvancePaymentSchema.index({ employee: 1 });
+AdvancePaymentSchema.index({ paidAt: 1 });
+AdvancePaymentSchema.index({ is_void: 1, paidAt: 1 });
+AdvancePaymentSchema.index({ company: 1, contractor: 1, is_void: 1, paidAt: 1 });
+AdvancePaymentSchema.index({ company: 1, contractor: 1, is_void: 1, appliedAt: 1 });
+AdvancePaymentSchema.index({ company: 1, employee: 1, is_void: 1, paidAt: 1 });
+AdvancePaymentSchema.index({ company: 1, employee: 1, is_void: 1, appliedAt: 1 });
 
 export const AdvancePayment = mongoose.model<IAdvancePayment>('AdvancePayment', AdvancePaymentSchema);
 export const AdvancePaymentVendor = AdvancePayment.discriminator<IAdvancePaymentVendor>('AdvancePaymentVendor', AdvancePaymentVendorSchema);

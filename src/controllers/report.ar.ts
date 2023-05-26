@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import moment from 'moment';
 import fs from 'fs';
-import pdfmake from 'pdfmake';
 import * as _ from 'lodash';
 import * as helper from '../services/helper';
 
@@ -16,6 +15,8 @@ import { Customer } from '../models/Customer';
 import { JobLocation } from '../models/JobLocation';
 import { Invoice } from '../models/Invoice';
 import { AgingBuckets, IAccountReceivableReportResponse, ReportData } from '../models/Report';
+
+const pdfmake = require('pdfmake');
 
 /**
  * Generate standard account receivable report,
@@ -194,7 +195,9 @@ export const _customAccountReceivableReport = async (companyId: string, params: 
  * where only return the total unpaid and aging buckets
  */
 const _generateAccountReceivableReport = async (companyId: string, params: any) => {
-
+    const workType = params.workType;
+    const companyLocation = params.companyLocation;
+    
     // Construct the basic filter query
     const query: any = {
         company: new ObjectId(companyId),
@@ -202,6 +205,27 @@ const _generateAccountReceivableReport = async (companyId: string, params: any) 
         isDraft: { $ne: true },
         isVoid: { $ne: true }
     };
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        query["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        query["companyLocation"] = { $in : companyLocationIds };
+    }
 
     // Handle if there asOf params provided, otherwise using today as default
     let asOf = params.asOf ? params.asOf : new Date();

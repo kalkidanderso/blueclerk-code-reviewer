@@ -18,6 +18,7 @@ import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket';
 import { JobRequest } from '../models/JobRequest';
 import { ITask, Job } from '../models/Job';
 import { HomeOwner } from '../models/HomeOwner';
+import Sentry from "@sentry/node";
 
 export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
@@ -32,6 +33,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 try {
                     customerContact = new ObjectId(customerContact);
                 } catch (e) {
+                    Sentry.captureException(e);
                     return res.json({'status': Status.Error, 'message': Messages.WrongId});
                 }
             }
@@ -53,10 +55,11 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 return res.json({ status: Status.Error, message: 'Home Owner is required when home is occupied' });
             }
 
-            if (params.customerId && !isHomeOccupied) {
+            if (params.customerId) {
                 try {
                     customerId = new ObjectId(params.customerId)
                 } catch (e) {
+                    Sentry.captureException(e);
                     return res.json({'status': Status.Error, 'message': `parameter customerId: ${Messages.WrongId}`});
                 }
             }
@@ -67,6 +70,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                     const homeOwner = await HomeOwner.findById(homeOwnerIdParameter);
                     homeOwnerId = homeOwner._id;
                 } catch(error) {
+                    Sentry.captureException(error);
                     return res.json({ status: Status.Error, message: error.message });    
                 }
             }
@@ -77,6 +81,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 // Call JobType's function to handle Job Types JSON params
                 ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.customerId, params.jobTypes, undefined));
             } catch (error) {
+                Sentry.captureException(error);
                 return res.json({ status: Status.Error, message: error.message });
             }
             //=== END HANDLE params jobTypes
@@ -107,18 +112,10 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 images: [],
             });
 
-            // Set home owner's property is home is occupied
-            if (isHomeOccupied) {
-                serviceTicket.homeOwner = homeOwnerId;
-                serviceTicket.homeJobLocation = params.homeJobLocationId;
-                serviceTicket.homeJobSite = params.homeJobSiteId
-            } else {
-                // Default to customerId when isHomeOccupied false or nowhere
-                serviceTicket.customer = customerId;
-                serviceTicket.homeOwner = null;
-                serviceTicket.homeJobLocation = null;
-                serviceTicket.homeJobSite = null;
-            }
+            serviceTicket.customer = customerId;
+            serviceTicket.homeOwner = homeOwnerId;
+            serviceTicket.homeJobLocation = params.homeJobLocationId ?? null;
+            serviceTicket.homeJobSite = params.homeJobSiteId ?? null;
 
             if (customerContact) {
                 let checkContact = await Contact.findOne({_id: customerContact}).exec();
@@ -126,6 +123,15 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                     serviceTicket.customerContactId = checkContact._id;
                 }
             }
+
+            if (params.companyLocation) {
+                serviceTicket.companyLocation = params.companyLocation;    
+            }
+
+            if (params.workType) {
+                serviceTicket.workType = params.workType;
+            }
+
             data.imagesUrl?.forEach((imageUrl: string) => serviceTicket.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }));
             serviceTicket.source = params.source ? params.source : 'blueclerk';
             await serviceTicket.save(async (err: any) => {
@@ -225,6 +231,7 @@ export const _createServiceTicket = async (req: Request, res: Response, next: (e
         // Call JobType's function to handle Job Types JSON params
         ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(params.customerId, params.jobTypes, undefined));
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message });
     }
     //=== END HANDLE params jobTypes
@@ -292,6 +299,7 @@ export const _createServiceTicket = async (req: Request, res: Response, next: (e
         await company.save();
 
     } catch (error) {
+        Sentry.captureException(error);
         return next(error, null);
     };
 
@@ -302,6 +310,8 @@ export const _createServiceTicket = async (req: Request, res: Response, next: (e
 export const getServiceTickets = async (req: Request, res: Response) => {
 
     const params = req.body;
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
     let companyId = req.companyId;
     let technicianIds: any[];
 
@@ -362,6 +372,27 @@ export const getServiceTickets = async (req: Request, res: Response) => {
                 { 'tasks.contractor': { $in: technicians } }
             ]
         });
+    }
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterQuery['$and'].push({ workType: { $in : workTypeIds }});
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterQuery['$and'].push({ companyLocation: { $in : companyLocationIds }});
     }
 
     if (params.status == 0) {
@@ -738,6 +769,7 @@ export const getOpenServiceTickets = (req: Request, res: Response) => {
                 }
                 return res.json({'status': Status.Success, 'serviceTickets': serviceTickets , 'total': totalCount })
               }).catch((err:any) => {
+                Sentry.captureException(err);
                 return res.json({'status': Status.Error, 'message': err.message})
             });
 }
@@ -747,14 +779,41 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
     const actionId = req.query.actionId;
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
     const includeOpenJobRequest = req.query.includeOpenJobRequest || false;
 
     // Initialize started count & total of the service tickets
     let count = 1;
+
+    let filterByDivision: any = {};
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterByDivision["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterByDivision["companyLocation"] = { $in : companyLocationIds };
+    }
+
     const totalServiceTickets = await ServiceTicket.find({
         company: company._id,
         jobCreated: false,
-        status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] }
+        status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] },
+        ...filterByDivision
     }).countDocuments();
 
     let totalJobRequests = 0;
@@ -762,7 +821,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
         // Get total of job requests
         totalJobRequests = await JobRequest.find({
             company: company._id,
-            status: { $in: [JobRequestStatus.PENDING] }
+            status: { $in: [JobRequestStatus.PENDING] },
         }).countDocuments();
     }
     const grandTotal = totalServiceTickets + totalJobRequests;
@@ -783,7 +842,8 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     const serviceTicketCursor = ServiceTicket.find({
         company: company._id,
         jobCreated: false,
-        status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] }
+        status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] },
+        ...filterByDivision
     }).sort({ _id: -1 })
         .populate({ path: 'company', select: 'info address contact' })
         .populate({ path: 'customer', select: 'info profile address location contact' })
@@ -905,6 +965,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                 try {
                     customerContact = new ObjectId(customerContact);
                 } catch (e) {
+                    Sentry.captureException(e);
                     return res.json({'status': Status.Error, 'message': Messages.WrongId});
                 }
             }
@@ -965,6 +1026,27 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                         jobTypeId = params.jobTypeId
                     }
 
+                    // Update isHomeOccupied and or homeOwner
+                    let isHomeOccupied = params.isHomeOccupied
+                        || params.isHomeOccupied === false 
+                        || params.isHomeOccupied === true 
+                        ? params.isHomeOccupied 
+                        : serviceTicket.isHomeOccupied;
+                    
+                    let homeOwnerId = params.homeOwnerId ? new ObjectId(params.homeOwnerId) : serviceTicket.homeOwner;
+                    
+                    if(params.homeOwnerId) {
+                        const newHomeOwner = await HomeOwner.findOne({ _id: params.homeOwnerId });
+                        if(!newHomeOwner) {
+                            return res.json({ 'status': Status.NotFound, 'message': 'Provided homeOwnerId does not correspond with any home owner' });
+                        }
+                    }
+                    else {
+                        if(isHomeOccupied && !serviceTicket.homeOwner) {
+                            return res.json({ 'status': Status.Error, 'message': 'Home Owner is required when home is occupied' });
+                        }
+                    }
+
                     //=== HANDLE params jobTypes
                     let currentJobTypes = serviceTicket.tasks;
                     let jobTypes: IJobTypes[], invalidJobTypes: string[];
@@ -973,6 +1055,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                         // Call JobType's function to handle Job Types JSON params
                         ({ jobTypes, invalidJobTypes } = await _handleJobTypesJson(customer.toString(), params.jobTypes, currentJobTypes));
                     } catch (error) {
+                        Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message });
                     }
                     // Check if jobTypes changed or not
@@ -1020,7 +1103,9 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             customerContactId: customerContactId,
                             customer: customer,
                             status: status,
-                            track: track
+                            track: track,
+                            isHomeOccupied: isHomeOccupied,
+                            homeOwner: homeOwnerId,
                         },
                         async (err: any)=> {
 

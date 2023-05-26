@@ -10,6 +10,7 @@ export interface IEmployee extends IUser {
         off: [number]
     },
     agreed: boolean
+    canAccessAllLocations: boolean;
 }
 
 const EmployeeSchema = new Schema({
@@ -30,8 +31,15 @@ const EmployeeSchema = new Schema({
     agreed: {
         type: Boolean,
         default: false
+    },
+    canAccessAllLocations: {
+        type: Boolean,
+        default: false
     }
 
 })
+
+//Indexes
+EmployeeSchema.index({ company: 1 });
 
 export const Employee = User.discriminator<IEmployee>('Employee', EmployeeSchema)

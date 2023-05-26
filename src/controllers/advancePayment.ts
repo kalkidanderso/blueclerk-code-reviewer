@@ -5,6 +5,7 @@ import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor, IAdvanceP
 import { Company, ICompany } from '../models/Company';
 import { IUser, User } from '../models/User';
 import { _voidPayment } from '../controllers/quickbook.payment';
+import Sentry from "@sentry/node";
 
 export const createAdvancePaymentContractor = async (req: Request, res: Response) => {
 
@@ -12,7 +13,7 @@ export const createAdvancePaymentContractor = async (req: Request, res: Response
     const user = <IUser>req.user;
     const company = <ICompany>req.company;
 
-    const advancePaymentEntry = {
+    const advancePaymentEntry:any = {
         company: company._id,
         referenceNumber: params.referenceNumber,
         paidAt: params.paidAt ?? new Date(),
@@ -23,6 +24,14 @@ export const createAdvancePaymentContractor = async (req: Request, res: Response
         note: params.note,
         createdBy: user._id
     };
+
+    if (params.companyLocation) {
+        advancePaymentEntry["companyLocation"] = params.companyLocation;    
+    }
+
+    if (params.workType) {
+        advancePaymentEntry["workType"] = params.workType;
+    }
 
     switch (params.type) {
         case 'vendor':
@@ -104,6 +113,7 @@ export const getAdvancePaymentsByContractor = async (req: Request, res: Response
                 .populate({ path: 'contractor', select: 'info address contact' })
                 .populate({ path: 'createdBy', select: 'auth.email profile' })
                 .catch((error: any) => {
+                    Sentry.captureException(error);
                     return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                 });;
 
@@ -116,6 +126,7 @@ export const getAdvancePaymentsByContractor = async (req: Request, res: Response
                 .populate({ path: 'employee', select: 'auth.email profile location contact' })
                 .populate({ path: 'createdBy', select: 'auth.email profile' })
                 .catch((error: any) => {
+                    Sentry.captureException(error);
                     return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
                 });
             
