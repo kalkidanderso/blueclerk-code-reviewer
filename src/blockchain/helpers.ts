@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import * as config from './config.json';
+import Sentry from "@sentry/node";
 
 export const getClientForOrg = async () => {
   const storePath = path.join(__dirname, 'hfc-key-store');
@@ -44,6 +45,7 @@ export const getClientForOrg = async () => {
       peer
     };
   } catch (err) {
+    Sentry.captureException(err);
     console.error(err);
     throw new Error('Failed to read stateStore: ');
   }

@@ -44,7 +44,8 @@ export const Messages = {
     TaskCannotBeStarted: `You can't start this task/job type, it is already`,
     TaskCannotBeUpdated: `You can't update this task/job type, it is already`,
     TaskNotFound: 'Task/job type not found in this Job.',
-    InvalidAMPM: 'ScheduleTimeAMPM has to be 0 (none), 1 (AM), 2 (PM) or 3 (Both AM and PM)'
+    InvalidAMPM: 'ScheduleTimeAMPM has to be 0 (none), 1 (AM), 2 (PM) or 3 (Both AM and PM)',
+    EmptyString: 'Must not be empty',
 }
 
 export const enum Role {

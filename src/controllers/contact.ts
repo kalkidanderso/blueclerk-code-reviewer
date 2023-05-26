@@ -8,6 +8,7 @@ import { IContact } from '../common/contact'
 import { Company, ICompany } from '../models/Company'
 import { CustomerContact, ICustomerContact } from '../models/CustomerContact';
 import { sendCustomerContactNewPassword } from '../services/aws';
+import Sentry from "@sentry/node";
 
 const generator = require('generate-password');
 
@@ -108,6 +109,7 @@ export const addContact = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'type must be selected' })
         }
     } catch (error) {
+        Sentry.captureException(error);
         return res.json({ 'status': Status.Error, 'message': 'Contact already added' });
     }
 
@@ -158,6 +160,7 @@ export const updateContact = async (req: Request, res: Response) => {
 
         return res.json({ status: Status.Success, contact: result });
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({ status: Status.Error, message: 'Error in updating contact' })
     }
 }
@@ -187,6 +190,7 @@ export const getContacts = async (req: Request, res: Response) => {
             })
         }
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({ status: Status.Error, message: 'Exception error' })
     }
 }
@@ -270,6 +274,7 @@ export const removeContact = async (req: Request, res: Response) => {
             return res.json({ status: Status.Success, message: 'Contact removed successfully' });
         }
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({ status: Status.Error, message: err ?? Messages.GenericError });
     }
 }

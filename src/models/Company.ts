@@ -17,7 +17,8 @@ export interface ICompany extends Document {
         companyName: string
         industry?: Schema.Types.ObjectId
         logoUrl: string,
-        companyEmail: string
+        companyEmail: string,
+        displayName: string,
     },
     address: {
         street: string
@@ -143,6 +144,7 @@ const CompanySchema = new Schema({
         industry: { type: Schema.Types.ObjectId, ref: 'Industry' },
         logoUrl: String,
         companyEmail: String,
+        displayName: String
     },
     address: {
         street: String,
@@ -325,7 +327,7 @@ const CompanySchema = new Schema({
         type: Number,
         default: null
     },
-     
+
     companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
     blockchain: {
         verified: {
@@ -345,6 +347,16 @@ const CompanySchema = new Schema({
     }
 
 }, { timestamps: { createdAt: true, updatedAt: true } })
+
+//Indexes
+CompanySchema.index({ 'info.industry': 1 });
+CompanySchema.index({ companyInvoices: 1 });
+CompanySchema.index({ employees: 1 });
+CompanySchema.index({ customers: 1 });
+CompanySchema.index({ admin: 1 });
+CompanySchema.index({ paymentTerm: 1 });
+CompanySchema.index({ 'info.companyEmail': 1 });
+CompanySchema.index({ plan: 1, chargeDate: 1 });
 
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)
 export const Company = mongoose.model<ICompany>('Company', CompanySchema)

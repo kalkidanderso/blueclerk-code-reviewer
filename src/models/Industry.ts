@@ -17,4 +17,8 @@ const IndustrySchema = new Schema({
 
 })
 
+//Indexes
+IndustrySchema.index({ title: 1 });
+IndustrySchema.index({ createdBy: 1 });
+
 export const Industry = mongoose.model<IIndustry>('Industry', IndustrySchema)

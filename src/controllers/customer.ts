@@ -25,6 +25,7 @@ import { _refreshToken } from './quickbook'
 import { createCustomerContact } from './contact'
 import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin'
 import { SupplierBuilder, ISupplierBuilder } from '../models/SupplierBuilder'
+import Sentry from "@sentry/node";
 
 /**
  * To reset Customer quickbookId,
@@ -268,6 +269,7 @@ export const _createCustomer = async (req: Request, res: Response, next: (err: a
         await companyCustomer.save();
 
     } catch (error) {
+        Sentry.captureException(error);
         return next(error, null);
     }
 
@@ -534,6 +536,7 @@ export const updateCustomPrices = async (req: Request, res: Response) => {
                 parsedCustomPrices = JSON.parse(parsedCustomPrices);
             }
         } catch (err) {
+            Sentry.captureException(err);
             return res.json({ status: Status.Error, message: 'customPrices json is invalid' });
         }
 
@@ -586,6 +589,7 @@ export const customerDetail = (req: Request, res: Response) => {
             }
             return res.json({ 'status': Status.Success, 'customer': customer })
         }).catch((err) => {
+            Sentry.captureException(err);
             return res.json({ 'status': Status.Error, 'message': err.message });
         });
     }
@@ -603,6 +607,7 @@ export const customerDetail = (req: Request, res: Response) => {
             }
             return res.json({ 'status': Status.Success, 'customer': customer })
         }).catch((err) => {
+            Sentry.captureException(err);
             return res.json({ 'status': Status.Error, 'message': err.message });
         });
     }
@@ -826,6 +831,7 @@ export const _getCustomerInvoicesPayments = async (customers: ICustomer[], compa
                 hasQBPayment
             });
         } catch (err) {
+            Sentry.captureException(err);
             console.log('== Search Duplicated Cust Err:', err.message);
             continue;
         }

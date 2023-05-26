@@ -17,6 +17,7 @@ import {CompanyCustomer, ICompanyCustomer} from '../models/CompanyCustomer';
 import { IItem, Item } from '../models/Item'
 import { IPriceTier, PriceTier } from '../models/PriceTier'
 import { PaymentEmployee, PaymentVendor } from '../models/Payment'
+import Sentry from "@sentry/node";
 
 const Hubspot = require('hubspot')
 
@@ -140,6 +141,7 @@ export const getEmployeeDetail = async (req: Request, res: Response) => {
         }
         return res.json({'status': Status.Error, 'message': 'EmployeeId is required!'});
     } catch (err) {
+        Sentry.captureException(err);
         return res.json({'status': Status.Error, 'message': err.message});
     }
 
@@ -282,7 +284,7 @@ export const getCompanyContracts = async (req: Request, res: Response) => {
     })
     .populate({
         path: 'contractor',
-        select: 'info.companyName info.companyEmail type',
+        select: 'info.companyName info.companyEmail info.displayName type',
         populate: [{ path: 'admin', select: 'profile auth.email contact' }]
     })
     .exec((err: any, contracts: IContract[]) => {
@@ -318,7 +320,7 @@ export const getContractorDetail = async(req: Request, res: Response) => {
             const paymentVendor = await PaymentVendor.find({ contractor: params.contractorId })
                 .populate({
                     path: 'company',
-                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                    select: 'info.companyName info.logoUrl info.displayName auth.email permissions.role address contact'
                 })
                 .populate({
                     path: 'contractor',
@@ -446,6 +448,7 @@ export const downgradeCompanies = (req: Request, res: Response) => {
                         }
                     }
                 }).catch((err) => {
+                    Sentry.captureException(err);
                     return res.json({'status': Status.Error, 'message': err.message});
                 })
                 for(let employee of company.employees) {
@@ -465,6 +468,7 @@ export const downgradeCompanies = (req: Request, res: Response) => {
             return res.json({'status': Status.Error, 'message': 'Nothing to downgrade.'})
         }
     }).catch((err) => {
+        Sentry.captureException(err);
         return res.json({'status': Status.Error, 'message': err.message});
     })
 }
@@ -836,12 +840,14 @@ export const updateContractorEmailPreferences =  (req: Request, res: Response) =
                 c.save().then(() => {
                     return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
                 }).catch((err) => {
+                    Sentry.captureException(err);
                     return res.json({'status': Status.Error, 'message': err.message})
                 })
             } else {
                 return res.json({ 'status': Status.Error, 'message': 'Could not find contractor' })
             }
         }).catch((err) => {
+            Sentry.captureException(err);
             return res.json({'status': Status.Error, 'message': err.message})
         });
     }
@@ -889,6 +895,7 @@ export const updateEmployeeEmailPreferences = (req: Request, res: Response) => {
                             }                            e.save().then(() => {
                                 return res.json({'status': Status.Success, 'message': "preferences updated successfully."})
                             }).catch((err) => {
+                                Sentry.captureException(err);
                                 return res.json({'status': Status.Error, 'message': err.message})
                             })
                         } else {
@@ -898,6 +905,7 @@ export const updateEmployeeEmailPreferences = (req: Request, res: Response) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
                     }
                 }).catch((err) => {
+                    Sentry.captureException(err);
                     return res.json({'status': Status.Error, 'message': err.message})
                 });
 
@@ -905,6 +913,7 @@ export const updateEmployeeEmailPreferences = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
             }
         }).catch((err) => {
+                Sentry.captureException(err);
             return res.json({'status': Status.Error, 'message': err.message})
         });
     }
@@ -938,12 +947,14 @@ export const updateCustomerEmailPreferences = (req: Request, res: Response) => {
                        return res.json({'status': Status.Success, 'message': Messages.GenericError});
                    }
                }).catch((err) => {
+                   Sentry.captureException(err);
                    return res.json({ 'status': Status.Error, 'message': err.message })
                });
            } else {
                return res.json({ 'status': Status.Error, 'message': Messages.UnAuthorized })
            }
             }).catch((err) => {
+            Sentry.captureException(err);
             return res.json({ 'status': Status.Error, 'message': err.message })
         });
     }

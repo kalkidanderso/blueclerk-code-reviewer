@@ -7,6 +7,7 @@ import { queryChaincode } from '../blockchain/query';
 import { Company } from '../models/Company';
 import { IdentityTypes, InvocationChaincodes, QueryChaincodes, SystemNames } from '../models/Blockchain';
 import { invokeChaincode } from '../blockchain/invoke';
+import Sentry from "@sentry/node";
 
 export const login = async (req: Request, res: Response) => {
 
@@ -192,6 +193,7 @@ export const approveCompany = async (req: Request, res: Response) => {
         });
 
     } catch (err) {
+        Sentry.captureException(err);
         console.log('== err:', err);
         return res.json({ status: Status.Error, message: err.message });
     }

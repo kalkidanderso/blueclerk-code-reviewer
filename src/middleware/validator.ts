@@ -98,6 +98,11 @@ export const Validations = {
     check('employeeId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
+  updateVendorDisplayName: [
+      check('contractorId').exists().isMongoId().withMessage(Messages.WrongId),
+        check('displayName').exists().isString().withMessage(Messages.Required)
+  ],
+
   updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('companyEmail').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }), check('phone').exists()],
 
   getCompanyCustomer: [
@@ -291,6 +296,7 @@ export const Validations = {
     check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
     check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
     check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
+    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
     check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
@@ -388,7 +394,13 @@ export const Validations = {
 
   editTicket: [check('ticketId').exists(), check('status').exists(), check('status').isNumeric()],
 
-  updateTicket: [check('ticketId').exists(), check('note').exists()],
+  updateTicket: [
+    check('ticketId').exists().withMessage(Messages.Required),
+    check('ticketId').isMongoId().withMessage(Messages.WrongId),
+    check('note').exists(),
+    check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
+    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
 
   getTicketDetail: [check('ticketId').exists()],
 
@@ -607,14 +619,14 @@ export const Validations = {
     check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
     check('amount').exists().withMessage(Messages.Required),
     check('amount').isInt().toInt().withMessage('has to be number'),
-  ],  
+  ],
 
   voidAdvancePaymentContractor: [
     check('type').exists().withMessage(Messages.Required),
     check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
     check('advancePaymentId').exists().withMessage(Messages.Required),
     check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
-  ],  
+  ],
 
   // REPORT
   generateIncomeReport: [
@@ -683,7 +695,33 @@ export const Validations = {
     check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
     check('firstName').exists().withMessage(Messages.Required),
     check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }).withMessage(Messages.InvalidEmail),
-    check('addressStreet').exists().withMessage(Messages.Required)
+    check('address').exists().withMessage(Messages.Required),
+    check('address').isMongoId().withMessage(Messages.WrongId),
+    check('subdivision').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  getHomeOwner: [
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId)
+  ],
+
+  getHomeOwners: [
+    check('keyword').optional().isString(),
+    check('address').optional().isMongoId().withMessage(Messages.WrongId),
+    check('subdivision').optional().isMongoId().withMessage(Messages.WrongId),
+  ],
+
+  // Home Owner
+  updateHomeOwner: [
+    check('id').exists().withMessage(Messages.Required),
+    check('id').isMongoId().withMessage(Messages.WrongId),
+    check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }).withMessage(Messages.InvalidEmail),
+    check('firstName').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('lastName').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('phone').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('fax').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+    check('address').optional().isMongoId().withMessage(Messages.WrongId),
+    check('subdivision').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
   // Job location

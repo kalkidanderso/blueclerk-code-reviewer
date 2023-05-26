@@ -13,6 +13,7 @@ import { Employee } from '../models/Employee';
 import {CompanyInvoice, ICompanyInvoice} from '../models/CompanyInvoice';
 import { NotificationTypes } from '../models/Notification';
 import { INotificationContract, NotificationContract } from '../models/NotificationDiscriminator';
+import Sentry from "@sentry/node";
 
 export const addCompanySubscriptions = (req: Request, res: Response) => {
 
@@ -113,6 +114,7 @@ export const addCompanySubscriptions = (req: Request, res: Response) => {
             }
         })
     }catch (err) {
+        Sentry.captureException(err);
         return res.json({'status': Status.Error, 'message': err.message});
     }
 }
@@ -169,6 +171,7 @@ export const removeCompanySubscriptions = async (req: Request, res: Response) =>
         checkEmployeeRelatedToCompany.save();
         return res.json({'status': Status.Error, 'message': 'Employee Subscription Have Been Deleted Successfully.'})
     }).catch((err) => {
+        Sentry.captureException(err);
         return res.json({'status': Status.Error, 'message': err.message})
     })
 }
@@ -262,6 +265,7 @@ export const chargeCompanySubscription = (req: Request, res: Response) => {
                             }
                         })
                     } catch (err) {
+                        Sentry.captureException(err);
                         responses.push({'status': Status.Error, 'message': err.message});
                     }
                 }
@@ -358,6 +362,7 @@ export const finalizeCompanyInvoices = async (req: Request, res: Response, sio: 
                 }
 
             } catch (err) {
+                Sentry.captureException(err);
                 let title, body;
 
                 if (err.code === 'missing' && err.param === 'card') {

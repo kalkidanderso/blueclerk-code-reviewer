@@ -4,6 +4,7 @@ import { IUser } from '../models/User'
 import { PurchaseOrder, IPurchaseOrder } from '../models/PurchaseOrder'
 import { Estimate, IEstimate } from '../models/Estimate'
 import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
+import Sentry from "@sentry/node";
 
 export const createPO = (req: Request, res: Response) => {
 
@@ -335,6 +336,7 @@ export const updatePO = (req: Request, res: Response) => {
                 try {
                     items = JSON.parse(params.items)
                 } catch (error) {
+                    Sentry.captureException(error);
                     return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
                 }
 
