@@ -339,7 +339,7 @@ export const getUserDivision = async (req: Request, res: Response) => {
             }
         ]).exec();
 
-        if (divisions.length) {
+        if (divisions.length > 1) {
             let allOption: any = {
                 name: "All",
             };
