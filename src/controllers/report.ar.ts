@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import moment from 'moment';
 import fs from 'fs';
-import pdfmake from 'pdfmake';
 import * as _ from 'lodash';
 import * as helper from '../services/helper';
 
@@ -16,6 +15,8 @@ import { Customer } from '../models/Customer';
 import { JobLocation } from '../models/JobLocation';
 import { Invoice } from '../models/Invoice';
 import { AgingBuckets, IAccountReceivableReportResponse, ReportData } from '../models/Report';
+
+const pdfmake = require('pdfmake');
 
 /**
  * Generate standard account receivable report,

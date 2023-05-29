@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import moment from 'moment';
 import fs from 'fs';
-import pdfmake from 'pdfmake';
 
 import { sendReportPdf, uploadFileInS3 } from '../services/aws';
 import { Messages, Status } from '../common/constants';
@@ -20,6 +19,8 @@ import { getPlaceholderValues, transformPlaceholders, _createCompanyDefaultEmail
 import { downloadFileToPath } from '../controllers/invoice';
 import { _customAccountReceivableReport, _generateAccountReceivableDetail, _generateAccountReceivableInvoices, _generateAccountReceivableReportPdf, _standardAccountReceivableReport } from '../controllers/report.ar';
 import Sentry from "@sentry/node";
+
+const pdfmake = require('pdfmake');
 
 
 /**
