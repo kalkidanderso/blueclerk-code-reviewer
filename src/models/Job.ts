@@ -74,6 +74,8 @@ export interface IJob extends Document {
         note?: string
         date: Date
     }[]
+    workType: Schema.Types.ObjectId  | any
+    companyLocation: Schema.Types.ObjectId  | any
 }
 
 export interface ITask extends Document {
@@ -429,7 +431,15 @@ const JobSchema = new Schema({
     completeOnTime: {
         type: Boolean,
         required: false
-    }
+    },
+    workType: {
+        type: Schema.Types.ObjectId,
+        ref: 'WorkType',
+    },
+    companyLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'CompanyLocation',
+    },
 }, { timestamps: { updatedAt: true } })
 
 //Indexes

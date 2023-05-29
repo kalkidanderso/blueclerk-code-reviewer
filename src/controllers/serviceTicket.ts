@@ -123,6 +123,15 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                     serviceTicket.customerContactId = checkContact._id;
                 }
             }
+
+            if (params.companyLocation) {
+                serviceTicket.companyLocation = params.companyLocation;    
+            }
+
+            if (params.workType) {
+                serviceTicket.workType = params.workType;
+            }
+
             data.imagesUrl?.forEach((imageUrl: string) => serviceTicket.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }));
             serviceTicket.source = params.source ? params.source : 'blueclerk';
             await serviceTicket.save(async (err: any) => {
@@ -301,6 +310,8 @@ export const _createServiceTicket = async (req: Request, res: Response, next: (e
 export const getServiceTickets = async (req: Request, res: Response) => {
 
     const params = req.body;
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
     let companyId = req.companyId;
     let technicianIds: any[];
 
@@ -361,6 +372,27 @@ export const getServiceTickets = async (req: Request, res: Response) => {
                 { 'tasks.contractor': { $in: technicians } }
             ]
         });
+    }
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterQuery['$and'].push({ workType: { $in : workTypeIds }});
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterQuery['$and'].push({ companyLocation: { $in : companyLocationIds }});
     }
 
     if (params.status == 0) {
@@ -747,14 +779,41 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
     const actionId = req.query.actionId;
+    const workType = req.query.workType;
+    const companyLocation = req.query.companyLocation;
     const includeOpenJobRequest = req.query.includeOpenJobRequest || false;
 
     // Initialize started count & total of the service tickets
     let count = 1;
+
+    let filterByDivision: any = {};
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        filterByDivision["workType"] = { $in : workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        filterByDivision["companyLocation"] = { $in : companyLocationIds };
+    }
+
     const totalServiceTickets = await ServiceTicket.find({
         company: company._id,
         jobCreated: false,
-        status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] }
+        status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] },
+        ...filterByDivision
     }).countDocuments();
 
     let totalJobRequests = 0;
@@ -762,7 +821,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
         // Get total of job requests
         totalJobRequests = await JobRequest.find({
             company: company._id,
-            status: { $in: [JobRequestStatus.PENDING] }
+            status: { $in: [JobRequestStatus.PENDING] },
         }).countDocuments();
     }
     const grandTotal = totalServiceTickets + totalJobRequests;
@@ -783,7 +842,8 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     const serviceTicketCursor = ServiceTicket.find({
         company: company._id,
         jobCreated: false,
-        status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] }
+        status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] },
+        ...filterByDivision
     }).sort({ _id: -1 })
         .populate({ path: 'company', select: 'info address contact' })
         .populate({ path: 'customer', select: 'info profile address location contact' })

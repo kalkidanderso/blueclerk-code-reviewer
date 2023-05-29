@@ -10,6 +10,7 @@ export interface IEmployee extends IUser {
         off: [number]
     },
     agreed: boolean
+    canAccessAllLocations: boolean;
 }
 
 const EmployeeSchema = new Schema({
@@ -28,6 +29,10 @@ const EmployeeSchema = new Schema({
         off: [Number]
     },
     agreed: {
+        type: Boolean,
+        default: false
+    },
+    canAccessAllLocations: {
         type: Boolean,
         default: false
     }
