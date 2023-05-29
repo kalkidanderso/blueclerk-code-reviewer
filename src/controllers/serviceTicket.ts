@@ -1035,15 +1035,17 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     
                     let homeOwnerId = params.homeOwnerId ? new ObjectId(params.homeOwnerId) : serviceTicket.homeOwner;
                     
-                    if(params.homeOwnerId) {
-                        const newHomeOwner = await HomeOwner.findOne({ _id: params.homeOwnerId });
-                        if(!newHomeOwner) {
-                            return res.json({ 'status': Status.NotFound, 'message': 'Provided homeOwnerId does not correspond with any home owner' });
+                    if(isHomeOccupied && isHomeOccupied === true) {
+                        if(params.homeOwnerId) {
+                            const newHomeOwner = await HomeOwner.findOne({ _id: params.homeOwnerId });
+                            if(!newHomeOwner) {
+                                return res.json({ 'status': Status.NotFound, 'message': 'Provided homeOwnerId does not correspond with any home owner' });
+                            }
                         }
-                    }
-                    else {
-                        if(isHomeOccupied && !serviceTicket.homeOwner) {
-                            return res.json({ 'status': Status.Error, 'message': 'Home Owner is required when home is occupied' });
+                        else {
+                            if(isHomeOccupied && !serviceTicket.homeOwner) {
+                                return res.json({ 'status': Status.Error, 'message': 'Home Owner is required when home is occupied' });
+                            }
                         }
                     }
 
