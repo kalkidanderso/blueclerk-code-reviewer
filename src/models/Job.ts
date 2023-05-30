@@ -7,7 +7,7 @@ import { IJobLocation } from '../models/JobLocation';
 import { IJobSite } from '../models/JobSite';
 
 export interface IJob extends Document {
-
+    scheduleTimeAMPM: number
     scheduleDate: Date
     scheduledStartTime: Date
     scheduledEndTime: Date
@@ -115,6 +115,10 @@ export interface ITaskJobType extends Document {
 
 const JobSchema = new Schema({
 
+    scheduleTimeAMPM: {
+        type: Number,
+        default: 0
+    },
     scheduleDate: {
         type: Date
     },
