@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb';
 import moment from 'moment';
 import * as helper from '../../services/helper';
 import { DefaultPageSize, Status } from '../../common/constants';
-import { Invoice } from '../../models/Invoice';
+import { IInvoice, Invoice } from '../../models/Invoice';
 
 import { _checkQBCustomerJobLocation } from '../quickbook.customer';
 import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice, _voidQBInvoice } from '../quickbook.invoice';
@@ -178,7 +178,7 @@ export const getInvoices = async (req: Request, res: Response) => {
         }).countDocuments()
     ];
 
-    const [, allInvoices, isNextPage, isPreviousPage, unsyncedInvoices]: [any, any[], any[], any[], number] = await Promise.all(parallelProcessing)
+    const [, allInvoices, isNextPage, isPreviousPage, unsyncedInvoices]: (IInvoice[] | any[] | any)[] = await Promise.all(parallelProcessing)
 
     return res.json({
         status: Status.Success,
