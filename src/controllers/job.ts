@@ -2064,16 +2064,18 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 //data.jobLocation = null;
                 //data.jobSite = null;
             }
-            if(params.homeOwnerId) {
-                const newHomeOwner = await HomeOwner.findOne({ _id: params.homeOwnerId });
-                if(!newHomeOwner) {
-                    return res.json({ 'status': Status.NotFound, 'message': 'Provided homeOwnerId does not correspond with any home owner' });
+            if(data?.isHomeOccupied && data?.isHomeOccupied === true) {
+                if(params.homeOwnerId) {
+                    const newHomeOwner = await HomeOwner.findOne({ _id: params.homeOwnerId });
+                    if(!newHomeOwner) {
+                        return res.json({ 'status': Status.NotFound, 'message': 'Provided homeOwnerId does not correspond with any home owner' });
+                    }
+                    data.homeOwner = new ObjectId(params.homeOwnerId);
                 }
-                data.homeOwner = new ObjectId(params.homeOwnerId);
-            }
-            else {
-                if(data.isHomeOccupied === true && !job.homeOwner) {
-                    return res.json({ 'status': Status.Error, 'message': 'Home Owner is required when home is occupied' });
+                else {
+                    if(data.isHomeOccupied === true && !job.homeOwner) {
+                        return res.json({ 'status': Status.Error, 'message': 'Home Owner is required when home is occupied' });
+                    }
                 }
             }
             if (params.homeJobLocationId) {
