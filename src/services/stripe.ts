@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 /**
  * @param number

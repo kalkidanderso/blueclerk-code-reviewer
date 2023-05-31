@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { Status } from '../common/constants';
 import { Session } from '../models/Session';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 export const isLogin = () => {
 

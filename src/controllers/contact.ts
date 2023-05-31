@@ -8,7 +8,7 @@ import { IContact } from '../common/contact'
 import { Company, ICompany } from '../models/Company'
 import { CustomerContact, ICustomerContact } from '../models/CustomerContact';
 import { sendCustomerContactNewPassword } from '../services/aws';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 const generator = require('generate-password');
 

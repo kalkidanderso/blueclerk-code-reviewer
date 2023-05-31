@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
 import { Company, ICompany } from '../models/Company';
 import { Status, Messages } from '../common/constants'
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 var OAuthClient = require('intuit-oauth');
 

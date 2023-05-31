@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { WorkType } from '../models/WorkType';
 import { Status } from '../common/constants';
 import { ObjectId } from 'mongodb';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 
 export const getWorkTypes = async (req: Request, res: Response) => {

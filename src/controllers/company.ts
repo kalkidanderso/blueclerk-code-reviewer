@@ -18,7 +18,7 @@ import { IItem, Item } from '../models/Item'
 import { IPriceTier, PriceTier } from '../models/PriceTier'
 import { PaymentEmployee, PaymentVendor } from '../models/Payment'
 import { CompanyLocation } from '../models/CompanyLocation'
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 const Hubspot = require('hubspot')
 

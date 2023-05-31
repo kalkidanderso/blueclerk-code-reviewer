@@ -18,7 +18,7 @@ import { ReportTypes, ReportData, ReportSources, IncomeReport, MemorizedReport, 
 import { getPlaceholderValues, transformPlaceholders, _createCompanyDefaultEmail } from '../controllers/emailDefault';
 import { downloadFileToPath } from '../controllers/invoice';
 import { _customAccountReceivableReport, _generateAccountReceivableDetail, _generateAccountReceivableInvoices, _generateAccountReceivableReportPdf, _standardAccountReceivableReport } from '../controllers/report.ar';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 const pdfmake = require('pdfmake');
 

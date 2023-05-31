@@ -8,7 +8,7 @@ import { ICompany } from '../models/Company';
 import { IUser, User } from '../models/User';
 import { Job } from '../models/Job';
 import { JobRoute } from '../models/JobRoute';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 /**
  *  To retrieve all job routes by today or any filter date provided

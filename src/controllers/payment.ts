@@ -14,7 +14,7 @@ import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer'
 import { _createQBPayment, _deleteQBPayment, _updateQBPayment, _voidPayment } from './quickbook.payment'
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission'
 import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor } from '../models/AdvancePayment';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 /**
  * To calculate invoice and customer payment amount related,

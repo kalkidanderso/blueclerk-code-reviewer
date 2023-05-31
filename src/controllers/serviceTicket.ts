@@ -18,7 +18,7 @@ import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket';
 import { JobRequest } from '../models/JobRequest';
 import { ITask, Job } from '../models/Job';
 import { HomeOwner } from '../models/HomeOwner';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 

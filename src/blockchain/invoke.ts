@@ -1,6 +1,6 @@
 import { getClientForOrg } from './helpers'
 import * as config from './config.json'
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 export const invokeChaincode = async (
   fcn: any,

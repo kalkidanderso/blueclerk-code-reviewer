@@ -13,7 +13,7 @@ import { Employee } from '../models/Employee';
 import {CompanyInvoice, ICompanyInvoice} from '../models/CompanyInvoice';
 import { NotificationTypes } from '../models/Notification';
 import { INotificationContract, NotificationContract } from '../models/NotificationDiscriminator';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 export const addCompanySubscriptions = (req: Request, res: Response) => {
 

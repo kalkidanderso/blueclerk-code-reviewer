@@ -8,7 +8,7 @@ import multer from 'multer'
 import { JobLocation } from '../models/JobLocation';
 import { Contact } from '../models/Contact'
 import { IContact } from '../common/contact'
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 let fs = require('fs');
 let XLSX = require('xlsx')
