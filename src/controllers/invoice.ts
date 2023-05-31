@@ -955,7 +955,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         currentInvoiceId = company.currentInvoiceId
     }
 
-    /* remove checking invoiceId with estimateId 
+    /* remove checking invoiceId with estimateId
     if (company.currentEstimateId > company.currentInvoiceId) {
         currentInvoiceId = company.currentEstimateId
     } else if (company.currentInvoiceId > company.currentEstimateId) {
@@ -1903,6 +1903,25 @@ export const updateInvoice = (req: Request, res: Response) => {
         });
 }
 
+export const updateInvoiceMessages = async (req: Request, res: Response) => {
+    const params = req.body;
+    try {
+        const invoice = await Invoice.findOne({ _id: params.invoiceId });
+        if (!invoice) {
+            return res.status(404).json({ error: 'Invoice not found' });
+        }
+
+        invoice.technicianMessages = {
+            notes: params.technicianMessages.notes || invoice.technicianMessages.notes,
+            images: params.technicianMessages.images || invoice.technicianMessages.images,
+        };
+
+        const updatedInvoice = await invoice.save();
+        return res.json({ status: Status.Success, message: 'Invoice updated successfully.', data: updatedInvoice });
+    } catch (err) {
+        return res.json({ status: Status.Error, message: err.message || Messages.GenericError });
+    }
+};
 export const getInvoiceDetail = (req: Request, res: Response) => {
     const params = req.body;
 
@@ -1919,7 +1938,8 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                 { path: 'track.user', select: 'profile auth.email address contact permissions.role'},
                 { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
                 { path: 'jobLocation', select: 'name location address' },
-                { path: 'jobSite', select: 'name location address' }
+                { path: 'jobSite', select: 'name location address' },
+                { path: 'homeOwner', select: 'profile info contact' }
             ],
         })
         .populate({
@@ -2328,7 +2348,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
                 sentAt: sendingDate
             });
             invoice.lastEmailSent = sendingDate;
-            
+
             const companyLocation = <ICompanyLocation>invoice.companyLocation;
             invoiceSender = companyLocation?.billingAddress?.emailSender;
 
@@ -2604,7 +2624,7 @@ export const getInvoices = async (req: Request, res: Response) => {
             { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
             { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
             { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } },
-            
+
         ]
     }
 
@@ -2623,7 +2643,7 @@ export const getInvoices = async (req: Request, res: Response) => {
 
     // Populate the invoices from aggregate
     await Invoice.populate(invoices, [
-        { path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks' },
+        { path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks scheduleTimeAMPM' },
         { path: 'paymentTerm', select: 'name dueDays' },
         { path: 'customer', select: 'info.email auth.email profile address contact vendorId contactName contactEmail' },
         { path: 'customerContactId', select: 'name phone email' },
@@ -3869,19 +3889,19 @@ export const getCommissionHistory = async (req: Request, res: Response) => {
 }
 
 export const updateCommissionCron = async (req: Request, res: Response) => {
-    
+
     let start = new Date();
     start.setHours(0,0,0,0);
 
     let end = new Date();
-    end.setHours(23, 59, 59, 999);    
-    // get commission_ histories whole effective date is today    
+    end.setHours(23, 59, 59, 999);
+    // get commission_ histories whole effective date is today
     const commissionHistories = await CommissionHistory.find({ effectiveDate: { $gte: start, $lt: end } })
     if (commissionHistories?.length > 0) {
         for (const history of commissionHistories) {
             //    if type is contractor
             if (history?.type === 'vendor') {
-                
+
                 const contractor = await Company.findById(history.technicianOrContractor).exec();
                 if (contractor) {
                     //update that commision
@@ -3894,13 +3914,13 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
                   // update employee
                     employee.commission = history.commission
                     await employee.save()
-                    
+
                 }
 
-            }                     
-            
+            }
+
         }
-    } 
+    }
     return res.json({ status: Status.OK });
 }
 

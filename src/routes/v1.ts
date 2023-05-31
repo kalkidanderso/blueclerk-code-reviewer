@@ -2001,6 +2001,17 @@ export default function (sio: any) {
     )
 
     router.post(
+        '/updateInvoiceMessages',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Invoice),
+        validate(Validations.updateInvoice),
+        refreshQBToken(),
+        invoiceController.updateInvoiceMessages
+    )
+
+    router.post(
         '/getInvoiceDetail',
         passport.authenticate('jwt', { session: false }),
         isLogin(),

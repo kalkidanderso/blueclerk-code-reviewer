@@ -3191,10 +3191,10 @@
                   "emailSender": {
                     "type": "string"
                   },
-                  "setUserAsSender" : {
+                  "setUserAsSender": {
                     "type": "booelan"
                   },
-                  "isAddressAsBillingAddress" : {
+                  "isAddressAsBillingAddress": {
                     "type": "booelan"
                   }
                 }
@@ -11082,6 +11082,55 @@
         ]
       }
     },
+    "/updateInvoiceMessages": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "Updates the technician notes and images for an invoice",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "invoiceId"
+                ],
+                "properties": {
+                  "invoiceId": {
+                    "type": "string",
+                    "description": "Id of invoice"
+                  },
+                  "technicianMessages": {
+                    "type": "object",
+                    "description": "Object of technician messages to update",
+                    "$ref": "#/components/schemas/TechnicianMessage"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/generateInvoicePdf": {
       "get": {
         "tags": [
@@ -18809,7 +18858,9 @@
       },
       "AssignedVendor": {
         "type": "object",
-        "required": ["vendorId"],
+        "required": [
+          "vendorId"
+        ],
         "properties": {
           "vendorId": {
             "type": "string",
@@ -18826,7 +18877,9 @@
       },
       "AssignedEmployees": {
         "type": "object",
-        "required": ["employeeId"],
+        "required": [
+          "employeeId"
+        ],
         "properties": {
           "employeeId": {
             "type": "string",
@@ -18838,6 +18891,34 @@
               "type": "string"
             },
             "description": "Array of work type ID"
+          }
+        }
+      },
+      "TechnicianMessage": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TechnicianMessagesNote"
+            }
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "TechnicianMessagesNote": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
           }
         }
       }
