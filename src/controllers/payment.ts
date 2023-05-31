@@ -1300,12 +1300,16 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
                     if (contractorEntry) {
                         contractorEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
                         // contractorEntry.balanceDue += Number(technicianCommission.commissionAmount.toFixed(2));
+                        if(contractorEntry?.workType && !contractorEntry?.workType.includes(invoice?.workType?.toString())) contractorEntry?.workType?.push(invoice.workType?.toString());
+                        if(contractorEntry?.companyLocation && !contractorEntry?.companyLocation.includes(invoice?.companyLocation?.toString())) contractorEntry?.companyLocation?.push(invoice.companyLocation?.toString());                        
                         contractorEntry?.invoiceIds?.push(invoice._id);
                     } else {
                         vendors.push({
                             contractor,
                             commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
                             // balanceDue: Number(technicianCommission.commissionAmount.toFixed(2)),
+                            workType: [invoice.workType?.toString()],
+                            companyLocation: [invoice.companyLocation?.toString()],
                             invoiceIds: [invoice._id],
                         });
                     }
@@ -1318,12 +1322,16 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
                     if (technicianEntry) {
                         technicianEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
                         // technicianEntry.balanceDue += Number(technicianCommission.commissionAmount.toFixed(2));
+                        if(technicianEntry?.workType && !technicianEntry?.workType.includes(invoice?.workType?.toString())) technicianEntry?.workType?.push(invoice.workType?.toString());
+                        if(technicianEntry?.companyLocation && !technicianEntry?.companyLocation.includes(invoice?.companyLocation?.toString())) technicianEntry?.companyLocation?.push(invoice.companyLocation?.toString());                        
                         technicianEntry.invoiceIds.push(invoice._id);
                     } else {
                         employees.push({
                             employee: technician,
                             commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
                             // balanceDue: Number(technicianCommission.commissionAmount.toFixed(2)),
+                            workType: [invoice.workType?.toString()],
+                            companyLocation: [invoice.companyLocation?.toString()],
                             invoiceIds: [invoice._id],
                         });
                     }

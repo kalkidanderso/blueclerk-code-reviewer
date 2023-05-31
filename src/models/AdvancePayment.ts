@@ -1,6 +1,8 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { IUser } from '../models/User';
 import { ICompany } from '../models/Company';
+import { IWorkType } from './WorkType';
+import { ICompanyLocation } from './CompanyLocation';
 
 export interface IAdvancePayment extends Document {
     company: Schema.Types.ObjectId | ICompany
@@ -16,8 +18,8 @@ export interface IAdvancePayment extends Document {
     createdBy: Schema.Types.ObjectId | IUser
     updatedBy: Schema.Types.ObjectId | IUser
     voidedBy: Schema.Types.ObjectId | IUser
-    workType: Schema.Types.ObjectId  | null
-    companyLocation: Schema.Types.ObjectId  | null
+    workType: [Schema.Types.ObjectId | IWorkType]
+    companyLocation: [Schema.Types.ObjectId | ICompanyLocation]
 }
 
 export interface IAdvancePaymentVendor extends IAdvancePayment {
@@ -65,14 +67,14 @@ const AdvancePaymentSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User',
     },
-    workType: {
+    workType: [{
         type: Schema.Types.ObjectId,
         ref: 'WorkType',
-    },
-    companyLocation: {
+    }],
+    companyLocation: [{
         type: Schema.Types.ObjectId,
         ref: 'CompanyLocation',
-    },
+    }],
 }, { timestamps: true });
 
 const AdvancePaymentVendorSchema = new Schema({

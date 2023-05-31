@@ -532,7 +532,7 @@ const checkIsFirstLocation = async (params: any, company: ICompany, locationId: 
         await Job.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
         await ServiceTicket.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
         await Invoice.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
-        await Payment.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
-        await AdvancePayment.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
+        await Payment.updateMany({company: company._id}, { $set :{"workType": [params.workTypes[0]], "companyLocation": [locationId]}}).exec();
+        await AdvancePayment.updateMany({company: company._id}, { $set :{"workType": [params.workTypes[0]], "companyLocation": [locationId]}}).exec();
     }
 }
