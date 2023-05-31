@@ -54,7 +54,7 @@ export const getInvoices = async (req: Request, res: Response) => {
 
     // Split the initial invoices into subarrays with 30,000 length, to do parallel processing
     const filteredInitialInvoicesSplited = _splitArray(filteredInitialInvoices, 30000);
-    const parallelFilter = filteredInitialInvoicesSplited.map((value:any[])=> _getFinalInvoicesIds(value, params));
+    const parallelFilter = filteredInitialInvoicesSplited.map((value: any[]) => _getFinalInvoicesIds(value, params));
     const finalInvoicesIds = (await Promise.all(parallelFilter)).flat()
 
     const finalQuery: any = {
@@ -520,7 +520,16 @@ const _getFilteredJobSitesIds = async (jobSitesIds: ObjectId[],
     // Add additional and conditions with the fields recieved on the params
     if (jobAddress) {
         const jobAddressRegex = helper.getRegex(jobAddress, 'i');
-        query['$and'].push({ 'address.street': jobAddressRegex });
+        query['$and'].push({
+            $or: [
+                {
+                    'address.street': jobAddressRegex
+                },
+                {
+                    name: jobAddressRegex
+                }
+            ]
+        });
     }
     if (jobCity) {
         const jobCityRegex = helper.getRegex(jobCity, 'i');
