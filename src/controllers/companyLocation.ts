@@ -333,6 +333,7 @@ export const getUserDivision = async (req: Request, res: Response) => {
                     address: "$address",
                     locationId: "$_id",
                     workTypeId: "$workType._id",
+                    key: {$concat : [{ $toString: "$_id"},"-",{ $toString: "$workType._id"}]},
                     name: {$concat : ["$name",  {$cond:[{$eq:['$isMainLocation', true]}, " (Main)", ""] }, " - ","$workType.title"]},
                     isMainLocation: "$isMainLocation"
                 }
