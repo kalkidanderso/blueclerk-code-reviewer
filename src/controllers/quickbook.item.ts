@@ -376,13 +376,12 @@ export const _updateQBItem = async (req: Request, res: Response, company: ICompa
 
       qbo.updateItem(qbItem, async (err: any, updatedQbItem: IQBItem) => {
         if (err || !updatedQbItem) {
-          throw new Error(
-            err.Fault?.Error[0]?.Detail
-            || err.Fault?.Error[0]?.Message
-            || err.fault?.error[0]?.detail
-            || err.fault?.error[0]?.message
-            || Messages.GenericError
-          );
+          const errMsg = err.Fault?.Error[0]?.Detail
+          || err.Fault?.Error[0]?.Message
+          || err.fault?.error[0]?.detail
+          || err.fault?.error[0]?.message
+          || Messages.GenericError;
+          return res.json({status: Status.Error, message: errMsg});
         }
 
         return next(null, null);
