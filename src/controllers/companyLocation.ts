@@ -116,7 +116,7 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
         
         //Verify Division and auto allocate jobs
         if (!existingDivision.length) {
-            await checkIsFirstLocation(params, company, populatedCompanyLocation.id)
+            await checkIsFirstLocation(params, company, populatedCompanyLocation._id)
         }
 
         return res.json({ status: Status.Success, companyLocation : populatedCompanyLocation });
@@ -145,6 +145,7 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
             }
         }
 
+        let existingDivision = await CompanyLocation.find({company: company._id, workTypes: {$ne: []}});
         await validateAndParseWorkTypesParam(params);
         await validateAndParseAssignedVendorsParam(params);
         await validateAndParseAssignedEmployeesParam(params);
@@ -192,6 +193,10 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
         .populate('assignedVendors.vendor')
         .populate('assignedVendors.workTypes');
 
+        if (!existingDivision.length) {
+            await checkIsFirstLocation(params, company, params.companyLocationId)
+        }
+        
         return res.json({ status: Status.Success, message: 'Company Location updated successfully', "companyLocation": newCompanyLocation });
     } catch (error) {
         Sentry.captureException(error);
@@ -529,6 +534,8 @@ const validateAndParseAssignedEmployeesParam = async (params: any) => {
 
 
 const checkIsFirstLocation = async (params: any, company: ICompany, locationId: string) => {
+    console.log(locationId);
+    
     if (params.workTypes && params.workTypes.length && locationId) {
         await Job.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
         await ServiceTicket.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
