@@ -729,7 +729,7 @@ const _getFinalInvoicesIds = async (filteredInitialInvoices: any[], params: any)
     // Get the ids linked to the invoices and that they are on other collections
     const invoicesIds = filteredInitialInvoices.map((value) => value._id);
     const jobsIds = filteredInitialInvoices.map((value) => value.job).filter((value) => value !== undefined);
-    const customersIds = filteredInitialInvoices.map((value) => value.job).filter((value) => value !== undefined);
+    const customersIds = filteredInitialInvoices.map((value) => value.customer).filter((value) => value !== undefined);
 
     // Get fields 
     const { keyword } = params
