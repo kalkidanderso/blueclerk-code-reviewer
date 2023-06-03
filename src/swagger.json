@@ -8540,6 +8540,11 @@
                     "type": "string",
                     "description": "scheduled end time of job. e.g. 15:05:00"
                   },
+                  "scheduleTimeAMPM": {
+                    "type": "integer",
+                    "default": 0,
+                    "description": "0 for none, 1 for AM, 2 for PM. You should provide either scheduleTimeAMPM or scheduledStartTime and scheduledEndTime, not both"
+                  },
                   "ticketId": {
                     "type": "string",
                     "description": "Id of a service ticket fetched by /getServiceTickets api"

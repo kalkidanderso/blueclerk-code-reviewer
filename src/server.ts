@@ -10,6 +10,7 @@ import passport from 'passport'
 import passportMiddleWare from './middleware/passport'
 import { MongoError } from 'mongodb'
 import routesV1 from './routes/v1'
+import routesV2 from './routes/v2'
 import swaggerUi from 'swagger-ui-express'
 import * as swaggerDocument from './swagger.json'
 // const CronJob = require('cron').CronJob;
@@ -168,6 +169,7 @@ sio.on('disconnect', (socket: any) => {
   console.log('Disconnected at ', new Date());
 })
 app.use('/api/v1', routesV1(sio))
+app.use('/api/v2', routesV2())
 new CronJob('0 0 1 * *', function () {
   // console.log('You will see this message every second');
 
