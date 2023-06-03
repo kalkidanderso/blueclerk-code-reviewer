@@ -33,16 +33,16 @@ export interface IPayment extends Document {
     createdAt: Date
     updatedBy: Schema.Types.ObjectId | IUser
     updatedAt: Date
-    workType: Schema.Types.ObjectId  | IWorkType
-    companyLocation: Schema.Types.ObjectId  | ICompanyLocation
+    workType: [Schema.Types.ObjectId | IWorkType]
+    companyLocation: [Schema.Types.ObjectId | ICompanyLocation]
 }
 
 export interface IPaymentCustomer extends IPayment {
 
     customer: Schema.Types.ObjectId | ICustomer
     invoice: Schema.Types.ObjectId | IInvoice
-    workType: Schema.Types.ObjectId | null
-    companyLocation: Schema.Types.ObjectId | null
+    workType: [Schema.Types.ObjectId | IWorkType]
+    companyLocation: [Schema.Types.ObjectId | ICompanyLocation]
 }
 
 export interface IPaymentVendor extends IPayment {
@@ -176,14 +176,14 @@ const PaymentSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User',
     },
-    workType: {
+    workType: [{
         type: Schema.Types.ObjectId,
         ref: 'WorkType',
-    },
-    companyLocation: {
+    }],
+    companyLocation: [{
         type: Schema.Types.ObjectId,
         ref: 'CompanyLocation',
-    },
+    }],
     updatedAt: Date,
 })
 
@@ -199,14 +199,14 @@ const PaymentCustomerSchema = new Schema({
         ref: 'Invoice',
         required: false
     },
-    workType: {
+    workType: [{
         type: Schema.Types.ObjectId,
         ref: 'WorkType',
-    },
-    companyLocation: {
+    }],
+    companyLocation: [{
         type: Schema.Types.ObjectId,
         ref: 'CompanyLocation',
-    },
+    }],
 })
 
 const PaymentVendorSchema = new Schema({
