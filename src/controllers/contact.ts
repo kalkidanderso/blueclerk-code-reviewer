@@ -25,37 +25,44 @@ const createContactForCustomer = async (data: any, customer: ICustomer) => {
 
     let contact = null
 
-    contact = await Contact.findOne({ name: data.name, phone: data.phone, email: data.email })
-    if (contact) {
-        if (customer.contacts.indexOf(contact._id) > -1) {
-            throw new Error('CONTACT_ALREADY_ADDED')
+    try {
+        contact = await Contact.findOne({ name: data.name, phone: data.phone, email: data.email })
+        if (contact) {
+            if (customer.contacts.indexOf(contact._id) > -1) {
+                throw new Error('CONTACT_ALREADY_ADDED')
+            }
+        } else {
+            contact = await createContact(data.name, data.email, data.phone, data.isActive);
+    
+            const customerContact = await CustomerContact.findOne({
+                $or: [{ 'info.email': data.email }, { 'auth.email': data.email }]
+            })
+    
+            if (customerContact) {
+                contact.userId = customerContact._id;
+                await contact.save();
+                customerContact.isActive = true;
+                await customerContact.save();
+            }
+    
         }
-    } else {
-        contact = await createContact(data.name, data.email, data.phone, data.isActive);
-
-        const customerContact = await CustomerContact.findOne({
-            $or: [{ 'info.email': data.email }, { 'auth.email': data.email }]
-        })
-
-        if (customerContact) {
-            contact.userId = customerContact._id;
-            await contact.save();
-            customerContact.isActive = true;
-            await customerContact.save();
-        }
-
+        customer.contacts.push(contact._id)
+        await customer.save()
+        return contact;
+    } catch (error) {
+        throw error
     }
-    customer.contacts.push(contact._id)
-    await customer.save()
-    return contact;
-
 }
 
 const createContactForJobLocation = async (data: any, jobLocationId: string) => {
-    const customer = await Customer.findOne({ jobLocations: jobLocationId })
-    const contact = await createContactForCustomer(data, customer)
-    await JobLocation.findByIdAndUpdate(jobLocationId, { $push: { contacts: contact._id } }, { new: true })
-    return contact
+    try {
+        const customer = await Customer.findOne({ jobLocations: jobLocationId })
+        const contact = await createContactForCustomer(data, customer)
+        await JobLocation.findByIdAndUpdate(jobLocationId, { $push: { contacts: contact._id } }, { new: true })
+        return contact
+    } catch (error) {
+        throw new Error(error)
+    }
 }
 
 const addContactToTheJobLocation = async (contactId: string, jobLocationId: string) => {
