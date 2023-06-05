@@ -17,6 +17,7 @@ import { Customer } from '../../models/Customer';
 export const getInvoices = async (req: Request, res: Response) => {
 
     const params = req.body;
+    const queryParams = req.query;
     let companyId = req.otherCompanyId || req.companyId;
 
     // Check if any filter provided to decide whether return all records or not
@@ -39,7 +40,7 @@ export const getInvoices = async (req: Request, res: Response) => {
         initialQuery['$and'].push({ issuedDate: { $gte: new Date(last90days) } });
     }
     // Add filters to initial query
-    _fillInitialQuery(params, initialQuery);
+    _fillInitialQuery(params, queryParams, initialQuery);
 
     const filteredInitialInvoices = await Invoice.aggregate([
         { $match: initialQuery },
@@ -149,6 +150,8 @@ export const getInvoices = async (req: Request, res: Response) => {
             { path: 'customerContactId', select: 'name phone email' },
             { path: 'jobLocation', select: 'name address location' },
             { path: 'jobSite', select: 'name address location' },
+            { path: 'companyLocation', select: 'billingAddress name isMainLocation' },
+            { path: 'workType', select: 'title' },
         ]),
         //count
         Invoice.aggregate([
@@ -206,12 +209,14 @@ export const getInvoices = async (req: Request, res: Response) => {
 /**
  * Check and add if params filter provided to initial query
  * @param params params provided on the request
+ * @param queryParams query params provided on the request
  * @param query query to be filled
  */
-const _fillInitialQuery = (params: any, query: any) => {
+const _fillInitialQuery = (params: any, queryParams: any, query: any) => {
     const { invoiceId, dueDate, status, startAmount, endAmount, customerPO, missingPO,
         customerId, customerContactId, isDraft, isVoid, startDate, endDate,
-        lastEmailStartDate, lastEmailEndDate } = params
+        lastEmailStartDate, lastEmailEndDate } = params;
+    const {workType, companyLocation } = queryParams;
     if (invoiceId) {
         const invoiceIdRegex = helper.getRegex(invoiceId, 'i');
         query['$and'].push({ invoiceId: invoiceIdRegex });
@@ -278,6 +283,26 @@ const _fillInitialQuery = (params: any, query: any) => {
         const lastEmailStartDateMoment = moment(lastEmailStartDate).startOf('day').format();
         const lastEmailEndDateMoment = moment(lastEmailEndDate).endOf('day').format();
         query['$and'].push({ lastEmailSent: { $gte: new Date(lastEmailStartDateMoment), $lte: new Date(lastEmailEndDateMoment) } });
+    }
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {};
+        query['$and'].push({ workType: { $in : workTypeIds }});
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) {}
+        query['$and'].push({ companyLocation: { $in : companyLocationIds }});
     }
 }
 
