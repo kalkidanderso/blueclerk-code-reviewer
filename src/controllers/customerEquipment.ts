@@ -9,7 +9,7 @@ import { IUser} from '../models/User'
 import { Tag, ITag} from '../models/Tag'
 import { ObjectId } from 'mongodb'
 import {JobSite} from '../models/JobSite';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 export const createCustomerEquipment = (req: Request, res: Response) => {
 

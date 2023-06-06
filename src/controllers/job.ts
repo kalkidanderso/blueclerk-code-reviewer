@@ -34,7 +34,7 @@ import { NotificationTypes } from '../models/Notification';
 import { JobLocation } from '../models/JobLocation';
 import { JobSite } from '../models/JobSite';
 import { HomeOwner } from '../models/HomeOwner';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 /**
  * 04-22-2022

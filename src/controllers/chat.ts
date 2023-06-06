@@ -8,7 +8,7 @@ import { IJobRequest, JobRequest } from '../models/JobRequest';
 import { IChat, Chat, ChatChannels, IJobRequestChat, JobRequestChat } from '../models/Chat';
 import { _handleNotification } from '../controllers/notification.firebase';
 import { NotificationTypes, FbNotificationType } from '../models/Notification';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 /**
  * To create new chat

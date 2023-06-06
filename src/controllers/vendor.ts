@@ -25,7 +25,7 @@ import { NotificationContract, INotificationContract } from '../models/Notificat
 import { _createHubSpotContact, _upgradeHubSpotContact, checkCompanyEmailExists, login } from '../controllers/user';
 import { _handleNotification } from './notification';
 import { Employee } from '../models/Employee';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 // new contractor signup
 export const createContractor = (req: Request, res: Response, sio: any) => {

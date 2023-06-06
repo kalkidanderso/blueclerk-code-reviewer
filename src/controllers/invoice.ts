@@ -40,7 +40,7 @@ import { ICommissionHistory, CommissionHistory } from '../models/CommissionHisto
 import { getDatesFilterQuery } from '../services/pagination';
 import { v4 as uuidv4 } from 'uuid';
 import { ICompanyLocation } from '../models/CompanyLocation';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 const pdfmake = require('pdfmake');
 

@@ -12,7 +12,7 @@ import { _getQbo, _refreshToken } from '../controllers/quickbook';
 import { NotificationServiceTicket } from '../models/NotificationDiscriminator';
 import { NotificationTypes } from '../models/Notification';
 import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");

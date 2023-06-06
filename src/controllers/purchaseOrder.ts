@@ -4,7 +4,7 @@ import { IUser } from '../models/User'
 import { PurchaseOrder, IPurchaseOrder } from '../models/PurchaseOrder'
 import { Estimate, IEstimate } from '../models/Estimate'
 import { CustomerEquipment, ICustomerEquipment } from '../models/CustomerEquipment'
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 export const createPO = (req: Request, res: Response) => {
 

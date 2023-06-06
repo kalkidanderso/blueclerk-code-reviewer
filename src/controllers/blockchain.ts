@@ -7,7 +7,7 @@ import { queryChaincode } from '../blockchain/query';
 import { Company } from '../models/Company';
 import { IdentityTypes, InvocationChaincodes, QueryChaincodes, SystemNames } from '../models/Blockchain';
 import { invokeChaincode } from '../blockchain/invoke';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 export const login = async (req: Request, res: Response) => {
 

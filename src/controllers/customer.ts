@@ -25,7 +25,7 @@ import { _refreshToken } from './quickbook'
 import { createCustomerContact } from './contact'
 import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin'
 import { SupplierBuilder, ISupplierBuilder } from '../models/SupplierBuilder'
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 /**
  * To reset Customer quickbookId,

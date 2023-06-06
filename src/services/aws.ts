@@ -15,7 +15,7 @@ import { IContact } from '../common/contact';
 import { ICustomer } from '../models/Customer';
 import { EmailSchedule } from '../models/EmailSchedule';
 import { v4 as uuidv4 } from 'uuid';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 const http = require("http");
 
 export const sendEmail = function (options: any) {
