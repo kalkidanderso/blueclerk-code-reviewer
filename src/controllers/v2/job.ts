@@ -19,8 +19,7 @@ export const getJobs = async (req: Request, res: Response) => {
     const companyId = req.otherCompanyId || req.companyId;
     const currentPage = bodyParams.currentPage || 0;
     const pageSize = bodyParams.pageSize || DefaultPageSize;
-    const { keyword } = bodyParams;
-    // Data query that used to search Invoices and available previous/next page
+    // Data query that used to search Jobs
     const initialQuery: any = {
         $and: [{
             $or: [
@@ -481,7 +480,7 @@ const _getFinalJobsIds = async (filteredInitialJobs: any[], params: any): Promis
             _getFilteredTechniciansIds(techniciansIds, keywordRegex), _getFilteredContractorsIds(contractorsIds, keywordRegex)]);
         const queryOr: any = {
             $or: [
-                { $text: { $search: keyword } },
+                { jobId: keywordRegex },
                 { customer: { $in: filteredCustomersIds } },
                 { jobLocation: { $in: filteredJobLocationsIds } },
                 { jobSite: { $in: filteredJobSitesIds } },
