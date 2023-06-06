@@ -968,9 +968,11 @@ export const getJobs = async (req: Request, res: Response) => {
 
     if (params.technicianIds) {
         // Validate is technician ids is already array or object
-        technicianIds = Array.isArray(params.technicianIds)
-            ? params.technicianIds
-            : params.technicianIds.split(',').filter((element: any) => element)
+        if (Array.isArray(params.technicianIds)) {
+            technicianIds = params.technicianIds
+        } else if (typeof params.technicianIds === 'string') {
+            technicianIds = params.technicianIds.split(',').filter((element: any) => element)
+        }
     }
 
     if (technicianIds?.length) {
