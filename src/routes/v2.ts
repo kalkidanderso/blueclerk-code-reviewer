@@ -1,15 +1,15 @@
-import express from 'express'
-import { validate, Validations } from '../middleware/validator';
+import express from 'express';
 import passport from 'passport';
+import { validate, Validations } from '../middleware/validator';
+
 import {
     checkUserPermissions,
 } from '../middleware/permissions'
 import { getCompanyId } from '../middleware/company';
-
-import { Permissions } from '../common/constants';
-
-import * as invoiceController from '../controllers/v2/invoice';
 import { isLogin } from '../middleware/session';
+import { Permissions } from '../common/constants';
+import * as invoiceController from '../controllers/v2/invoice';
+import * as jobController from '../controllers/v2/job';
 
 export default function () {
 
@@ -24,6 +24,16 @@ export default function () {
         checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.getInvoices),
         invoiceController.getInvoices
+    )
+
+    router.post(
+        '/getJobs',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Get_All),
+        validate(Validations.getJobs),
+        jobController.getJobs
     )
 
     return router
