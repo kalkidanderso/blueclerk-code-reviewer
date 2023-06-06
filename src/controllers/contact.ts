@@ -174,20 +174,23 @@ export const updateContact = async (req: Request, res: Response) => {
 
 export const getContacts = async (req: Request, res: Response) => {
     try {
+        const isActive = (typeof req.query?.isActive === "string" || typeof req.query?.isActive === "boolean") && req.query?.isActive;
+
         if (req.query.type === 'Customer') {
             Customer.findOne({ _id: req.query.referenceNumber }).populate({ path: 'contacts' }).exec(async (err: any, customer: ICustomer) => {
                 if(err || !customer) {
                     return res.json({ status: Status.Error, message: 'Customer not found' });
                 }
                 const customerContacts = <IContact[]>customer?.contacts;
-                const contacts = await _handlefindIsActiveContact(req.query.isActive, customerContacts)
+                const contacts = await _handlefindIsActiveContact(isActive, customerContacts)
                 
                 return res.json({ result: contacts });
             });
         } else {
             JobLocation.findOne({ _id: req.query.referenceNumber }).populate({ path: 'contacts' }).exec(async (err: any, customer: ICustomer) => {
                 const customerContacts = <IContact[]>customer?.contacts;
-                const contacts = await _handlefindIsActiveContact(req.query.isActive, customerContacts)
+
+                const contacts = await _handlefindIsActiveContact(isActive, customerContacts)
 
                 if (customer) {
                     return res.json({ status: Status.Success, result: contacts })
