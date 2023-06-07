@@ -2770,7 +2770,7 @@ export const editJob = async (req: Request, res: Response) => {
 
             if (params.scheduledStartTime) {
                 date = new Date(params.scheduleDate)
-                newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
+                newStartTime = new Date(params.scheduledStartTime)
                 if (newStartTime != job.scheduledStartTime) {
                     action += '|Updated ScheduledStartTime|';
                 }
@@ -2780,7 +2780,7 @@ export const editJob = async (req: Request, res: Response) => {
 
             if (params.scheduledEndTime) {
                 date = new Date(params.scheduleDate)
-                newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
+                newEndTime = new Date(params.scheduledEndTime)
                 if (newEndTime != job.scheduledEndTime) {
                     action += '|Updated ScheduledEndTime|';
                 }
