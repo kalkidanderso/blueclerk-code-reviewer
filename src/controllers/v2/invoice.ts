@@ -19,6 +19,8 @@ export const getInvoices = async (req: Request, res: Response) => {
     const params = req.body;
     const queryParams = req.query;
     let companyId = req.otherCompanyId || req.companyId;
+    let currentPage = params.currentPage || 0;
+    let pageSize = params.pageSize || DefaultPageSize;
 
     // Check if any filter provided to decide whether return all records or not
     let isAllRecords = await _getIsAllRecordsByParams(params);
@@ -72,32 +74,6 @@ export const getInvoices = async (req: Request, res: Response) => {
     // Sort query that default to sort by the recent ones
     let sortQuery = { createdAt: -1, _id: -1 };
 
-    if (params.nextCursor) {
-        // Update pagination query to get the next page
-        const cursor = JSON.parse(helper.fromCursorHash(params.nextCursor));
-        const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
-        paginationQuery = {
-            $or: [
-                { createdAt: { $lt: new Date(cursor.createdAt) } },
-                { createdAt: new Date(cursor.createdAt), _id: { $lt: cursorId } }
-            ]
-        };
-        query['$and'].push({ ...paginationQuery });
-    }
-    if (params.previousCursor) {
-        // Update pagination query to get the previous page
-        const cursor = JSON.parse(helper.fromCursorHash(params.previousCursor));
-        const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
-        paginationQuery = {
-            $or: [
-                { createdAt: { $gt: new Date(cursor.createdAt) } },
-                { createdAt: new Date(cursor.createdAt), _id: { $gt: cursorId } }
-            ]
-        };
-        query['$and'].push({ ...paginationQuery });
-        // Getting previous page is special, we need to reverse the sort
-        sortQuery = { createdAt: 1, _id: 1 };
-    }
     // Get the invoices limiting by the page size
     let invoices = await Invoice.aggregate(
         [
@@ -107,6 +83,7 @@ export const getInvoices = async (req: Request, res: Response) => {
             {
                 $sort: sortQuery
             },
+            { $skip : (currentPage  * pageSize) },
             { $limit: params.pageSize || DefaultPageSize },
         ]
     )
