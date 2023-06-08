@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 import { getMessaging } from 'firebase-admin/messaging';
 import { ChatChannels, IChat } from '../models/Chat';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 /**
  * Initialize Firebase instance and app,

@@ -21,7 +21,7 @@ import { Customer } from '../models/Customer';
 import { IndependentContractor } from '../models/IndependentContractor';
 import { ISession, Session } from '../models/Session';
 import { CompanyLocation } from '../models/CompanyLocation';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 var generator = require('generate-password');
 var passwordValidator = require('password-validator');

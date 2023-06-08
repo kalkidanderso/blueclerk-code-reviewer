@@ -34,7 +34,7 @@ import { NotificationTypes } from '../models/Notification';
 import { JobLocation } from '../models/JobLocation';
 import { JobSite } from '../models/JobSite';
 import { HomeOwner } from '../models/HomeOwner';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 /**
  * 04-22-2022
@@ -968,9 +968,11 @@ export const getJobs = async (req: Request, res: Response) => {
 
     if (params.technicianIds) {
         // Validate is technician ids is already array or object
-        technicianIds = Array.isArray(params.technicianIds)
-            ? params.technicianIds
-            : params.technicianIds.split(',').filter((element: any) => element)
+        if (Array.isArray(params.technicianIds)) {
+            technicianIds = params.technicianIds
+        } else if (typeof params.technicianIds === 'string') {
+            technicianIds = params.technicianIds.split(',').filter((element: any) => element)
+        }
     }
 
     if (technicianIds?.length) {
@@ -2770,7 +2772,7 @@ export const editJob = async (req: Request, res: Response) => {
 
             if (params.scheduledStartTime) {
                 date = new Date(params.scheduleDate)
-                newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledStartTime)
+                newStartTime = new Date(params.scheduledStartTime)
                 if (newStartTime != job.scheduledStartTime) {
                     action += '|Updated ScheduledStartTime|';
                 }
@@ -2780,7 +2782,7 @@ export const editJob = async (req: Request, res: Response) => {
 
             if (params.scheduledEndTime) {
                 date = new Date(params.scheduleDate)
-                newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + params.scheduledEndTime)
+                newEndTime = new Date(params.scheduledEndTime)
                 if (newEndTime != job.scheduledEndTime) {
                     action += '|Updated ScheduledEndTime|';
                 }

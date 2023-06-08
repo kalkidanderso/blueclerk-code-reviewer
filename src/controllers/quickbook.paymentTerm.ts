@@ -4,7 +4,7 @@ import { IUser } from '../models/User';
 import { ICompany, Company } from '../models/Company';
 import { IPaymentTerm, DefaultPaymentTerms, IQBPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 // =========================================
 // =======[ QUICKBOOKS PAYMENT TERM ]=======

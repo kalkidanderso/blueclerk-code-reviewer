@@ -19,7 +19,7 @@ import { JobReport } from '../models/JobReport';
 import { InvoiceCommission } from '../models/InvoiceCommission';
 import { Payment } from '../models/Payment';
 import { waitTimer } from '../services/helper';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 // ===================================
 // =======[ QUICKBOOK INVOICE ]=======

@@ -17,7 +17,7 @@ import * as swaggerDocument from './swagger.json'
 import { CronJob } from 'cron'
 import request from 'request';
 import socketioJwt from 'socketio-jwt';
-const Sentry = require("@sentry/node");
+import * as Sentry from '@sentry/node';
 
 //Environment config
 import moment from 'moment-timezone';

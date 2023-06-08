@@ -5,7 +5,7 @@ import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor, IAdvanceP
 import { Company, ICompany } from '../models/Company';
 import { IUser, User } from '../models/User';
 import { _voidPayment } from '../controllers/quickbook.payment';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 export const createAdvancePaymentContractor = async (req: Request, res: Response) => {
 

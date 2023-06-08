@@ -8,7 +8,7 @@ import { IContact } from '../common/contact'
 import { Company, ICompany } from '../models/Company'
 import { CustomerContact, ICustomerContact } from '../models/CustomerContact';
 import { sendCustomerContactNewPassword } from '../services/aws';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 const generator = require('generate-password');
 
@@ -25,37 +25,44 @@ const createContactForCustomer = async (data: any, customer: ICustomer) => {
 
     let contact = null
 
-    contact = await Contact.findOne({ name: data.name, phone: data.phone, email: data.email })
-    if (contact) {
-        if (customer.contacts.indexOf(contact._id) > -1) {
-            throw new Error('CONTACT_ALREADY_ADDED')
+    try {
+        contact = await Contact.findOne({ name: data.name, phone: data.phone, email: data.email })
+        if (contact) {
+            if (customer.contacts.indexOf(contact._id) > -1) {
+                throw new Error('CONTACT_ALREADY_ADDED')
+            }
+        } else {
+            contact = await createContact(data.name, data.email, data.phone, data.isActive);
+    
+            const customerContact = await CustomerContact.findOne({
+                $or: [{ 'info.email': data.email }, { 'auth.email': data.email }]
+            })
+    
+            if (customerContact) {
+                contact.userId = customerContact._id;
+                await contact.save();
+                customerContact.isActive = true;
+                await customerContact.save();
+            }
+    
         }
-    } else {
-        contact = await createContact(data.name, data.email, data.phone, data.isActive);
-
-        const customerContact = await CustomerContact.findOne({
-            $or: [{ 'info.email': data.email }, { 'auth.email': data.email }]
-        })
-
-        if (customerContact) {
-            contact.userId = customerContact._id;
-            await contact.save();
-            customerContact.isActive = true;
-            await customerContact.save();
-        }
-
+        customer.contacts.push(contact._id)
+        await customer.save()
+        return contact;
+    } catch (error) {
+        throw error
     }
-    customer.contacts.push(contact._id)
-    await customer.save()
-    return contact;
-
 }
 
 const createContactForJobLocation = async (data: any, jobLocationId: string) => {
-    const customer = await Customer.findOne({ jobLocations: jobLocationId })
-    const contact = await createContactForCustomer(data, customer)
-    await JobLocation.findByIdAndUpdate(jobLocationId, { $push: { contacts: contact._id } }, { new: true })
-    return contact
+    try {
+        const customer = await Customer.findOne({ jobLocations: jobLocationId })
+        const contact = await createContactForCustomer(data, customer)
+        await JobLocation.findByIdAndUpdate(jobLocationId, { $push: { contacts: contact._id } }, { new: true })
+        return contact
+    } catch (error) {
+        throw new Error(error)
+    }
 }
 
 const addContactToTheJobLocation = async (contactId: string, jobLocationId: string) => {
@@ -167,20 +174,23 @@ export const updateContact = async (req: Request, res: Response) => {
 
 export const getContacts = async (req: Request, res: Response) => {
     try {
+        const isActive = (typeof req.query?.isActive === "string" || typeof req.query?.isActive === "boolean") ? req.query?.isActive : null;
+
         if (req.query.type === 'Customer') {
             Customer.findOne({ _id: req.query.referenceNumber }).populate({ path: 'contacts' }).exec(async (err: any, customer: ICustomer) => {
                 if(err || !customer) {
                     return res.json({ status: Status.Error, message: 'Customer not found' });
                 }
                 const customerContacts = <IContact[]>customer?.contacts;
-                const contacts = await _handlefindIsActiveContact(req.query.isActive, customerContacts)
+                const contacts = await _handlefindIsActiveContact(isActive, customerContacts)
                 
                 return res.json({ result: contacts });
             });
         } else {
             JobLocation.findOne({ _id: req.query.referenceNumber }).populate({ path: 'contacts' }).exec(async (err: any, customer: ICustomer) => {
                 const customerContacts = <IContact[]>customer?.contacts;
-                const contacts = await _handlefindIsActiveContact(req.query.isActive, customerContacts)
+
+                const contacts = await _handlefindIsActiveContact(isActive, customerContacts)
 
                 if (customer) {
                     return res.json({ status: Status.Success, result: contacts })
@@ -279,7 +289,7 @@ export const removeContact = async (req: Request, res: Response) => {
     }
 }
 
-const _handlefindIsActiveContact = async (isActive: string | boolean, customerContacts: IContact[]): Promise<IContact[]> => {
+const _handlefindIsActiveContact = async (isActive: string | boolean | null, customerContacts: IContact[]): Promise<IContact[]> => {
 
     const contacts: any[] = [];
 

@@ -4,7 +4,7 @@ import { CompanyCard, ICompanyCard } from '../models/CompanyCard'
 import { createCustomer, detachCustomerSource, addCustomerSource, createCard, checkCardExist, _getCustomerCard } from '../services/stripe'
 import { ICompany } from '../models/Company'
 import { ObjectId } from 'mongodb'
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 
 export const createCompanyCard = async (req: Request, res: Response) => {

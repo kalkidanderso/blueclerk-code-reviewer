@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken'
 import { Role, AccountTypes } from '../common/constants'
 import bcrypt from "bcrypt-nodejs"
 import moment from 'moment'
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 export interface IUser extends Document {
 

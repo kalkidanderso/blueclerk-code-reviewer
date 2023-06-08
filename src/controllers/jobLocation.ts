@@ -8,7 +8,7 @@ import { Customer } from '../models/Customer'
 import { Contact } from '../models/Contact'
 import { _createQBCustomerJob, _updateQBCustomerJob } from './quickbook.customer';
 import { HomeOwner } from '../models/HomeOwner';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 /**
  * To reset Job Location quickbookId,

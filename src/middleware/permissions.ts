@@ -8,7 +8,7 @@ import { ICompanyAdmin, CompanyAdmin } from '../models/CompanyAdmin'
 import {Tag} from '../models/Tag';
 import {createManager} from '../controllers/user';
 import {CustomerEquipment} from '../models/CustomerEquipment';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 export const checkPermissions = (minAuth: Role) => {
 

@@ -14,7 +14,7 @@ import { Invoice } from '../models/Invoice';
 import { Payment } from '../models/Payment';
 import {ObjectId} from 'mongodb'
 import { AdvancePayment } from '../models/AdvancePayment';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 
 export const getCompanyLocations = async (req: Request, res: Response) => {

@@ -15,7 +15,7 @@ import { JobCharges } from '../models/JobCharges';
 import { IInvoice, Invoice } from '../models/Invoice';
 import { _createQBItem, _updateQBItem, _updateQBItemsStatus, _transferQBItems } from '../controllers/quickbook.item';
 import { _transferQBInvoiceItem } from '../controllers/quickbook.invoice';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 // ==========================================
 // ==============[ ITEM ]====================

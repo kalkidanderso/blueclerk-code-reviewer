@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import * as config from './config.json';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 export const getClientForOrg = async () => {
   const storePath = path.join(__dirname, 'hfc-key-store');

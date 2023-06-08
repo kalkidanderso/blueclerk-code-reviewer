@@ -15,7 +15,7 @@ import { NotificationServiceTicket } from '../models/NotificationDiscriminator';
 import { NotificationTypes } from '../models/Notification';
 import { createBCItem, updateBCItem } from './quickbook.item';
 import { deleteBCInvoice, updateBCInvoice, voidBCInvoice } from './quickbook.invoice';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");

@@ -14,7 +14,7 @@ import { IPayment, IQBPayment, IQBPaymentMethod, IQBPaymentTxnTypes, Payment, Pa
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
 import { _calculateInvoiceBalance } from '../controllers/payment';
 import { waitTimer } from '../services/helper';
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 // ===================================
 // =======[ QUICKBOOK PAYMENT ]=======

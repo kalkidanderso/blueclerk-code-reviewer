@@ -3,7 +3,7 @@ import { Status, Messages } from '../common/constants'
 
 import { JobSite, IJobSite } from '../models/JobSite'
 import { JobLocation } from '../models/JobLocation'
-import Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 export const get = (req: Request, res: Response) => {
     const { id } = req.params
