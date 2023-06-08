@@ -69,8 +69,7 @@ export const getInvoices = async (req: Request, res: Response) => {
     // Deep clone filter finalQuery
     const query: any = { $and: [] };
     finalQuery['$and'].map((q: any) => { query['$and'].push({ ...q }) });
-    // Pagination query that default to nothing
-    let paginationQuery = {};
+
     // Sort query that default to sort by the recent ones
     let sortQuery = { createdAt: -1, _id: -1 };
 
@@ -88,35 +87,6 @@ export const getInvoices = async (req: Request, res: Response) => {
         ]
     )
 
-    // Because we reverse sort for previous page, we need to revert it back
-    if (params.previousCursor) {
-        invoices = invoices.reverse();
-    }
-
-    let nextCursor = { createdAt: invoices[invoices.length - 1]?.createdAt, _id: invoices[invoices.length - 1]?._id };
-    // Deep clone filterQuery
-    const nextPageQuery: any = { $and: [] };
-    finalQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
-    // To be added with the pagination for the previous page
-    nextPageQuery['$and'].push({
-        $or: [
-            { createdAt: { $lt: new Date(nextCursor.createdAt) } },
-            { createdAt: new Date(nextCursor.createdAt), _id: { $lt: nextCursor._id } }
-        ]
-    });
-
-
-    let previousCursor = { createdAt: invoices[0]?.createdAt, _id: invoices[0]?._id };
-    // Deep clone finalQuery filter
-    const previousPageQuery: any = { $and: [] };
-    finalQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
-    // To be added with the pagination for the previous page
-    previousPageQuery['$and'].push({
-        $or: [
-            { createdAt: { $gt: new Date(previousCursor.createdAt) } },
-            { createdAt: new Date(previousCursor.createdAt), _id: { $gt: previousCursor._id } }
-        ]
-    });
     // Parallel processing ond fifferent queries that can be executed in parallel
     const parallelProcessing = [
         // Populate the invoices from aggregate
@@ -136,18 +106,6 @@ export const getInvoices = async (req: Request, res: Response) => {
             { $count: 'count' },
 
         ]),
-        // check if is a next page query
-        Invoice.aggregate([
-            { $match: { ...nextPageQuery } },
-            { $sort: { createdAt: -1, _id: -1 } },
-            { $limit: 1 }
-        ]),
-        //check if a is previous query
-        Invoice.aggregate([
-            { $match: { ...previousPageQuery } },
-            { $sort: { createdAt: 1, _id: 1 } },
-            { $limit: 1 }
-        ]),
 
         // Retrieve number of the unsynced invoices
         Invoice.find({
@@ -158,18 +116,13 @@ export const getInvoices = async (req: Request, res: Response) => {
         }).countDocuments()
     ];
 
-    const [, allInvoices, isNextPage, isPreviousPage, unsyncedInvoices]: (IInvoice[] | any[] | any)[] = await Promise.all(parallelProcessing)
+    const [, allInvoices, unsyncedInvoices]: (IInvoice[] | any[] | any)[] = await Promise.all(parallelProcessing)
 
     return res.json({
         status: Status.Success,
         total: allInvoices[0]?.count,
         unsyncedInvoices,
-        invoices,
-        pagination: {
-            nextCursor: isNextPage.length ? helper.toCursorHash(JSON.stringify(nextCursor)) : null,
-            previousCursor: isPreviousPage.length ? helper.toCursorHash(JSON.stringify(previousCursor)) : null,
-            pageSize: params.pageSize || null
-        },
+        invoices
     })
 }
 
