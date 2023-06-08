@@ -15,7 +15,22 @@ import { Customer } from '../../models/Customer';
 import { splitArray } from './common';
 import { User } from '../../models/User';
 
-
+/**
+ * Receives the request to get invoices
+ * @param req request
+ * @param res response
+ * @returns {
+ *       status,
+ *       total,
+ *       unsyncedInvoices,
+ *       invoices,
+ *       pagination: {
+ *           nextCursor,
+ *           previousCursor,
+ *           pageSize
+ *       }
+ * }
+ */
 export const getInvoices = async (req: Request, res: Response) => {
 
     const params = req.body;

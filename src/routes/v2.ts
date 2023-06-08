@@ -10,6 +10,7 @@ import { isLogin } from '../middleware/session';
 import { Permissions } from '../common/constants';
 import * as invoiceController from '../controllers/v2/invoice';
 import * as jobController from '../controllers/v2/job';
+import * as serviceTicketController from '../controllers/v2/serviceTicket';
 
 export default function () {
 
@@ -34,6 +35,25 @@ export default function () {
         checkUserPermissions(Permissions.Job_Get_All),
         validate(Validations.getJobs),
         jobController.getJobs
+    )
+
+    router.get(
+        '/getAllJobReports',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Job_Report),
+        validate(Validations.getAllJobReports),
+        jobController.getAllJobReports
+    )
+
+    router.post(
+        '/getServiceTickets',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Service_Tickets),
+        serviceTicketController.getServiceTickets
     )
 
     return router
