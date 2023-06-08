@@ -51,7 +51,7 @@ pipelines:
             - eval $(aws ecr get-login --region ${AWS_DEFAULT_REGION} --no-include-email)
             # docker
             - export IMAGE_TAG="${BITBUCKET_COMMIT::7}"
-            - docker build -t ${REPOSITORY_URL}:$IMAGE_TAG --build-arg node_environment=development .
+            - docker build -t ${REPOSITORY_URL}:$IMAGE_TAG --build-arg node_environment=test .
             - docker push ${REPOSITORY_URL}:$IMAGE_TAG
             - docker tag ${REPOSITORY_URL}:$IMAGE_TAG ${REPOSITORY_URL}:latest
             - docker push ${REPOSITORY_URL}:latest
