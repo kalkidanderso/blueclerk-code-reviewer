@@ -174,7 +174,7 @@ export const updateContact = async (req: Request, res: Response) => {
 
 export const getContacts = async (req: Request, res: Response) => {
     try {
-        const isActive = (typeof req.query?.isActive === "string" || typeof req.query?.isActive === "boolean") && req.query?.isActive;
+        const isActive = (typeof req.query?.isActive === "string" || typeof req.query?.isActive === "boolean") ? req.query?.isActive : null;
 
         if (req.query.type === 'Customer') {
             Customer.findOne({ _id: req.query.referenceNumber }).populate({ path: 'contacts' }).exec(async (err: any, customer: ICustomer) => {
@@ -289,7 +289,7 @@ export const removeContact = async (req: Request, res: Response) => {
     }
 }
 
-const _handlefindIsActiveContact = async (isActive: string | boolean, customerContacts: IContact[]): Promise<IContact[]> => {
+const _handlefindIsActiveContact = async (isActive: string | boolean | null, customerContacts: IContact[]): Promise<IContact[]> => {
 
     const contacts: any[] = [];
 
