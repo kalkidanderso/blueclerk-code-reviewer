@@ -547,7 +547,7 @@ const _getFilteredJobReportsIds = async (filteredInitialJobReports: any[], param
     // Get fields 
     const { keyword, workType, companyLocation } = params;
     //early return
-    if (!keyword) {
+    if (!keyword && !workType && !companyLocation) {
         return jobReportsIds;
     }
     //Additional filter by params receive, workType and companyLocation on the jobs
@@ -571,26 +571,29 @@ const _getFilteredJobReportsIds = async (filteredInitialJobReports: any[], param
             },
         },
     ]);
-    const jobSitesFieldsToFilter: string[] = ['name', 'address.street', 'address.city'];
-    const jobLocationsFieldsToFilter: string[] = ['name', 'address.street', 'address.city'];
-
-    const filteredJobs = await _getFilteredJobsIds(jobs, params, jobSitesFieldsToFilter,
-        jobLocationsFieldsToFilter);
-
-    const keywordRegex = helper.getRegex(keyword, 'i');
 
     const query: any = {
         $and: [
             { _id: { $in: jobReportsIds } },
-            {
-                $or: [
-                    { customerName: keywordRegex },
-                    { technicianName: keywordRegex },
-                    { job: { $in: filteredJobs } }
-                ]
-            }
         ]
     };
+    //conditioning the search with keyword
+    if (keyword) {
+        const jobSitesFieldsToFilter: string[] = ['name', 'address.street', 'address.city'];
+        const jobLocationsFieldsToFilter: string[] = ['name', 'address.street', 'address.city'];
+
+        const filteredJobs = await _getFilteredJobsIds(jobs, params, jobSitesFieldsToFilter,
+            jobLocationsFieldsToFilter);
+
+        const keywordRegex = helper.getRegex(keyword, 'i');
+        query['$and'].push({
+            $or: [
+                { customerName: keywordRegex },
+                { technicianName: keywordRegex },
+                { job: { $in: filteredJobs } }
+            ]
+        });
+    }
     //Forcing to match witht he jobs if they need to be filtered by workType or companyLocation
     if (jobsQueryParams.length > 0) {
         query['$and'].push({ job: jobs.map((value) => value._id) })
