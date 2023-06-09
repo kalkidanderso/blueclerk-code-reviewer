@@ -25,10 +25,6 @@ import { IJobReport, JobReport } from '../../models/JobReport';
 export const getJobs = async (req: Request, res: Response) => {
 
     const bodyParams = req.body;
-    // Return error when all cursors are provided
-    if (bodyParams.nextCursor && bodyParams.previousCursor) {
-        return res.json({ status: Status.Error, message: 'Provided cursor could only be one of either nextCursor or previousCursor.' });
-    }
     const queryParams = req.query;
     const companyId = req.otherCompanyId || req.companyId;
     const currentPage = bodyParams.currentPage || 0;
@@ -219,10 +215,6 @@ export const getJobs = async (req: Request, res: Response) => {
  */
 export const getAllJobReports = async (req: Request, res: Response) => {
     const params = req.query;
-    // Return error when all cursors are provided
-    if (params.nextCursor && params.previousCursor) {
-        return res.json({ status: Status.Error, message: 'Provided cursor could only be one of either nextCursor or previousCursor.' });
-    }
     const companyId = req.otherCompanyId || req.companyId;
     const currentPage = params.currentPage || 0;
     const pageSize = params.pageSize || DefaultPageSize;
