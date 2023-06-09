@@ -596,7 +596,7 @@ const _getFilteredJobReportsIds = async (filteredInitialJobReports: any[], param
     }
     //Forcing to match witht he jobs if they need to be filtered by workType or companyLocation
     if (jobsQueryParams.length > 0) {
-        query['$and'].push({ job: jobs.map((value) => value._id) })
+        query['$and'].push({ job: { $in: jobs.map((value) => value._id) } })
     }
     const values = (await JobReport.aggregate([
         { $match: query },
