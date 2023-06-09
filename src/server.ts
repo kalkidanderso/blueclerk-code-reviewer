@@ -1,3 +1,4 @@
+import express from 'express';
 import dotenv from 'dotenv'
 import mongoose from 'mongoose'
 import logger from 'morgan'
@@ -12,7 +13,9 @@ import { MongoError } from 'mongodb'
 import routesV1 from './routes/v1'
 import routesV2 from './routes/v2'
 import swaggerUi from 'swagger-ui-express'
-import * as swaggerDocument from './swagger.json'
+import * as swaggerDocumentV1 from './swagger_v1.json'
+import * as swaggerDocumentV2 from './swagger_v2.json'
+
 // const CronJob = require('cron').CronJob;
 import { CronJob } from 'cron'
 import request from 'request';
@@ -40,8 +43,8 @@ process.env.TZ = 'America/Chicago';
 //Database connection
 const { DB_USER, DB_PASS, DB_HOST, DB_NAME, session_secret, jwt_encryption } = process.env
 const dbConnect = DB_HOST === 'localhost'
-    ? `mongodb://${DB_HOST}/${DB_NAME}`
-    : `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`;
+  ? `mongodb://${DB_HOST}/${DB_NAME}`
+  : `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`;
 
 mongoose.set('useCreateIndex', true)
 mongoose.connect(
@@ -59,9 +62,9 @@ mongoose.connect(
 const app = require('express')();
 
 Sentry.init({
-    dsn: "https://7ce3dc3af480456e9351a3df61cd166a@o4505155845226496.ingest.sentry.io/4505156270686208",
-    tracesSampleRate: 1.0,
-    environment: process.env.ENVIRONMENT
+  dsn: "https://7ce3dc3af480456e9351a3df61cd166a@o4505155845226496.ingest.sentry.io/4505156270686208",
+  tracesSampleRate: 1.0,
+  environment: process.env.ENVIRONMENT
 });
 
 
@@ -80,21 +83,21 @@ function haltOnTimeout(req: any, res: any, next: any) {
 // Handle session
 app.use(
   session({
-      secret: session_secret || jwt_encryption,
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-          maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
-          secure: true,
-      },
+    secret: session_secret || jwt_encryption,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+      secure: true,
+    },
 
-      // Database settings to session
-      store: MongoStore.create({
-          mongoUrl: dbConnect,
-          mongoOptions: { useNewUrlParser: true, useUnifiedTopology: true },
-          collectionName: 'sessions',
-          autoRemove: 'native' // Remove session when expired
-      }),
+    // Database settings to session
+    store: MongoStore.create({
+      mongoUrl: dbConnect,
+      mongoOptions: { useNewUrlParser: true, useUnifiedTopology: true },
+      collectionName: 'sessions',
+      autoRemove: 'native' // Remove session when expired
+    }),
   })
 );
 
@@ -118,11 +121,39 @@ passportMiddleWare(passport)
 app.use(logger('dev'))
 
 //Swagger
-app.use('/api-docs', (req: any, res: any, next: any) => {
-  swaggerDocument.servers.push({ url: process.env.BASE_URL || "https://blueclerk-node-api.deploy.blueclerk.com/api/v1" });
-  req.swaggerDoc = swaggerDocument;
-  next();
-}, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+const options = {
+  explorer: true,
+  swaggerOptions: {
+    urls: [
+      {
+        url: '/swagger/v1',
+        name: 'Version 1'
+      },
+      {
+        url: '/swagger/v2',
+        name: 'Version 2'
+      }
+    ]
+  }
+}
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(null, options));
+const swaggerRoutes = ()=>{
+  const router: express.Router = express.Router();
+  //Documentation version 1
+  router.get('/v1', async (req, res) => {
+    swaggerDocumentV1.servers.push({ url: process.env.BASE_URL || "https://blueclerk-node-api.deploy.blueclerk.com/api/v1" });
+    return res.json(swaggerDocumentV1);
+  })
+
+  //Documentation version 1
+  router.get('/v2', async (req, res) => {
+    swaggerDocumentV2.servers.push({ url: process.env.BASE_URL_V2 || "https://blueclerk-node-api.deploy.blueclerk.com/api/v2" });
+    return res.json(swaggerDocumentV2);
+  })
+  return router;
+}
+app.use('/swagger', swaggerRoutes());
+
 
 const httpServer = require('http').createServer(app);
 const sio = require("socket.io")(httpServer, {

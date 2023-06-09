@@ -1,0 +1,2418 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "BlueClerk",
+    "description": "APIs version 2 for both app and website",
+    "version": "0.0.1"
+  },
+  "servers": [],
+  "tags": [
+    {
+      "name": "Service Ticket",
+      "description": "For creating and getting service tickets"
+    },
+    {
+      "name": "Job",
+      "description": "For scheduled jobs"
+    },
+    {
+      "name": "Job Report",
+      "description": "For job and other reports"
+    },
+    {
+      "name": "Invoice",
+      "description": "For invoices of jobs"
+    }
+  ],
+  "paths": {
+    "/getJobs": {
+      "post": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "To get all jobs of a company or company of employee.",
+        "parameters": [
+          {
+            "name": "workType",
+            "in": "query",
+            "description": "Array of work types to filter jobs",
+            "schema": {
+              "type": "array"
+            }
+          },
+          {
+            "name": "companyLocation",
+            "in": "query",
+            "description": "Array of company locations to filter jobs",
+            "schema": {
+              "type": "array"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keyword": {
+                    "type": "string",
+                    "description": "Filter jobs by search keyword to Job Id, Customer's name, Subdivision's name address, Job Address's name address, Technician's name, and Contractor's name"
+                  },
+                  "status": {
+                    "type": "integer",
+                    "description": "Filter jobs by status (PENDING => 0, STARTED => 1, FINISHED => 2, CANCELED => 3, RESCHEDULED => 4, PAUSED => 5, INCOMPLETE => 6)",
+                    "enum": [
+                      0,
+                      1,
+                      2,
+                      3,
+                      4,
+                      5,
+                      6
+                    ]
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter of start jobs schedule date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter of end jobs schedule date"
+                  },
+                  "customerId": {
+                    "type": "string",
+                    "description": "Filter jobs by customer"
+                  },
+                  "technicianIds": {
+                    "type": "array",
+                    "description": "List of technician id's in array. eg. [\"608b9f54c30223196b7ab22a\", \"608b9f54c30223196b7ab21b\"]"
+                  },
+                  "currentPage": {
+                    "type": "number",
+                    "description": "Page to go on the pagination. Default value 0"
+                  },
+                  "pageSize": {
+                    "type": "number",
+                    "description": "The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default"
+                  },
+                  "companyId": {
+                    "type": "string",
+                    "description": "Id of company if contractor is hitting for other company"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "number",
+                      "description": "Custom status"
+                    },
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/JobList"
+                      }
+                    },
+                    "total": {
+                      "type": "number",
+                      "description": "Total of jobs"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getInvoices": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To get invoices",
+        "parameters": [
+          {
+            "name": "workType",
+            "in": "query",
+            "description": "Array of work types to filter invoices",
+            "schema": {
+              "type": "array"
+            }
+          },
+          {
+            "name": "companyLocation",
+            "in": "query",
+            "description": "Array of company locations to filter invoices",
+            "schema": {
+              "type": "array"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pageSize": {
+                    "type": "number",
+                    "description": "The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default"
+                  },
+                  "currentPage": {
+                    "type": "number",
+                    "description": "Page to go on the pagination. Default value 0"
+                  },
+                  "keyword": {
+                    "type": "string",
+                    "description": "Filter invoices by search keyword to Job Id, Customer's name, Job's Subdivision name address, Job's Job Address name address, Job's Technician name, and Job's Contractor name"
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter invoices by start of the issued date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter invoices by end of the issued date"
+                  },
+                  "jobId": {
+                    "type": "string",
+                    "description": "Filter invoices by Job ID"
+                  },
+                  "customerPO": {
+                    "type": "string",
+                    "description": "Filter invoices by P.O. Number"
+                  },
+                  "missingPO": {
+                    "type": "boolean",
+                    "description": "Filter invoices by missing P.O. Number. Only show invoices that don't have any PO number"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "Filter invoices by multiple status. Format example: [\"UNPAID\", \"PARTIALLY_PAID\", \"PAID\"]"
+                  },
+                  "customerId": {
+                    "type": "string",
+                    "description": "Filter invoices by Customer ID"
+                  },
+                  "customerContactId": {
+                    "type": "string",
+                    "description": "Filter invoices by Customer Contact ID"
+                  },
+                  "jobLocationId": {
+                    "type": "string",
+                    "description": "Filter invoices by Subdivision/Job Location ID"
+                  },
+                  "jobAddress": {
+                    "type": "string",
+                    "description": "Filter invoices by Job Address' address"
+                  },
+                  "jobCity": {
+                    "type": "string",
+                    "description": "Filter invoices by Job Address' city"
+                  },
+                  "jobState": {
+                    "type": "string",
+                    "description": "Filter invoices by Job Address' state"
+                  },
+                  "jobZip": {
+                    "type": "string",
+                    "description": "Filter invoices by Job Address' Zip"
+                  },
+                  "technicianId": {
+                    "type": "string",
+                    "description": "Filter invoices by Job's technician"
+                  },
+                  "startAmount": {
+                    "type": "string",
+                    "description": "Filter invoices by Start Amount range"
+                  },
+                  "endAmount": {
+                    "type": "string",
+                    "description": "Filter invoices by End Amount range"
+                  },
+                  "lastEmailStartDate": {
+                    "type": "string",
+                    "description": "Filter invoices by Last Email Send start range"
+                  },
+                  "lastEmailEndDate": {
+                    "type": "string",
+                    "description": "Filter invoices by Last Email Send end range"
+                  },
+                  "isDraft": {
+                    "type": "boolean",
+                    "description": "Filter invoices by draft"
+                  },
+                  "isVoid": {
+                    "type": "boolean",
+                    "description": "Filter invoices by void"
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "description": "Filter invoices by dueDate or before"
+                  },
+                  "recentOnly": {
+                    "type": "boolean",
+                    "description": "To force API to return only last 90 days even with any filter applied. Be default, when any filter applied, API will return all data so user could search through all invoices",
+                    "enum": [
+                      true,
+                      false
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "number",
+                      "description": "Custom status"
+                    },
+                    "invoices": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/InvoiceList"
+                      }
+                    },
+                    "total": {
+                      "type": "number",
+                      "description": "Total of invoices"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getAllJobReports": {
+      "get": {
+        "tags": [
+          "Job Report"
+        ],
+        "summary": "Get the company's job reports",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "Filter job reports by search keyword to Job Id, Customer's name, Subdivision's name address, Job Address's name address, Technician's name, and Contractor's name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Filter of start job reports' job date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "Filter of end job reports' job date",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currentPage",
+            "in": "query",
+            "description": "Page to go on the pagination. Default value 0",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "number",
+                      "description": "Custom status"
+                    },
+                    "reports": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/JobReportList"
+                      }
+                    },
+                    "total": {
+                      "type": "number",
+                      "description": "Total of job reports"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "Bearer": []
+              }
+            ]
+          }
+        }
+      }
+    },
+    "/getServiceTickets": {
+      "post": {
+        "tags": [
+          "Service Ticket"
+        ],
+        "summary": "To get all service tickets of a company or company of employee.",
+        "parameters": [
+          {
+            "name": "workType",
+            "in": "query",
+            "description": "Array of work types to filter invoices",
+            "schema": {
+              "type": "array"
+            }
+          },
+          {
+            "name": "companyLocation",
+            "in": "query",
+            "description": "Array of company locations to filter invoices",
+            "schema": {
+              "type": "array"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keyword": {
+                    "type": "string",
+                    "description": "Filter service tickets by search keyword to Service Ticket Id, Customer's name, Subdivision's name address, Technician's name, and Contractor's name"
+                  },
+                  "status": {
+                    "type": "integer",
+                    "description": "Filter service tickets by status (OPEN => 0, AVAILABLE => 1, ALL => 2)",
+                    "enum": [
+                      0,
+                      1,
+                      2
+                    ]
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter of start service tickets schedule date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter of end service tickets schedule date"
+                  },
+                  "customerId": {
+                    "type": "string",
+                    "description": "Filter service tickets by customer"
+                  },
+                  "technicianIds": {
+                    "type": "array",
+                    "description": "List of technician id's in array. eg. [\"608b9f54c30223196b7ab22a\", \"608b9f54c30223196b7ab21b\"]"
+                  },
+                  "currentPage": {
+                    "type": "number",
+                    "description": "Page to go on the pagination. Default value 0"
+                  },
+                  "pageSize": {
+                    "type": "number",
+                    "description": "The numbers of service tickets to return per page e.g. 10. When not provided, will return 30 service tickets by default"
+                  },
+                  "companyId": {
+                    "type": "string",
+                    "description": "Id of company if contractor is hitting for other company"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "number",
+                      "description": "Custom status"
+                    },
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ServiceTicketList"
+                      }
+                    },
+                    "total": {
+                      "type": "number",
+                      "description": "Total of service tickets"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "JobBasic": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "Current status of job"
+          },
+          "isHomeOccupied": {
+            "type": "boolean"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JobTask"
+            }
+          },
+          "track": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "user": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "scheduledStartTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "scheduledEndTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "scheduleDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "scheduleTimeAMPM": {
+            "type": "number"
+          }
+        }
+      },
+      "Job": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/JobBasic"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "parentJob": {
+                "type": "string"
+              },
+              "ticket": {
+                "type": "string"
+              },
+              "request": {
+                "type": "string"
+              },
+              "equipmentId": {
+                "type": "string"
+              },
+              "technician": {
+                "type": "string"
+              },
+              "contractor": {
+                "type": "string"
+              },
+              "customer": {
+                "type": "string"
+              },
+              "jobLocation": {
+                "type": "string"
+              },
+              "jobSite": {
+                "type": "string"
+              },
+              "homeOwner": {
+                "type": "string"
+              },
+              "homeJobLocation": {
+                "type": "string"
+              },
+              "homeJobSite": {
+                "type": "string"
+              },
+              "customerPO": {
+                "type": "string"
+              },
+              "image": {
+                "type": "string"
+              },
+              "images": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "imageUrl": {
+                      "type": "string"
+                    },
+                    "uploadedBy": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              },
+              "technicianImages": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "imageUrl": {
+                      "type": "string"
+                    },
+                    "uploadedBy": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              },
+              "type": {
+                "type": "string",
+                "description": "Id of job type"
+              },
+              "tasksBackup": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "jobType": {
+                      "type": "string"
+                    },
+                    "isSelfFinished": {
+                      "type": "boolean"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "charges": {
+                      "type": "number"
+                    },
+                    "startTime": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "tempStartTime": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "endTime": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "timeSpent": {
+                      "type": "number"
+                    },
+                    "pausedCount": {
+                      "type": "number"
+                    },
+                    "timeUpdatedBy": {
+                      "type": "number"
+                    },
+                    "timeUpdatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "equipmentScanned": {
+                      "type": "boolean"
+                    },
+                    "noOfEquipmentScanned": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "company": {
+                "type": "string",
+                "description": "Id of company who created it"
+              },
+              "comment": {
+                "type": "string",
+                "description": "Comment by employee who completed the job"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updatedAt": {
+                "type": "string"
+              },
+              "employeeType": {
+                "type": "boolean"
+              },
+              "charges": {
+                "type": "number"
+              },
+              "salesTax": {
+                "type": "string"
+              },
+              "startTime": {
+                "type": "string",
+                "description": "Date and time when the job was started",
+                "format": "date-time"
+              },
+              "endTime": {
+                "type": "string",
+                "description": "Date and time when the job was finished",
+                "format": "date-time"
+              },
+              "timeSpent": {
+                "type": "number"
+              },
+              "timeUpdatedBy": {
+                "type": "string"
+              },
+              "timeUpdatedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "completeOnTime": {
+                "type": "boolean"
+              },
+              "workType": {
+                "type": "string"
+              },
+              "companyLocation": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "Invoice": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "invoiceId": {
+            "type": "string",
+            "description": "Custom invoice id to be shown on invoice"
+          },
+          "inoviceType": {
+            "type": "number",
+            "description": "0 for the invoice for job and 1 for the invoice of purchase order"
+          },
+          "job": {
+            "type": "string",
+            "description": "Id of job from which the invoice was created"
+          },
+          "purchaseOrder": {
+            "type": "string",
+            "description": "Id of the purchase order if the invoic is for purchase order only"
+          },
+          "estimate": {
+            "type": "string",
+            "description": "Id of the estimate if the invoic is for estimate only"
+          },
+          "jobPurchaseOrders": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "issuedDate": {
+            "type": "string",
+            "description": "Issued date of the invoice"
+          },
+          "dueDate": {
+            "type": "string",
+            "description": "Due date of the invoice"
+          },
+          "isDraft": {
+            "type": "boolean"
+          },
+          "paymentTerm": {
+            "type": "string"
+          },
+          "customerPO": {
+            "type": "string"
+          },
+          "customerContactId": {
+            "type": "string"
+          },
+          "vendorId": {
+            "type": "string"
+          },
+          "customer": {
+            "type": "string",
+            "description": "Id of cusomer from whom the invoice was created"
+          },
+          "jobLocation": {
+            "type": "string"
+          },
+          "jobSite": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string",
+            "description": "Id of company to whom this invoice belongs"
+          },
+          "note": {
+            "type": "string"
+          },
+          "charges": {
+            "type": "number",
+            "description": "Charges amount from job or if you have customized while creating invoice"
+          },
+          "shippingCost": {
+            "type": "number"
+          },
+          "tax": {
+            "type": "number",
+            "description": "Tax amount to be added in charges to caculate the total invoice"
+          },
+          "taxAmount": {
+            "type": "number"
+          },
+          "subTotal": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number",
+            "description": "Total amount to be charged to customer"
+          },
+          "taxPercentage": {
+            "type": "number",
+            "description": "Tax percentage applied to invoice default will be 0"
+          },
+          "timeSpent": {
+            "type": "number",
+            "description": "No of hourse spent on that job"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "item": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "isFixed": {
+                  "type": "boolean"
+                },
+                "hourlyRate": {
+                  "type": "number"
+                },
+                "price": {
+                  "type": "number"
+                },
+                "quantity": {
+                  "type": "number"
+                },
+                "tax": {
+                  "type": "number"
+                },
+                "taxAmount": {
+                  "type": "number"
+                },
+                "subTotal": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "paymentApplied": {
+            "type": "number"
+          },
+          "balanceDue": {
+            "type": "number"
+          },
+          "paid": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "emailHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sentTo": {
+                  "type": "string"
+                },
+                "sentAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "lastEmailSent": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "quickbookId": {
+            "type": "string"
+          },
+          "comission": {
+            "type": "string"
+          },
+          "isVoid": {
+            "type": "boolean"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "Id of employee of company who has created this invoice"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Date time when the invoice was created",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "workType": {
+            "type": "string"
+          },
+          "companyLocation": {
+            "type": "string"
+          }
+        }
+      },
+      "JobReport": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string",
+            "description": "Auto generated job id from sevice ticket number"
+          },
+          "status": {
+            "type": "number",
+            "description": "Status of job if it is finshed or not"
+          },
+          "employeeType": {
+            "type": "boolean",
+            "description": "If false that means assigned to employee if true that means job is assigned to vendor or vendors employee"
+          },
+          "dateTime": {
+            "type": "string",
+            "description": "Time when job was scheduled",
+            "format": "date-time"
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ticket": {
+            "type": "object",
+            "properties": {
+              "scheduleDateTime": {
+                "type": "string",
+                "description": "Time when ticket was scheduled",
+                "format": "date-time"
+              },
+              "note": {
+                "type": "string",
+                "description": "Additional note added by person who created ticket"
+              },
+              "ticketId": {
+                "type": "string",
+                "description": "Auto generated ticket number using prefix defined by user"
+              }
+            }
+          },
+          "technician": {
+            "type": "object",
+            "properties": {
+              "auth": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "description": "Email address of technician"
+                  }
+                }
+              },
+              "profile": {
+                "type": "object",
+                "properties": {
+                  "displayName": {
+                    "type": "string",
+                    "description": "Name of technician"
+                  }
+                }
+              },
+              "contact": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "description": "Phone number of technician"
+                  }
+                }
+              },
+              "permissions": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "description": "Role of technician in his company/organization"
+                  }
+                }
+              }
+            }
+          },
+          "customer": {
+            "type": "object",
+            "properties": {
+              "auth": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "description": "Email address of customer or from info.email"
+                  }
+                }
+              },
+              "info": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "description": "Email address of customer if present"
+                  }
+                }
+              },
+              "profile": {
+                "type": "object",
+                "properties": {
+                  "displayName": {
+                    "type": "string",
+                    "description": "Name of customer"
+                  }
+                }
+              },
+              "contact": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "description": "Phone number of customer if present"
+                  }
+                }
+              },
+              "address": {
+                "type": "object",
+                "properties": {
+                  "street": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "zipCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "type": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Title of job type"
+              }
+            }
+          },
+          "company": {
+            "type": "object",
+            "properties": {
+              "auth": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "description": "Email address of company"
+                  }
+                }
+              },
+              "info": {
+                "type": "object",
+                "properties": {
+                  "companyName": {
+                    "type": "string",
+                    "description": "Name of company"
+                  },
+                  "logoUrl": {
+                    "type": "string",
+                    "description": "Logo of company"
+                  }
+                }
+              },
+              "contact": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "description": "Phone number of company"
+                  }
+                }
+              },
+              "permissions": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string"
+                  }
+                }
+              },
+              "address": {
+                "type": "object",
+                "properties": {
+                  "street": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "zipCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "createdBy": {
+            "type": "object",
+            "properties": {
+              "auth": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "description": "Email address of person who created job"
+                  }
+                }
+              },
+              "info": {
+                "type": "object",
+                "properties": {
+                  "companyName": {
+                    "type": "string",
+                    "description": "Name of company"
+                  }
+                }
+              },
+              "profile": {
+                "type": "object",
+                "properties": {
+                  "displayName": {
+                    "type": "string"
+                  }
+                }
+              },
+              "contact": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string"
+                  }
+                }
+              },
+              "permissions": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "description": "Role of person who created job in his company/organization"
+                  }
+                }
+              },
+              "address": {
+                "type": "object",
+                "properties": {
+                  "street": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "zipCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "scans": {
+            "type": "object",
+            "properties": {
+              "comment": {
+                "type": "string",
+                "description": "comment added by person who scanned the equipment"
+              },
+              "timeOfScan": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "equipment": {
+                "type": "object",
+                "properties": {
+                  "info": {
+                    "type": "object",
+                    "properties": {
+                      "model": {
+                        "type": "string",
+                        "description": "model number of equipment scanned"
+                      },
+                      "serialNumber": {
+                        "type": "string",
+                        "description": "serialNumber number of equipment scanned"
+                      },
+                      "nfcTag": {
+                        "type": "string",
+                        "description": "nfcTag of equipment scanned"
+                      },
+                      "location": {
+                        "type": "string",
+                        "description": "location of equipment"
+                      }
+                    }
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "type": {
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "brand": {
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "invoiceCreated": {
+            "type": "boolean"
+          },
+          "invoice": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string"
+              },
+              "invoiceId": {
+                "type": "string",
+                "description": "Custom invoice id to be shown on invoice"
+              },
+              "invoiceType": {
+                "type": "number",
+                "description": "0 for the invoice for job and 1 for the invoice of purchase order"
+              },
+              "purchaseOrder": {
+                "type": "string",
+                "description": "Id of the purchase order if the invoic is for purchase order only"
+              },
+              "issuedDate": {
+                "type": "string",
+                "description": "Issued date of the invoice"
+              },
+              "dueDate": {
+                "type": "string",
+                "description": "Due date of the invoice"
+              },
+              "estimate": {
+                "type": "string",
+                "description": "Id of the estimate if the invoic is for estimate only"
+              },
+              "jobPurchaseOrders": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "charges": {
+                "type": "number",
+                "description": "Charges amount from job or if you have customized while creating invoice"
+              },
+              "taxPercentage": {
+                "type": "number",
+                "description": "Tax percentage applied to invoice default will be 0"
+              },
+              "tax": {
+                "type": "number",
+                "description": "Tax amount to be added in charges to caculate the total invoice"
+              },
+              "total": {
+                "type": "number",
+                "description": "Total amount to be charged to customer"
+              }
+            }
+          }
+        }
+      },
+      "ServiceTicket": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "customer": {
+            "type": "string",
+            "description": "Id of customer"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "Id of user who created ticket"
+          },
+          "note": {
+            "type": "string",
+            "description": "note added while creating ticket"
+          },
+          "customerPO": {
+            "type": "string",
+            "description": "Customer PO/Sales Order#\n\n"
+          },
+          "customerContactId": {
+            "type": "string",
+            "description": "Customer Contact Id"
+          },
+          "image": {
+            "type": "string",
+            "description": "Image of ticket"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "_id": {
+                  "type": "string"
+                },
+                "imageUrl": {
+                  "type": "string"
+                },
+                "uploadedBy": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "company": {
+            "type": "string",
+            "description": "Id of company who created it"
+          },
+          "technician": {
+            "type": "string",
+            "description": "Id of technician"
+          },
+          "status": {
+            "type": "number"
+          },
+          "editedBy": {
+            "type": "string"
+          },
+          "editedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ticketId": {
+            "type": "string"
+          },
+          "jobLocation": {
+            "type": "string"
+          },
+          "jobSite": {
+            "type": "string"
+          },
+          "isHomeOccupied": {
+            "type": "boolean"
+          },
+          "homeOwner": {
+            "type": "string"
+          },
+          "homeJobLocation": {
+            "type": "string"
+          },
+          "homeJobSite": {
+            "type": "string"
+          },
+          "jobType": {
+            "type": "string"
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "jobType": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "item": {
+            "type": "string"
+          },
+          "jobCreated": {
+            "type": "boolean"
+          },
+          "track": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "source": {
+            "type": "string"
+          },
+          "workType": {
+            "type": "string"
+          },
+          "workLocation": {
+            "type": "string"
+          }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "street": {
+            "type": "string"
+          },
+          "zipcode": {
+            "type": "string"
+          }
+        }
+      },
+      "Point": {
+        "type": "object",
+        "properties": {
+          "coordinates": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "JobSite": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "location": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "address": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "locationId": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "homeOwner": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Company": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "info": {
+            "type": "object",
+            "properties": {
+              "companyName": {
+                "type": "string"
+              },
+              "industry": {
+                "type": "string"
+              },
+              "logoUrl": {
+                "type": "string"
+              },
+              "companyEmail": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              }
+            }
+          },
+          "address": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "contact": {
+            "$ref": "#/components/schemas/CommonContact"
+          },
+          "other": {
+            "type": "object",
+            "properties": {
+              "tenantId": {
+                "type": "string"
+              },
+              "hasCardOnFile": {
+                "type": "boolean"
+              }
+            }
+          },
+          "employees": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "customers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "stripeId": {
+            "type": "string"
+          },
+          "paid": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "number"
+          },
+          "plan": {
+            "type": "number"
+          },
+          "chargeDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "trialEndDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "maxTechnicians": {
+            "type": "number"
+          },
+          "maxManagers": {
+            "type": "number"
+          },
+          "maxOfficeAdmins": {
+            "type": "number"
+          },
+          "maxAdmins": {
+            "type": "number"
+          },
+          "userPermissions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "on": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "emailPreferences": {
+            "type": "object",
+            "properties": {
+              "preferences": {
+                "type": "number"
+              },
+              "time": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "timeZone": {
+                "type": "string"
+              }
+            }
+          },
+          "currentJobId": {
+            "type": "number"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "admin": {
+            "type": "string"
+          },
+          "qbAccessToken": {
+            "type": "string"
+          },
+          "qbRefreshToken": {
+            "type": "string"
+          },
+          "realmId": {
+            "type": "string"
+          },
+          "qbCompanyName": {
+            "type": "string"
+          },
+          "qbCompanyEmail": {
+            "type": "string"
+          },
+          "customersSynced": {
+            "type": "boolean"
+          },
+          "customersSyncedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "qbSync": {
+            "type": "object",
+            "properties": {
+              "customersSynced": {
+                "type": "boolean"
+              },
+              "customersSyncedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "itemsSynced": {
+                "type": "boolean"
+              },
+              "itemsSyncedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "paymentTermSynced": {
+                "type": "boolean"
+              },
+              "paymentTermSynedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "invoicesSynced": {
+                "type": "boolean"
+              },
+              "invoicesSyncedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "paymentsSynced": {
+                "type": "boolean"
+              },
+              "paymentsSyncedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "socketId": {
+            "type": "string"
+          },
+          "qbAuthorized": {
+            "type": "boolean"
+          },
+          "qbRefeshTokenExpiry": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "currentInvoiceId": {
+            "type": "number"
+          },
+          "invoicePrefix": {
+            "type": "string"
+          },
+          "currentPOId": {
+            "type": "number"
+          },
+          "currentEstimateId": {
+            "type": "number"
+          },
+          "itemTier": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "number"
+              },
+              "list": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "tier": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "paymentTerm": {
+            "type": "string"
+          },
+          "companyInvoices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "balance": {
+            "type": "number"
+          },
+          "credit": {
+            "type": "number"
+          },
+          "comission": {
+            "type": "number"
+          },
+          "blockchain": {
+            "type": "object",
+            "properties": {
+              "attachments": {
+                "type": "string"
+              },
+              "verified": {
+                "type": "boolean"
+              },
+              "verifiedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "verifiedBy": {
+                "type": "string"
+              },
+              "deniedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "deniedBy": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "JobType": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "industry": {
+            "type": "string",
+            "description": "industry id for whome the job type was created"
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "Id of the company who created it, or null if the global admin created it."
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "quickbookId": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "HomeOwner": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/CommonProfile"
+          },
+          "info": {
+            "type": "object",
+            "properties": {
+              "email": {
+                "type": "string"
+              }
+            }
+          },
+          "contact": {
+            "$ref": "#/components/schemas/CommonContact"
+          },
+          "subdivision": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "address": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "JobTask": {
+        "type": "object",
+        "properties": {
+          "jobType": {
+            "type": "string"
+          },
+          "isSelfFinished": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "number"
+          },
+          "charges": {
+            "type": "number"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "tempStartTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timeSpent": {
+            "type": "number"
+          },
+          "pausedCount": {
+            "type": "number"
+          },
+          "timeUpdatedBy": {
+            "type": "number"
+          },
+          "noOfEquipmentScanned": {
+            "type": "number"
+          }
+        }
+      },
+      "CommonProfile": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "CommonContact": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string"
+          },
+          "fax": {
+            "type": "string"
+          }
+        }
+      },
+      "InvoiceList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Invoice"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "job": {
+                "type": "object",
+                "properties": {
+                  "jobId": {
+                    "type": "string"
+                  },
+                  "scheduleDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "ticket": {
+                    "type": "string"
+                  },
+                  "jobLocation": {
+                    "type": "string"
+                  },
+                  "jobSite": {
+                    "type": "string"
+                  },
+                  "tasks": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/JobTask"
+                    }
+                  }
+                }
+              },
+              "paymentTerm": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "dueDays": {
+                    "type": "number"
+                  }
+                }
+              },
+              "customer": {
+                "type": "object",
+                "properties": {
+                  "info": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "auth": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "profile": {
+                    "$ref": "#/components/schemas/CommonProfile"
+                  },
+                  "address": {
+                    "$ref": "#/components/schemas/Address"
+                  },
+                  "vendorId": {
+                    "type": "string"
+                  },
+                  "contactName": {
+                    "type": "string"
+                  },
+                  "contactEmail": {
+                    "type": "string"
+                  }
+                }
+              },
+              "customerContactId": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  }
+                }
+              },
+              "jobLocation": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "$ref": "#/components/schemas/Address"
+                  },
+                  "location": {
+                    "$ref": "#/components/schemas/Point"
+                  }
+                }
+              },
+              "jobSite": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "$ref": "#/components/schemas/Address"
+                  },
+                  "location": {
+                    "$ref": "#/components/schemas/Point"
+                  }
+                }
+              },
+              "companyLocation": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "isMainLocation": {
+                    "type": "boolean"
+                  },
+                  "billingAddres": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/Address"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "coordinates": {
+                            "type": "object",
+                            "properties": {
+                              "lng": {
+                                "type": "number"
+                              },
+                              "lat": {
+                                "type": "number"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "workType": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "JobList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/JobBasic"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "customerObj": {
+                "type": "object",
+                "properties": {
+                  "_id": {
+                    "type": "string"
+                  },
+                  "profile": {
+                    "$ref": "#/components/schemas/CommonProfile"
+                  },
+                  "info": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "ticketObj": {
+                "$ref": "#/components/schemas/ServiceTicket"
+              },
+              "jobLocation": {
+                "type": "object",
+                "properties": {
+                  "_id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "$ref": "#/components/schemas/Address"
+                  },
+                  "location": {
+                    "$ref": "#/components/schemas/Point"
+                  }
+                }
+              },
+              "jobSiteObj": {
+                "$ref": "#/components/schemas/JobSite"
+              },
+              "technicianObj": {
+                "type": "object",
+                "properties": {
+                  "_id": {
+                    "type": "string"
+                  },
+                  "profile": {
+                    "$ref": "#/components/schemas/CommonProfile"
+                  }
+                }
+              },
+              "contractorsObj": {
+                "$ref": "#/components/schemas/Company"
+              },
+              "homeOwnerObj": {
+                "$ref": "#/components/schemas/HomeOwner"
+              },
+              "jobTypeObj": {
+                "$ref": "#/components/schemas/JobType"
+              }
+            }
+          }
+        ]
+      },
+      "JobReportList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/JobReport"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "jobObj": {
+                "$ref": "#/components/schemas/Job"
+              },
+              "invoiceObj": {
+                "$ref": "#/components/schemas/Invoice"
+              },
+              "customerObj": {
+                "type": "object",
+                "properties": {
+                  "_id": {
+                    "type": "string"
+                  },
+                  "profile": {
+                    "$ref": "#/components/schemas/CommonProfile"
+                  },
+                  "info": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "jobLocationObj": {
+                "type": "object",
+                "properties": {
+                  "_id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "$ref": "#/components/schemas/Address"
+                  }
+                }
+              },
+              "jobSiteObj": {
+                "$ref": "#/components/schemas/JobSite"
+              },
+              "technicianObj": {
+                "type": "object",
+                "properties": {
+                  "_id": {
+                    "type": "string"
+                  },
+                  "profile": {
+                    "$ref": "#/components/schemas/CommonProfile"
+                  }
+                }
+              },
+              "contractorsObj": {
+                "$ref": "#/components/schemas/Company"
+              },
+              "companyObj": {
+                "$ref": "#/components/schemas/Company"
+              },
+              "jobTypeObj": {
+                "$ref": "#/components/schemas/JobType"
+              }
+            }
+          }
+        ]
+      },
+      "ServiceTicketList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ServiceTicket"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "customer": {
+                "type": "object",
+                "properties": {
+                  "info": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "profile": {
+                    "type": "object",
+                    "properties": {
+                      "displayName": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "contactName": {
+                    "type": "string"
+                  }
+                }
+              },
+              "homeOwner": {
+                "type": "object",
+                "properties": {
+                  "info": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "profile": {
+                    "$ref": "#/components/schemas/CommonProfile"
+                  },
+                  "address": {
+                    "$ref": "#/components/schemas/Address"
+                  },
+                  "location": {
+                    "$ref": "#/components/schemas/Point"
+                  },
+                  "contact": {
+                    "$ref": "#/components/schemas/CommonContact"
+                  }
+                }
+              },
+              "createdBy": {
+                "type": "object",
+                "properties": {
+                  "profile": {
+                    "type": "object",
+                    "properties": {
+                      "displayName": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "editedBy": {
+                "type": "object",
+                "properties": {
+                  "profile": {
+                    "type": "object",
+                    "properties": {
+                      "displayName": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header"
+      }
+    }
+  }
+}

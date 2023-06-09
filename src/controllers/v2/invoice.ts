@@ -12,8 +12,25 @@ import { JobLocation } from '../../models/JobLocation';
 import { JobSite } from '../../models/JobSite';
 import { Company } from '../../models/Company';
 import { Customer } from '../../models/Customer';
+import { splitArray } from './common';
+import { User } from '../../models/User';
 
-
+/**
+ * Receives the request to get invoices
+ * @param req request
+ * @param res response
+ * @returns {
+ *       status,
+ *       total,
+ *       unsyncedInvoices,
+ *       invoices,
+ *       pagination: {
+ *           nextCursor,
+ *           previousCursor,
+ *           pageSize
+ *       }
+ * }
+ */
 export const getInvoices = async (req: Request, res: Response) => {
 
     const params = req.body;
@@ -54,7 +71,7 @@ export const getInvoices = async (req: Request, res: Response) => {
     ]);
 
     // Split the initial invoices into subarrays with 30,000 length, to do parallel processing
-    const filteredInitialInvoicesSplited = _splitArray(filteredInitialInvoices, 30000);
+    const filteredInitialInvoicesSplited = splitArray(filteredInitialInvoices, 30000);
     const parallelFilter = filteredInitialInvoicesSplited.map((value: any[]) => _getFinalInvoicesIds(value, params));
     const finalInvoicesIds = (await Promise.all(parallelFilter)).flat()
 
@@ -390,11 +407,11 @@ const _getFilteredJobsIds = async (jobsIds: ObjectId[], params: any,
         },
     ]);
 
-    let newJobsIds = jobsLinkedToIds.map((value) => value._id);
-    let jobSitesIds = jobsLinkedToIds.map((value) => value.jobSite).filter((value) => value !== undefined)
-    let jobLocationsIds = jobsLinkedToIds.map((value) => value.jobLocation).filter((value) => value !== undefined)
-    let techniciansIds = jobsLinkedToIds.flatMap((value) => value.tasks.map((value: any) => value.technician).filter((value: any) => value !== undefined))
-    let contractorsIds = jobsLinkedToIds.flatMap((value) => value.tasks.map((value: any) => value.contractor).filter((value: any) => value !== undefined))
+    const newJobsIds = jobsLinkedToIds.map((value) => value._id);
+    const jobSitesIds = jobsLinkedToIds.map((value) => value.jobSite).filter((value) => value !== undefined)
+    const jobLocationsIds = jobsLinkedToIds.map((value) => value.jobLocation).filter((value) => value !== undefined)
+    const techniciansIds = jobsLinkedToIds.flatMap((value) => value.tasks.map((value: any) => value.technician).filter((value: any) => value !== undefined))
+    const contractorsIds = jobsLinkedToIds.flatMap((value) => value.tasks.map((value: any) => value.contractor).filter((value: any) => value !== undefined))
     // Parallel processing
     const [filteredJobLocationsIds,
         { and: filteredJobsSiteIdsAnd, or: filteredJobsSiteIdsOr }, filteredTechnicianIds,
@@ -640,7 +657,7 @@ const _getFilteredTechniciansIds = async (techniciansIds: ObjectId[], keywordReg
 
     });
 
-    const filteredTechniciansIds = (await JobSite.aggregate([
+    const filteredTechniciansIds = (await User.aggregate([
         {
             $match: query
         },
@@ -729,20 +746,7 @@ const _getIsAllRecordsByParams = async (params: any): Promise<boolean> => {
     return isAllRecords;
 }
 
-/**
- * Split array on arrays with specified length
- * @param array the original array
- * @param size the size to split the original arrar
- * @returns array of arrays
- */
-const _splitArray = (array: any[], size: number) => {
-    let result = [];
-    for (let i = 0; i < array.length; i += size) {
-        let chunk = array.slice(i, i + size);
-        result.push(chunk);
-    }
-    return result;
-}
+
 
 /**
  * Get the ids of final filtered invoices

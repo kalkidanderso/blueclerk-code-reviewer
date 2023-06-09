@@ -1754,6 +1754,7 @@ export const getAllJobReports = async (req: Request, res: Response) => {
     ]);
 
     const totalJobReports = await JobReport.aggregate([
+        ...aggregateLookups,
         { $match: { ...filterQuery } },
         { $count: 'count' }
     ])
