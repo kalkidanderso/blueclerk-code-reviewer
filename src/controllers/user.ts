@@ -42,8 +42,8 @@ export const login = (req: Request, res: Response, sio: any) => {
             }
 
             if (
-                [AccountTypes.BUILDER, AccountTypes.CONTRACTOR].includes(Number(user.accountType))
-                || [Role.CUSTOMER, Role.CUSTOMER_CONTACT, Role.CONTRACTOR].includes(Number(user.permissions.role))
+                [AccountTypes.BUILDER].includes(Number(user.accountType))
+                || [Role.CUSTOMER, Role.CUSTOMER_CONTACT].includes(Number(user.permissions.role))
             ) {
                 return res.json({
                     status: Status.Unauthorized,
