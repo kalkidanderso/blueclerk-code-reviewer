@@ -323,29 +323,30 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                 });
 
             case AccountTypes.CONTRACTOR:
-                const { BC_COMPANY_ID } = process.env;
-                const bcCompany = await Company.findById(BC_COMPANY_ID);
+                // const { BC_COMPANY_ID } = process.env;
+                // const bcCompany = await Company.findById(BC_COMPANY_ID);
 
-                if (!bcCompany) {
-                    return res.json({ status: Status.Error, message: 'Generic company not found, please contact our team' });
-                }
+                // if (!bcCompany) {
+                //     return res.json({ status: Status.Error, message: 'Generic company not found, please contact our team' });
+                // }
 
-                userEntry.company = bcCompany;
-                userEntry.permissions.role = Role.CONTRACTOR;
-                userEntry.accountType = AccountTypes.CONTRACTOR;
+                // userEntry.company = bcCompany;
+                // userEntry.permissions.role = Role.CONTRACTOR;
+                // userEntry.accountType = AccountTypes.CONTRACTOR;
 
-                const independentContractor = await new IndependentContractor(userEntry).save();
-                bcCompany.employees.push(independentContractor._id);
-                await bcCompany.save();
+                // const independentContractor = await new IndependentContractor(userEntry).save();
+                // bcCompany.employees.push(independentContractor._id);
+                // await bcCompany.save();
 
-                sendEmail({ to: params?.email });
-                return res.json({
-                    status: Status.Success,
-                    userType: independentContractor.permissions.role,
-                    accountType: independentContractor.accountType,
-                    user: independentContractor,
-                });
-
+                // sendEmail({ to: params?.email });
+                // return res.json({
+                //     status: Status.Success,
+                //     userType: independentContractor.permissions.role,
+                //     accountType: independentContractor.accountType,
+                //     user: independentContractor,
+                // });
+                cerateIndividualContractor(req, res, sio, CompanyTypes.CONTRACTOR);
+                break
             case AccountTypes.SUPPLIER:
                 if (!params.supplierName) {
                     return res.json({ status: Status.Error, message: 'supplierName is required for Supplier Signup.' });
@@ -558,6 +559,124 @@ export const createCompany = (req: Request, res: Response, sio: any, companyType
 
     })
 
+}
+
+export const cerateIndividualContractor =  (req: Request, res: Response, sio: any, companyType: CompanyTypes) => {
+    checkCompanyEmailExists(req, res, async (req: Request, res: Response) => {
+        const params = req.body
+        var chargeDate = new Date();
+        chargeDate.setDate(chargeDate.getDate() + 30);
+        const passwordRegex = new RegExp(/(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z])[!@#$%^&*0-9a-zA-Z]{8,}/);
+
+        if (!passwordRegex.test(params.password)) {
+            return res.json({ status: Status.Error, message: 'Your password must be have at least: 8 characters long, 1 uppercase, 1 number, & 1 special character' });
+        }
+
+        const company = new Company(
+            {
+                info: {
+                    companyName: `${params.firstName} ${params.lastName}`,
+                    industry: null,
+                    logoUrl: '',
+                    companyEmail: params.email,
+                },
+                address: {
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                },
+                contact: {
+                    phone: params.phone,
+                },
+                userPermissions: UserPermissions,
+                chargeDate: chargeDate,
+                maxTechnicians: 0,
+                maxAdmins: 1,
+                maxManagers: 0,
+                maxOfficeAdmins: 0,
+                type: CompanyTypes.CONTRACTOR
+            }
+        );
+
+        company.save((err: any) => {
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': err.message })
+            }
+
+            const companyAdmin = new CompanyAdmin(
+                {
+                    auth: {
+                        email: params.email,
+                        password: params.password,
+                    },
+                    profile: {
+                        firstName: params.firstName,
+                        lastName: params.lastName,
+                        displayName: `${params.firstName} ${params.lastName}`,
+                        imageUrl: '',
+                    },
+                    accountType: AccountTypes.CONTRACTOR,
+                    address: {
+                        street: '',
+                        city: '',
+                        state: '',
+                        zipCode: '',
+                    },
+                    contact: {
+                        phone: params.phone,
+                    },
+                    permissions: {
+                        role: Role.CONTRACTOR,
+                        extra: [],
+                    },
+                    company: company._id
+                }
+            );
+
+            companyAdmin.save(async (err: any) => {
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': err.message })
+                }
+                company.updateOne({
+                    'admin': companyAdmin._id
+                }, async (err: any, raq: any) => {
+                    const isContractInvitation = params.isci === 'false' || params.isci === 'undefined' || params.isci === 'null' || params.isci === '0'
+                    ? false
+                    : !!params.isci;
+    
+                    if (isContractInvitation) {
+                        const hiringCompany = await Company.findById(params.cid);
+    
+                        if (hiringCompany) {
+                            let contract = await Contract.findOne({
+                                company: hiringCompany._id,
+                                contractorEmail: company.info?.companyEmail,
+                                status: ContractStatus.ACCOUNT_NOT_CREATED
+                            });
+    
+                            if (!contract) {
+                                // Start contract
+                                contract = new Contract({ company: hiringCompany._id });
+                            }
+                            contract.contractor = company._id;
+                            contract.contractorEmail = null;
+                            contract.status = ContractStatus.ACCEPTED;
+                            await contract.save();
+                        }
+                    }
+    
+                    sendEmail({ to: params?.email });
+                    return res.json({
+                        status: Status.Success,
+                        userType:  Role.CONTRACTOR,
+                        accountType: AccountTypes.CONTRACTOR,
+                        user: companyAdmin
+                    });
+                })
+            })
+        })
+    })
 }
 
 export const getCompanyProfile = (req: Request, res: Response) => {
