@@ -604,7 +604,7 @@ export const cerateIndividualContractor =  (req: Request, res: Response, sio: an
                 return res.json({ 'status': Status.Error, 'message': err.message })
             }
 
-            const companyAdmin = new IndependentContractor(
+            const companyAdmin = new CompanyAdmin(
                 {
                     auth: {
                         email: params.email,

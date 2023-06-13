@@ -117,7 +117,7 @@ export const checkUserPermissions = (permissionId : number) => {
 
         // check if get contracts
 
-        if(user.permissions.role == Role.COMPANY_ADMIN || user.permissions.role == Role.ADMIN_EMPLOYEE){
+        if(user.permissions.role == Role.COMPANY_ADMIN || user.permissions.role == Role.ADMIN_EMPLOYEE || user.permissions.role == Role.CONTRACTOR){
 
             const companyAdmin = <ICompanyAdmin>req.user
 
