@@ -4,6 +4,7 @@ export interface ICommissionHistory extends Document {
     technicianOrContractor: string 
     type:string
     commission: number
+    commissionType: string
     editedBy: {
         id: string
         displayName: string
@@ -35,6 +36,10 @@ const CommissionHistorySchema = new Schema({
     },
      commission: {
         type: Number,
+        default: null,
+    },
+     commissionType: {
+        type: String,
         default: null,
     },
     editedBy: {

@@ -3738,12 +3738,15 @@ export const updateCommission = async (req: Request, res: Response) => {
         technicianOrContractor: params.id,
         effectiveDate: params.commissionEffectiveDate,
         commission: params.commission,
+        commissionType: params.commissionType,
         type: params.type,
         editedBy: {
             id: user._id,
             displayName: user.profile.displayName,
         },
     });
+
+    const isFixed = params.commissionType === 'fixed'
 
     await commissionHistory.save();
 
@@ -3754,8 +3757,18 @@ export const updateCommission = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Error, message: 'Vendor not found' });
             }
 
+            // Update vendor's commission rate
+            contractor.commissionType = params.commissionType ?? '%';
+            if (isFixed) {
+                contractor.commission = 0;
+                contractor.commissionTier = params.commissionTier;
+            } else {
+                contractor.commission = params.commission ?? null;
+                contractor.commissionTier = null;
+            }
+
             // Check if the date is greater than today, if so, do nothing... else, do as you used to..
-            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day')) {
+            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day') && !isFixed) {
                 // Update vendor's commission rate
                 contractor.commission = params.commission ?? null;
 

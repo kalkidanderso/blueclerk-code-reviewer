@@ -18,6 +18,7 @@ import { IItem, Item } from '../models/Item'
 import { IPriceTier, PriceTier } from '../models/PriceTier'
 import { PaymentEmployee, PaymentVendor } from '../models/Payment'
 import { CompanyLocation } from '../models/CompanyLocation'
+import { IJobCosting, JobCosting } from '../models/JobCosting'
 import * as Sentry from '@sentry/node';
 
 const Hubspot = require('hubspot')
@@ -1525,4 +1526,109 @@ export const updateCompanyCustomer = async (req: Request, res: Response) => {
     companyCustomer.isPreferred = params.isPreferred ?? companyCustomer.isPreferred;
     companyCustomer.save();
     return res.json({ status: Status.Success, messages: 'Company customer updated successfully.', companyCustomer });
+}
+
+/**
+ * Retrieve all Company's Item Tier List
+ */
+export const getJobCostingList = async (req: Request, res: Response) => {
+    const company = <ICompany>req.company;
+    await company.populate({
+        path: 'costing.list.tier',
+        select: '-companyId -__v',
+        populate: [ { path: 'inactiveBy', select: 'auth.email profile.displayName contact.phone'} ]
+    }).execPopulate()
+    return res.json({ status: Status.Success, costingList: company.costing.list });
+}
+/**
+ * Generic function for addJobCosting to be used anywhere
+ */
+export const _addJobCosting = async (company: ICompany, next: (err: any, costing: IJobCosting) => void) => {
+    // Create new Cost Tier collection
+    const costing: IJobCosting = new JobCosting({
+        companyId: company._id,
+        name: (company.costing.count || 0) + 1,
+        isActive: true
+    })
+    await costing.save(err => {
+        if (err)
+            return next(err.message, null);
+    });
+    // Update Company costing Count and add the new one to the list
+    company.costing.count += 1;
+    company.costing.list.push({
+        tier: costing._id,
+    });
+    await company.save(err => {
+        if (err)
+            return next(err.message, null);
+    });
+    // Search all items belong to the Company
+    const items: IItem[] = await Item.find({ company: company._id, isDiscountItem: { $ne: true } });
+    // Iterate all items and add the new tier
+    for (const item of items) {
+        if (company.costing.count === item.costing.length) {
+            continue;
+        }
+        item.costing.push({
+            tier: costing._id,
+        })
+        await item.save(err => {
+            if (err)
+                return next(err.message, null);
+        })
+    }
+    return next(null, costing);
+}
+/**
+ * Create a new Cost Tier in collection,
+ * then add it to the Company Cost Tier list,
+ * then add it to all Company Cost's tiers
+ */
+export const addJobCosting = (req: Request, res: Response) => {
+    const company = <ICompany>req.company;
+    _addJobCosting(company, (err, createJobCosting) => {
+        if (err)
+            return res.json({ status: Status.Error, message: err.message });
+        return res.json({ status: Status.Success, message: 'New Cost Tier added successfully', costing: createJobCosting });
+    });
+}
+/**
+ * Update Company Cost Tier's name & isActive,
+ * which will update the real record on Cost Tier
+ */
+export const updateJobCosting = async (req: Request, res: Response) => {
+    const user = <IUser>req.user;
+    const company = <ICompany>req.company;
+    const params = req.body;
+    let conflictCustomers: ICustomer[];
+    // Check if params.costingTierId is a valid Mongo ObjectID
+    if (!ObjectId.isValid(params.costingTierId)) {
+        return res.json({ status: Status.Error, message: Messages.WrongId });
+    }
+    // Search the tier to the Cost Tier collection
+    const tier = await JobCosting.findOne({ _id: params.costingTierId, companyId: company._id });
+    if (!tier) {
+        return res.json({ status: Status.Error, message: 'Job costing not found' });
+    }
+    tier.name = params.name || tier.name;
+    tier.isActive = params.isActive ? !!(Number(params.isActive)) : tier.isActive;
+    // Handle inactiveBy & inactiveAt based on active status
+    if (params.isActive === '0') {
+        tier.inactiveBy = user._id;
+        tier.inactiveAt = new Date();
+        conflictCustomers = await Customer.find({ costing: tier._id });
+    } else if (params.isActive === '1') {
+        tier.inactiveBy = null;
+        tier.inactiveAt = null;
+    }
+    await tier.save(err => {
+        if (err)
+            return res.json({ status: Status.Error, message: err.message });
+    });
+    await tier.populate({
+        path: 'inactiveBy',
+        select: 'auth.email profile.displayName contact.phone'
+    }).execPopulate();
+    return res.json({ status: Status.Success, message: 'Cost Tier updated successfully', costing: tier, conflictCustomers });
 }

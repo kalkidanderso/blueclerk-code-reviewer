@@ -3008,6 +3008,28 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Customer_Get_All),
         customerController.exportCustomersToExcel
     )
+    router.get(
+        '/getJobCostingList',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        companyController.getJobCostingList
+    )
+    router.post(
+        '/addJobCosting',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        companyController.addJobCosting
+    )
+    router.put(
+        '/updateJobCosting',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        validate(Validations.updateJobCosting),
+        companyController.updateJobCosting
+    )
 
     return router
 

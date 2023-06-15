@@ -197,6 +197,16 @@ export const updateItems = async (req: Request, res: Response) => {
                 itemObjTier.charge = paramTier.charge;
             }
         }
+        if (i.costing.length) {
+            for (const productCost of i.costing) {
+                // Find the tier to be updated
+                itemObj.costing.forEach(itemTier => {
+                    if (itemTier.tier.toString() === productCost.tierId) {
+                        itemTier.charge = productCost.charge
+                    }
+                });
+            }
+        }
 
         // Handle item active status
         if (itemObj.isActive !== i.isActive) {

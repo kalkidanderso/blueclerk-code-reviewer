@@ -2138,6 +2138,26 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     for (const task of startedPausedTasks) {
                         task.status = JobStatus.FINISHED;
                     };
+                    const updateCommission: any[] = []
+                    job.tasks.forEach(async (task: any) => {
+                        task.jobTypes.forEach(async (j: any) => {
+                            let balance = 0
+                            const jobType = await Item.findOne({ jobType: j.jobType })
+                            const commissionTierId = task.contractor.commissionTier
+                            if (commissionTierId) {
+                                const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
+                                if (commissionTier?.charge) balance += commissionTier.charge
+                            }
+                            updateCommission.push(
+                                Company.findByIdAndUpdate(
+                                    task.contractor._id,
+                                    { $inc: { balance } },
+                                    { new: true }
+                                ).exec()
+                            )
+                        })
+                    })
+                    await Promise.all(updateCommission)
 
                     break;
 
@@ -3679,6 +3699,10 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
         .populate({
             path: 'tasks.technician',
             select: 'profile.displayName'
+        })
+        .populate({
+            path: 'tasks.contractor',
+            select: 'commissionTier'
         })
         .populate({
             path: 'ticket',
