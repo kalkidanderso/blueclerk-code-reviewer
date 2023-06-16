@@ -39,6 +39,7 @@ export const getItems = (req: Request, res: Response) => {
 
     Item.find(query)
         .populate({ path: 'tiers.tier', select: '-companyId -__v' })
+        .populate({ path: 'costing.tier', select: '-companyId -__v' })
         .exec((err: any, items: IItem[]) => {
 
             if (err) {
