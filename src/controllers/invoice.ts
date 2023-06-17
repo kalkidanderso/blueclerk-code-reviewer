@@ -3540,11 +3540,15 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const customerContact = <IContact>invoice.customerContactId ?? job?.customerContactId;
 
 
-    const jobNote = ticket?.note;
-    const jobImgs = ticket?.images.map(image => image.imageUrl);
-    const technicianNote = invoice?.technicianMessages?.notes.filter((note) => note.comment !== jobNote)[0].comment;
-    const technicianImages = invoice?.technicianMessages?.images.filter((image) => !jobImgs.includes(image));
-    const jobImages = invoice?.technicianMessages?.images.filter((image) => jobImgs.includes(image));
+    const jobNote = {
+        id: (await ticket?._id)?.toString() ?? "",
+        comment: ticket?.note ?? ""
+    };
+    const jobImgs = ticket?.images?.map(image => image?.imageUrl) ?? [];
+    const technicianNote = invoice?.technicianMessages?.notes?.filter((note) => note?.id !== jobNote.id)[0]?.comment ?? '';
+    const jobNotes = invoice?.technicianMessages?.notes?.filter(note => note?.id === jobNote?.id)[0]?.comment ?? '';
+    const technicianImages = invoice?.technicianMessages?.images.filter((image) => !jobImgs.includes(image)) ?? [];
+    const jobImages = invoice?.technicianMessages?.images?.filter((image) => jobImgs?.includes(image)) ?? [];
 
     const base64Images = await convertImagesToBase64(invoice?.technicianMessages?.images);
     const base64JobImages = await convertImagesToBase64(jobImages);
@@ -4011,7 +4015,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {
                                 stack: [
                                     {text: 'Job/Ticket Details', style: 'headerTitle'},
-                                    {text: jobNote, style: 'invoiceHeaderBold'}
+                                    {text: jobNotes, style: 'invoiceHeaderBold'}
                                 ],
                                 rowSpan: 2,
                                 margin: [0, 10, 0, 10]
