@@ -1006,6 +1006,17 @@ export default function (sio: any) {
         jobRouteController.getJobRoute
     )
 
+    router.get(
+        '/getAllJobRoutesByTechnician',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Get_Technician),
+        validate(Validations.allJobRoutesByTechnician),
+        getTechnicianContractor(),
+        jobRouteController.getAllJobRoutesByTechnician
+    )
+
     router.post(
         '/createJobRoute',
         passport.authenticate('jwt', { session: false }),
