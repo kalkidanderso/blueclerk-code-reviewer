@@ -1065,7 +1065,7 @@ const _converCustomerToRowExcel = (customer: any): any => {
     }
     if (customer.customerObj.length > 0) {
         const cust = customer.customerObj[0];
-        row.name = cust.profile?.firstName;
+        row.name = cust.profile?.displayName;
         row.email = cust.info?.email;
         row.phone = cust.contcat?.phone;
         row.addressStreet = cust.address?.street;
