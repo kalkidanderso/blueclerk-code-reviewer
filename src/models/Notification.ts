@@ -20,14 +20,6 @@ export enum FbNotificationType {
     CHAT_READ = 'chatRead'
 }
 
-export interface INotificationQuery {
-
-    company: string
-    'dismissedStatus.isDismissed'?: string | boolean
-    'readStatus.isRead'?: string | boolean
-
-}
-
 export interface INotification extends Document {
 
     company: Schema.Types.ObjectId
@@ -103,6 +95,19 @@ NotificationSchema.index({ company: 1 });
 NotificationSchema.index({ customer: 1 });
 NotificationSchema.index({ customerContact: 1 });
 NotificationSchema.index({ notificationType: 1 });
-NotificationSchema.index({ company: 1, 'dismissedStatus.isDismissed': 1, 'readStatus.isRead': 1 });
+NotificationSchema.index(
+    {
+        company: 1,
+        'dismissedStatus.isDismissed': 1,
+        'readStatus.isRead': 1
+    });
+NotificationSchema.index(
+    {
+        company: 1,
+        'dismissedStatus.isDismissed': 1,
+        'readStatus.isRead': 1,
+        'message.body': 1,
+        'message.title': 1
+    });
 
 export const Notification = mongoose.model<INotification>('Notification', NotificationSchema);
