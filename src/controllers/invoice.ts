@@ -3558,7 +3558,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
 
     let jobImagesForPDF = []
     for (let j = 0; j < base64JobImages.length; j++) {
-        jobImagesForPDF.push({image: base64JobImages[j], fit: [75, 75]})
+        jobImagesForPDF.push({image: base64JobImages[j], width: 150})
     }
     const jobNumRows = Math.ceil(jobImagesForPDF.length / numbOfColumns);
     const jobBase64ImagesRows = [];
@@ -3576,7 +3576,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
 
     let technicianImagesForPDF = []
     for (var j = 0; j < base64TechnicianImages.length; j++) {
-        technicianImagesForPDF.push({image: base64TechnicianImages[j], fit: [75, 75]})
+        technicianImagesForPDF.push({image: base64TechnicianImages[j], width: 150})
     }
     const numRows = Math.ceil(technicianImagesForPDF.length / numbOfColumns);
     const techBase64ImagesRows = [];
