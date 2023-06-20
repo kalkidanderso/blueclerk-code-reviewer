@@ -8,7 +8,9 @@ import * as helper from '../services/helper';
 import { Status, Messages, JobStatus, ServiceTicketStatus, SocketEvents, DefaultPageSize, JobRequestStatus } from '../common/constants'
 import {
     sendJobEmailToAssignee,
-    sendJobEmailToCustomer, sendReportEmailToCustomer
+    sendJobEmailToCustomer, 
+    sendReportEmailToCustomer, 
+    sendSMS,
 } from '../services/aws'
 import { IContact } from '../common/contact';
 
@@ -35,6 +37,7 @@ import { JobLocation } from '../models/JobLocation';
 import { JobSite } from '../models/JobSite';
 import { HomeOwner } from '../models/HomeOwner';
 import * as Sentry from '@sentry/node';
+import { standarizePhoneNumberE164 } from '../utils/phoneNumberUtil';
 
 /**
  * 04-22-2022
@@ -1810,6 +1813,7 @@ export const getJobReportDetails = (req: Request, res: Response) => {
                 { path: 'tasks.timeUpdatedBy', select: 'profile.displayName' },
                 { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
                 { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
+                { path: 'homeOwner', select: 'profile info contact' },
                 'jobSite', 'jobLocation'
             ]
         })
@@ -1917,6 +1921,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
             ]
         })
+        .populate({ path: 'customerContactId'})
         .then((job: IJob) => {
 
             if (job == undefined) {
@@ -2243,7 +2248,20 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     technicianNameLinkedJob = tasks[0].technician.profile.displayName;
                 }
 
-                await createJobReport(job._id, job.company, customerName, technicianName, date, companyId);
+                const jobReport = await createJobReport(job._id, job.company, customerName, technicianName, date, companyId);
+                if (params.status == JobStatus.FINISHED) {
+                    try {
+                        if(job.customerContactId?.phone) {
+                            const standarizedPhone = standarizePhoneNumberE164(job.customerContactId.phone);
+                            const message = `Blueclerk: Dear ${job.customerContactId.name}, the job with ID ${job.jobId || 'N/A'} has been completed.\nYou can access the report at the following link: https://app.blueclerk.com/main/customers/job-reports/detail/${jobReport?._id}.\n\nText STOP to opt-out.`;
+                            // If job is finished a SMS is sent
+                            await sendSMS(standarizedPhone, message);
+                        }
+                    }
+                    catch(err) {
+                        Sentry.captureException(err);
+                    }     
+                }
                 if (linkedJob) {
                     await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, companyId);
                 }

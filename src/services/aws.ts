@@ -16,6 +16,8 @@ import { ICustomer } from '../models/Customer';
 import { EmailSchedule } from '../models/EmailSchedule';
 import { v4 as uuidv4 } from 'uuid';
 import * as Sentry from '@sentry/node';
+import { PublishCommandInput } from "@aws-sdk/client-sns";
+
 const http = require("http");
 
 export const sendEmail = function (options: any) {
@@ -1433,6 +1435,54 @@ export const uploadFileInS3 = async (filePath: string, fileType: string) => {
       }
 
       resolve(data.Location);
+    });
+  });
+}
+
+/**
+ * Sends SMS to a given phone number
+ * @param phoneNumber 
+ * @param message 
+ */
+export const sendSMS = async (phoneNumber: string, message: string) => {
+
+  // If has opted out, message is not sent
+  if(await hasOptedOut(phoneNumber)) return;
+
+  // Set the parameters
+  const params : PublishCommandInput= {
+    PhoneNumber: phoneNumber,
+    Message: message,
+  };
+
+  const snsClient = new AWS.SNS();
+  return new Promise((resolve, reject) => {
+    snsClient.publish(params, function(err, data) {
+      if (err) {
+        console.log("== sendSMSError " + err, err.stack);
+        reject(err);
+      }
+      resolve(data);
+    });    
+  });
+}
+
+/**
+ * Checks if a phone number has opted out of receiving SMS messages from AWS SNS
+ * @param phoneNumber phone number in the E.164 phone number structure
+ * @returns boolean
+ */
+export const hasOptedOut = async (phoneNumber: string) : Promise<boolean> => {
+  const params = { phoneNumber: phoneNumber };
+  const snsClient = new AWS.SNS();
+  
+  return new Promise((resolve, reject) => {
+    snsClient.checkIfPhoneNumberIsOptedOut(params, function(err, data) {
+      if (err) {
+        console.log("== checkHasOptedOutError " + err, err.stack);
+        reject(err);
+      }
+      resolve(data.isOptedOut);
     });
   });
 }
