@@ -1450,7 +1450,7 @@ export const sendSMS = async (phoneNumber: string, message: string) => {
   if(await hasOptedOut(phoneNumber)) return;
 
   // Set the parameters
-  const params : PublishCommandInput= {
+  const params : PublishCommandInput = {
     PhoneNumber: phoneNumber,
     Message: message,
   };

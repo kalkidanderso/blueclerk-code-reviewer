@@ -1922,6 +1922,8 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             ]
         })
         .populate({ path: 'customerContactId'})
+        .populate({ path: 'company', select: 'info.companyName'})
+        .populate({ path: 'jobLocation', select: 'name'})
         .then((job: IJob) => {
 
             if (job == undefined) {
@@ -2253,7 +2255,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     try {
                         if(job.customerContactId?.phone) {
                             const standarizedPhone = standarizePhoneNumberE164(job.customerContactId.phone);
-                            const message = `Blueclerk: Dear ${job.customerContactId.name}, the job with ID ${job.jobId || 'N/A'} has been completed.\nYou can access the report at the following link: https://app.blueclerk.com/main/customers/job-reports/detail/${jobReport?._id}.\n\nText STOP to opt-out.`;
+                            const message = `Blueclerk: Dear ${job.customerContactId.name}, the job ${job.jobId || 'N/A'} at ${job.jobLocation?.name || 'N/A'} has been completed by ${job.company?.info?.companyName || 'N/A'}.\nFull report here: https://app.blueclerk.com/main/customers/job-reports/detail/${jobReport?._id}.\n\nText STOP to opt-out.`;
                             // If job is finished a SMS is sent
                             await sendSMS(standarizedPhone, message);
                         }
