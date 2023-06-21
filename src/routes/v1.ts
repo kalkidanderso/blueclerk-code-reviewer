@@ -2070,9 +2070,9 @@ export default function (sio: any) {
         invoiceController.updateCommission
     )
 
-     router.get(
+    router.get(
         '/updateCommissionCron',
-         (req, res) => {
+        (req, res) => {
             invoiceController.updateCommissionCron(req, res)
         }
     )
@@ -2999,6 +2999,14 @@ export default function (sio: any) {
         '/createWorkType',
         workTypeController.createWorkType,
         passport.authenticate('jwt', { session: false })
+    )
+
+    router.get('/customers/export',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Customer_Get_All),
+        customerController.exportCustomersToExcel
     )
 
     return router
