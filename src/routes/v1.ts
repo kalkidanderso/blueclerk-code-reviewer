@@ -3031,6 +3031,15 @@ export default function (sio: any) {
         companyController.updateJobCosting
     )
 
+    router.put(
+        '/updateJobCommission/:id',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        validate(Validations.updateJobCommission),
+        invoiceController.updateJobCommission
+    )
+
     return router
 
 }

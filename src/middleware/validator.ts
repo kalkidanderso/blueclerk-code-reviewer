@@ -822,5 +822,8 @@ export const Validations = {
 
   updateJobCosting: [check('costingTierId').exists().withMessage('is required')],
 
+  updateJobCommission: [
+    check('balance').exists().withMessage(Messages.Required),
+  ],
 }
 

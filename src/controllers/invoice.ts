@@ -4149,3 +4149,27 @@ const _getIsAllRecordsByParams = async (params: any): Promise<boolean> => {
 
     return isAllRecords;
 }
+
+export const updateJobCommission = async (req: Request, res: Response) => {
+    const body = req.body;
+    const user = <IUser>req.user;
+    Company.findByIdAndUpdate(
+        req.params.id,
+        { balance: body.balance },
+        { new: true }
+    ).then((comp) => {
+        const commissionHistory = new CommissionHistory({
+            technicianOrContractor: req.params.id,
+            commission: body.balance,
+            addition: body.addition,
+            deduction: body.deduction,
+            type: "additions & deductions",
+            editedBy: {
+                id: user._id,
+                displayName: user.profile.displayName,
+            },
+        });
+        return commissionHistory.save()
+    }).then(() => res.json({ status: Status.Success, message: 'Update successful' }))
+    .catch(err => res.json({ status: Status.Error, message: err.message }))
+}
