@@ -1914,7 +1914,7 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                 { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
                 { path: 'tasks.technician', select: 'profile auth.email address contact permissions.role' },
-                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
+                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax commissionTier', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
                 { path: 'technicianImages.uploadedBy', select: 'profile auth.email address contact permissions.role' },
                 { path: 'track.user', select: 'profile auth.email address contact permissions.role'},
                 { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
@@ -1939,7 +1939,7 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
         })
         .populate({
             path: 'company',
-            select: 'info.companyName info.logoUrl info.companyEmail permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax'
+            select: 'info.companyName info.logoUrl info.companyEmail permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax commissionTier'
         })
         .populate({
             path: 'customer',
