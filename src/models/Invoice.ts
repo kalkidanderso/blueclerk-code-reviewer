@@ -59,7 +59,8 @@ export interface IInvoice extends Document {
     status: InvoiceStatus
     emailHistory?: [{
         sentTo: string
-        sentAt: Date
+        sentAt: Date,
+        sentBy: Schema.Types.ObjectId
     }],
     lastEmailSent?: Date
     quickbookId?: string
@@ -68,8 +69,8 @@ export interface IInvoice extends Document {
     createdBy: Schema.Types.ObjectId
     createdAt: Date
     updatedAt: Date
-    workType: Schema.Types.ObjectId  | IWorkType
-    companyLocation: Schema.Types.ObjectId  | ICompanyLocation
+    workType: Schema.Types.ObjectId | IWorkType
+    companyLocation: Schema.Types.ObjectId | ICompanyLocation
 }
 
 export enum LineDetailTypes {
@@ -327,6 +328,10 @@ const InvoiceSchema = new Schema({
         sentTo: String,
         sentAt: {
             type: Date,
+        },
+        sentBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
         }
     }],
     lastEmailSent: {
@@ -364,7 +369,7 @@ InvoiceSchema.index({ vendorId: 1 });
 InvoiceSchema.index({ jobLocation: 1 });
 InvoiceSchema.index({ jobSite: 1 });
 InvoiceSchema.index({ company: 1 });
-InvoiceSchema.index({ customerContactId: 1})
+InvoiceSchema.index({ customerContactId: 1 })
 InvoiceSchema.index({ customer: 1, isDraft: 1 });
 InvoiceSchema.index({ job: 1, isDraft: 1 });
 InvoiceSchema.index({ issuedDate: 1, isDraft: 1 })
@@ -373,8 +378,8 @@ InvoiceSchema.index({ customer: 1, company: 1, isVoid: 1 })
 InvoiceSchema.index({ company: 1, job: 1, isDraft: 1, issuedDate: 1 })
 InvoiceSchema.index({ company: 1, 'technicians.contractor': 1, isDraft: 1 })
 InvoiceSchema.index({ company: 1, 'technicians.technician': 1, isDraft: 1 })
-InvoiceSchema.index({ company: 1, quickbookId: 1, isDraft: 1, isVoid: 1})
-InvoiceSchema.index({ company: 1, createdAt: -1, _id: -1, isDraft: 1, isVoid: 1})
+InvoiceSchema.index({ company: 1, quickbookId: 1, isDraft: 1, isVoid: 1 })
+InvoiceSchema.index({ company: 1, createdAt: -1, _id: -1, isDraft: 1, isVoid: 1 })
 InvoiceSchema.index({ company: 1, job: 1, issuedDate: 1, note: 1, vendorId: 1, invoiceId: 1 })
 InvoiceSchema.index({ company: 1, job: 1, isDraft: 1, issuedDate: 1 })
 InvoiceSchema.index({ company: 1, createdAt: -1, isDraft: 1, isVoid: 1, invoiceId: 1, status: 1, customerPO: 1, vendorId: 1 })
