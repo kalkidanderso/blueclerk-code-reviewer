@@ -3772,8 +3772,16 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                                 margin: [0, -2, 0, 10],
                                 border: [false, false, false, true]
                             },
+
+                            {
+                                stack: [
+                                    {text: 'Job Number', style: 'headerTitleBold'},
+                                    {text: job?.jobId ?? '', style: 'invoiceHeader'},
+                                ],
+                                margin: [0, -2, 0, 10],
+                                border: [false, false, false, true]
+                            },
                             {text: '', margin: [0, 0, 0, 10], border: [false, false, false, true]},
-                            {}
                         ]
                     ],
                 },
