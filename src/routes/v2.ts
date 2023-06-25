@@ -11,6 +11,8 @@ import { Permissions } from '../common/constants';
 import * as invoiceController from '../controllers/v2/invoice';
 import * as jobController from '../controllers/v2/job';
 import * as serviceTicketController from '../controllers/v2/serviceTicket';
+import * as itemController from '../controllers/v2/item'
+
 
 export default function () {
 
@@ -54,6 +56,67 @@ export default function () {
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Service_Tickets),
         serviceTicketController.getServiceTickets
+    )
+
+      // Item
+
+      router.post(
+        '/getItems',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Items),
+        validate(Validations.getItems),
+        itemController.getItems
+    )
+
+    router.post(
+        '/createItem',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Type_Create),
+        validate(Validations.createItem),
+        itemController.createItem
+    )
+
+    router.post(
+        '/updateItem',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Item),
+        validate(Validations.updateItem),
+        itemController.updateItem
+    )
+
+    router.post(
+        '/updateItems',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Item),
+        itemController.updateItems
+    )
+
+    router.post(
+        '/searchDuplicatedItems',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Items),
+        validate(Validations.searchDuplicatedItems),
+        itemController.searchDuplicatedItems
+    )
+
+    router.post(
+        '/mergeItems',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Update_Item),
+        validate(Validations.mergeItems),
+        itemController.mergeItems
     )
 
     return router
