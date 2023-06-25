@@ -11,6 +11,8 @@ import { Permissions } from '../common/constants';
 import * as invoiceController from '../controllers/v2/invoice';
 import * as jobController from '../controllers/v2/job';
 import * as serviceTicketController from '../controllers/v2/serviceTicket';
+import * as itemController from '../controllers/v2/item'
+
 
 
 export default function () {
