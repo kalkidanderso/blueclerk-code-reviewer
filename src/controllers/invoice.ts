@@ -403,7 +403,7 @@ export const createInvoice = (req: Request, res: Response) => {
 
                 return new Promise(async (resolve, reject) => {
 
-                    if (!invoice.isDraft) {
+                    // if (!invoice.isDraft) {
                         const customer = await Customer.findById(invoice.customer);
                         const job = await Job.findById(invoice.job);
                         customer.balance += invoice.total;
@@ -423,6 +423,21 @@ export const createInvoice = (req: Request, res: Response) => {
                                             technician: contractor.admin,
                                             commission: contractor.commission,
                                             commissionAmount: Number(commission.toFixed(2))
+                                        }
+                                        
+                                        if (contractor.commissionType === "fixed") {
+                                            //calculate fixed commission...
+                                            for (const j of task.jobTypes) {
+                                                const jobType = await Item.findOne({ jobType: j.jobType })
+                                                const commissionTierId = contractor.commissionTier._id || contractor.commissionTier
+                                                if (commissionTierId) {
+                                                    const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
+                                                    if (commissionTier?.charge) {
+                                                        contractorCommissionEntry.commission = commissionTier.charge
+                                                        contractorCommissionEntry.commissionAmount = commissionTier.charge
+                                                    }
+                                                }
+                                            }
                                         }
 
                                         contractor.balance += Number(commission.toFixed(2));
@@ -465,7 +480,7 @@ export const createInvoice = (req: Request, res: Response) => {
 
                         invoice.commission = invoiceCommission._id;
                         await invoice.save();
-                    }
+                    // }
 
                     resolve(invoice);
                 })
