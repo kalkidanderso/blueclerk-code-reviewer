@@ -41,6 +41,7 @@ import { getDatesFilterQuery } from '../services/pagination';
 import { v4 as uuidv4 } from 'uuid';
 import { ICompanyLocation } from '../models/CompanyLocation';
 import * as Sentry from '@sentry/node';
+import { IJobCosting } from '../models/JobCosting';
 
 const pdfmake = require('pdfmake');
 
@@ -429,7 +430,9 @@ export const createInvoice = (req: Request, res: Response) => {
                                             //calculate fixed commission...
                                             for (const j of task.jobTypes) {
                                                 const jobType = await Item.findOne({ jobType: j.jobType })
-                                                const commissionTierId = contractor.commissionTier._id || contractor.commissionTier
+
+                                                const commissionTier = contractor.commissionTier as IJobCosting;
+                                                const commissionTierId = commissionTier._id || contractor.commissionTier
                                                 if (commissionTierId) {
                                                     const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
                                                     if (commissionTier?.charge) {
@@ -1658,8 +1661,27 @@ export const updateInvoice = (req: Request, res: Response) => {
                                         const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
                                         if (contractor) {
                                             if (Number(total) !== Number(oldTotalInvoice)) {
-                                                const oldCommission = (oldTotal / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
-                                                const commission = (total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                                const getCommission = (t: any) => (t / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                                const oldCommission = getCommission(oldTotal)
+                                                let commission = getCommission(total)
+                                                if (contractor.commissionType === "fixed" && contractor.commissionTier) {
+                                                    //calculate fixed commission...
+                                                    for (const task of job.tasks) {
+                                                        for (const j of task.jobTypes) {
+                                                            const jobType = await Item.findOne({ jobType: j.jobType })
+
+                                                            const commissionTier = contractor.commissionTier as IJobCosting;
+                                                            const commissionTierId = commissionTier._id || contractor.commissionTier
+                                                            if (commissionTierId) {
+                                                                const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
+                                                                if (commissionTier?.charge) {
+                                                                    commission = commissionTier.charge
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                commission = Number(commission.toFixed(2))
                                                 contractor.balance -= Number(oldCommission.toFixed(2));
                                                 contractor.balance += Number(commission.toFixed(2));
                                                 invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2));
