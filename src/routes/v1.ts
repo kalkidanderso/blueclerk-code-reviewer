@@ -2086,6 +2086,14 @@ export default function (sio: any) {
     )
 
     router.get(
+        '/getCommissionHistoryByJob/:jobId',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        checkUserPermissions(Permissions.Update_Invoice), //if has permission to update then can also view
+        invoiceController.getCommissionHistoryByJob
+    )
+
+    router.get(
         '/getInvoicesByContractor',
         passport.authenticate('jwt', { session: false }),
         isLogin(),

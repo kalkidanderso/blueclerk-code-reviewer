@@ -20,6 +20,7 @@ export interface ICommissionHistory extends Document {
     effectiveDate: Date
     createdAt: Date
     updatedAt: Date
+    job: string 
 }
 
 const CommissionHistorySchema = new Schema({
@@ -65,6 +66,7 @@ const CommissionHistorySchema = new Schema({
         },
         displayName: String,
     },
+    job: { type: Schema.Types.ObjectId, ref: 'Job' },
 
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
