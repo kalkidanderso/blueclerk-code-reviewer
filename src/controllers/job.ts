@@ -41,7 +41,7 @@ import { standarizePhoneNumberE164 } from '../utils/phoneNumberUtil';
 import pdfmake from 'pdfmake';
 import { ACCOUNT_RECEIVABLE_REPORT_PDF_PATH, FONT_SETS } from '../common/config';
 import fs from 'fs';
-import { _handleJobReportPdf } from '../controllers/report.ar';
+import { handleJobReportPdf } from '../services/pdf';
 
 /**
  * 04-22-2022
@@ -3488,7 +3488,7 @@ export const getJobReportPDF = (req: Request, res: Response) => {
                 // Initialize PDF Make
                 const pdfMake = new pdfmake(FONT_SETS.ROBOTO);
                 // Generate the PDF content
-                const generatePdf = await _handleJobReportPdf(report);
+                const generatePdf = await handleJobReportPdf(report);
                 // Construct the PDF full path
                 const fullPath = `${ACCOUNT_RECEIVABLE_REPORT_PDF_PATH}/${Date.now()}.pdf`;
                 // Check if folder path exist, create if not
