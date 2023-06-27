@@ -38,6 +38,10 @@ import { JobSite } from '../models/JobSite';
 import { HomeOwner } from '../models/HomeOwner';
 import * as Sentry from '@sentry/node';
 import { standarizePhoneNumberE164 } from '../utils/phoneNumberUtil';
+import pdfmake from 'pdfmake';
+import { ACCOUNT_RECEIVABLE_REPORT_PDF_PATH, FONT_SETS } from '../common/config';
+import fs from 'fs';
+import { _handleJobReportPdf } from '../controllers/report.ar';
 
 /**
  * 04-22-2022
@@ -3415,6 +3419,97 @@ export const sendJobReport = (req: Request, res: Response) => {
                 }).catch((err) => {
                     Sentry.captureException(err);
                     return res.json({ 'status': Status.Error, 'message': err.message });
+                });
+            } else {
+                return res.json({ 'status': Status.Error, 'message': "Report was not found" });
+            }
+        }).catch((err) => {
+            Sentry.captureException(err);
+            return res.json({ 'status': Status.Error, 'message': err.message });
+        });
+}
+
+export const getJobReportPDF = (req: Request, res: Response) => {
+
+    const params = req.params;
+    const user = <IUser>req.user;
+    let companyId = req.companyId;
+    const company = <ICompany>req.company;
+
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+
+    JobReport.findOne({ _id: params.jobReportId, $or: [{ contractor: companyId }, { company: companyId }] })
+        .populate({
+            path: 'job',
+            populate: [
+                { path: 'ticket', select: 'ticketId note scheduleDateTime' },
+                {
+                    path: 'request',
+                    select: '-__v',
+                    populate: [
+                        { path: 'track', select: 'track.user track.action track.date' },
+                        { path: 'jobLocation' },
+                        { path: 'jobSite' },
+                        { path: 'customerContact' },
+                        { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+                    ]
+                },
+                // TODO: To be deprecated
+                { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.technician', select: 'profile auth.email contact' },
+                { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
+                { path: 'customerContactId', select: '-id -__v' },
+                { path: 'type', select: 'title description sku' },
+                { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+                { path: 'tasks.timeUpdatedBy', select: 'profile.displayName' },
+                { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
+                { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
+                { path: 'homeOwner' },
+            ],
+        }).populate({
+            path: 'scans',
+            populate: [
+                {
+                    path: 'equipment',
+                    select: 'info.model info.serialNumber info.nfcTag images info.location',
+                    populate: [
+                        { path: 'brand', select: 'title' },
+                        { path: 'type', select: 'title' }
+                    ]
+                }
+            ]
+        }).populate('PurchaseOrder')
+        .exec()
+        .then(async (report: IJobReport) => {
+            if (report) {                
+                // Initialize PDF Make
+                const pdfMake = new pdfmake(FONT_SETS.ROBOTO);
+                // Generate the PDF content
+                const generatePdf = await _handleJobReportPdf(report);
+                // Construct the PDF full path
+                const fullPath = `${ACCOUNT_RECEIVABLE_REPORT_PDF_PATH}/${Date.now()}.pdf`;
+                // Check if folder path exist, create if not
+                if (!fs.existsSync(ACCOUNT_RECEIVABLE_REPORT_PDF_PATH)) {
+                    fs.mkdirSync(ACCOUNT_RECEIVABLE_REPORT_PDF_PATH);
+                }
+                // Check if existing Invoice PDF exist, remove if any
+                if (fs.existsSync(fullPath)) {
+                    fs.unlinkSync(fullPath);
+                }
+                const pdfDoc = pdfMake.createPdfKitDocument(generatePdf);
+                const writeStream = fs.createWriteStream(fullPath);
+                pdfDoc.pipe(writeStream);
+                pdfDoc.end();
+                writeStream.on('finish', () => {
+                    let file = fs.createReadStream(fullPath);
+                    let stat = fs.statSync(fullPath);
+                    res.setHeader('Content-Length', stat.size);
+                    res.setHeader('Content-Type', 'application/pdf');
+                    res.setHeader('Content-Disposition', 'attachment; filename=quote.pdf');
+                    file.pipe(res);
                 });
             } else {
                 return res.json({ 'status': Status.Error, 'message': "Report was not found" });
