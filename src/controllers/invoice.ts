@@ -405,7 +405,7 @@ export const createInvoice = (req: Request, res: Response) => {
 
                 return new Promise(async (resolve, reject) => {
 
-                    // if (!invoice.isDraft) {
+                    if (!invoice.isDraft) {
                         const customer = await Customer.findById(invoice.customer);
                         const job = await Job.findById(invoice.job);
                         customer.balance += invoice.total;
@@ -494,7 +494,7 @@ export const createInvoice = (req: Request, res: Response) => {
 
                         invoice.commission = invoiceCommission._id;
                         await invoice.save();
-                    // }
+                    }
 
                     resolve(invoice);
                 })
