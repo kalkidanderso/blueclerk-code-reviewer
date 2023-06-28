@@ -35,6 +35,8 @@ import { JobLocation } from '../models/JobLocation';
 import { JobSite } from '../models/JobSite';
 import { HomeOwner } from '../models/HomeOwner';
 import * as Sentry from '@sentry/node';
+import { JobCommission } from '../models/JobCommission';
+import { CommissionHistory } from '../models/CommissionHistory';
 
 /**
  * 04-22-2022
@@ -1902,6 +1904,9 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             select: 'profile.displayName'
         })
         .populate({
+            path: 'tasks.contractor',
+        })
+        .populate({
             path: 'ticket',
             select: 'customer',
             populate: { path: 'customer', select: 'profile.displayName' }
@@ -2138,27 +2143,53 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     for (const task of startedPausedTasks) {
                         task.status = JobStatus.FINISHED;
                     };
-                    const updateCommission: any[] = []
-                    job.tasks.forEach(async (task: any) => {
-                        task.jobTypes.forEach(async (j: any) => {
-                            let balance = 0
+                    
+                    let invoiceCommissionEntry: any[] = [];
+
+                    console.log(job?.tasks);
+                    
+                    for (const task of job?.tasks) {
+                        let contractorCommissionEntry = {
+                            contractor: task.contractor._id,
+                            technician: task.contractor.admin,
+                            commission: 0,
+                            commissionAmount: 0
+                        }
+                        
+                        for (const j of task.jobTypes) {
+                            let balance = 0;
+
                             const jobType = await Item.findOne({ jobType: j.jobType })
                             const commissionTierId = task.contractor.commissionTier
                             if (commissionTierId) {
                                 const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
-                                if (commissionTier?.charge) balance += commissionTier.charge
+                                if (commissionTier?.charge){
+                                    balance += commissionTier.charge
+                                    contractorCommissionEntry.commission += commissionTier.charge
+                                    contractorCommissionEntry.commissionAmount += commissionTier.charge
+                                }
                             }
-                            updateCommission.push(
-                                Company.findByIdAndUpdate(
-                                    task.contractor._id,
-                                    { $inc: { balance } },
-                                    { new: true }
-                                ).exec()
-                            )
-                        })
-                    })
-                    await Promise.all(updateCommission)
+                            await Company.findByIdAndUpdate(
+                                task.contractor._id,
+                                { $inc: { balance } },
+                                { new: true }
+                            ).exec()
+                        }
+                        const commissionHistory = await CommissionHistory.find({job : job._id, technicianOrContractor: task.contractor._id}).sort( { createdAt: -1 } )
+                        if (commissionHistory.length) {
+                            contractorCommissionEntry.commissionAmount += commissionHistory[0].addition?.amount || 0;
+                            contractorCommissionEntry.commissionAmount -= commissionHistory[0].deduction?.amount || 0;
+                        }
+                        invoiceCommissionEntry.push(contractorCommissionEntry);
+                    }
 
+                    if (invoiceCommissionEntry.length) {
+                        const jobCommisssion = await new JobCommission({
+                            job: job._id,
+                            technicians: invoiceCommissionEntry
+                        }).save();
+                        data.commission = jobCommisssion;
+                    }
                     break;
 
                 case JobStatus.PAUSED:

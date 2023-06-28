@@ -5,6 +5,7 @@ import { ICompany } from '../models/Company';
 import { IHomeOwner } from '../models/HomeOwner';
 import { IJobLocation } from '../models/JobLocation';
 import { IJobSite } from '../models/JobSite';
+import { IJobCommission } from './JobCommission';
 
 export interface IJob extends Document {
     scheduleTimeAMPM: number
@@ -74,6 +75,7 @@ export interface IJob extends Document {
         note?: string
         date: Date
     }[]
+    commission?: Schema.Types.ObjectId | IJobCommission
     workType: Schema.Types.ObjectId  | any
     companyLocation: Schema.Types.ObjectId  | any
 }
@@ -430,6 +432,11 @@ const JobSchema = new Schema({
     },
     completeOnTime: {
         type: Boolean,
+        required: false
+    },
+    commission: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobCommission',
         required: false
     },
     workType: {

@@ -15,6 +15,8 @@ import { _createQBPayment, _deleteQBPayment, _updateQBPayment, _voidPayment } fr
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission'
 import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor } from '../models/AdvancePayment';
 import * as Sentry from '@sentry/node';
+import { IJob, Job } from '../models/Job';
+import { IJobCommission, JobCommission } from '../models/JobCommission';
 
 /**
  * To calculate invoice and customer payment amount related,
@@ -700,8 +702,10 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
     const user = <IUser>req.user;
     const paramsInvoiceIds = params.invoiceIds?.length ? JSON.parse(params.invoiceIds) : [];
-    if (!params.invoiceIds && !params.startDate && !params.endDate) {
-        return res.json({ statstus: Status.Error, message: 'Either invoiceIds or startDate endDate is required.' });
+    const paramsJobIds = params.jobIds?.length ? JSON.parse(params.jobIds) : [];
+
+    if (!params.invoiceIds && !params.jobIds && !params.startDate && !params.endDate) {
+        return res.json({ statstus: Status.Error, message: 'Either invoiceIds, jobIds or startDate endDate is required.' });
     }
 
     // const startDate = moment(params.startDate).startOf('day').utc().format();
@@ -712,21 +716,24 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
 
     if (paramsInvoiceIds.length) {
         query = { _id: { $in: paramsInvoiceIds } }
+    } else if(paramsJobIds.length){
+        query = { _id: { $in: paramsJobIds } }
     } else if (params.startDate && params.endDate) {
         query = { $or: [{ issuedDate: { $gte: startDate, $lte: endDate } }] }
     } else {
-        return res.json({ statstus: Status.Error, message: 'Either invoiceIds or startDate endDate is required' });
+        return res.json({ statstus: Status.Error, message: 'Either invoiceIds, JobIds or startDate endDate is required' });
     }
 
     const invoices = await Invoice.find({ ...query, isDraft: { $ne: true } }).populate({ path: 'commission' });
-    if (!invoices?.length) {
-        return res.json({ status: Status.Error, message: 'No invoice found' });
-    }
+    const jobs = await Job.find({ ...query, status: 2 }).populate({ path: 'commission' });
+
     const invoiceIds = invoices.map(invoice => invoice._id);
+    const jobIds = jobs.map(job => job._id);
 
     // Construct the base payment entry
     const paymentEntry:any = {
         invoices: invoiceIds,
+        jobs: jobIds,
         amountPaid: roundTwoDecimal(params.amount),
         paymentType: params.paymentType,
         // referenceNumber: params.referenceNumber || new ObjectId().toString().substring(5, 20),
@@ -813,6 +820,26 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                     contractor.balance = contractorBalance < 0 ? 0 : contractorBalance;
 
                     await invoiceCommission.save();
+                }
+            }
+
+              // Iterate all jobs to mark the commission as paid and deduct vendor balance
+              for (const job of jobs) {
+                const jobCommission = <IJobCommission>job.commission;
+
+                if (jobCommission.technicians) {
+                    // Find the vendor on the invoice commisison object
+                    const contractorJobCommission = jobCommission.technicians.find(commission => commission?.contractor?.toString() === contractor?._id?.toString());
+
+                    // Mark vendor commission as paid
+                    contractorJobCommission.paid = true;
+                    contractorJobCommission.paidAt = paymentVendor.paidAt;
+
+                    // Deduct vendor balance
+                    const contractorBalance = contractor.balance - Number(contractorJobCommission.commissionAmount.toFixed(2));
+                    contractor.balance = contractorBalance < 0 ? 0 : contractorBalance;
+
+                    await jobCommission.save();
                 }
             }
             await contractor.save();
@@ -1340,6 +1367,60 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
         }
     }
 
+    //Get Jobs Commission
+    const Jobs: any = await Job.find({
+        company: company._id,
+        status : 2,
+        commission: { $ne: null },
+        ...query
+    }).populate({ path: 'commission' });
+    // Iterate all Jobs
+    for (const job of Jobs) {
+        const jobCommisssion = <IJobCommission>job.commission;
+        if (jobCommisssion?.technicians) {
+            for (const technicianCommission of jobCommisssion.technicians) {
+                if (technicianCommission.contractor && !technicianCommission.paid) {
+                    const contractor = await Company.findById(technicianCommission.contractor).exec();
+                    const contractorEntry = vendors.find((v: any) => v.contractor._id?.toString() === technicianCommission.contractor?.toString());
+                    if (contractorEntry) {
+                        contractorEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
+                        if(contractorEntry?.workType && !contractorEntry?.workType.includes(job?.workType?.toString())) contractorEntry?.workType?.push(job.workType?.toString());
+                        if(contractorEntry?.companyLocation && !contractorEntry?.companyLocation.includes(job?.companyLocation?.toString())) contractorEntry?.companyLocation?.push(job.companyLocation?.toString());                        
+                        contractorEntry?.jobIds?.push(job._id);
+                    } else {
+                        vendors.push({
+                            contractor,
+                            commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
+                            workType: [job.workType?.toString()],
+                            companyLocation: [job.companyLocation?.toString()],
+                            jobIds: [job._id],
+                        });
+                    }
+                }
+
+                if (technicianCommission.technician && !technicianCommission.contractor && !technicianCommission.paid) {
+                    const technician = await User.findById(technicianCommission.technician).exec();
+                    const technicianEntry = employees.find((t: any) => t.employee._id?.toString() === technicianCommission.technician?.toString());
+
+                    if (technicianEntry) {
+                        technicianEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
+                        if(technicianEntry?.workType && !technicianEntry?.workType.includes(job?.workType?.toString())) technicianEntry?.workType?.push(job.workType?.toString());
+                        if(technicianEntry?.companyLocation && !technicianEntry?.companyLocation.includes(job?.companyLocation?.toString())) technicianEntry?.companyLocation?.push(job.companyLocation?.toString());                        
+                        technicianEntry.jobIds.push(job._id);
+                    } else {
+                        employees.push({
+                            employee: technician,
+                            commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
+                            workType: [job.workType?.toString()],
+                            companyLocation: [job.companyLocation?.toString()],
+                            jobIds: [job._id],
+                        });
+                    }
+                }
+            }
+        }
+    }
+
     // await _getVendorPayments(vendors, company, queryPaymentVendor);
     await _getVendorPayments(vendors, company, queryPaymentVendor, queryAdvancePaymentVendor);
     // await _getEmployeePayments(employees, company, queryPaymentEmployee);
@@ -1486,6 +1567,75 @@ export const getPayrollReport = async (req: Request, res: Response) => {
             }
         }
     }
+
+    const jobs = await Job.find({
+        company: company._id,
+        status: 2,
+        commission: { $ne: null },
+        ...query
+    });
+    
+    
+    const jobIds = jobs.map(job => job._id);
+    const jobCommisssions = await JobCommission.find({
+        job: { $in: jobIds }, 'technicians.$[].paid': { $ne: true },
+        ...techQuery
+    }).populate({ path: 'job' });
+    
+    for (const jobCommisssion of jobCommisssions) {
+        const job = <IJob>jobCommisssion.job;
+
+        await job
+            .populate({
+                 path: 'technician', 
+                 select: 'profile auth.email contact' ,
+            })
+            .populate({
+                path: 'contractor', 
+                select: 'info address contact' ,
+            })
+            .populate({
+                path: 'tasks.technician', 
+                select: 'profile auth.email contact' ,
+            })
+            .populate({
+                path: 'tasks.contractor', 
+                select: 'info address contact' ,
+            })
+            .populate({
+                path: 'tasks.jobTypes.jobType', 
+                select: 'title description sku' ,
+            })
+            .populate({
+                path: 'commission',
+                populate: [{ path: 'technician', select: 'profile auth.email contact' }]
+            }).execPopulate();
+
+        if (jobCommisssion.technicians) {
+            for (const technicianCommission of jobCommisssion.technicians) {
+                if (params.type !== 'employee' && technicianCommission.contractor && !technicianCommission.paid) {
+                    const contractor = await Company.findById(technicianCommission.contractor).exec();
+
+                    vendors.push({
+                        job,
+                        contractor,
+                        commissionAmount: Number(technicianCommission.commissionAmount.toFixed(2)),
+                    });
+                }
+
+                if (params.type !== 'vendor' && technicianCommission.technician && !technicianCommission.contractor && !technicianCommission.paid) {
+                    const technician = await User.findById(technicianCommission.technician).exec();
+
+                    employees.push({
+                        job,
+                        employee: technician,
+                        commissionAmount: Number(technicianCommission.commissionAmount.toFixed(2)),
+                    });
+                }
+            }
+        }
+    }
+
 
     return res.json({ status: Status.Success, vendors, employees });
 }
