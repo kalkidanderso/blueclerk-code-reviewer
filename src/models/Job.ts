@@ -84,7 +84,7 @@ export interface ITask extends Document {
     status: number
     employeeType?: boolean
     technician?: Schema.Types.ObjectId | any
-    contractor?: Schema.Types.ObjectId
+    contractor?: Schema.Types.ObjectId | ICompany
     comment?: string
     jobTypes?: ITaskJobType[]
     paid: boolean

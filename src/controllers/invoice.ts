@@ -4299,17 +4299,34 @@ export const updateJobCommission = async (req: Request, res: Response) => {
         await commissionHistory.save()
 
         const commission = await JobCommission.findOne({ job: body.job });
-        if (commission.technicians) {
-            // Find the vendor on the invoice commisison object
-            commission.technicians = commission.technicians.map(technician => {
-                if(technician?.contractor?.toString() === req.params.id){
-                    technician.commissionAmount =  Number(balance.toFixed(2));
-                }
-                return technician;
-            });
 
-            await commission.save();
+        if (commission) {
+            if (commission.technicians) {
+                // Find the vendor on the invoice commisison object
+                commission.technicians = commission.technicians.map(technician => {
+                    if(technician?.contractor?.toString() === req.params.id){
+                        technician.commissionAmount =  Number(balance.toFixed(2));
+                    }
+                    return technician;
+                });
+    
+                await commission.save();
+            }
+        }else{
+            let contractorCommissionEntry = {
+                contractor: req.params.id,
+                commission: body.balance,
+                commissionAmount: body.balance
+            }
+            
+            const jobCommisssion = await new JobCommission({
+                job: body.job,
+                technicians: [contractorCommissionEntry]
+            }).save();
+            
+            await Job.findByIdAndUpdate(body.job,{commission : jobCommisssion}).exec();
         }
+
     }).then(() => res.json({ status: Status.Success, message: 'Update successful' }))
     .catch(err => res.json({ status: Status.Error, message: err.message }))
 }

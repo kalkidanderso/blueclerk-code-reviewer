@@ -2145,8 +2145,6 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     };
                     
                     let invoiceCommissionEntry: any[] = [];
-
-                    console.log(job?.tasks);
                     
                     for (const task of job?.tasks) {
                         let contractorCommissionEntry = {
@@ -2175,14 +2173,9 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                                 { new: true }
                             ).exec()
                         }
-                        const commissionHistory = await CommissionHistory.find({job : job._id, technicianOrContractor: task.contractor._id}).sort( { createdAt: -1 } )
-                        if (commissionHistory.length) {
-                            contractorCommissionEntry.commissionAmount += commissionHistory[0].addition?.amount || 0;
-                            contractorCommissionEntry.commissionAmount -= commissionHistory[0].deduction?.amount || 0;
-                        }
                         invoiceCommissionEntry.push(contractorCommissionEntry);
                     }
-
+                    
                     if (invoiceCommissionEntry.length) {
                         const jobCommisssion = await new JobCommission({
                             job: job._id,
@@ -2569,6 +2562,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
         .populate({ path: 'customer', select: 'profile.displayName itemTier' })
         .populate({ path: 'homeOwner', select: 'profile.displayName' })
         .populate({ path: 'tasks.technician', select: 'profile.displayName' })
+        .populate({ path: 'tasks.contractor' })
         // TODO: To be deprecated
         .populate({ path: 'technician', select: 'profile.displayName' })
         .populate({ path: 'ticket.customer', select: 'profile.displayName' })
@@ -2719,6 +2713,55 @@ export const updateJobTask = async (req: Request, res: Response) => {
 
         // Create Job Report for parent/sub Job
         await createJobReport(linkedJob._id, linkedJob.company, customerName, linkedJob.technician?.profile?.displayName, linkedJob.scheduleDate, linkedJob.contractor || companyId);
+    }
+
+
+    //Commission Calculation
+    const completedTasks: ITaskJobType[] = job.tasks.filter(task => task.status == JobStatus.FINISHED);
+    if (completedTasks.length == job.tasks.length) {
+        let invoiceCommissionEntry: any[] = [];
+
+        for (const task of job?.tasks) {
+            let contractor = task.contractor as ICompany;
+            if(contractor){
+                let contractorCommissionEntry = {
+                    contractor: contractor._id,
+                    technician: contractor.admin,
+                    commission: 0,
+                    commissionAmount: 0
+                }
+                
+                for (const j of task.jobTypes) {
+                    let balance = 0;
+    
+                    const jobType = await Item.findOne({ jobType: j.jobType })
+                    const commissionTierId = contractor.commissionTier
+                    if (commissionTierId) {
+                        const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
+                        if (commissionTier?.charge){
+                            balance += commissionTier.charge
+                            contractorCommissionEntry.commission += commissionTier.charge
+                            contractorCommissionEntry.commissionAmount += commissionTier.charge
+                        }
+                    }
+                    await Company.findByIdAndUpdate(
+                        contractor._id,
+                        { $inc: { balance } },
+                        { new: true }
+                    ).exec()
+                }
+                invoiceCommissionEntry.push(contractorCommissionEntry);
+            }
+        }
+
+        if (invoiceCommissionEntry.length) {
+            const jobCommisssion = await new JobCommission({
+                job: job._id,
+                technicians: invoiceCommissionEntry
+            }).save();
+            job.commission = jobCommisssion;
+            await job.save();
+        }
     }
 
     return res.json({ status: Status.Success, message: `Job Task ${statusAction.toLowerCase()} successfully.`, job, updatedTask: task });
