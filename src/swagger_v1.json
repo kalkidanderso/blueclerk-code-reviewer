@@ -6024,6 +6024,7 @@
                     "description": "Required with Item Type Product"
                   }
                 }
+                }
               }
             }
           },
@@ -6046,7 +6047,7 @@
             "Bearer": []
           }
         ]
-      }
+      
     },
     "/getItems": {
       "post": {
