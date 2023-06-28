@@ -986,6 +986,9 @@ const _getDataCustomersToExport = async (company: string): Promise<any[]> => {
                             itemTier: 1,
                             paymentTerm: 1,
                             isActive: 1,
+                            lowerName:{
+                                "$toLower": "$profile.displayName"
+                            }
                         },
                     },
                 ],
@@ -1028,7 +1031,7 @@ const _getDataCustomersToExport = async (company: string): Promise<any[]> => {
                 paymentTermObj: 1
             }
         },
-        { $sort: { 'customerObj.profile.displayName': 1 } },
+        { $sort: { 'customerObj.lowerName': 1 } },
     ]);
     return customers;
 }
