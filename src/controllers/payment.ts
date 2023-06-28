@@ -18,6 +18,41 @@ import * as Sentry from '@sentry/node';
 import { IJob, Job } from '../models/Job';
 import { IJobCommission, JobCommission } from '../models/JobCommission';
 
+
+/**
+ * Data returned by the query that gets technian commissions linked to the invoices
+ */
+interface ITechnicianCommissionInvoice {
+    technician: ObjectId
+    contractor?: ObjectId
+    commission: number
+    commissionAmount: number
+    paid?: boolean
+    paidAt?: Date
+    invoice: {
+        id: ObjectId,
+        workType: ObjectId,
+        companyLocation: ObjectId
+    }
+}
+
+/**
+ * Data returned by the query that gets technian commissions linked to the jobs
+ */
+interface ITechnicianCommissionJob {
+    technician: ObjectId
+    contractor?: ObjectId
+    commission: number
+    commissionAmount: number
+    paid?: boolean
+    paidAt?: Date
+    job: {
+        id: ObjectId,
+        workType: ObjectId,
+        companyLocation: ObjectId
+    }
+}
+
 /**
  * To calculate invoice and customer payment amount related,
  * invoice's balanceDue, paymentApplied, status, and paid,
@@ -99,8 +134,8 @@ export const _resetPaymentQB = (company: ICompany): void => {
 export const getPayments = (req: Request, res: Response) => {
     const workType = req.query.workType;
     const companyLocation = req.query.companyLocation;
-    
-    let filterQuery: {[key: string]: any} = { company: req.companyId, __t: { $nin: ['PaymentEmployee', 'PaymentVendor']} };
+
+    let filterQuery: { [key: string]: any } = { company: req.companyId, __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] } };
     if (workType) {
         let workTypeIds: any[] = [];
         try {
@@ -108,8 +143,8 @@ export const getPayments = (req: Request, res: Response) => {
             workTypeIds = workTypeArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {};
-        filterQuery["workType"] = { $in : workTypeIds };
+        } catch (error) { };
+        filterQuery["workType"] = { $in: workTypeIds };
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
@@ -118,8 +153,8 @@ export const getPayments = (req: Request, res: Response) => {
             companyLocationIds = companyLocationArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {}
-        filterQuery["companyLocation"] = { $in : companyLocationIds };
+        } catch (error) { }
+        filterQuery["companyLocation"] = { $in: companyLocationIds };
     }
     Payment.find(filterQuery)
         .populate({
@@ -161,8 +196,8 @@ export const getPayments = (req: Request, res: Response) => {
                     workTypeIds = workTypeArr.map((id: string) => {
                         if (ObjectId.isValid(id)) return new ObjectId(id)
                     })
-                } catch (error) {};
-                filterUnsynced["workType"] = { $in : workTypeIds };
+                } catch (error) { };
+                filterUnsynced["workType"] = { $in: workTypeIds };
             }
             if (companyLocation) {
                 let companyLocationIds: any[] = [];
@@ -171,10 +206,10 @@ export const getPayments = (req: Request, res: Response) => {
                     companyLocationIds = companyLocationArr.map((id: string) => {
                         if (ObjectId.isValid(id)) return new ObjectId(id)
                     })
-                } catch (error) {}
-                filterUnsynced["companyLocation"] = { $in : companyLocationIds };
+                } catch (error) { }
+                filterUnsynced["companyLocation"] = { $in: companyLocationIds };
             }
-            
+
             const unsyncedPayments = await Payment.find({
                 company: req.companyId,
                 __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] },
@@ -205,7 +240,7 @@ export const getUnsyncedPayments = async (req: Request, res: Response) => {
     const companyId = req.companyId;
     const workType = req.query.workType;
     const companyLocation = req.query.companyLocation;
-    
+
     // Data query that used to search unsynced Invoices
     const filterQuery: any = {
         $and: [
@@ -241,8 +276,8 @@ export const getUnsyncedPayments = async (req: Request, res: Response) => {
             workTypeIds = workTypeArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {};
-        filterQuery['$and'].push({ workType: { $in : workTypeIds }});
+        } catch (error) { };
+        filterQuery['$and'].push({ workType: { $in: workTypeIds } });
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
@@ -251,8 +286,8 @@ export const getUnsyncedPayments = async (req: Request, res: Response) => {
             companyLocationIds = companyLocationArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {}
-        filterQuery['$and'].push({ companyLocation: { $in : companyLocationIds }});
+        } catch (error) { }
+        filterQuery['$and'].push({ companyLocation: { $in: companyLocationIds } });
     }
 
     const payments = await Payment.find(filterQuery)
@@ -351,8 +386,8 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
             workTypeIds = workTypeArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {};
-        filterByDivision["workType"] = { $in : workTypeIds };
+        } catch (error) { };
+        filterByDivision["workType"] = { $in: workTypeIds };
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
@@ -361,8 +396,8 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
             companyLocationIds = companyLocationArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {}
-        filterByDivision["companyLocation"] = { $in : companyLocationIds };
+        } catch (error) { }
+        filterByDivision["companyLocation"] = { $in: companyLocationIds };
     }
 
     if (params.startDate && params.endDate) {
@@ -385,7 +420,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
 
     switch (params.type) {
         case 'vendor':
-            result = _.extend({status: Status.Success});
+            result = _.extend({ status: Status.Success });
             const vendorQuery = { company: company._id, contractor: params.id, ...query, ...voidQuery, ...filterByDivision }
             if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
                 const payments = await PaymentVendor.find(vendorQuery)
@@ -441,7 +476,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
             return res.json(result);
 
         case 'employee':
-            result = _.extend({status: Status.Success});
+            result = _.extend({ status: Status.Success });
             const employeeQuery = { company, employee: params.id, ...query, ...voidQuery, ...filterByDivision }
             if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
                 const payments = await PaymentEmployee.find(employeeQuery)
@@ -495,7 +530,7 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
             return res.json(result);
 
         default:
-            result = _.extend({status: Status.Success});
+            result = _.extend({ status: Status.Success });
             if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
                 const payments = await Payment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery, ...filterByDivision })
                     .populate({
@@ -608,7 +643,7 @@ export const createPayment = async (req: Request, res: Response) => {
         if (invoice.companyLocation) {
             divisionData["companyLocation"] = invoice.companyLocation;
         }
-        
+
         if (invoice.workType) {
             divisionData["workType"] = invoice.workType;
         }
@@ -716,7 +751,7 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
 
     if (paramsInvoiceIds.length) {
         query = { _id: { $in: paramsInvoiceIds } }
-    } else if(paramsJobIds.length){
+    } else if (paramsJobIds.length) {
         query = { _id: { $in: paramsJobIds } }
     } else if (params.startDate && params.endDate) {
         query = { $or: [{ issuedDate: { $gte: startDate, $lte: endDate } }] }
@@ -731,7 +766,7 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
     const jobIds = jobs.map(job => job._id);
 
     // Construct the base payment entry
-    const paymentEntry:any = {
+    const paymentEntry: any = {
         invoices: invoiceIds,
         jobs: jobIds,
         amountPaid: roundTwoDecimal(params.amount),
@@ -750,7 +785,7 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
     };
 
     if (params.companyLocation) {
-        paymentEntry["companyLocation"] = params.companyLocation;    
+        paymentEntry["companyLocation"] = params.companyLocation;
     }
 
     if (params.workType) {
@@ -823,8 +858,8 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
                 }
             }
 
-              // Iterate all jobs to mark the commission as paid and deduct vendor balance
-              for (const job of jobs) {
+            // Iterate all jobs to mark the commission as paid and deduct vendor balance
+            for (const job of jobs) {
                 const jobCommission = <IJobCommission>job.commission;
 
                 if (jobCommission.technicians) {
@@ -1259,172 +1294,26 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
     const vendors: any = [];
     const employees: any = [];
     let query: any = {}, queryPaymentVendor: any = {}, queryPaymentEmployee: any = {}, queryAdvancePaymentVendor: any = {}, queryAdvancePaymentEmployee: any = {};
-    const workType = req.query.workType;
-    const companyLocation = req.query.companyLocation;
 
     // Check when startDate and endDate is provided, offset must be required
-    if (params.startDate && params.endDate) {
-        if (!params.offset) {
-            return res.json({ status: Status.Error, message: 'Params offset is required when startDate and endDate provided' });
-        }
-
-        const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
-        const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
-        query = { issuedDate: { $gte: startDate, $lte: endDate } };
-        queryPaymentVendor = { paidAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
-        queryAdvancePaymentVendor = { appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
-        queryPaymentEmployee = { paidAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
-        queryAdvancePaymentEmployee = { appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
+    if (params.startDate && params.endDate && !params.offset) {
+        return res.json({ status: Status.Error, message: 'Params offset is required when startDate and endDate provided' });
     }
 
-    if (workType) {
-        let workTypeIds: any[] = [];
-        try {
-            let workTypeArr = JSON.parse(workType);
-            workTypeIds = workTypeArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
-        } catch (error) {};
-        query["workType"] = { $in : workTypeIds };
-        queryPaymentVendor["workType"] = { $in : workTypeIds };
-        queryAdvancePaymentVendor["workType"] = { $in : workTypeIds };
-        queryPaymentEmployee["workType"] = { $in : workTypeIds };
-        queryAdvancePaymentEmployee["workType"] = { $in : workTypeIds };
-    }
-    if (companyLocation) {
-        let companyLocationIds: any[] = [];
-        try {
-            let companyLocationArr = JSON.parse(companyLocation);
-            companyLocationIds = companyLocationArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
-        } catch (error) {}
-        query["companyLocation"] = { $in : companyLocationIds };
-        queryPaymentVendor["companyLocation"] = { $in : companyLocationIds };
-        queryAdvancePaymentVendor["companyLocation"] = { $in : companyLocationIds };
-        queryPaymentEmployee["companyLocation"] = { $in : companyLocationIds };
-        queryAdvancePaymentEmployee["companyLocation"] = { $in : companyLocationIds };
-    }
+    _fillQueriesPayrollBalance(params, query, queryPaymentVendor, queryPaymentEmployee, queryAdvancePaymentVendor, queryAdvancePaymentEmployee);
 
     // get job with unpaid technician or contractor
-    const invoices: any = await Invoice.find({
-        company: company._id,
-        isDraft: { $ne: true },
-        job: { $ne: null },
-        ...query
-    }).populate({ path: 'commission' });
-
-    // Iterate all invoices
-    for (const invoice of invoices) {
-        const invoiceCommission = <IInvoiceCommission>invoice.commission;
-
-        if (invoiceCommission?.technicians) {
-            for (const technicianCommission of invoiceCommission.technicians) {
-                if (technicianCommission.contractor && !technicianCommission.paid) {
-                    const contractor = await Company.findById(technicianCommission.contractor).exec();
-                    const contractorEntry = vendors.find((v: any) => v.contractor._id?.toString() === technicianCommission.contractor?.toString());
-
-                    if (contractorEntry) {
-                        contractorEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
-                        // contractorEntry.balanceDue += Number(technicianCommission.commissionAmount.toFixed(2));
-                        if(contractorEntry?.workType && !contractorEntry?.workType.includes(invoice?.workType?.toString())) contractorEntry?.workType?.push(invoice.workType?.toString());
-                        if(contractorEntry?.companyLocation && !contractorEntry?.companyLocation.includes(invoice?.companyLocation?.toString())) contractorEntry?.companyLocation?.push(invoice.companyLocation?.toString());                        
-                        contractorEntry?.invoiceIds?.push(invoice._id);
-                    } else {
-                        vendors.push({
-                            contractor,
-                            commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
-                            // balanceDue: Number(technicianCommission.commissionAmount.toFixed(2)),
-                            workType: [invoice.workType?.toString()],
-                            companyLocation: [invoice.companyLocation?.toString()],
-                            invoiceIds: [invoice._id],
-                        });
-                    }
-                }
-
-                if (technicianCommission.technician && !technicianCommission.contractor && !technicianCommission.paid) {
-                    const technician = await User.findById(technicianCommission.technician).exec();
-                    const technicianEntry = employees.find((t: any) => t.employee._id?.toString() === technicianCommission.technician?.toString());
-
-                    if (technicianEntry) {
-                        technicianEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
-                        // technicianEntry.balanceDue += Number(technicianCommission.commissionAmount.toFixed(2));
-                        if(technicianEntry?.workType && !technicianEntry?.workType.includes(invoice?.workType?.toString())) technicianEntry?.workType?.push(invoice.workType?.toString());
-                        if(technicianEntry?.companyLocation && !technicianEntry?.companyLocation.includes(invoice?.companyLocation?.toString())) technicianEntry?.companyLocation?.push(invoice.companyLocation?.toString());                        
-                        technicianEntry.invoiceIds.push(invoice._id);
-                    } else {
-                        employees.push({
-                            employee: technician,
-                            commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
-                            // balanceDue: Number(technicianCommission.commissionAmount.toFixed(2)),
-                            workType: [invoice.workType?.toString()],
-                            companyLocation: [invoice.companyLocation?.toString()],
-                            invoiceIds: [invoice._id],
-                        });
-                    }
-                }
-            }
-        }
-    }
-
     //Get Jobs Commission
-    const Jobs: any = await Job.find({
-        company: company._id,
-        status : 2,
-        commission: { $ne: null },
-        ...query
-    }).populate({ path: 'commission' });
-    // Iterate all Jobs
-    for (const job of Jobs) {
-        const jobCommisssion = <IJobCommission>job.commission;
-        if (jobCommisssion?.technicians) {
-            for (const technicianCommission of jobCommisssion.technicians) {
-                if (technicianCommission.contractor && !technicianCommission.paid) {
-                    const contractor = await Company.findById(technicianCommission.contractor).exec();
-                    const contractorEntry = vendors.find((v: any) => v.contractor._id?.toString() === technicianCommission.contractor?.toString());
-                    if (contractorEntry) {
-                        contractorEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
-                        if(contractorEntry?.workType && !contractorEntry?.workType.includes(job?.workType?.toString())) contractorEntry?.workType?.push(job.workType?.toString());
-                        if(contractorEntry?.companyLocation && !contractorEntry?.companyLocation.includes(job?.companyLocation?.toString())) contractorEntry?.companyLocation?.push(job.companyLocation?.toString());                        
-                        contractorEntry?.jobIds?.push(job._id);
-                    } else {
-                        vendors.push({
-                            contractor,
-                            commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
-                            workType: [job.workType?.toString()],
-                            companyLocation: [job.companyLocation?.toString()],
-                            jobIds: [job._id],
-                        });
-                    }
-                }
+    const [techniciansCommissionsInvoices, techniciansCommissionsJobs] = await Promise.all([_getTechnicianCommisionsInvoices(query, company),
+    _getTechnicianCommisionsJobs(query, company)])
 
-                if (technicianCommission.technician && !technicianCommission.contractor && !technicianCommission.paid) {
-                    const technician = await User.findById(technicianCommission.technician).exec();
-                    const technicianEntry = employees.find((t: any) => t.employee._id?.toString() === technicianCommission.technician?.toString());
+    const { contractors, technicians } = await _getTechniciansContrators(techniciansCommissionsInvoices, techniciansCommissionsJobs);
 
-                    if (technicianEntry) {
-                        technicianEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
-                        if(technicianEntry?.workType && !technicianEntry?.workType.includes(job?.workType?.toString())) technicianEntry?.workType?.push(job.workType?.toString());
-                        if(technicianEntry?.companyLocation && !technicianEntry?.companyLocation.includes(job?.companyLocation?.toString())) technicianEntry?.companyLocation?.push(job.companyLocation?.toString());                        
-                        technicianEntry.jobIds.push(job._id);
-                    } else {
-                        employees.push({
-                            employee: technician,
-                            commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
-                            workType: [job.workType?.toString()],
-                            companyLocation: [job.companyLocation?.toString()],
-                            jobIds: [job._id],
-                        });
-                    }
-                }
-            }
-        }
-    }
+    await Promise.all([_fillEmployeesAndVendorFromInvoices(techniciansCommissionsInvoices, technicians, contractors, employees, vendors),
+    _fillEmployeesAndVendorFromJobs(techniciansCommissionsJobs, technicians, contractors, employees, vendors)]);
 
-    // await _getVendorPayments(vendors, company, queryPaymentVendor);
-    await _getVendorPayments(vendors, company, queryPaymentVendor, queryAdvancePaymentVendor);
-    // await _getEmployeePayments(employees, company, queryPaymentEmployee);
-    await _getEmployeePayments(employees, company, queryPaymentEmployee, queryAdvancePaymentEmployee);
+    await Promise.all([_getVendorPayments(vendors, company, queryPaymentVendor, queryAdvancePaymentVendor),
+    _getEmployeePayments(employees, company, queryPaymentEmployee, queryAdvancePaymentEmployee)]);
 
     return res.json({
         status: Status.Success,
@@ -1481,8 +1370,8 @@ export const getPayrollReport = async (req: Request, res: Response) => {
             workTypeIds = workTypeArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {};
-        query["workType"] = { $in : workTypeIds };
+        } catch (error) { };
+        query["workType"] = { $in: workTypeIds };
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
@@ -1491,8 +1380,8 @@ export const getPayrollReport = async (req: Request, res: Response) => {
             companyLocationIds = companyLocationArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {}
-        query["companyLocation"] = { $in : companyLocationIds };
+        } catch (error) { }
+        query["companyLocation"] = { $in: companyLocationIds };
     }
 
     const invoices = await Invoice.find({
@@ -1574,37 +1463,37 @@ export const getPayrollReport = async (req: Request, res: Response) => {
         commission: { $ne: null },
         ...query
     });
-    
-    
+
+
     const jobIds = jobs.map(job => job._id);
     const jobCommisssions = await JobCommission.find({
         job: { $in: jobIds }, 'technicians.$[].paid': { $ne: true },
         ...techQuery
     }).populate({ path: 'job' });
-    
+
     for (const jobCommisssion of jobCommisssions) {
         const job = <IJob>jobCommisssion.job;
 
         await job
             .populate({
-                 path: 'technician', 
-                 select: 'profile auth.email contact' ,
+                path: 'technician',
+                select: 'profile auth.email contact',
             })
             .populate({
-                path: 'contractor', 
-                select: 'info address contact' ,
+                path: 'contractor',
+                select: 'info address contact',
             })
             .populate({
-                path: 'tasks.technician', 
-                select: 'profile auth.email contact' ,
+                path: 'tasks.technician',
+                select: 'profile auth.email contact',
             })
             .populate({
-                path: 'tasks.contractor', 
-                select: 'info address contact' ,
+                path: 'tasks.contractor',
+                select: 'info address contact',
             })
             .populate({
-                path: 'tasks.jobTypes.jobType', 
-                select: 'title description sku' ,
+                path: 'tasks.jobTypes.jobType',
+                select: 'title description sku',
             })
             .populate({
                 path: 'commission',
@@ -1949,116 +1838,337 @@ const _handleVoidPaymentContractor = async (paymentType: string, paymentVendor: 
 }
 
 const _getVendorPayments = async (vendors: any[], company: ICompany, queryPayment: any, queryAdvancePayment: any) => {
-    // const query: any = {
-    //     company: company._id,
-    //     isVoid: { $ne: true }
-    // };
     queryPayment.company = company._id;
     queryPayment.isVoid = { $ne: true };
     queryAdvancePayment.company = company._id;
     queryAdvancePayment.isVoid = { $ne: true };
+    const contractorsIds = vendors.map((value) => value?.contractor?._id).filter((value) => value !== undefined)
+    queryPayment.contractor = { $in: contractorsIds };
+    queryAdvancePayment.contractor = { $in: contractorsIds };
+    // Retrieve advance payments history and the total of it
+    const advancePayments = (await AdvancePaymentVendor.aggregate([
+        { $match: { ...queryAdvancePayment } },
+        {
+            $group: {
+                _id: { contractor: "$contractor", company: "$company" },
+                totalAdvancePayment: { $sum: "$amount" },
+                creditAvailable: { $sum: '$balance' }
+            }
+        }
+    ])).reduce((accumulator, currentValue) => {
+        accumulator[currentValue._id.contractor.toString()] = currentValue;
+        return accumulator;
+    }, {});
+    // Retrieve payments history and the total of it
+    const payments = (await PaymentVendor.aggregate([
+        { $match: { ...queryPayment } },
+        {
+            $group: {
+                _id: { contractor: "$contractor", company: "$company" },
+                creditUsed: { $sum: "$creditUsed" }
+            }
+        }
+    ])).reduce((accumulator, currentValue) => {
+        accumulator[currentValue._id.contractor.toString()] = currentValue;
+        return accumulator;
+    }, {});
     for (const vendor of vendors) {
-        queryPayment.contractor = vendor?.contractor?._id;
-        queryAdvancePayment.contractor = vendor?.contractor?._id;
-
-        // query.contractor = vendor?.contractor?._id;
-
-        // Retrieve advance payments history and the total of it
-        // const advancePayments = await AdvancePaymentVendor.find({ ...queryPayment });
-        const advancePayment = await AdvancePaymentVendor.aggregate([
-            // { $match: { ...queryPayment } },
-            { $match: { ...queryAdvancePayment } },
-            // { $match: { ...query } },
-            {
-                $group: {
-                    _id: { contractor: "$contractor", company: "$company" },
-                    totalAdvancePayment: { $sum: "$amount" },
-                    creditAvailable: { $sum: '$balance' }
-                }
-            }
-        ]);
-
-        // Retrieve payments history and the total of it
-        // const payments = await PaymentVendor.find({ ...queryPayment });
-        const payment = await PaymentVendor.aggregate([
-            { $match: { ...queryPayment } },
-            // { $match: { ...query } },
-            {
-                $group: {
-                    _id: { contractor: "$contractor", company: "$company" },
-                    // totalPayment: { $sum: "$amountPaid" },
-                    creditUsed: { $sum: "$creditUsed" }
-                }
-            }
-        ]);
+        const advancePayment = advancePayments[vendor?.contractor?._id?.toString()];
+        const payment = payments[vendor?.contractor?._id?.toString()];
 
         // Put the retrieved history and total to each vendor
-        // vendor.advancePayments = advancePayments;
-        // vendor.payments = payments;
-        // vendor.paymentTotal = payment[0]?.totalPayment ?? 0;
-        // vendor.balanceDue -= vendor.advancePaymentTotal;
-        // vendor.balanceDue -= vendor.paymentTotal;
-        vendor.advancePaymentTotal = advancePayment[0]?.totalAdvancePayment ?? 0;
-        vendor.creditAvailable = advancePayment[0]?.creditAvailable ?? 0;
-        vendor.creditUsedTotal = payment[0]?.creditUsed ?? 0;
-        // vendor.creditAvailable = vendor.advancePaymentTotal - vendor.creditUsedTotal;
-        // vendor.creditAvailable = vendor.creditAvailable < 0 ? 0 : vendor.creditAvailable;
+        vendor.advancePaymentTotal = advancePayment?.totalAdvancePayment ?? 0;
+        vendor.creditAvailable = advancePayment?.creditAvailable ?? 0;
+        vendor.creditUsedTotal = payment?.creditUsed ?? 0;
+
     }
 }
 
 const _getEmployeePayments = async (employees: any[], company: ICompany, queryPayment: any, queryAdvancePayment: any) => {
-    // const query: any = {
-    //     company: company._id,
-    //     isVoid: { $ne: true }
-    // };
     queryPayment.company = company._id;
     queryPayment.isVoid = { $ne: true };
     queryAdvancePayment.company = company._id;
     queryAdvancePayment.isVoid = { $ne: true };
+    const employeesIds = employees.map((value) => value.employee?._id).filter((value) => value !== undefined)
+    queryPayment.employee = { $in: employeesIds };
+    queryAdvancePayment.employee = { $in: employeesIds };
+    // Retrieve advance payments history and the total of it
+    const advancePayments = (await AdvancePaymentEmployee.aggregate([
+        { $match: { ...queryAdvancePayment } },
+        {
+            $group: {
+                _id: { employee: "$employee", company: "$company" },
+                totalAdvancePayment: { $sum: "$amount" },
+                creditAvailable: { $sum: '$balance' }
+            }
+        }
+    ])).reduce((accumulator, currentValue) => {
+        accumulator[currentValue._id.employee.toString()] = currentValue;
+        return accumulator;
+    }, {});
+    // Retrieve payments history and the total of it
+    const payments = (await PaymentEmployee.aggregate([
+        { $match: { ...queryPayment } },
+        {
+            $group: {
+                _id: { employee: "$employee", company: "$company" },
+                totalPayment: { $sum: "$amountPaid" },
+                creditUsed: { $sum: "$creditUsed" }
+            }
+        }
+    ])).reduce((accumulator, currentValue) => {
+        accumulator[currentValue._id.employee.toString()] = currentValue;
+        return accumulator;
+    }, {});
     for (const employee of employees) {
-        queryPayment.employee = employee?.employee?._id;
-        queryAdvancePayment.employee = employee?.employee?._id;
-        // query.employee = employee?.employee?._id;
-
-        // Retrieve advance payments history and the total of it
-        // const advancePayments = await AdvancePaymentEmployee.find({ ...queryPayment });
-        const advancePayment = await AdvancePaymentEmployee.aggregate([
-            // { $match: { ...queryPayment } },
-            { $match: { ...queryAdvancePayment } },
-            // { $match: { ...query } },
-            {
-                $group: {
-                    _id: { employee: "$employee", company: "$company" },
-                    totalAdvancePayment: { $sum: "$amount" },
-                    creditAvailable: { $sum: '$balance' }
-                }
-            }
-        ]);
-
-        // Retrieve payments history and the total of it
-        // const payments = await PaymentEmployee.find({ ...queryPayment });
-        const payment = await PaymentEmployee.aggregate([
-            { $match: { ...queryPayment } },
-            // { $match: { ...query } },
-            {
-                $group: {
-                    _id: { employee: "$employee", company: "$company" },
-                    totalPayment: { $sum: "$amountPaid" },
-                    creditUsed: { $sum: "$creditUsed" }
-                }
-            }
-        ]);
-
+        const advancePayment = advancePayments[employee?.employee?._id?.toString()];
+        const payment = payments[employee?.employee?._id?.toString()];
         // Put the retrieved history and total to each employee
-        // employee.advancePayments = advancePayments;
-        // employee.payments = payments;
-        // employee.paymentTotal = payment[0]?.totalPayment ?? 0;
-        // employee.balanceDue -= employee.advancePaymentTotal;
-        // employee.balanceDue -= employee.paymentTotal;
-        employee.advancePaymentTotal = advancePayment[0]?.totalAdvancePayment ?? 0;
-        employee.creditAvailable = advancePayment[0]?.creditAvailable ?? 0;
-        employee.creditUsedTotal = payment[0]?.creditUsed ?? 0;
-        // employee.creditAvailable = employee.advancePaymentTotal - employee.creditUsedTotal;
-        // employee.creditAvailable = employee.creditAvailable < 0 ? 0 : employee.creditAvailable;
+        employee.advancePaymentTotal = advancePayment?.totalAdvancePayment ?? 0;
+        employee.creditAvailable = advancePayment?.creditAvailable ?? 0;
+        employee.creditUsedTotal = payment?.creditUsed ?? 0;
+    }
+}
+
+/**
+ * Fill the queries requeried to get the payroll balance
+ * @param {any} params params received by the query on the request
+ * @param {any} query query applied on invoices and jobs
+ * @param {any} queryPaymentVendor query applied on vendor payments
+ * @param {any} queryPaymentEmployee query applied in employee payments
+ * @param {any} queryAdvancePaymentVendor query applied in vendor advance payments
+ * @param {any} queryAdvancePaymentEmployee query applied in employee advance payments
+ */
+const _fillQueriesPayrollBalance = (params: any, query: any, queryPaymentVendor: any, queryPaymentEmployee: any, queryAdvancePaymentVendor: any, queryAdvancePaymentEmployee: any) => {
+    const { startDateP, endDateP, workType, companyLocation, offset } = params
+    if (startDateP && endDateP) {
+
+        const startDate = moment(startDateP).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
+        const endDate = moment(endDateP).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
+        query = { issuedDate: { $gte: startDate, $lte: endDate } };
+        queryPaymentVendor = { paidAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
+        queryAdvancePaymentVendor = { appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
+        queryPaymentEmployee = { paidAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
+        queryAdvancePaymentEmployee = { appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
+    }
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) { };
+        query["workType"] = { $in: workTypeIds };
+        queryPaymentVendor["workType"] = { $in: workTypeIds };
+        queryAdvancePaymentVendor["workType"] = { $in: workTypeIds };
+        queryPaymentEmployee["workType"] = { $in: workTypeIds };
+        queryAdvancePaymentEmployee["workType"] = { $in: workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) { }
+        query["companyLocation"] = { $in: companyLocationIds };
+        queryPaymentVendor["companyLocation"] = { $in: companyLocationIds };
+        queryAdvancePaymentVendor["companyLocation"] = { $in: companyLocationIds };
+        queryPaymentEmployee["companyLocation"] = { $in: companyLocationIds };
+        queryAdvancePaymentEmployee["companyLocation"] = { $in: companyLocationIds };
+    }
+}
+
+/**
+ * Get from the database technician comissions linked to invoices
+ * @param {any} query query to filter invoices
+ * @param {ICompany} company company where the invoices are linked
+ * @returns {Promise<ITechnicianCommissionInvoice[]>}
+ */
+const _getTechnicianCommisionsInvoices = async (query: any, company: ICompany): Promise<ITechnicianCommissionInvoice[]> => {
+    const techniciansCommissionsInvoices: ITechnicianCommissionInvoice[] = (await Invoice.find({
+        company: company._id,
+        isDraft: { $ne: true },
+        job: { $ne: null },
+        ...query
+    })
+        .populate({ path: 'commission' })
+        .lean())
+        .flatMap((value: IInvoice) => {
+            return (<IInvoiceCommission>value.commission)?.technicians?.map((value2: any) => {
+                return {
+                    ...value2,
+                    invoice: {
+                        id: value._id,
+                        workType: value.workType,
+                        companyLocation: value.companyLocation
+                    }
+                }
+            });
+        })
+        .filter((value: any) => value !== undefined);
+    return techniciansCommissionsInvoices;
+}
+
+/**
+ * Get from the database technician comissions linked to jobs
+ * @param {any} query query to filter invoices
+ * @param {ICompany} company company where the invoices are linked
+ * @returns {Promise<ITechnicianCommissionInvoice[]>}
+ */
+const _getTechnicianCommisionsJobs = async (query: any, company: ICompany): Promise<ITechnicianCommissionJob[]> => {
+    const techniciansCommissionsJobs: ITechnicianCommissionJob[] = (await Job.find({
+        company: company._id,
+        status: 2,
+        commission: { $ne: null },
+        ...query
+    }).populate({ path: 'commission' })
+        .lean())
+        .flatMap((value: IJob) => {
+            return (<IJobCommission>value.commission)?.technicians?.map((value2: any) => {
+                return {
+                    ...value2,
+                    job: {
+                        id: value._id,
+                        workType: value.workType,
+                        companyLocation: value.companyLocation
+                    }
+                }
+            });
+        })
+        .filter((value: any) => value !== undefined);
+    return techniciansCommissionsJobs;
+}
+
+
+/**
+ * Get technician and contractor from technician commissions got from invoices and jobs
+ * @param {ITechnicianCommissionInvoice[]} techniciansCommissionsInvoices 
+ * @param {ITechnicianCommissionJob[]} techniciansCommissionsJobs 
+ * @returns {Promise<{ contractors: {[param:string]: ICompany}, technicians: {[param:string]:IUser} }>}
+ */
+const _getTechniciansContrators = async (techniciansCommissionsInvoices: ITechnicianCommissionInvoice[],
+    techniciansCommissionsJobs: ITechnicianCommissionJob[]): Promise<{ contractors: { [param: string]: ICompany }, technicians: { [param: string]: IUser } }> => {
+    const concatenation: Array<ITechnicianCommissionInvoice | ITechnicianCommissionJob> = [...techniciansCommissionsInvoices, ...techniciansCommissionsJobs]
+    const { techniciansIds, contractorsIds } = concatenation
+        .reduce((accumulator, technicianCommission) => {
+            if (technicianCommission.contractor && !technicianCommission.paid) {
+                accumulator.contractorsIds.push(technicianCommission.contractor);
+            }
+            if (technicianCommission.technician && !technicianCommission.contractor && !technicianCommission.paid) {
+                accumulator.techniciansIds.push(technicianCommission.technician);
+            }
+            return accumulator;
+        }, { techniciansIds: [], contractorsIds: [] });
+
+    const contractors = (await Company.find({ _id: { $in: Array.from(new Set(contractorsIds)) } }))
+        .reduce((accumulator: any, contractor) => {
+            accumulator[contractor._id.toString()] = contractor
+            return accumulator;
+        }, {});
+    const technicians = (await User.find({ _id: { $in: Array.from(new Set(techniciansIds)) } }))
+        .reduce((accumulator: any, technician) => {
+            accumulator[technician._id.toString()] = technician
+            return accumulator;
+        }, {});
+    return { contractors, technicians };
+}
+
+const _fillEmployeesAndVendorFromInvoices = (techniciansCommissionsInvoices: ITechnicianCommissionInvoice[],
+    technicians: { [param: string]: IUser }, contractors: { [param: string]: ICompany }, employees: any[], vendors: any[]) => {
+    for (const technicianCommission of techniciansCommissionsInvoices) {
+        const { invoice } = technicianCommission
+        if (technicianCommission.contractor && !technicianCommission.paid) {
+            const contractor = contractors[technicianCommission.contractor.toString()];
+            const contractorEntry = vendors.find((v: any) => v.contractor._id?.toString() === technicianCommission.contractor?.toString());
+
+            if (contractorEntry) {
+                contractorEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
+                // contractorEntry.balanceDue += Number(technicianCommission.commissionAmount.toFixed(2));
+                if (contractorEntry?.workType && !contractorEntry?.workType.includes(invoice?.workType?.toString())) contractorEntry?.workType?.push(invoice.workType?.toString());
+                if (contractorEntry?.companyLocation && !contractorEntry?.companyLocation.includes(invoice?.companyLocation?.toString())) contractorEntry?.companyLocation?.push(invoice.companyLocation?.toString());
+                contractorEntry?.invoiceIds?.push(invoice.id);
+            } else {
+                vendors.push({
+                    contractor,
+                    commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
+                    // balanceDue: Number(technicianCommission.commissionAmount.toFixed(2)),
+                    workType: [invoice.workType?.toString()],
+                    companyLocation: [invoice.companyLocation?.toString()],
+                    invoiceIds: [invoice.id],
+                });
+            }
+        }
+
+        if (technicianCommission.technician && !technicianCommission.contractor && !technicianCommission.paid) {
+            const technician = technicians[technicianCommission.technician.toString()];
+            const technicianEntry = employees.find((t: any) => t.employee._id?.toString() === technicianCommission.technician?.toString());
+
+            if (technicianEntry) {
+                technicianEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
+                // technicianEntry.balanceDue += Number(technicianCommission.commissionAmount.toFixed(2));
+                if (technicianEntry?.workType && !technicianEntry?.workType.includes(invoice?.workType?.toString())) technicianEntry?.workType?.push(invoice.workType?.toString());
+                if (technicianEntry?.companyLocation && !technicianEntry?.companyLocation.includes(invoice?.companyLocation?.toString())) technicianEntry?.companyLocation?.push(invoice.companyLocation?.toString());
+                technicianEntry.invoiceIds.push(invoice.id);
+            } else {
+                employees.push({
+                    employee: technician,
+                    commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
+                    // balanceDue: Number(technicianCommission.commissionAmount.toFixed(2)),
+                    workType: [invoice.workType?.toString()],
+                    companyLocation: [invoice.companyLocation?.toString()],
+                    invoiceIds: [invoice.id],
+                });
+            }
+        }
+    }
+}
+
+
+const _fillEmployeesAndVendorFromJobs = (techniciansCommissionsJobs: ITechnicianCommissionJob[],
+    technicians: { [param: string]: IUser }, contractors: { [param: string]: ICompany }, employees: any[], vendors: any[]) => {
+    for (const technicianCommission of techniciansCommissionsJobs) {
+        const { job } = technicianCommission
+        if (technicianCommission.contractor && !technicianCommission.paid) {
+            const contractor = contractors[technicianCommission.contractor.toString()];
+            const contractorEntry = vendors.find((v: any) => v.contractor._id?.toString() === technicianCommission.contractor?.toString());
+            if (contractorEntry) {
+                contractorEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
+                if (contractorEntry?.workType && !contractorEntry?.workType.includes(job?.workType?.toString())) contractorEntry?.workType?.push(job.workType?.toString());
+                if (contractorEntry?.companyLocation && !contractorEntry?.companyLocation.includes(job?.companyLocation?.toString())) contractorEntry?.companyLocation?.push(job.companyLocation?.toString());
+                contractorEntry?.jobIds?.push(job.id);
+            } else {
+                vendors.push({
+                    contractor,
+                    commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
+                    workType: [job.workType?.toString()],
+                    companyLocation: [job.companyLocation?.toString()],
+                    jobIds: [job.id],
+                });
+            }
+        }
+
+        if (technicianCommission.technician && !technicianCommission.contractor && !technicianCommission.paid) {
+            const technician = technicians[technicianCommission.technician.toString()];
+            const technicianEntry = employees.find((t: any) => t.employee._id?.toString() === technicianCommission.technician?.toString());
+
+            if (technicianEntry) {
+                technicianEntry.commissionTotal += Number(technicianCommission.commissionAmount.toFixed(2));
+                if (technicianEntry?.workType && !technicianEntry?.workType.includes(job?.workType?.toString())) technicianEntry?.workType?.push(job.workType?.toString());
+                if (technicianEntry?.companyLocation && !technicianEntry?.companyLocation.includes(job?.companyLocation?.toString())) technicianEntry?.companyLocation?.push(job.companyLocation?.toString());
+                technicianEntry.jobIds.push(job.id);
+            } else {
+                employees.push({
+                    employee: technician,
+                    commissionTotal: Number(technicianCommission.commissionAmount.toFixed(2)),
+                    workType: [job.workType?.toString()],
+                    companyLocation: [job.companyLocation?.toString()],
+                    jobIds: [job.id],
+                });
+            }
+        }
     }
 }
