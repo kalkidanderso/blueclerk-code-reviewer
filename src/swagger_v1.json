@@ -6006,7 +6006,13 @@
                   },
                   "sku": {
                     "type": "string"
+                  },
+                  
+                  "itemtype": {
+                    "type": "string",
+                    "description":"Service or Porduct, default is Service"
                   }
+                }
                 }
               }
             }

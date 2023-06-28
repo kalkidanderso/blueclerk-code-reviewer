@@ -16,6 +16,7 @@ import { IInvoice, Invoice } from '../models/Invoice';
 import { _createQBItem, _updateQBItem, _updateQBItemsStatus, _transferQBItems } from '../controllers/quickbook.item';
 import { _transferQBInvoiceItem } from '../controllers/quickbook.invoice';
 import * as Sentry from '@sentry/node';
+import { param } from 'express-validator';
 
 // ==========================================
 // ==============[ ITEM ]====================
@@ -71,7 +72,10 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
             sku: params.sku,
             tiers: itemTiers,
             company: company._id,
-            isJobType: false
+            isJobType: false,
+            itemType:params?.itemType,
+            cost:params.cost,
+            salePrice:params.salePrice
         }
     )
 
@@ -111,6 +115,7 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
 export const updateItem = (req: Request, res: Response) => {
 
     const params = req.body
+    const isProduct=params.itemType=='Product';
     Item.findOne({ _id: params.itemId },
         (err: any, item: IItem) => {
 
@@ -122,14 +127,13 @@ export const updateItem = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'Invalid item id' })
             }
 
-            item.updateOne({ charges: params.charges, tax: params.tax, isFixed: params.isFixed },
+            item.updateOne({ charges: params.charges, tax: params.tax, isFixed: isProduct?true:params.isFixed ,itemType:params.itemType},
                 (err: any, raw: any) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
 
                     return res.json({ 'status': Status.Success, 'message': 'Item updated successfully' })
-
                 })
 
         }

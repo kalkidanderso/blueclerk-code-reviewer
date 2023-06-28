@@ -137,6 +137,15 @@ const ItemSchema = new Schema({
 
         default:'Service'
     },
+    cost:{
+        type:Number,
+        optional:true
+    },
+    
+    salePrice:{
+        type:Number,
+        optional:true
+    },
     company: {
         type: Schema.Types.ObjectId,
         ref: 'Company',

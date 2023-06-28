@@ -143,6 +143,9 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
             costing: jobCostingList,
             company: companyId,
             jobType: jobType._id,
+            itemType:params.itemType,
+            cost:params.cost,
+            salePrice:params.salePrice
         }
     )
 
