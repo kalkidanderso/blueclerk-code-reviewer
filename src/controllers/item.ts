@@ -64,7 +64,7 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
     for (const t of company.itemTier.list) {
         itemTiers.push({ tier: t.tier });
     }
-
+    const isProduct=params.itemType=="Product";
     const item = new Item(
         {
             name: params.title,
@@ -75,7 +75,8 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
             isJobType: false,
             itemType:params?.itemType,
             cost:params.cost,
-            salePrice:params.salePrice
+            salePrice:params.salePrice,
+            isFixed:isProduct?true:params.isFixed
         }
     )
 

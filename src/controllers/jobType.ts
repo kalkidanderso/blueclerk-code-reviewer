@@ -133,6 +133,7 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
     for (const t of company.costing.list) {
         jobCostingList.push({ tier: t.tier });
     }
+    const isProduct=params.itemType=="Product";
 
     const item = new Item(
         {
@@ -145,6 +146,7 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
             jobType: jobType._id,
             itemType:params.itemType,
             cost:params.cost,
+            isFixed:isProduct?true:params.isFixed,
             salePrice:params.salePrice
         }
     )

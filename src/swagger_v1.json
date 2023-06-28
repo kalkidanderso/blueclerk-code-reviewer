@@ -6007,12 +6007,22 @@
                   "sku": {
                     "type": "string"
                   },
-                  
-                  "itemtype": {
+                  "itemType": {
                     "type": "string",
-                    "description":"Service or Porduct, default is Service"
+                    "description": "Enum only accepts Product and Service",
+                    "enum": [
+                      "Service",
+                      "Product"
+                    ]
+                  },
+                  "cost": {
+                    "type": "number",
+                    "description": "Required with Item Type Product"
+                  },
+                  "salePrice": {
+                    "type": "number",
+                    "description": "Required with Item Type Product"
                   }
-                }
                 }
               }
             }
