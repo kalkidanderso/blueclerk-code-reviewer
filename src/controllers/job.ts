@@ -2154,26 +2154,29 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                             commissionAmount: 0
                         }
                         
-                        for (const j of task.jobTypes) {
-                            let balance = 0;
-
-                            const jobType = await Item.findOne({ jobType: j.jobType })
-                            const commissionTierId = task.contractor.commissionTier
-                            if (commissionTierId) {
-                                const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
-                                if (commissionTier?.charge){
-                                    balance += commissionTier.charge
-                                    contractorCommissionEntry.commission += commissionTier.charge
-                                    contractorCommissionEntry.commissionAmount += commissionTier.charge
+                        let contractor = task.contractor as ICompany;
+                        if(contractor && contractor.commissionType == "fixed"){
+                            for (const j of task.jobTypes) {
+                                let balance = 0;
+    
+                                const jobType = await Item.findOne({ jobType: j.jobType })
+                                const commissionTierId = contractor.commissionTier
+                                if (commissionTierId) {
+                                    const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
+                                    if (commissionTier?.charge){
+                                        balance += commissionTier.charge
+                                        contractorCommissionEntry.commission += commissionTier.charge
+                                        contractorCommissionEntry.commissionAmount += commissionTier.charge
+                                    }
                                 }
+                                await Company.findByIdAndUpdate(
+                                    contractor._id,
+                                    { $inc: { balance } },
+                                    { new: true }
+                                ).exec()
                             }
-                            await Company.findByIdAndUpdate(
-                                task.contractor._id,
-                                { $inc: { balance } },
-                                { new: true }
-                            ).exec()
+                            invoiceCommissionEntry.push(contractorCommissionEntry);
                         }
-                        invoiceCommissionEntry.push(contractorCommissionEntry);
                     }
                     
                     if (invoiceCommissionEntry.length) {
@@ -2672,7 +2675,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
 
         for (const task of job?.tasks) {
             let contractor = task.contractor as ICompany;
-            if(contractor){
+            if(contractor && contractor.commissionType == "fixed"){
                 let contractorCommissionEntry = {
                     contractor: contractor._id,
                     technician: contractor.admin,

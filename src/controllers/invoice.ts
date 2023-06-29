@@ -412,92 +412,62 @@ export const createInvoice = (req: Request, res: Response) => {
                         customer.balance += invoice.total;
                         await customer.save();
                         
-                        /** === Disable commission Calculation in invoice == **/
+                        const invoiceCommissionEntry = [];
+                        if (job.tasks) {
+                            const totalTechnician = job.tasks.length;
+                            for (const task of job?.tasks) {
+                                if (task.contractor) {
+                                    const contractor = await Company.findOne({ _id: task.contractor });
 
-                        // const invoiceCommissionEntry = [];
+                                    if (contractor && contractor.commissionType != "fixed") {
+                                        let commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                        const contractorCommissionEntry = {
+                                            contractor: contractor._id,
+                                            technician: contractor.admin,
+                                            commission: contractor.commission,
+                                            commissionAmount: Number(commission.toFixed(2))
+                                        }
 
-                        // if (job.tasks) {
-                        //     const totalTechnician = job.tasks.length;
-                        //     for (const task of job?.tasks) {
-                        //         if (task.contractor) {
-                        //             const contractor = await Company.findOne({ _id: task.contractor });
+                                        contractor.balance += Number(commission.toFixed(2));
+                                        contractor.save();
 
-                        //             if (contractor) {
-                        //                 let commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
-                        //                 const contractorCommissionEntry = {
-                        //                     contractor: contractor._id,
-                        //                     technician: contractor.admin,
-                        //                     commission: contractor.commission,
-                        //                     commissionAmount: Number(commission.toFixed(2))
-                        //                 }
-                                        
-                        //                 if (contractor.commissionType === "fixed") {
-                        //                     //calculate fixed commission...
-                        //                     contractorCommissionEntry.commission  = 0;
-                        //                     contractorCommissionEntry.commissionAmount  = 0;
-                        //                     for (const j of task.jobTypes) {
-                        //                         const jobType = await Item.findOne({ jobType: j.jobType })
+                                        invoiceCommissionEntry.push(contractorCommissionEntry);
+                                    }
+                                }
 
-                        //                         const commissionTier = contractor.commissionTier as IJobCosting;
-                        //                         const commissionTierId = commissionTier._id || contractor.commissionTier
-                        //                         if (commissionTierId) {
-                        //                             const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
-                        //                             if (commissionTier?.charge) {
-                        //                                 contractorCommissionEntry.commission += commissionTier.charge
-                        //                                 contractorCommissionEntry.commissionAmount += commissionTier.charge
-                        //                             }
-                        //                         }
-                        //                     }
-                        //                     const commisionHistory = await CommissionHistory.find({job : job._id, technicianOrContractor: contractor._id}).sort( { createdAt: -1 } )
-                        //                     if (commisionHistory.length) {
-                        //                         contractorCommissionEntry.commission += commisionHistory[0].addition?.amount || 0;
-                        //                         contractorCommissionEntry.commission -= commisionHistory[0].deduction?.amount || 0;
-                        //                         contractorCommissionEntry.commissionAmount += commisionHistory[0].addition?.amount || 0;
-                        //                         contractorCommissionEntry.commissionAmount -= commisionHistory[0].deduction?.amount || 0;
-                        //                     }
-                        //                 }
+                                if (task.technician && !task.contractor) {
+                                    const technician = await User.findOne({ _id: task.technician });
 
+                                    if (technician) {
+                                        const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                        const technicianCommissionEntry = {
+                                            technician: technician._id,
+                                            commission: technician.commission,
+                                            commissionAmount: Number(commission.toFixed(2))
+                                        }
 
-                        //                 contractor.balance += Number(commission.toFixed(2));
-                        //                 contractor.save();
+                                        technician.balance += Number(commission.toFixed(2));
+                                        technician.save();
 
-                        //                 invoiceCommissionEntry.push(contractorCommissionEntry);
-                        //             }
-                        //         }
+                                        invoiceCommissionEntry.push(technicianCommissionEntry);
+                                    }
+                                }
+                            }
+                        }
 
-                        //         if (task.technician && !task.contractor) {
-                        //             const technician = await User.findOne({ _id: task.technician });
+                        let invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
+                        if (!invoiceCommission) {
+                            invoiceCommission = await new InvoiceCommission({
+                                invoice: invoice._id,
+                                technicians: invoiceCommissionEntry
+                            }).save();
+                        } else {
+                            invoiceCommission.technicians = invoiceCommissionEntry;
+                            invoiceCommission.save();
+                        }
 
-                        //             if (technician) {
-                        //                 const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
-                        //                 const technicianCommissionEntry = {
-                        //                     technician: technician._id,
-                        //                     commission: technician.commission,
-                        //                     commissionAmount: Number(commission.toFixed(2))
-                        //                 }
-
-                        //                 technician.balance += Number(commission.toFixed(2));
-                        //                 technician.save();
-
-                        //                 invoiceCommissionEntry.push(technicianCommissionEntry);
-                        //             }
-                        //         }
-                        //     }
-                        // }
-
-                        // let invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
-                        // if (!invoiceCommission) {
-                        //     invoiceCommission = await new InvoiceCommission({
-                        //         invoice: invoice._id,
-                        //         technicians: invoiceCommissionEntry
-                        //     }).save();
-                        // } else {
-                        //     invoiceCommission.technicians = invoiceCommissionEntry;
-                        //     invoiceCommission.save();
-                        // }
-
-                        // invoice.commission = invoiceCommission._id;
-                        // await invoice.save();
+                        invoice.commission = invoiceCommission._id;
+                        await invoice.save();
                     }
 
                     resolve(invoice);
@@ -1666,74 +1636,48 @@ export const updateInvoice = (req: Request, res: Response) => {
                         }
 
                         // Update company and technician commission when charges is updated and invoice is not draft
-                        /** === Disable commission Calculation in invoice == **/
-                        // if (!invoice.isDraft && invoice.job) {
-                        //     const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
+                        if (!invoice.isDraft && invoice.job) {
+                            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
 
-                        //     if (invoiceCommission.technicians) {
-                        //         const totalTechnician = invoiceCommission.technicians.length;
-                        //         for (const invoiceCommissionTechnician of invoiceCommission.technicians) {
-                        //             if (invoiceCommissionTechnician.contractor) {
-                        //                 const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
-                        //                 if (contractor) {
-                        //                     if (Number(total) !== Number(oldTotalInvoice)) {
-                        //                         const getCommission = (t: any) => (t / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
-                        //                         const oldCommission = getCommission(oldTotal)
-                        //                         let commission = getCommission(total)
-                        //                         if (contractor.commissionType === "fixed" && contractor.commissionTier) {
-                        //                             commission = 0;
-                        //                             //calculate fixed commission...
-                        //                             for (const task of job.tasks) {
-                        //                                 if (String(task.contractor) == String(contractor._id)) {
-                        //                                     for (const j of task.jobTypes) {
-                        //                                         const jobType = await Item.findOne({ jobType: j.jobType })
-    
-                        //                                         const commissionTier = contractor.commissionTier as IJobCosting;
-                        //                                         const commissionTierId = commissionTier._id || contractor.commissionTier
-                        //                                         if (commissionTierId) {
-                        //                                             const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
-                        //                                             if (commissionTier?.charge) {
-                        //                                                 commission += commissionTier.charge
-                        //                                             }
-                        //                                         }
-                        //                                     }
-                        //                                 }
-                        //                             }
-                        //                             const commisionHistory = await CommissionHistory.find({job : job._id, technicianOrContractor: contractor._id}).sort( { createdAt: -1 } )
-                        //                             if (commisionHistory.length) {
-                        //                                 commission += commisionHistory[0].addition?.amount || 0;
-                        //                                 commission -= commisionHistory[0].deduction?.amount || 0;
-                        //                             }
-                        //                         }
-                        //                         commission = Number(commission.toFixed(2))
-                        //                         contractor.balance -= Number(oldCommission.toFixed(2));
-                        //                         contractor.balance += Number(commission.toFixed(2));
-                        //                         invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2) || 0);
-                        //                     }
+                            if (invoiceCommission.technicians) {
+                                const totalTechnician = invoiceCommission.technicians.length;
+                                for (const invoiceCommissionTechnician of invoiceCommission.technicians) {
+                                    if (invoiceCommissionTechnician.contractor) {
+                                        const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
+                                        if (contractor && contractor.commissionType != "fixed" ) {
+                                            if (Number(total) !== Number(oldTotalInvoice)) {
+                                                const getCommission = (t: any) => (t / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                                const oldCommission = getCommission(oldTotal)
+                                                let commission = getCommission(total)
+                                                commission = Number(commission.toFixed(2))
+                                                contractor.balance -= Number(oldCommission.toFixed(2));
+                                                contractor.balance += Number(commission.toFixed(2));
+                                                invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2) || 0);
+                                            }
 
-                        //                     contractor.save();
-                        //                     invoiceCommission.save();
-                        //                 }
-                        //             }
+                                            contractor.save();
+                                            invoiceCommission.save();
+                                        }
+                                    }
 
-                        //             if (invoiceCommissionTechnician.technician && !invoiceCommissionTechnician.contractor) {
-                        //                 const technician = await User.findOne({ _id: invoiceCommissionTechnician.technician }).exec();
-                        //                 if (technician) {
-                        //                     if (Number(total) !== Number(oldTotalInvoice)) {
-                        //                         const oldCommission = (oldTotal / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
-                        //                         const commission = (total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
-                        //                         invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2));
-                        //                         technician.balance -= Number(oldCommission.toFixed(2));
-                        //                         technician.balance += Number(commission.toFixed(2));
-                        //                     }
+                                    if (invoiceCommissionTechnician.technician && !invoiceCommissionTechnician.contractor) {
+                                        const technician = await User.findOne({ _id: invoiceCommissionTechnician.technician }).exec();
+                                        if (technician) {
+                                            if (Number(total) !== Number(oldTotalInvoice)) {
+                                                const oldCommission = (oldTotal / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                                const commission = (total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                                invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2));
+                                                technician.balance -= Number(oldCommission.toFixed(2));
+                                                technician.balance += Number(commission.toFixed(2));
+                                            }
 
-                        //                     technician.save();
-                        //                     invoiceCommission.save();
-                        //                 }
-                        //             }
-                        //         }
-                        //     }
-                        // }
+                                            technician.save();
+                                            invoiceCommission.save();
+                                        }
+                                    }
+                                }
+                            }
+                        }
 
                         if (params.charges) {
                             charges = parseFloat(params.charges);
@@ -3055,136 +2999,86 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         Customer.findByIdAndUpdate(customer._id, { balance }).exec();
 
         
-        /** === Disable commission Calculation in invoice == **/
-        // const techniciansEntry = []
-        // if (invoice.job) {
-        //     const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id })
-        //     if (invoiceCommission) {
-        //         if (invoiceCommission?.technicians) {
-        //             const totalTechnician = invoiceCommission.technicians.length;
-        //             for (const invoiceCommissionTechnician of invoiceCommission.technicians) {
-        //                 if (invoiceCommissionTechnician.contractor) {
-        //                     const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
-        //                     let commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
-        //                     if (contractor.commissionType === "fixed" && contractor.commissionTier) {
-        //                         commission = 0;
-                                
-        //                         //calculate fixed commission...
-        //                         for (const task of job.tasks) {
-        //                             if (String(task.contractor) == String(contractor._id)) {
-        //                                 for (const j of task.jobTypes) {
-        //                                     const jobType = await Item.findOne({ jobType: j.jobType })
+        const techniciansEntry = []
+        if (invoice.job) {
+            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id })
+            if (invoiceCommission) {
+                if (invoiceCommission?.technicians) {
+                    const totalTechnician = invoiceCommission.technicians.length;
+                    for (const invoiceCommissionTechnician of invoiceCommission.technicians) {
+                        if (invoiceCommissionTechnician.contractor) {
+                            const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
+                            if (contractor && contractor.commissionType != "fixed") {
+                                let commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                const contractorBalance = contractor.balance + Number(commission.toFixed(2));
     
-        //                                     const commissionTier = contractor.commissionTier as IJobCosting;
-        //                                     const commissionTierId = commissionTier._id || contractor.commissionTier
-        //                                     if (commissionTierId) {
-        //                                         const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
-        //                                         if (commissionTier?.charge) {
-        //                                             commission += commissionTier.charge
-        //                                         }
-        //                                     }
-        //                                 }
-        //                             }
-        //                         }
-        //                         const commisionHistory = await CommissionHistory.find({job : job._id, technicianOrContractor: contractor._id}).sort( { createdAt: -1 } )
-        //                         if (commisionHistory.length) {
-        //                             commission += commisionHistory[0].addition?.amount || 0;
-        //                             commission -= commisionHistory[0].deduction?.amount || 0;
-        //                         }
-        //                     }
-        //                     const contractorBalance = contractor.balance + Number(commission.toFixed(2));
+                                await Company.findByIdAndUpdate(invoiceCommissionTechnician.contractor, { balance: contractorBalance }).exec();
+                                await InvoiceCommission.findByIdAndUpdate(invoiceCommissionTechnician.contractor, { commissionAmount: Number(commission.toFixed(2)) }).exec();
+                            }
+                        }
 
-        //                     await Company.findByIdAndUpdate(invoiceCommissionTechnician.contractor, { balance: contractorBalance }).exec();
-        //                     await InvoiceCommission.findByIdAndUpdate(invoiceCommissionTechnician.contractor, { commissionAmount: Number(commission.toFixed(2)) }).exec();
-        //                 }
+                        if (invoiceCommissionTechnician.technician && !invoiceCommissionTechnician.contractor) {
+                            const technician = await User.findOne({ _id: invoiceCommissionTechnician.technician }).exec();
+                            const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                            const technicianBalance = technician.balance + Number(commission.toFixed(2));
+                            await User.findByIdAndUpdate(invoiceCommissionTechnician.technician, { balance: technicianBalance }).exec();
+                            await InvoiceCommission.findByIdAndUpdate(invoiceCommissionTechnician.technician, { commissionAmount: Number(commission.toFixed(2)) }).exec();
+                        }
+                    }
+                }
+            } else {
+                // Add new invoice commission when invoice haven't invoice commission
+                const job = await Job.findById(invoice.job);
+                if (job.tasks) {
+                    const totalTechnician = job.tasks.length;
+                    for (const task of job?.tasks) {
+                        if (task.contractor) {
+                            const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                            const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                            const contractorEntry = {
+                                contractor: contractor._id,
+                                technician: contractor.admin,
+                                commission: contractor.commission,
+                                commissionAmount: Number(commission.toFixed(2))
+                            }
 
-        //                 if (invoiceCommissionTechnician.technician && !invoiceCommissionTechnician.contractor) {
-        //                     const technician = await User.findOne({ _id: invoiceCommissionTechnician.technician }).exec();
-        //                     const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
-        //                     const technicianBalance = technician.balance + Number(commission.toFixed(2));
-        //                     await User.findByIdAndUpdate(invoiceCommissionTechnician.technician, { balance: technicianBalance }).exec();
-        //                     await InvoiceCommission.findByIdAndUpdate(invoiceCommissionTechnician.technician, { commissionAmount: Number(commission.toFixed(2)) }).exec();
-        //                 }
-        //             }
-        //         }
-        //     } else {
-        //         // Add new invoice commission when invoice haven't invoice commission
-        //         const job = await Job.findById(invoice.job);
-        //         if (job.tasks) {
-        //             const totalTechnician = job.tasks.length;
-        //             for (const task of job?.tasks) {
-        //                 if (task.contractor) {
-        //                     const contractor = await Company.findOne({ _id: task.contractor }).exec();
-        //                     const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
-        //                     const contractorEntry = {
-        //                         contractor: contractor._id,
-        //                         technician: contractor.admin,
-        //                         commission: contractor.commission,
-        //                         commissionAmount: Number(commission.toFixed(2))
-        //                     }
-
-        //                     if (contractor) {
-        //                         if (contractor.commissionType === "fixed") {
-        //                             contractorEntry.commission += 0;
-        //                             contractorEntry.commissionAmount += 0;
-        //                             //calculate fixed commission...
-        //                             for (const j of task.jobTypes) {
-        //                                 const jobType = await Item.findOne({ jobType: j.jobType })
-
-        //                                 const commissionTier = contractor.commissionTier as IJobCosting;
-        //                                 const commissionTierId = commissionTier._id || contractor.commissionTier
-        //                                 if (commissionTierId) {
-        //                                     const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
-        //                                     if (commissionTier?.charge) {
-        //                                         contractorEntry.commission += commissionTier.charge
-        //                                         contractorEntry.commissionAmount += commissionTier.charge
-        //                                     }
-        //                                 }
-        //                             }
-        //                             const commisionHistory = await CommissionHistory.find({job : job._id, technicianOrContractor: contractor._id}).sort( { createdAt: -1 } )
-        //                             if (commisionHistory.length) {
-        //                                 contractorEntry.commission += commisionHistory[0].addition?.amount || 0;
-        //                                 contractorEntry.commission -= commisionHistory[0].deduction?.amount || 0;
-        //                                 contractorEntry.commissionAmount += commisionHistory[0].addition?.amount || 0;
-        //                                 contractorEntry.commissionAmount -= commisionHistory[0].deduction?.amount || 0;
-        //                             }
-        //                         }
+                            if (contractor && contractor.commissionType != "fixed") {
                                 
-        //                         contractor.balance += Number(commission.toFixed(2));
-        //                         contractor.save();
-        //                     }
+                                contractor.balance += Number(commission.toFixed(2));
+                                contractor.save();
+                            }
 
-        //                     techniciansEntry.push(contractorEntry);
-        //                 }
+                            techniciansEntry.push(contractorEntry);
+                        }
 
-        //                 if (task.technician && !task.contractor) {
-        //                     const technician = await User.findOne({ _id: task.technician }).exec();
-        //                     const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
-        //                     const invoiceTechnicianEntry: any = {
-        //                         technician: technician._id,
-        //                         commission: technician.commission,
-        //                         commissionAmount: Number(commission.toFixed(2))
-        //                     }
+                        if (task.technician && !task.contractor) {
+                            const technician = await User.findOne({ _id: task.technician }).exec();
+                            const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                            const invoiceTechnicianEntry: any = {
+                                technician: technician._id,
+                                commission: technician.commission,
+                                commissionAmount: Number(commission.toFixed(2))
+                            }
 
-        //                     if (technician) {
-        //                         technician.balance += Number(commission.toFixed(2));
-        //                         technician.save();
-        //                     }
+                            if (technician) {
+                                technician.balance += Number(commission.toFixed(2));
+                                technician.save();
+                            }
 
-        //                     techniciansEntry.push(invoiceTechnicianEntry);
-        //                 }
-        //             }
-        //         }
+                            techniciansEntry.push(invoiceTechnicianEntry);
+                        }
+                    }
+                }
 
-        //         const commissionInvoice = await new InvoiceCommission({
-        //             invoice: invoice._id,
-        //             technicians: techniciansEntry
-        //         }).save();
+                const commissionInvoice = await new InvoiceCommission({
+                    invoice: invoice._id,
+                    technicians: techniciansEntry
+                }).save();
 
-        //         invoice.commission = commissionInvoice._id;
-        //         await invoice.save();
-        //     }
-        // }
+                invoice.commission = commissionInvoice._id;
+                await invoice.save();
+            }
+        }
 
         const jobReport = await JobReport.findOne({ job: invoice.job });
         if (jobReport) {
@@ -3922,6 +3816,61 @@ export const updateCommission = async (req: Request, res: Response) => {
                         // Recalculate vendor open balance
                         commissionBalance += contractorCommission.commissionAmount ?? 0;
                         await invoiceCommission.save();
+                    }
+
+                    // Update vendor balance and save vendor object
+                    contractor.balance = commissionBalance;
+                }
+            }
+
+            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day') && isFixed) {
+                const jobCommissions = await JobCommission.find({ 'technicians.contractor': contractor._id })
+                .populate('job')
+                .exec();
+
+                if (jobCommissions?.length) {
+                    // Iterate all job commissions
+                    for (const jobCommission of jobCommissions) {
+                        const job = <IJob>jobCommission.job;
+                        const contractorCommission = jobCommission?.technicians?.find((technician) => technician?.contractor?.toString() === contractor._id?.toString());
+
+                        if (!contractorCommission) {
+                            continue;
+                        }
+
+                        if (!contractorCommission.paid && (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment.utc(jobCommission?.createdAt), 'day'))) {
+                            /**
+                             * If job commission is not been paid,
+                             * update the amount with the new rate, else update
+                             **/
+                            contractorCommission.commission = params.commission ?? 0;
+                            contractorCommission.commissionAmount = 0;
+                            for (const task of job.tasks) {
+                                if (String(task.contractor) == String(contractor._id)) {
+                                    for (const j of task.jobTypes) {
+                                        const jobType = await Item.findOne({ jobType: j.jobType })
+
+                                        const commissionTier = contractor.commissionTier as IJobCosting;
+                                        const commissionTierId = commissionTier._id || contractor.commissionTier
+                                        if (commissionTierId) {
+                                            const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
+                                            if (commissionTier?.charge) {
+                                                contractorCommission.commissionAmount += commissionTier.charge
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            const commisionHistory = await CommissionHistory.find({job : job._id, technicianOrContractor: contractor._id}).sort( { createdAt: -1 } )
+                            if (commisionHistory.length) {
+                                contractorCommission.commissionAmount += commisionHistory[0].addition?.amount || 0;
+                                contractorCommission.commissionAmount -= commisionHistory[0].deduction?.amount || 0;
+                            }
+                        }
+
+                        // Recalculate vendor open balance
+                        commissionBalance += contractorCommission.commissionAmount ?? 0;
+                        await jobCommission.save();
                     }
 
                     // Update vendor balance and save vendor object
