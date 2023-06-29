@@ -4056,6 +4056,7 @@ const _handleMutltipleTechniciansTasks = async ({
     for (const paramTask of paramTasks) {
         let taskContractor
         let taskTechnician: any
+        let contractorCommissionTier: any
 
         if (!paramTask.contractorId && !paramTask.technicianId) {
             // return res.json({ status: Status.Error, message: "contractorId or technicianId must be provided" });
@@ -4078,6 +4079,7 @@ const _handleMutltipleTechniciansTasks = async ({
                 : !!paramTask.employeeType;
 
         if (taskContractor && !taskTechnician) {
+            contractorCommissionTier = taskContractor?.commissionTier
             taskTechnician = taskContractor?.admin
         }
 
@@ -4090,6 +4092,7 @@ const _handleMutltipleTechniciansTasks = async ({
             employeeType: paramsemployeeType,
             technician: taskTechnician,
             contractor: taskContractor?._id,
+            contractorCommissionTier: contractorCommissionTier,
         };
 
         //=== HANDLE params jobTypes

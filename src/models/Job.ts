@@ -6,6 +6,7 @@ import { IHomeOwner } from '../models/HomeOwner';
 import { IJobLocation } from '../models/JobLocation';
 import { IJobSite } from '../models/JobSite';
 import { IJobCommission } from './JobCommission';
+import { IJobCosting } from './JobCosting';
 
 export interface IJob extends Document {
     scheduleTimeAMPM: number
@@ -85,6 +86,7 @@ export interface ITask extends Document {
     employeeType?: boolean
     technician?: Schema.Types.ObjectId | any
     contractor?: Schema.Types.ObjectId | ICompany
+    contractorCommissionTier?: Schema.Types.ObjectId | IJobCosting
     comment?: string
     jobTypes?: ITaskJobType[]
     paid: boolean
@@ -295,6 +297,11 @@ const JobSchema = new Schema({
         contractor: {
             type: Schema.Types.ObjectId,
             ref: 'Company',
+            required: false
+        },
+        contractorCommissionTier: {
+            type: Schema.Types.ObjectId,
+            ref: 'JobCosting',
             required: false
         },
         comment: String,
