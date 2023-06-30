@@ -1,33 +1,40 @@
-import { Request, Response } from 'express';
-import { ObjectId } from 'mongodb';
+import {Request, Response} from 'express';
+import {ObjectId} from 'mongodb';
 import moment from 'moment';
 import fs from 'fs';
 import * as http from 'http';
 import * as https from 'https';
 import * as helper from '../services/helper';
-import { ContractorPermissions, DefaultCommission, DefaultPageSize, InvoiceStatus, Messages, Status } from '../common/constants';
-import { IContact } from '../common/contact';
-import { FONT_SETS, INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH } from '../common/config';
-import { Layouts, Styles } from '../common/constants.pdf';
-import { Contact } from '../models/Contact';
-import { IUser, User } from '../models/User';
-import { Company, ICompany } from '../models/Company';
-import { ICompanyAdmin } from '../models/CompanyAdmin';
-import { CompanyInvoice } from '../models/CompanyInvoice';
-import { Customer, ICustomer } from '../models/Customer';
-import { IItem, Item } from '../models/Item';
-import { IPriceTier } from '../models/PriceTier';
-import { IServiceTicket } from '../models/ServiceTicket';
-import { IJob, ITaskJobType, Job } from '../models/Job';
-import { IJobReport, JobReport } from '../models/JobReport';
-import { IPurchaseOrder, PurchaseOrder } from '../models/PurchaseOrder';
-import { Estimate, IEstimate } from '../models/Estimate';
-import { IInvoicePrefix, InvoicePrefix } from '../models/InvoicePrefix';
-import { IPaymentTerm, PaymentTerm } from '../models/PaymentTerm';
-import { Payment, PaymentCustomer } from '../models/Payment';
-import { IInvoice, IQBInvoice, Invoice } from '../models/Invoice';
-import { IScan, Scan } from '../models/Scan';
-import { EmailDefault, EmailTypes } from '../models/EmailDefault';
+import {
+    ContractorPermissions,
+    DefaultCommission,
+    DefaultPageSize,
+    InvoiceStatus,
+    Messages,
+    Status
+} from '../common/constants';
+import {IContact} from '../common/contact';
+import {FONT_SETS, INVOICE_FONT_PATH, INVOICE_IMAGE_PATH, INVOICE_PDF_PATH} from '../common/config';
+import {Layouts, Styles} from '../common/constants.pdf';
+import {Contact} from '../models/Contact';
+import {IUser, User} from '../models/User';
+import {Company, ICompany} from '../models/Company';
+import {ICompanyAdmin} from '../models/CompanyAdmin';
+import {CompanyInvoice} from '../models/CompanyInvoice';
+import {Customer, ICustomer} from '../models/Customer';
+import {IItem, Item} from '../models/Item';
+import {IPriceTier} from '../models/PriceTier';
+import {IServiceTicket} from '../models/ServiceTicket';
+import {IJob, ITaskJobType, Job} from '../models/Job';
+import {IJobReport, JobReport} from '../models/JobReport';
+import {IPurchaseOrder, PurchaseOrder} from '../models/PurchaseOrder';
+import {Estimate, IEstimate} from '../models/Estimate';
+import {IInvoicePrefix, InvoicePrefix} from '../models/InvoicePrefix';
+import {IPaymentTerm, PaymentTerm} from '../models/PaymentTerm';
+import {Payment, PaymentCustomer} from '../models/Payment';
+import {IInvoice, IQBInvoice, Invoice} from '../models/Invoice';
+import {IScan, Scan} from '../models/Scan';
+import {EmailDefault, EmailTypes} from '../models/EmailDefault';
 
 import { sendInvoiceEmailToCustomer, uploadFileInS3 } from '../services/aws';
 import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer';
@@ -41,6 +48,9 @@ import { getDatesFilterQuery } from '../services/pagination';
 import { v4 as uuidv4 } from 'uuid';
 import { ICompanyLocation } from '../models/CompanyLocation';
 import * as Sentry from '@sentry/node';
+import axios from 'axios';
+import { JobCommission } from '../models/JobCommission';
+import { IJobCosting } from '../models/JobCosting';
 
 const pdfmake = require('pdfmake');
 
@@ -51,8 +61,8 @@ const pdfmake = require('pdfmake');
 export const _resetInvoiceQB = (company: ICompany): void => {
 
     Invoice.updateMany(
-        { company: company._id, quickbookId: { $ne: null } },
-        { $set: { quickbookId: null } }
+        {company: company._id, quickbookId: {$ne: null}},
+        {$set: {quickbookId: null}}
     ).exec();
 
     return;
@@ -63,7 +73,7 @@ export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
     const params = req.query;
 
-    Invoice.find({ 'company': req.companyId, customer: params.customerId })
+    Invoice.find({'company': req.companyId, customer: params.customerId})
         .populate({
             path: 'job',
             populate: [{
@@ -79,7 +89,7 @@ export const getInvoicesByCustomerId = (req: Request, res: Response) => {
         .populate({
             path: 'items.item',
             select: 'name description sku itemCode note cost price',
-            populate: [{ path: 'jobType' }]
+            populate: [{path: 'jobType'}]
         })
         .populate({
             path: 'company',
@@ -89,9 +99,9 @@ export const getInvoicesByCustomerId = (req: Request, res: Response) => {
             path: 'customer',
             select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
         })
-        .populate({ path: 'jobLocation', select: 'name address location' })
-        .populate({ path: 'jobSite', select: 'name address location' })
-        .populate({ path: 'customerContactId', select: 'name phone email' })
+        .populate({path: 'jobLocation', select: 'name address location'})
+        .populate({path: 'jobSite', select: 'name address location'})
+        .populate({path: 'customerContactId', select: 'name phone email'})
         .populate({
             path: 'estimate',
             select: 'total items note status customer company createdBy'
@@ -99,10 +109,10 @@ export const getInvoicesByCustomerId = (req: Request, res: Response) => {
         .exec((err: any, invoices: IInvoice[]) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
-            return res.json({ 'status': Status.Success, 'invoices': invoices })
+            return res.json({'status': Status.Success, 'invoices': invoices})
         })
 
 }
@@ -116,34 +126,34 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
     var oldInvoiceId: number
 
     if ((params.invoicePrefix == undefined || params.invoicePrefix === '""') && (params.invoiceNumber == undefined || params.invoiceNumber === '""')) {
-        return res.json({ 'status': Status.Error, 'message': "Either prefix or work order number is required." })
+        return res.json({'status': Status.Error, 'message': "Either prefix or work order number is required."})
     }
 
     Company.findById(admin.company,
         (err: any, company: ICompany) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
             if (company == undefined || company == null) {
-                return res.json({ 'status': Status.Error, 'message': 'No company found.' })
+                return res.json({'status': Status.Error, 'message': 'No company found.'})
             }
 
             if (typeof params.invoicePrefix !== 'undefined' && params.invoicePrefix && (typeof params.invoiceNumber === 'undefined' && !params.invoiceNumber)) {
 
                 if (params.invoicePrefix == company.invoicePrefix) {
 
-                    return res.json({ 'status': Status.Success, 'message': "Invoice Prefix already set there." });
+                    return res.json({'status': Status.Success, 'message': "Invoice Prefix already set there."});
                 }
 
                 checkInvoicePrefixExists(req, res, (req: Request, res: Response, previousPrefix: IInvoicePrefix) => {
 
                     oldInvoicePrefix = company.invoicePrefix
 
-                    company.updateOne({ 'invoicePrefix': params.invoicePrefix }, (err: any) => {
+                    company.updateOne({'invoicePrefix': params.invoicePrefix}, (err: any) => {
                         if (err) {
-                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         }
 
 
@@ -157,25 +167,28 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
 
                             prefix.save((err: any) => {
                                 if (err) {
-                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                 }
 
-                                return res.json({ 'status': Status.Success, 'message': "Prefix updated successfully." });
+                                return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
                             })
 
                         } else if (previousPrefix != null) {
 
                             previousPrefix.updateOne(
-                                { 'prefix': oldInvoicePrefix, 'maxInvoiceId': company.currentInvoiceId },
+                                {'prefix': oldInvoicePrefix, 'maxInvoiceId': company.currentInvoiceId},
                                 (err: any) => {
                                     if (err) {
-                                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                     }
 
-                                    return res.json({ 'status': Status.Success, 'message': "Prefix updated successfully." });
+                                    return res.json({
+                                        'status': Status.Success,
+                                        'message': "Prefix updated successfully."
+                                    });
                                 })
                         } else {
-                            return res.json({ 'status': Status.Success, 'message': "Prefix updated successfully." });
+                            return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
                         }
 
                     })
@@ -189,11 +202,14 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
 
                 newInvoicePrefix = params.invoicePrefix == "" ? null : params?.invoicePrefix
 
-                company.updateOne({ 'currentInvoiceId': params.invoiceNumber, 'invoicePrefix': newInvoicePrefix }, (err: any) => {
+                company.updateOne({
+                    'currentInvoiceId': params.invoiceNumber,
+                    'invoicePrefix': newInvoicePrefix
+                }, (err: any) => {
                     if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
-                    return res.json({ 'status': Status.Success, 'message': "Invoice number updated successfully." });
+                    return res.json({'status': Status.Success, 'message': "Invoice number updated successfully."});
                 })
 
             } else if ((typeof params.invoicePrefix !== 'undefined' && params.invoicePrefix) && (typeof params.invoiceNumber !== 'undefined')) {
@@ -204,12 +220,12 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                     //     return res.json({ 'status': Status.Success, 'message': "Invoice number can not be less then " + company.currentJobId });
                     // }
 
-                    company.updateOne({ 'currentInvoiceId': params.invoiceNumber }, (err: any) => {
+                    company.updateOne({'currentInvoiceId': params.invoiceNumber}, (err: any) => {
                         if (err) {
-                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         }
 
-                        return res.json({ 'status': Status.Success, 'message': "Invoice number updated successfully." });
+                        return res.json({'status': Status.Success, 'message': "Invoice number updated successfully."});
                     })
 
                 } else if (company.prefix != params.invoicePrefix) {
@@ -218,9 +234,12 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                         oldInvoicePrefix = company.prefix
                         oldInvoiceId = company.currentJobId
 
-                        company.updateOne({ 'invoicePrefix': params.invoicePrefix, 'currentInvoiceId': params.invoiceNumber }, (err: any) => {
+                        company.updateOne({
+                            'invoicePrefix': params.invoicePrefix,
+                            'currentInvoiceId': params.invoiceNumber
+                        }, (err: any) => {
                             if (err) {
-                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
                             }
 
                             if (prefix == null && oldInvoicePrefix != undefined) {
@@ -231,24 +250,30 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                                 })
                                 prefix.save((err: any) => {
                                     if (err) {
-                                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                     }
 
-                                    return res.json({ 'status': Status.Success, 'message': "Prefix updated successfully." });
+                                    return res.json({
+                                        'status': Status.Success,
+                                        'message': "Prefix updated successfully."
+                                    });
                                 })
                             } else if (prefix != null) {
                                 const invoicePrefix = <IInvoicePrefix>prefix
 
-                                invoicePrefix.updateOne({ 'prefix': oldInvoicePrefix, 'maxInvoiceId': oldInvoiceId },
+                                invoicePrefix.updateOne({'prefix': oldInvoicePrefix, 'maxInvoiceId': oldInvoiceId},
                                     (err: any) => {
                                         if (err) {
-                                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
                                         }
 
-                                        return res.json({ 'status': Status.Success, 'message': "Prefix updated successfully." });
+                                        return res.json({
+                                            'status': Status.Success,
+                                            'message': "Prefix updated successfully."
+                                        });
                                     })
                             } else {
-                                return res.json({ 'status': Status.Success, 'message': "Prefix updated successfully." });
+                                return res.json({'status': Status.Success, 'message': "Prefix updated successfully."});
                             }
                         })
                     })
@@ -263,11 +288,11 @@ const checkInvoicePrefixExists = (req: Request, res: Response, next: (req: Reque
     const params = req.body
 
     InvoicePrefix.findOne(
-        { 'prefix': req.company.prefix, 'company': req.companyId },
+        {'prefix': req.company.prefix, 'company': req.companyId},
         (err: any, invoicePrefix: IInvoicePrefix) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
             if (invoicePrefix == undefined || invoicePrefix == null) {
@@ -284,7 +309,10 @@ const checkInvoicePrefixExists = (req: Request, res: Response, next: (req: Reque
                     // }
 
                 } else if (invoicePrefix.maxInvoiceId > req.company.currentJobId) {
-                    return res.json({ 'status': Status.Error, 'message': 'Current invoice number with prefix ' + params.invoicePrefix + ' is not allowed. Try no greater then ' + invoicePrefix.maxInvoiceId })
+                    return res.json({
+                        'status': Status.Error,
+                        'message': 'Current invoice number with prefix ' + params.invoicePrefix + ' is not allowed. Try no greater then ' + invoicePrefix.maxInvoiceId
+                    })
 
                 } else {
                     next(req, res, invoicePrefix)
@@ -302,14 +330,18 @@ export const getInvoiceNumber = (req: Request, res: Response) => {
         (err: any, company: ICompany) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
             if (company == undefined || company == null) {
-                return res.json({ 'status': Status.Error, 'message': 'No company found.' })
+                return res.json({'status': Status.Error, 'message': 'No company found.'})
             }
 
-            return res.json({ status: Status.Success, 'invoicePrefix': company.invoicePrefix, 'currentInvoiceNumber': company.currentInvoiceId });
+            return res.json({
+                status: Status.Success,
+                'invoicePrefix': company.invoicePrefix,
+                'currentInvoiceNumber': company.currentInvoiceId
+            });
         }
     )
 }
@@ -323,7 +355,7 @@ export const createInvoice = (req: Request, res: Response) => {
 
     if (params.jobId) {
 
-        Invoice.findOne({ 'job': params.jobId, 'company': req.companyId, isVoid: { $ne: true } })
+        Invoice.findOne({'job': params.jobId, 'company': req.companyId, isVoid: {$ne: true}})
             .then((previousInvoice: any) => {
 
                 if (previousInvoice) {
@@ -354,7 +386,7 @@ export const createInvoice = (req: Request, res: Response) => {
                 // const items = Item.find({ jobType: { $in: jobTypeIds }});
                 const items: any[] = []
                 jobTypeIds.forEach(async (jobTypeId) => {
-                    const item = await Item.findOne({ jobType: jobTypeId })
+                    const item = await Item.findOne({jobType: jobTypeId})
                     items.push(item);
                 });
 
@@ -376,7 +408,7 @@ export const createInvoice = (req: Request, res: Response) => {
 
                         invoiceData.save()
                             .then((newInvoice: IInvoice) => {
-                                resolve({ latestInvoiceId: currentInvoiceId, invoice: newInvoice })
+                                resolve({latestInvoiceId: currentInvoiceId, invoice: newInvoice})
                             })
                             .catch(() => {
                                 reject('Unable to create invoice, please try again')
@@ -390,7 +422,7 @@ export const createInvoice = (req: Request, res: Response) => {
 
                 return new Promise((resolve, reject) => {
                     let invoiceId = data.latestInvoiceId + 1
-                    company.updateOne({ currentInvoiceId: invoiceId })
+                    company.updateOne({currentInvoiceId: invoiceId})
                         .then(() => {
                             resolve(data.invoice)
                         })
@@ -408,16 +440,16 @@ export const createInvoice = (req: Request, res: Response) => {
                         const job = await Job.findById(invoice.job);
                         customer.balance += invoice.total;
                         await customer.save();
+                        
                         const invoiceCommissionEntry = [];
-
                         if (job.tasks) {
                             const totalTechnician = job.tasks.length;
                             for (const task of job?.tasks) {
                                 if (task.contractor) {
-                                    const contractor = await Company.findOne({ _id: task.contractor });
+                                    const contractor = await Company.findOne({_id: task.contractor});
 
-                                    if (contractor) {
-                                        const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                    if (contractor && contractor.commissionType != "fixed") {
+                                        let commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
                                         const contractorCommissionEntry = {
                                             contractor: contractor._id,
                                             technician: contractor.admin,
@@ -433,7 +465,7 @@ export const createInvoice = (req: Request, res: Response) => {
                                 }
 
                                 if (task.technician && !task.contractor) {
-                                    const technician = await User.findOne({ _id: task.technician });
+                                    const technician = await User.findOne({_id: task.technician});
 
                                     if (technician) {
                                         const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
@@ -452,7 +484,7 @@ export const createInvoice = (req: Request, res: Response) => {
                             }
                         }
 
-                        let invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
+                        let invoiceCommission = await InvoiceCommission.findOne({invoice: invoice._id});
                         if (!invoiceCommission) {
                             invoiceCommission = await new InvoiceCommission({
                                 invoice: invoice._id,
@@ -475,7 +507,7 @@ export const createInvoice = (req: Request, res: Response) => {
                 // Mark the job report as it has been invoiced
                 return new Promise(async (resolve, reject) => {
 
-                    const jobReport = await JobReport.findOne({ job: invoice.job });
+                    const jobReport = await JobReport.findOne({job: invoice.job});
                     if (jobReport) {
                         jobReport.invoiceCreated = true;
                         jobReport.invoice = invoice._id;
@@ -495,14 +527,24 @@ export const createInvoice = (req: Request, res: Response) => {
                     const customerId = invoice.customer.toString();
                     _checkQBCustomerJobLocation(req, res, company, customerId, (err, errMsg, qbCustomer) => {
                         if (err || errMsg) {
-                            return res.json({ status: Status.Success, message: 'Job invoice created successfully.', invoice });
+                            return res.json({
+                                status: Status.Success,
+                                message: 'Job invoice created successfully.',
+                                invoice
+                            });
                         }
 
                         if (qbCustomer) {
                             // Create new Invoice in QuickBooks
                             _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                                 if (err || errMsg) {
-                                    return res.json({ status: Status.Success, message: 'Job invoice created successfully.', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
+                                    return res.json({
+                                        status: Status.Success,
+                                        message: 'Job invoice created successfully.',
+                                        invoice,
+                                        quickbookInvoice: null,
+                                        quickbookInvoiceError: errMsg
+                                    });
                                 }
 
                                 if (qbInvoice) {
@@ -527,21 +569,20 @@ export const createInvoice = (req: Request, res: Response) => {
                     });
 
                 } else {
-                    return res.json({ status: Status.Success, message: 'Job invoice created successfully.', invoice });
+                    return res.json({status: Status.Success, message: 'Job invoice created successfully.', invoice});
                 }
             })
             .catch((error: any) => {
                 Sentry.captureException(error);
                 if (error.message != undefined) {
-                    return res.json({ 'status': Status.Error, 'message': error.message })
+                    return res.json({'status': Status.Error, 'message': error.message})
                 } else {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
             })
-    }
-    else if (params.hasOwnProperty('purchaseOrderId') && params.purchaseOrderId != null && params.purchaseOrderId != '""') {
+    } else if (params.hasOwnProperty('purchaseOrderId') && params.purchaseOrderId != null && params.purchaseOrderId != '""') {
 
-        Invoice.findOne({ 'purchaseOrder': params.purchaseOrderId, 'company': req.companyId })
+        Invoice.findOne({'purchaseOrder': params.purchaseOrderId, 'company': req.companyId})
             .then((invoice: IInvoice | null) => {
                 if (invoice != undefined && invoice != null) {
                     throw new Error('Invoice already created for this purchase order')
@@ -564,7 +605,11 @@ export const createInvoice = (req: Request, res: Response) => {
 
                         invoiceData.save()
                             .then((newInvoice: IInvoice) => {
-                                resolve({ latestInvoiceId: currentInvoiceId, invoice: newInvoice, purchaseOrderId: purchaseOrder._id })
+                                resolve({
+                                    latestInvoiceId: currentInvoiceId,
+                                    invoice: newInvoice,
+                                    purchaseOrderId: purchaseOrder._id
+                                })
                             })
                             .catch(() => {
                                 reject('Unable to create invoice, please try again')
@@ -576,8 +621,8 @@ export const createInvoice = (req: Request, res: Response) => {
             .then((data: any) => {
                 let invoiceId = data.latestInvoiceId + 1
 
-                const companyUpdate = company.updateOne({ currentInvoiceId: invoiceId })
-                const poUpdate = PurchaseOrder.updateOne({ _id: data.purchaseOrderId }, { invoiceCreated: true })
+                const companyUpdate = company.updateOne({currentInvoiceId: invoiceId})
+                const poUpdate = PurchaseOrder.updateOne({_id: data.purchaseOrderId}, {invoiceCreated: true})
 
                 return Promise.all([data.invoice, companyUpdate, poUpdate])
             })
@@ -604,14 +649,24 @@ export const createInvoice = (req: Request, res: Response) => {
                     const customerId = invoice.customer.toString();
                     _checkQBCustomerJobLocation(req, res, company, customerId, (err, errMsg, qbCustomer) => {
                         if (err || errMsg) {
-                            return res.json({ status: Status.Success, message: 'Purchase order invoice created successfully.', invoice });
+                            return res.json({
+                                status: Status.Success,
+                                message: 'Purchase order invoice created successfully.',
+                                invoice
+                            });
                         }
 
                         if (qbCustomer) {
                             // Create new Invoice in QuickBooks
                             _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                                 if (err || errMsg) {
-                                    return res.json({ status: Status.Success, message: 'Purchase order invoice created successfully.', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
+                                    return res.json({
+                                        status: Status.Success,
+                                        message: 'Purchase order invoice created successfully.',
+                                        invoice,
+                                        quickbookInvoice: null,
+                                        quickbookInvoiceError: errMsg
+                                    });
                                 }
 
                                 if (qbInvoice) {
@@ -636,15 +691,19 @@ export const createInvoice = (req: Request, res: Response) => {
                     });
 
                 } else {
-                    return res.json({ status: Status.Success, message: 'Purchase order invoice created successfully.', invoice });
+                    return res.json({
+                        status: Status.Success,
+                        message: 'Purchase order invoice created successfully.',
+                        invoice
+                    });
                 }
             })
             .catch((error: any) => {
                 Sentry.captureException(error);
                 if (error.message != undefined) {
-                    return res.json({ 'status': Status.Error, 'message': error.message })
+                    return res.json({'status': Status.Error, 'message': error.message})
                 } else {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
             })
 
@@ -707,10 +766,9 @@ export const createInvoice = (req: Request, res: Response) => {
 
 
         // });
-    }
-    else if (params.hasOwnProperty('estimateId') && params.estimateId != null && params.estimateId != '""') {
+    } else if (params.hasOwnProperty('estimateId') && params.estimateId != null && params.estimateId != '""') {
 
-        Invoice.findOne({ 'estimate': params.estimateId, 'company': req.companyId })
+        Invoice.findOne({'estimate': params.estimateId, 'company': req.companyId})
             .then((invoice: IInvoice | null) => {
                 if (invoice != undefined && invoice != null) {
                     throw new Error('Invoice already created for this estimate')
@@ -733,7 +791,11 @@ export const createInvoice = (req: Request, res: Response) => {
 
                         invoiceData.save()
                             .then((newInvoice: IInvoice) => {
-                                resolve({ latestInvoiceId: currentInvoiceId, invoice: newInvoice, estimateId: estimate._id })
+                                resolve({
+                                    latestInvoiceId: currentInvoiceId,
+                                    invoice: newInvoice,
+                                    estimateId: estimate._id
+                                })
                             })
                             .catch(() => {
                                 reject('Unable to create invoice, please try again')
@@ -745,8 +807,8 @@ export const createInvoice = (req: Request, res: Response) => {
             .then((data: any) => {
                 let invoiceId = data.latestInvoiceId + 1
 
-                const companyUpdate = company.updateOne({ currentInvoiceId: invoiceId })
-                const estimateUpdate = Estimate.updateOne({ _id: data.estimateId }, { invoiceCreated: true })
+                const companyUpdate = company.updateOne({currentInvoiceId: invoiceId})
+                const estimateUpdate = Estimate.updateOne({_id: data.estimateId}, {invoiceCreated: true})
 
                 return Promise.all([data.invoice, companyUpdate, estimateUpdate])
             })
@@ -773,14 +835,24 @@ export const createInvoice = (req: Request, res: Response) => {
                     const customerId = invoice.customer.toString();
                     _checkQBCustomerJobLocation(req, res, company, customerId, (err, errMsg, qbCustomer) => {
                         if (err || errMsg) {
-                            return res.json({ status: Status.Success, message: 'Estimate invoice created successfully.', invoice });
+                            return res.json({
+                                status: Status.Success,
+                                message: 'Estimate invoice created successfully.',
+                                invoice
+                            });
                         }
 
                         if (qbCustomer) {
                             // Create new Invoice in QuickBooks
                             _createQBInvoice(req, res, company, invoice, (err, errMsg, qbInvoice) => {
                                 if (err || errMsg) {
-                                    return res.json({ status: Status.Success, message: 'Estimate invoice created successfully.', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
+                                    return res.json({
+                                        status: Status.Success,
+                                        message: 'Estimate invoice created successfully.',
+                                        invoice,
+                                        quickbookInvoice: null,
+                                        quickbookInvoiceError: errMsg
+                                    });
                                 }
 
                                 if (qbInvoice) {
@@ -805,15 +877,19 @@ export const createInvoice = (req: Request, res: Response) => {
                     });
 
                 } else {
-                    return res.json({ status: Status.Success, message: 'Estimate invoice created successfully.', invoice });
+                    return res.json({
+                        status: Status.Success,
+                        message: 'Estimate invoice created successfully.',
+                        invoice
+                    });
                 }
             })
             .catch((error: any) => {
                 Sentry.captureException(error);
                 if (error.message != undefined) {
-                    return res.json({ 'status': Status.Error, 'message': error.message })
+                    return res.json({'status': Status.Error, 'message': error.message})
                 } else {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
             })
 
@@ -874,8 +950,7 @@ export const createInvoice = (req: Request, res: Response) => {
 
         //     })
         // });
-    }
-    else {
+    } else {
         // MANUAL CUSTOM INVOICE
 
         _populateInvoiceData(req, res, null, null, null, null, null, (req, res, invoiceData, currentInvoiceId) => {
@@ -883,13 +958,13 @@ export const createInvoice = (req: Request, res: Response) => {
             invoiceData.save((invoiceError: any, newInvoice: IInvoice,) => {
                 if (invoiceError) {
 
-                    return res.json({ status: Status.Error, message: Messages.GenericError });
+                    return res.json({status: Status.Error, message: Messages.GenericError});
                 }
 
-                company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
+                company.updateOne({currentInvoiceId: currentInvoiceId + 1})
                     .exec(async (companyError: any) => {
                         if (companyError) {
-                            return res.json({ status: Status.Error, message: Messages.GenericError });
+                            return res.json({status: Status.Error, message: Messages.GenericError});
                         }
 
                         const customer = await Customer.findById(newInvoice.customer);
@@ -905,14 +980,24 @@ export const createInvoice = (req: Request, res: Response) => {
                              */
                             await _checkQBCustomerJobLocation(req, res, company, customer._id, (err, errMsg, qbCustomer) => {
                                 if (err || errMsg) {
-                                    return res.json({ status: Status.Success, message: 'Invoice created successfully.', invoice: newInvoice });
+                                    return res.json({
+                                        status: Status.Success,
+                                        message: 'Invoice created successfully.',
+                                        invoice: newInvoice
+                                    });
                                 }
 
                                 if (qbCustomer) {
                                     // Create new Invoice in QuickBooks
                                     _createQBInvoice(req, res, company, newInvoice, (err, errMsg, qbInvoice) => {
                                         if (err || errMsg) {
-                                            return res.json({ status: Status.Success, message: 'Invoice created successfully.', invoice: newInvoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
+                                            return res.json({
+                                                status: Status.Success,
+                                                message: 'Invoice created successfully.',
+                                                invoice: newInvoice,
+                                                quickbookInvoice: null,
+                                                quickbookInvoiceError: errMsg
+                                            });
                                         }
 
                                         if (qbInvoice) {
@@ -936,7 +1021,11 @@ export const createInvoice = (req: Request, res: Response) => {
                                 }
                             });
                         } else {
-                            return res.json({ status: Status.Success, message: 'Invoice created successfully.', invoice: newInvoice });
+                            return res.json({
+                                status: Status.Success,
+                                message: 'Invoice created successfully.',
+                                invoice: newInvoice
+                            });
                         }
                     })
             })
@@ -955,7 +1044,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         currentInvoiceId = company.currentInvoiceId
     }
 
-    /* remove checking invoiceId with estimateId 
+    /* remove checking invoiceId with estimateId
     if (company.currentEstimateId > company.currentInvoiceId) {
         currentInvoiceId = company.currentEstimateId
     } else if (company.currentInvoiceId > company.currentEstimateId) {
@@ -995,16 +1084,16 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         workType = job.workType;
         companyLocation = job.companyLocation;
 
-        await job.populate({ path: 'ticket' }).execPopulate();
+        await job.populate({path: 'ticket'}).execPopulate();
         ticket = job.ticket;
     }
 
     if (purchaseOrder != null) {
         if (purchaseOrder.total == undefined || purchaseOrder.total == null || purchaseOrder.total == '""') {
-            return res.json({ 'status': Status.Error, 'message': 'purchaseOrder total is missing' })
+            return res.json({'status': Status.Error, 'message': 'purchaseOrder total is missing'})
         }
         if (purchaseOrder.customer == undefined || purchaseOrder.customer == null || purchaseOrder.customer == '""') {
-            return res.json({ 'status': Status.Error, 'message': 'purchaseOrder customer is missing' })
+            return res.json({'status': Status.Error, 'message': 'purchaseOrder customer is missing'})
         }
 
         purchaseOrderId = purchaseOrder._id
@@ -1016,10 +1105,10 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     if (estimate != null) {
 
         if (estimate.total == undefined || estimate.total == null || estimate.total == '""') {
-            return res.json({ 'status': Status.Error, 'message': 'Estimate total is missing' })
+            return res.json({'status': Status.Error, 'message': 'Estimate total is missing'})
         }
         if (estimate.customer == undefined || estimate.customer == null || estimate.customer == '""') {
-            return res.json({ 'status': Status.Error, 'message': 'Estimate customer is missing' })
+            return res.json({'status': Status.Error, 'message': 'Estimate customer is missing'})
         }
 
         estimateId = estimate._id
@@ -1038,11 +1127,11 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     if (job == null && purchaseOrder == null && estimate == null) {
 
         if (!params.customerId) {
-            return res.json({ status: Status.Error, message: 'Customer ID is required' });
+            return res.json({status: Status.Error, message: 'Customer ID is required'});
         }
 
         if (params.charges == undefined || params.charges == null || params.charges === '""') {
-            return res.json({ status: Status.Error, message: 'Charges are required' });
+            return res.json({status: Status.Error, message: 'Charges are required'});
         }
 
         invoiceType = 3
@@ -1052,9 +1141,13 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     // Handle and overwrite Job Location if provided
     if (params.jobLocationId) {
         // const jobLocationObj = await JobLocation.findById(params.jobLocationId);
-        const jobLocationObj = await JobLocation.findOne({ _id: params.jobLocationId, customerId: customer, isActive: { $ne: false } });
+        const jobLocationObj = await JobLocation.findOne({
+            _id: params.jobLocationId,
+            customerId: customer,
+            isActive: {$ne: false}
+        });
         if (!jobLocationObj) {
-            return res.json({ status: Status.Error, message: 'Subdivision not found' });
+            return res.json({status: Status.Error, message: 'Subdivision not found'});
         }
         jobLocation = jobLocationObj._id;
     }
@@ -1062,9 +1155,9 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     // Handle and overwrite Job Site if provided
     if (params.jobSiteId) {
         // const jobSiteObj = await JobSite.findById(params.jobSiteId);
-        const jobSiteObj = await JobSite.findOne({ _id: params.jobSiteId, customerId: customer, isActive: { $ne: false } });
+        const jobSiteObj = await JobSite.findOne({_id: params.jobSiteId, customerId: customer, isActive: {$ne: false}});
         if (!jobSiteObj) {
-            return res.json({ status: Status.Error, message: 'Job Address not found' });
+            return res.json({status: Status.Error, message: 'Job Address not found'});
         }
         jobSite = jobSiteObj._id;
     }
@@ -1091,23 +1184,23 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             }
         } catch (error) {
             Sentry.captureException(error);
-            return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
+            return res.json({'status': Status.Error, 'message': 'Items json is invalid'})
         }
     }
 
     let invoiceItems: any[] = []
     // Find Customer object to see the itemTier, customPrice, & payment term info
-    const customerObj = await Customer.findById(customer).populate({ path: 'paymentTerm' });
+    const customerObj = await Customer.findById(customer).populate({path: 'paymentTerm'});
     if (!customerObj) {
-        return res.json({ status: Status.Error, message: 'Customer not found' });
+        return res.json({status: Status.Error, message: 'Customer not found'});
     }
     // Populate payment term from the company
-    await company.populate({ path: 'paymentTerm' }).execPopulate();
+    await company.populate({path: 'paymentTerm'}).execPopulate();
 
     // Retrive payment term for this invoice
     let paymentTerm: IPaymentTerm;
     if (params.paymentTermId) {
-        paymentTerm = await PaymentTerm.findOne({ _id: params.paymentTermId, isActive: true });
+        paymentTerm = await PaymentTerm.findOne({_id: params.paymentTermId, isActive: true});
     }
     /**
      * Priority order: 1) User params 2) Customer default term 3) Company default term,
@@ -1120,7 +1213,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
             if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed'))) {
-                return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' })
+                return res.json({'status': Status.Error, 'message': 'Items format is invalid'})
             }
             let obj: any = {}
             let price = parseFloat(item.price)
@@ -1174,7 +1267,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
                 itemTier = jobTypeitem.tiers.find(t => t.tier.toString() === customerObj.itemTier.toString());
             } else {
                 // Take the first active tier of Item when customer doesn't have itemTier
-                await jobTypeitem.populate({ path: 'tiers.tier' }).execPopulate();
+                await jobTypeitem.populate({path: 'tiers.tier'}).execPopulate();
                 itemTier = jobTypeitem.tiers.find(t => {
                     const tier = <IPriceTier>t.tier;
                     return tier.isActive;
@@ -1233,7 +1326,9 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
      */
     if (jobTypeitems?.length > 0 && customerObj.discountPrices?.length > 0) {
         // Sort the customer discount prices and filter any null prices
-        let discountPrices = customerObj.discountPrices?.sort((a, b) => { return a.quantity - b.quantity });
+        let discountPrices = customerObj.discountPrices?.sort((a, b) => {
+            return a.quantity - b.quantity
+        });
         discountPrices = discountPrices.filter(disc => disc.discountItem);
 
         // Get the max quantity that should be discounted
@@ -1344,25 +1439,28 @@ export const createPOInvoice = (req: Request, res: Response) => {
     const user = <IUser>req.user
     const company = <ICompany>req.company
 
-    Invoice.findOne({ 'purchaseOrder': params.purchaseOrderId, 'company': req.companyId },
+    Invoice.findOne({'purchaseOrder': params.purchaseOrderId, 'company': req.companyId},
         (err: any, previousInvoice: IInvoice) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({'status': Status.Error, 'message': Messages.GenericError})
             }
 
             if (previousInvoice != undefined || previousInvoice != null) {
-                return res.json({ 'status': Status.Success, 'message': "Invoice already created for this purchase order." })
+                return res.json({
+                    'status': Status.Success,
+                    'message': "Invoice already created for this purchase order."
+                })
             }
 
             PurchaseOrder.findById(params.purchaseOrderId, (POError: any, PO: IPurchaseOrder) => {
 
                 if (POError) {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
                 }
 
                 if (PO == undefined || PO == null) {
-                    return res.json({ 'status': Status.Error, 'message': 'Invalid purchase order id' })
+                    return res.json({'status': Status.Error, 'message': 'Invalid purchase order id'})
                 }
 
                 let currentInvoiceId = 0;
@@ -1389,16 +1487,19 @@ export const createPOInvoice = (req: Request, res: Response) => {
 
                 invoice.save((invoiceError: any) => {
                     if (invoiceError) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
 
-                    company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
+                    company.updateOne({currentInvoiceId: currentInvoiceId + 1})
                         .exec((companyError: any) => {
                             if (companyError) {
-                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
                             }
 
-                            return res.json({ 'status': Status.Success, 'message': "Purchase order invoice created successfully." })
+                            return res.json({
+                                'status': Status.Success,
+                                'message': "Purchase order invoice created successfully."
+                            })
                         })
                 })
             })
@@ -1410,24 +1511,27 @@ export const updateInvoice = (req: Request, res: Response) => {
     const params = req.body
     const company = <ICompany>req.company;
 
-    Invoice.findOne({ '_id': params.invoiceId, 'company': req.companyId },
+    Invoice.findOne({'_id': params.invoiceId, 'company': req.companyId},
         async (err: any, invoice: IInvoice) => {
             if (err) {
-                return res.json({ status: Status.Error, message: Messages.GenericError });
+                return res.json({status: Status.Error, message: Messages.GenericError});
             }
 
             if (!invoice) {
-                return res.json({ status: Status.Error, message: 'Invoice not found' });
+                return res.json({status: Status.Error, message: 'Invoice not found'});
             }
 
             if (params.isDraft && invoice.status !== InvoiceStatus.UNPAID) {
-                return res.json({ status: Status.Error, message: 'Cannot update a PAID/PARTIALLY PAID invoce to become draft.' });
+                return res.json({
+                    status: Status.Error,
+                    message: 'Cannot update a PAID/PARTIALLY PAID invoce to become draft.'
+                });
             }
 
             // Find Customer object to see the itemTier, customPrice, * payment term info
-            const customerObj = await Customer.findById(invoice.customer).populate({ path: 'paymentTerm' });
+            const customerObj = await Customer.findById(invoice.customer).populate({path: 'paymentTerm'});
             // Populate payment term from the company
-            await company.populate({ path: 'paymentTerm' }).execPopulate();
+            await company.populate({path: 'paymentTerm'}).execPopulate();
             // Save the invoice old isDraft before it is replaced
             const oldIsDraft = invoice.isDraft;
             const oldTotalInvoice = invoice.total
@@ -1435,9 +1539,9 @@ export const updateInvoice = (req: Request, res: Response) => {
             // Retrieve payment term for this invoice
             let paymentTerm: IPaymentTerm;
             if (params.paymentTermId) {
-                paymentTerm = await PaymentTerm.findOne({ _id: params.paymentTermId, isActive: true });
+                paymentTerm = await PaymentTerm.findOne({_id: params.paymentTermId, isActive: true});
                 if (!paymentTerm) {
-                    return res.json({ status: Status.Error, message: 'Payment Term not found' });
+                    return res.json({status: Status.Error, message: 'Payment Term not found'});
                 }
             }
 
@@ -1446,25 +1550,33 @@ export const updateInvoice = (req: Request, res: Response) => {
             if (params.customerContactId) {
                 customerContact = await Contact.findById(params.customerContactId);
                 if (!customerContact) {
-                    return res.json({ status: Status.Error, message: 'Customer Contact not found' });
+                    return res.json({status: Status.Error, message: 'Customer Contact not found'});
                 }
             }
 
             // Retrieve job location for this invoice
             let jobLocation: IJobLocation;
             if (params.jobLocationId) {
-                jobLocation = await JobLocation.findOne({ _id: params.jobLocationId, customerId: customerObj?._id, isActive: { $ne: false } });
+                jobLocation = await JobLocation.findOne({
+                    _id: params.jobLocationId,
+                    customerId: customerObj?._id,
+                    isActive: {$ne: false}
+                });
                 if (!jobLocation) {
-                    return res.json({ status: Status.Error, message: 'Subdivision not found' });
+                    return res.json({status: Status.Error, message: 'Subdivision not found'});
                 }
             }
 
             // Retrieve job site for this invoice
             let jobSite: IJobSite;
             if (params.jobSiteId) {
-                jobSite = await JobSite.findOne({ _id: params.jobSiteId, customerId: customerObj?._id, isActive: { $ne: false } });
+                jobSite = await JobSite.findOne({
+                    _id: params.jobSiteId,
+                    customerId: customerObj?._id,
+                    isActive: {$ne: false}
+                });
                 if (!jobSite) {
-                    return res.json({ status: Status.Error, message: 'Job Address not found' });
+                    return res.json({status: Status.Error, message: 'Job Address not found'});
                 }
             }
 
@@ -1472,13 +1584,13 @@ export const updateInvoice = (req: Request, res: Response) => {
              * Priority order: 1) User params 2) Customer default term 3) Company default term,
              * otherwise leave paymentTerm to be blank
              */
-            // paymentTerm = paymentTerm || <IPaymentTerm>customerObj?.paymentTerm || <IPaymentTerm>company?.paymentTerm;
+                // paymentTerm = paymentTerm || <IPaymentTerm>customerObj?.paymentTerm || <IPaymentTerm>company?.paymentTerm;
 
             const invoiceId = params.invoiceNumber === undefined || params.invoiceNumber === null
-                ? invoice.invoiceId
-                : company.invoicePrefix
-                    ? `Invoice ${company.invoicePrefix}-${params.invoiceNumber}`
-                    : `Invoice ${params.invoiceNumber}`;
+                    ? invoice.invoiceId
+                    : company.invoicePrefix
+                        ? `Invoice ${company.invoicePrefix}-${params.invoiceNumber}`
+                        : `Invoice ${params.invoiceNumber}`;
 
             if (invoice.invoiceType == 0) {
 
@@ -1500,11 +1612,14 @@ export const updateInvoice = (req: Request, res: Response) => {
                         let purchaseOrders = result[1]
 
                         if (err) {
-                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         }
 
                         if ((params.charges == undefined || params.charges == null || params.charges == '""') && (params.tax == undefined || params.tax == null || params.tax == '""')) {
-                            return res.json({ 'status': Status.Error, 'message': 'Tax Percentage or charges are required' })
+                            return res.json({
+                                'status': Status.Error,
+                                'message': 'Tax Percentage or charges are required'
+                            })
                         }
                         const issuedDate = params.issuedDate ? new Date(params.issuedDate) : invoice.issuedDate;
                         const dueDate = params.paymentTermId && paymentTerm
@@ -1524,7 +1639,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                         const oldTotal = invoice.total;
 
                         if (!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
-                            return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
+                            return res.json({'status': Status.Error, 'message': 'Time spent is required'})
                         } else if (!job.isFixed) {
                             invoice.timeSpent = params.timeSpent
                         }
@@ -1550,7 +1665,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 }
                             } catch (error) {
                                 Sentry.captureException(error);
-                                return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
+                                return res.json({'status': Status.Error, 'message': 'Items json is invalid'})
                             }
                         }
 
@@ -1561,7 +1676,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                             for (let i = 0; i < items.length; i++) {
                                 const item = items[i];
                                 if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed'))) {
-                                    return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' })
+                                    return res.json({'status': Status.Error, 'message': 'Items format is invalid'})
                                 }
                                 let obj: any = {}
                                 let price = parseFloat(item.price)
@@ -1634,20 +1749,22 @@ export const updateInvoice = (req: Request, res: Response) => {
 
                         // Update company and technician commission when charges is updated and invoice is not draft
                         if (!invoice.isDraft && invoice.job) {
-                            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
+                            const invoiceCommission = await InvoiceCommission.findOne({invoice: invoice._id});
 
                             if (invoiceCommission.technicians) {
                                 const totalTechnician = invoiceCommission.technicians.length;
                                 for (const invoiceCommissionTechnician of invoiceCommission.technicians) {
                                     if (invoiceCommissionTechnician.contractor) {
-                                        const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
+                                        const contractor = await Company.findOne({_id: invoiceCommissionTechnician.contractor}).exec();
                                         if (contractor) {
                                             if (Number(total) !== Number(oldTotalInvoice)) {
-                                                const oldCommission = (oldTotal / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
-                                                const commission = (total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                                const getCommission = (t: any) => (t / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                                const oldCommission = getCommission(oldTotal)
+                                                let commission = getCommission(total)
+                                                commission = Number(commission.toFixed(2))
                                                 contractor.balance -= Number(oldCommission.toFixed(2));
                                                 contractor.balance += Number(commission.toFixed(2));
-                                                invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2));
+                                                invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2) || 0);
                                             }
 
                                             contractor.save();
@@ -1656,7 +1773,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                                     }
 
                                     if (invoiceCommissionTechnician.technician && !invoiceCommissionTechnician.contractor) {
-                                        const technician = await User.findOne({ _id: invoiceCommissionTechnician.technician }).exec();
+                                        const technician = await User.findOne({_id: invoiceCommissionTechnician.technician}).exec();
                                         if (technician) {
                                             if (Number(total) !== Number(oldTotalInvoice)) {
                                                 const oldCommission = (oldTotal / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
@@ -1684,28 +1801,28 @@ export const updateInvoice = (req: Request, res: Response) => {
                         }
 
                         invoice.updateOne({
-                            jobPurchaseOrders: purchaseOrderIds,
-                            items: invoiceItems,
-                            shippingCost: helper.roundTwoDecimal(shippingCost),
-                            taxAmount: helper.roundTwoDecimal(taxAmount),
-                            subTotal: helper.roundTwoDecimal(subTotalBeforeTax),
-                            total: helper.roundTwoDecimal(total),
-                            balanceDue: helper.roundTwoDecimal(balanceDue),
-                            paymentApplied: helper.roundTwoDecimal(paymentApplied),
-                            status, paid,
-                            charges, issuedDate, dueDate, note: params.note,
-                            isDraft: params.isDraft,
-                            customerPO: params.customerPO,
-                            customerContactId: customerContact,
-                            jobLocation: params.jobLocationId === null ? null : jobLocation?._id,
-                    jobSite: params.jobSiteId === null ? null : jobSite?._id,
-                            vendorId: params.vendorId,
-                            invoiceId
-                        }, { omitUndefined: true },
+                                jobPurchaseOrders: purchaseOrderIds,
+                                items: invoiceItems,
+                                shippingCost: helper.roundTwoDecimal(shippingCost),
+                                taxAmount: helper.roundTwoDecimal(taxAmount),
+                                subTotal: helper.roundTwoDecimal(subTotalBeforeTax),
+                                total: helper.roundTwoDecimal(total),
+                                balanceDue: helper.roundTwoDecimal(balanceDue),
+                                paymentApplied: helper.roundTwoDecimal(paymentApplied),
+                                status, paid,
+                                charges, issuedDate, dueDate, note: params.note,
+                                isDraft: params.isDraft,
+                                customerPO: params.customerPO,
+                                customerContactId: customerContact,
+                                jobLocation: params.jobLocationId === null ? null : jobLocation?._id,
+                                jobSite: params.jobSiteId === null ? null : jobSite?._id,
+                                vendorId: params.vendorId,
+                                invoiceId
+                            }, {omitUndefined: true},
 
                             async (err: any) => {
                                 if (err) {
-                                    return res.json({ status: Status.Error, message: Messages.GenericError });
+                                    return res.json({status: Status.Error, message: Messages.GenericError});
                                 }
 
                                 /**
@@ -1720,23 +1837,34 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 // To handle the switch of Invoice isDraft
                                 _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
                                     if (errMsg) {
-                                        return res.json({ status: Status.Success, message: 'Invoice updated successfully', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
+                                        return res.json({
+                                            status: Status.Success,
+                                            message: 'Invoice updated successfully',
+                                            invoice,
+                                            quickbookInvoice: null,
+                                            quickbookInvoiceError: errMsg
+                                        });
                                     }
 
-                                    return res.json({ status: Status.Success, message: 'Invoice updated successfully', invoice, quickbookInvoice: qbInvoice });
+                                    return res.json({
+                                        status: Status.Success,
+                                        message: 'Invoice updated successfully',
+                                        invoice,
+                                        quickbookInvoice: qbInvoice
+                                    });
                                 });
                             })
                     })
                     .catch((error: any) => {
                         Sentry.captureException(error);
-                        return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
+                        return res.json({status: Status.Error, message: error.message || Messages.GenericError});
                     })
             } else {
 
                 // MANUAL / CUSTOM INVOICE
 
                 if ((params.charges == undefined || params.charges == null || params.charges == '""') && (params.tax == undefined || params.tax == null || params.tax == '""')) {
-                    return res.json({ 'status': Status.Error, 'message': 'Tax Percentage or charges are required' })
+                    return res.json({'status': Status.Error, 'message': 'Tax Percentage or charges are required'})
                 }
                 const issuedDate = params.issuedDate ? new Date(params.issuedDate) : invoice.issuedDate;
                 const dueDate = params.paymentTermId && paymentTerm
@@ -1766,7 +1894,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                         }
                     } catch (error) {
                         Sentry.captureException(error);
-                        return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
+                        return res.json({'status': Status.Error, 'message': 'Items json is invalid'})
                     }
                 }
 
@@ -1777,7 +1905,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                     for (let i = 0; i < items.length; i++) {
                         const item = items[i];
                         if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed'))) {
-                            return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' })
+                            return res.json({'status': Status.Error, 'message': 'Items format is invalid'})
                         }
                         let obj: any = {}
                         let price = parseFloat(item.price)
@@ -1858,27 +1986,27 @@ export const updateInvoice = (req: Request, res: Response) => {
                 }
 
                 invoice.updateOne({
-                    items: invoiceItems,
-                    charges: helper.roundTwoDecimal(charges),
-                    shippingCost: helper.roundTwoDecimal(shippingCost),
-                    taxAmount: helper.roundTwoDecimal(taxAmount),
-                    subTotal: helper.roundTwoDecimal(subTotalBeforeTax),
-                    total: helper.roundTwoDecimal(total),
-                    balanceDue: helper.roundTwoDecimal(balanceDue),
-                    paymentApplied: helper.roundTwoDecimal(paymentApplied),
-                    status, paid,
-                    issuedDate, dueDate, note: params.note,
-                    isDraft: params.isDraft,
-                    customerPO: params.customerPO,
-                    customerContactId: customerContact,
-                    jobLocation: params.jobLocationId === null ? null : jobLocation?._id,
-                    jobSite: params.jobSiteId === null ? null : jobSite?._id,
-                    vendorId: params.vendorId,
-                    invoiceId
-                }, { omitUndefined: true },
+                        items: invoiceItems,
+                        charges: helper.roundTwoDecimal(charges),
+                        shippingCost: helper.roundTwoDecimal(shippingCost),
+                        taxAmount: helper.roundTwoDecimal(taxAmount),
+                        subTotal: helper.roundTwoDecimal(subTotalBeforeTax),
+                        total: helper.roundTwoDecimal(total),
+                        balanceDue: helper.roundTwoDecimal(balanceDue),
+                        paymentApplied: helper.roundTwoDecimal(paymentApplied),
+                        status, paid,
+                        issuedDate, dueDate, note: params.note,
+                        isDraft: params.isDraft,
+                        customerPO: params.customerPO,
+                        customerContactId: customerContact,
+                        jobLocation: params.jobLocationId === null ? null : jobLocation?._id,
+                        jobSite: params.jobSiteId === null ? null : jobSite?._id,
+                        vendorId: params.vendorId,
+                        invoiceId
+                    }, {omitUndefined: true},
                     async (err: any) => {
                         if (err) {
-                            return res.json({ status: Status.Error, message: Messages.GenericError });
+                            return res.json({status: Status.Error, message: Messages.GenericError});
                         }
 
                         /**
@@ -1893,60 +2021,102 @@ export const updateInvoice = (req: Request, res: Response) => {
                         // To handle the switch of Invoice isDraft
                         _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
                             if (errMsg) {
-                                return res.json({ status: Status.Success, message: 'Invoice updated successfully', invoice, quickbookInvoice: null, quickbookInvoiceError: errMsg });
+                                return res.json({
+                                    status: Status.Success,
+                                    message: 'Invoice updated successfully',
+                                    invoice,
+                                    quickbookInvoice: null,
+                                    quickbookInvoiceError: errMsg
+                                });
                             }
 
-                            return res.json({ status: Status.Success, message: 'Invoice updated successfully', invoice, quickbookInvoice: qbInvoice });
+                            return res.json({
+                                status: Status.Success,
+                                message: 'Invoice updated successfully',
+                                invoice,
+                                quickbookInvoice: qbInvoice
+                            });
                         });
                     })
             }
         });
 }
 
+export const updateInvoiceMessages = async (req: Request, res: Response) => {
+    const params = req.body;
+    try {
+        const invoice = await Invoice.findOne({_id: params.invoiceId});
+        if (!invoice) {
+            return res.status(404).json({error: 'Invoice not found'});
+        }
+
+        invoice.technicianMessages = {
+            notes: params.technicianMessages.notes || invoice.technicianMessages.notes,
+            images: params.technicianMessages.images || invoice.technicianMessages.images,
+        };
+
+        const updatedInvoice = await invoice.save();
+        return res.json({status: Status.Success, message: 'Invoice updated successfully.', data: updatedInvoice});
+    } catch (err) {
+        return res.json({status: Status.Error, message: err.message || Messages.GenericError});
+    }
+};
 export const getInvoiceDetail = (req: Request, res: Response) => {
     const params = req.body;
 
-    Invoice.findOne({ _id: params.invoiceId, 'company': req.companyId })
+    Invoice.findOne({_id: params.invoiceId, 'company': req.companyId})
         .populate({
             path: 'job',
             populate: [
-                { path: 'type', select: 'title description sku' },
-                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
-                { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
-                { path: 'tasks.technician', select: 'profile auth.email address contact permissions.role' },
-                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
-                { path: 'technicianImages.uploadedBy', select: 'profile auth.email address contact permissions.role' },
-                { path: 'track.user', select: 'profile auth.email address contact permissions.role'},
-                { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
-                { path: 'jobLocation', select: 'name location address' },
-                { path: 'jobSite', select: 'name location address' }
+                {path: 'type', select: 'title description sku'},
+                {path: 'tasks.jobTypes.jobType', select: 'title description sku'},
+                {
+                    path: 'customer',
+                    select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail'
+                },
+                {path: 'tasks.technician', select: 'profile auth.email address contact permissions.role'},
+                {
+                    path: 'tasks.contractor',
+                    select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax',
+                    populate: {path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role'}
+                },
+                {path: 'technicianImages.uploadedBy', select: 'profile auth.email address contact permissions.role'},
+                {path: 'track.user', select: 'profile auth.email address contact permissions.role'},
+                {path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId'}},
+                {path: 'jobLocation', select: 'name location address'},
+                {path: 'jobSite', select: 'name location address'},
+                {path: 'homeOwner', select: 'profile info contact'}
             ],
         })
         .populate({
             path: 'purchaseOrder',
             select: 'purchaseOrderId items equipment status estimate note total',
             populate: [
-                { path: 'equipment', select: 'info maintenance type brand', populate: [{ path: 'type', select: 'title' }, { path: 'brand', select: 'title' }] },
-                { path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price' }
+                {
+                    path: 'equipment',
+                    select: 'info maintenance type brand',
+                    populate: [{path: 'type', select: 'title'}, {path: 'brand', select: 'title'}]
+                },
+                {path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price'}
             ]
         })
-        .populate({ path: 'paymentTerm', select: '-company -__v' })
-        .populate({ path: 'customerContactId', select: '-__v' })
+        .populate({path: 'paymentTerm', select: '-company -__v'})
+        .populate({path: 'customerContactId', select: '-__v'})
         .populate({
             path: 'items.item',
             select: 'name description sku isFixed charges tax',
-            populate: [{ path: 'jobType' }]
+            populate: [{path: 'jobType'}]
         })
         .populate({
             path: 'company',
-            select: 'info.companyName info.logoUrl info.companyEmail permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax'
+            select: 'info.companyName info.logoUrl info.companyEmail permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax commissionTier'
         })
         .populate({
             path: 'customer',
             select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail'
         })
-        .populate({ path: 'jobLocation', select: 'name address location' })
-        .populate({ path: 'jobSite', select: 'name address location' })
+        .populate({path: 'jobLocation', select: 'name address location'})
+        .populate({path: 'jobSite', select: 'name address location'})
         .populate({
             path: 'estimate',
             select: 'total items note status customer company createdAt createdBy'
@@ -1962,36 +2132,36 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
         .exec((err: any, invoice: IInvoice) => {
 
             if (err) {
-                return res.json({ status: Status.Error, message: Messages.GenericError });
+                return res.json({status: Status.Error, message: Messages.GenericError});
             }
 
             // if (invoice == undefined || invoice == null) {
             if (!invoice) {
-                return res.json({ status: Status.Error, message: 'Invoice not found' });
+                return res.json({status: Status.Error, message: 'Invoice not found'});
             }
 
-            Scan.find({ job: invoice.job }, 'comment timeOfScan')
+            Scan.find({job: invoice.job}, 'comment timeOfScan')
                 .populate({
                     path: 'equipment',
                     select: 'info.model info.serialNumber info.nfcTag images info.location',
-                    populate: [{ path: 'brand', select: 'title' }, { path: 'type', select: 'title' }],
+                    populate: [{path: 'brand', select: 'title'}, {path: 'type', select: 'title'}],
 
                 })
                 .exec(async (err: any, scans: IScan[]) => {
                     if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
 
                     const payments = await PaymentCustomer.find({
                         company: req.companyId,
-                        isVoid: { $ne: true },
+                        isVoid: {$ne: true},
                         $or: [
-                            { invoice: invoice._id },
-                            { 'line.invoice': invoice._id }
+                            {invoice: invoice._id},
+                            {'line.invoice': invoice._id}
                         ]
                     });
 
-                    return res.json({ status: Status.Success, invoice, scans, payments });
+                    return res.json({status: Status.Success, invoice, scans, payments});
                 })
         })
 }
@@ -2005,19 +2175,19 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     switch (params.emailType) {
         case EmailTypes.INVOICES:
             if (!params.invoiceIds) {
-                return res.json({ status: Status.Error, message: 'Param invoiceIds is required for emailType INVOICES' });
+                return res.json({status: Status.Error, message: 'Param invoiceIds is required for emailType INVOICES'});
             }
 
             const invoiceIds = JSON.parse(params.invoiceIds)?.map((id: string) => new ObjectId(id));
             invoices = await Invoice
-                .find({ company, _id: { $in: invoiceIds } })
+                .find({company, _id: {$in: invoiceIds}})
                 .populate({
                     path: 'customer',
                     select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
                 })
 
             if (!invoices?.length) {
-                return res.json({ status: Status.Error, message: 'Invoices not found.' });
+                return res.json({status: Status.Error, message: 'Invoices not found.'});
             }
 
             customer = <ICustomer>invoices[0]?.customer;
@@ -2025,26 +2195,26 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
 
         case EmailTypes.INVOICE:
             if (!params.invoiceId) {
-                return res.json({ status: Status.Error, message: 'Param invoiceId is required for emailType INVOICE' });
+                return res.json({status: Status.Error, message: 'Param invoiceId is required for emailType INVOICE'});
             }
 
         default:
             // Retrieve invoice and populate customer and paymentTerm info
             invoice = await Invoice
-                .findOne({ company, _id: params.invoiceId })
+                .findOne({company, _id: params.invoiceId})
                 .populate({
                     path: 'customer',
                     select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
                 })
-                .populate({ path: 'customerContactId', select: 'name email phone' })
+                .populate({path: 'customerContactId', select: 'name email phone'})
                 .populate({
                     path: 'job',
                     select: 'customerContactId',
-                    populate: [{ path: 'customerContactId', select: 'name email phone'}]
+                    populate: [{path: 'customerContactId', select: 'name email phone'}]
                 });
 
             if (!invoice) {
-                return res.json({ status: Status.Error, message: 'Invoice not found.' });
+                return res.json({status: Status.Error, message: 'Invoice not found.'});
             }
 
             customer = <ICustomer>invoice?.customer;
@@ -2056,12 +2226,12 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     const emailType = params.emailType ?? EmailTypes.INVOICE;
 
     // Retrieve company email default
-    let emailDefault = await EmailDefault.findOne({ company, emailType });
+    let emailDefault = await EmailDefault.findOne({company, emailType});
 
     // Create email default if company doesn't have one yet
     if (!emailDefault) {
         await _createCompanyDefaultEmail(company, emailType);
-        emailDefault = await EmailDefault.findOne({ company, emailType });
+        emailDefault = await EmailDefault.findOne({company, emailType});
     }
 
     /**
@@ -2071,7 +2241,16 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     await transformPlaceholders(emailDefault);
 
     // Get available placeholder values for Invoice email template
-    const { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_total_amount, invoice_due_date } = await getPlaceholderValues({ company, invoice, invoices, customer, job });
+    const {
+        company_name,
+        company_email,
+        customer_name,
+        customer_email,
+        invoice_number,
+        invoice_amount,
+        invoice_total_amount,
+        invoice_due_date
+    } = await getPlaceholderValues({company, invoice, invoices, customer, job});
 
     return res.json({
         status: Status.Success,
@@ -2099,19 +2278,26 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     // Retrieve invoice and populate customer and paymentTerm info
     // const { INVOICE_PDF_PATH } = process.env;
     const invoice = await Invoice
-        .findOne({ company, _id: params.invoiceId })
+        .findOne({company, _id: params.invoiceId})
         .populate({
             path: 'job',
             populate: [
-                { path: 'type', select: 'title description sku' },
-                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
-                { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
-                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
-                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
-                { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
-                { path: 'jobLocation', select: 'name location address' },
-                { path: 'jobSite', select: 'name location address' },
-                { path: 'customerContactId', select: '-__v' }
+                {path: 'type', select: 'title description sku'},
+                {path: 'tasks.jobTypes.jobType', select: 'title description sku'},
+                {
+                    path: 'customer',
+                    select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail'
+                },
+                {path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role'},
+                {
+                    path: 'tasks.contractor',
+                    select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax',
+                    populate: {path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role'}
+                },
+                {path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId'}},
+                {path: 'jobLocation', select: 'name location address'},
+                {path: 'jobSite', select: 'name location address'},
+                {path: 'customerContactId', select: '-__v'}
             ],
         })
         .populate({
@@ -2122,8 +2308,8 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
             path: 'customerContactId',
             select: '-__v'
         })
-        .populate({ path: 'jobLocation', select: 'name address location' })
-        .populate({ path: 'jobSite', select: 'name address location' })
+        .populate({path: 'jobLocation', select: 'name address location'})
+        .populate({path: 'jobSite', select: 'name address location'})
         .populate({
             path: 'paymentTerm',
             select: '-company -__v'
@@ -2131,7 +2317,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         .populate({
             path: 'items.item',
             select: 'name description sku isJobType isFixed charges tax',
-            populate: [{ path: 'jobType' }]
+            populate: [{path: 'jobType'}]
         })
         .populate({
             path: 'companyLocation',
@@ -2139,7 +2325,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         })
 
     if (!invoice) {
-        return res.json({ status: Status.Error, message: 'Invoice not found.' });
+        return res.json({status: Status.Error, message: 'Invoice not found.'});
     }
 
     const customer = <ICustomer>invoice.customer;
@@ -2148,8 +2334,8 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
     // Retrieve company email default
     const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
-    const invoicePdfs = [{ invoice, filepath }];
-    const emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
+    const invoicePdfs = [{invoice, filepath}];
+    const emailDefault = await EmailDefault.findOne({company, emailType: EmailTypes.INVOICE});
 
     // Generate Invoice PDF
     await _generateInvoicePdf(company, invoice);
@@ -2189,7 +2375,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     } catch (error) {
         Sentry.captureException(error);
         console.log('== Send Invoice Error:', error);
-        return res.json({ status: Status.Error, message: Messages.GenericError });
+        return res.json({status: Status.Error, message: Messages.GenericError});
     }
 
     const companyLocation = <ICompanyLocation>invoice.companyLocation;
@@ -2216,12 +2402,13 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     const sendingDate = new Date();
     invoice.emailHistory.push({
         sentTo: customer.info?.email,
-        sentAt: sendingDate
+        sentAt: sendingDate,
+        sentBy: user._id || null
     });
     invoice.lastEmailSent = sendingDate;
     await invoice.save();
 
-    return res.json({ status: Status.Success, message: 'Invoice has been sent successfully.' });
+    return res.json({status: Status.Success, message: 'Invoice has been sent successfully.'});
 
 }
 
@@ -2238,7 +2425,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
     // Retrieve and check if customer exist
     const customer = await Customer.findById(params.customerId);
     if (!customer) {
-        return res.json({ Status: Status.Error, message: 'Customer not found' });
+        return res.json({Status: Status.Error, message: 'Customer not found'});
     }
 
     // Handle the stringify array of invoice IDs value
@@ -2259,38 +2446,45 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
         invoiceIds = invoiceIds.map((id: string) => new ObjectId(id));
     } catch (error) {
         Sentry.captureException(error);
-        return res.json({ 'status': Status.Error, 'message': 'Param Invoice IDs is invalid' })
+        return res.json({'status': Status.Error, 'message': 'Param Invoice IDs is invalid'})
     }
 
     // Retrieve invoices and populate customer and paymentTerm info
     const invoices = await Invoice
-        .find({ company, _id: { $in: invoiceIds } })
+        .find({company, _id: {$in: invoiceIds}})
         .populate({
             path: 'job',
             populate: [
-                { path: 'type', select: 'title description sku' },
-                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
-                { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
-                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
-                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
-                { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
-                { path: 'jobLocation', select: 'name location address' },
-                { path: 'jobSite', select: 'name location address' },
-                { path: 'customerContactId', select: '-__v' }
+                {path: 'type', select: 'title description sku'},
+                {path: 'tasks.jobTypes.jobType', select: 'title description sku'},
+                {
+                    path: 'customer',
+                    select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail'
+                },
+                {path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role'},
+                {
+                    path: 'tasks.contractor',
+                    select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax',
+                    populate: {path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role'}
+                },
+                {path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId'}},
+                {path: 'jobLocation', select: 'name location address'},
+                {path: 'jobSite', select: 'name location address'},
+                {path: 'customerContactId', select: '-__v'}
             ],
         })
         .populate({
             path: 'customer',
             select: 'info.email auth.email profile.displayName address contact contactName'
         })
-        .populate({ path: 'customerContactId', select: '-__v' })
-        .populate({ path: 'jobLocation', select: 'name address location' })
-        .populate({ path: 'jobSite', select: 'name address location' })
-        .populate({ path: 'paymentTerm', select: '-company -__v' })
+        .populate({path: 'customerContactId', select: '-__v'})
+        .populate({path: 'jobLocation', select: 'name address location'})
+        .populate({path: 'jobSite', select: 'name address location'})
+        .populate({path: 'paymentTerm', select: '-company -__v'})
         .populate({
             path: 'items.item',
             select: 'name description sku isJobType isFixed charges tax',
-            populate: [{ path: 'jobType' }]
+            populate: [{path: 'jobType'}]
         })
         .populate({
             path: 'companyLocation',
@@ -2298,7 +2492,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
         });
 
     if (!invoices?.length) {
-        return res.json({ status: Status.Error, message: 'Invoices not found.' });
+        return res.json({status: Status.Error, message: 'Invoices not found.'});
     }
 
     let invoicePdfs = [];
@@ -2319,16 +2513,17 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
             totalInvoiceAmount += invoice.total;
 
             // Collect all invoices into one array
-            invoicePdfs.push({ invoice, filepath });
+            invoicePdfs.push({invoice, filepath});
 
             // Update email history and last email sent info
             const sendingDate = new Date();
             invoice.emailHistory.push({
                 sentTo: customer.info?.email,
-                sentAt: sendingDate
+                sentAt: sendingDate,
+                sentBy: user._id || null
             });
             invoice.lastEmailSent = sendingDate;
-            
+
             const companyLocation = <ICompanyLocation>invoice.companyLocation;
             invoiceSender = companyLocation?.billingAddress?.emailSender;
 
@@ -2336,11 +2531,11 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
         }
     } catch (error) {
         Sentry.captureException(error);
-        return res.json({ status: Status.Error, message: Messages.GenericError });
+        return res.json({status: Status.Error, message: Messages.GenericError});
     }
 
     // Retrieve company email default
-    const emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICES });
+    const emailDefault = await EmailDefault.findOne({company, emailType: EmailTypes.INVOICES});
 
     let paramRecipients: string[];
     let recipientEmails: string[];
@@ -2376,7 +2571,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
         }
     } catch (error) {
         Sentry.captureException(error);
-        return res.json({ status: Status.Error, message: Messages.GenericError });
+        return res.json({status: Status.Error, message: Messages.GenericError});
     }
 
     // Call AWS SES method
@@ -2392,7 +2587,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
         invoice_pdfs: invoicePdfs,
     });
 
-    return res.json({ status: Status.Success, message: 'Invoice has been sent successfully.' });
+    return res.json({status: Status.Success, message: 'Invoice has been sent successfully.'});
 
 }
 
@@ -2410,17 +2605,20 @@ export const getInvoices = async (req: Request, res: Response) => {
 
     // Return error when all cursors are provided
     if (params.nextCursor && params.previousCursor) {
-        return res.json({ status: Status.Error, message: 'Provided cursor could only be one of either nextCursor or previousCursor.' });
+        return res.json({
+            status: Status.Error,
+            message: 'Provided cursor could only be one of either nextCursor or previousCursor.'
+        });
     }
 
     // Data query that used to search Invoices and available previous/next page
     const filterQuery: any = {
-        $and: [{ $or: [{ company: companyId }] }]
+        $and: [{$or: [{company: companyId}]}]
     };
 
     // Add the last 90 days filter if need to return all records
     if (!isAllRecords) {
-        filterQuery['$and'].push({ issuedDate: { $gte: new Date(last90days) } });
+        filterQuery['$and'].push({issuedDate: {$gte: new Date(last90days)}});
     }
 
     // Check and add if params filter provided
@@ -2428,82 +2626,82 @@ export const getInvoices = async (req: Request, res: Response) => {
         const keywordRegex = helper.getRegex(params.keyword, 'i');
         filterQuery['$and'].push({
             $or: [
-                { invoiceId: keywordRegex },
-                { status: keywordRegex },
-                { customerPO: keywordRegex },
-                { vendorId: keywordRegex },
-                { 'jobObj.jobId': keywordRegex },
-                { 'customerObj.profile.displayName': keywordRegex },
-                { 'jobLocationObj.name': keywordRegex },
-                { 'jobLocationObj.address.street': keywordRegex },
-                { 'jobLocationObj.address.city': keywordRegex },
-                { 'jobSiteObj.name': keywordRegex },
-                { 'jobSiteObj.address.street': keywordRegex },
-                { 'jobSiteObj.address.city': keywordRegex },
-                { 'technicianObj.profile.displayName': keywordRegex },
-                { 'contractorsObj.info.companyName': keywordRegex },
+                {invoiceId: keywordRegex},
+                {status: keywordRegex},
+                {customerPO: keywordRegex},
+                {vendorId: keywordRegex},
+                {'jobObj.jobId': keywordRegex},
+                {'customerObj.profile.displayName': keywordRegex},
+                {'jobLocationObj.name': keywordRegex},
+                {'jobLocationObj.address.street': keywordRegex},
+                {'jobLocationObj.address.city': keywordRegex},
+                {'jobSiteObj.name': keywordRegex},
+                {'jobSiteObj.address.street': keywordRegex},
+                {'jobSiteObj.address.city': keywordRegex},
+                {'technicianObj.profile.displayName': keywordRegex},
+                {'contractorsObj.info.companyName': keywordRegex},
             ]
         })
     }
     if (params.invoiceId) {
         const invoiceIdRegex = helper.getRegex(params.invoiceId, 'i');
-        filterQuery['$and'].push({ invoiceId: invoiceIdRegex });
+        filterQuery['$and'].push({invoiceId: invoiceIdRegex});
     }
     if (params.dueDate) {
         const dueDate = moment(params.dueDate).endOf('day').format();
-        filterQuery['$and'].push({ dueDate: { $lte: new Date(dueDate) } });
+        filterQuery['$and'].push({dueDate: {$lte: new Date(dueDate)}});
     }
     if (params.status) {
-        filterQuery['$and'].push({ status: { $in: JSON.parse(params.status) } });
+        filterQuery['$and'].push({status: {$in: JSON.parse(params.status)}});
     }
     if (params.startAmount) {
-        filterQuery['$and'].push({ total: { $gte: params.startAmount } });
+        filterQuery['$and'].push({total: {$gte: params.startAmount}});
     }
     if (params.endAmount) {
-        filterQuery['$and'].push({ total: { $lte: params.endAmount } });
+        filterQuery['$and'].push({total: {$lte: params.endAmount}});
     }
     if (params.customerPO) {
         const customerPORegex = helper.getRegex(params.customerPO, 'i');
-        filterQuery['$and'].push({ customerPO: customerPORegex });
+        filterQuery['$and'].push({customerPO: customerPORegex});
     }
     if (params.missingPO) {
-        filterQuery['$and'].push({ $or: [{ customerPO: { $exists: false } }, { customerPO: '' }, { customerPO: null }]});
+        filterQuery['$and'].push({$or: [{customerPO: {$exists: false}}, {customerPO: ''}, {customerPO: null}]});
     }
     if (params.customerId) {
-        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+        filterQuery['$and'].push({customer: new ObjectId(params.customerId)});
     }
     if (params.customerContactId) {
-        filterQuery['$and'].push({ customerContactId: new ObjectId(params.customerContactId) });
+        filterQuery['$and'].push({customerContactId: new ObjectId(params.customerContactId)});
     }
     if (params.jobId) {
         const jobIdRegex = helper.getRegex(params.jobId, 'i');
-        filterQuery['$and'].push({ 'jobObj.jobId': jobIdRegex });
+        filterQuery['$and'].push({'jobObj.jobId': jobIdRegex});
     }
     if (params.jobLocationId) {
-        filterQuery['$and'].push({ 'jobLocationObj._id': new ObjectId(params.jobLocationId) });
+        filterQuery['$and'].push({'jobLocationObj._id': new ObjectId(params.jobLocationId)});
     }
     if (params.jobAddress) {
         const jobAddressRegex = helper.getRegex(params.jobAddress, 'i');
-        filterQuery['$and'].push({ 'jobSiteObj.address.street': jobAddressRegex });
+        filterQuery['$and'].push({'jobSiteObj.address.street': jobAddressRegex});
     }
     if (params.jobCity) {
         const jobCityRegex = helper.getRegex(params.jobCity, 'i');
-        filterQuery['$and'].push({ 'jobSiteObj.address.city': jobCityRegex });
+        filterQuery['$and'].push({'jobSiteObj.address.city': jobCityRegex});
     }
     if (params.jobState) {
         const jobStateRegex = helper.getRegex(params.jobState, 'i');
-        filterQuery['$and'].push({ 'jobSiteObj.address.state': jobStateRegex });
+        filterQuery['$and'].push({'jobSiteObj.address.state': jobStateRegex});
     }
     if (params.jobZip) {
         const jobZipRegex = helper.getRegex(params.jobZip, 'i');
-        filterQuery['$and'].push({ 'jobSiteObj.address.zipcode': jobZipRegex });
+        filterQuery['$and'].push({'jobSiteObj.address.zipcode': jobZipRegex});
     }
     if (params.technicianId) {
-        filterQuery['$and'].push({ $or: [{ 'jobObj.tasks.technician': new ObjectId(params.technicianId) }, { 'jobObj.tasks.contractor': new ObjectId(params.technicianId) }] });
+        filterQuery['$and'].push({$or: [{'jobObj.tasks.technician': new ObjectId(params.technicianId)}, {'jobObj.tasks.contractor': new ObjectId(params.technicianId)}]});
     }
     switch (params.isDraft) {
         case true:
-            filterQuery['$and'].push({ isDraft: params.isDraft });
+            filterQuery['$and'].push({isDraft: params.isDraft});
             break;
 
         default:
@@ -2511,12 +2709,12 @@ export const getInvoices = async (req: Request, res: Response) => {
              * For isDraft false, use the $ne because we want to retrieve old invoices,
              * old invoices may don't have isDraft property at all
              */
-            filterQuery['$and'].push({ isDraft: { $ne: true } });
+            filterQuery['$and'].push({isDraft: {$ne: true}});
             break;
     }
     switch (params.isVoid) {
         case true:
-            filterQuery['$and'].push({ isVoid: params.isVoid });
+            filterQuery['$and'].push({isVoid: params.isVoid});
             break;
 
         default:
@@ -2524,18 +2722,23 @@ export const getInvoices = async (req: Request, res: Response) => {
              * For isVoid false, use the $ne because we want to retrieve old invoices,
              * old invoices may don't have isVoid property at all
              */
-            filterQuery['$and'].push({ isVoid: { $ne: true } });
+            filterQuery['$and'].push({isVoid: {$ne: true}});
             break;
     }
     if (params.startDate && params.endDate) {
         const startDate = moment.utc(params.startDate).startOf('day').format();
         const endDate = moment.utc(params.endDate).endOf('day').format();
-        filterQuery['$and'].push({ issuedDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
+        filterQuery['$and'].push({issuedDate: {$gte: new Date(startDate), $lte: new Date(endDate)}});
     }
     if (params.lastEmailStartDate && params.lastEmailEndDate) {
         const lastEmailStartDate = moment(params.lastEmailStartDate).startOf('day').format();
         const lastEmailEndDate = moment(params.lastEmailEndDate).endOf('day').format();
-        filterQuery['$and'].push({ lastEmailSent: { $gte: new Date(lastEmailStartDate), $lte: new Date(lastEmailEndDate) } });
+        filterQuery['$and'].push({
+            lastEmailSent: {
+                $gte: new Date(lastEmailStartDate),
+                $lte: new Date(lastEmailEndDate)
+            }
+        });
     }
 
     if (workType) {
@@ -2545,8 +2748,10 @@ export const getInvoices = async (req: Request, res: Response) => {
             workTypeIds = workTypeArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {};
-        filterQuery['$and'].push({ workType: { $in : workTypeIds }});
+        } catch (error) {
+        }
+        ;
+        filterQuery['$and'].push({workType: {$in: workTypeIds}});
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
@@ -2555,17 +2760,20 @@ export const getInvoices = async (req: Request, res: Response) => {
             companyLocationIds = companyLocationArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {}
-        filterQuery['$and'].push({ companyLocation: { $in : companyLocationIds }});
+        } catch (error) {
+        }
+        filterQuery['$and'].push({companyLocation: {$in: companyLocationIds}});
     }
 
     // Deep clone filterQuery
-    const query: any = { $and: [] };
-    filterQuery['$and'].map((q: any) => { query['$and'].push({ ...q }) });
+    const query: any = {$and: []};
+    filterQuery['$and'].map((q: any) => {
+        query['$and'].push({...q})
+    });
     // Pagination query that default to nothing
     let paginationQuery = {};
     // Sort query that default to sort by the recent ones
-    let sortQuery = { createdAt: -1, _id: -1 };
+    let sortQuery = {createdAt: -1, _id: -1};
 
     if (params.nextCursor) {
         // Update pagination query to get the next page
@@ -2573,11 +2781,11 @@ export const getInvoices = async (req: Request, res: Response) => {
         const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
         paginationQuery = {
             $or: [
-                { createdAt: { $lt: new Date(cursor.createdAt) } },
-                { createdAt: new Date(cursor.createdAt), _id: { $lt: cursorId } }
+                {createdAt: {$lt: new Date(cursor.createdAt)}},
+                {createdAt: new Date(cursor.createdAt), _id: {$lt: cursorId}}
             ]
         };
-        query['$and'].push({ ...paginationQuery });
+        query['$and'].push({...paginationQuery});
     }
     if (params.previousCursor) {
         // Update pagination query to get the previous page
@@ -2585,52 +2793,72 @@ export const getInvoices = async (req: Request, res: Response) => {
         const cursorId = ObjectId.isValid(cursor._id) ? new ObjectId(cursor._id) : null;
         paginationQuery = {
             $or: [
-                { createdAt: { $gt: new Date(cursor.createdAt) } },
-                { createdAt: new Date(cursor.createdAt), _id: { $gt: cursorId } }
+                {createdAt: {$gt: new Date(cursor.createdAt)}},
+                {createdAt: new Date(cursor.createdAt), _id: {$gt: cursorId}}
             ]
         };
-        query['$and'].push({ ...paginationQuery });
+        query['$and'].push({...paginationQuery});
         // Getting previous page is special, we need to reverse the sort
-        sortQuery = { createdAt: 1, _id: 1 };
+        sortQuery = {createdAt: 1, _id: 1};
     }
 
     // Construct aggreate lookups here to be used multiple times
     let aggregateLookups: any[] = [];
     if (isAllRecords) {
         aggregateLookups = [
-            { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } },
-            { $lookup: { from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj' } },
-            { $lookup: { from: 'joblocations', localField: 'jobObj.jobLocation', foreignField: '_id', as: 'jobLocationObj' } },
-            { $lookup: { from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj' } },
-            { $lookup: { from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj' } },
-            { $lookup: { from: 'companies', localField: 'jobObj.tasks.contractor', foreignField: '_id', as: 'contractorsObj' } },
-            
+            {$lookup: {from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj'}},
+            {$lookup: {from: 'customers', localField: 'customer', foreignField: '_id', as: 'customerObj'}},
+            {
+                $lookup: {
+                    from: 'joblocations',
+                    localField: 'jobObj.jobLocation',
+                    foreignField: '_id',
+                    as: 'jobLocationObj'
+                }
+            },
+            {$lookup: {from: 'jobsites', localField: 'jobObj.jobSite', foreignField: '_id', as: 'jobSiteObj'}},
+            {$lookup: {from: 'users', localField: 'jobObj.tasks.technician', foreignField: '_id', as: 'technicianObj'}},
+            {
+                $lookup: {
+                    from: 'companies',
+                    localField: 'jobObj.tasks.contractor',
+                    foreignField: '_id',
+                    as: 'contractorsObj'
+                }
+            },
+
         ]
     }
 
-    aggregateLookups.push({ $lookup: { from: 'contacts', localField: 'customerContactId', foreignField: '_id', as: 'contactsObj' } })
-
+    aggregateLookups.push({
+        $lookup: {
+            from: 'contacts',
+            localField: 'customerContactId',
+            foreignField: '_id',
+            as: 'contactsObj'
+        }
+    })
 
 
     // Filter jobs using aggregate to be search to another collection
     let invoices: IInvoice[] = await Invoice.aggregate([
         ...aggregateLookups,
-        { $match: { ...query } },
-        { $sort: sortQuery },
-        { $limit: params.pageSize || DefaultPageSize },
-        { $project: { jobObj: 0, customerObj: 0, jobLocationObj: 0, jobSiteObj: 0, technicianObj: 0, contractorsObj: 0 } },
+        {$match: {...query}},
+        {$sort: sortQuery},
+        {$limit: params.pageSize || DefaultPageSize},
+        {$project: {jobObj: 0, customerObj: 0, jobLocationObj: 0, jobSiteObj: 0, technicianObj: 0, contractorsObj: 0}},
     ]);
 
     // Populate the invoices from aggregate
     await Invoice.populate(invoices, [
-        { path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks' },
-        { path: 'paymentTerm', select: 'name dueDays' },
-        { path: 'customer', select: 'info.email auth.email profile address contact vendorId contactName contactEmail' },
-        { path: 'customerContactId', select: 'name phone email' },
-        { path: 'jobLocation', select: 'name address location' },
-        { path: 'jobSite', select: 'name address location' },
-        { path: 'companyLocation', select: 'billingAddress name isMainLocation' },
-        { path: 'workType', select: 'title' },
+        {path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks scheduleTimeAMPM'},
+        {path: 'paymentTerm', select: 'name dueDays'},
+        {path: 'customer', select: 'info.email auth.email profile address contact vendorId contactName contactEmail'},
+        {path: 'customerContactId', select: 'name phone email'},
+        {path: 'jobLocation', select: 'name address location'},
+        {path: 'jobSite', select: 'name address location'},
+        {path: 'companyLocation', select: 'billingAddress name isMainLocation'},
+        {path: 'workType', select: 'title'},
     ]);
 
     // // Filter jobs using aggregate to be search to another collection
@@ -2708,8 +2936,8 @@ export const getInvoices = async (req: Request, res: Response) => {
      */
     const allInvoices = await Invoice.aggregate([
         ...aggregateLookups,
-        { $match: { ...filterQuery } },
-        { $count: 'count' }
+        {$match: {...filterQuery}},
+        {$count: 'count'}
         // { $sort: sortQuery }
     ])
 
@@ -2733,47 +2961,51 @@ export const getInvoices = async (req: Request, res: Response) => {
     /**
      * Check if next page is available
      */
-    let nextCursor = { createdAt: invoices[invoices.length - 1]?.createdAt, _id: invoices[invoices.length - 1]?._id };
+    let nextCursor = {createdAt: invoices[invoices.length - 1]?.createdAt, _id: invoices[invoices.length - 1]?._id};
     // Deep clone filterQuery
-    const nextPageQuery: any = { $and: [] };
-    filterQuery['$and'].map((q: any) => { nextPageQuery['$and'].push({ ...q }) });
+    const nextPageQuery: any = {$and: []};
+    filterQuery['$and'].map((q: any) => {
+        nextPageQuery['$and'].push({...q})
+    });
     // To be added with the pagination for the previous page
     nextPageQuery['$and'].push({
         $or: [
-            { createdAt: { $lt: new Date(nextCursor.createdAt) } },
-            { createdAt: new Date(nextCursor.createdAt), _id: { $lt: nextCursor._id } }
+            {createdAt: {$lt: new Date(nextCursor.createdAt)}},
+            {createdAt: new Date(nextCursor.createdAt), _id: {$lt: nextCursor._id}}
         ]
     });
     const isNextPage = await Invoice.aggregate([
         ...aggregateLookups,
-        { $match: { ...nextPageQuery } },
-        { $sort: { createdAt: -1, _id: -1 } },
-        { $limit: 1 }
+        {$match: {...nextPageQuery}},
+        {$sort: {createdAt: -1, _id: -1}},
+        {$limit: 1}
     ]);
 
     /**
      * Check if previous page is availabe
      */
-    let previousCursor = { createdAt: invoices[0]?.createdAt, _id: invoices[0]?._id };
+    let previousCursor = {createdAt: invoices[0]?.createdAt, _id: invoices[0]?._id};
     // Deep clone filterQuery
-    const previousPageQuery: any = { $and: [] };
-    filterQuery['$and'].map((q: any) => { previousPageQuery['$and'].push({ ...q }) });
+    const previousPageQuery: any = {$and: []};
+    filterQuery['$and'].map((q: any) => {
+        previousPageQuery['$and'].push({...q})
+    });
     // To be added with the pagination for the previous page
     previousPageQuery['$and'].push({
         $or: [
-            { createdAt: { $gt: new Date(previousCursor.createdAt) } },
-            { createdAt: new Date(previousCursor.createdAt), _id: { $gt: previousCursor._id } }
+            {createdAt: {$gt: new Date(previousCursor.createdAt)}},
+            {createdAt: new Date(previousCursor.createdAt), _id: {$gt: previousCursor._id}}
         ]
     });
     const isPreviousPage = await Invoice.aggregate([
         ...aggregateLookups,
-        { $match: { ...previousPageQuery } },
-        { $sort: { createdAt: 1, _id: 1 } },
-        { $limit: 1 }
+        {$match: {...previousPageQuery}},
+        {$sort: {createdAt: 1, _id: 1}},
+        {$limit: 1}
     ]).allowDiskUse(true);
 
     // Retrieve number of the unsynced invoices
-    let filterUnsynced:any = {};
+    let filterUnsynced: any = {};
 
     if (workType) {
         let workTypeIds: any[] = [];
@@ -2782,8 +3014,10 @@ export const getInvoices = async (req: Request, res: Response) => {
             workTypeIds = workTypeArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {};
-        filterUnsynced["workType"] = { $in : workTypeIds };
+        } catch (error) {
+        }
+        ;
+        filterUnsynced["workType"] = {$in: workTypeIds};
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
@@ -2792,14 +3026,15 @@ export const getInvoices = async (req: Request, res: Response) => {
             companyLocationIds = companyLocationArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {}
-        filterUnsynced["companyLocation"] = { $in : companyLocationIds };
+        } catch (error) {
+        }
+        filterUnsynced["companyLocation"] = {$in: companyLocationIds};
     }
 
     const unsyncedInvoices = await Invoice.find({
         company: companyId,
-        isDraft: { $ne: true },
-        isVoid: { $ne: true },
+        isDraft: {$ne: true},
+        isVoid: {$ne: true},
         quickbookId: null,
         ...filterUnsynced
     })?.countDocuments();
@@ -2837,44 +3072,44 @@ export const getUnsyncedInvoices = async (req: Request, res: Response) => {
     // Data query that used to search unsynced Invoices
     const filterQuery: any = {
         $and: [
-            { company: companyId },
-            { isDraft: { $ne: true } },
-            { isVoid: { $ne: true } },
-            { quickbookId: null }
+            {company: companyId},
+            {isDraft: {$ne: true}},
+            {isVoid: {$ne: true}},
+            {quickbookId: null}
         ]
     }
 
     // Check and add if params filter provided
     if (params.keyword) {
-        const keywordRegex = { $regex: params.keyword, $options: 'i' };
+        const keywordRegex = {$regex: params.keyword, $options: 'i'};
         filterQuery['$and'].push({
             $or: [
-                { invoiceId: keywordRegex },
-                { status: keywordRegex },
-                { customerPO: keywordRegex },
-                { vendorId: keywordRegex },
-                { 'jobObj.jobId': keywordRegex },
-                { 'customerObj.profile.displayName': keywordRegex },
-                { 'jobLocationObj.name': keywordRegex },
-                { 'jobLocationObj.address.street': keywordRegex },
-                { 'jobLocationObj.address.city': keywordRegex },
-                { 'jobSiteObj.name': keywordRegex },
-                { 'jobSiteObj.address.street': keywordRegex },
-                { 'jobSiteObj.address.city': keywordRegex },
-                { 'technicianObj.profile.displayName': keywordRegex },
-                { 'contractorsObj.info.companyName': keywordRegex },
+                {invoiceId: keywordRegex},
+                {status: keywordRegex},
+                {customerPO: keywordRegex},
+                {vendorId: keywordRegex},
+                {'jobObj.jobId': keywordRegex},
+                {'customerObj.profile.displayName': keywordRegex},
+                {'jobLocationObj.name': keywordRegex},
+                {'jobLocationObj.address.street': keywordRegex},
+                {'jobLocationObj.address.city': keywordRegex},
+                {'jobSiteObj.name': keywordRegex},
+                {'jobSiteObj.address.street': keywordRegex},
+                {'jobSiteObj.address.city': keywordRegex},
+                {'technicianObj.profile.displayName': keywordRegex},
+                {'contractorsObj.info.companyName': keywordRegex},
             ]
         })
     }
     if (params.customerId) {
-        filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
+        filterQuery['$and'].push({customer: new ObjectId(params.customerId)});
     }
     if (params.dueDate) {
         const dueDate = moment(params.dueDate).endOf('day').format();
-        filterQuery['$and'].push({ dueDate: { $lte: new Date(dueDate) } });
+        filterQuery['$and'].push({dueDate: {$lte: new Date(dueDate)}});
     }
     if (params.status) {
-        filterQuery['$and'].push({ status: { $in: JSON.parse(params.status) } });
+        filterQuery['$and'].push({status: {$in: JSON.parse(params.status)}});
     }
 
     if (workType) {
@@ -2884,8 +3119,10 @@ export const getUnsyncedInvoices = async (req: Request, res: Response) => {
             workTypeIds = workTypeArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {};
-        filterQuery['$and'].push({ workType: { $in : workTypeIds }});
+        } catch (error) {
+        }
+        ;
+        filterQuery['$and'].push({workType: {$in: workTypeIds}});
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
@@ -2894,45 +3131,57 @@ export const getUnsyncedInvoices = async (req: Request, res: Response) => {
             companyLocationIds = companyLocationArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {}
-        filterQuery['$and'].push({ companyLocation: { $in : companyLocationIds }});
+        } catch (error) {
+        }
+        filterQuery['$and'].push({companyLocation: {$in: companyLocationIds}});
     }
 
     const invoices = await Invoice.find(filterQuery)
         .populate({
             path: 'job',
             populate: [
-                { path: 'type', select: 'title description sku' },
-                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
-                { path: 'customer', select: 'info auth.email profile address contact vendorId contactName contactEmail' },
-                { path: 'tasks.technician', select: 'profile auth.email contact permissions.role' },
-                { path: 'tasks.contractor', select: 'info address contact', populate: { path: 'admin', select: 'profile auth.email contact permissions.role' } },
-                { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
-                { path: 'jobLocation', select: 'name location address' },
-                { path: 'jobSite', select: 'name location address' }
+                {path: 'type', select: 'title description sku'},
+                {path: 'tasks.jobTypes.jobType', select: 'title description sku'},
+                {path: 'customer', select: 'info auth.email profile address contact vendorId contactName contactEmail'},
+                {path: 'tasks.technician', select: 'profile auth.email contact permissions.role'},
+                {
+                    path: 'tasks.contractor',
+                    select: 'info address contact',
+                    populate: {path: 'admin', select: 'profile auth.email contact permissions.role'}
+                },
+                {path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId'}},
+                {path: 'jobLocation', select: 'name location address'},
+                {path: 'jobSite', select: 'name location address'}
             ],
         })
         .populate({
             path: 'purchaseOrder',
             select: 'purchaseOrderId items equipment status estimate note total',
             populate: [
-                { path: 'equipment', select: 'info maintenance type brand', populate: [{ path: 'type', select: 'title' }, { path: 'brand', select: 'title' }] },
-                { path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price' }
+                {
+                    path: 'equipment',
+                    select: 'info maintenance type brand',
+                    populate: [{path: 'type', select: 'title'}, {path: 'brand', select: 'title'}]
+                },
+                {path: 'items.part', select: 'name itemCode description totalQuantity availableQuantity cost price'}
             ]
         })
         .populate({
             path: 'items.item',
             select: 'name description sku isFixed charges tax',
-            populate: [{ path: 'jobType' }]
+            populate: [{path: 'jobType'}]
         })
-        .populate({ path: 'paymentTerm', select: '-company -__v' })
-        .populate({ path: 'customerContactId', select: '-__v' })
-        .populate({ path: 'company', select: 'info address contact' })
-        .populate({ path: 'customer', select: 'info auth.email profile address contact vendorId contactName contactEmail' })
-        .populate({ path: 'jobLocation', select: 'name address location' })
-        .populate({ path: 'jobSite', select: 'name address location' })
-        .populate({ path: 'estimate', select: 'total items note status customer company createdAt createdBy' })
-        .populate({ path: 'createdBy', select: 'info auth.email profile permissions.role address contact' });
+        .populate({path: 'paymentTerm', select: '-company -__v'})
+        .populate({path: 'customerContactId', select: '-__v'})
+        .populate({path: 'company', select: 'info address contact'})
+        .populate({
+            path: 'customer',
+            select: 'info auth.email profile address contact vendorId contactName contactEmail'
+        })
+        .populate({path: 'jobLocation', select: 'name address location'})
+        .populate({path: 'jobSite', select: 'name address location'})
+        .populate({path: 'estimate', select: 'total items note status customer company createdAt createdBy'})
+        .populate({path: 'createdBy', select: 'info auth.email profile permissions.role address contact'});
 
     return res.json({
         status: Status.Success,
@@ -2944,24 +3193,24 @@ export const getUnsyncedInvoices = async (req: Request, res: Response) => {
 
 export const getCompanyInvoices = (req: Request, res: Response) => {
 
-    CompanyInvoice.find({ 'company': req.companyId })
+    CompanyInvoice.find({'company': req.companyId})
         .populate('company')
         .exec((err: any, invoices: IInvoice[]) => {
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': err.message })
+                return res.json({'status': Status.Error, 'message': err.message})
             }
-            return res.json({ 'status': Status.Success, 'companyInvoices': invoices })
+            return res.json({'status': Status.Success, 'companyInvoices': invoices})
         });
 }
 export const getCompanyInvoiceDetails = (req: Request, res: Response) => {
     const companyInvoiceId = req.query.companyInvoiceId;
-    CompanyInvoice.find({ 'company': req.companyId, _id: new ObjectId(companyInvoiceId) })
+    CompanyInvoice.find({'company': req.companyId, _id: new ObjectId(companyInvoiceId)})
         .populate('company')
         .exec((err: any, invoices: IInvoice[]) => {
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': err.message })
+                return res.json({'status': Status.Error, 'message': err.message})
             }
-            return res.json({ 'status': Status.Success, 'companyInvoice': invoices })
+            return res.json({'status': Status.Success, 'companyInvoice': invoices})
         });
 }
 
@@ -2977,7 +3226,7 @@ export const getCompanyInvoiceDetails = (req: Request, res: Response) => {
  * Add or deduct customer balance,
  * Create, update, or remove QB Invoice
  */
-const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company: ICompany, customer: ICustomer, invoice: IInvoice, oldIsDraft: boolean, next: (errMsg: string, invoice: IInvoice, qbInvoice: IQBInvoice) => void) => {
+const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company: ICompany, customer: ICustomer, invoice: IInvoice, oldIsDraft: boolean, next: (errMsg: string, invoice: IInvoice, qbInvoice: IQBInvoice) => void, job?: IJob) => {
 
     // Retrieve the latest invoice
     invoice = await Invoice.findById(invoice._id);
@@ -2987,31 +3236,32 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
          * Update & switch from DRAFT to ACTIVE invoice
          */
 
-        // Add customer balance
+            // Add customer balance
         const balance = customer.balance + invoice.total;
-        Customer.findByIdAndUpdate(customer._id, { balance }).exec();
+        Customer.findByIdAndUpdate(customer._id, {balance}).exec();
 
+        
         const techniciansEntry = []
         if (invoice.job) {
-            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id })
+            const invoiceCommission = await InvoiceCommission.findOne({invoice: invoice._id})
             if (invoiceCommission) {
                 if (invoiceCommission?.technicians) {
                     const totalTechnician = invoiceCommission.technicians.length;
                     for (const invoiceCommissionTechnician of invoiceCommission.technicians) {
                         if (invoiceCommissionTechnician.contractor) {
-                            const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
+                            const contractor = await Company.findOne({_id: invoiceCommissionTechnician.contractor}).exec();
                             const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
                             const contractorBalance = contractor.balance + Number(commission.toFixed(2));
-                            await Company.findByIdAndUpdate(invoiceCommissionTechnician.contractor, { balance: contractorBalance }).exec();
-                            await InvoiceCommission.findByIdAndUpdate(invoiceCommissionTechnician.contractor, { commissionAmount: Number(commission.toFixed(2)) }).exec();
+                            await Company.findByIdAndUpdate(invoiceCommissionTechnician.contractor, {balance: contractorBalance}).exec();
+                            await InvoiceCommission.findByIdAndUpdate(invoiceCommissionTechnician.contractor, {commissionAmount: Number(commission.toFixed(2))}).exec();
                         }
 
                         if (invoiceCommissionTechnician.technician && !invoiceCommissionTechnician.contractor) {
-                            const technician = await User.findOne({ _id: invoiceCommissionTechnician.technician }).exec();
+                            const technician = await User.findOne({_id: invoiceCommissionTechnician.technician}).exec();
                             const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
                             const technicianBalance = technician.balance + Number(commission.toFixed(2));
-                            await User.findByIdAndUpdate(invoiceCommissionTechnician.technician, { balance: technicianBalance }).exec();
-                            await InvoiceCommission.findByIdAndUpdate(invoiceCommissionTechnician.technician, { commissionAmount: Number(commission.toFixed(2)) }).exec();
+                            await User.findByIdAndUpdate(invoiceCommissionTechnician.technician, {balance: technicianBalance}).exec();
+                            await InvoiceCommission.findByIdAndUpdate(invoiceCommissionTechnician.technician, {commissionAmount: Number(commission.toFixed(2))}).exec();
                         }
                     }
                 }
@@ -3022,7 +3272,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                     const totalTechnician = job.tasks.length;
                     for (const task of job?.tasks) {
                         if (task.contractor) {
-                            const contractor = await Company.findOne({ _id: task.contractor }).exec();
+                            const contractor = await Company.findOne({_id: task.contractor}).exec();
                             const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
                             const contractorEntry = {
                                 contractor: contractor._id,
@@ -3031,7 +3281,8 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                                 commissionAmount: Number(commission.toFixed(2))
                             }
 
-                            if (contractor) {
+                            if (contractor && contractor.commissionType != "fixed") {
+                                
                                 contractor.balance += Number(commission.toFixed(2));
                                 contractor.save();
                             }
@@ -3040,7 +3291,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                         }
 
                         if (task.technician && !task.contractor) {
-                            const technician = await User.findOne({ _id: task.technician }).exec();
+                            const technician = await User.findOne({_id: task.technician}).exec();
                             const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
                             const invoiceTechnicianEntry: any = {
                                 technician: technician._id,
@@ -3068,7 +3319,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
             }
         }
 
-        const jobReport = await JobReport.findOne({ job: invoice.job });
+        const jobReport = await JobReport.findOne({job: invoice.job});
         if (jobReport) {
             jobReport.invoiceCreated = true;
             jobReport.invoice = invoice._id;
@@ -3118,30 +3369,30 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
          * Update & switch from ACTIVE to DRAFT invoice
          */
 
-        // Deduct customer balance
+            // Deduct customer balance
         const balance = customer.balance -= invoice.total;
-        Customer.findByIdAndUpdate(customer._id, { balance }).exec();
+        Customer.findByIdAndUpdate(customer._id, {balance}).exec();
 
         if (invoice.job && invoice.commission) {
-            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id })
+            const invoiceCommission = await InvoiceCommission.findOne({invoice: invoice._id})
             if (invoiceCommission.technicians) {
                 const totalTechnician = invoiceCommission.technicians.length;
                 for (const invoiceCommissionTechnician of invoiceCommission?.technicians) {
                     if (invoiceCommissionTechnician.contractor) {
-                        const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
+                        const contractor = await Company.findOne({_id: invoiceCommissionTechnician.contractor}).exec();
                         if (contractor) {
                             const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
                             const contractorBalance = contractor.balance - Number(commission.toFixed(2));
-                            await Company.findByIdAndUpdate(invoiceCommissionTechnician.contractor, { balance: contractorBalance }).exec();
+                            await Company.findByIdAndUpdate(invoiceCommissionTechnician.contractor, {balance: contractorBalance}).exec();
                         }
                     }
 
                     if (invoiceCommissionTechnician.technician && !invoiceCommissionTechnician.contractor) {
-                        const technician = await User.findOne({ _id: invoiceCommissionTechnician.technician }).exec();
+                        const technician = await User.findOne({_id: invoiceCommissionTechnician.technician}).exec();
                         if (technician) {
                             const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
                             const technicianBalance = technician.balance - Number(commission.toFixed(2));
-                            await User.findByIdAndUpdate(invoiceCommissionTechnician.technician, { balance: technicianBalance }).exec();
+                            await User.findByIdAndUpdate(invoiceCommissionTechnician.technician, {balance: technicianBalance}).exec();
                         }
                     }
                 }
@@ -3149,7 +3400,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         }
 
         // Remove Job Report invoice
-        const jobReport = await JobReport.findOne({ job: invoice.job });
+        const jobReport = await JobReport.findOne({job: invoice.job});
         if (jobReport) {
             jobReport.invoiceCreated = false;
             jobReport.invoice = null;
@@ -3257,6 +3508,29 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 
 }
 
+async function convertImageToBase64(imageUrl: string) {
+    try {
+        const response = await axios.get(imageUrl, {responseType: 'arraybuffer'});
+        const base64Image = Buffer.from(response.data, 'binary').toString('base64');
+        return `data:image/png;base64,${base64Image}`;
+    } catch (error) {
+        console.error('Error fetching image:', error);
+        throw error;
+    }
+}
+
+async function convertImagesToBase64(images: string[]): Promise<string[]> {
+    try {
+        const base64Images = await Promise.all(images.map(async (image) => {
+            return await convertImageToBase64(image);
+        }));
+        return base64Images;
+    } catch (error) {
+        console.error('Error converting images to base64:', error);
+        throw error;
+    }
+}
+
 export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) => {
 
     // Initialize PDF Make
@@ -3272,6 +3546,60 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const ticket = <IServiceTicket>job?.ticket;
     const companyLocation = <ICompanyLocation>invoice?.companyLocation;
     const customerContact = <IContact>invoice.customerContactId ?? job?.customerContactId;
+
+
+    const jobNote = {
+        id: (await ticket?._id)?.toString() ?? "",
+        comment: ticket?.note ?? ""
+    };
+    const jobImgs = ticket?.images?.map(image => image?.imageUrl) ?? [];
+    const technicianNote = invoice?.technicianMessages?.notes?.filter((note) => note?.id !== jobNote.id)[0]?.comment ?? '';
+    const jobNotes = invoice?.technicianMessages?.notes?.filter(note => note?.id === jobNote?.id)[0]?.comment ?? '';
+    const technicianImages = invoice?.technicianMessages?.images.filter((image) => !jobImgs.includes(image)) ?? [];
+    const jobImages = invoice?.technicianMessages?.images?.filter((image) => jobImgs?.includes(image)) ?? [];
+
+    const base64Images = await convertImagesToBase64(invoice?.technicianMessages?.images);
+    const base64JobImages = await convertImagesToBase64(jobImages);
+    const base64TechnicianImages = await convertImagesToBase64(technicianImages);
+
+    let numbOfColumns = 5;
+
+    let jobImagesForPDF = []
+    for (let j = 0; j < base64JobImages.length; j++) {
+        jobImagesForPDF.push({image: base64JobImages[j], width: 150})
+    }
+    const jobNumRows = Math.ceil(jobImagesForPDF.length / numbOfColumns);
+    const jobBase64ImagesRows = [];
+    for (let i = 0; i < jobNumRows; i++) {
+        const start = i * numbOfColumns;
+        const end = Math.min(start + numbOfColumns, jobImagesForPDF.length);
+        const rowImages = jobImagesForPDF.slice(start, end);
+
+        jobBase64ImagesRows.push({
+            margin: [30, 0, 0, 30],
+            columnGap: 2,
+            columns: rowImages,
+        });
+    }
+
+    let technicianImagesForPDF = []
+    for (var j = 0; j < base64TechnicianImages.length; j++) {
+        technicianImagesForPDF.push({image: base64TechnicianImages[j], width: 150})
+    }
+    const numRows = Math.ceil(technicianImagesForPDF.length / numbOfColumns);
+    const techBase64ImagesRows = [];
+    for (let i = 0; i < numRows; i++) {
+        const start = i * numbOfColumns;
+        const end = Math.min(start + numbOfColumns, technicianImagesForPDF.length);
+        const rowImages = technicianImagesForPDF.slice(start, end);
+
+        techBase64ImagesRows.push({
+            margin: [30, 0, 0, 30],
+            columnGap: 2,
+            columns: rowImages,
+        });
+    }
+
 
     // Construct Billing Address object
     const billingAddress = {
@@ -3290,8 +3618,8 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     }
 
     // Construct default Job Service Address and Job Site Address object
-    const jobAddress: any = { ...customerAddress };
-    const jobSiteAddress: any = { ...customerAddress };
+    const jobAddress: any = {...customerAddress};
+    const jobSiteAddress: any = {...customerAddress};
 
     if (job) {
         // Take Job Location address if any
@@ -3350,7 +3678,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
         widths: [20, 220, 50, 110, 48, 110, 20],
         body: [
             [
-                { text: '', style: 'itemTitle' },
+                {text: '', style: 'itemTitle'},
                 {
                     text: "Service / Product",
                     style: "itemTitle",
@@ -3375,7 +3703,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                     style: "itemTitle",
                     alignment: "right",
                 },
-                { text: '', style: 'itemTitle' },
+                {text: '', style: 'itemTitle'},
             ],
         ],
     }
@@ -3389,14 +3717,14 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             {},
             {
                 stack: [
-                    { text: `${item.name ?? itemPopulated?.name ?? ''}`, style: 'itemListBold' },
-                    { text: `${item.description ?? itemPopulated?.description ?? ''}`, style: 'itemList' }
+                    {text: `${item.name ?? itemPopulated?.name ?? ''}`, style: 'itemListBold'},
+                    {text: `${item.description ?? itemPopulated?.description ?? ''}`, style: 'itemList'}
                 ]
             },
-            { text: item.quantity, style: 'itemListCenter' },
-            { text: `${helper.delimiterEnUs(item.price)}`, style: 'itemListCenter' },
-            { text: item.taxAmount === 0 ? '' : '', style: 'icon' },
-            { text: `${helper.delimiterEnUs(item.subTotal)}`, style: 'itemListRight' },
+            {text: item.quantity, style: 'itemListCenter'},
+            {text: `${helper.delimiterEnUs(item.price)}`, style: 'itemListCenter'},
+            {text: item.taxAmount === 0 ? '' : '', style: 'icon'},
+            {text: `${helper.delimiterEnUs(item.subTotal)}`, style: 'itemListRight'},
             {}
         ]);
     });
@@ -3439,29 +3767,41 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {},
                             {},
                             {
-                                text: `${billingAddress.street}\n${billingAddress.city}${billingAddress.state ? ', ' + billingAddress.state: ''}${billingAddress.zipCode? ', ' + billingAddress.zipCode : ''}\n${company.contact?.phone ?? ''}`,
+                                text: `${billingAddress.street}\n${billingAddress.city}${billingAddress.state ? ', ' + billingAddress.state : ''}${billingAddress.zipCode ? ', ' + billingAddress.zipCode : ''}\n${company.contact?.phone ?? ''}`,
                                 style: 'invoiceHeader',
                                 margin: [0, 0, 0, 10],
                                 border: [false, false, false, true]
                             },
                             {
                                 stack: [
-                                    { text: 'Vendor Number', style: 'headerTitleBold' },
-                                    { text: invoice.vendorId ?? '', style: 'invoiceHeader' },
+                                    {text: 'Vendor Number', style: 'headerTitleBold'},
+                                    {text: invoice.vendorId ?? '', style: 'invoiceHeader'},
                                 ],
                                 margin: [0, -2, 0, 10],
                                 border: [false, false, false, true]
                             },
-                            { text: '', margin: [0, 0, 0, 10], border: [false, false, false, true] },
-                            {}
+
+                            {
+                                stack: [
+                                    {text: 'Job Number', style: 'headerTitleBold'},
+                                    {text: job?.jobId ?? '', style: 'invoiceHeader'},
+                                ],
+                                margin: [0, -2, 0, 10],
+                                border: [false, false, false, true]
+                            },
+                            {text: '', margin: [0, 0, 0, 10], border: [false, false, false, true]},
                         ]
                     ],
                 },
                 fillColor: '#F9FDFF',
                 layout: {
                     ...Layouts.noBorders,
-                    hLineColor: (i: number, node: any) => { return '#D0D3DC'; },
-                    hLineWidth: (i: number, node: any) => { return 1; }
+                    hLineColor: (i: number, node: any) => {
+                        return '#D0D3DC';
+                    },
+                    hLineWidth: (i: number, node: any) => {
+                        return 1;
+                    }
                 },
             },
             {
@@ -3476,15 +3816,15 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {},
                             {
                                 stack: [
-                                    { text: 'Bill To', style: 'headerTitle' },
-                                    { text: customer?.profile?.displayName ?? ' ', style: 'invoiceHeaderBold' }
+                                    {text: 'Bill To', style: 'headerTitle'},
+                                    {text: customer?.profile?.displayName ?? ' ', style: 'invoiceHeaderBold'}
                                 ],
                                 rowSpan: 2,
                                 margin: [0, 10, 0, 10],
                             },
                             {},
-                            { text: `Job PO/Sales Order:`, style: 'invoiceMetadataTitle', margin: [0, 10, 0, 0] },
-                            { text: invoice.customerPO ?? ' ', style: 'invoiceMetadata', margin: [0, 10, 0, 0] },
+                            {text: `Job PO/Sales Order:`, style: 'invoiceMetadataTitle', margin: [0, 10, 0, 0]},
+                            {text: invoice.customerPO ?? ' ', style: 'invoiceMetadata', margin: [0, 10, 0, 0]},
                             {}
                         ],
                         [
@@ -3492,17 +3832,23 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {}, {}, {},
                             {
                                 stack: [
-                                    { text: 'Invoice Date:', style: 'invoiceMetadataTitle' },
-                                    { text: 'Due Date:', style: 'invoiceMetadataTitle' },
-                                    { text: 'Terms:', style: 'invoiceMetadataTitle' }
+                                    {text: 'Invoice Date:', style: 'invoiceMetadataTitle'},
+                                    {text: 'Due Date:', style: 'invoiceMetadataTitle'},
+                                    {text: 'Terms:', style: 'invoiceMetadataTitle'}
                                 ],
                                 rowSpan: 2,
                             },
                             {
                                 stack: [
-                                    { text: `${moment(invoice.issuedDate ?? invoice.createdAt).format('MMM. DD, YYYY')}`, style: 'invoiceMetadata' },
-                                    { text: `${invoice.dueDate ? moment(invoice.dueDate).format('MMM. DD, YYYY') : ' '}`, style: 'invoiceMetadata' },
-                                    { text: paymentTerm?.name ?? ' ', style: 'invoiceMetadata' }
+                                    {
+                                        text: `${moment(invoice.issuedDate ?? invoice.createdAt).format('MMM. DD, YYYY')}`,
+                                        style: 'invoiceMetadata'
+                                    },
+                                    {
+                                        text: `${invoice.dueDate ? moment(invoice.dueDate).format('MMM. DD, YYYY') : ' '}`,
+                                        style: 'invoiceMetadata'
+                                    },
+                                    {text: paymentTerm?.name ?? ' ', style: 'invoiceMetadata'}
                                 ],
                                 rowSpan: 2,
                             },
@@ -3514,10 +3860,13 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {},
                             {
                                 stack: [
-                                    { text: 'Subdivision', style: 'headerTitle' },
-                                    { text: jobAddress.name ?? ' ', style: 'invoiceHeader' },
-                                    { text: 'Job Address', style: 'headerTitle', margin: [0, 10, 0, 0] },
-                                    { text: `${jobSiteAddress.name ?? ' '}${jobSiteAddress.street ?? ' '}`, style: 'invoiceHeader' }
+                                    {text: 'Subdivision', style: 'headerTitle'},
+                                    {text: jobAddress.name ?? ' ', style: 'invoiceHeader'},
+                                    {text: 'Job Address', style: 'headerTitle', margin: [0, 10, 0, 0]},
+                                    {
+                                        text: `${jobSiteAddress.name ?? ' '}${jobSiteAddress.street ?? ' '}`,
+                                        style: 'invoiceHeader'
+                                    }
                                 ],
                                 rowSpan: 2,
                                 margin: [0, 0, 0, 10],
@@ -3525,8 +3874,8 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             },
                             {
                                 stack: [
-                                    { text: 'Contact Details', style: 'headerTitle' },
-                                    { text: customerContact?.name ?? ' ', style: 'invoiceHeader' }
+                                    {text: 'Contact Details', style: 'headerTitle'},
+                                    {text: customerContact?.name ?? ' ', style: 'invoiceHeader'}
                                 ],
                                 margin: [0, 0, 0, 5],
                             },
@@ -3539,8 +3888,8 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                             {}, {},
                             {
                                 stack: [
-                                    { text: customerContact?.phone ?? ' ', style: 'invoiceHeader' },
-                                    { text: customerContact?.email ?? ' ', style: 'invoiceHeader' }
+                                    {text: customerContact?.phone ?? ' ', style: 'invoiceHeader'},
+                                    {text: customerContact?.email ?? ' ', style: 'invoiceHeader'}
                                 ],
                                 colSpan: 3,
                                 margin: [0, 0, 0, 10],
@@ -3553,8 +3902,12 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                 fillColor: '#F9FDFF',
                 layout: {
                     ...Layouts.noBorders,
-                    hLineColor: (i: number, node: any) => { return '#D0D3DC'; },
-                    hLineWidth: (i: number, node: any) => { return 1; }
+                    hLineColor: (i: number, node: any) => {
+                        return '#D0D3DC';
+                    },
+                    hLineWidth: (i: number, node: any) => {
+                        return 1;
+                    }
                 },
             },
             {
@@ -3562,10 +3915,18 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                 table,
                 layout: {
                     ...Layouts.custom,
-                    paddingLeft: (i: number, node: any) => { return 1; },
-                    paddingRight: (i: number, node: any) => { return 1; },
-                    paddingTop: (i: number, node: any) => { return 5; },
-                    paddingBottom: (i: number, node: any) => { return 5; },
+                    paddingLeft: (i: number, node: any) => {
+                        return 1;
+                    },
+                    paddingRight: (i: number, node: any) => {
+                        return 1;
+                    },
+                    paddingTop: (i: number, node: any) => {
+                        return 5;
+                    },
+                    paddingBottom: (i: number, node: any) => {
+                        return 5;
+                    },
                 },
             },
             {
@@ -3575,46 +3936,152 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                     body: [
                         [
                             {},
-                            { text: 'Subtotal:', style: 'itemListRight', border: [false, false, false, true] },
-                            { text: `${helper.delimiterEnUs(invoice.subTotal)}`, style: 'itemListRight', border: [false, false, false, true] },
+                            {text: 'Subtotal:', style: 'itemListRight', border: [false, false, false, true]},
+                            {
+                                text: `${helper.delimiterEnUs(invoice.subTotal)}`,
+                                style: 'itemListRight',
+                                border: [false, false, false, true]
+                            },
                             {}
                         ],
                         [
                             {},
-                            { text: 'Tax:', style: 'itemListRight', border: [false, false, false, true] },
-                            { text: `${helper.delimiterEnUs(invoice.taxAmount)}`, style: 'itemListRight', border: [false, false, false, true] },
+                            {text: 'Tax:', style: 'itemListRight', border: [false, false, false, true]},
+                            {
+                                text: `${helper.delimiterEnUs(invoice.taxAmount)}`,
+                                style: 'itemListRight',
+                                border: [false, false, false, true]
+                            },
                             {}
                         ],
                         [
                             {},
-                            { text: 'Total:', style: 'itemListRight', border: [false, false, false, true] },
-                            { text: `${helper.delimiterEnUs(invoice.total)}`, style: 'itemListRight', border: [false, false, false, true] },
+                            {text: 'Total:', style: 'itemListRight', border: [false, false, false, true]},
+                            {
+                                text: `${helper.delimiterEnUs(invoice.total)}`,
+                                style: 'itemListRight',
+                                border: [false, false, false, true]
+                            },
                             {}
                         ],
                         [
                             {},
-                            { text: 'Payments Applied:', style: 'itemListRight', border: [false, false, false, true] },
-                            { text: `${helper.delimiterEnUs(invoice.paymentApplied)}`, style: 'itemListRight', border: [false, false, false, true] },
+                            {text: 'Payments Applied:', style: 'itemListRight', border: [false, false, false, true]},
+                            {
+                                text: `${helper.delimiterEnUs(invoice.paymentApplied)}`,
+                                style: 'itemListRight',
+                                border: [false, false, false, true]
+                            },
                             {}
                         ],
                         [
                             {},
-                            { text: 'AMOUNT DUE:', style: 'amountDueTitle', border: [false, false, false, true] },
-                            { text: `${helper.delimiterEnUs(invoice.balanceDue)}`, style: 'amountDue', border: [false, false, false, true] },
+                            {text: 'AMOUNT DUE:', style: 'amountDueTitle', border: [false, false, false, true]},
+                            {
+                                text: `${helper.delimiterEnUs(invoice.balanceDue)}`,
+                                style: 'amountDue',
+                                border: [false, false, false, true]
+                            },
                             {}
                         ]
                     ]
                 },
                 layout: {
                     ...Layouts.noBorders,
-                    hLineColor: (i: number, node: any) => { return '#D0D3DC'; },
-                    hLineWidth: (i: number, node: any) => { return 1; },
-                    paddingLeft: (i: number, node: any) => { return 1; },
-                    paddingRight: (i: number, node: any) => { return 1; },
-                    paddingTop: (i: number, node: any) => { return 5; },
-                    paddingBottom: (i: number, node: any) => { return 5; },
+                    hLineColor: (i: number, node: any) => {
+                        return '#D0D3DC';
+                    },
+                    hLineWidth: (i: number, node: any) => {
+                        return 1;
+                    },
+                    paddingLeft: (i: number, node: any) => {
+                        return 1;
+                    },
+                    paddingRight: (i: number, node: any) => {
+                        return 1;
+                    },
+                    paddingTop: (i: number, node: any) => {
+                        return 5;
+                    },
+                    paddingBottom: (i: number, node: any) => {
+                        return 5;
+                    },
                 },
-            }
+            },
+            {
+                text: '', // Empty text to create a new page
+                pageBreak: 'after' // Create a new page after this element
+            },
+            // {
+            //     rowSpan:2, image: base64Image,
+            // },
+            // {
+            //     margin: [2, 2, 2, 2],
+            //     columnGap: 3,
+            //     columns: rows,
+            // },
+            // ...rows,
+
+            {
+                table: {
+                    widths: [10, 900, 900, 900, 900, 10],
+                    body: [
+                        [
+                            {},
+                            {
+                                stack: [
+                                    {text: 'Job/Ticket Details', style: 'headerTitle'},
+                                    {text: jobNotes, style: 'invoiceHeaderBold'}
+                                ],
+                                rowSpan: 2,
+                                margin: [0, 10, 0, 10]
+                            }, {}, {}, {}, {}
+                        ],
+                        [{}, {}, {}, {}, {}, {}]
+                    ]
+                },
+                fillColor: '#ffffff',
+                layout: {
+                    ...Layouts.noBorders,
+                    hLineColor: (i: number, node: any) => {
+                        return '#D0D3DC';
+                    },
+                    hLineWidth: (i: number, node: any) => {
+                        return 1;
+                    }
+                },
+            },
+            ...jobBase64ImagesRows,
+            {
+                table: {
+                    widths: [10, 900, 900, 900, 900, 10],
+                    body: [
+                        [
+                            {},
+                            {
+                                stack: [
+                                    {text: 'Technician comments', style: 'headerTitle'},
+                                    {text: technicianNote, style: 'invoiceHeaderBold'}
+                                ],
+                                rowSpan: 2,
+                                margin: [0, 10, 0, 10]
+                            }, {}, {}, {}, {}
+                        ],
+                        [{}, {}, {}, {}, {}, {}]
+                    ]
+                },
+                fillColor: '#ffffff',
+                layout: {
+                    ...Layouts.noBorders,
+                    hLineColor: (i: number, node: any) => {
+                        return '#D0D3DC';
+                    },
+                    hLineWidth: (i: number, node: any) => {
+                        return 1;
+                    }
+                },
+            },
+            ...techBase64ImagesRows,
         ],
         footer: (currentPage: number, pageCount: number) => {
             return [{
@@ -3634,7 +4101,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                     ],
                 },
                 fillColor: '#F9FDFF',
-                layout: { ...Layouts.noBorders },
+                layout: {...Layouts.noBorders},
             }]
         },
         styles: Styles.invoice,
@@ -3671,9 +4138,9 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             }
             resolve('');
         })
-        .on('error', (error) => {
-            reject('Error in _generateInvoicePdf: ' + error);
-        });
+            .on('error', (error) => {
+                reject('Error in _generateInvoicePdf: ' + error);
+            });
     });
 }
 
@@ -3736,6 +4203,7 @@ export const updateCommission = async (req: Request, res: Response) => {
         technicianOrContractor: params.id,
         effectiveDate: params.commissionEffectiveDate,
         commission: params.commission,
+        commissionType: params.commissionType,
         type: params.type,
         editedBy: {
             id: user._id,
@@ -3743,23 +4211,35 @@ export const updateCommission = async (req: Request, res: Response) => {
         },
     });
 
+    const isFixed = params.commissionType === 'fixed'
+
     await commissionHistory.save();
 
     switch (params.type) {
         case 'vendor':
             const contractor = await Company.findById(params.id).exec();
             if (!contractor) {
-                return res.json({ status: Status.Error, message: 'Vendor not found' });
+                return res.json({status: Status.Error, message: 'Vendor not found'});
+            }
+
+            // Update vendor's commission rate
+            contractor.commissionType = params.commissionType ?? '%';
+            if (isFixed) {
+                contractor.commission = 0;
+                contractor.commissionTier = params.commissionTier;
+            } else {
+                contractor.commission = params.commission ?? null;
+                contractor.commissionTier = null;
             }
 
             // Check if the date is greater than today, if so, do nothing... else, do as you used to..
-            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day')) {
+            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day') && !isFixed) {
                 // Update vendor's commission rate
                 contractor.commission = params.commission ?? null;
 
                 // Find if vendor already have invoice commission
                 // --should only happen if the invoice issued date is greater than the effective date
-                const contractorInvoiceCommissions = await InvoiceCommission.find({ 'technicians.contractor': contractor._id })
+                const contractorInvoiceCommissions = await InvoiceCommission.find({'technicians.contractor': contractor._id})
                     .populate('invoice')
                     .exec();
 
@@ -3798,13 +4278,68 @@ export const updateCommission = async (req: Request, res: Response) => {
                 }
             }
 
+            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day') && isFixed) {
+                const jobCommissions = await JobCommission.find({ 'technicians.contractor': contractor._id })
+                .populate('job')
+                .exec();
+
+                if (jobCommissions?.length) {
+                    // Iterate all job commissions
+                    for (const jobCommission of jobCommissions) {
+                        const job = <IJob>jobCommission.job;
+                        const contractorCommission = jobCommission?.technicians?.find((technician) => technician?.contractor?.toString() === contractor._id?.toString());
+
+                        if (!contractorCommission) {
+                            continue;
+                        }
+
+                        if (!contractorCommission.paid && (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment.utc(jobCommission?.createdAt), 'day'))) {
+                            /**
+                             * If job commission is not been paid,
+                             * update the amount with the new rate, else update
+                             **/
+                            contractorCommission.commission = params.commission ?? 0;
+                            contractorCommission.commissionAmount = 0;
+                            for (const task of job.tasks) {
+                                if (String(task.contractor) == String(contractor._id)) {
+                                    for (const j of task.jobTypes) {
+                                        const jobType = await Item.findOne({ jobType: j.jobType })
+
+                                        const commissionTier = contractor.commissionTier as IJobCosting;
+                                        const commissionTierId = commissionTier._id || contractor.commissionTier
+                                        if (commissionTierId) {
+                                            const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
+                                            if (commissionTier?.charge) {
+                                                contractorCommission.commissionAmount += commissionTier.charge
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            const commisionHistory = await CommissionHistory.find({job : job._id, technicianOrContractor: contractor._id}).sort( { createdAt: -1 } )
+                            if (commisionHistory.length) {
+                                contractorCommission.commissionAmount += commisionHistory[0].addition?.amount || 0;
+                                contractorCommission.commissionAmount -= commisionHistory[0].deduction?.amount || 0;
+                            }
+                        }
+
+                        // Recalculate vendor open balance
+                        commissionBalance += contractorCommission.commissionAmount ?? 0;
+                        await jobCommission.save();
+                    }
+
+                    // Update vendor balance and save vendor object
+                    contractor.balance = commissionBalance;
+                }
+            }
+
             await contractor.save();
-            return res.json({ status: Status.Success, message: 'Commission updated successfully', contractor });
+            return res.json({status: Status.Success, message: 'Commission updated successfully', contractor});
 
         case 'employee':
             const employee = await User.findById(params.id).exec();
             if (!employee) {
-                return res.json({ status: Status.Error, message: 'Employee not found' });
+                return res.json({status: Status.Error, message: 'Employee not found'});
             }
 
             // Check if the date is greater than today, if so, do not update commision... else, do as you used to..
@@ -3814,7 +4349,7 @@ export const updateCommission = async (req: Request, res: Response) => {
 
                 // Find if employee already have invoice commission
                 // --should only happen if the invoice issued date is greater than the effective date
-                const employeeInvoiceCommissions = await InvoiceCommission.find({ 'technicians.technician': employee._id })
+                const employeeInvoiceCommissions = await InvoiceCommission.find({'technicians.technician': employee._id})
                     .populate('invoice')
                     .exec();
 
@@ -3854,34 +4389,45 @@ export const updateCommission = async (req: Request, res: Response) => {
             } //else part here for commission processing if date is in future
 
             await employee.save();
-            return res.json({ status: Status.Success, message: 'Commission updated successfully', employee });
+            return res.json({status: Status.Success, message: 'Commission updated successfully', employee});
 
         default:
-            return res.json({ status: Status.Success, message: 'Type not supported. Available Type to be used: vendor or employee.' });
+            return res.json({
+                status: Status.Success,
+                message: 'Type not supported. Available Type to be used: vendor or employee.'
+            });
     }
 
 }
 
 export const getCommissionHistory = async (req: Request, res: Response) => {
-    const { beneficiaryId } = req.params;
-    const commissionHistories = await CommissionHistory.find({ technicianOrContractor: beneficiaryId })
+    const {beneficiaryId} = req.params;
+    const commissionHistories = await CommissionHistory.find({technicianOrContractor: beneficiaryId})
+    return res.json({'status': Status.OK, 'history': commissionHistories})
+}
+
+
+export const getCommissionHistoryByJob = async (req: Request, res: Response) => {
+    const { jobId } = req.params;
+    const commissionHistories = await CommissionHistory.find({ job: jobId })
     return res.json({ 'status': Status.OK, 'history': commissionHistories })
 }
 
+
 export const updateCommissionCron = async (req: Request, res: Response) => {
-    
+
     let start = new Date();
-    start.setHours(0,0,0,0);
+    start.setHours(0, 0, 0, 0);
 
     let end = new Date();
-    end.setHours(23, 59, 59, 999);    
-    // get commission_ histories whole effective date is today    
-    const commissionHistories = await CommissionHistory.find({ effectiveDate: { $gte: start, $lt: end } })
+    end.setHours(23, 59, 59, 999);
+    // get commission_ histories whole effective date is today
+    const commissionHistories = await CommissionHistory.find({effectiveDate: {$gte: start, $lt: end}})
     if (commissionHistories?.length > 0) {
         for (const history of commissionHistories) {
             //    if type is contractor
             if (history?.type === 'vendor') {
-                
+
                 const contractor = await Company.findById(history.technicianOrContractor).exec();
                 if (contractor) {
                     //update that commision
@@ -3891,17 +4437,17 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
             } else if (history?.type === 'employee') {
                 const employee = await User.findById(history.technicianOrContractor).exec();
                 if (employee) {
-                  // update employee
+                    // update employee
                     employee.commission = history.commission
                     await employee.save()
-                    
+
                 }
 
-            }                     
-            
+            }
+
         }
-    } 
-    return res.json({ status: Status.OK });
+    }
+    return res.json({status: Status.OK});
 }
 
 export const getInvoicesByContractor = async (req: Request, res: Response) => {
@@ -3913,38 +4459,38 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
     const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
 
     if (params.startDate && params.endDate) {
-        query = { issuedDate: { $gte: startDate, $lte: endDate } }
+        query = {issuedDate: {$gte: startDate, $lte: endDate}}
     }
 
     if (params.name) {
         // find to note or vendorId
         query.$or = [
-            { note: { $regex: params.name, $options: 'i' } },
-            { vendorId: { $regex: params.name, $options: 'i' } },
-            { invoiceId: { $regex: params.name, $options: 'i' } },
+            {note: {$regex: params.name, $options: 'i'}},
+            {vendorId: {$regex: params.name, $options: 'i'}},
+            {invoiceId: {$regex: params.name, $options: 'i'}},
         ]
     }
 
     if (!params.id) {
-        return res.json({ status: Status.Error, message: 'Id is required when type is vendor' });
+        return res.json({status: Status.Error, message: 'Id is required when type is vendor'});
     }
 
     switch (params.type) {
         case 'vendor':
-            jobQuery = { company, 'tasks.contractor': params.id }
+            jobQuery = {company, 'tasks.contractor': params.id}
             break;
 
         case 'employee':
-            jobQuery = { company, 'tasks.technician': params.id };
+            jobQuery = {company, 'tasks.technician': params.id};
             break;
 
         default:
-            return res.json({ status: Status.Error, message: 'Type is required' });
+            return res.json({status: Status.Error, message: 'Type is required'});
     }
 
     const jobs = await Job.find(jobQuery).exec();
     const jobIds = jobs.map(job => job._id);
-    const invoices = await Invoice.find({ company: req.companyId, job: { $in: jobIds }, ...query })
+    const invoices = await Invoice.find({company: req.companyId, job: {$in: jobIds}, ...query})
         .populate({
             path: 'job',
             populate: [{
@@ -3960,7 +4506,7 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
         .populate({
             path: 'items.item',
             select: 'name description sku itemCode note cost price',
-            populate: [{ path: 'jobType' }]
+            populate: [{path: 'jobType'}]
         })
         .populate({
             path: 'company',
@@ -3970,19 +4516,19 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
             path: 'customer',
             select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
         })
-        .populate({ path: 'jobLocation', select: 'name address location' })
-        .populate({ path: 'jobSite', select: 'name address location' })
-        .populate({ path: 'customerContactId', select: 'name phone email' })
+        .populate({path: 'jobLocation', select: 'name address location'})
+        .populate({path: 'jobSite', select: 'name address location'})
+        .populate({path: 'customerContactId', select: 'name phone email'})
         .populate({
             path: 'estimate',
             select: 'total items note status customer company createdBy'
         }).exec();
 
     if (!invoices) {
-        return res.json({ status: Status.Success, invoices: '' });
+        return res.json({status: Status.Success, invoices: ''});
     }
 
-    return res.json({ status: Status.Success, invoices });
+    return res.json({status: Status.Success, invoices});
 
 }
 
@@ -3993,23 +4539,26 @@ export const voidInvoice = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
 
     if (!invoice) {
-        return res.json({ status: Status.Error, message: 'Invoice not found.' });
+        return res.json({status: Status.Error, message: 'Invoice not found.'});
     }
     if (invoice.isVoid) {
-        return res.json({ status: Status.Error, message: 'Invoice already voided.' });
+        return res.json({status: Status.Error, message: 'Invoice already voided.'});
     }
 
     // TODO: Check more properly for all possible payments ?
     // const payment = await Payment.findOne({ invoice: invoice._id });
     // if (payment || invoice.status !== InvoiceStatus.UNPAID) {
     if (invoice.status !== InvoiceStatus.UNPAID) {
-        return res.json({ status: Status.Error, message: 'Invoice already paid or partially paid, cannot void this invoice.' });
+        return res.json({
+            status: Status.Error,
+            message: 'Invoice already paid or partially paid, cannot void this invoice.'
+        });
     }
 
-    const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
+    const invoiceCommission = await InvoiceCommission.findOne({invoice: invoice._id});
     // remove invoice commission if exsists
     if (invoiceCommission) {
-        await InvoiceCommission.deleteOne({ _id: invoiceCommission._id });
+        await InvoiceCommission.deleteOne({_id: invoiceCommission._id});
     }
 
     invoice.isVoid = true;
@@ -4023,10 +4572,10 @@ export const voidInvoice = async (req: Request, res: Response) => {
         await customer.save();
     }
 
-    const jobReport = await JobReport.findOne({ invoice: invoice._id });
+    const jobReport = await JobReport.findOne({invoice: invoice._id});
     // remove invoice and invoiceCreated in job report if exsists
     if (jobReport) {
-        await jobReport.updateOne({ $unset: { invoice: null, invoiceCreated: false } });
+        await jobReport.updateOne({$unset: {invoice: null, invoiceCreated: false}});
     }
 
     if (company.qbAuthorized && invoice.quickbookId) {
@@ -4034,7 +4583,7 @@ export const voidInvoice = async (req: Request, res: Response) => {
         await _voidQBInvoice(req, res, company, invoice);
     }
 
-    return res.json({ status: Status.Success, message: 'Invoice voided successfully', invoice });
+    return res.json({status: Status.Success, message: 'Invoice voided successfully', invoice});
 
 }
 
@@ -4042,19 +4591,26 @@ export const generateInvoicePdf = async (req: Request, res: Response) => {
     const params = req.query;
     const company = <ICompany>req.company;
     const invoice = await Invoice
-        .findOne({ _id: params.invoiceId, customer: params.customerId, company: company._id })
+        .findOne({_id: params.invoiceId, customer: params.customerId, company: company._id})
         .populate({
             path: 'job',
             populate: [
-                { path: 'type', select: 'title description sku' },
-                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
-                { path: 'customer', select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail' },
-                { path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
-                { path: 'tasks.contractor', select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax', populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' } },
-                { path: 'ticket', populate: { path: 'ticket', populate: 'customerContactId' } },
-                { path: 'jobLocation', select: 'name location address' },
-                { path: 'jobSite', select: 'name location address' },
-                { path: 'customerContactId', select: '-__v' }
+                {path: 'type', select: 'title description sku'},
+                {path: 'tasks.jobTypes.jobType', select: 'title description sku'},
+                {
+                    path: 'customer',
+                    select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail'
+                },
+                {path: 'tasks.technician', select: 'profile.displayName auth.email contact.phone permissions.role'},
+                {
+                    path: 'tasks.contractor',
+                    select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax',
+                    populate: {path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role'}
+                },
+                {path: 'ticket', populate: {path: 'ticket', populate: 'customerContactId'}},
+                {path: 'jobLocation', select: 'name location address'},
+                {path: 'jobSite', select: 'name location address'},
+                {path: 'customerContactId', select: '-__v'}
             ],
         })
         .populate({
@@ -4065,8 +4621,8 @@ export const generateInvoicePdf = async (req: Request, res: Response) => {
             path: 'customerContactId',
             select: '-__v'
         })
-        .populate({ path: 'jobLocation', select: 'name address location' })
-        .populate({ path: 'jobSite', select: 'name address location' })
+        .populate({path: 'jobLocation', select: 'name address location'})
+        .populate({path: 'jobSite', select: 'name address location'})
         .populate({
             path: 'paymentTerm',
             select: '-company -__v'
@@ -4074,7 +4630,7 @@ export const generateInvoicePdf = async (req: Request, res: Response) => {
         .populate({
             path: 'items.item',
             select: 'name description sku isJobType isFixed charges tax',
-            populate: [{ path: 'jobType' }]
+            populate: [{path: 'jobType'}]
         })
         .populate({
             path: 'companyLocation',
@@ -4082,7 +4638,7 @@ export const generateInvoicePdf = async (req: Request, res: Response) => {
         })
 
     if (!invoice) {
-        return res.json({ status: Status.NotFound, message: 'Invoice not found' });
+        return res.json({status: Status.NotFound, message: 'Invoice not found'});
     }
 
     const filepath = `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
@@ -4090,7 +4646,7 @@ export const generateInvoicePdf = async (req: Request, res: Response) => {
     // Generate Invoice PDF
     await _generateInvoicePdf(company, invoice);
     const invoiceUrl = await uploadFileInS3(filepath, 'pdf');
-    return res.json({ status: Status.Success, message: 'Invoice Successfully Generated', invoiceUrl: invoiceUrl });
+    return res.json({status: Status.Success, message: 'Invoice Successfully Generated', invoiceUrl: invoiceUrl});
 }
 
 // PARTIAL METHODS
@@ -4133,4 +4689,61 @@ const _getIsAllRecordsByParams = async (params: any): Promise<boolean> => {
     }
 
     return isAllRecords;
+}
+
+export const updateJobCommission = async (req: Request, res: Response) => {
+    const body = req.body;
+    const user = <IUser>req.user;
+    const balance = Number(body.balance);
+
+    Company.findByIdAndUpdate(
+        req.params.id,
+        { balance: balance },
+        { new: true }
+    ).then(async (comp) => {
+        const commissionHistory = new CommissionHistory({
+            technicianOrContractor: req.params.id,
+            job: body.job,
+            commission: balance,
+            addition: body.addition,
+            deduction: body.deduction,
+            type: "additions & deductions",
+            editedBy: {
+                id: user._id,
+                displayName: user.profile.displayName,
+            },
+        });
+        await commissionHistory.save()
+
+        const commission = await JobCommission.findOne({ job: body.job });
+
+        if (commission) {
+            if (commission.technicians) {
+                // Find the vendor on the invoice commisison object
+                commission.technicians = commission.technicians.map(technician => {
+                    if(technician?.contractor?.toString() === req.params.id){
+                        technician.commissionAmount =  Number(balance.toFixed(2));
+                    }
+                    return technician;
+                });
+    
+                await commission.save();
+            }
+        }else{
+            let contractorCommissionEntry = {
+                contractor: req.params.id,
+                commission: body.balance,
+                commissionAmount: body.balance
+            }
+            
+            const jobCommisssion = await new JobCommission({
+                job: body.job,
+                technicians: [contractorCommissionEntry]
+            }).save();
+            
+            await Job.findByIdAndUpdate(body.job,{commission : jobCommisssion}).exec();
+        }
+
+    }).then(() => res.json({ status: Status.Success, message: 'Update successful' }))
+    .catch(err => res.json({ status: Status.Error, message: err.message }))
 }

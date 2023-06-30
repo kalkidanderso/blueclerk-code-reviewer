@@ -120,6 +120,7 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
     const params = req.body
     let companyId = company._id;
     const itemTiers = [];
+    const jobCostingList = [];
 
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
@@ -129,6 +130,9 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
     for (const t of company.itemTier.list) {
         itemTiers.push({ tier: t.tier });
     }
+    for (const t of company.costing.list) {
+        jobCostingList.push({ tier: t.tier });
+    }
 
     const item = new Item(
         {
@@ -136,6 +140,7 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
             description: params.description,
             sku: params.sku,
             tiers: itemTiers,
+            costing: jobCostingList,
             company: companyId,
             jobType: jobType._id,
         }

@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose'
 import { IPriceTier } from './PriceTier';
+import { IJobCosting } from './JobCosting';
 
 export interface IItem extends Document {
 
@@ -11,6 +12,12 @@ export interface IItem extends Document {
     tax: number
     tiers?: {
         tier: Schema.Types.ObjectId | IPriceTier
+        charge?: number
+        updatedBy?: Schema.Types.ObjectId
+        updatedAt?: Date
+    }[]
+    costing?: {
+        tier: Schema.Types.ObjectId | IJobCosting
         charge?: number
         updatedBy?: Schema.Types.ObjectId
         updatedAt?: Date
@@ -86,6 +93,19 @@ const ItemSchema = new Schema({
         tier: {
             type: Schema.Types.ObjectId,
             ref: 'PriceTier'
+        },
+        charge: Number,
+        updatedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        updatedAt: Date
+    }],
+    costing: [{
+        _id: false,
+        tier: {
+            type: Schema.Types.ObjectId,
+            ref: 'JobCosting'
         },
         charge: Number,
         updatedBy: {
