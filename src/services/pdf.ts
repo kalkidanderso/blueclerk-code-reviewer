@@ -11,7 +11,7 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
         text: '_______________________________________________________________________________________________\n\n',
         style: 'separatorStyle'
     };
-    const generateField = (label : string, value : string, width : string) => ({
+    const generateField = (label : string, value : string, width : string) => (value ? {
         stack: [{
             text: '\n' + label,
             style: 'fieldLabel'
@@ -20,7 +20,7 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
             style: 'boldGrey'
         }],
         width: width,
-    });
+    } : {text: '', width: '0%'});
     // Handle company logo download
     let companyLogoFilePath = '';
     // Construct default Company Logo image
@@ -34,7 +34,7 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
         companyLogoFilePath = await downloadFileToPath(jobReport.job.company, jobReport.job.company.info.logoUrl, '/' + INVOICE_IMAGE_PATH, true);
         companyImage = {
             image: 'companyLogo',
-            width: 35,
+            width: 60,
         }
     }
     const technicianNotes = jobReport.job?.tasks?.length ?  jobReport.job.tasks.filter((task: any) => task.comment).map((task: any) => {
@@ -55,7 +55,7 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                 };
             }
         })) : [];
-
+    const serviceTicketNotes = jobReport.job.request?.requests?.filter((request: any) => request.note).map((request: any) => request.note).join('\n\n') || jobReport.job.ticket?.note;
     // ===================================
     // ===[ INITIALIZE PDF TEMPLATE ]=====
     // ===================================
@@ -63,9 +63,10 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
         content: [{
                 stack: [{
                     columns: [{
-                            width: '10%',
+                            width: '15%',
                             stack: [{
-                                    text: '\n\n'
+                                    text: '\n',
+                                    style: 'footerText'
                                 },
                                 {
                                     ...companyImage
@@ -78,12 +79,12 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                                     style: 'header',
                                 },
                                 {
-                                    text: (jobReport.job.company?.address?.street || 'N/A') + ',\n' +
-                                        (jobReport.job.company?.address?.city || 'N/A') + ', ' +
-                                        (jobReport.job.company?.address?.state || 'N/A') + ', ' +
-                                        (jobReport.job.company?.address?.zipCode || 'N/A') + '\n' +
-                                        (jobReport.job.company?.contact?.phone || 'N/A') + '\n' +
-                                        (jobReport.job.company?.info?.companyEmail || 'N/A') + '\n',
+                                    text: (jobReport.job.company?.address?.street ? jobReport.job.company?.address?.street + '\n' : '') +
+                                        (jobReport.job.company?.address?.city ? jobReport.job.company?.address?.city + ', ' : '') +
+                                        (jobReport.job.company?.address?.state ? jobReport.job.company?.address?.state + ', ' : '') +
+                                        (jobReport.job.company?.address?.zipCode || '') + '\n' +
+                                        (jobReport.job.company?.contact?.phone ? jobReport.job.company?.contact?.phone + '\n' : '') +
+                                        (jobReport.job.company?.info?.companyEmail ? jobReport.job.company?.info?.companyEmail : ''),
                                     style: 'boldGrey',
                                 }
                             ]
@@ -112,18 +113,18 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                     }, ]
                 }, {
                     columns: [{ 
-                        ...generateField('NAME', jobReport.job.customer?.profile?.name, '25%')
+                        ...generateField('NAME', jobReport.job.customer?.profile?.displayName, '25%')
                     }, {
                         ...generateField('ADDRESS', 
-                            (jobReport.job.customer?.address?.street ? jobReport.job.customer?.address?.street + ',\n' : '') +
-                            (jobReport.job.customer?.address?.city ? jobReport.job.customer?.address?.city + ' ' : '') +
+                            (jobReport.job.customer?.address?.street ? jobReport.job.customer?.address?.street + '\n' : '') +
+                            (jobReport.job.customer?.address?.city ? jobReport.job.customer?.address?.city + ', ' : '') +
                             (jobReport.job.customer?.address?.state ? jobReport.job.customer?.address?.state + ' ' : '') +
                             (jobReport.job.customer?.address?.zipCode ? jobReport.job.customer?.address?.zipCode + ' ' : ''), 
                             '25%')
                     }, {
-                        ...generateField('PHONE NUMBER', jobReport.job.customer?.contact?.phone, '25%')
+                        ...generateField('PHONE NUMBER', jobReport.job.customer?.contact?.phone, '20%')
                     }, {
-                        ...generateField('EMAIL', jobReport.job.customer?.info?.email, '25%')
+                        ...generateField('EMAIL', jobReport.job.customer?.info?.email, '30%')
                     }, ],
                 }, ],
             }, {
@@ -138,6 +139,8 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                         columns: [{
                             ...generateField('SUBDIVISION', jobReport.job.jobLocation?.name, '25%')
                         }, {
+                            ...generateField('JOB ADDRESS', jobReport.job.jobSite?.name, '25%')
+                        }, {
                             stack: [{
                                 text: '\nHOUSE STATUS',
                                 style: 'fieldLabel'
@@ -145,11 +148,11 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                                 text: jobReport.job.isHomeOccupied ? 'Occupied' : 'Not occuppied',
                                 style: jobReport.job.isHomeOccupied ? 'boldGreen' : 'boldGrey'
                             }],
-                            width: '25%',
+                            width: '20%',
                         }, {
-                            ...generateField('START', moment(jobReport.job?.startTime).format('MMM. DD, YYYY HH:mm'), '25%')
+                            ...generateField('START', moment(jobReport.job?.startTime).format('MMM. DD, YYYY HH:mm'), '15%')
                         }, {
-                            ...generateField('END', moment(jobReport.job?.endTime).format('MMM. DD, YYYY HH:mm'), '25%')
+                            ...generateField('END', moment(jobReport.job?.endTime).format('MMM. DD, YYYY HH:mm'), '15%')
                         }, ],
                     },
                     jobReport.job.customerContactId ? {
@@ -196,42 +199,40 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                 }, ],
             } : {}, {
                 ...separator,
-            }, {
+            }, serviceTicketNotes || jobReport.job.comment || technicianNotes.length > 0 ? {
                 stack: [{
                     columns: [{
                         text: 'Notes',
                         style: 'header',
-                    }, ]
-                }, {
+                    }, ] 
+                }, serviceTicketNotes ? {
                     stack: [{
                         text: '\nSERVICE TICKET NOTE',
                         style: 'notesFieldLabel'
                     }, {
-                        text: jobReport.job.request?.requests?.filter((request: any) => request.note).map((request: any) => request.note).join('\n\n') || jobReport.job.ticket?.note || 'N/A',
+                        text:  serviceTicketNotes,
                         style: 'boldGrey'
                     }]
-                }, {
+                } : {}, jobReport.job.comment ? {
                     stack: [{
                         text: '\nJOB NOTES',
                         style: 'notesFieldLabel'
                     }, {
-                        text: jobReport.job.comment || 'N/A',
+                        text: jobReport.job.comment,
                         style: 'boldGrey'
                     }]
-                }, {
+                } : {}, technicianNotes.length > 0 ? {
                     stack: [{
                         text: '\nTECHNICIANS COMMENTS',
                         style: 'notesFieldLabel'
                     }, {
-                        text: technicianNotes.length > 0 ?
-                            technicianNotes.flat() :
-                            'N/A',
+                        text: technicianNotes.flat(),
                         style: 'boldGrey'
                     }]
-                }, ],
-            },{
+                } : {}, ],
+            }: {}, serviceTicketNotes || jobReport.job.comment || technicianNotes.length > 0 ? {
                 ...separator,
-            },
+            } : {},
             technicianImages.length > 0 ? {
                 stack: [{
                     columns: [{
@@ -270,17 +271,17 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                 italics: true
             },
             boldGrey: {
-                fontSize: 12,
+                fontSize: 10,
                 bold: true,
                 color: '#4F4F4F',
             },
             boldGreen: {
-                fontSize: 12,
+                fontSize: 10,
                 bold: true,
                 color: '#44d62c',
             },
             boldGreyRight: {
-                fontSize: 12,
+                fontSize: 10,
                 bold: true,
                 color: '#4F4F4F',
                 alignment: 'right'
@@ -292,13 +293,13 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                 alignment: 'right'
             },
             fieldLabelRight: {
-                fontSize: 12,
+                fontSize: 10,
                 bold: false,
                 color: '#828282',
                 alignment: 'right'
             },
             fieldLabel: {
-                fontSize: 12,
+                fontSize: 10,
                 bold: false,
                 color: '#828282',
             },
@@ -311,14 +312,14 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                 color: '#F2F2F2'
             },
             subTitle: {
-                fontSize: 12,
+                fontSize: 10,
                 bold: true,
                 color: '#4F4F4F',
                 decoration: 'underline',
                 decorationColor: '#4F4F4F'
             },
             notesFieldLabel: {
-                fontSize: 12,
+                fontSize: 10,
                 bold: false,
                 color: '#828282',
                 decoration: 'underline',

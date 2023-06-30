@@ -3489,6 +3489,8 @@ export const getJobReportPDF = (req: Request, res: Response) => {
                 { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
                 { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
                 { path: 'homeOwner' },
+                { path: 'jobLocation', select: 'name' },
+                { path: 'jobSite', select: 'name' },
             ],
         }).populate({
             path: 'scans',
