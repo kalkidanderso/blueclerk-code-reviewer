@@ -24,6 +24,10 @@ const ContactSchema = new Schema({
         ref: 'User',
         required: false
     },
+    smsStatus: {
+        type: Boolean,
+        default: true, // True = subscribed, False = unsubscribed
+    }
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
 //Indexes

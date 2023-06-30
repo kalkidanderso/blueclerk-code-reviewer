@@ -5,7 +5,7 @@ import fs from 'fs';
 import * as _ from 'lodash';
 import * as helper from '../services/helper';
 
-import { FONT_SETS, ACCOUNT_RECEIVABLE_REPORT_PDF_PATH } from '../common/config';
+import { FONT_SETS, ACCOUNT_RECEIVABLE_REPORT_PDF_PATH, INVOICE_IMAGE_PATH } from '../common/config';
 import { Layouts, Styles } from '../common/constants.pdf';
 import { delimiterEnUs, roundTwoDecimal } from '../services/helper';
 

@@ -8,7 +8,9 @@ import * as helper from '../services/helper';
 import { Status, Messages, JobStatus, ServiceTicketStatus, SocketEvents, DefaultPageSize, JobRequestStatus } from '../common/constants'
 import {
     sendJobEmailToAssignee,
-    sendJobEmailToCustomer, sendReportEmailToCustomer
+    sendJobEmailToCustomer, 
+    sendReportEmailToCustomer, 
+    sendSMS,
 } from '../services/aws'
 import { IContact } from '../common/contact';
 
@@ -35,6 +37,11 @@ import { JobLocation } from '../models/JobLocation';
 import { JobSite } from '../models/JobSite';
 import { HomeOwner } from '../models/HomeOwner';
 import * as Sentry from '@sentry/node';
+import { standarizePhoneNumberE164 } from '../utils/phoneNumberUtil';
+import pdfmake from 'pdfmake';
+import { ACCOUNT_RECEIVABLE_REPORT_PDF_PATH, FONT_SETS } from '../common/config';
+import fs from 'fs';
+import { handleJobReportPdf } from '../services/pdf';
 import { JobCommission } from '../models/JobCommission';
 import { CommissionHistory } from '../models/CommissionHistory';
 
@@ -1812,6 +1819,7 @@ export const getJobReportDetails = (req: Request, res: Response) => {
                 { path: 'tasks.timeUpdatedBy', select: 'profile.displayName' },
                 { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
                 { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
+                { path: 'homeOwner', select: 'profile info contact' },
                 'jobSite', 'jobLocation'
             ]
         })
@@ -1922,6 +1930,10 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                 { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
             ]
         })
+        .populate({ path: 'customerContactId'})
+        .populate({ path: 'company', select: 'info.companyName'})
+        .populate({ path: 'jobLocation', select: 'name'})
+        .populate({ path: 'jobSite', select: 'name'})
         .then((job: IJob) => {
 
             if (job == undefined) {
@@ -2290,7 +2302,22 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     technicianNameLinkedJob = tasks[0].technician.profile.displayName;
                 }
 
-                await createJobReport(job._id, job.company, customerName, technicianName, date, companyId);
+                const jobReport = await createJobReport(job._id, job.company, customerName, technicianName, date, companyId);
+                if (params.status == JobStatus.FINISHED) {
+                    try {
+                        if(job.customerContactId?.phone) {
+                            const standarizedPhone = standarizePhoneNumberE164(job.customerContactId.phone);
+                            const today = new Date()
+                            const todayDate = `${today.getMonth() + 1}/${today.getDate()}`;
+                            // If job is finished a SMS is sent
+                            const message = `BlueClerk: Dear ${job.customerContactId.name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
+                            await sendSMS(standarizedPhone, message);
+                        }
+                    }
+                    catch(err) {
+                        Sentry.captureException(err);
+                    }     
+                }
                 if (linkedJob) {
                     await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, companyId);
                 }
@@ -2570,6 +2597,10 @@ export const updateJobTask = async (req: Request, res: Response) => {
         .populate({ path: 'technician', select: 'profile.displayName' })
         .populate({ path: 'ticket.customer', select: 'profile.displayName' })
         .populate({ path: 'request.customer', select: 'profile.displayName' })
+        .populate({ path: 'customerContactId'})
+        .populate({ path: 'company', select: 'info.companyName'})
+        .populate({ path: 'jobLocation', select: 'name'})
+        .populate({ path: 'jobSite', select: 'name'})
 
     // Check if job exist and job status is not FINISHED or CANCELED
     if (!job)
@@ -2660,6 +2691,20 @@ export const updateJobTask = async (req: Request, res: Response) => {
         job.completeOnTime = !job.scheduledEndTime ? true : job.scheduledEndTime >= job.endTime;
         jobStatus = JobStatus.FINISHED;
         action += `|Finishing the job|`;
+        // Send SMS if job is finished
+        try {
+            if(job.customerContactId?.phone) {
+                const standarizedPhone = standarizePhoneNumberE164(job.customerContactId.phone);
+                const today = new Date()
+                const todayDate = `${today.getMonth() + 1}/${today.getDate()}`;
+                const message = `BlueClerk: Dear ${job.customerContactId.name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
+                // If job is finished a SMS is sent
+                await sendSMS(standarizedPhone, message);
+            }
+        }
+        catch(err) {
+            Sentry.captureException(err);
+        }     
     }
 
     // Log a track history
@@ -3489,6 +3534,99 @@ export const sendJobReport = (req: Request, res: Response) => {
                 }).catch((err) => {
                     Sentry.captureException(err);
                     return res.json({ 'status': Status.Error, 'message': err.message });
+                });
+            } else {
+                return res.json({ 'status': Status.Error, 'message': "Report was not found" });
+            }
+        }).catch((err) => {
+            Sentry.captureException(err);
+            return res.json({ 'status': Status.Error, 'message': err.message });
+        });
+}
+
+export const getJobReportPDF = (req: Request, res: Response) => {
+
+    const params = req.params;
+    const user = <IUser>req.user;
+    let companyId = req.companyId;
+    const company = <ICompany>req.company;
+
+    if (req.otherCompanyId != undefined) {
+        companyId = req.otherCompanyId
+    }
+
+    JobReport.findOne({ _id: params.jobReportId, $or: [{ contractor: companyId }, { company: companyId }] })
+        .populate({
+            path: 'job',
+            populate: [
+                { path: 'ticket', select: 'ticketId note scheduleDateTime' },
+                {
+                    path: 'request',
+                    select: '-__v',
+                    populate: [
+                        { path: 'track', select: 'track.user track.action track.date' },
+                        { path: 'jobLocation' },
+                        { path: 'jobSite' },
+                        { path: 'customerContact' },
+                        { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+                    ]
+                },
+                // TODO: To be deprecated
+                { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.technician', select: 'profile auth.email contact' },
+                { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
+                { path: 'customerContactId', select: '-id -__v' },
+                { path: 'type', select: 'title description sku' },
+                { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+                { path: 'tasks.timeUpdatedBy', select: 'profile.displayName' },
+                { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
+                { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
+                { path: 'homeOwner' },
+                { path: 'jobLocation', select: 'name' },
+                { path: 'jobSite', select: 'name' },
+            ],
+        }).populate({
+            path: 'scans',
+            populate: [
+                {
+                    path: 'equipment',
+                    select: 'info.model info.serialNumber info.nfcTag images info.location',
+                    populate: [
+                        { path: 'brand', select: 'title' },
+                        { path: 'type', select: 'title' }
+                    ]
+                }
+            ]
+        }).populate('PurchaseOrder')
+        .exec()
+        .then(async (report: IJobReport) => {
+            if (report) {                
+                // Initialize PDF Make
+                const pdfMake = new pdfmake(FONT_SETS.ROBOTO);
+                // Generate the PDF content
+                const generatePdf = await handleJobReportPdf(report);
+                // Construct the PDF full path
+                const fullPath = `${ACCOUNT_RECEIVABLE_REPORT_PDF_PATH}/${Date.now()}.pdf`;
+                // Check if folder path exist, create if not
+                if (!fs.existsSync(ACCOUNT_RECEIVABLE_REPORT_PDF_PATH)) {
+                    fs.mkdirSync(ACCOUNT_RECEIVABLE_REPORT_PDF_PATH);
+                }
+                // Check if existing Invoice PDF exist, remove if any
+                if (fs.existsSync(fullPath)) {
+                    fs.unlinkSync(fullPath);
+                }
+                const pdfDoc = pdfMake.createPdfKitDocument(generatePdf);
+                const writeStream = fs.createWriteStream(fullPath);
+                pdfDoc.pipe(writeStream);
+                pdfDoc.end();
+                writeStream.on('finish', () => {
+                    let file = fs.createReadStream(fullPath);
+                    let stat = fs.statSync(fullPath);
+                    res.setHeader('Content-Length', stat.size);
+                    res.setHeader('Content-Type', 'application/pdf');
+                    res.setHeader('Content-Disposition', 'attachment; filename=quote.pdf');
+                    file.pipe(res);
                 });
             } else {
                 return res.json({ 'status': Status.Error, 'message': "Report was not found" });

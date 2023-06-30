@@ -939,6 +939,15 @@ export default function (sio: any) {
         jobController.getJobDetails
     )
 
+    router.get(
+        '/getJobReportPDF/:jobReportId',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Job_Report),
+        jobController.getJobReportPDF
+    )
+
     router.post(
         '/editJob',
         passport.authenticate('jwt', { session: false }),
