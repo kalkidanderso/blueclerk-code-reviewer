@@ -38,11 +38,11 @@ import { JobSite } from '../models/JobSite';
 import { HomeOwner } from '../models/HomeOwner';
 import * as Sentry from '@sentry/node';
 import { standarizePhoneNumberE164 } from '../utils/phoneNumberUtil';
-import pdfmake from 'pdfmake';
 import { ACCOUNT_RECEIVABLE_REPORT_PDF_PATH, FONT_SETS } from '../common/config';
 import fs from 'fs';
 import { handleJobReportPdf } from '../services/pdf';
 
+const PdfPrinter = require('pdfmake')
 /**
  * 04-22-2022
  * To be deprecated
@@ -3509,7 +3509,7 @@ export const getJobReportPDF = (req: Request, res: Response) => {
         .then(async (report: IJobReport) => {
             if (report) {                
                 // Initialize PDF Make
-                const pdfMake = new pdfmake(FONT_SETS.ROBOTO);
+                const pdfMake = new PdfPrinter(FONT_SETS.ROBOTO);
                 // Generate the PDF content
                 const generatePdf = await handleJobReportPdf(report);
                 // Construct the PDF full path
