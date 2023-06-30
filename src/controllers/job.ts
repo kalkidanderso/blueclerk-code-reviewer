@@ -35,6 +35,8 @@ import { JobLocation } from '../models/JobLocation';
 import { JobSite } from '../models/JobSite';
 import { HomeOwner } from '../models/HomeOwner';
 import * as Sentry from '@sentry/node';
+import { JobCommission } from '../models/JobCommission';
+import { CommissionHistory } from '../models/CommissionHistory';
 
 /**
  * 04-22-2022
@@ -1902,6 +1904,9 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
             select: 'profile.displayName'
         })
         .populate({
+            path: 'tasks.contractor',
+        })
+        .populate({
             path: 'ticket',
             select: 'customer',
             populate: { path: 'customer', select: 'profile.displayName' }
@@ -2138,7 +2143,49 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     for (const task of startedPausedTasks) {
                         task.status = JobStatus.FINISHED;
                     };
-
+                    
+                    let invoiceCommissionEntry: any[] = [];
+                    
+                    for (const task of job?.tasks) {
+                        let contractorCommissionEntry = {
+                            contractor: task.contractor._id,
+                            technician: task.contractor.admin,
+                            commission: 0,
+                            commissionAmount: 0
+                        }
+                        
+                        let contractor = task.contractor as ICompany;
+                        if(contractor && contractor.commissionType == "fixed"){
+                            for (const j of task.jobTypes) {
+                                let balance = 0;
+    
+                                const jobType = await Item.findOne({ jobType: j.jobType })
+                                const commissionTierId = contractor.commissionTier
+                                if (commissionTierId) {
+                                    const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
+                                    if (commissionTier?.charge){
+                                        balance += commissionTier.charge
+                                        contractorCommissionEntry.commission += commissionTier.charge
+                                        contractorCommissionEntry.commissionAmount += commissionTier.charge
+                                    }
+                                }
+                                await Company.findByIdAndUpdate(
+                                    contractor._id,
+                                    { $inc: { balance } },
+                                    { new: true }
+                                ).exec()
+                            }
+                            invoiceCommissionEntry.push(contractorCommissionEntry);
+                        }
+                    }
+                    
+                    if (invoiceCommissionEntry.length) {
+                        const jobCommisssion = await new JobCommission({
+                            job: job._id,
+                            technicians: invoiceCommissionEntry
+                        }).save();
+                        data.commission = jobCommisssion;
+                    }
                     break;
 
                 case JobStatus.PAUSED:
@@ -2518,6 +2565,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
         .populate({ path: 'customer', select: 'profile.displayName itemTier' })
         .populate({ path: 'homeOwner', select: 'profile.displayName' })
         .populate({ path: 'tasks.technician', select: 'profile.displayName' })
+        .populate({ path: 'tasks.contractor' })
         // TODO: To be deprecated
         .populate({ path: 'technician', select: 'profile.displayName' })
         .populate({ path: 'ticket.customer', select: 'profile.displayName' })
@@ -2620,6 +2668,52 @@ export const updateJobTask = async (req: Request, res: Response) => {
         action,
         date: new Date()
     };
+
+    if (jobStatus == JobStatus.FINISHED) {
+        //Commission Calculation
+        let invoiceCommissionEntry: any[] = [];
+
+        for (const task of job?.tasks) {
+            let contractor = task.contractor as ICompany;
+            if(contractor && contractor.commissionType == "fixed"){
+                let contractorCommissionEntry = {
+                    contractor: contractor._id,
+                    technician: contractor.admin,
+                    commission: 0,
+                    commissionAmount: 0
+                }
+                
+                for (const j of task.jobTypes) {
+                    let balance = 0;
+    
+                    const jobType = await Item.findOne({ jobType: j.jobType })
+                    const commissionTierId = contractor.commissionTier
+                    if (commissionTierId) {
+                        const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
+                        if (commissionTier?.charge){
+                            balance += commissionTier.charge
+                            contractorCommissionEntry.commission += commissionTier.charge
+                            contractorCommissionEntry.commissionAmount += commissionTier.charge
+                        }
+                    }
+                    await Company.findByIdAndUpdate(
+                        contractor._id,
+                        { $inc: { balance } },
+                        { new: true }
+                    ).exec()
+                }
+                invoiceCommissionEntry.push(contractorCommissionEntry);
+            }
+        }
+
+        if (invoiceCommissionEntry.length) {
+            const jobCommisssion = await new JobCommission({
+                job: job._id,
+                technicians: invoiceCommissionEntry
+            }).save();
+            job.commission = jobCommisssion;
+        }
+    }
 
     job.timeUpdatedBy = user._id;
     job.timeUpdatedAt = new Date();
@@ -3681,6 +3775,10 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
             select: 'profile.displayName'
         })
         .populate({
+            path: 'tasks.contractor',
+            select: 'commissionTier'
+        })
+        .populate({
             path: 'ticket',
             select: 'customer',
             populate: { path: 'customer', select: 'profile.displayName' }
@@ -3958,6 +4056,7 @@ const _handleMutltipleTechniciansTasks = async ({
     for (const paramTask of paramTasks) {
         let taskContractor
         let taskTechnician: any
+        let contractorCommissionTier: any
 
         if (!paramTask.contractorId && !paramTask.technicianId) {
             // return res.json({ status: Status.Error, message: "contractorId or technicianId must be provided" });
@@ -3980,6 +4079,7 @@ const _handleMutltipleTechniciansTasks = async ({
                 : !!paramTask.employeeType;
 
         if (taskContractor && !taskTechnician) {
+            contractorCommissionTier = taskContractor?.commissionTier
             taskTechnician = taskContractor?.admin
         }
 
@@ -3992,6 +4092,7 @@ const _handleMutltipleTechniciansTasks = async ({
             employeeType: paramsemployeeType,
             technician: taskTechnician,
             contractor: taskContractor?._id,
+            contractorCommissionTier: contractorCommissionTier,
         };
 
         //=== HANDLE params jobTypes

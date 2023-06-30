@@ -7,6 +7,7 @@ import { ICustomer } from '../models/Customer';
 import { IInvoice } from '../models/Invoice';
 import { IWorkType } from './WorkType';
 import { ICompanyLocation } from './CompanyLocation';
+import { IJob } from './Job';
 
 export interface IPayment extends Document {
     customer: Schema.Types.ObjectId | ICustomer
@@ -49,6 +50,7 @@ export interface IPaymentVendor extends IPayment {
 
     contractor: Schema.Types.ObjectId | ICompany
     invoices: [Schema.Types.ObjectId | IInvoice]
+    jobs: [Schema.Types.ObjectId | IJob]
     startDate: Date
     endDate: Date
     offset: number
@@ -218,6 +220,10 @@ const PaymentVendorSchema = new Schema({
     invoices: [{
         type: Schema.Types.ObjectId,
         ref: 'Invoice'
+    }],
+    jobs: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Jobs'
     }],
     startDate: Date,
     endDate: Date,

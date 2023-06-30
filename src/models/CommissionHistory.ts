@@ -4,6 +4,15 @@ export interface ICommissionHistory extends Document {
     technicianOrContractor: string 
     type:string
     commission: number
+    addition?: {
+        amount: number
+        note: string
+    };
+    deduction?: {
+        amount: number
+        note: string
+    };
+    commissionType: string
     editedBy: {
         id: string
         displayName: string
@@ -11,6 +20,7 @@ export interface ICommissionHistory extends Document {
     effectiveDate: Date
     createdAt: Date
     updatedAt: Date
+    job: string 
 }
 
 const CommissionHistorySchema = new Schema({
@@ -37,6 +47,18 @@ const CommissionHistorySchema = new Schema({
         type: Number,
         default: null,
     },
+    addition: {
+        amount: Number,
+        note: String,
+    },
+    deduction: {
+        amount: Number,
+        note: String,
+    },
+     commissionType: {
+        type: String,
+        default: null,
+    },
     editedBy: {
         id: {
             type: Schema.Types.ObjectId,
@@ -44,6 +66,7 @@ const CommissionHistorySchema = new Schema({
         },
         displayName: String,
     },
+    job: { type: Schema.Types.ObjectId, ref: 'Job' },
 
 }, { timestamps: { createdAt: true, updatedAt: true } })
 

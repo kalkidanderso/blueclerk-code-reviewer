@@ -2097,6 +2097,14 @@ export default function (sio: any) {
     )
 
     router.get(
+        '/getCommissionHistoryByJob/:jobId',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        checkUserPermissions(Permissions.Update_Invoice), //if has permission to update then can also view
+        invoiceController.getCommissionHistoryByJob
+    )
+
+    router.get(
         '/getInvoicesByContractor',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
@@ -3018,6 +3026,37 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Customer_Get_All),
         customerController.exportCustomersToExcel
+    )
+    router.get(
+        '/getJobCostingList',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        companyController.getJobCostingList
+    )
+    router.post(
+        '/addJobCosting',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        companyController.addJobCosting
+    )
+    router.put(
+        '/updateJobCosting',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        validate(Validations.updateJobCosting),
+        companyController.updateJobCosting
+    )
+
+    router.put(
+        '/updateJobCommission/:id',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        validate(Validations.updateJobCommission),
+        invoiceController.updateJobCommission
     )
 
     return router
