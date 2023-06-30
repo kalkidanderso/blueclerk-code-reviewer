@@ -1928,6 +1928,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
         .populate({ path: 'customerContactId'})
         .populate({ path: 'company', select: 'info.companyName'})
         .populate({ path: 'jobLocation', select: 'name'})
+        .populate({ path: 'jobSite', select: 'name'})
         .then((job: IJob) => {
 
             if (job == undefined) {
@@ -2259,8 +2260,10 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     try {
                         if(job.customerContactId?.phone) {
                             const standarizedPhone = standarizePhoneNumberE164(job.customerContactId.phone);
-                            const message = `BlueClerk: Dear ${job.customerContactId.name}, a job at ${job.jobLocation?.name || 'N/A'} has been completed by ${job.company?.info?.companyName || 'N/A'}.\n\nText STOP to opt-out.`;
+                            const today = new Date()
+                            const todayDate = `${today.getMonth() + 1}/${today.getDate()}`;
                             // If job is finished a SMS is sent
+                            const message = `BlueClerk: Dear ${job.customerContactId.name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
                             await sendSMS(standarizedPhone, message);
                         }
                     }
@@ -2546,6 +2549,10 @@ export const updateJobTask = async (req: Request, res: Response) => {
         .populate({ path: 'technician', select: 'profile.displayName' })
         .populate({ path: 'ticket.customer', select: 'profile.displayName' })
         .populate({ path: 'request.customer', select: 'profile.displayName' })
+        .populate({ path: 'customerContactId'})
+        .populate({ path: 'company', select: 'info.companyName'})
+        .populate({ path: 'jobLocation', select: 'name'})
+        .populate({ path: 'jobSite', select: 'name'})
 
     // Check if job exist and job status is not FINISHED or CANCELED
     if (!job)
@@ -2636,6 +2643,20 @@ export const updateJobTask = async (req: Request, res: Response) => {
         job.completeOnTime = !job.scheduledEndTime ? true : job.scheduledEndTime >= job.endTime;
         jobStatus = JobStatus.FINISHED;
         action += `|Finishing the job|`;
+        // Send SMS if job is finished
+        try {
+            if(job.customerContactId?.phone) {
+                const standarizedPhone = standarizePhoneNumberE164(job.customerContactId.phone);
+                const today = new Date()
+                const todayDate = `${today.getMonth() + 1}/${today.getDate()}`;
+                const message = `BlueClerk: Dear ${job.customerContactId.name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
+                // If job is finished a SMS is sent
+                await sendSMS(standarizedPhone, message);
+            }
+        }
+        catch(err) {
+            Sentry.captureException(err);
+        }     
     }
 
     // Log a track history
