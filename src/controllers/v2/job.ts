@@ -190,7 +190,8 @@ export const getJobs = async (req: Request, res: Response) => {
                 "jobTypeObj": "$jobTypeObj",
                 "ticketObj": "$ticketObj",
                 "scheduleDate": "$scheduleDate",
-                "scheduleTimeAMPM": "$scheduleTimeAMPM"
+                "scheduleTimeAMPM": "$scheduleTimeAMPM",
+                "customerContactId": "$customerContactId"
             }
         }
     ])];
@@ -606,6 +607,6 @@ const _getFilteredJobReportsIds = async (filteredInitialJobReports: any[], param
                 _id: 1
             },
         },
-    ])).map((value: any) => value._id);
+    ])).map((value: any) => value._id); 
     return values;
 }
