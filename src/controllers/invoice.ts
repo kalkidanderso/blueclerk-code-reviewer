@@ -2398,7 +2398,8 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     const sendingDate = new Date();
     invoice.emailHistory.push({
         sentTo: customer.info?.email,
-        sentAt: sendingDate
+        sentAt: sendingDate,
+        sentBy: user._id || null
     });
     invoice.lastEmailSent = sendingDate;
     await invoice.save();
@@ -2514,7 +2515,8 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
             const sendingDate = new Date();
             invoice.emailHistory.push({
                 sentTo: customer.info?.email,
-                sentAt: sendingDate
+                sentAt: sendingDate,
+                sentBy: user._id || null
             });
             invoice.lastEmailSent = sendingDate;
 
