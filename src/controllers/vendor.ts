@@ -1108,7 +1108,7 @@ export const getContractors = async (req: Request, res: Response) => {
     const contractors = await Company.find({_id: {$in: [...new Set(contractorIds)]}})
         .populate({
             path: 'admin',
-            select: 'profile.displayName contact.phone auth.email'
+            select: 'profile.displayName contact.phone auth.email accountType'
         }).exec();
     const technicians = await Employee.find({company}).exec();
 
