@@ -1,4 +1,4 @@
-import {PhoneNumberFormat, PhoneNumberUtil} from 'google-libphonenumber';
+const {PhoneNumberFormat, PhoneNumberUtil} = require('google-libphonenumber');
 
 export const standarizePhoneNumberE164 = (phoneNumber: string): string => {
     const phoneUtil = new PhoneNumberUtil();
