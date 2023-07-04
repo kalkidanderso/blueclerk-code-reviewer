@@ -68,7 +68,7 @@ import jobSite from './jobSite'
 import chat from './chat';
 import blockchain from './blockchain';
 import { isLogin } from '../middleware/session';
-import { isLambdaRequest, isRequestValid } from '../middleware/isLamdaRequest'
+import { isLambdaRequest } from '../middleware/isLamdaRequest'
 
 export default function (sio: any) {
 
@@ -92,8 +92,9 @@ export default function (sio: any) {
     // Bounced Emails
     router.post(
         '/store-bounced-emails',
+        validate(Validations.bounceEmail),
         isLambdaRequest,
-        isRequestValid,
+        // isRequestValid,
         bouncedEmails.store
     )
 

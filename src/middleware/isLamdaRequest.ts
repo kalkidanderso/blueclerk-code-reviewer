@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { IBouncedEmail } from 'src/models/BounceEmail';
 
-
 export const isLambdaRequest = (req: Request, res: Response, next: NextFunction) => {
     const { ['x-api-key'] : apiKey } = req.headers
 
