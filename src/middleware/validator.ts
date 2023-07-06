@@ -824,7 +824,12 @@ export const Validations = {
     param('id').isMongoId().withMessage(Messages.WrongId),
     check('lastReadChatId').exists().withMessage(Messages.Required),
     check('lastReadChatId').isMongoId().withMessage(Messages.WrongId),
-  ]
+  ],
 
+  updateJobCosting: [check('costingTierId').exists().withMessage('is required')],
+
+  updateJobCommission: [
+    check('balance').exists().withMessage(Messages.Required),
+  ],
 }
 

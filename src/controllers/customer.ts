@@ -321,7 +321,7 @@ export const getCustomers = async (req: Request, res: Response) => {
             }
         },
     ]).exec()
-    
+
     return res.json({ 'status': Status.Success, 'customers': customers })
 }
 
@@ -569,47 +569,45 @@ export const updateCustomPrices = async (req: Request, res: Response) => {
 export const customerDetail = (req: Request, res: Response) => {
 
     const params = req.body
-    
+
     let companyId = req.companyId;
     if (req.otherCompanyId != undefined) {
         companyId = req.otherCompanyId
     }
 
-    if(params.accountType == "Supplier")
-    {
+    if (params.accountType == "Supplier") {
         SupplierBuilder.findOne({ builder: params.customerId, supplier: companyId })
-        .populate({
-            path: 'builder',
-            populate: [{ path: 'jobLocations', populate: { path: 'jobSites' } }, { path: 'equipments' }, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
-        })
-        .exec().then((supplierCustomer: ISupplierBuilder) => {
-            const customer: any = supplierCustomer?.builder;
-            if (!supplierCustomer || customer?.permissions?.role != Role.CUSTOMER) {
-                return res.json({ 'status': Status.Error, 'message': 'No customer found' })
-            }
-            return res.json({ 'status': Status.Success, 'customer': customer })
-        }).catch((err) => {
-            Sentry.captureException(err);
-            return res.json({ 'status': Status.Error, 'message': err.message });
-        });
+            .populate({
+                path: 'builder',
+                populate: [{ path: 'jobLocations', populate: { path: 'jobSites' } }, { path: 'equipments' }, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
+            })
+            .exec().then((supplierCustomer: ISupplierBuilder) => {
+                const customer: any = supplierCustomer?.builder;
+                if (!supplierCustomer || customer?.permissions?.role != Role.CUSTOMER) {
+                    return res.json({ 'status': Status.Error, 'message': 'No customer found' })
+                }
+                return res.json({ 'status': Status.Success, 'customer': customer })
+            }).catch((err) => {
+                Sentry.captureException(err);
+                return res.json({ 'status': Status.Error, 'message': err.message });
+            });
     }
-    else
-    {
+    else {
         CompanyCustomer.findOne({ 'customer': params.customerId, company: companyId })
-        .populate({
-            path: 'customer',
-            populate: [{ path: 'jobLocations', populate: { path: 'jobSites' } }, { path: 'equipments' }, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
-        })
-        .exec().then((companyCustomer: ICompanyCustomer) => {
-            const customer: any = companyCustomer?.customer;
-            if (!companyCustomer || customer?.permissions?.role != Role.CUSTOMER) {
-                return res.json({ 'status': Status.Error, 'message': 'No customer found' })
-            }
-            return res.json({ 'status': Status.Success, 'customer': customer })
-        }).catch((err) => {
-            Sentry.captureException(err);
-            return res.json({ 'status': Status.Error, 'message': err.message });
-        });
+            .populate({
+                path: 'customer',
+                populate: [{ path: 'jobLocations', populate: { path: 'jobSites' } }, { path: 'equipments' }, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
+            })
+            .exec().then((companyCustomer: ICompanyCustomer) => {
+                const customer: any = companyCustomer?.customer;
+                if (!companyCustomer || customer?.permissions?.role != Role.CUSTOMER) {
+                    return res.json({ 'status': Status.Error, 'message': 'No customer found' })
+                }
+                return res.json({ 'status': Status.Success, 'customer': customer })
+            }).catch((err) => {
+                Sentry.captureException(err);
+                return res.json({ 'status': Status.Error, 'message': err.message });
+            });
     }
 }
 
@@ -937,4 +935,156 @@ const _sumMergedCreditBalance = async (unusedCustomerIds: string[]): Promise<{ c
 
     return { credit, balance };
 
+}
+
+/**
+ * Export the customers linked to company to excel, with
+ * the next information: "Customer Name", "Email", "Phone", "Street", "City", "State", "Zip",
+ * "Pricing Tier", "Payment Term"
+ * @param req 
+ * @param res 
+ */
+export const exportCustomersToExcel = async (req: Request, res: Response) => {
+    const company = req.otherCompanyId || req.companyId;
+    const customers = await _getDataCustomersToExport(company)
+    const rows = customers.map((customer: any) => _converCustomerToRowExcel(customer))
+        .filter((row: any) => row.name && row.name !== '');
+    const XLSX = require("xlsx");
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const headers = ["Customer Name", "Email", "Phone", "Street", "City", "State", "Zip", "Pricing Tier", "Payment Term", "Active"]
+    XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Dates");
+    const buf = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+    res.attachment("customers.xlsx");
+    res.header('Access-Control-Expose-Headers', 'Content-Type, Location, Content-Disposition');
+    res.status(200).end(buf);
+}
+
+/**
+ * Get the customers linked to the company to be exported to excel
+ * @param company the id company
+ * @returns Promise<any[]>
+ */
+const _getDataCustomersToExport = async (company: string): Promise<any[]> => {
+    const customers = await CompanyCustomer.aggregate([
+        { $match: { company: new ObjectId(company) } },
+        {
+            $lookup: {
+                from: 'customers',
+                localField: 'customer',
+                foreignField: '_id',
+                as: 'customerObj',
+                pipeline: [
+                    {
+                        $project: {
+                            info: 1,
+                            profile: 1,
+                            address: 1,
+                            contact: 1,
+                            itemTier: 1,
+                            paymentTerm: 1,
+                            isActive: 1,
+                            lowerName:{
+                                "$toLower": "$profile.displayName"
+                            }
+                        },
+                    },
+                ],
+            }
+        },
+        {
+            $lookup: {
+                from: 'pricetiers',
+                localField: 'customerObj.itemTier',
+                foreignField: '_id',
+                as: 'tierObj',
+                pipeline: [
+                    {
+                        $project: {
+                            name: 1,
+                        },
+                    },
+                ],
+            }
+        },
+        {
+            $lookup: {
+                from: 'paymentterms',
+                localField: 'customerObj.paymentTerm',
+                foreignField: '_id',
+                as: 'paymentTermObj',
+                pipeline: [
+                    {
+                        $project: {
+                            name: 1,
+                        },
+                    },
+                ],
+            }
+        },
+        {
+            $project: {
+                customerObj: 1,
+                tierObj: 1,
+                paymentTermObj: 1
+            }
+        },
+        { $sort: { 'customerObj.lowerName': 1 } },
+    ]);
+    return customers;
+}
+
+/**
+ * Convert customer to row to be used one xcel
+ * @param customer the customer will be converted
+ * @returns {
+ *       name
+ *       email
+ *       phone
+ *       addressStreet
+ *       addressCity
+ *       addressState
+ *       addressZipCode
+ *       tierName
+ *       paymentTermName
+ *   }
+ */
+const _converCustomerToRowExcel = (customer: any): any => {
+    const row = {
+        name: '',
+        email: '',
+        phone: '',
+        addressStreet: '',
+        addressCity: '',
+        addressState: '',
+        addressZipCode: '',
+        tierName: '',
+        paymentTermName: '',
+        isActive: ''
+    };
+    if (!customer) {
+        return row;
+    }
+    if (customer.customerObj.length > 0) {
+        const cust = customer.customerObj[0];
+        row.name = cust.profile?.displayName;
+        row.email = cust.info?.email;
+        row.phone = cust.contcat?.phone;
+        row.addressStreet = cust.address?.street;
+        row.addressCity = cust.address?.city;
+        row.addressState = cust.address?.state;
+        row.addressZipCode = cust.address?.zipCode;
+        row.isActive = cust.isActive ? 'Yes' : 'No'
+    }
+    if (customer.tierObj.length > 0) {
+        const tier = customer.tierObj[0];
+        row.tierName = tier.name;
+    }
+    if (customer.paymentTermObj.length > 0) {
+        const payT = customer.paymentTermObj[0];
+        row.paymentTermName = payT.name;
+    }
+    return row;
 }

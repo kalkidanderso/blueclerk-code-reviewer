@@ -6,5 +6,6 @@ export interface IContact extends Document {
     email: string,
     phone: string,
     isActive: boolean,
-    userId: Schema.Types.ObjectId | IUser
+    userId: Schema.Types.ObjectId | IUser,
+    smsStatus: boolean,
 }

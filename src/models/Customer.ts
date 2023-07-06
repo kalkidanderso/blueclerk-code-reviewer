@@ -5,6 +5,7 @@ import { IItem } from '../models/Item'
 import { IPriceTier } from '../models/PriceTier'
 import { IJobLocation } from '../models/JobLocation'
 import { IPaymentTerm } from '../models/PaymentTerm'
+import { IJobCosting } from './JobCosting'
 import moment from 'moment'
 import { Role } from 'src/common/constants'
 
@@ -52,6 +53,7 @@ export interface ICustomer extends Document {
     balance: number,
     credit: number,
     itemTier: Schema.Types.ObjectId | IPriceTier
+    JobCosting: Schema.Types.ObjectId | IJobCosting
     isCustomPrice?: boolean
     customPrices?: {
         quantity: number,
@@ -203,6 +205,10 @@ const CustomerSchema = new Schema({
     itemTier: {
         type: Schema.Types.ObjectId,
         ref: 'PriceTier'
+    },
+    JobCosting: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobCosting'
     },
     isCustomPrice: {
         type: Boolean,
