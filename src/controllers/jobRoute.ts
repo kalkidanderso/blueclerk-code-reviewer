@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Schema } from 'mongoose';
+import { Query, Schema } from 'mongoose';
 import { ObjectId } from 'mongodb';
 import moment from 'moment';
 
@@ -139,12 +139,18 @@ export const getAllJobRoutesByTechnician = async (req: Request, res: Response) =
     const technician = <IUser>req.technician;
     const contractor = <ICompany>req.contractor;
 
-    const query = {
+    let query:any = {
         company: company._id,
         employeeType: params.employeeType,
         technician: technician?._id,
         contractor: contractor?._id
     };
+
+    if (params.startDate && params.endDate) {
+        const startDate = moment(params.startDate).format('YYYY-MM-DD');
+        const endDate = moment(params.endDate).format('YYYY-MM-DD');
+        query["scheduleDate"] = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    }
 
     const jobRoute = await JobRoute.find(query).sort({ _id: -1 })
         .populate({

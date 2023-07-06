@@ -1283,8 +1283,15 @@ const matchStage = { $match: filterQuery };
 
 export const getJobsByTechnicianId = (req: Request, res: Response) => {
 
-    const params = req.body
-    Job.find({ $or: [{ "tasks.technician": params.employeeId }, { technician: params.employeeId }] })
+    const params = req.body;
+    const filterQuery: any = {$and: [{$or: [{ "tasks.technician": params.employeeId }, { technician: params.employeeId }]}] };
+    if (params.startDate && params.endDate) {
+        const startDate = moment(params.startDate).format('YYYY-MM-DD');
+        const endDate = moment(params.endDate).format('YYYY-MM-DD');
+        filterQuery['$and'].push({ scheduleDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
+    }
+
+    Job.find(filterQuery)
         .populate({
             path: 'ticket',
             select: '-__v',
@@ -2162,6 +2169,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     let invoiceCommissionEntry: any[] = [];
                     
                     for (const task of job?.tasks) {
+                        task.status = JobStatus.FINISHED;
                         let contractorCommissionEntry = {
                             contractor: task.contractor._id,
                             technician: task.contractor.admin,
