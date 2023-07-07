@@ -47,6 +47,9 @@ export const Validations = {
     check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })
   ],
 
+  //bounce email
+  bounceEmail: [check('email').exists(),check('email').isLength({min:1})],
+
   login: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
   socialLogin: [check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric()],

@@ -62,6 +62,7 @@ export interface IInvoice extends Document {
         sentAt: Date,
         sentBy: Schema.Types.ObjectId
     }],
+    bouncedEmailFlag: boolean,
     lastEmailSent?: Date
     quickbookId?: string
     commission?: Schema.Types.ObjectId | IInvoiceCommission
@@ -343,6 +344,10 @@ const InvoiceSchema = new Schema({
             ref: 'User'
         }
     }],
+    bouncedEmailFlag: {
+        type: Boolean,
+        default: false
+    },
     lastEmailSent: {
         type: Date
     },
