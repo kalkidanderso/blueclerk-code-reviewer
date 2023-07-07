@@ -2274,7 +2274,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     const params = req.body;
     const user = <IUser>req.user;
     const company = <ICompany>req.company;
-
+    console.log(req.body)
     // Retrieve invoice and populate customer and paymentTerm info
     // const { INVOICE_PDF_PATH } = process.env;
     const invoice = await Invoice
@@ -2405,6 +2405,17 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         sentAt: sendingDate,
         sentBy: user._id || null
     });
+
+    
+    recipientEmails.forEach((item) => {
+        invoice.emailHistory.push({
+            sentTo: item,
+            sentAt: sendingDate,
+            sentBy: user._id || null
+        });
+       
+      });
+      
     invoice.lastEmailSent = sendingDate;
     await invoice.save();
 
