@@ -1,25 +1,29 @@
 import { Request, Response } from 'express';
-import { BouncedEmail , IBouncedEmail } from '../models/BounceEmail'
+import { Invoice } from '../models/Invoice';
+import { indexOf } from 'lodash';
 /**
  * To store bounced emails in db
  */
 export const store = async (req: Request, res: Response) => {
     try {
 
-        const { email }: IBouncedEmail = req.body
+        const { email } = req.body
         
-        // TODO: 
-        // 1. Design alert symbol according to figma
-        // 2. update invoice object where email exists in emailHistory and has latest sentAt value
-        // 3. remove BouncedEmail model and document
+        const invoice = await Invoice
+        .findOne(
+            { 'emailHistory.sentTo': email.trim()}
+        );
 
+        if (!invoice) {
+            res.status(500).json({message:'Invoice not found'})
+        }
 
-        const bouncedEmail = new BouncedEmail({ email })
-        const savedBounceEmail = await bouncedEmail.save()
+        invoice.bouncedEmailFlag = true;
+        invoice.save()
 
-        res.json(savedBounceEmail)
-    } catch (error) {
-        
-        res.status(500).json({message:'Failed to insert data'})
+        res.status(200).json({message: 'Success'})
+
+    } catch (error) {        
+        res.status(500).json({message:'Failed to update bounced status'})
     }
 }
