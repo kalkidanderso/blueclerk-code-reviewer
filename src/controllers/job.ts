@@ -1283,8 +1283,15 @@ const matchStage = { $match: filterQuery };
 
 export const getJobsByTechnicianId = (req: Request, res: Response) => {
 
-    const params = req.body
-    Job.find({ $or: [{ "tasks.technician": params.employeeId }, { technician: params.employeeId }] })
+    const params = req.body;
+    const filterQuery: any = {$and: [{$or: [{ "tasks.technician": params.employeeId }, { technician: params.employeeId }]}] };
+    if (params.startDate && params.endDate) {
+        const startDate = moment(params.startDate).format('YYYY-MM-DD');
+        const endDate = moment(params.endDate).format('YYYY-MM-DD');
+        filterQuery['$and'].push({ scheduleDate: { $gte: new Date(startDate), $lte: new Date(endDate) } });
+    }
+
+    Job.find(filterQuery)
         .populate({
             path: 'ticket',
             select: '-__v',
@@ -1333,6 +1340,9 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
             // TODO: To be deprecated
             path: 'type',
             select: 'title description sku'
+        })
+        .populate({
+            path: 'homeOwner'
         })
         .populate({
             // TODO: To be deprecated
@@ -2159,6 +2169,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     let invoiceCommissionEntry: any[] = [];
                     
                     for (const task of job?.tasks) {
+                        task.status = JobStatus.FINISHED;
                         let contractorCommissionEntry = {
                             contractor: task.contractor._id,
                             technician: task.contractor.admin,
@@ -2445,6 +2456,7 @@ export const startJobTask = async (req: Request, res: Response) => {
     const companyId = req.otherCompanyId || req.companyId;
     const params = req.body;
     const startedJobTypes: IJobType[] = [];
+    const timeStart = params.time_start ? new Date(params.time_start) : new Date();
     let taskJobType: ITaskJobType;
     let newJobType: IJobType;
     let actionStatus: string;
@@ -2504,11 +2516,11 @@ export const startJobTask = async (req: Request, res: Response) => {
         // Update the task start time and status
         let actionStatus: string;
         if (taskJobType.status === JobStatus.PAUSED) {
-            taskJobType.tempStartTime = new Date();
+            taskJobType.tempStartTime = timeStart;
             actionStatus = 'Re-starting';
         }
         else {
-            taskJobType.startTime = new Date();
+            taskJobType.startTime = timeStart;
             actionStatus = 'Started';
         }
         // Update the task status
@@ -2518,7 +2530,7 @@ export const startJobTask = async (req: Request, res: Response) => {
         taskJobType.timeUpdatedAt = new Date();
 
         if (job.status !== JobStatus.STARTED) {
-            job.startTime = new Date();
+            job.startTime = timeStart;
         }
 
         history = {
@@ -2552,10 +2564,10 @@ export const startJobTask = async (req: Request, res: Response) => {
     if (linkedTask) {
         // linkedTask.startTime = new Date();
         if (linkedJobType.status === JobStatus.PAUSED) {
-            linkedJobType.tempStartTime = new Date();
+            linkedJobType.tempStartTime = timeStart;
         }
         else {
-            linkedJobType.startTime = new Date();
+            linkedJobType.startTime = timeStart;
         }
         linkedJobType.status = JobStatus.STARTED;
         linkedJobType.timeUpdatedBy = user;

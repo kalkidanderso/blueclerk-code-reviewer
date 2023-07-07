@@ -344,6 +344,12 @@ export const Validations = {
     check('contractorId').optional().isMongoId().withMessage(Messages.WrongId)
   ],
 
+  // Job Route
+  allJobRoutesByTechnician: [
+    check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
+    check('contractorId').optional().isMongoId().withMessage(Messages.WrongId)
+  ],
+
   createJobRoute: [
     check('routes').exists().withMessage(Messages.Required),
   ],
