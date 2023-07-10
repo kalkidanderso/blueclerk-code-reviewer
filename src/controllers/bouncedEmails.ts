@@ -17,17 +17,15 @@ export const store = async (req: Request, res: Response) => {
                     bouncedEmailFlag: true
                 },
             },
-            { new: true }
-
         );
        
         if (!invoice) {
-            res.status(500).json({message:'Invoice not found'})
+            res.status(500).json({message: 'Invoice not found'})
         }
 
         res.status(200).json({message: 'Success'})
 
     } catch (error) {        
-        res.status(500).json({message:'Failed to update bounced status'})
+        res.status(500).json({message: 'Failed to update bounced status'})
     }
 }

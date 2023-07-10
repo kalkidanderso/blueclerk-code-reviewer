@@ -342,6 +342,10 @@ const InvoiceSchema = new Schema({
         sentBy: {
             type: Schema.Types.ObjectId,
             ref: 'User'
+        },
+        deliveryStatus: {
+            type:Boolean,
+            default:true
         }
     }],
     bouncedEmailFlag: {
