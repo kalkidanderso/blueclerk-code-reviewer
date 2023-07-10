@@ -144,66 +144,66 @@ const PdfPrinter = require('pdfmake')
 
 export const createJob = async (req: Request, res: Response) => {
 
-        const params = req.body;
-        const imagesUrl: string[] = [];
-        const company = <ICompany>req.company;
-        if (req.files) {
-            const paramsImageFile = JSON.parse(JSON.stringify(req.files));
+    const params = req.body;
+    const imagesUrl: string[] = [];
+    const company = <ICompany>req.company;
+    if (req.files) {
+        const paramsImageFile = JSON.parse(JSON.stringify(req.files));
 
-            // Push image location from req.files to imagesUrl
-            paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
-            paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
+        // Push image location from req.files to imagesUrl
+        paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
+        paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
+    }
+
+    if (!params.ticketId && !params.jobRequestId) {
+        return res.json({ status: Status.Error, message: 'ticketId or jobRequestId must be provided' })
+    }
+
+    if (params.ticketId && params.jobRequestId) {
+        return res.json({ status: Status.Error, message: 'Can only use one of the ticketId or jobRequestId' })
+    }
+
+    if (params.employeeType == 0 && !params.technicianId) {
+        return res.json({ status: Status.Error, message: 'technicianId must be provided when employeeType is employee' });
+    }
+
+    if (params.employeeType == 1 && !params.contractorId) {
+        return res.json({ status: Status.Error, message: 'contractorId must be provided when employeeType is contractor' });
+    }
+
+    if (!params.isHomeOccupied && !params.customerId) {
+        return res.json({ status: Status.Error, message: 'Customer is required' });
+    }
+
+    if (params.isHomeOccupied && !params.homeOwnerId) {
+        return res.json({ status: Status.Error, message: 'Home Owner is required when home is occupied'});
+    }
+
+    if (!params.customerName && !(!params.customerPhone && !params.customerEmail)) {
+        return res.json({ status: Status.Error, message: 'Name, Email or Phone must be provided'});
+    }
+
+    if (params.scheduledStartTime && params.scheduledEndTime) {
+        try {
+            handleScheduledTime({
+                company,
+                scheduleDate: params.scheduleDate,
+                scheduledStartTime: params.scheduledStartTime,
+                scheduledEndTime: params.scheduledEndTime,
+                technicianId: params.technicianId
+            });
+        } catch (err) {
+            Sentry.captureException(err);
+            return res.json({ status: Status.Error, message: err });
         }
+    }
 
-        if (!params.ticketId && !params.jobRequestId) {
-            return res.json({ status: Status.Error, message: 'ticketId or jobRequestId must be provided' })
-        }
+    if (params.ticketId) {
+        await createServiceTicketJob(req, res, params.ticketId, imagesUrl, company);
+    }
 
-        if (params.ticketId && params.jobRequestId) {
-            return res.json({ status: Status.Error, message: 'Can only use one of the ticketId or jobRequestId' })
-        }
-
-        if (params.employeeType == 0 && !params.technicianId) {
-            return res.json({ status: Status.Error, message: 'technicianId must be provided when employeeType is employee' });
-        }
-
-        if (params.employeeType == 1 && !params.contractorId) {
-            return res.json({ status: Status.Error, message: 'contractorId must be provided when employeeType is contractor' });
-        }
-
-        if (!params.isHomeOccupied && !params.customerId) {
-            return res.json({ status: Status.Error, message: 'Customer is required' });
-        }
-
-        if (params.isHomeOccupied && !params.homeOwnerId) {
-            return res.json({ status: Status.Error, message: 'Home Owner is required when home is occupied'});
-        }
-
-        if (!params.customerName && !(!params.customerPhone && !params.customerEmail)) {
-            return res.json({ status: Status.Error, message: 'Name, Email or Phone must be provided'});
-        }
-
-        if (params.scheduledStartTime && params.scheduledEndTime) {
-            try {
-                handleScheduledTime({
-                    company,
-                    scheduleDate: params.scheduleDate,
-                    scheduledStartTime: params.scheduledStartTime,
-                    scheduledEndTime: params.scheduledEndTime,
-                    technicianId: params.technicianId
-                });
-            } catch (err) {
-                Sentry.captureException(err);
-                return res.json({ status: Status.Error, message: err });
-            }
-        }
-
-        if (params.ticketId) {
-            await createServiceTicketJob(req, res, params.ticketId, imagesUrl, company);
-        }
-
-        if (params.jobRequestId) {
-            await createJobRequestJob(req, res, params.jobRequestId, imagesUrl, company);
+    if (params.jobRequestId) {
+        await createJobRequestJob(req, res, params.jobRequestId, imagesUrl, company);
     }
 }
 
