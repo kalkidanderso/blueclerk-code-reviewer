@@ -151,6 +151,7 @@ export interface IQBInvoice {
 export interface IQBInvoiceLine {
     DetailType?: LineDetailTypes
     Amount?: number
+    Description?: string
     SalesItemLineDetail?: {
         ItemRef?: {
             name?: string
