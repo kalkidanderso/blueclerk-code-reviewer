@@ -60,7 +60,8 @@ export interface IInvoice extends Document {
     emailHistory?: [{
         sentTo: string
         sentAt: Date,
-        sentBy: Schema.Types.ObjectId
+        sentBy: Schema.Types.ObjectId,
+        deliveryStatus: boolean
     }],
     bouncedEmailFlag: boolean,
     lastEmailSent?: Date
@@ -344,8 +345,8 @@ const InvoiceSchema = new Schema({
             ref: 'User'
         },
         deliveryStatus: {
-            type:Boolean,
-            default:true
+            type: Boolean,
+            default: true
         }
     }],
     bouncedEmailFlag: {

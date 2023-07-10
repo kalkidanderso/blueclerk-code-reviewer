@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Invoice } from '../models/Invoice';
+
 /**
  * mark the bounced emails as read 
  */
@@ -8,11 +9,10 @@ export const markRead = async (req: Request, res: Response) => {
 
         const { invoiceId } = req.body
         
-        const invoice = await Invoice
+        await Invoice
         .findOneAndUpdate(
             { '_id': invoiceId.trim() },
             { $set: { bouncedEmailFlag: false } }
-
         );
 
         res.status(200).json({message: 'Success'})

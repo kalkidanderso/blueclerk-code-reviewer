@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Invoice } from '../models/Invoice';
+
 /**
  * To store bounced emails in db
  */
