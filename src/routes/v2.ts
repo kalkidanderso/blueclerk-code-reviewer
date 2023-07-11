@@ -8,9 +8,12 @@ import {
 import { getCompanyId } from '../middleware/company';
 import { isLogin } from '../middleware/session';
 import { Permissions } from '../common/constants';
+import { isObjectIdValid } from '../middleware/isObjectIdValid'
+
 import * as invoiceController from '../controllers/v2/invoice';
 import * as jobController from '../controllers/v2/job';
 import * as serviceTicketController from '../controllers/v2/serviceTicket';
+import * as markAsRead from '../controllers/markAsRead';
 
 export default function () {
 
@@ -25,6 +28,15 @@ export default function () {
         checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.getInvoices),
         invoiceController.getInvoices
+    )
+
+    //mark-bounced-emails-as-read
+    router.post(
+        '/mark-as-read',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        isObjectIdValid,
+        markAsRead.markRead
     )
 
     router.post(

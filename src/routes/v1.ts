@@ -61,7 +61,6 @@ import * as integrationController from '../controllers/integration';
 import * as scriptController from '../controllers/script';
 import * as workTypeController from '../controllers/workType';
 import * as bouncedEmails from '../controllers/bouncedEmails';
-import * as markAsRead from '../controllers/markAsRead';
 
 import homeOwner from './homeOwner';
 import jobLocation from './jobLocation'
@@ -70,7 +69,6 @@ import chat from './chat';
 import blockchain from './blockchain';
 import { isLogin } from '../middleware/session';
 import { isLambdaRequest } from '../middleware/isLamdaRequest'
-import { isObjectIdValid } from '../middleware/isObjectIdValid'
 
 export default function (sio: any) {
 
@@ -96,18 +94,9 @@ export default function (sio: any) {
         '/store-bounced-emails',
         validate(Validations.bounceEmail),
         isLambdaRequest,
-        // isRequestValid,
         bouncedEmails.store
     )
 
-    //mark-bounced-emails-as-read
-    router.post(
-        '/mark-as-read',
-        passport.authenticate('jwt', { session: false }),
-        isLogin(),
-        isObjectIdValid,
-        markAsRead.markRead
-    )
 
     // Used for Service Provider Sign Up
     router.get(

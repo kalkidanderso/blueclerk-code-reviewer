@@ -9,13 +9,3 @@ export const isLambdaRequest = (req: Request, res: Response, next: NextFunction)
 
     next()
 }
-
-export const isRequestValid = (req: Request, res: Response, next: NextFunction) => {
-    const { email } = req.body
-
-    if (!email) {
-        res.status(400).send({ message : 'Email field is required'})
-    }
-
-    next()
-}

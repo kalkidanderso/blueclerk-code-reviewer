@@ -2403,7 +2403,8 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     invoice.emailHistory.push({
         sentTo: customer.info?.email,
         sentAt: sendingDate,
-        sentBy: user._id || null
+        sentBy: user._id || null,
+        deliveryStatus:true
     });
 
     
@@ -2411,7 +2412,8 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         invoice.emailHistory.push({
             sentTo: item,
             sentAt: sendingDate,
-            sentBy: user._id || null
+            sentBy: user._id || null,
+            deliveryStatus:true
         });
     });
       
@@ -2530,7 +2532,8 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
             invoice.emailHistory.push({
                 sentTo: customer.info?.email,
                 sentAt: sendingDate,
-                sentBy: user._id || null
+                sentBy: user._id || null,
+                deliveryStatus: true
             });
             invoice.lastEmailSent = sendingDate;
 
