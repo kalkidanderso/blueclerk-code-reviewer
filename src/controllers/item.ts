@@ -86,6 +86,7 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
     res.json({ status: Status.Success, message: 'Item created successfully.', item });
 
     if (company.qbAuthorized) {
+        console.log("item going to qb ",item);
         // Create the new Item in QuickBooks
         _createQBItem(req, res, company, item, async (err: any, errMsg: any, qbItem: IQBItem) => {
             if (err) {
@@ -239,7 +240,7 @@ export const updateItems = async (req: Request, res: Response) => {
             if (err) {
                 return res.json({ status: Status.Success, message: err.message, item: itemObj });
             }
-
+            console.log("update Items",itemObj)
             if (company.qbAuthorized && itemObj.quickbookId) {
                 await _updateQBItem(req, res, company, itemObj, async (err, errMsg) => { });
             }

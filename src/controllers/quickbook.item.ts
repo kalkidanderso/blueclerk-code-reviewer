@@ -63,7 +63,7 @@ export const _createQBItem = async (req: Request, res: Response, company: ICompa
       Name: item.name,
       Description: item.description,
       Sku: item.sku,
-      Type: QBItemTypes.SERVICE,
+      Type: item.itemType =='Product'? QBItemTypes.NONINVENTORY:QBItemTypes.SERVICE,
       UnitPrice: item.charges,
       Active: item.isActive,
       SalesTaxIncluded: false,
@@ -373,9 +373,11 @@ export const _updateQBItem = async (req: Request, res: Response, company: ICompa
       qbItem.Name = item.name;
       qbItem.Taxable = item.tax === 0 ? false : !false;
       qbItem.Sku = item.sku;
+      qbItem.Type= item.itemType =='Product'? QBItemTypes.NONINVENTORY:QBItemTypes.SERVICE,
+
 
       qbo.updateItem(qbItem, async (err: any, updatedQbItem: IQBItem) => {
-        if (err || !updatedQbItem) {
+         if (err || !updatedQbItem) {
           const errMsg = err.Fault?.Error[0]?.Detail
           || err.Fault?.Error[0]?.Message
           || err.fault?.error[0]?.detail
