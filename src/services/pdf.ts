@@ -173,7 +173,7 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                         }, {
                             ...generateField('JOB TYPE(S)', 
                                 jobReport.job.tasks.map((task: any) => {
-                                    return task.jobTypes.map((jobType: any) => jobType.jobType?.title + ' - ')}).flat(), 
+                                    return task.jobTypes.map((jobType: any) => jobType.jobType?.title)}).join(', '), 
                                 '50%')
                         }, ],
                     },
