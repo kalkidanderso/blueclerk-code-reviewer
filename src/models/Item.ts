@@ -32,7 +32,9 @@ export interface IItem extends Document {
     jobType?: Schema.Types.ObjectId
     company?: Schema.Types.ObjectId
     isActive: boolean
-    itemType:ItemTypes
+    itemType:ItemTypes,
+    salePrice:number,
+    productCost:number,
     quickbookId?: string
     createdAt?: Date
     updatedAt?: Date
@@ -137,7 +139,7 @@ const ItemSchema = new Schema({
 
         default:'Service'
     },
-    cost:{
+    productCost:{
         type:Number,
         optional:true
     },

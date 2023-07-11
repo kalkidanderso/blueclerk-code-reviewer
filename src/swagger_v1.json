@@ -6015,7 +6015,7 @@
                       "Product"
                     ]
                   },
-                  "cost": {
+                  "productCost": {
                     "type": "number",
                     "description": "Required with Item Type Product"
                   },
@@ -6131,6 +6131,22 @@
                   "tax": {
                     "type": "number",
                     "description": "tax percentage to be applied on this item in invoice"
+                  },
+                  "itemType": {
+                    "type": "string",
+                    "description": "Enum only accepts Product and Service",
+                    "enum": [
+                      "Service",
+                      "Product"
+                    ]
+                  },
+                  "productCost": {
+                    "type": "number",
+                    "description": "Required with Item Type Product"
+                  },
+                  "salePrice": {
+                    "type": "number",
+                    "description": "Required with Item Type Product"
                   }
                 }
               }
