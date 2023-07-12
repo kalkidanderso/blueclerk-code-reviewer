@@ -60,7 +60,6 @@ import * as notificationController from '../controllers/notification';
 import * as integrationController from '../controllers/integration';
 import * as scriptController from '../controllers/script';
 import * as workTypeController from '../controllers/workType';
-import * as bouncedEmails from '../controllers/bouncedEmails';
 
 import homeOwner from './homeOwner';
 import jobLocation from './jobLocation'
@@ -68,7 +67,6 @@ import jobSite from './jobSite'
 import chat from './chat';
 import blockchain from './blockchain';
 import { isLogin } from '../middleware/session';
-import { isLambdaRequest } from '../middleware/isLamdaRequest'
 
 export default function (sio: any) {
 
@@ -88,15 +86,6 @@ export default function (sio: any) {
             userController.login(req, res, sio)
         }
     )
-
-    // Bounced Emails
-    router.post(
-        '/store-bounced-emails',
-        validate(Validations.bounceEmail),
-        isLambdaRequest,
-        bouncedEmails.store
-    )
-
 
     // Used for Service Provider Sign Up
     router.get(
