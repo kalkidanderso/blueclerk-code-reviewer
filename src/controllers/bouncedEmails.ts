@@ -19,7 +19,7 @@ export const store = async (req: Request, res: Response) => {
                 },
             },
         );
-       
+
         if (!invoice) {
             res.status(500).json({message: 'Invoice not found'})
         }
@@ -28,5 +28,44 @@ export const store = async (req: Request, res: Response) => {
 
     } catch (error) {        
         res.status(500).json({message: 'Failed to update bounced status'})
+    }
+}
+
+/**
+ * To store bounced emails in db
+ */
+export const deliveryStatus = async (req: Request, res: Response) => {
+    try {
+        const countofBounceEmail = await Invoice.countDocuments({ 
+            bouncedEmailFlag: true }
+        );
+
+        res.send({
+            invoiceEmaildeliveryStatus: !!countofBounceEmail
+        })
+    } 
+    catch (error) {
+        res.status(500).send({ error: "Failed to count" });
+    }
+}
+
+/**
+ * mark the bounced emails as read 
+ */
+export const markRead = async (req: Request, res: Response) => {
+    try {
+
+        const { invoiceId } = req.body
+        
+        await Invoice
+        .findOneAndUpdate(
+            { '_id': invoiceId.trim() },
+            { $set: { bouncedEmailFlag: false } }
+        );
+
+        res.status(200).json({message: 'Success'})
+
+    } catch (error) {        
+        res.status(500).json({message: 'Failed to mark all bounced emails delivery status '})
     }
 }
