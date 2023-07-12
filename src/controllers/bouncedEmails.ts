@@ -32,24 +32,6 @@ export const store = async (req: Request, res: Response) => {
 }
 
 /**
- * To store bounced emails in db
- */
-export const deliveryStatus = async (req: Request, res: Response) => {
-    try {
-        const countofBounceEmail = await Invoice.countDocuments({ 
-            bouncedEmailFlag: true }
-        );
-
-        res.send({
-            invoiceEmaildeliveryStatus: !!countofBounceEmail
-        })
-    } 
-    catch (error) {
-        res.status(500).send({ error: "Failed to count" });
-    }
-}
-
-/**
  * mark the bounced emails as read 
  */
 export const markRead = async (req: Request, res: Response) => {

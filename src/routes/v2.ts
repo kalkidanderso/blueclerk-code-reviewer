@@ -38,14 +38,6 @@ export default function () {
         isLambdaRequest,
         bouncedEmails.store
     )
-    
-    router.get(
-        '/getInvoiceEmailDeliveryStatus',
-        passport.authenticate('jwt', { session: false }),
-        isLogin(),
-        checkUserPermissions(Permissions.Get_Invoices),
-        bouncedEmails.deliveryStatus
-    )
 
     //mark-bounced-emails-as-read
     router.post(
