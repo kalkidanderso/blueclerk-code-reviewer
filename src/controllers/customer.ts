@@ -318,6 +318,7 @@ export const getCustomers = async (req: Request, res: Response) => {
                 "info.email": 1,
                 "isActive": 1,
                 "quickbookId": 1,
+                "isPORequired": 1,
             }
         },
     ]).exec()
@@ -459,6 +460,7 @@ export const updateCustomer = (req: Request, res: Response) => {
                 contacts: params.contacts,
                 inactiveAt: null,
                 inactiveBy: null,
+                isPORequired: params.isPORequired
             }
 
             if (customer.isActive && !isActive) {

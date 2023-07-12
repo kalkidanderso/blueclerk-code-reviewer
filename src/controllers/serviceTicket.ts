@@ -110,6 +110,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 tasks: jobTypes,
                 customerPO : customerPo,
                 images: [],
+                type: params.type
             });
 
             serviceTicket.customer = customerId;

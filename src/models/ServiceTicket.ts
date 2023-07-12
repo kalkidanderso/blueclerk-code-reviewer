@@ -168,7 +168,11 @@ const ServiceTicketSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'CompanyLocation',
     },
-
+    type: {
+        type: String,
+        enum: ['Ticket','PO Request'],
+        default: 'Ticket'
+    }
 })
 
 //Indexes

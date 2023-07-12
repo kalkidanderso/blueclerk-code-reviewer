@@ -254,8 +254,12 @@ const CustomerSchema = new Schema({
     admin:{
         type: String,
         ref: 'User'
+    },
+    isPORequired: {
+        type: Boolean,
+        default: false,
+        required: false
     }
-
 });
 
 //Indexes
