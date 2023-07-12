@@ -217,7 +217,7 @@ export const Validations = {
       }
       return true;
     }),
-    check('productCost').if(check('itemType').equals('Product')).not().isEmpty().withMessage(Messages.Required),
+    // check('productCost').if(check('itemType').equals('Product')).not().isEmpty().withMessage(Messages.Required),
   check('salePrice').if(check('itemType').equals('Product')).not().isEmpty().withMessage(Messages.Required)
 ],
 
