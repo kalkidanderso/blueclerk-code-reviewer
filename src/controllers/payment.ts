@@ -1940,16 +1940,15 @@ const _getEmployeePayments = async (employees: any[], company: ICompany, queryPa
  * @param {any} queryAdvancePaymentEmployee query applied in employee advance payments
  */
 const _fillQueriesPayrollBalance = (params: any, query: any, queryPaymentVendor: any, queryPaymentEmployee: any, queryAdvancePaymentVendor: any, queryAdvancePaymentEmployee: any) => {
-    const { startDateP, endDateP, workType, companyLocation, offset } = params
-    if (startDateP && endDateP) {
-
-        const startDate = moment(startDateP).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
-        const endDate = moment(endDateP).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
-        query = { issuedDate: { $gte: startDate, $lte: endDate } };
-        queryPaymentVendor = { paidAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
-        queryAdvancePaymentVendor = { appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
-        queryPaymentEmployee = { paidAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
-        queryAdvancePaymentEmployee = { appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
+    const { startDate, endDate, workType, companyLocation, offset } = params
+    if (startDate && endDate) {
+        const startDateFormatted = moment(startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
+        const endDateFormatted = moment(endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
+        query["date"] = { $gte: startDateFormatted, $lte: endDateFormatted };
+        queryPaymentVendor["paidAt"] = { $gte: new Date(startDate), $lte: new Date(endDate) };
+        queryAdvancePaymentVendor["appliedAt"] = { $gte: new Date(startDate), $lte: new Date(endDate) };
+        queryPaymentEmployee["paidAt"] = { $gte: new Date(startDate), $lte: new Date(endDate) };
+        queryAdvancePaymentEmployee["appliedAt"] = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
 
     if (workType) {
@@ -1989,11 +1988,17 @@ const _fillQueriesPayrollBalance = (params: any, query: any, queryPaymentVendor:
  * @returns {Promise<ITechnicianCommissionInvoice[]>}
  */
 const _getTechnicianCommisionsInvoices = async (query: any, company: ICompany): Promise<ITechnicianCommissionInvoice[]> => {
+    let invoiceQuery = {...query}
+    if (invoiceQuery["date"]) {
+        invoiceQuery["issuedDate"] = invoiceQuery["date"];
+        delete invoiceQuery["date"]
+    } 
+    
     const techniciansCommissionsInvoices: ITechnicianCommissionInvoice[] = (await Invoice.find({
         company: company._id,
         isDraft: { $ne: true },
         job: { $ne: null },
-        ...query
+        ...invoiceQuery
     })
         .populate({ path: 'commission' })
         .lean())
@@ -2020,11 +2025,17 @@ const _getTechnicianCommisionsInvoices = async (query: any, company: ICompany): 
  * @returns {Promise<ITechnicianCommissionInvoice[]>}
  */
 const _getTechnicianCommisionsJobs = async (query: any, company: ICompany): Promise<ITechnicianCommissionJob[]> => {
+    let jobQuery = {...query}
+    if (jobQuery["date"]) {
+        jobQuery["endTime"] = jobQuery["date"];
+        delete jobQuery["date"]
+    } 
+
     const techniciansCommissionsJobs: ITechnicianCommissionJob[] = (await Job.find({
         company: company._id,
         status: 2,
         commission: { $ne: null },
-        ...query
+        ...jobQuery
     }).populate({ path: 'commission' })
         .lean())
         .flatMap((value: IJob) => {
