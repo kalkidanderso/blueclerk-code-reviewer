@@ -2055,6 +2055,10 @@ export const updateInvoiceMessages = async (req: Request, res: Response) => {
             images: params.technicianMessages.images || invoice.technicianMessages.images,
         };
 
+        if([true, false].includes(params.showJobId)) {
+            invoice.showJobId = params.showJobId;
+        }
+
         const updatedInvoice = await invoice.save();
         return res.json({status: Status.Success, message: 'Invoice updated successfully.', data: updatedInvoice});
     } catch (err) {
@@ -3781,14 +3785,14 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                                 border: [false, false, false, true]
                             },
 
-                            {
+                            invoice?.showJobId ? {
                                 stack: [
                                     {text: 'Job Number', style: 'headerTitleBold'},
                                     {text: job?.jobId ?? '', style: 'invoiceHeader'},
                                 ],
                                 margin: [0, -2, 0, 10],
                                 border: [false, false, false, true]
-                            },
+                            } : {},
                             {text: '', margin: [0, 0, 0, 10], border: [false, false, false, true]},
                         ]
                     ],

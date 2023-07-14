@@ -490,6 +490,7 @@ export const Validations = {
     check('jobLocationId').optional({ nullable: true }).isMongoId().withMessage(Messages.WrongId),
     check('jobSiteId').optional({ nullable: true }).isMongoId().withMessage(Messages.WrongId),
     check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
+    check('showJobId').optional().isBoolean().toBoolean().withMessage('showJobId has to be boolean'),
   ],
 
   setCustomInvoiceNumber: [check('invoiceNumber').optional().isInt().toInt()],

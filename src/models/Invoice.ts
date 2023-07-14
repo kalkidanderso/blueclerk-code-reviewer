@@ -79,7 +79,8 @@ export interface IInvoice extends Document {
             }
         ],
         images: [string]
-    }
+    },
+    showJobId: boolean,
 }
 
 export enum LineDetailTypes {
@@ -376,6 +377,10 @@ const InvoiceSchema = new Schema({
             type: [String],
             required: false
         }
+    },
+    showJobId: {
+        type: Boolean,
+        default: true,
     }
 }, {timestamps: {createdAt: true, updatedAt: true}});
 
