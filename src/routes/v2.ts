@@ -11,6 +11,7 @@ import { Permissions } from '../common/constants';
 import * as invoiceController from '../controllers/v2/invoice';
 import * as jobController from '../controllers/v2/job';
 import * as serviceTicketController from '../controllers/v2/serviceTicket';
+import * as userPermissionController from '../controllers/v2/userPermission';
 
 export default function () {
 
@@ -54,6 +55,22 @@ export default function () {
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Service_Tickets),
         serviceTicketController.getServiceTickets
+    )
+
+    router.get(
+        '/getUserPermission/:userId',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        userPermissionController.getUserPermission
+    )
+
+    router.post(
+        '/updateUserPermission/:userId',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        userPermissionController.updateUserPermission
     )
 
     return router
