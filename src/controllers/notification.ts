@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
-import { Messages, SocketEvents, Status } from '../common/constants';
+import { Messages, SocketEvents, Status, DefaultPageSize } from '../common/constants';
 
 import { IUser } from '../models/User';
-import { Notification, INotification, INotificationQuery, NotificationTypes } from '../models/Notification';
+import { Notification, INotification, NotificationTypes } from '../models/Notification';
 import { NotificationContract, NotificationServiceTicket, NotificationJob, NotificationJobRequest, NotificationChat } from '../models/NotificationDiscriminator';
+import * as helper from '../services/helper';
 
 /**
  * Construct and get query for notification,
@@ -12,24 +13,38 @@ import { NotificationContract, NotificationServiceTicket, NotificationJob, Notif
 const _getNotificationQuery = (
     companyId: string,
     isDismissed: 'ALL' | boolean,
-    isRead: 'ALL' | boolean
-): INotificationQuery => {
+    isRead: 'ALL' | boolean,
+    search?: string
+): any => {
 
-    const query: INotificationQuery = {
-        company: companyId,
-        'dismissedStatus.isDismissed': false
+    const query: any = {
+        $and: [
+            { company: companyId },
+
+        ]
     }
-
-    if (isDismissed === 'ALL') {
-        delete query['dismissedStatus.isDismissed'];
-    } else if (isDismissed != null) {
-        query['dismissedStatus.isDismissed'] = isDismissed
+    const queryAnd: any[] = [];
+    if (isDismissed != null && isDismissed !== 'ALL') {
+        queryAnd.push({ 'dismissedStatus.isDismissed': isDismissed });
     }
 
     if (isRead != null && isRead !== 'ALL') {
-        query['readStatus.isRead'] = isRead
+        queryAnd.push({ 'readStatus.isRead': isRead });
     }
-
+    if (search && search != '') {
+        const searchRegex = helper.getRegex(search, 'i');
+        queryAnd.push({
+            $or: [
+                {
+                    'message.title': searchRegex
+                },
+                {
+                    'message.body': searchRegex
+                }
+            ]
+        })
+    }
+    query['$and'].push(...queryAnd);
     return query;
 
 }
@@ -96,13 +111,20 @@ export const _handleNotification = async ({ sio, companyId, notificationType, me
 /**
  * Retrieve multiple notifications based on company
  */
-export const getNotifications = (req: Request, res: Response) => {
+export const getNotifications = async (req: Request, res: Response) => {
 
+    const params = req.query;
     const companyId = req.companyId;
-    const { isDismissed, isRead } = req.query;
-    const _query: INotificationQuery = _getNotificationQuery(companyId, isDismissed, isRead);
+    const { isDismissed, isRead, search } = params;
+    const _query: any = _getNotificationQuery(companyId, isDismissed, isRead, search);
+    const currentPage = parseInt(params.currentPage || 0);
+    const pageSize = parseInt(params.pageSize || DefaultPageSize);
 
+    const total = await Notification.count(_query)
+    const totalUnread = await Notification.count(_getNotificationQuery(companyId, false, false))
     Notification.find(_query).sort({ createdAt: 'desc' })
+        .skip(currentPage * pageSize)
+        .limit(pageSize)
         .populate({
             path: 'readStatus.readBy',
             select: 'profile.displayName'
@@ -122,11 +144,12 @@ export const getNotifications = (req: Request, res: Response) => {
 
             return res.json({
                 status: Status.Success,
-                notifications
+                notifications,
+                total,
+                totalUnread
             })
         }
-    );
-
+        );
 }
 
 /**
@@ -192,6 +215,6 @@ export const updateNotification = (req: Request, res: Response) => {
 
             })
         }
-    );
+        );
 
 }

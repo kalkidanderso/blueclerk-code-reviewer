@@ -7,8 +7,9 @@ import { IJobLocation, JobLocation } from '../models/JobLocation'
 import { IContact } from '../common/contact'
 import { Company, ICompany } from '../models/Company'
 import { CustomerContact, ICustomerContact } from '../models/CustomerContact';
-import { sendCustomerContactNewPassword } from '../services/aws';
+import { hasOptedOut, sendCustomerContactNewPassword } from '../services/aws';
 import * as Sentry from '@sentry/node';
+import { standarizePhoneNumberE164 } from '../utils/phoneNumberUtil';
 
 const generator = require('generate-password');
 
@@ -291,7 +292,7 @@ export const removeContact = async (req: Request, res: Response) => {
 
 const _handlefindIsActiveContact = async (isActive: string | boolean | null, customerContacts: IContact[]): Promise<IContact[]> => {
 
-    const contacts: any[] = [];
+    let contacts: IContact[] = [];
 
     switch (isActive) {
         case 'true':
@@ -317,8 +318,21 @@ const _handlefindIsActiveContact = async (isActive: string | boolean | null, cus
             contacts.push(...customerContacts);
     }
 
-    return contacts;
+    // For each one, check if has opted out
+    contacts = await Promise.all(contacts.map(async (contact: IContact) => {
+        if(!contact.phone) contact.smsStatus = false;
+        else {
+            try {
+                contact.smsStatus = !await hasOptedOut(standarizePhoneNumberE164(contact.phone));
+            }
+            catch(err) {
+                contact.smsStatus = false;
+            }
+        }
+        return contact;
+    }));
 
+    return contacts;
 }
 
 // Create customer contact in user collection

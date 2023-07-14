@@ -132,6 +132,48 @@ export const getJobRoute = async (req: Request, res: Response) => {
 
 }
 
+export const getAllJobRoutesByTechnician = async (req: Request, res: Response) => {
+
+    const params = req.query;
+    const company = <ICompany>req.company;
+    const technician = <IUser>req.technician;
+    const contractor = <ICompany>req.contractor;
+
+    let query:any = {
+        company: company._id,
+        employeeType: params.employeeType,
+        technician: technician?._id,
+        contractor: contractor?._id
+    };
+
+    if (params.startDate && params.endDate) {
+        const startDate = moment(params.startDate).format('YYYY-MM-DD');
+        const endDate = moment(params.endDate).format('YYYY-MM-DD');
+        query["scheduleDate"] = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    }
+
+    const jobRoute = await JobRoute.find(query).sort({ _id: -1 })
+        .populate({
+            path: 'routes.job',
+            select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
+            populate: [
+                { path: 'customer', select: 'profile vendorId address location' },
+                { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+                { path: 'type', select: 'title description sku' },
+                { path: 'ticket', select: '-__v -track' },
+                { path: 'jobLocation', select: '-__v -contacts -jobSites -customerId -companyId -quickbookId' },
+                { path: 'jobSite', select: '-__v -locationId -customerId' }
+            ]
+        })
+        .populate({ path: 'technician', select: 'profile' })
+        .populate({ path: 'createdBy', select: 'profile' })
+        .populate({ path: 'updatedBy', select: 'profile' });
+
+    return res.json({ status: Status.Success, jobRoute });
+
+}
+
 /**
  * To create a new job route for technician/contractor
  */

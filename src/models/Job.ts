@@ -5,6 +5,8 @@ import { ICompany } from '../models/Company';
 import { IHomeOwner } from '../models/HomeOwner';
 import { IJobLocation } from '../models/JobLocation';
 import { IJobSite } from '../models/JobSite';
+import { IJobCommission } from './JobCommission';
+import { IJobCosting } from './JobCosting';
 
 export interface IJob extends Document {
     scheduleTimeAMPM: number
@@ -74,6 +76,7 @@ export interface IJob extends Document {
         note?: string
         date: Date
     }[]
+    commission?: Schema.Types.ObjectId | IJobCommission
     workType: Schema.Types.ObjectId  | any
     companyLocation: Schema.Types.ObjectId  | any
 }
@@ -82,7 +85,8 @@ export interface ITask extends Document {
     status: number
     employeeType?: boolean
     technician?: Schema.Types.ObjectId | any
-    contractor?: Schema.Types.ObjectId
+    contractor?: Schema.Types.ObjectId | ICompany
+    contractorCommissionTier?: Schema.Types.ObjectId | IJobCosting
     comment?: string
     jobTypes?: ITaskJobType[]
     paid: boolean
@@ -295,6 +299,11 @@ const JobSchema = new Schema({
             ref: 'Company',
             required: false
         },
+        contractorCommissionTier: {
+            type: Schema.Types.ObjectId,
+            ref: 'JobCosting',
+            required: false
+        },
         comment: String,
         jobTypes: [{
             jobType: {
@@ -430,6 +439,11 @@ const JobSchema = new Schema({
     },
     completeOnTime: {
         type: Boolean,
+        required: false
+    },
+    commission: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobCommission',
         required: false
     },
     workType: {

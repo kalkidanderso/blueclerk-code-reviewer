@@ -4,6 +4,7 @@ import { ICompanyInvoice } from '../models/CompanyInvoice';
 import { IPriceTier } from '../models/PriceTier';
 import { IPaymentTerm } from '../models/PaymentTerm';
 import { IUser } from '../models/User';
+import { IJobCosting } from './JobCosting';
 
 export enum CompanyTypes {
     COMPANY = 0,
@@ -102,6 +103,12 @@ export interface ICompany extends Document {
         count: number
         list: { tier: Schema.Types.ObjectId | IPriceTier }[]
     }
+    costing: {
+        count: number
+        list: { tier: Schema.Types.ObjectId | IJobCosting }[]
+    }
+    commissionType: string;
+    commissionTier: Schema.Types.ObjectId | IJobCosting;
     paymentTerm?: Schema.Types.ObjectId | IPaymentTerm
     companyInvoices: ICompanyInvoice[];
     balance: number;
@@ -311,6 +318,19 @@ const CompanySchema = new Schema({
             },
         }]
     },
+     costing: {
+        count: {
+            type: Number,
+            default: 0
+        },
+        list: [{
+            _id: false,
+            tier: {
+                type: Schema.Types.ObjectId,
+                ref: 'JobCosting'
+            },
+        }]
+    },
     paymentTerm: {
         type: Schema.Types.ObjectId,
         ref: 'PaymentTerm'
@@ -328,6 +348,14 @@ const CompanySchema = new Schema({
         default: null
     },
 
+    commissionType: {
+        type: String,
+        default: '%'
+    },
+    commissionTier: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobCosting'
+    },
     companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
     blockchain: {
         verified: {

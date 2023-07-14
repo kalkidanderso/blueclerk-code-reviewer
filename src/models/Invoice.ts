@@ -1,17 +1,17 @@
-import mongoose, { Document, Schema } from 'mongoose'
-import { InvoiceStatus } from '../common/constants';
-import { ICustomer, IQBAddress } from '../models/Customer';
-import { IContact } from '../common/contact';
-import { IItem } from '../models/Item';
-import { IJob } from '../models/Job';
-import { IPaymentTerm } from '../models/PaymentTerm';
-import { ICompany } from './Company';
-import { IUser } from './User';
-import { IInvoiceCommission } from '../models/InvoiceCommission';
-import { IJobLocation } from '../models/JobLocation';
-import { IJobSite } from '../models/JobSite';
-import { IWorkType } from './WorkType';
-import { ICompanyLocation } from './CompanyLocation';
+import mongoose, {Document, Schema} from 'mongoose'
+import {InvoiceStatus} from '../common/constants';
+import {ICustomer, IQBAddress} from '../models/Customer';
+import {IContact} from '../common/contact';
+import {IItem} from '../models/Item';
+import {IJob} from '../models/Job';
+import {IPaymentTerm} from '../models/PaymentTerm';
+import {ICompany} from './Company';
+import {IUser} from './User';
+import {IInvoiceCommission} from '../models/InvoiceCommission';
+import {IJobLocation} from '../models/JobLocation';
+import {IJobSite} from '../models/JobSite';
+import {IWorkType} from './WorkType';
+import {ICompanyLocation} from './CompanyLocation';
 
 export interface IInvoice extends Document {
     invoice: any[]
@@ -59,7 +59,8 @@ export interface IInvoice extends Document {
     status: InvoiceStatus
     emailHistory?: [{
         sentTo: string
-        sentAt: Date
+        sentAt: Date,
+        sentBy: Schema.Types.ObjectId
     }],
     lastEmailSent?: Date
     quickbookId?: string
@@ -68,8 +69,17 @@ export interface IInvoice extends Document {
     createdBy: Schema.Types.ObjectId
     createdAt: Date
     updatedAt: Date
-    workType: Schema.Types.ObjectId  | IWorkType
-    companyLocation: Schema.Types.ObjectId  | ICompanyLocation
+    workType: Schema.Types.ObjectId | IWorkType
+    companyLocation: Schema.Types.ObjectId | ICompanyLocation
+    technicianMessages: {
+        notes: [
+            {
+                id: string,
+                comment: string
+            }
+        ],
+        images: [string]
+    }
 }
 
 export enum LineDetailTypes {
@@ -141,6 +151,7 @@ export interface IQBInvoice {
 export interface IQBInvoiceLine {
     DetailType?: LineDetailTypes
     Amount?: number
+    Description?: string
     SalesItemLineDetail?: {
         ItemRef?: {
             name?: string
@@ -327,6 +338,10 @@ const InvoiceSchema = new Schema({
         sentTo: String,
         sentAt: {
             type: Date,
+        },
+        sentBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
         }
     }],
     lastEmailSent: {
@@ -350,36 +365,46 @@ const InvoiceSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'CompanyLocation',
     },
-}, { timestamps: { createdAt: true, updatedAt: true } });
+    technicianMessages: {
+        _id: false,
+        notes: [{
+            _id: false,
+            id: String,
+            comment: String,
+        }],
+        images: {
+            type: [String],
+            required: false
+        }
+    }
+}, {timestamps: {createdAt: true, updatedAt: true}});
 
 //Indexes
-InvoiceSchema.index({ customer: 1 });
-InvoiceSchema.index({ job: 1 });
-InvoiceSchema.index({ purchaseOrder: 1 });
-InvoiceSchema.index({ estimate: 1 });
-InvoiceSchema.index({ jobPurchaseOrders: 1 });
-InvoiceSchema.index({ paymentTerm: 1 });
-InvoiceSchema.index({ customerPO: 1 });
-InvoiceSchema.index({ vendorId: 1 });
-InvoiceSchema.index({ jobLocation: 1 });
-InvoiceSchema.index({ jobSite: 1 });
-InvoiceSchema.index({ company: 1 });
-InvoiceSchema.index({ customerContactId: 1})
-InvoiceSchema.index({ customer: 1, isDraft: 1 });
-InvoiceSchema.index({ job: 1, isDraft: 1 });
-InvoiceSchema.index({ issuedDate: 1, isDraft: 1 })
-InvoiceSchema.index({ job: 1, company: 1, isVoid: 1 });
-InvoiceSchema.index({ customer: 1, company: 1, isVoid: 1 })
-InvoiceSchema.index({ company: 1, job: 1, isDraft: 1, issuedDate: 1 })
-InvoiceSchema.index({ company: 1, 'technicians.contractor': 1, isDraft: 1 })
-InvoiceSchema.index({ company: 1, 'technicians.technician': 1, isDraft: 1 })
-InvoiceSchema.index({ company: 1, quickbookId: 1, isDraft: 1, isVoid: 1})
-InvoiceSchema.index({ company: 1, createdAt: -1, _id: -1, isDraft: 1, isVoid: 1})
-InvoiceSchema.index({ company: 1, job: 1, issuedDate: 1, note: 1, vendorId: 1, invoiceId: 1 })
-InvoiceSchema.index({ company: 1, job: 1, isDraft: 1, issuedDate: 1 })
-InvoiceSchema.index({ company: 1, createdAt: -1, isDraft: 1, isVoid: 1, invoiceId: 1, status: 1, customerPO: 1, vendorId: 1 })
-
-
+InvoiceSchema.index({customer: 1});
+InvoiceSchema.index({job: 1});
+InvoiceSchema.index({purchaseOrder: 1});
+InvoiceSchema.index({estimate: 1});
+InvoiceSchema.index({jobPurchaseOrders: 1});
+InvoiceSchema.index({paymentTerm: 1});
+InvoiceSchema.index({customerPO: 1});
+InvoiceSchema.index({vendorId: 1});
+InvoiceSchema.index({jobLocation: 1});
+InvoiceSchema.index({jobSite: 1});
+InvoiceSchema.index({company: 1});
+InvoiceSchema.index({customerContactId: 1})
+InvoiceSchema.index({customer: 1, isDraft: 1});
+InvoiceSchema.index({job: 1, isDraft: 1});
+InvoiceSchema.index({issuedDate: 1, isDraft: 1})
+InvoiceSchema.index({job: 1, company: 1, isVoid: 1});
+InvoiceSchema.index({customer: 1, company: 1, isVoid: 1})
+InvoiceSchema.index({company: 1, job: 1, isDraft: 1, issuedDate: 1})
+InvoiceSchema.index({company: 1, 'technicians.contractor': 1, isDraft: 1})
+InvoiceSchema.index({company: 1, 'technicians.technician': 1, isDraft: 1})
+InvoiceSchema.index({company: 1, quickbookId: 1, isDraft: 1, isVoid: 1})
+InvoiceSchema.index({company: 1, createdAt: -1, _id: -1, isDraft: 1, isVoid: 1})
+InvoiceSchema.index({company: 1, job: 1, issuedDate: 1, note: 1, vendorId: 1, invoiceId: 1})
+InvoiceSchema.index({company: 1, job: 1, isDraft: 1, issuedDate: 1})
+InvoiceSchema.index({company: 1,createdAt: -1,isDraft: 1,isVoid: 1,invoiceId: 1,status: 1,customerPO: 1,vendorId: 1})
 
 
 export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema)
