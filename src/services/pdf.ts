@@ -145,7 +145,7 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                                 text: '\nHOUSE STATUS',
                                 style: 'fieldLabel'
                             }, {
-                                text: jobReport.job.isHomeOccupied ? 'Occupied' : 'Not occuppied',
+                                text: jobReport.job.isHomeOccupied ? 'Occupied' : 'Not occupied',
                                 style: jobReport.job.isHomeOccupied ? 'boldGreen' : 'boldGrey'
                             }],
                             width: '25%',
