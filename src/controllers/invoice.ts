@@ -2081,7 +2081,7 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                 {path: 'tasks.technician', select: 'profile auth.email address contact permissions.role'},
                 {
                     path: 'tasks.contractor',
-                    select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax',
+                    select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax commissionTier',
                     populate: {path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role'}
                 },
                 {path: 'technicianImages.uploadedBy', select: 'profile auth.email address contact permissions.role'},
