@@ -62,20 +62,22 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
 
     const qbInvoiceLines: IQBInvoiceLine[] = [];
     const taxCode = await _createTaxService(company);
-
+    
     // Iterate all items in the invoice and construct is to QB Inv Lines
+    const tempNullDesc = "Temporary value is $0.1 - actual value is $0 (please update it manually to $0)";
     for (const invItem of invoice.items) {
         const item = <IItem>invItem.item;
 
         const qbInvoiceLinesEntry: any = {
             DetailType: LineDetailTypes.SalesItemLineDetail,
-            Amount: invItem?.subTotal,
+            Amount: invItem.subTotal == 0 ? 0.1 : invItem.subTotal,
+            Description: invItem.subTotal == 0 ? tempNullDesc : "", 
             SalesItemLineDetail: {
                 ItemRef: {
                     value: item?.quickbookId
                 },
                 Qty: invItem?.quantity,
-                UnitPrice: invItem?.price
+                UnitPrice: invItem.price == 0 ? 0.1 : invItem.price
             }
         };
 
@@ -211,6 +213,36 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
                     || Messages.GenericError);
             }
 
+            const isNullAmount = qbInvoiceLines?.filter(res => res.Description == tempNullDesc);
+            if (isNullAmount.length) {
+                qbInvoice.Line = qbInvoice.Line.map((res) => {
+                    if (res.Description == tempNullDesc) {
+                        res.Description = "";
+                        res.Amount = 0;
+                        res.SalesItemLineDetail.UnitPrice = 0;
+                    }
+                    return res
+                })
+
+                qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
+                    if (err) {
+                        console.log('== _createQBInvoice > qbo.createInvoice > ERROR ==');
+                        console.log('== err.Fault:', err.Fault);
+                        console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                        console.log('== err.fault:', err.fault);
+                        console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                        console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                        console.log('== invoiceId:', invoice._id);
+        
+                        reject(err.Fault?.Error[0]?.Detail
+                            || err.Fault?.Error[0]?.Message
+                            || err.fault?.error[0]?.detail
+                            || err.fault?.error[0]?.message
+                            || Messages.GenericError);
+                    }
+                });
+            }
+
             resolve(qbInvoice);
         })
 
@@ -263,18 +295,20 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
         const taxCode = await _createTaxService(company);
 
         // Iterate all items in the invoice and construct is to QB Inv Lines
+        const tempNullDesc = "Temporary value is $0.1 - actual value is $0 (please update it manually to $0)";
         for (const invItem of invoice.items) {
             const item = <IItem>invItem.item;
 
             const qbInvoiceLinesEntry: any = {
                 DetailType: LineDetailTypes.SalesItemLineDetail,
-                Amount: invItem.subTotal,
+                Amount: invItem.subTotal == 0 ? 0.1 : invItem.subTotal,
+                Description: invItem.subTotal == 0 ? tempNullDesc : "", 
                 SalesItemLineDetail: {
                     ItemRef: {
                         value: item.quickbookId
                     },
                     Qty: invItem.quantity,
-                    UnitPrice: invItem.price
+                    UnitPrice: invItem.price == 0 ? 0.1 : invItem.price
                 }
             };
 
@@ -342,6 +376,40 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
                         || Messages.GenericError,
                         null
                     );
+                }
+                
+                const isNullAmount = qbInvoiceLines?.filter(res => res.Description == tempNullDesc);
+                if (isNullAmount.length) {
+                    qbInvoice.Line = qbInvoice.Line.map((res) => {
+                        if (res.Description == tempNullDesc) {
+                            res.Description = "";
+                            res.Amount = 0;
+                            res.SalesItemLineDetail.UnitPrice = 0;
+                        }
+                        return res
+                    })
+
+                    qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
+                        if (err) {
+                            console.log('== _updateQBInvoice > qbo.updateInvoice > ERROR ==');
+                            console.log('== err.Fault:', err.Fault);
+                            console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                            console.log('== err.fault:', err.fault);
+                            console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                            console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                            console.log('== invoiceId:', invoice._id);
+        
+                            return next(
+                                Status.Error,
+                                err.Fault?.Error[0]?.Detail
+                                || err.Fault?.Error[0]?.Message
+                                || err.fault?.error[0]?.detail
+                                || err.fault?.error[0]?.message
+                                || Messages.GenericError,
+                                null
+                            );
+                        }
+                    });
                 }
 
                 return next(null, null, qbInvoice);
@@ -1228,13 +1296,13 @@ export const getQBInvoice = async (req: Request, res: Response) => {
             }
         });
     })
-    .then((response: any) => {
-        return res.json({ 'status': Status.Success, 'message': response })
-    })
-    .catch((error: any) => {
-        Sentry.captureException(error);
-        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
-    })
+        .then((response: any) => {
+            return res.json({ 'status': Status.Success, 'message': response })
+        })
+        .catch((error: any) => {
+            Sentry.captureException(error);
+            return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
+        })
 }
 
 export const findQBInvoice = async (req: Request, res: Response) => {
@@ -1253,13 +1321,13 @@ export const findQBInvoice = async (req: Request, res: Response) => {
             }
         });
     })
-    .then((data: any) => {
-        return res.json({ status: Status.Success, data: data ?? null });
-    })
-    .catch((error: any) => {
-        Sentry.captureException(error);
-        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
-    })
+        .then((data: any) => {
+            return res.json({ status: Status.Success, data: data ?? null });
+        })
+        .catch((error: any) => {
+            Sentry.captureException(error);
+            return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
+        })
 }
 
 export const updateQBInvoice = async (req: Request, res: Response) => {
@@ -1278,11 +1346,11 @@ export const updateQBInvoice = async (req: Request, res: Response) => {
             })
         })
     })
-    .then((data: any) => {
-        return res.json({ status: Status.Success, data: data ?? null });
-    })
-    .catch((error: any) => {
-        Sentry.captureException(error);
-        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
-    })
+        .then((data: any) => {
+            return res.json({ status: Status.Success, data: data ?? null });
+        })
+        .catch((error: any) => {
+            Sentry.captureException(error);
+            return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
+        })
 }
