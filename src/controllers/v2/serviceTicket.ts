@@ -326,7 +326,11 @@ const _fillInitialQueryTickets = (bodyParams: any, queryParams: any, query: any)
     }
 
     if (type) {
-        query['$and'].push({type: type});
+        if (type == "Ticket") {
+            query['$and'].push({$or: [{type: type}, { type: { $exists: false }}]});
+        }else{
+            query['$and'].push({type: type});
+        }
     }
 
     fillQueryCommon({ workType, companyLocation }, query['$and']);
